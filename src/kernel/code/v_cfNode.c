@@ -48,7 +48,10 @@ v_cfNodeNew(
     break;
     case V_CFNODE:
     default:
-        OS_REPORT_1(OS_ERROR,"v_cfNodeNew failed",0,"Illegal kind (%d) specified",kind);
+        OS_REPORT_1(OS_ERROR,
+                    "v_cfNodeNew",0,
+                    "Illegal kind (%d) specified",
+                    kind);
         assert(FALSE); 
         type = NULL;
     break;
@@ -56,7 +59,18 @@ v_cfNodeNew(
 
     if (type != NULL) {
         node = c_new(type);
+        if (node == NULL) {
+            OS_REPORT(OS_ERROR,
+                      "v_cfNodeNew",0,
+                      "Failed to allocate v_cfNode object.");
+            assert(FALSE);
+        }
     } else {
+        OS_REPORT_1(OS_ERROR,
+                    "v_cfNodeNew",0,
+                    "Failed to resolve v_cfNode sub-type identified by kind=%d.",
+                    kind);
+        assert(FALSE);
         node = NULL;
     }
     /* init is done by specific class itself, this is just a 

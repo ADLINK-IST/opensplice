@@ -106,7 +106,8 @@ extern "C" {
  * The constructor is idem-potent so multiple calls will not have any effect,
  * however this call is not MT-save.
  */
-OS_API u_result u_userInitialise();
+OS_API u_result
+u_userInitialise();
 
 /** \brief The class destructor.
  *
@@ -117,15 +118,6 @@ OS_API u_result u_userInitialise();
  */
 OS_API u_result
 u_userDetach ();
-
-OS_API u_domain
-u_userFindDomain (
-    const c_char *uri,
-    c_long timeout);
-
-OS_API u_result
-u_userKernelClose (
-    u_domain domain);
 
 /** \brief Increases the refCount of the object only within the lifespan of the process.
  */

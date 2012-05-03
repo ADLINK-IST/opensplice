@@ -57,14 +57,21 @@ static void
 d_doPrint(
     d_configuration config,
     const char* format,
-    va_list args)
+    va_list args,
+    const char* header
+    )
 {
     char description[512];
 
     if(config->tracingOutputFile){
         os_vsnprintf(description, sizeof(description)-1, format, args);
         description [sizeof(description)-1] = '\0';
-        fprintf(config->tracingOutputFile, "%s", description);
+        if (header != NULL) {
+            fprintf(config->tracingOutputFile, "%s%s", header, description);
+        }
+        else {
+            fprintf(config->tracingOutputFile, "%s", description);
+        }
         fflush(config->tracingOutputFile);
 
         if(config->tracingSynchronous){
@@ -84,14 +91,15 @@ d_printTimedEvent(
 {
     va_list args;
     d_configuration config;
+    char header[100];
 
     config = d_durabilityGetConfiguration(durability);
 
     if (config && (((c_ulong)level) >= ((c_ulong)config->tracingVerbosityLevel)))
     {
-        d_printState(durability, config, threadName);
+        d_printState(durability, config, threadName, header);
         va_start (args, format);
-        d_doPrint(config, format, args);
+        d_doPrint(config, format, args, header);
         va_end (args);
     }
 }
@@ -111,7 +119,7 @@ d_printEvent(
     if (config && (((c_ulong)level) >= ((c_ulong)config->tracingVerbosityLevel)))
     {
         va_start (args, format);
-        d_doPrint(config, format, args);
+        d_doPrint(config, format, args, NULL);
         va_end (args);
     }
 }
@@ -162,7 +170,8 @@ void
 d_printState(
     d_durability durability,
     d_configuration config,
-    const char* threadName)
+    const char* threadName,
+    char* header)
 {
     os_time time;
     d_serviceState kind;
@@ -219,10 +228,10 @@ d_printState(
             if(config->tracingRelativeTimestamps == TRUE){
                 time = os_timeSub(time, config->startTime);
             }
-            fprintf(config->tracingOutputFile, "%d.%9.9d %s (%s) -> ",
-                    time.tv_sec, time.tv_nsec, state, threadName);
+            os_sprintf(header, "%d.%9.9d %s (%s) -> ",
+                time.tv_sec, time.tv_nsec, state, threadName);
         } else {
-            fprintf(config->tracingOutputFile, "%s (%s) -> ", state, threadName);
+            os_sprintf(header, "%s (%s) -> ", state, threadName);
         }
     }
 }

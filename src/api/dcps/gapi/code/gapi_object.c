@@ -14,6 +14,7 @@
 #include "gapi_typeSupport.h"
 
 #define MAGIC 0x0babe000
+#define MAGIC_DELETED 0xfee1dead
 #define TRASH_LENGTH (64)
 
 #define IS_TYPE(t1,t2)        (((t1&t2)==t2)?TRUE:FALSE)
@@ -66,7 +67,7 @@ typedef struct DeleteActionInfo_s {
 
 
 C_STRUCT(gapi_handle) {
-    long              magic;
+    unsigned long              magic;
     _ObjectKind       kind;
     os_mutex          mutex;
 #ifdef _RWLOCK_
@@ -217,7 +218,14 @@ gapi_handleClaim (
                 result = GAPI_RETCODE_ALREADY_DELETED;
             }
         } else {
-            result = GAPI_RETCODE_BAD_PARAMETER;
+            if(handle->magic == MAGIC_DELETED)
+            {
+                result = GAPI_RETCODE_ALREADY_DELETED;
+            }
+            else
+            {
+                result = GAPI_RETCODE_BAD_PARAMETER;
+            }
         }
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
@@ -240,7 +248,14 @@ gapi_handleClaimNotBusy (
                 if (osr == os_resultSuccess) {
                     if (handle->magic == MAGIC) {
                         while ( handle->busy ) {
-                            os_condWait(&handle->cv, &handle->mutex);
+                            osr = os_condWait(&handle->cv, &handle->mutex);
+                            if (osr == os_resultFail)
+                            {
+                                OS_REPORT(OS_CRITICAL, "gapi_handleClaimNotBusy", 0,
+                                          "os_condWait failed - waiting for busy handle");
+                                osr = os_mutexUnlock(&handle->mutex);
+                                return GAPI_RETCODE_ERROR;
+                            }
                         }
                         result = GAPI_RETCODE_OK;
                     } else {
@@ -253,7 +268,15 @@ gapi_handleClaimNotBusy (
                 result = GAPI_RETCODE_ALREADY_DELETED;
             }
         } else {
-            result = GAPI_RETCODE_BAD_PARAMETER;
+            if(handle->magic == MAGIC_DELETED)
+            {
+                result = GAPI_RETCODE_ALREADY_DELETED;
+            }
+            else
+            {
+                result = GAPI_RETCODE_BAD_PARAMETER;
+            }
+
         }
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
@@ -285,13 +308,20 @@ static void
 gapi_handleReadClaimNotBusy (
     gapi_handle handle)
 {
+    os_result osr;
     os_mutexLock(&handle->read);
     handle->count++;
     if (handle->count == 1) {
         os_mutexLock(&handle->mutex);
     }
     while ( handle->busy ) {
-        os_condWait(&handle->cv, &handle->mutex);
+        osr = os_condWait(&handle->cv, &handle->mutex);
+        if (osr == os_resultFail)
+        {
+            OS_REPORT(OS_CRITICAL, "gapi_handleReadClaimNotBusy", 0,
+                      "os_condWait failed - waiting for busy handle");
+            break;
+        }
     }
     os_mutexUnlock(&handle->read);
 }
@@ -457,22 +487,21 @@ _ObjectDelete (
     }
     handle->userData = NULL;
 
+    handle->magic = MAGIC_DELETED;
+
     if ( handle->registry != NULL ) {
         _ObjectRegistryDeregister(handle->registry, handle);
-        gapi_handleRelease(handle);
-        os_condDestroy( &handle->cv );
-        os_mutexDestroy( &handle->mutex );
+    }
+
+    gapi_handleRelease(handle);
+
+    os_condDestroy( &handle->cv );
+    os_mutexDestroy( &handle->mutex );
 #ifdef _RWLOCK_
-        os_mutexDestroy(&handle->read);
+    os_mutexDestroy(&handle->read);
 #endif
-    } else {
-        handle->magic = 0;
-        gapi_handleRelease(handle);
-        os_condDestroy( &handle->cv );
-        os_mutexDestroy( &handle->mutex );
-#ifdef _RWLOCK_
-        os_mutexDestroy(&handle->read);
-#endif
+
+    if ( handle->registry == NULL ) {
         gapi__free(handle);
     }
 }
@@ -488,7 +517,7 @@ gapi_objectClaim (
     gapi_returnCode_t retval;
 
     retval = gapi_handleClaim(handle);
-    
+
     if (retval == GAPI_RETCODE_OK) {
         if ( HEADER_IS_TYPE(handle,kind) ) {
             if ( handle->object != NULL ) {
@@ -522,7 +551,7 @@ gapi_objectClaimNB (
     gapi_returnCode_t retval;
 
     retval = gapi_handleClaimNotBusy(handle);
-    
+
     if (retval == GAPI_RETCODE_OK) {
         if ( HEADER_IS_TYPE(handle,kind) ) {
             if ( handle->object != NULL ) {
@@ -589,6 +618,17 @@ gapi_objectReadClaim (
                 gapi_handleReadRelease(handle);
             }
         }
+        else
+        {
+            if(handle->magic == MAGIC_DELETED)
+            {
+                retval = GAPI_RETCODE_ALREADY_DELETED;
+            }
+            else
+            {
+                retval = GAPI_RETCODE_BAD_PARAMETER;
+            }
+        }
     }
 
     if ( result != NULL ) {
@@ -622,6 +662,17 @@ gapi_objectReadClaimNB (
                 }
             } else {
                 gapi_handleReadRelease(handle);
+            }
+        }
+        else
+        {
+            if(handle->magic == MAGIC_DELETED)
+            {
+                retval = GAPI_RETCODE_ALREADY_DELETED;
+            }
+            else
+            {
+                retval = GAPI_RETCODE_BAD_PARAMETER;
             }
         }
     }

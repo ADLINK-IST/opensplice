@@ -34,7 +34,7 @@ namespace ContentFilteredPublisher
     {
         static void Main(string[] args)
         {
-            DDSEntityManager mgr = new DDSEntityManager();
+            DDSEntityManager mgr = new DDSEntityManager("ContentFilteredTopic");
             String partitionName = "ContentFilteredTopic example";
 
             // create Domain Participant
@@ -46,7 +46,7 @@ namespace ContentFilteredPublisher
             mgr.registerType(msgTS);
 
             // create Topic
-            mgr.createTopic("StockTrackerExclusive", "ContentFilteredTopic");
+            mgr.createTopic("StockTrackerExclusive");
 
             // create Publisher
             mgr.createPublisher();

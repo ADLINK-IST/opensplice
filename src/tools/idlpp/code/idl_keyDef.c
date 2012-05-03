@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -106,39 +106,66 @@ idl_keyResolve (
     li = 0;
     /* check all key definition list elements */
     while (li < c_iterLength (keyDef->keyList)) {
-	keyMap = c_iterObject (keyDef->keyList, li);
-	if (strcmp(typeName, keyMap->typeName) == 0) {
-	    /* if the typename equals, check if the scope compares */
-	    if ((idl_scopeStackSize(scope) == 0) && (keyMap->scope->definedIn == NULL)) {
-		/* Global scope */
-		return keyMap->keyList;
-	    }
-	    si = idl_scopeStackSize (scope)-1;
-	    typeScope = keyMap->scope;
-	    while (si >= 0) {
-		/* for each scope element */
-		if (idl_scopeElementType(idl_scopeIndexed (scope, si)) == idl_tModule &&
-		    strcmp (typeScope->name, idl_scopeElementName(idl_scopeIndexed (scope, si))) == 0) {
-		    /* the scope is a module and the scope name compares */
-		    si--;
-		    if (typeScope) {
-			typeScope = typeScope->definedIn;
-		    }
-		    if (si == -1) {
-			/* bottom of the stack is reached */
-		        if (typeScope == NULL || typeScope->name == NULL) {
-			    /* the typeScope has reached the bottom too,
-			       thus the scopes are equal
-			    */
-			    return keyMap->keyList;
-			}
-		    }
-		} else {
-		    si = -1;
-		}
+        keyMap = c_iterObject (keyDef->keyList, li);
+        if (strcmp(typeName, keyMap->typeName) == 0) {
+            /* if the typename equals, check if the scope compares */
+            if ((idl_scopeStackSize(scope) == 0) && (keyMap->scope->definedIn == NULL)) {
+                /* Global scope */
+                return keyMap->keyList;
+            }
+            si = idl_scopeStackSize (scope)-1;
+            typeScope = keyMap->scope;
+            while (si >= 0) {
+                /* for each scope element */
+                if (idl_scopeElementType(idl_scopeIndexed (scope, si)) == idl_tModule &&
+                    strcmp (typeScope->name, idl_scopeElementName(idl_scopeIndexed (scope, si))) == 0) {
+                    /* the scope is a module and the scope name compares */
+                    si--;
+                    if (typeScope) {
+                        typeScope = typeScope->definedIn;
+                    }
+                    if (si == -1) {
+                        /* bottom of the stack is reached */
+                        if (typeScope == NULL || typeScope->name == NULL) {
+                        /* the typeScope has reached the bottom too,
+                           thus the scopes are equal
+                        */
+                        return keyMap->keyList;
+                    }
+                }
+            } else {
+                si = -1;
+            }
 	    }
 	}
 	li++;
+    }
+    return NULL;
+}
+
+c_char *
+idl_keyResolve2 (
+    idl_keyDef keyDef,
+    c_metaObject scope,
+    const char *typeName)
+{
+    c_long li;
+    idl_keyMap keyMap;
+
+    li = 0;
+    /* check all key definition list elements */
+    while (li < c_iterLength (keyDef->keyList))
+    {
+        keyMap = c_iterObject (keyDef->keyList, li);
+        if (strcmp(typeName, keyMap->typeName) == 0)
+        {
+            /* if the typename equals, check if the scope compares */
+            if(scope == keyMap->scope)
+            {
+                return keyMap->keyList;
+            }
+	    }
+	    li++;
     }
     return NULL;
 }
@@ -148,7 +175,7 @@ void
 idl_keyDefDefSet (
     idl_keyDef keyDef)
 {
-    idl_keyDefinitions = keyDef;    
+    idl_keyDefinitions = keyDef;
 }
 
 /* Get the default key definition list */

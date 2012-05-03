@@ -18,7 +18,7 @@ include $(OSPL_HOME)/setup/makefiles/target.mak
 $(JTIMESTAMP): $(TOPICIDL)
 	@mkdir -p $(IDL_CODE_DIR) $(CLASS_DIR)
 	@rm -rf $(IDL_CODE_DIR)/* $(CLASS_DIR)/*
-	$(JAVA) org.jacorb.idl.parser -d $(IDL_CODE_DIR) $(TOPICIDL)
+	$(JAVA) -classpath "$(CLASSPATH)" org.jacorb.idl.parser -d $(IDL_CODE_DIR) $(TOPICIDL)
 	$(IDLPP) -l java -C -d $(IDL_CODE_DIR) $(TOPICIDL)
 	@touch $(JTIMESTAMP)
 	$(JCC) $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(IDL_CODE_DIR)/DDS/*.java

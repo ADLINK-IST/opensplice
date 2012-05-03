@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* Interface */
@@ -25,31 +25,34 @@
 os_int
 nw_socketGetDefaultLoopbackAddress(
     os_int sockfd,
-    struct sockaddr_in *sockAddr)
+    os_sockaddr_storage *sockAddr)
 {
     /* Statics for storing the result */
-    static struct sockaddr_in sockAddrFound;
+    static os_sockaddr_storage sockAddrFound;
     static os_int hadSuccessBefore = SK_FALSE;
     /* Normal variables for retrieving the result */
     os_int success;
     sk_interfaceInfo *interfaceList;
     os_uint nofInterfaces;
-    
+    char addressStr[INET6_ADDRSTRLEN];
+
     if (!hadSuccessBefore) {
-         success = sk_interfaceInfoRetrieveAllLoopback(&interfaceList, &nofInterfaces, 
+         success = sk_interfaceInfoRetrieveAllLoopback(&interfaceList, &nofInterfaces,
                                               sockfd);
          if (success) {
-             sockAddrFound = 
-                 *(struct sockaddr_in *)sk_interfaceInfoGetPrimaryAddress(
+             sockAddrFound =
+                 *(os_sockaddr_storage *)sk_interfaceInfoGetPrimaryAddress(
                                           interfaceList[0]);
              hadSuccessBefore = SK_TRUE;
-             
+
              /* Diagnostics */
              NW_TRACE_2(Configuration, 2, "Identified loopback enabled interface %s "
                  "having primary address %s",
                  sk_interfaceInfoGetName(interfaceList[0]),
-                 inet_ntoa(sockAddrFound.sin_addr));
-                                       
+                 os_sockaddrAddressToString((os_sockaddr*) &sockAddrFound,
+                                            addressStr,
+                                            sizeof(addressStr)));
+
              /* Free mem used */
              sk_interfaceInfoFreeAll(interfaceList, nofInterfaces);
          }
@@ -58,6 +61,6 @@ nw_socketGetDefaultLoopbackAddress(
     if (hadSuccessBefore) {
         *sockAddr = sockAddrFound;
     }
-    
+
     return hadSuccessBefore;
 }

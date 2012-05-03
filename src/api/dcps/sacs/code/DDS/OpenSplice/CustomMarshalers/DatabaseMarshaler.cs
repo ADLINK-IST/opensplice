@@ -2,17 +2,17 @@
 //
 // Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
-// 
+//
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
 //  License Version 3 dated 29 June 2007, as published by the
 //  Free Software Foundation.
-// 
+//
 //  This library is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  Lesser General Public License for more details.
-// 
+//
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
 //  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -38,7 +38,7 @@ namespace DDS.OpenSplice.CustomMarshalers
 
     /* TODO: replace FakeCopyOut as soon as Mono issue mentioned above has been fixed. */
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void SampleCopyOutDelegate(IntPtr from, ref object to, int offset);
+    public delegate void SampleCopyOutDelegate(IntPtr from, IntPtr to);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void SampleReaderCopyDelegate(Gapi.gapi_Seq samples, Gapi.gapi_readerInfo info);
@@ -50,39 +50,40 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_data = (int)Marshal.OffsetOf(dataSampleType, "data");
         private static readonly int offset_sampleInfo = (int)Marshal.OffsetOf(dataSampleType, "sampleInfo");
 
-        public static Dictionary<KeyValuePair<IDomainParticipant, Type>, DatabaseMarshaler> typeMarshalers = 
+        public static Dictionary<KeyValuePair<IDomainParticipant, Type>, DatabaseMarshaler> typeMarshalers =
                 new Dictionary<KeyValuePair<IDomainParticipant, Type>, DatabaseMarshaler>();
-        
+
         // Used to instantiate an array of the datatype.
         public abstract object[] SampleReaderAlloc(int length);
         public abstract bool CopyIn(IntPtr basePtr, IntPtr from, IntPtr to);
         public abstract bool CopyIn(IntPtr basePtr, object from, IntPtr to, int offset);
-        public abstract void CopyOut(IntPtr from, ref object to, int offset);        
+        public abstract void CopyOut(IntPtr from, IntPtr to);
+        public abstract void CopyOut(IntPtr from, ref object to, int offset);
 
         private SampleCopyInDelegate copyInDelegate;
         private SampleCopyOutDelegate copyOutDelegate;
         private SampleReaderCopyDelegate readerCopyDelegate;
 
-        public abstract void InitEmbeddedMarshalers(IDomainParticipant participant); 
-        
-        public SampleCopyInDelegate CopyInDelegate 
-        { 
+        public abstract void InitEmbeddedMarshalers(IDomainParticipant participant);
+
+        public SampleCopyInDelegate CopyInDelegate
+        {
             get
             {
                 return copyInDelegate;
-            } 
+            }
         }
-        
-        public Delegate CopyOutDelegate 
-        { 
+
+        public Delegate CopyOutDelegate
+        {
             get
             {
                 return copyOutDelegate;
             }
         }
-        
-        public SampleReaderCopyDelegate ReaderCopyDelegate 
-        { 
+
+        public SampleReaderCopyDelegate ReaderCopyDelegate
+        {
             get
             {
                 return readerCopyDelegate;
@@ -102,7 +103,7 @@ namespace DDS.OpenSplice.CustomMarshalers
                 DatabaseMarshaler marshaler)
         {
             DatabaseMarshaler tmp;
-            
+
             // Check if a Marshaler for this type already exists, and if not, add it.
             if (!typeMarshalers.TryGetValue(new KeyValuePair<IDomainParticipant, Type>(participant, t), out tmp))
             {
@@ -110,18 +111,18 @@ namespace DDS.OpenSplice.CustomMarshalers
                 typeMarshalers.Add(new KeyValuePair<IDomainParticipant, Type>(participant, t), marshaler);
             }
         }
-        
+
         public static DatabaseMarshaler GetMarshaler(
                 IDomainParticipant participant,
                 Type t)
         {
             DatabaseMarshaler marshaler;
-            
+
             // Check if a Marshaler for this type already exists, and if so return it.
             typeMarshalers.TryGetValue(new KeyValuePair<IDomainParticipant, Type>(participant, t), out marshaler);
             return marshaler;
         }
-        
+
         public virtual void initObjectSeq(object[] src, object[] target)
         {
             if (src != null)
@@ -132,8 +133,8 @@ namespace DDS.OpenSplice.CustomMarshalers
                     target[i] = src[i];
                 }
             }
-        }   
-        
+        }
+
         public virtual void ReaderCopy(Gapi.gapi_Seq samples, Gapi.gapi_readerInfo readerInfo)
         {
             int samplesToRead = 0;
@@ -145,7 +146,7 @@ namespace DDS.OpenSplice.CustomMarshalers
                 dataSampleBuf = samples._buffer;
             }
 
-            // Restore GCHandle types from IntPtr types. 
+            // Restore GCHandle types from IntPtr types.
             GCHandle tmpGCHandleData = GCHandle.FromIntPtr(readerInfo.data_buffer);
             object[] sampleDataArray = tmpGCHandleData.Target as object[];
 
@@ -180,9 +181,9 @@ namespace DDS.OpenSplice.CustomMarshalers
                 sampleDataArray[i] = sampleObj;
 
                 // Copy the sample info
-                SampleInfoMarshaler.CopyOut(dataSampleBuf, ref sampleInfoArray[i], 
+                SampleInfoMarshaler.CopyOut(dataSampleBuf, ref sampleInfoArray[i],
                         cursor + offset_sampleInfo);
-                cursor += dataSampleSize; 
+                cursor += dataSampleSize;
             }
         }
     }

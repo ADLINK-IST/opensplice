@@ -48,6 +48,7 @@ idl_genMeta(
     c_char tmplFileName[1024];
     c_char *tmplPath;
     c_char *orbPath;
+    c_char *metaXML;
     int tmplFile;
     struct os_stat tmplStat;
     unsigned int nRead;
@@ -74,9 +75,11 @@ idl_genMeta(
     idl_macroSetAdd(idlpp_macroSet,
         idl_macroNew("uniquetypename",
         idl_scopeStackCxx(meta->scope, "_", meta->name)));
+    metaXML = idl_genXMLmeta(meta->type);
     idl_macroSetAdd(idlpp_macroSet,
         idl_macroNew("meta-descriptor",
-        idl_genXMLmeta(meta->type)));
+        idl_cutXMLmeta(metaXML)));
+    os_free(metaXML);
 
     if (idl_fileCur() == NULL) {
         return -1;

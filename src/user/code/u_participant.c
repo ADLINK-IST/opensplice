@@ -124,7 +124,7 @@ u_participantNew(
     } else {
         uri_string = "";
     }
-    domain = u_userFindDomain(uri, timeout);
+    domain = u_domainOpen(uri, timeout);
     if (domain != NULL) {
         r = u_entityWriteClaim(u_entity(domain),(v_entity*)(&kk));
         if (r == U_RESULT_OK) {
@@ -447,7 +447,7 @@ u_participantInit (
         }
         r = u_dispatcherInit(u_dispatcher(_this));
         if (r == U_RESULT_OK) {
-            r = u_domainAdd(domain,_this);
+            r = u_domainAddParticipant(domain,_this);
 
             osr = os_threadCreate(&_this->threadId, "watchdog", &attr,
                 (void *(*)(void *))leaseManagerMain,(void *)_this);
@@ -537,7 +537,7 @@ u_participantDeinit (
     v_leaseManager lm;
 
     if (_this != NULL) {
-        r = u_domainRemove(_this->domain,_this);
+        r = u_domainRemoveParticipant(_this->domain,_this);
         if (r == U_RESULT_OK) {
             r = u_entityReadClaim(u_entity(_this), (v_entity*)(&kp));
             if(r == U_RESULT_OK)
@@ -569,9 +569,7 @@ u_participantDeinit (
                 OS_REPORT(OS_WARNING, "u_participantDeinit", 0,
                           "Failed to claim Participant.");
             }
-            if (r == U_RESULT_OK) {
-                u_userKernelClose(_this->domain);
-            }
+            u_domainFree(_this->domain);
             /* Disable the participant to avoid multiple Free's */
             _this->domain = NULL;
         }
@@ -851,32 +849,6 @@ u_participantGetConfiguration(
                   "Illegal parameter.");
     }
     return cfg;
-}
-
-u_result
-u_participantRenewLease(
-    u_participant participant,
-    v_duration leasePeriod)
-{
-    u_result r;
-    v_participant p;
-
-    if (participant == NULL) {
-        r = U_RESULT_ILL_PARAM;
-    } else {
-        r = u_entityReadClaim(u_entity(participant), (v_entity*)(&p));
-        if(r == U_RESULT_OK)
-        {
-            assert(p);
-            v_participantRenewLease(p, leasePeriod);
-            r = u_entityRelease(u_entity(participant));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_participantRenewLease", 0,
-                      "Failed to claim Participant.");
-        }
-    }
-    return r;
 }
 
 c_iter

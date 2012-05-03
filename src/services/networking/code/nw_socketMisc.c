@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* interface */
@@ -31,97 +31,92 @@ typedef char sk_interfaceName[SK_INTF_MAX_NAME_LEN];
 #define SK_POINTER(address)     ((char *)(address))
 
 /* last seen Socket error, only changes are reported in the errorlog */
+/* @todo - ??? Not even vaguely thread / service concurrency safe */
 os_sockErrno skLastSockError = 0;
 
-
 /* Helper functions */
-
-sk_address
-sk_stringToAddress(
-    const char *addressString,
-    const char *addressOnError)
-{
-    sk_address result;
-
-    result = (sk_address)inet_addr(addressString);
-
-    if (result == (sk_address)(-1)) {
-#ifdef DO_HOST_BY_NAME
-        struct addrinfo template;
-        struct addrinfo *resultList;
-        int retCode;
-
-        memset (&template, 0, sizeof(template));
-        template.ai_family = AF_INET;
-        template.ai_socktype = SOCK_DGRAM;
-
-        retCode = getaddrinfo(addressString, NULL, &template, &resultList);
-        if (retCode != 0) {
-            NW_REPORT_WARNING_2("sk_stringToAddress",
-                "error calling getaddrinfo(\"%s\"): %s",
-                addressString, gai_strerror(retCode));
-        } else {
-            if (resultList) {
-                result = ((struct sockaddr_in *)resultList->ai_addr)->sin_addr.s_addr;
-                /* Ignore other entries, just take first */
-                freeaddrinfo(resultList);
-            } else {
-                NW_REPORT_WARNING_1("sk_stringToAddress",
-                      "could not lookup host \"%s\"",
-                      addressString);
-            }
-        }
-        if (result == (sk_address)(-1)) {
-#endif
-        if (addressOnError) {
-            NW_REPORT_WARNING_2("sk_stringToAddress",
-                "invalid networking address %s specified, "
-                "switching to %s",
-                addressString, addressOnError);
-            result = inet_addr(addressOnError);
-        } else {
-            NW_REPORT_WARNING_1("sk_stringToAddress",
-                "ignoring invalid networking address %s",
-                addressString);
-            result = (sk_address)0;
-        }
-#ifdef DO_HOST_BY_NAME
-        }
-#endif
-    }
-    NW_CONFIDENCE(result != (in_addr_t)-1);
-
-    return result;
-}
 
 sk_addressType
 sk_getAddressType(
     const char *addressString)
 {
     sk_addressType result = SK_TYPE_UNKNOWN;
-    sk_address address;
-    sk_address addressHostFormat;
+    os_sockaddr_storage address;
+    os_uint32 addressHostFormat;
     nw_stringList addressList;
     const char *usedAddressString;
+    os_boolean convertedOK;
 
     addressList = nw_stringListNew(addressString, NW_ADDRESS_SEPARATORS);
     if (addressList && (nw_stringListGetSize(addressList) > 0)) {
         /* Take first item to represent this string */
         usedAddressString = nw_stringListGetValue(addressList, 0);
         if (strcmp(usedAddressString, NWCF_BROADCAST_EXPR) == 0) {
-            result = SK_TYPE_BROADCAST;
+            if (nw_configurationGetIsIPv6())
+            {
+                NW_REPORT_ERROR_1("sk_getAddressType",
+                                  "Incorrectly specified address '%s' in IPv6 configured service. Check configuration.",
+                                  usedAddressString);
+            }
+            else
+            {
+                result = SK_TYPE_BROADCAST;
+            }
+
         } else {
-            address = sk_stringToAddress(usedAddressString, NULL);
-            if (address) {
-                addressHostFormat = ntohl(address);
-                if (IN_CLASSD(addressHostFormat)) {
-                    result = SK_TYPE_MULTICAST;
-                } else if (addressHostFormat == INADDR_LOOPBACK) {
-                    result = SK_TYPE_LOOPBACK;
-                } else if (IN_CLASSA(addressHostFormat) ||
-                           IN_CLASSB(addressHostFormat) ||
-                           IN_CLASSC(addressHostFormat)) {
-                    result = SK_TYPE_UNICAST;
+            convertedOK = os_sockaddrStringToAddress(usedAddressString,
+                                                    (os_sockaddr*) &address,
+                                                    !nw_configurationGetIsIPv6());
+            if (convertedOK)
+            {
+                if (address.ss_family == AF_INET)
+                {
+                    /* IPv4 address */
+                    if (nw_configurationGetIsIPv6())
+                    {
+                        NW_REPORT_ERROR_1("sk_getAddressType",
+                                          "Incorrectly specified IPv4 address %s in IPv6 configured service. Check configuration.",
+                                          usedAddressString);
+                    }
+                    else
+                    {
+                        addressHostFormat = ntohl(((os_sockaddr_in*)&address)->sin_addr.s_addr);
+                        if (IN_CLASSD(addressHostFormat)) {
+                            result = SK_TYPE_MULTICAST;
+                        } else if (addressHostFormat == INADDR_LOOPBACK) {
+                            result = SK_TYPE_LOOPBACK;
+                        } else if (IN_CLASSA(addressHostFormat) ||
+                                   IN_CLASSB(addressHostFormat) ||
+                                   IN_CLASSC(addressHostFormat)) {
+                            result = SK_TYPE_UNICAST;
+                        }
+                    }
+                }
+                else
+                {
+                    os_sockaddr_in6* v6Address = (os_sockaddr_in6*) &address;
+                    /* IPV6 address */
+                    if (nw_configurationGetIsIPv6())
+                    {
+                        if (IN6_IS_ADDR_MULTICAST(&v6Address->sin6_addr))
+                        {
+                            result = SK_TYPE_MULTICAST;
+                        }
+                        else if (IN6_IS_ADDR_LOOPBACK(&v6Address->sin6_addr))
+                        {
+                            result = SK_TYPE_LOOPBACK;
+                        }
+                        else
+                        {
+                            result = SK_TYPE_UNICAST;
+                        }
+                    }
+                    else
+                    {
+                        NW_REPORT_ERROR_1("sk_getAddressType",
+                                          "Incorrectly specified IPv6 address %s in IPv4 configured service. Check configuration.",
+                                          usedAddressString);
+                    }
                 }
             }
         }
@@ -135,16 +130,17 @@ sk_getAddressType(
 struct sk_interfaceInfo_s {
     sk_interfaceName  name;
     unsigned short    flags;
-    struct sockaddr  *primaryAddress;
-    struct sockaddr  *broadcastAddress;
+    os_sockaddr_storage  *primaryAddress;
+    os_sockaddr_storage  *broadcastAddress;
+    os_uint interfaceIndexNo;
 };
 
 static sk_interfaceInfo
 sk_interfaceInfoNew(
     const sk_interfaceName name,
     const unsigned short flags,
-    const struct sockaddr *primaryAddress,
-    const struct sockaddr *broadcastAddress)
+    const os_sockaddr_storage *primaryAddress,
+    const os_sockaddr_storage *broadcastAddress)
 {
     sk_interfaceInfo result = NULL;
 
@@ -157,18 +153,18 @@ sk_interfaceInfoNew(
 
         result->flags = flags;
 
-        if (primaryAddress && ((os_int)primaryAddress->sa_family == AF_INET)) {
-            /* Only IPv4 for now */
-            result->primaryAddress = (struct sockaddr *)os_malloc(
-                                        (os_uint32)sizeof(struct sockaddr_in));
+        if (primaryAddress) {
+            result->primaryAddress = (os_sockaddr_storage *)os_malloc(
+                                        (os_uint32)sizeof(os_sockaddr_storage));
             if (result->primaryAddress) {
                 memcpy(result->primaryAddress, primaryAddress,
-                       (os_uint32)sizeof(struct sockaddr_in));
+                       (os_uint32)sizeof(os_sockaddr_storage));
             }
-            /* If interface supports broadcast, fill bc info */
-            if (broadcastAddress && SD_FLAG_IS_SET(flags, IFF_BROADCAST)) {
-                result->broadcastAddress = (struct sockaddr *)os_malloc(
-                                              (os_uint32)sizeof(struct sockaddr_in));
+            /* If interface is IPv4 & supports broadcast, fill bc info */
+            if (primaryAddress->ss_family == AF_INET &&
+                broadcastAddress && SD_FLAG_IS_SET(flags, IFF_BROADCAST)) {
+                result->broadcastAddress = (os_sockaddr_storage *)os_malloc(
+                                              (os_uint32)sizeof(os_sockaddr_storage));
                 if (result->broadcastAddress) {
                     memcpy(result->broadcastAddress, broadcastAddress,
                            (os_uint32)sizeof(struct sockaddr_in));
@@ -250,18 +246,25 @@ sk_interfaceWalkCountMC(
 
     (void)intf;
     (void)sockfd;
-
+    if (nw_configurationGetIsIPv6() && !os_sockaddrIsLoopback((os_sockaddr*)&intf->address))
+    {
+        /* AFAIK all Ipv6 interfaces are multicast capable */
+        (*count)++;
+    }
+    else
+    {
 #ifndef INTEGRITY
-    /* Only interested in multicast-enabled interfaces for now */
-    if (SD_FLAG_IS_SET(intf->flags, IFF_MULTICAST) &&
-        !SD_FLAG_IS_SET(intf->flags, IFF_LOOPBACK)) {
-        (*count)++;
-    }
+        /* Only interested in multicast-enabled interfaces for now */
+        if (SD_FLAG_IS_SET(intf->flags, IFF_MULTICAST) &&
+            !SD_FLAG_IS_SET(intf->flags, IFF_LOOPBACK)) {
+            (*count)++;
+        }
 #else
-    if (!SD_FLAG_IS_SET(intf->flags, IFF_LOOPBACK)) {
-        (*count)++;
-    }
+        if (!SD_FLAG_IS_SET(intf->flags, IFF_LOOPBACK)) {
+            (*count)++;
+        }
 #endif
+    }
 }
 
 
@@ -272,19 +275,36 @@ sk_interfaceWalkFillMC(
     void *actionArg)
 {
     sk_interfaceInfo **interfaceInfo = (sk_interfaceInfo **)actionArg;
-    struct sockaddr *broadaddr;
+    os_sockaddr_storage *broadaddr;
 
-    if (SD_FLAG_IS_SET(intf->flags, IFF_MULTICAST) &&
-        !SD_FLAG_IS_SET(intf->flags, IFF_LOOPBACK)) {
-        if (SD_FLAG_IS_SET(intf->flags, IFF_BROADCAST)) {
-            broadaddr = &intf->broadcast_address;
-        } else {
+    if (nw_configurationGetIsIPv6())
+    {
+        /* AFAIK all Ipv6 interfaces are multicast capable */
+        if (!os_sockaddrIsLoopback((os_sockaddr*)&intf->address))
+        {
             broadaddr = NULL;
+            **interfaceInfo = sk_interfaceInfoNew(intf->name, intf->flags,
+                                  &intf->address, broadaddr);
+            (**interfaceInfo)->interfaceIndexNo = intf->interfaceIndexNo;
+             /* (*interfaceInfo)++ not allowed by QAC */
+            *interfaceInfo = &((*interfaceInfo)[1]);
         }
-        **interfaceInfo = sk_interfaceInfoNew(intf->name, intf->flags,
-                              &intf->address, broadaddr);
-         /* (*interfaceInfo)++ not allowed by QAC */
-        *interfaceInfo = &((*interfaceInfo)[1]);
+    }
+    else
+    {
+        if (SD_FLAG_IS_SET(intf->flags, IFF_MULTICAST) &&
+            !SD_FLAG_IS_SET(intf->flags, IFF_LOOPBACK)) {
+            if (SD_FLAG_IS_SET(intf->flags, IFF_BROADCAST)) {
+                broadaddr = &intf->broadcast_address;
+            } else {
+                broadaddr = NULL;
+            }
+            **interfaceInfo = sk_interfaceInfoNew(intf->name, intf->flags,
+                                  &intf->address, broadaddr);
+            (**interfaceInfo)->interfaceIndexNo = intf->interfaceIndexNo;
+             /* (*interfaceInfo)++ not allowed by QAC */
+            *interfaceInfo = &((*interfaceInfo)[1]);
+        }
     }
 }
 
@@ -300,8 +320,12 @@ sk_interfaceWalkCountLoopback(
     (void)sockfd;
     (void)intf;
 
-    /* Only interested in broadcast-enabled interfaces for now */
-    if (SD_FLAG_IS_SET(intf->flags, IFF_LOOPBACK)) {
+    if (nw_configurationGetIsIPv6()
+        && os_sockaddrIsLoopback((os_sockaddr*)&intf->address))
+    {
+        (*count)++;
+    }
+    else if (SD_FLAG_IS_SET(intf->flags, IFF_LOOPBACK)) {
         (*count)++;
     }
 }
@@ -317,12 +341,18 @@ sk_interfaceWalkFillLoopback(
 
    (void)sockfd;
 
-    if (SD_FLAG_IS_SET(intf->flags, IFF_LOOPBACK)) {
+    if (nw_configurationGetIsIPv6()
+        && os_sockaddrIsLoopback((os_sockaddr*)&intf->address))
+    {
         **interfaceInfo = sk_interfaceInfoNew(intf->name, intf->flags,
-                              &intf->address, NULL);         
+                              &intf->address, NULL);
          *interfaceInfo = &((*interfaceInfo)[1]);
     }
-
+    else if (SD_FLAG_IS_SET(intf->flags, IFF_LOOPBACK)) {
+        **interfaceInfo = sk_interfaceInfoNew(intf->name, intf->flags,
+                              &intf->address, NULL);
+         *interfaceInfo = &((*interfaceInfo)[1]);
+    }
 }
 
 
@@ -349,8 +379,9 @@ sk_interfaceIPv4Walk(
 
     if (action) {
         while (currentInterface < nofInterfaces) {
-            if (SD_FLAG_IS_SET(allInterfaces[currentInterface].flags, IFF_UP)) {
-                action(&allInterfaces[currentInterface], sockfd, actionArg);                
+            if (nw_configurationGetIsIPv6()
+                || SD_FLAG_IS_SET(allInterfaces[currentInterface].flags, IFF_UP)) {
+                action(&allInterfaces[currentInterface], sockfd, actionArg);
             }
             currentInterface++;
         }
@@ -358,14 +389,14 @@ sk_interfaceIPv4Walk(
 }
 
 #undef SK_MAX
-                      
+
 os_int
 sk_interfaceInfoRetrieveAllBC(
     sk_interfaceInfo **interfaceList /* [nofInterfaces */,
     os_uint *nofInterfaces,
     os_int sockfd)
 {
-    os_result result;
+    os_result result = os_resultFail;
     os_ifAttributes ifList[MAX_INTERFACES];
     os_uint32 nofIf = 0;
     sk_interfaceInfo *interfaceHelper;
@@ -376,7 +407,10 @@ sk_interfaceInfoRetrieveAllBC(
     *interfaceList = NULL;
     *nofInterfaces = 0;
 
-    result = os_sockQueryInterfaces(&ifList[0], (os_uint32)MAX_INTERFACES, &nofIf);
+    if (! nw_configurationGetIsIPv6())
+    {
+        result = os_sockQueryInterfaces(&ifList[0], (os_uint32)MAX_INTERFACES, &nofIf);
+    }
 
     if (result == os_resultSuccess) {
         /* Count the number of valid interfaces */
@@ -395,7 +429,7 @@ sk_interfaceInfoRetrieveAllBC(
            }
         }
 #endif
-                                
+
 
         if ( *nofInterfaces > 0 )
         {
@@ -431,13 +465,23 @@ sk_interfaceInfoRetrieveAllMC(
     *interfaceList = NULL;
     *nofInterfaces = 0;
 
-    result = os_sockQueryInterfaces(&ifList[0], (os_uint32)MAX_INTERFACES, &nofIf);
+    if (nw_configurationGetIsIPv6())
+    {
+        result = os_sockQueryIPv6Interfaces(&ifList[0], (os_uint32)MAX_INTERFACES, &nofIf);
+    }
+    else
+    {
+        result = os_sockQueryInterfaces(&ifList[0], (os_uint32)MAX_INTERFACES, &nofIf);
+    }
 
     if (result == os_resultSuccess) {
         /* Count the number of valid interfaces */
         sk_interfaceIPv4Walk(ifList, nofIf, sockfd,
                              sk_interfaceWalkCountMC, nofInterfaces);
 
+    NW_TRACE_1(Configuration, 6,
+                       "sk_interfaceInfoRetrieveAllMC: Retrieved %d multicast interfaces",
+                       *nofInterfaces);
 
 #ifdef INTEGRITY
     if ( *nofInterfaces > 1 )
@@ -479,7 +523,14 @@ sk_interfaceInfoRetrieveAllLoopback(
     *interfaceList = NULL;
     *nofInterfaces = 0;
 
-    result = os_sockQueryInterfaces(&ifList[0], (os_uint32)MAX_INTERFACES, &nofIf);
+    if (nw_configurationGetIsIPv6())
+    {
+        result = os_sockQueryIPv6Interfaces(&ifList[0], (os_uint32)MAX_INTERFACES, &nofIf);
+    }
+    else
+    {
+        result = os_sockQueryInterfaces(&ifList[0], (os_uint32)MAX_INTERFACES, &nofIf);
+    }
 
     if (result == os_resultSuccess) {
         /* Count the number of valid interfaces */
@@ -512,7 +563,7 @@ sk_interfaceInfoFreeAll(
     os_uint nofInterfaces)
 {
     os_uint i;
-    
+
     if (interfaceList) {
         for (i=0; i<nofInterfaces; i++) {
             sk_interfaceInfoFree(interfaceList[i]);
@@ -551,11 +602,11 @@ sk_interfaceInfoGetFlags(
 #endif
 
 
-struct sockaddr *
+os_sockaddr_storage *
 sk_interfaceInfoGetPrimaryAddress(
     const sk_interfaceInfo interfaceInfo)
 {
-    struct sockaddr *result = NULL;
+    os_sockaddr_storage *result = NULL;
 
     if (interfaceInfo != NULL) {
         result = interfaceInfo->primaryAddress;
@@ -565,15 +616,27 @@ sk_interfaceInfoGetPrimaryAddress(
 }
 
 
-struct sockaddr *
+os_sockaddr_storage *
 sk_interfaceInfoGetBroadcastAddress(
     const sk_interfaceInfo interfaceInfo)
 {
-    struct sockaddr *result = NULL;
+    os_sockaddr_storage *result = NULL;
 
     if (interfaceInfo != NULL) {
          result = interfaceInfo->broadcastAddress;
     }
 
     return result;
+}
+
+os_uint
+sk_interfaceInfoGetInterfaceIndexNo(sk_interfaceInfo this_)
+{
+    return this_->interfaceIndexNo;
+}
+
+void
+sk_interfaceInfoSetInterfaceIndexNo(sk_interfaceInfo this_, os_uint indexNo)
+{
+    this_->interfaceIndexNo = indexNo;
 }

@@ -14,7 +14,7 @@ namespace ListenerDataPublisher
     {
         static void Main(string[] args)
         {
-            DDSEntityManager mgr = new DDSEntityManager();
+            DDSEntityManager mgr = new DDSEntityManager("Listener");
             String partitionName = "Listener Example";
 
             // create Domain Participant
@@ -25,7 +25,7 @@ namespace ListenerDataPublisher
             mgr.registerType(msgTS);
 
             // create Topic
-            mgr.createTopic("ListenerData_Msg", "Listener");
+            mgr.createTopic("ListenerData_Msg");
 
             // create Publisher
             mgr.createPublisher();

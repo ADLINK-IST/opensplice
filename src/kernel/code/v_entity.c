@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -95,6 +95,9 @@ v_entityEnable (
     v_entity e)
 {
     v_result result;
+    v_topic found;
+
+    found = NULL;
 
     assert(e != NULL);
     assert(C_TYPECHECK(e,v_entity));
@@ -105,7 +108,11 @@ v_entityEnable (
         e->enabled = TRUE;
         switch (v_objectKind(e)) {
         case K_TOPIC:
-            result = v_topicEnable(v_topic(e));
+            result = v_topicEnable(v_topic(e), &found);
+            if(found)
+            {
+                c_free(found);
+            }
         break;
         case K_WRITER:
             result = v_writerEnable(v_writer(e));
@@ -119,8 +126,8 @@ v_entityEnable (
         case K_SUBSCRIBER:
             result = v_subscriberEnable(v_subscriber(e));
         break;
-        case K_PARTICIPANT: 
-        case K_SERVICE:     
+        case K_PARTICIPANT:
+        case K_SERVICE:
         case K_SPLICED:
         case K_NETWORKING:
         case K_DURABILITY:

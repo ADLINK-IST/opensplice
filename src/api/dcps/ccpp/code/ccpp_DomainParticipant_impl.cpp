@@ -22,6 +22,13 @@
 #include "ccpp_MultiTopic_impl.h"
 #include "ccpp_ListenerUtils.h"
 #include "os_report.h"
+#include "dds_builtinTopicsSplDcps.h"
+
+extern "C" {
+#include "v_public.h"
+#include "v_dataReaderInstance.h"
+#include "u_instanceHandle.h"
+}
 
 DDS::DomainParticipant_impl::DomainParticipant_impl(gapi_domainParticipant handle) : DDS::Entity_impl(handle)
 {
@@ -1219,24 +1226,52 @@ DDS::DomainParticipant_impl::get_default_topic_qos (
     return result;
 }
 
+struct copyInstanceHandle {
+    c_ulong index;
+    DDS::InstanceHandleSeq *seq;
+};
+
+static c_bool
+copyInstanceHandle(
+    v_dataReaderInstance instance,
+    c_voidp arg)
+{
+    c_bool result = TRUE;
+    struct copyInstanceHandle *a = (struct copyInstanceHandle *)arg;
+    DDS::InstanceHandle_t ghandle;
+    os_uint32 length;
+    if (a->index ==0) {
+        length = c_count(v_dataReaderInstanceGetNotEmptyInstanceSet(instance));
+        if (length > a->seq->maximum()) {
+            a->seq->length(length); /* potentially reallocate */
+        }
+    }
+
+    ghandle = u_instanceHandleNew((v_public)instance);
+    if (a->index < a->seq->maximum()) {
+        (*a->seq)[a->index++] = ghandle;
+
+    } else {
+        /* error index out of bounds */
+    }
+
+    return result;
+}
+
 DDS::ReturnCode_t
 DDS::DomainParticipant_impl::get_discovered_participants (
     DDS::InstanceHandleSeq & participant_handles
 ) THROW_ORB_EXCEPTIONS
 {
-    gapi_instanceHandleSeq gapi_handles;
+
+    struct copyInstanceHandle cih;
+    cih.index = 0;
+    cih.seq = &participant_handles;
+
     DDS::ReturnCode_t result;
 
-    ccpp_sequenceInitialize<gapi_instanceHandleSeq>(gapi_handles);
-    result = gapi_domainParticipant_get_discovered_participants(_gapi_self, &gapi_handles);
-    if (result == DDS::RETCODE_OK)
-    {
-        ccpp_sequenceCopyOut<gapi_instanceHandleSeq,
-                             gapi_instanceHandle_t,
-                             DDS::InstanceHandleSeq,
-                             DDS::InstanceHandle_t>
-            (gapi_handles, participant_handles);
-    }
+    result = gapi_domainParticipant_get_discovered_participants(_gapi_self, copyInstanceHandle, &cih);
+
     return result;
 }
 
@@ -1249,13 +1284,10 @@ DDS::DomainParticipant_impl::get_discovered_participant_data (
     DDS::ReturnCode_t result;
     gapi_participantBuiltinTopicData gapi_data;
 
-    result = gapi_domainParticipant_get_discovered_participant_data(_gapi_self,
-                                                                    &gapi_data,
-                                                                    participant_handle);
-    if (result == DDS::RETCODE_OK)
-    {
-        ccpp_ParticipantBuiltinTopicData_copyOut(gapi_data, participant_data);
-    }
+    result = (DDS::ReturnCode_t)gapi_domainParticipant_get_discovered_participant_data(_gapi_self,
+                                                                    &participant_data,
+                                                                    participant_handle,
+                                                                    __DDS_ParticipantBuiltinTopicData__copyOut);
     return result;
 }
 
@@ -1264,36 +1296,31 @@ DDS::DomainParticipant_impl::get_discovered_topics (
     DDS::InstanceHandleSeq & topic_handles
 ) THROW_ORB_EXCEPTIONS
 {
-    gapi_instanceHandleSeq gapi_handles;
+
+    struct copyInstanceHandle cih;
+    cih.index = 0;
+    cih.seq = &topic_handles;
+
     DDS::ReturnCode_t result;
 
-    ccpp_sequenceInitialize<gapi_instanceHandleSeq>(gapi_handles);
-    result = gapi_domainParticipant_get_discovered_topics(_gapi_self, &gapi_handles);
-    if (result == DDS::RETCODE_OK)
-    {
-        ccpp_sequenceCopyOut<gapi_instanceHandleSeq,
-                             gapi_instanceHandle_t,
-                             DDS::InstanceHandleSeq,
-                             DDS::InstanceHandle_t>
-            (gapi_handles, topic_handles);
-    }
+    result = gapi_domainParticipant_get_discovered_topics(_gapi_self, copyInstanceHandle, &cih);
+
     return result;
 }
 
 DDS::ReturnCode_t
 DDS::DomainParticipant_impl::get_discovered_topic_data (
-        DDS::TopicBuiltinTopicData & topic_data,
+    DDS::TopicBuiltinTopicData & topic_data,
     DDS::InstanceHandle_t topic_handle
 ) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
-    gapi_topicBuiltinTopicData gapi_data;
+    gapi_participantBuiltinTopicData gapi_data;
 
-    result = gapi_domainParticipant_get_discovered_topic_data(_gapi_self, &gapi_data, topic_handle);
-    if (result == DDS::RETCODE_OK)
-    {
-        ccpp_TopicBuiltinTopicData_copyOut(gapi_data, topic_data);
-    }
+    result = (DDS::ReturnCode_t)gapi_domainParticipant_get_discovered_topic_data(_gapi_self,
+                                                                    &topic_data,
+                                                                    topic_handle,
+                                                                    __DDS_TopicBuiltinTopicData__copyOut);
     return result;
 }
 

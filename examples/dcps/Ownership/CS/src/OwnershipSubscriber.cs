@@ -14,7 +14,7 @@ namespace OwnershipSubscriber
     {
         static void Main(string[] args)
         {
-            DDSEntityManager mgr = new DDSEntityManager();
+            DDSEntityManager mgr = new DDSEntityManager("Ownership");
             String partitionName = "Ownership example";
 
             // create Domain Participant
@@ -25,13 +25,13 @@ namespace OwnershipSubscriber
             mgr.registerType(msgTS);
 
             // create Topic
-            mgr.createTopic("StockTrackerExclusive", "Ownership");
+            mgr.createTopic("StockTrackerExclusive");
             
             // create Subscriber
             mgr.createSubscriber();
 
             // create DataReader
-            mgr.createReader("Ownership", false);
+            mgr.createReader(false);
 
             // Read Events
             IDataReader dreader = mgr.getReader();

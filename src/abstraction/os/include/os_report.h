@@ -27,6 +27,11 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
+/* following new line macro can be used in report description to insert
+ * a new line and indent to align next line.
+ */
+#define OS_REPORT_NL "\n              "
+
 #define OS_REPORT(type,context,code,description) \
     os_report(type,context,__FILE__,__LINE__,code,description)
 

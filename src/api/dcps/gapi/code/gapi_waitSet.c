@@ -441,6 +441,7 @@ gapi_waitSet_wait(
                     break;
                     default:
                         assert(FALSE);
+                        result = GAPI_RETCODE_ERROR;
                         ready = TRUE;
                     }
                 } else {
@@ -496,8 +497,13 @@ gapi_waitSet_wait(
                             result = GAPI_RETCODE_ALREADY_DELETED;
                             ready = TRUE;
                         break;
+                        case U_RESULT_INTERNAL_ERROR:
+                            result = GAPI_RETCODE_ERROR;
+                            ready = TRUE;
+                        break;
                         default:
                             assert(FALSE);
+                            result = GAPI_RETCODE_ERROR;
                             ready = TRUE;
                         }
                     } else {

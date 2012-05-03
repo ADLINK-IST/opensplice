@@ -257,44 +257,50 @@ c_fieldConcat (
 
     field = c_new(c_field_t(base));
 
-    field->type = c_keep(tail->type);
-    field->kind = tail->kind;
-    field->path = c_newArray(c_fieldPath_t(base),len1 + len2);
-    for (i=0;i<len1;i++) {
-        field->path[i] = c_keep(head->path[i]);
-    }
-    for (i=0;i<len2;i++) {
-        field->path[i+len1] = c_keep(tail->path[i]);
-    }
-
-    len1 = c_arraySize(head->refs);
-    len2 = c_arraySize(tail->refs);
-
-    totlen = len1 + len2;
-    if (totlen > 0) {
-        field->offset = 0;
-        field->refs = c_newArray(c_fieldRefs_t(base),totlen);
-        if (len1) {
-            for (i=0;i<len1;i++) {
-                field->refs[i] = head->refs[i];
-            }
-        } else {
-            tail->refs[0] = (c_voidp)head->offset;
-            len1 = 1;
+    if (field) {
+        field->type = c_keep(tail->type);
+        field->kind = tail->kind;
+        field->path = c_newArray(c_fieldPath_t(base),len1 + len2);
+        for (i=0;i<len1;i++) {
+            field->path[i] = c_keep(head->path[i]);
         }
         for (i=0;i<len2;i++) {
-            field->refs[i+len1] = tail->refs[i];
+            field->path[i+len1] = c_keep(tail->path[i]);
         }
+
+        len1 = c_arraySize(head->refs);
+        len2 = c_arraySize(tail->refs);
+
+        totlen = len1 + len2;
+        if (totlen > 0) {
+            field->offset = 0;
+            field->refs = c_newArray(c_fieldRefs_t(base),totlen);
+            if (len1) {
+                for (i=0;i<len1;i++) {
+                    field->refs[i] = head->refs[i];
+                }
+            } else {
+                tail->refs[0] = (c_voidp)head->offset;
+                len1 = 1;
+            }
+            for (i=0;i<len2;i++) {
+                field->refs[i+len1] = tail->refs[i];
+            }
+        } else {
+            field->offset = head->offset + tail->offset;
+            field->refs = NULL;
+        }
+
+        len1 = strlen(head->name);
+        len2 = strlen(tail->name);
+
+        field->name = c_stringMalloc(base,len1+len2+2);
+        os_sprintf(field->name,"%s.%s",head->name,tail->name);
     } else {
-        field->offset = head->offset + tail->offset;
-        field->refs = NULL;
+        OS_REPORT(OS_ERROR,
+                  "database::c_fieldConcat",0,
+                  "Failed to allocate c_field object.");
     }
-
-    len1 = strlen(head->name);
-    len2 = strlen(tail->name);
-
-    field->name = c_stringMalloc(base,len1+len2+2);
-    os_sprintf(field->name,"%s.%s",head->name,tail->name);
 
     return field;
 }

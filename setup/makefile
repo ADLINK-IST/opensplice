@@ -27,5 +27,6 @@ clean:
 	(cd wrappers; make clean)
 qac:
 gcov:
+analyse:
 
 endif

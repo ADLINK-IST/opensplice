@@ -358,17 +358,26 @@ gapi_subscriber_create_datareader (
              * data reader create function.
              */
             typeSupport = _DomainParticipantFindType(participant, typeName);
-            /* if create function is NULL, take default from data reader */
-            datareader = _DataReaderNew(topicDescription,
-                                        typeSupport,
-                                        readerQos,
-                                        a_listener,
-                                        mask,
-                                        subscriber);
-            if ( datareader ) {
-                _ENTITY_REGISTER_OBJECT(_Entity(subscriber),
-                                        (_Object)datareader);
+            if(typeSupport)
+            {          
+                /* if create function is NULL, take default from data reader */
+                datareader = _DataReaderNew(topicDescription,
+                                            typeSupport,
+                                            readerQos,
+                                            a_listener,
+                                            mask,
+                                            subscriber);
+                if ( datareader ) {
+                    _ENTITY_REGISTER_OBJECT(_Entity(subscriber),
+                                            (_Object)datareader);
+                }
+            }else{
+                OS_REPORT_1(OS_WARNING,
+                            "gapi_subscriber_create_datareader", 0,
+                            "TypeSupport %s not found !",
+                            typeName);
             }
+            
             gapi_free(typeName);
             gapi_free(topicName);
         }

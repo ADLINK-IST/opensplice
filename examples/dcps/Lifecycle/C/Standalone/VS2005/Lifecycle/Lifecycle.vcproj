@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
-	Name="Lifecycle"
-	ProjectGUID="{442F477C-A7D4-4B1B-9951-7E6103505540}"
-	RootNamespace="Lifecycle"
-	TargetFrameworkVersion="196613"
+	Version="8.00"
+	Name="LifecycleData"
+	ProjectGUID="{09FBC8FD-FB96-4DB4-A3DA-B61A0EC6720E}"
+	RootNamespace="LifecycleData"
 	>
 	<Platforms>
 		<Platform
@@ -40,13 +39,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot;"
+				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\dcps\C\SAC&quot;;..\Generated"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
-				RuntimeLibrary="0"
+				RuntimeLibrary="1"
 				WarningLevel="1"
 				DebugInformationFormat="1"
+				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -59,6 +59,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				OutputFile="$(ProjectDir)\$(ConfigurationName)\$(ProjectName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -101,13 +102,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot;"
+				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\dcps\C\SAC&quot;;..\Generated"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
 				WarningLevel="1"
 				DebugInformationFormat="1"
+				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -120,6 +122,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				OutputFile="$(ProjectDir)\$(ConfigurationName)\$(ProjectName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -147,24 +150,23 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\..\src\CheckStatus.cpp"
+				RelativePath="..\..\..\src\CheckStatus.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\src\DDSEntityManager.cpp"
+				RelativePath="..\..\..\src\DDSEntitiesManager.c"
 				>
 			</File>
 			<File
-				RelativePath="..\Lifecycle.idl"
+				RelativePath="..\..\..\..\idl\LifecycleData.idl"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cd $(ProjectDir)&#x0D;&#x0A;idlpp -I&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot; -I&quot;..&quot; -I$(ProjectDir)\..\..\..\src -l cpp -S -d Generated &quot;$(ProjectDir)\\..\\..\\..\\..\\idl\\$(InputName).idl&quot;&#x0D;&#x0A;"
-						AdditionalDependencies=""
-						Outputs="ccpp_$(InputName).h;$(InputName).h;$(InputName).cpp;$(InputName)Dcps.idl;$(InputName)Dcps_impl.h;$(InputName)Dcps_impl.cpp;$(InputName)SplDcps.h;$(InputName)SplDcps.cpp;$(InputName)Dcps.h;$(InputName)Dcps.cpp"
+						CommandLine="cd $(ProjectDir)&#x0D;&#x0A;idlpp -l c -S -d &quot;$(ProjectDir)\..\Generated&quot;  &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+						Outputs="$(InputName).h;$(InputName)Dcps.h;$(InputName)SacDcps.c;$(InputName)SacDcps.h;$(InputName)SplDcps.c;$(InputName)SplDcps.h"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -172,11 +174,18 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="cd $(ProjectDir)&#x0D;&#x0A;idlpp -I&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot; -I&quot;..&quot; -I$(ProjectDir)\..\..\..\src -l cpp -S -d Generated &quot;$(ProjectDir)\\..\\..\\..\\..\\idl\\$(InputName).idl&quot;&#x0D;&#x0A;"
-						AdditionalDependencies=""
-						Outputs="ccpp_$(InputName).h;$(InputName).h;$(InputName).cpp;$(InputName)Dcps.idl;$(InputName)Dcps_impl.h;$(InputName)Dcps_impl.cpp;$(InputName)SplDcps.h;$(InputName)SplDcps.cpp;$(InputName)Dcps.h;$(InputName)Dcps.cpp"
+						CommandLine="cd $(ProjectDir)&#x0D;&#x0A;idlpp -l c -S -d &quot;$(ProjectDir)\..\Generated&quot;  &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+						Outputs="$(InputName).h;$(InputName)Dcps.h;$(InputName)SacDcps.c;$(InputName)SacDcps.h;$(InputName)SplDcps.c;$(InputName)SplDcps.h"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\Generated\LifecycleDataSacDcps.c"
+				>
+			</File>
+			<File
+				RelativePath="..\Generated\LifecycleDataSplDcps.c"
+				>
 			</File>
 		</Filter>
 		<Filter
@@ -184,56 +193,6 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath=".\Generated\ccpp_Lifecycle.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\CheckStatus.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\src\DDSEntityManager.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Generated\Lifecycle.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Generated\LifecycleDcps.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Generated\LifecycleDcps_impl.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Generated\LifecycleSplDcps.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
-			<File
-				RelativePath=".\Generated\Lifecycle.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Generated\LifecycleDcps.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Generated\LifecycleDcps_impl.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\Generated\LifecycleSplDcps.cpp"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

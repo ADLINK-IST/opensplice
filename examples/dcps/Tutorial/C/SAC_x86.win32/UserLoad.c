@@ -31,6 +31,8 @@
 #include "CheckStatus.h"
 #include "Chat.h"
 
+#define TERMINATION_MESSAGE -1 
+
 /* entities required by all threads. */
 static DDS_GuardCondition           escape;
 
@@ -95,6 +97,8 @@ main (
     char                            *partitionName;
     char                            *chatMessageTypeName = NULL;
     char                            *nameServiceTypeName = NULL;
+    
+    printf("Starting UserLoad : disconnect a Chatter with userID = -1 to close it....\n\n");
 
     /* Create a DomainParticipant (using the 'TheParticipantFactory' convenience macro). */
     participant = DDS_DomainParticipantFactory_create_participant (
@@ -342,6 +346,10 @@ main (
                             msgList._length);
                         status = Chat_ChatMessageDataReader_return_loan(loadAdmin, &msgList, &infoSeq2);
                         checkStatus(status, "Chat_ChatMessageDataReader_return_loan");
+                        if(nsList._buffer[j].userID == TERMINATION_MESSAGE) {
+                           printf("Termination message received: exiting...\n");
+                           closed = 1;
+                        }
                     }
                     status = Chat_NameServiceDataReader_return_loan(nameServer, &nsList, &infoSeq);
                     checkStatus(status, "Chat_NameServiceDataReader_return_loan");

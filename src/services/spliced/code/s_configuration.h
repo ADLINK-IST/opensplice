@@ -47,6 +47,7 @@ C_STRUCT(s_configuration)
     os_threadAttr resendManagerScheduling;
     os_threadAttr cAndMCommandScheduling;
     c_bool        enableCandMCommandThread;
+    os_threadAttr leaseRenewScheduling;
 };
 
 #define s_configuration(config) ((s_configuration)(config))

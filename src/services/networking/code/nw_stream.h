@@ -19,7 +19,7 @@
 #include "nw_plugSendChannel.h"
 #include "nw_plugReceiveChannel.h"
 
-C_CLASS(nw_stream);
+NW_CLASS(nw_stream);
 
 nw_stream
 nw_stream_writeOpen (

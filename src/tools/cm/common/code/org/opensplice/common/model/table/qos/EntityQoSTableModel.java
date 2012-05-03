@@ -104,6 +104,10 @@ public abstract class EntityQoSTableModel extends DefaultTableModel {
         return currentQos;
     }
     
+    public void setQoS(QoS qos){
+        currentQos = qos;
+    }
+    
     public void applyQoS() throws CommonException{
         try {
             if(editor != null){

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="ListenerData"
-	ProjectGUID="{408C5F56-A523-4E8F-8AEC-7D957FF2C844}"
+	ProjectGUID="{442F477C-A7D4-4B1B-9951-7E6103505540}"
 	RootNamespace="ListenerData"
 	>
 	<Platforms>

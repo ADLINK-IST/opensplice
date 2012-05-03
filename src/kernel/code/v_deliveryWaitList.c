@@ -201,15 +201,20 @@ v_deliveryWaitListNew(
             waitlist->guard = _this;
             c_mutexInit(&waitlist->mutex, SHARED_MUTEX);
             c_condInit(&waitlist->cv, &waitlist->mutex, SHARED_COND);
-        }
-        found = c_tableInsert(_this->waitlists, waitlist);
-        if (found != waitlist) {
-            /* This should not happen! */
+            found = c_tableInsert(_this->waitlists, waitlist);
+            if (found != waitlist) {
+                /* This should not happen! */
+                OS_REPORT(OS_ERROR,
+                          "v_deliveryWaitListNew",0,
+                          "detected inconsistent waitlist admin.");
+                c_free(waitlist);
+                waitlist = NULL;
+            }
+        } else {
             OS_REPORT(OS_ERROR,
                       "v_deliveryWaitListNew",0,
-                      "detected inconsistent waitlist admin.");
-            c_free(waitlist);
-            waitlist = NULL;
+                      "Failed to allocate v_deliveryWaitList object.");
+            assert(FALSE);
         }
     } else {
         OS_REPORT(OS_ERROR,

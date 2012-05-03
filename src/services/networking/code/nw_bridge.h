@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef NW_BRIDGE_H
@@ -47,14 +47,14 @@ c_ulong           nw_bridgeWrite(
                       const char *topicName,
                       nw_signedLength *bytesLeft,
                       plugSendStatistics pss);
-                      
+
 nw_bool           nw_bridgeFlush(
                       nw_bridge bridge,
                       nw_seqNr channelId,
                       nw_bool all,
                       nw_signedLength *bytesLeft,
                       plugSendStatistics pss);
-                      
+
 void              nw_bridgePeriodicAction(
                       nw_bridge bridge,
                       nw_seqNr channelId,
@@ -66,12 +66,12 @@ typedef c_voidp nw_typeLookupArg;
 /* Note: can not use the normal notation c_type here because of the
  *       parentheses that follow; this will be expanded by the preprocessor
  *       since c_type(o) is a macro... */
-typedef C_STRUCT(c_type)*   (*nw_typeLookupAction) (
+typedef NW_STRUCT(c_type)*   (*nw_typeLookupAction) (
                       v_networkHashValue hashValue,
                       const char *partitionName,
                       const char *topicName,
                       nw_typeLookupArg arg);
-                      
+
 void              nw_bridgeRead(
                       nw_bridge bridge,
                       nw_seqNr channelId,
@@ -96,7 +96,7 @@ nw_sendChannel    nw_bridgeNewSendChannel(
                       const char *pathName,
                       nw_onFatalCallBack onFatal,
                       c_voidp onFatalUsrData);
-                      
+
 void              nw_bridgeFreeChannel(
                       nw_bridge bridge,
                       nw_seqNr channelId);
@@ -107,28 +107,28 @@ void              nw_bridgeFreeChannel(
 void              nw_bridgeNotifyNodeStarted(
                       nw_bridge bridge,
                       v_networkId networkId,
-                      nw_address address);
+                      os_sockaddr_storage address);
 
 void              nw_bridgeNotifyNodeStopped(
                       nw_bridge bridge,
                       v_networkId networkId,
-                      nw_address address);
+                      os_sockaddr_storage address);
 
 void              nw_bridgeNotifyNodeDied(
                       nw_bridge bridge,
                       v_networkId networkId,
-                      nw_address address);
+                      os_sockaddr_storage address);
 
 void              nw_bridgeNotifyGpAdd(
                       nw_bridge bridge,
                       v_networkId networkId,
-                      nw_address address);
+                      os_sockaddr_storage address);
 
 void              nw_bridgeNotifyGpRemove(
                       nw_bridge bridge,
                       v_networkId networkId,
-                      nw_address address);
-                     
+                      os_sockaddr_storage address);
+
 
 /* Convenience */
 

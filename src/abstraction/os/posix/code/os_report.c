@@ -319,7 +319,7 @@ os_report_file_path(char * default_file, char * override_variable)
         /* Note bug in glibc < 2.0.6 returns -1 for output truncated */
         if ( len < (int)sizeof(file_path) && len > -1 )
         {
-            file_dir = &profile_path;
+            file_dir = (char*) &profile_path;
         }
         else
         {
@@ -890,7 +890,7 @@ os_unregisterReportService (
        libraryHandle = os_libraryOpen (library_file_name, &attr);
     }
 
-    if (libraryHandle == NULL) 
+    if (libraryHandle == NULL)
     {
        OS_REPORT_1 (OS_ERROR, "os_reportRegisterPlugin", 0,
                     "Unable to load library: %s", library_file_name);
@@ -902,7 +902,7 @@ os_unregisterReportService (
     {
         initFunction =  (os_reportPlugin_initialize)os_libraryGetSymbol (libraryHandle, initialize_method_name);
 
-        if (initFunction == NULL) 
+        if (initFunction == NULL)
         {
            OS_REPORT_1 (OS_ERROR, "os_reportRegisterPlugin", 0,
                     "Unable to resolve report intialize function: %s", initialize_method_name);
@@ -915,7 +915,7 @@ os_unregisterReportService (
     {
         finalizeFunction = (os_reportPlugin_finalize)os_libraryGetSymbol (libraryHandle, finalize_method_name);
 
-        if (finalizeFunction == NULL) 
+        if (finalizeFunction == NULL)
         {
             OS_REPORT_1 (OS_ERROR, "os_reportRegsiterPlugin", 0,
                     "Unable to resolve report finalize function: %s", finalize_method_name);
@@ -928,7 +928,7 @@ os_unregisterReportService (
     {
         reportFunction = (os_reportPlugin_report)os_libraryGetSymbol (libraryHandle, report_method_name);
 
-        if (reportFunction == NULL) 
+        if (reportFunction == NULL)
         {
             OS_REPORT_1 (OS_ERROR, "os_reportRegisterPlugin", 0,
                         "Unable to resolve report Report function: %s", report_method_name);

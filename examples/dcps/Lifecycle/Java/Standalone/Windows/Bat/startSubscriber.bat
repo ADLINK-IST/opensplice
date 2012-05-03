@@ -1,9 +1,9 @@
 @echo off
-rem echo === LifecycleDataSubscriber
-cd ..\Release
-if /I "%1" == "" (
-LifecycleDataSubscriber.exe
+cd ..\exec
+
+if /I "%1" == "" ( 
+   java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";LifecycleDataSubscriber.jar LifecycleDataSubscriber
 ) else (
-LifecycleDataSubscriber.exe > ..\Bat\%1
+   java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";LifecycleDataSubscriber.jar LifecycleDataSubscriber > ..\Bat\%1 
 )
 cd ..\Bat

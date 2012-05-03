@@ -259,7 +259,7 @@ _PublisherUpublisher (
     return U_PUBLISHER_GET(_this);
 }
 
-gapi_publisherQos *
+u_result
 _PublisherGetQos (
     _Publisher _this,
     gapi_publisherQos *qos)
@@ -278,7 +278,7 @@ _PublisherGetQos (
         u_publisherQosFree(publisherQos);
     }
 
-    return qos;
+    return result;
 }
 
 gapi_dataWriter
@@ -326,7 +326,7 @@ gapi_publisher_create_datawriter (
             gapi_char *typeName;
             gapi_char *topicName;
             _DomainParticipant participant;
-            _TypeSupport typeSupport;
+            _TypeSupport typeSupport = NULL;
 
             /* find topic with the participant for consistency */
             typeName  = _TopicGetTypeName(topic);
@@ -335,17 +335,26 @@ gapi_publisher_create_datawriter (
 
             /* find type support for the data type to find data writer create function */
             typeSupport = _DomainParticipantFindType(participant, typeName);
-            /* if create function is NULL, take default from data writer */
-            datawriter = _DataWriterNew(topic,
-                                        typeSupport,
-                                        writerQos,
-                                        a_listener,
-                                        mask,
-                                        publisher);
-            if ( datawriter ) {
-                _ENTITY_REGISTER_OBJECT(_Entity(publisher),
-                                        (_Object)datawriter);
+            if(typeSupport)
+            {
+                /* if create function is NULL, take default from data writer */
+                datawriter = _DataWriterNew(topic,
+                                            typeSupport,
+                                            writerQos,
+                                            a_listener,
+                                            mask,
+                                            publisher);
+                if ( datawriter ) {
+                    _ENTITY_REGISTER_OBJECT(_Entity(publisher),
+                                            (_Object)datawriter);
+                }
+            }else{
+                OS_REPORT_1(OS_WARNING,
+                            "gapi_publisher_create_datawriter", 0,
+                            "TypeSupport %s not found !",
+                            typeName);
             }
+
             gapi_free(typeName);
             gapi_free(topicName);
         }
@@ -488,12 +497,15 @@ gapi_publisher_set_qos (
 
     if ((result == GAPI_RETCODE_OK ) && (_EntityEnabled(publisher))) {
         existing_qos = gapi_publisherQos__alloc();
-
-        result = gapi_publisherQosCheckMutability(
+        uResult = _PublisherGetQos(publisher, existing_qos);
+        result = kernelResultToApiResult(uResult);
+        if(result == GAPI_RETCODE_OK)
+        {
+            result = gapi_publisherQosCheckMutability(
                      qos,
-                     _PublisherGetQos(publisher, existing_qos),
+                     existing_qos,
                      &context);
-
+        }
         gapi_free(existing_qos);
     }
 
@@ -525,10 +537,12 @@ gapi_publisher_get_qos (
 {
     _Publisher publisher;
     gapi_returnCode_t result;
+    u_result uResult;
 
     publisher = gapi_publisherClaim(_this, &result);
     if ( publisher && qos ) {
-        _PublisherGetQos(publisher, qos);
+        uResult = _PublisherGetQos(publisher, qos);
+        result = kernelResultToApiResult(uResult);
     }
 
     _EntityRelease(publisher);

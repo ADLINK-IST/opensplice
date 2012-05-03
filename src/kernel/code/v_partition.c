@@ -244,6 +244,7 @@ v_partitionInterestNew(
         OS_REPORT(OS_ERROR,
                   "v_partitionInterestNew",0,
                   "Failed to allocate partition interest.");
+        assert(FALSE);
     }
 
     return result;

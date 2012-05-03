@@ -30,19 +30,56 @@
  **************************************************************/
 
 #ifndef INTEGRITY
-#define DAEMON_PATH "Daemon"
+#define DAEMON_PATH "Domain/Daemon"
+#define DAEMON_PATH_DEPRECATED "Daemon"
+
+static int
+checkLockingEnabled(v_cfElement root, const c_char *path, int *lock) {
+
+    v_cfElement service;
+    v_cfData data;
+    c_iter iter;
+    int iterLength;
+    int iterLengthRoot;
+    c_value value;
+    int found= 0;
+    iter = v_cfElementXPath(root, path);
+    iterLengthRoot = c_iterLength(iter);
+    if (iterLengthRoot > 0) {
+        service = v_cfElement(c_iterTakeFirst(iter));
+        c_iterFree(iter);
+        iter = v_cfElementXPath(service, "Locking/#text");
+        iterLength = c_iterLength(iter);
+        if (iterLength > 0) {
+            data = v_cfData(c_iterTakeFirst(iter));
+            c_iterFree(iter);
+            if (u_cfValueScan(v_cfDataValue(data), V_BOOLEAN, &value)) {
+                if (value.is.Boolean) {
+                    *lock = 1;
+                } else {
+                    *lock = 0;
+                }
+                found = 1;
+            }
+        }
+        if (iterLength > 1 && found) {
+            OS_REPORT(OS_WARNING,"lockPages", 0,"Daemon: multiple locking tags found, first one used");
+        }
+    }
+    if (iterLengthRoot > 1) {
+        OS_REPORT(OS_WARNING,"lockPages", 0,"Daemon: multiple daemon tags found, first tag used to read locking");
+    }
+    return found;
+}
+
 static int
 lockPages(
     v_spliced kSpliced)
 {
     v_configuration cfg;
     v_cfElement root;
-    v_cfElement service;
-    v_cfData data;
     int lock;
-    c_iter iter;
-    int iterLength;
-    c_value value;
+    int result;
     v_kernel k;
 
     assert(kSpliced);
@@ -54,40 +91,22 @@ lockPages(
     if (cfg != NULL) {
         root = v_configurationGetRoot(cfg);
         if (root != NULL) {
-            iter = v_cfElementXPath(root, DAEMON_PATH);
-            iterLength = c_iterLength(iter);
-            if (iterLength == 1) {
-                service = v_cfElement(c_iterTakeFirst(iter));
-                c_iterFree(iter);
-                iter = v_cfElementXPath(service, "Locking/#text");
-                iterLength = c_iterLength(iter);
-                if (iterLength == 1) {
-                    data = v_cfData(c_iterTakeFirst(iter));
-                    c_iterFree(iter);
-                    if (u_cfValueScan(v_cfDataValue(data), V_BOOLEAN, &value)) {
-                        if (value.is.Boolean) {
-                            lock = 1;
-                            OS_REPORT(OS_INFO,"lockPages", 0,
-                                "Daemon: Locking enabled for spliced");
-                        }
-                    } else {
-                        OS_REPORT(OS_WARNING,"lockPages", 0,
-                            "Failed to retrieve Locking for Daemon: Locking disabled");
-                    }
-                } else {
-                    OS_REPORT(OS_INFO,"lockPages", 0,
-                        "Daemon: Locking disabled");
-                    c_iterFree(iter);
+            result = checkLockingEnabled(root,DAEMON_PATH,&lock);
+            if (result && lock) {
+                OS_REPORT(OS_INFO,"lockPages", 0,"Daemon: Locking enabled for spliced");
+            } else if (result && !lock) {
+                OS_REPORT(OS_INFO,"lockPages", 0,"Daemon: Locking disabled for spliced");
+            }
+            if (!result) {
+                result = checkLockingEnabled(root,DAEMON_PATH_DEPRECATED, &lock);
+                if (result && lock) {
+                    OS_REPORT(OS_WARNING,"lockPages", 0,"DEPRECATED location for " DAEMON_PATH_DEPRECATED "/Locking location changed to " DAEMON_PATH "/Locking : Locking enabled for spliced");
+                } else if (result && !lock) {
+                    OS_REPORT(OS_WARNING,"lockPages", 0,"DEPRECATED location for " DAEMON_PATH_DEPRECATED "/Locking location changed to " DAEMON_PATH "/Locking : Locking disabled for spliced");
                 }
-            } else {
-                c_voidp e;
-                OS_REPORT(OS_INFO,"lockPages", 0,
-                    "No configuration specified for Daemon. Therefore the default will be used: Locking disabled");
-                do{
-                    e = c_iterTakeFirst(iter);
-                    c_free(e);
-                } while(e != NULL);
-                c_iterFree(iter);
+            }
+            if (!result) {
+                OS_REPORT(OS_INFO,"lockPages", 0,"Daemon: Locking not defined using default value disabled");
             }
             c_free(root);
         }
@@ -96,6 +115,7 @@ lockPages(
     return lock;
 }
 #undef DAEMON_PATH
+#undef DAEMON_PATH_DEPRECATED
 #endif
 
 static v_spliced
@@ -184,7 +204,7 @@ u_splicedNew(
     spliced = NULL;
 
 #if !defined (VXWORKS_RTP) && !defined (__INTEGRITY) && !defined (WINCE)
-    domain = u_userFindDomain(uri, -1 /* no timeout and no error logging */);
+    domain = u_domainOpen(uri, -1 /* no timeout and no error logging */);
     if (domain != NULL) {
         printf("Database opened, opening kernel\n");
         r = u_entityWriteClaim(u_entity(domain),(v_entity*)(&kk));
@@ -206,11 +226,11 @@ u_splicedNew(
             } while (otherSpliced && (nrSec < 4));
             r = u_entityRelease(u_entity(domain));
         }
-        u_userKernelClose(domain);
+        u_domainFree(domain);
         if (otherSpliced) {
             printf("Other splicedaemon running!\n");
         } else {
-            domain = u_userCreateDomain(uri);
+            domain = u_domainNew(uri);
             if (domain == NULL) {
                 printf("Creation of kernel failed!\n");
             } else {
@@ -222,7 +242,7 @@ u_splicedNew(
 #endif
     {
 
-        domain = u_userCreateDomain(uri);
+        domain = u_domainNew(uri);
         if (domain == NULL) {
             printf("Creation of kernel failed!\n");
         } else {
@@ -277,12 +297,21 @@ u_splicedFree(
             result = u_splicedDeinit(_this);
             if (result == U_RESULT_OK) {
                 u_entityDealloc(u_entity(_this));
-                u_userDeleteDomain(domain);
+#if 0
+                result = u_domainFree(domain);
+                if (result != U_RESULT_OK) {
+                    OS_REPORT_2(OS_ERROR,
+                                "user::u_spliced::u_splicedFree", 0,
+                                "Operation u_domainFree(0x%x) failed."
+                                OS_REPORT_NL "result = %s.",
+                                domain, u_resultImage(result));
+                }
+#endif
             } else {
-                OS_REPORT_2(OS_WARNING,
-                            "u_splicedFree",0,
-                            "Operation u_splicedDeinit failed: "
-                            "Spliced = 0x%x, result = %s.",
+                OS_REPORT_2(OS_ERROR,
+                            "user::u_spliced::u_splicedFree",0,
+                            "Operation u_splicedDeinit(0x%x) failed: "
+                            "result = %s.",
                             _this, u_resultImage(result));
                 u_entityUnlock(u_entity(_this));
             }
@@ -290,10 +319,10 @@ u_splicedFree(
             u_entityUnlock(u_entity(_this));
         }
     } else {
-        OS_REPORT_2(OS_WARNING,
-                    "u_splicedFree",0,
-                    "Operation u_entityLock failed: "
-                    "Spliced = 0x%x, result = %s.",
+        OS_REPORT_2(OS_ERROR,
+                    "user::u_spliced::u_splicedFree",0,
+                    "Operation u_entityLock(0x%x) failed: "
+                    "result = %s.",
                     _this, u_resultImage(result));
     }
     return result;

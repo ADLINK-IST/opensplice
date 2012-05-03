@@ -31,8 +31,8 @@
           <td>
             <b>Query parser doesn't support escape characters</b><br/>
             <i>
-              The internal OpenSplice DDS query parser does not support escape characters. This 
-              implicates that specific tokens cannot be used in query expressions (like 
+              The internal OpenSplice DDS query parser does not support escape characters. This
+              implicates that specific tokens cannot be used in query expressions (like
               for instance SQL keywords 'select', 'where', etc).<br/>
               Impact at API level:
               <ul>
@@ -92,7 +92,7 @@
             };
             </code></pre>
             with the error: <code>***DDS parse error TestStruct undefined at line: 4</code>. The
-            following idl construct is not allowed, however the IDL preprocessor does not give 
+            following idl construct is not allowed, however the IDL preprocessor does not give
             a clear error:
             <pre><code>
             struct TestStruct;
@@ -127,17 +127,17 @@
           <td>
             <b>Implicit unregister messages can corrupt copy-out functions</b><br/>
             <i>
-              On all language bindings there are methods that only use the key 
-              fields of a sample, as for example the register, unregister and 
-              dispose methods. However, currently the complete sample (including 
-              the non-key fields) need to adhere to the IDL to language mapping 
-              rules, as all fields are validated. This means that when a sample 
-              contains garbage data in its non-key fields, the sample could be 
-              rejected and the application might even crash in case of dangling 
-              pointers (segmentation fault). <br> 
-              The work-around is that no values should be initalised to NULL 
-              values, no values should contain dangling pointers, all unions 
-              should explicitly be initialized to a valid value and any 
+              On all language bindings there are methods that only use the key
+              fields of a sample, as for example the register, unregister and
+              dispose methods. However, currently the complete sample (including
+              the non-key fields) need to adhere to the IDL to language mapping
+              rules, as all fields are validated. This means that when a sample
+              contains garbage data in its non-key fields, the sample could be
+              rejected and the application might even crash in case of dangling
+              pointers (segmentation fault). <br>
+              The work-around is that no values should be initalised to NULL
+              values, no values should contain dangling pointers, all unions
+              should explicitly be initialized to a valid value and any
               enumeration value should remain within its bounds.
             </i>
           </td>
@@ -150,12 +150,12 @@
             <b>Limitations for output directories for ospl_projgen on Integrity</b><br/>
             <i>
               ospl_projgen will generate projects which will build incorrectly if it is supplied an output
-              directory ( -o option ) in which the final part of the path matches the name of one of the 
+              directory ( -o option ) in which the final part of the path matches the name of one of the
               address spaces being generated. <br>
               e.g. ospl_projgen ... -t mmstat -o path/mmstat<br>
               These projects appear to build correctly however the final image will be incorrect.<br>
-              Other names to avoid currently are inetserver, ivfs_server, ResourceStore, spliced, 
-              networking, durability, pong, ping1, ping2, ping3, ping4, ping5, ping6, shmdump, Chatter, 
+              Other names to avoid currently are inetserver, ivfs_server, ResourceStore, spliced,
+              networking, durability, pong, ping1, ping2, ping3, ping4, ping5, ping6, shmdump, Chatter,
               Chatter_Quit, MessageBoard, UserLoad            </i>
           </td>
         </tr>
@@ -170,7 +170,21 @@
               be tidied in future releases.
             </i>
           </td>
-        </tr>      
+        </tr>
+        <tr>
+          <td>
+            dds2142
+          </td>
+          <td>
+            <b>Sequences are not currently supported in multi-domain applications.</b><br/>
+            <i>
+              On Solaris9 there may be an error in the ospl-error.log when the networking service is started:
+              "setsockopt returned errno 132 (No buffer space available)" this is down to the udp_max_buf being to small.
+              To find out what the system has it set to do <code> /usr/sbin/ndd -get /dev/udp udp_max_buf</code> and to set it larger do :
+              <code>/usr/sbin/ndd -set /dev/udp udp_max_buf &ltxxxxxxx size in bytes&gt </code>
+            </i>
+          </td>
+        </tr>
         <tr>
           <td>
             dds2565
@@ -186,10 +200,23 @@
               worst-case amount of resources.
             </i>
           </td>
-        </tr>      
+        </tr>
+        <tr>
+          <td>
+            dds2819
+          </td>
+          <td>
+            <b>Windows Services on Windows 7</b><br/>
+            <i>
+              If OpenSplice DDS is installed as a windows service but without a valid license in place
+              then on Windows 7 it will just report starting and not allow a user to take any actions. To fix this,
+              please reboot after installing a valid license (by default a license file is picked up
+              from the OpenSplice DDS installation etc directory). This issue will be fixed in the next
+              OpenSplice DDS release.
+            </i>
+          </td>
+        </tr>
       </table>
-
-
       <br/>
       <hr>
       <p>

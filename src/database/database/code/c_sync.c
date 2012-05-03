@@ -372,7 +372,7 @@ c_condTimedWait (
     wait_on_error(result);
 #endif
     if((result != os_resultSuccess) && (result != os_resultTimeout)){
-        OS_REPORT_1(OS_ERROR, "c_condWait", 0, "os_condWait failed; os_result = %d.", result);
+        OS_REPORT_1(OS_ERROR, "c_condTimedWait", 0, "os_condTimedWait failed; os_result = %d.", result);
         assert((result == os_resultSuccess) || (result == os_resultTimeout));
     }
     return result;

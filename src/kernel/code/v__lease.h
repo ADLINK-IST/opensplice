@@ -62,29 +62,20 @@ v_leaseDeinit (
     v_lease _this);
 
 /**
- * \brief This operation updates the expiry time of the lease with a new
- * duration and stores this new duration in the lease. Because the duration has
- * changed the lease will notify all of it's observers as with a shorter
- * duration time the newly calculated expiry time might be sooner then the
- * previous expiry time.
+ * \brief This operation updates the expiry time of the lease with a (potential)
+ * new duration and stores this new duration in the lease. If the expiryTime of
+ * the lease now is earlier then the expiryTime before the renew, then the
+ * observers will be notified of an earlier expiryTime. Otherwise no notification
+ * will be done.
  *
  * \param _this The lease object of which to update the expiry time (!= NULL)
- * \param leaseDuration The new lease duration (!= NULL)
+ * \param leaseDuration The new lease duration, if no new duration is needed
+ *                      then this param may be NULL.
  */
 void
 v_leaseRenew (
     v_lease _this,
-    v_duration leaseDuration);
-
-/**
- * \brief This operation updates the expiry time of the lease with the duration
- * already known within the lease
- *
- * \param _this The lease object of which to update the expiry time (!= NULL)
- */
-void
-v_leaseUpdate (
-    v_lease _this);
+    v_duration* leaseDuration);
 
 /**
  * \brief Stores the expiryTime and duration of the lease in the provided pointers.

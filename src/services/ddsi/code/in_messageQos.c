@@ -44,7 +44,7 @@ in_messageQos_new(
         in_connectivityPeerWriterGetInfo(writer);
 
     /* inefficient, should be permenanent */
-    c_type type = NULL;
+    c_type type;
     v_messageQos _this ;
     c_long transportQosValue = 0; /* TODO */
 #ifdef _FAST_ACCESS_
@@ -63,98 +63,99 @@ in_messageQos_new(
 
     c_octet *dst, *src;
 
-    if (type == NULL) {
-        type = c_metaArrayTypeNew(c_metaObject(base),
-                                  "C_ARRAY<c_octet>",
-                                  c_octet_t(base),
-                                  0);
-    }
-
-    byte0 |= _LSHIFT_(i->topicData.info.reliability.kind,
-                      MQ_BYTE0_RELIABILITY_OFFSET);
-    byte0 |= _LSHIFT_(i->topicData.info.ownership.kind,
-                      MQ_BYTE0_OWNERSHIP_OFFSET);
-    byte0 |= _LSHIFT_(i->topicData.info.destination_order.kind,
-                      MQ_BYTE0_ORDERBY_OFFSET);
-    byte0 |= _LSHIFT_(i->topicData.info.lifecycle.autodispose_unregistered_instances,
-                      MQ_BYTE0_AUTODISPOSE_OFFSET);
-    byte1 |= _LSHIFT_(i->topicData.info.durability.kind,
-                      MQ_BYTE1_DURABILITY_OFFSET);
-    byte1 |= _LSHIFT_(i->topicData.info.liveliness.kind,
-                      MQ_BYTE1_LIVELINESS_OFFSET);
-    byte1 |= _LSHIFT_(i->topicData.info.presentation.access_scope,
-                      MQ_BYTE1_PRESENTATION_OFFSET);
-    byte1 |= _LSHIFT_(i->topicData.info.presentation.coherent_access,
-                      MQ_BYTE1_ORDERED_ACCESS_OFFSET);
-    byte1 |= _LSHIFT_(i->topicData.info.presentation.ordered_access,
-                      MQ_BYTE1_COHERENT_ACCESS_OFFSET);
-
-    if (i->topicData.info.ownership.kind == V_OWNERSHIP_EXCLUSIVE) {
-        strength_offset = offset;
-        offset += sizeof(i->topicData.info.ownership_strength.value);
-    }
-
-    if (c_timeIsZero(i->topicData.info.latency_budget.duration)) {
-        byte0 |= _LSHIFT_(1,MQ_BYTE0_LATENCY_OFFSET);
-    } else {
-        latency_offset = offset;
-        offset += sizeof(i->topicData.info.latency_budget.duration);
-    }
-    if (c_timeIsInfinite(i->topicData.info.deadline.period)) {
-        byte0 |= _LSHIFT_(1,MQ_BYTE0_DEADLINE_OFFSET);
-    } else {
-        deadline_offset = offset;
-        offset += sizeof(i->topicData.info.deadline.period);
-    }
-    if (c_timeIsInfinite(i->topicData.info.liveliness.lease_duration)) {
-        byte0 |= _LSHIFT_(1,MQ_BYTE0_LIVELINESS_OFFSET);
-    } else {
-        liveliness_offset = offset;
-        offset += sizeof(i->topicData.info.liveliness.lease_duration);
-    }
-    if (c_timeIsInfinite(i->topicData.info.lifespan.duration)) {
-        byte0 |= _LSHIFT_(1,MQ_BYTE0_LIFESPAN_OFFSET);
-    } else {
-        lifespan_offset = offset;
-        offset += sizeof(i->topicData.info.lifespan.duration);
-    }
+    type = c_metaArrayTypeNew(c_metaObject(base),
+                              "C_ARRAY<c_octet>",
+                              c_octet_t(base),
+                              0);
 
     _this = c_newArray((c_collectionType)type,offset);
-
-    ((c_octet *)_this)[0] = byte0;
-    ((c_octet *)_this)[1] = byte1;
-
-    src = (c_octet *)&(transportQosValue); /* TODO fix*/
-    dst = (c_octet *)&((c_octet *)_this)[2];
-    _COPY4_(dst,src);
-
-    if (strength_offset) {
-        src = (c_octet *)&(i->topicData.info.ownership_strength.value);
-        dst = (c_octet *)&((c_octet *)_this)[strength_offset];
-        _COPY4_(dst,src);
-    }
-    if (latency_offset) {
-        src = (c_octet *)&(i->topicData.info.latency_budget.duration);
-        dst = (c_octet *)&((c_octet *)_this)[latency_offset];
-        _COPY8_(dst,src);
-    }
-    if (deadline_offset) {
-        src = (c_octet *)&(i->topicData.info.deadline.period);
-        dst = (c_octet *)&((c_octet *)_this)[deadline_offset];
-        _COPY8_(dst,src);
-    }
-    if (liveliness_offset) {
-        src = (c_octet *)&(i->topicData.info.liveliness.lease_duration);
-        dst = (c_octet *)&((c_octet *)_this)[liveliness_offset];
-        _COPY8_(dst,src);
-    }
-    if (lifespan_offset) {
-        src = (c_octet *)&(i->topicData.info.lifespan.duration);
-        dst = (c_octet *)&((c_octet *)_this)[lifespan_offset];
-        _COPY8_(dst,src);
-    }
-
     c_free(type); /* remove if "type" becomes permenanent */
+
+    if (_this) {
+        byte0 |= _LSHIFT_(i->topicData.info.reliability.kind,
+                          MQ_BYTE0_RELIABILITY_OFFSET);
+        byte0 |= _LSHIFT_(i->topicData.info.ownership.kind,
+                          MQ_BYTE0_OWNERSHIP_OFFSET);
+        byte0 |= _LSHIFT_(i->topicData.info.destination_order.kind,
+                          MQ_BYTE0_ORDERBY_OFFSET);
+        byte0 |= _LSHIFT_(i->topicData.info.lifecycle.autodispose_unregistered_instances,
+                          MQ_BYTE0_AUTODISPOSE_OFFSET);
+        byte1 |= _LSHIFT_(i->topicData.info.durability.kind,
+                          MQ_BYTE1_DURABILITY_OFFSET);
+        byte1 |= _LSHIFT_(i->topicData.info.liveliness.kind,
+                          MQ_BYTE1_LIVELINESS_OFFSET);
+        byte1 |= _LSHIFT_(i->topicData.info.presentation.access_scope,
+                          MQ_BYTE1_PRESENTATION_OFFSET);
+        byte1 |= _LSHIFT_(i->topicData.info.presentation.coherent_access,
+                          MQ_BYTE1_ORDERED_ACCESS_OFFSET);
+        byte1 |= _LSHIFT_(i->topicData.info.presentation.ordered_access,
+                          MQ_BYTE1_COHERENT_ACCESS_OFFSET);
+
+        if (i->topicData.info.ownership.kind == V_OWNERSHIP_EXCLUSIVE) {
+            strength_offset = offset;
+            offset += sizeof(i->topicData.info.ownership_strength.value);
+        }
+
+        if (c_timeIsZero(i->topicData.info.latency_budget.duration)) {
+            byte0 |= _LSHIFT_(1,MQ_BYTE0_LATENCY_OFFSET);
+        } else {
+            latency_offset = offset;
+            offset += sizeof(i->topicData.info.latency_budget.duration);
+        }
+        if (c_timeIsInfinite(i->topicData.info.deadline.period)) {
+            byte0 |= _LSHIFT_(1,MQ_BYTE0_DEADLINE_OFFSET);
+        } else {
+            deadline_offset = offset;
+            offset += sizeof(i->topicData.info.deadline.period);
+        }
+        if (c_timeIsInfinite(i->topicData.info.liveliness.lease_duration)) {
+            byte0 |= _LSHIFT_(1,MQ_BYTE0_LIVELINESS_OFFSET);
+        } else {
+            liveliness_offset = offset;
+            offset += sizeof(i->topicData.info.liveliness.lease_duration);
+        }
+        if (c_timeIsInfinite(i->topicData.info.lifespan.duration)) {
+            byte0 |= _LSHIFT_(1,MQ_BYTE0_LIFESPAN_OFFSET);
+        } else {
+            lifespan_offset = offset;
+            offset += sizeof(i->topicData.info.lifespan.duration);
+        }
+
+        ((c_octet *)_this)[0] = byte0;
+        ((c_octet *)_this)[1] = byte1;
+
+        src = (c_octet *)&(transportQosValue); /* TODO fix*/
+        dst = (c_octet *)&((c_octet *)_this)[2];
+        _COPY4_(dst,src);
+
+        if (strength_offset) {
+            src = (c_octet *)&(i->topicData.info.ownership_strength.value);
+            dst = (c_octet *)&((c_octet *)_this)[strength_offset];
+            _COPY4_(dst,src);
+        }
+        if (latency_offset) {
+            src = (c_octet *)&(i->topicData.info.latency_budget.duration);
+            dst = (c_octet *)&((c_octet *)_this)[latency_offset];
+            _COPY8_(dst,src);
+        }
+        if (deadline_offset) {
+            src = (c_octet *)&(i->topicData.info.deadline.period);
+            dst = (c_octet *)&((c_octet *)_this)[deadline_offset];
+            _COPY8_(dst,src);
+        }
+        if (liveliness_offset) {
+            src = (c_octet *)&(i->topicData.info.liveliness.lease_duration);
+            dst = (c_octet *)&((c_octet *)_this)[liveliness_offset];
+            _COPY8_(dst,src);
+        }
+        if (lifespan_offset) {
+            src = (c_octet *)&(i->topicData.info.lifespan.duration);
+            dst = (c_octet *)&((c_octet *)_this)[lifespan_offset];
+            _COPY8_(dst,src);
+        }
+    } else {
+        assert(FALSE);
+    }
 
     return _this;
 }

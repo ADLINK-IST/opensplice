@@ -80,44 +80,31 @@ idl_structureOpen (
 {
     c_char *key_list;
 
-    idl_fileOutPrintf(idl_fileCur(), "char *\n");
+    idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(
         idl_fileCur(),
         "__%s__name(void)\n",
         idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf(idl_fileCur(), "{\n");
-    if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    return \"%s\";\n",
-            idl_scopeStack(scope, "::", name));
-    } else {
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    return CORBA_string_dup(\"%s\");\n",
-            idl_scopeStack(scope, "::", name));
-    }
+
+    idl_fileOutPrintf(
+        idl_fileCur(),
+        "    return (const char*)\"%s\";\n",
+        idl_scopeStack(scope, "::", name));
+
     idl_fileOutPrintf(idl_fileCur(), "}\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
     key_list = idl_keyResolve(idl_keyDefDefGet(), scope, name);
-    idl_fileOutPrintf(idl_fileCur(), "char *\n");
+    idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(
         idl_fileCur(),
         "__%s__keys(void)\n",
         idl_scopeStack (scope, "_", name));
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     if (key_list) {
-        if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
-            idl_fileOutPrintf(idl_fileCur(), "    return \"%s\";\n", key_list);
-        } else {
-            idl_fileOutPrintf(idl_fileCur(), "    return CORBA_string_dup(\"%s\");\n", key_list);
-        }
+        idl_fileOutPrintf(idl_fileCur(), "    return (const char*)\"%s\";\n", key_list);
     } else {
-        if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
-            idl_fileOutPrintf(idl_fileCur(), "    return \"\";\n");
-        } else {
-            idl_fileOutPrintf(idl_fileCur(), "    return CORBA_string_dup(\"\");\n");
-        }
+        idl_fileOutPrintf(idl_fileCur(), "    return (const char*)\"\";\n");
     }
     idl_fileOutPrintf(idl_fileCur(), "}\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
@@ -150,48 +137,32 @@ idl_unionOpen(
 {
     c_char *key_list;
 
-    idl_fileOutPrintf(idl_fileCur(), "char *\n");
+    idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(idl_fileCur(), "__%s__name(void)\n",
 	idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf(idl_fileCur(), "{\n");
-    if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    return \"%s\";\n",
-            idl_scopeStack(scope, "::", name));
-    } else {
-        idl_fileOutPrintf(
-            idl_fileCur(),
-            "    return CORBA_string_dup(\"%s\");\n",
-            idl_scopeStack(scope, "::", name));
-    }
+
+    idl_fileOutPrintf(
+        idl_fileCur(),
+        "    return (const char*)\"%s\";\n",
+        idl_scopeStack(scope, "::", name));
+
     idl_fileOutPrintf(idl_fileCur(), "}\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
     key_list = idl_keyResolve(idl_keyDefDefGet(), scope, name);
-    idl_fileOutPrintf(idl_fileCur(), "char *\n");
+    idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(
         idl_fileCur(),
         "__%s__keys(void)\n",
         idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     if (key_list) {
-        if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "    return \"%s\";\n",
-                key_list);
-        } else {
-            idl_fileOutPrintf(
-                idl_fileCur(),
-                "    return CORBA_string_dup(\"%s\");\n",
-                key_list);
-        }
+        idl_fileOutPrintf(
+            idl_fileCur(),
+            "    return (const char *)\"%s\";\n",
+            key_list);
     } else {
-        if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
-            idl_fileOutPrintf(idl_fileCur(), "    return \"\";\n");
-        } else {
-            idl_fileOutPrintf(idl_fileCur(), "    return CORBA_string_dup(\"\");\n");
-        }
+        idl_fileOutPrintf(idl_fileCur(), "    return (const char *)\"\";\n");
     }
     idl_fileOutPrintf(idl_fileCur(), "}\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");

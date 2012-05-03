@@ -25,7 +25,7 @@ namespace OwnershipPublisher
     	
 	    private void initPublisher(String pub, int strength)
 	    {
-		    mgr = new DDSEntityManager();
+		    mgr = new DDSEntityManager("Ownership");
 		    String partitionName = "Ownership example";
 
 		    // create Domain Participant
@@ -36,7 +36,7 @@ namespace OwnershipPublisher
 		    mgr.registerType(stkTS);
     		
 		    // create Topic
-		    mgr.createTopic("StockTrackerExclusive", "Ownership");
+		    mgr.createTopic("StockTrackerExclusive");
     		
 		    // create Publisher
 		    mgr.createPublisher();

@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 {
   bool automatic = true;
   ReturnCode_t status =  - 1;
-  os_time delay_10s = { 10, 0 };
+  os_time delay_180s = { 180, 0 };
   os_time delay_1s = { 1, 0 };
 
   if (argc < 4)
@@ -117,8 +117,8 @@ int main(int argc, char *argv[])
      }
   } 
   else {
-    cout << "=== sleeping 10s..." << endl;
-    os_nanoSleep(delay_10s);   
+    cout << "=== sleeping 180s..." << endl;
+    os_nanoSleep(delay_180s);   
   }
   //clean up
 

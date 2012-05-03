@@ -11,6 +11,7 @@
  */
 #include "os.h"
 #include "os_stdlib.h"
+#include "os_cond.h"
 #include "d_misc.h"
 #include "d__storeMMF.h"
 #include "d_storeMMF.h"
@@ -390,6 +391,7 @@ d_storeOpenMMF(
     d_storeMMF    storeMMF;
     os_mmfAttr    mmfAttr;
     os_boolean    mmfExistingFile;
+    os_condAttr   actionAttr;
 
     assert(d_objectIsValid(d_object(store), D_STORE));
     assert(d_store(store)->type == D_STORE_TYPE_MEM_MAPPED_FILE);
@@ -450,6 +452,11 @@ d_storeOpenMMF(
                 storeMMF->storeFilePath = NULL;
             }
         }
+        storeMMF->actionsInProgress = 0;
+        os_condAttrInit(&actionAttr);
+        actionAttr.scopeAttr = OS_SCOPE_PRIVATE;
+        os_condInit(&(storeMMF->actionCondition), &(d_lock(store)->lock), &actionAttr);
+
         d_lockUnlock(d_lock(store));
     } else {
         d_storeReport(store, D_LEVEL_SEVERE, "Supplied parameter(s) not valid.\n");
@@ -505,24 +512,47 @@ d_storeActionStartMMF(
     const d_store store)
 {
     d_storeResult result;
+    os_result osr;
 
     assert(d_objectIsValid(d_object(store), D_STORE));
     assert(d_store(store)->type == D_STORE_TYPE_MEM_MAPPED_FILE);
 
     if(store != NULL){
-        /* Code used to benchmark MMF store (DDS1582) */
-    	if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
-    	{
-            action_started = TRUE;
-            first_time.tv_sec = 0;
-            first_time.tv_nsec = 0;
-            last_time.tv_sec = 0;
-            last_time.tv_nsec = 0;
-        }
-        /* end of benchmark code */
+        d_lockLock(d_lock(store));
+        osr = os_resultSuccess;
 
-        /*d_storeReport(store, D_LEVEL_FINEST, "d_storeActionStartMMF.\n");*/
-        result = D_STORE_RESULT_OK;
+        while((d_storeMMF(store)->actionsInProgress != 0) && (osr == os_resultSuccess)){
+            osr = os_condWait(&(d_storeMMF(store)->actionCondition), &(d_lock(store)->lock));
+        }
+        if((d_storeMMF(store)->actionsInProgress == 0) && (osr == os_resultSuccess)){
+            /* Code used to benchmark MMF store (DDS1582) */
+            if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
+            {
+                action_started = TRUE;
+                first_time.tv_sec = 0;
+                first_time.tv_nsec = 0;
+                last_time.tv_sec = 0;
+                last_time.tv_nsec = 0;
+            }
+            /* end of benchmark code */
+            /*d_storeReport(store, D_LEVEL_FINEST, "d_storeActionStartMMF.\n");*/
+            result = D_STORE_RESULT_OK;
+        } else {
+            result = D_STORE_RESULT_ERROR;
+
+            if(osr != os_resultSuccess){
+                OS_REPORT_1(OS_ERROR, "d_storeActionStartMMF", 0,
+                  "os_condWait returned %d", osr);
+                assert(FALSE);
+            }
+            if(d_storeMMF(store)->actionsInProgress != 0){
+                OS_REPORT_1(OS_ERROR, "d_storeActionStartMMF", 0,
+                  "d_storeMMF(store)->actionsInProgress == %d",
+                  d_storeMMF(store)->actionsInProgress);
+                assert(FALSE);
+            }
+        }
+    	d_lockUnlock(d_lock(store));
     } else {
         result = D_STORE_RESULT_ILL_PARAM;
     }
@@ -535,30 +565,57 @@ d_storeActionStopMMF(
 {
     d_storeResult result;
     os_time diff_time;
+    os_result osr;
 
     assert(d_objectIsValid(d_object(store), D_STORE));
     assert(store->type == D_STORE_TYPE_MEM_MAPPED_FILE);
 
     if(store != NULL){
-        /* Code used to benchmark MMF store (DDS1582) */
-    	if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
-    	{
-    		action_started = FALSE;
-    		d_storeReport(store, D_LEVEL_FINEST,
-    				"Start time %d.%09d\n",
-    				first_time.tv_sec, first_time.tv_nsec);
-    		d_storeReport(store, D_LEVEL_FINEST,
-    				"End time   %d.%09d\n",
-    				last_time.tv_sec, last_time.tv_nsec);
-    		diff_time = os_timeSub(last_time, first_time);
-    		d_storeReport(store, D_LEVEL_FINEST,
-    				"Diff time  %d.%09d seconds \n",
-    				diff_time.tv_sec, diff_time.tv_nsec);
-    	}
-        /* end of benchmark code */
+        osr = os_resultSuccess;
 
-        /*d_storeReport(store, D_LEVEL_FINEST, "d_storeActionStopMMF.\n");*/
-        result = D_STORE_RESULT_OK;
+        d_lockLock(d_lock(store));
+
+        while((d_storeMMF(store)->actionsInProgress != 0) && (osr == os_resultSuccess)){
+            osr = os_condWait(&(d_storeMMF(store)->actionCondition), &(d_lock(store)->lock));
+        }
+
+        if((d_storeMMF(store)->actionsInProgress == 0) && (osr == os_resultSuccess)){
+            os_mmfSync(d_storeMMF(store)->mmfHandle);
+
+            /* Code used to benchmark MMF store (DDS1582) */
+            if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
+            {
+                action_started = FALSE;
+                d_storeReport(store, D_LEVEL_FINEST,
+                        "Start time %d.%09d\n",
+                        first_time.tv_sec, first_time.tv_nsec);
+                d_storeReport(store, D_LEVEL_FINEST,
+                        "End time   %d.%09d\n",
+                        last_time.tv_sec, last_time.tv_nsec);
+                diff_time = os_timeSub(last_time, first_time);
+                d_storeReport(store, D_LEVEL_FINEST,
+                        "Diff time  %d.%09d seconds \n",
+                        diff_time.tv_sec, diff_time.tv_nsec);
+            }
+            /* end of benchmark code */
+            /*d_storeReport(store, D_LEVEL_FINEST, "d_storeActionStopMMF.\n");*/
+            result = D_STORE_RESULT_OK;
+        } else {
+            result = D_STORE_RESULT_ERROR;
+
+            if(osr != os_resultSuccess){
+                OS_REPORT_1(OS_ERROR, "d_storeActionStartMMF", 0,
+                  "os_condWait returned %d", osr);
+                assert(FALSE);
+            }
+            if(d_storeMMF(store)->actionsInProgress != 0){
+                OS_REPORT_1(OS_ERROR, "d_storeActionStartMMF", 0,
+                  "d_storeMMF(store)->actionsInProgress == %d",
+                  d_storeMMF(store)->actionsInProgress);
+                assert(FALSE);
+            }
+        }
+        d_lockUnlock(d_lock(store));
     } else {
         result = D_STORE_RESULT_ILL_PARAM;
     }
@@ -676,6 +733,7 @@ d_storeMessageStoreMMF(
 {
     d_storeResult result;
     d_groupInfo group;
+    d_sample sample;
 
     /* Code used to benchmark MMF store (DDS1582) */
     if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
@@ -704,8 +762,18 @@ d_storeMessageStoreMMF(
                     v_entity(msg->group->topic)->name);
 
             if(group){
-                result = d_groupInfoWrite(group, store, msg);
-                os_mmfSync(d_storeMMF(store)->mmfHandle);
+                d_storeMMF(store)->actionsInProgress++;
+                d_lockUnlock(d_lock(store));
+                /*Time consuming action that can be performed outside lock*/
+                sample = d_groupInfoSampleNew(group, NULL, msg->message);
+                d_lockLock(d_lock(store));
+                d_storeMMF(store)->actionsInProgress--;
+
+                if(d_storeMMF(store)->actionsInProgress == 0){
+                    os_condSignal(&(d_storeMMF(store)->actionCondition));
+                }
+                result = d_groupInfoWrite(group, store, msg, sample);
+                /*os_mmfSync(d_storeMMF(store)->mmfHandle);*/
                 c_free(group);
             } else {
                 result = D_STORE_RESULT_PRECONDITION_NOT_MET;
@@ -733,6 +801,7 @@ d_storeInstanceDisposeMMF(
 {
     d_storeResult result;
     d_groupInfo group;
+    d_sample sample;
 
     assert(d_objectIsValid(d_object(store), D_STORE));
     assert(store->type == D_STORE_TYPE_MEM_MAPPED_FILE);
@@ -750,8 +819,20 @@ d_storeInstanceDisposeMMF(
                     v_entity(msg->group->topic)->name);
 
             if(group){
-                result = d_groupInfoDispose(group, store, msg);
-                os_mmfSync(d_storeMMF(store)->mmfHandle);
+
+                d_storeMMF(store)->actionsInProgress++;
+                d_lockUnlock(d_lock(store));
+                /*Time consuming action that can be performed outside lock*/
+                sample = d_groupInfoSampleNew(group, NULL, msg->message);
+
+                d_lockLock(d_lock(store));
+                d_storeMMF(store)->actionsInProgress--;
+
+                if(d_storeMMF(store)->actionsInProgress == 0){
+                    os_condSignal(&(d_storeMMF(store)->actionCondition));
+                }
+                result = d_groupInfoWrite(group, store, msg, sample);
+                /*os_mmfSync(d_storeMMF(store)->mmfHandle);*/
                 c_free(group);
             } else {
                 result = D_STORE_RESULT_PRECONDITION_NOT_MET;

@@ -36,10 +36,10 @@ public class LifecycleDataPublisher {
 	}
 
 	public static void main(String args[]) {
+		System.out.println("=== args_length=" + args.length);
 		if (args.length < 2) {
 			usage();
 		}
-		System.out.println(args.length);
 		if (!(args[0].equals("false")) && !(args[0].equals("true"))
                     && !(args[1].equals("dispose")) && !(args[1].equals("unregister")) && !(args[1].equals("stoppub")))
 		{

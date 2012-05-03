@@ -11,13 +11,16 @@
  */
 
 #include "os_report.h"
+#include "os_abstract.h"
 
 #include "u_user.h"
 #include "u__cfData.h"
 #include "u__cfValue.h"
 #include "u__entity.h"
 #include "v_cfNode.h"
-#include <math.h>
+#include "c_stringSupport.h"
+
+#include <ctype.h>
 
 #define U_CFDATA_SIZE (sizeof(C_STRUCT(u_cfData)))
 
@@ -187,24 +190,27 @@ u_cfDataFloatValue(
 c_bool
 u_cfDataSizeValue(
         u_cfData data,
-        c_ulong *ul)
+        c_size *size)
 {
-    u_result r;
+    u_result user_result;
     c_bool result;
     v_cfData kData;
     c_value value;
-    c_value resultValue;
 
     result = FALSE;
-    if ((data != NULL) && (ul != NULL)) {
-        r = u_cfNodeReadClaim(u_cfNode(data), (v_cfNode*)(&kData));
-        if (r == U_RESULT_OK) {
+    if ((data != NULL) && (size != NULL)) {
+        user_result = u_cfNodeReadClaim(u_cfNode(data), (v_cfNode*)(&kData));
+        if (user_result == U_RESULT_OK) {
             value = v_cfDataValue(kData);
-            result = u_cfValueScan(value, V_SIZE, &resultValue);
-
-            if (result == TRUE) {
-                *ul = resultValue.is.ULong;
+            if(value.kind == V_STRING){
+                result = u_cfDataSizeValueFromString(value.is.String,size);
             }
+            else
+            {
+                OS_REPORT(OS_ERROR, "u_cfDataSizeValue", 0, "Value is not a string");
+                assert(value.kind == V_STRING);
+            }
+
             u_cfNodeRelease(u_cfNode(data));
         }
     }
@@ -214,54 +220,130 @@ u_cfDataSizeValue(
 c_bool
 u_cfDataSizeValueFromString(
     c_char *str,
-    c_ulong *ul)
+    c_size *size)
 {
-    c_bool result;
-    c_char *temp;
-    c_char chp;
-    c_ulong base,res,retval = 0;
-    result = TRUE;
+    c_bool result = TRUE;
+    c_char *temp, *startChar, *endChar;
+    c_char tempChar;
 
-    assert(str);
+    if(str){
 
-    temp = os_malloc(strlen(str) +1);
-    if (temp != NULL) {
-        strcpy (temp,str);
-        retval = sscanf(temp, "%u%c",&res, &chp);
-        if (retval == 1) {
-            base =1;
-        } else if (retval == 2) {
-            switch(chp) {
-            case 'K':
-                base = 1024;
-                break;
-            case 'M':
-                base = pow(1024,2);
-                break;
-            case 'G':
-                base = pow(1024,3);
-                break;
-            default:
-                OS_REPORT_1(OS_ERROR, "u_cfDataSizeValueFromString", 0, "Invalid size specifier (%c)", chp);
-                base =1;
-                break;
+        temp = c_trimString(str);
+
+        if(temp)
+        {
+            startChar = temp;
+
+            /* get the numeric part */
+            endChar = startChar;
+            while(*endChar != '\0' && isdigit(*endChar))
+            {
+                endChar++;
             }
-        } else {
-            OS_REPORT_1(OS_ERROR, "u_cfDataSizeValueFromString", 0, "Invalid size value (%s)", str);
-            res = 0;
-            base = 1;
+
+            if(startChar == endChar)
+            {
+                result = FALSE;
+            }
+            else {
+                /* endChar now points to the character in the string after the last digit */
+                tempChar = *endChar;
+                *endChar = '\0'; /* make it a 0-terminated string */
+
+                sscanf(startChar, PA_SIZEFMT, size);
+
+                *endChar = tempChar;
+
+                /*
+                 * If endChar is now pointing at '\0', then the size does not contain
+                 * a user-friendly size character. Else continue and interpret the user
+                 * friendly size character.
+                 */
+                if(*endChar != '\0'){
+                    endChar++;
+                    if(*endChar != '\0')
+                    {
+                        /*
+                         * If endChar is '\0' now, then this means that after the
+                         * user friendly size character comes more, which is not
+                         * allowed.
+                         */
+                        result = FALSE;
+                    }
+                    else
+                    {
+                        /* now get the user-friendly part, if available */
+                        switch(tempChar) { /* tmpChar contains the user-friendly character */
+                            case 'K':
+                            case 'k':
+                                if(*size > C_MAX_SIZE/(1<<10)) /* boundary checking */
+                                {
+                                    *size = C_MAX_SIZE;
+                                    OS_REPORT_2(OS_WARNING,
+                                                "u_cfDataSizeValueFromString",
+                                                0,
+                                                "Configuration parameter value (%s) exceeds maximum size, value changed to " PA_SIZEFMT,
+                                                temp,
+                                                C_MAX_SIZE);
+                                }
+                                *size <<= 10; /* multiply by 1024 */
+                                break;
+                            case 'M':
+                            case 'm':
+                                if(*size > C_MAX_SIZE/(1<<20)) /* boundary checking */
+                                {
+                                    *size = C_MAX_SIZE;
+                                    OS_REPORT_2(OS_WARNING,
+                                                "u_cfDataSizeValueFromString",
+                                                0,
+                                                "Configuration parameter value (%s) exceeds maximum size, value changed to " PA_SIZEFMT,
+                                                temp,
+                                                C_MAX_SIZE);
+                                }
+                                *size <<= 20; /* multiply by 1048576 */
+                                break;
+                            case 'G':
+                            case 'g':
+                                if(*size > C_MAX_SIZE/(1<<30)) /* boundary checking */
+                                {
+                                    *size = C_MAX_SIZE;
+                                    OS_REPORT_2(OS_WARNING,
+                                                "u_cfDataSizeValueFromString",
+                                                0,
+                                                "Configuration parameter value (%s) exceeds maximum size, value changed to " PA_SIZEFMT,
+                                                temp,
+                                                C_MAX_SIZE);
+                                }
+                                else{
+                                    *size <<= 30; /* multiply by 1073741824 */
+                                }
+                                break;
+                            default:
+                                result = FALSE;
+                                break;
+                        }
+                    }
+                }
+            }
+
+            if(!result)
+            {
+                *size = 0;
+                OS_REPORT_1(OS_ERROR, "u_cfDataSizeValueFromString", 0, "Invalid size value (\"%s\")", temp);
+            }
+
+            os_free(temp);
         }
-        /* boundary checking */
-        if (res > C_MAX_ULONG(L)/base) {
-            *ul = C_MAX_ULONG(L);
-            OS_REPORT_2(OS_WARNING, "u_cfDataSizeValueFromString", 0, "Configuration parameter value (%s) exceeds maximum size ulong, value changed to %lu",str,C_MAX_ULONG(L));
-        } else {
-            *ul = res*base;
+        else
+        {
+            OS_REPORT_1(OS_ERROR, "u_cfDataSizeValueFromString", 0, "String trimming failed for configuration parameter value (%s)", str);
+            result = FALSE;
         }
-        os_free(temp);
-    } else {
-        result =0;
-        OS_REPORT_1(OS_ERROR, "u_cfDataSizeValueFromString", 0, "Malloc failed for configuration parameter value (%s)", str);
     }
+    else {
+        OS_REPORT(OS_ERROR, "u_cfDataSizeValueFromString", 0, "Illegal parameter given (NULL pointer) to u_cfDataSizeValueFromString");
+        result = FALSE;
+    }
+
     return result;
 }

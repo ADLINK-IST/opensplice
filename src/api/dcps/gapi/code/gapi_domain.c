@@ -36,7 +36,7 @@ _DomainNew(
       _this = _DomainAlloc();
       if (_this)
       {
-          _this->domain = u_userFindDomain((c_char *)domainId, 1);/* 1 = timeout */
+          _this->domain = u_domainOpen((c_char *)domainId, 1);/* 1 = timeout */
           if(!_this->domain)
           {
               _DomainFree(_this);
@@ -55,7 +55,7 @@ _DomainFree(
     {
         if(_this->domain)
         {
-            u_userKernelClose(_this->domain);
+//            u_domainFree(_this->domain);
             _this->domain = NULL;
         }
         _ObjectDelete((_Object)_this);

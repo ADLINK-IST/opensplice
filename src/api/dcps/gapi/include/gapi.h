@@ -64,6 +64,9 @@ typedef c_string    gapi_string;
 
 typedef gapi_boolean (*_dealloactorType)(void *object);
 typedef void *(*_bufferAllocatorType)(gapi_unsigned_long len);
+typedef c_bool (*gapi_ReaderInstanceAction)(v_dataReaderInstance instance, c_voidp arg);
+typedef void (*gapi_readerAction) (c_voidp from, c_voidp to);
+
 
 /* Generic DDS object pointer */
 
@@ -2633,7 +2636,9 @@ gapi_domainParticipant_get_default_topic_qos (
 OS_API gapi_returnCode_t
 gapi_domainParticipant_get_discovered_participants (
     gapi_domainParticipant _this,
-    gapi_instanceHandleSeq  *participant_handles);
+    gapi_ReaderInstanceAction action,
+    c_voidp arg);
+
 
 /*     ReturnCode_t
  *     get_discovered_participant_data (
@@ -2643,8 +2648,9 @@ gapi_domainParticipant_get_discovered_participants (
 OS_API gapi_returnCode_t
 gapi_domainParticipant_get_discovered_participant_data (
     gapi_domainParticipant _this,
-    gapi_participantBuiltinTopicData *participant_data,
-    gapi_instanceHandle_t  handle);
+    c_voidp participant_data,
+    gapi_instanceHandle_t handle,
+    gapi_readerAction action);
 
 /*     ReturnCode_t
  *     get_discovered_topics (
@@ -2653,7 +2659,8 @@ gapi_domainParticipant_get_discovered_participant_data (
 OS_API gapi_returnCode_t
 gapi_domainParticipant_get_discovered_topics (
     gapi_domainParticipant _this,
-    gapi_instanceHandleSeq  *topic_handles);
+    gapi_ReaderInstanceAction action,
+    c_voidp arg);
 
 /*     ReturnCode_t
  *     get_discovered_topic_data (
@@ -2663,8 +2670,9 @@ gapi_domainParticipant_get_discovered_topics (
 OS_API gapi_returnCode_t
 gapi_domainParticipant_get_discovered_topic_data (
     gapi_domainParticipant _this,
-    gapi_topicBuiltinTopicData *topic_data,
-    gapi_instanceHandle_t handle);
+    c_voidp topic_data,
+    gapi_instanceHandle_t handle,
+    gapi_readerAction action);
 
 /*     Boolean
  *     contains_entity (

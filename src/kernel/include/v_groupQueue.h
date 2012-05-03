@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_GROUPQUEUE_H
@@ -41,27 +41,39 @@ extern "C" {
  */
 #define v_groupQueue(_this) (C_CAST(_this,v_groupQueue))
 
-OS_API v_groupQueue          
+OS_API v_groupQueue
 v_groupQueueNew(
     v_subscriber subscriber,
     const c_char* name,
     c_ulong size,
     v_readerQos qos);
 
-OS_API void                        
+OS_API void
 v_groupQueueFree(
     v_groupQueue _this);
 
-OS_API v_groupAction               
+OS_API v_groupAction
 v_groupQueueRead(
     v_groupQueue _this);
 
-OS_API v_groupAction               
+OS_API v_groupAction
 v_groupQueueTake(
     v_groupQueue _this);
 
+OS_API c_ulong
+v_groupQueueSize(
+    v_groupQueue _this);
+
+OS_API void
+v_groupQueueSetMarker(
+    v_groupQueue _this);
+
+OS_API void
+v_groupQueueResetMarker(
+    v_groupQueue _this);
+
 #undef OS_API
-                                                         
+
 #if defined (__cplusplus)
 }
 #endif

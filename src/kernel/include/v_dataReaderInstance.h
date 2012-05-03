@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_DATAREADERINSTANCE_H
@@ -42,19 +42,22 @@
 
 #define v_dataReaderInstanceTemplate(o) ((v_dataReaderInstanceTemplate)(o))
 
-#define v_dataReaderInstanceHead(_this) \
-        v_dataReaderSample(v_dataReaderInstanceTemplate(_this)->sample)
+#define v_dataReaderInstanceOldest(_this) \
+        v_dataReaderSample(v_dataReaderInstanceTemplate(_this)->oldest)
 
-#define v_dataReaderInstanceTail(_this) \
-        v_dataReaderSample(v_dataReaderInstanceTemplate(_this)->tail)
+#define v_dataReaderInstanceNewest(_this) \
+        v_dataReaderSample(v_dataReaderInstanceTemplate(_this)->sample)
 
 /* Getter functions for the instance state */
 
 #define v_dataReaderInstanceState(_this) \
         (v_dataReaderInstance(_this)->instanceState)
-    
+
 #define v_dataReaderInstanceStateTest(_this, state)    \
         (v_stateTest(v_dataReaderInstanceState(_this), state))
+
+#define v_dataReaderInstanceStateTestOr(_this, state)    \
+        (v_stateTestOr(v_dataReaderInstanceState(_this), state))
 
 #define v_dataReaderInstanceSampleCount(_this) \
         (v_dataReaderInstance(_this)->sampleCount)
@@ -65,11 +68,11 @@
          (!v_dataReaderInstanceStateTest(_this, L_STATECHANGED)))
 #else
 #define v_dataReaderInstanceEmpty(_this) \
-        (v_dataReaderInstanceHead(_this) == NULL)
+        (v_dataReaderInstanceOldest(_this) == NULL)
 #endif
 
 #define v_dataReaderInstanceNoWriters(_this) \
-        (v_dataReaderInstanceStateTest(_this, L_NOWRITERS))
+        (v_dataReaderInstance(_this)->liveliness == 0)
 
 #define v_dataReaderInstanceReader(_this) \
         (v_dataReader(v_index(v_dataReaderInstance(_this)->index)->reader))
@@ -88,6 +91,19 @@ OS_API void v_dataReaderInstanceSetUserData
  */
 OS_API v_message v_dataReaderInstanceCreateMessage
                         (v_dataReaderInstance _this);
+
+/*
+ * Function to get the datareaderInstance index->notEmptyList field
+ */
+OS_API c_collection v_dataReaderInstanceGetNotEmptyInstanceSet
+                        (v_dataReaderInstance _this);
+
+/*
+ * Function to get the datareaderInstance index->notEmptyList count
+ */
+OS_API c_ulong v_dataReaderInstanceGetNotEmptyInstanceCount
+                        (v_dataReaderInstance _this);
+
 
 #undef OS_API
 

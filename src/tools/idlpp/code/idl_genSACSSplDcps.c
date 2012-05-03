@@ -1660,7 +1660,29 @@ idl_CreateCopyOut(
 {
     c_long i, nrMembers = c_structureMemberCount((c_structure) structType);
 
-    /* Open the 1st CopyIn operation and increase the indent. */
+    /* Open the 1st CopyOut operation and increase the indent. */
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "public override void CopyOut(System.IntPtr from, System.IntPtr to)\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "{\n");
+    indent_level++;
+
+    /* Generate a body that retrieves the C# object and invokes the appropriate CopyOut. */
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "GCHandle tmpGCHandleTo = GCHandle.FromIntPtr(to);\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "object toObj = tmpGCHandleTo.Target;\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "CopyOut(from, ref toObj, 0);\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "if (toObj != tmpGCHandleTo.Target) tmpGCHandleTo.Target = toObj;\n");
+
+    /* Decrease the indent level back to its original value and close the CopyOut operation. */
+    indent_level--;
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+
+    /* Open the 2nd CopyOut operation and increase the indent. */
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "public override void CopyOut(System.IntPtr from, ref object to, int offset)\n");
     idl_printIndent(indent_level);

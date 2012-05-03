@@ -18,6 +18,7 @@
 #include "gapi_expression.h"
 #include "gapi_error.h"
 #include "gapi_domain.h"
+#include "gapi_object.h"
 
 #include "os.h"
 #include "c_iterator.h"
@@ -81,6 +82,50 @@ copyParticipantFactoryQosOut (
 
     return TRUE;
 }
+
+static c_equality
+gapi_compareParticipantDomainId(
+    _DomainParticipant participant,
+    gapi_domainId_t domainId)
+{
+    c_equality result = C_NE;
+    if(participant)
+    {
+        /* Participant was created with domain_id = NULL */
+        if ((gapi_domainParticipant_get_domain_id((gapi_domainParticipant)_EntityHandle(participant)) == NULL) && (domainId == NULL)) {
+            result = C_EQ;
+        } else {
+            /* Participant was created with either a name or uri.
+             * We cannot know which one so it's no use to compare with
+             * participant->_DomainId
+             * Instead we ask the kernel, to which the participant is attached,
+             * for its name and uri.
+             */
+            u_participant p = _DomainParticipantUparticipant(participant);
+            if ((u_domainCompareDomainId(u_participantDomain(p), (const c_char*)domainId)) == TRUE) {
+               result = C_EQ;
+            }
+        }
+    }
+    return result;
+}
+
+
+static c_equality
+gapi_compareDomainId(
+    _Domain domain,
+    gapi_domainId_t domainId)
+{
+    c_equality result = C_NE;
+    if (domain)
+    {
+        if((u_domainCompareDomainId(_DomainGetKernel(domain), (const c_char*)domainId)) == TRUE) {
+            result = C_EQ;
+        }
+    }
+    return result;
+}
+
 
 void
 _DomainParticipantFactoryRegister (
@@ -250,6 +295,24 @@ gapi_domainParticipantFactory_create_participant(
     return (gapi_domainParticipant)_EntityRelease(newParticipant);
 }
 
+typedef struct {
+    gapi_domainId_t domainId;
+    int nrOfConnectedParticipants;
+
+} countConnectedParticipantArg;
+
+void
+countConnectedParticipant(
+        void* o,
+        c_iterActionArg arg)
+{
+    _DomainParticipant participant = (_DomainParticipant)o;
+    countConnectedParticipantArg *ccArg = (countConnectedParticipantArg*)arg;
+    if(gapi_compareParticipantDomainId(participant, ccArg->domainId) == C_EQ){
+        ccArg->nrOfConnectedParticipants++;
+    }
+}
+
 /*     ReturnCode_t
  *     delete_participant(
  *         in DomainParticipant a_participant);
@@ -279,10 +342,48 @@ gapi_domainParticipantFactory_delete_participant(
                     if (c_iterTake (factory->DomainParticipantList, participant) != participant) {
                         result = GAPI_RETCODE_BAD_PARAMETER;
                     } else {
+                        countConnectedParticipantArg arg;
+                        arg.domainId = gapi_string_dup(_DomainParticipantGetDomainId(participant));
+                        arg.nrOfConnectedParticipants = 0;
+                        /* Check if this pariticpant is the last participant of its domain.
+                         */
+                        c_iterWalk(factory->DomainParticipantList, countConnectedParticipant, &arg);
+
+                        /* if the just deleted participant was the last, also delete
+                         * the reference to the domain, as it no longer exists */
+                        if(arg.nrOfConnectedParticipants == 0)
+                        {
+                            _Domain domain;
+                            domain = c_iterResolve(factory->DomainList, gapi_compareDomainId, (void*)arg.domainId);
+                            if ( domain != NULL ) {
+                                domain = c_iterTake (factory->DomainList, domain);
+                                assert(domain);
+                                if(domain)
+                                {
+                                    _DomainFree (domain);
+                                    domain = NULL;
+                                }
+                                else {
+                                    OS_REPORT_1(OS_ERROR,
+                                                "gapi::DomainParticipantFactory::delete_participant", 0,
+                                                "Could not obtain domain '%s' from the factory's domain list.", arg.domainId);
+                                    result = GAPI_RETCODE_ERROR;
+                                }
+                            }
+                        }
+
                         result = _DomainParticipantFree (participant);
-                        if ( result == GAPI_RETCODE_OK ) {
+                        if( result == GAPI_RETCODE_OK )
+                        {
                             participant = NULL;
                         }
+                        else
+                        {
+                            OS_REPORT(OS_ERROR,
+                                      "gapi::DomainParticipantFactory::delete_participant", 0,
+                                      "Could not properly free the particpant.");
+                        }
+                        gapi_free(arg.domainId);
                     }
                 } else {
                     result = GAPI_RETCODE_PRECONDITION_NOT_MET;
@@ -297,49 +398,6 @@ gapi_domainParticipantFactory_delete_participant(
 
     _EntityRelease(factory);
 
-    return result;
-}
-
-static c_equality
-gapi_compareParticipantDomainId(
-    _DomainParticipant participant,
-    gapi_domainId_t domainId)
-{
-    c_equality result = C_NE;
-    if(participant)
-    {
-        /* Participant was created with domain_id = NULL */
-        if ((gapi_domainParticipant_get_domain_id((gapi_domainParticipant)_EntityHandle(participant)) == NULL) && (domainId == NULL)) {
-            result = C_EQ;
-        } else {
-            /* Participant was created with either a name or uri.
-             * We cannot know which one so it's no use to compare with
-             * participant->_DomainId
-             * Instead we ask the kernel, to which the participant is attached,
-             * for its name and uri.
-             */
-            u_participant p = _DomainParticipantUparticipant(participant);
-            if ((u_domainCompareDomainId(u_participantDomain(p), (const c_char*)domainId)) == TRUE) {
-               result = C_EQ;
-            }
-        }
-    }
-    return result;
-}
-
-
-static c_equality
-gapi_compareDomainId(
-    _Domain domain,
-    gapi_domainId_t domainId)
-{
-    c_equality result = C_NE;
-    if (domain)
-    {
-        if((u_domainCompareDomainId(_DomainGetKernel(domain), (const c_char*)domainId)) == TRUE) {
-            result = C_EQ;
-        }
-    }
     return result;
 }
 

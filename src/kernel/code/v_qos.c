@@ -64,6 +64,7 @@ v_qosCreate(
         OS_REPORT(OS_ERROR,
                   "v_qosCreate",0,
                   "Failed to allocate qos.");
+        assert(FALSE);
     }
 
     return qos;

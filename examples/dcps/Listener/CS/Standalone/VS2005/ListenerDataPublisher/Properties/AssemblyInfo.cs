@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Prismtech Ltd")]
 [assembly: AssemblyProduct("ListenerDataPublisher")]
-[assembly: AssemblyCopyright("Copyright © Prismtech Ltd 2010")]
+[assembly: AssemblyCopyright("Copyright © Prismtech Ltd 2011")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

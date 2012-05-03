@@ -87,6 +87,9 @@ extern "C" {
 #define D_DEFAULT_PERSISTENT_QUEUE_SIZE             (0)
 #define D_MAXIMUM_PERSISTENT_QUEUE_SIZE             (10000)
 
+#define D_MINIMUM_PERSISTENT_SMP_COUNT              (1)
+#define D_DEFAULT_PERSISTENT_SMP_COUNT              (1)
+
 #define D_MINIMUM_PERSISTENT_MMF_STORE_SIZE         (1048567)
 
 #define D_MINIMUM_OPTIMIZE_INTERVAL                 (10)
@@ -241,6 +244,9 @@ void            d_configurationSetPersistentStoreSleepTime  (d_configuration con
 void            d_configurationSetPersistentStoreSessionTime(d_configuration config,
                                                              c_float seconds);
 
+void            d_configurationSetPersistentSMPCount        (d_configuration config,
+                                                             c_ulong count);
+
 void            d_configurationSetDuration                  (v_duration * timeOut,
                                                              c_float seconds );
 
@@ -272,6 +278,12 @@ void            d_configurationAttrValueLong                (d_configuration con
                                                              const char * attr,
                                                              void (* const setAction)(d_configuration config, c_long longValue));
 
+void            d_configurationAttrValueULong               (d_configuration configuration,
+                                                             u_cfElement  element,
+                                                             const char * tag,
+                                                             const char * attr,
+                                                             void (* const setAction)(d_configuration config, c_ulong longValue));
+
 void            d_configurationAttrValueFloat               (d_configuration configuration,
                                                              u_cfElement  element,
                                                              const char * tag,
@@ -292,7 +304,7 @@ void            d_configurationValueULong                   (d_configuration con
 void            d_configurationValueSize                   (d_configuration configuration,
                                                              u_cfElement  element,
                                                              const char * tag,
-                                                             void (* const setAction)(d_configuration config, c_ulong ulongValue));
+                                                             void (* const setAction)(d_configuration config, c_size size));
 
 void            d_configurationValueLong                    (d_configuration configuration,
                                                              u_cfElement  element,

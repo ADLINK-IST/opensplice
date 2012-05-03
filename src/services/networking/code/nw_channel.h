@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -20,14 +20,15 @@
 #include "nw_plugSendChannel.h"
 #include "nw_plugReceiveChannel.h"
 
-/* 
+/*
  * All types have protected constructors
  * called by networkingBridge functions
  */
 
 
-/* Abstract baseclass */
-
+/**
+* @class nw_channel
+*/
 NW_CLASS(nw_channel);
 
 
@@ -56,12 +57,12 @@ struct nw_endpointInfo {
 
 typedef c_voidp nw_entryLookupArg;
 
-typedef C_STRUCT(v_networkReaderEntry)* (*nw_entryLookupAction) (
+typedef NW_STRUCT(v_networkReaderEntry)* (*nw_entryLookupAction) (
     v_networkHashValue hashValue,
     const char *partitionName,
     const char *topicName,
     nw_entryLookupArg arg);
-                      
+
 /* The entry lookupaction is called at the moment that a message for an
  * unknown partition/topic has been received */
 void nw_receiveChannelRead(
@@ -71,7 +72,7 @@ void nw_receiveChannelRead(
          const nw_entryLookupAction entryLookupAction,
          nw_entryLookupArg entryLookupArg,
          plugReceiveStatistics prs);
-         
+
 /* sendChannel */
 
 NW_CLASS(nw_sendChannel);
@@ -86,7 +87,7 @@ c_ulong nw_sendChannelWrite(
          v_message message,
          nw_signedLength *maxBytes,
          plugSendStatistics pss);
-         
+
 nw_bool nw_sendChannelFlush(
             nw_sendChannel sendChannel,
             nw_bool all,

@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_DATAREADERENTRY_H
@@ -50,29 +50,28 @@ v_dataReaderEntryNew(
     v_dataReader dataReader,
     v_topic topic,
     v_filter filter);
-    
-OS_API void               
+
+OS_API void
 v_dataReaderEntryFree(
     v_dataReaderEntry _this);
-    
-OS_API v_writeResult      
+
+OS_API v_writeResult
 v_dataReaderEntryWrite(
-    v_dataReaderEntry _this, 
-    v_message o, 
-    v_instance *instance,
-    c_time lastDisposeAll);
-    
-OS_API void               
+    v_dataReaderEntry _this,
+    v_message o,
+    v_instance *instance);
+
+OS_API void
 v_dataReaderEntryAddIncompatibleWriter(
     v_dataReaderEntry _this,
     v_gid *writerGID);
-    
-OS_API void               
+
+OS_API void
 v_dataReaderEntryRemoveIncompatibleWriter(
     v_dataReaderEntry _this,
     v_gid *writerGID);
-    
-OS_API void               
+
+OS_API void
 v_dataReaderEntryUpdatePurgeLists(
     v_dataReaderEntry _this);
 
@@ -80,11 +79,17 @@ OS_API void
 v_dataReaderEntryAbortTransaction(
     v_dataReaderEntry _this,
     v_gid writerGID);
- 
-OS_API v_result
+
+OS_API v_writeResult
 v_dataReaderEntryDisposeAll (
     v_dataReaderEntry _this,
-    c_time timestamp);
+    v_message disposeMsg);
+
+OS_API v_result
+v_dataReaderEntryApplyUnregisterMessageToInstanceList (
+    v_dataReaderEntry _this,
+    v_message unregisterMsg,
+    c_iter instanceList);
 
 #undef OS_API
 

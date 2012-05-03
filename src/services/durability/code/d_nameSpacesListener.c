@@ -256,7 +256,7 @@ deleteNsWalk(
 struct checkFellowMasterHelper
 {
     d_admin admin;
-    d_networkAddress fellow;
+    d_fellow fellow;
     d_nameSpace oldNameSpace;
 };
 
@@ -266,20 +266,20 @@ checkFellowMasterWalk(
     c_voidp userData)
 {
     struct checkFellowMasterHelper* helper;
-    d_networkAddress master;
+    d_networkAddress master, fellow;
     d_nameSpace nameSpace;
 
     helper = (struct checkFellowMasterHelper*)userData;
     nameSpace = d_nameSpace(o);
     master = d_nameSpaceGetMaster (nameSpace);
+    fellow = d_fellowGetAddress(helper->fellow);
 
-    if (d_nameSpaceIsMasterConfirmed (nameSpace)) {
-        if (!d_networkAddressCompare (helper->fellow, master)) {
-            d_adminReportMaster (helper->admin, nameSpace, helper->oldNameSpace);
-        }
+    if (!d_networkAddressCompare (fellow, master)) {
+        d_adminReportMaster (helper->admin, helper->fellow, nameSpace, helper->oldNameSpace);
     }
 
-    d_networkAddressFree (master);
+    d_networkAddressFree(master);
+    d_networkAddressFree(fellow);
 }
 
 static c_bool
@@ -387,10 +387,9 @@ d_nameSpacesListenerAction(
 
         /* If fellow is master for a namespace, report it to admin */
         fellowMasterHelper.admin = admin;
-        fellowMasterHelper.fellow = d_fellowGetAddress(fellow);
+        fellowMasterHelper.fellow = fellow;
         fellowMasterHelper.oldNameSpace = oldFellowNameSpace;
         checkFellowMasterWalk (nameSpace, &fellowMasterHelper);
-        d_free (fellowMasterHelper.fellow);
 
         /* If the namespace was not added to the fellow (because it already existed there), free it */
         if(!added){
@@ -473,7 +472,7 @@ d_nameSpacesListenerAction(
                     d_fellowNameSpaceWalk (fellow, collectFellowNsWalk, fellowNameSpaces);
 
                     fellowMasterHelper.admin = admin;
-                    fellowMasterHelper.fellow = d_fellowGetAddress(fellow);
+                    fellowMasterHelper.fellow = fellow;
                     fellowMasterHelper.oldNameSpace = NULL;
                     c_iterWalk (fellowNameSpaces, checkFellowMasterWalk, &fellowMasterHelper);
 
@@ -481,8 +480,6 @@ d_nameSpacesListenerAction(
                         d_nameSpaceFree(ns);
                     }
                     c_iterFree(fellowNameSpaces);
-
-                    d_free (fellowMasterHelper.fellow);
 
                 } else {
                     info->fellowsIncompatibleDataModelDif += 1;

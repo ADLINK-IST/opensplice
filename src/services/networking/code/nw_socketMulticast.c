@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* Interface */
@@ -23,14 +23,23 @@
 #include "nw_report.h"
 #include "nw_configuration.h"
 
+#include "os_defs.h"
+
+typedef unsigned long long my_foo;
+
 #define NW_FULL_IP_ADDRESS            "255.255.255.255"
 
+/**
+* Gets a list of all Multicast enabled Interfaces and interates over them looking for a match
+* for the requested network interface.
+*/
 static os_int
 nw_socketRetrieveMCInterface(
+    nw_socket this_,
     const char *addressLookingFor,
     os_int sockfd,
-    struct sockaddr_in *sockAddrPrimaryFound,
-    struct sockaddr_in *sockAddrBroadcastFound)
+    os_sockaddr_storage *sockAddrPrimaryFound,
+    os_sockaddr_storage *sockAddrBroadcastFound)
 {
     os_int result = SK_TRUE;
     os_int success;
@@ -41,40 +50,80 @@ nw_socketRetrieveMCInterface(
     char *addressDefault;
     os_int found = SK_FALSE;
     struct sockaddr_in *testAddr;
+    os_sockaddr_storage ipv6SockAddressLookingFor;
     nw_bool forced = SK_FALSE;
+    char addressStr[INET6_ADDRSTRLEN];
 
     forced = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Interface),forced);
     success = sk_interfaceInfoRetrieveAllMC(&interfaceList, &nofInterfaces,
                                           sockfd);
 
+    NW_TRACE_1(Configuration, 6,
+                       "nw_socketRetrieveMCInterface: Retrieved %d multicast interfaces",
+                       nofInterfaces);
+
     if (success && (nofInterfaces > 0U)) {
         /* Retrieve interface from custom settings */
         if (strncmp(addressLookingFor, NWCF_DEF(Interface),
                     (os_uint)sizeof(NWCF_DEF(Interface))) == 0) {
+            /* If first available is requested use 0'th */
             usedInterface = 0;
-
         } else {
+             success = os_sockaddrStringToAddress(addressLookingFor,
+                                                    (os_sockaddr*) &ipv6SockAddressLookingFor,
+                                                    !nw_configurationGetIsIPv6());
              i = 0;
              while ((i < nofInterfaces) && !found) {
-                testAddr = (struct sockaddr_in *)
-                        sk_interfaceInfoGetPrimaryAddress(interfaceList[i]);
-                if (i == 0U) {
-                    addressDefault = inet_ntoa(testAddr->sin_addr);
+                if (nw_configurationGetIsIPv6())
+                {
+                    if (success && os_sockaddrIPAddressEqual((os_sockaddr*) &ipv6SockAddressLookingFor,
+                                                (os_sockaddr*) sk_interfaceInfoGetPrimaryAddress(interfaceList[i])))
+                    {
+                        usedInterface = i;
+                        found = SK_TRUE;
+                    }
+                    else if (strncmp(addressLookingFor,
+                                    sk_interfaceInfoGetName(interfaceList[i]),
+                                    SK_INTF_MAX_NAME_LEN) == 0)
+                    {
+                        /* Interface name specified that matches this interface's name */
+                        usedInterface = i;
+                        found = SK_TRUE;
+                        /* @todo Why is this level Test ?? */
+                        NW_TRACE_1(Configuration, 3, "Interface name: %s  found in list",addressLookingFor);
+                    }
+                    else
+                    {
+                        i++;
+                    }
                 }
-                if (strncmp(addressLookingFor,
-                            inet_ntoa(testAddr->sin_addr),
-                            (os_uint)sizeof(NW_FULL_IP_ADDRESS)) == 0) {
-                    usedInterface = i;
-                    found = SK_TRUE;
-                } else if (strncmp(addressLookingFor,
-                        sk_interfaceInfoGetName(interfaceList[i]),
-                        SK_INTF_MAX_NAME_LEN) == 0) {
-                    /* Interface name looking for matches with this interface's name */
-                    usedInterface = i;
-                    found = SK_TRUE;
-                    NW_TRACE_1(Test, 3, "Multicast adres: %s  found in list",addressLookingFor);
-                } else {
-                    i++;
+                else
+                {
+                    testAddr = (struct sockaddr_in *)
+                            sk_interfaceInfoGetPrimaryAddress(interfaceList[i]);
+                    if (i == 0U) {
+                        /* Take the '1st' as a fall back default */
+                        /* @todo - Why ?? This is not used. */
+                        addressDefault = inet_ntoa(testAddr->sin_addr);
+                    }
+                    if (strncmp(addressLookingFor,
+                                inet_ntoa(testAddr->sin_addr),
+                                (os_uint)sizeof(NW_FULL_IP_ADDRESS)) == 0) {
+                        /* IP address specified that matches this interface address */
+                        usedInterface = i;
+                        found = SK_TRUE;
+                    } else if (strncmp(addressLookingFor,
+                            sk_interfaceInfoGetName(interfaceList[i]),
+                            SK_INTF_MAX_NAME_LEN) == 0) {
+                        /* Interface name specified that matches this interface's name */
+                        usedInterface = i;
+                        found = SK_TRUE;
+                        /* @todo Below trace makes no real sense. This is a multicast enabled interface
+                        It is not a 'multicast address' */
+                        NW_TRACE_1(Test, 3, "Multicast adress: %s  found in list",addressLookingFor);
+                    } else {
+                        i++;
+                    }
                 }
             }
             if (!found && !forced) {
@@ -93,25 +142,32 @@ nw_socketRetrieveMCInterface(
             }
         }
         if (result) {
-			/* Store addresses found for later use */
-			*sockAddrPrimaryFound =
-				*(struct sockaddr_in *)sk_interfaceInfoGetPrimaryAddress(
-												 interfaceList[usedInterface]);
-			*sockAddrBroadcastFound =
-				*(struct sockaddr_in *)sk_interfaceInfoGetBroadcastAddress(
-												 interfaceList[usedInterface]);
+            os_sockaddr_storage* tmpAddress;
+            /* Store addresses found for later use */
+            *sockAddrPrimaryFound = *sk_interfaceInfoGetPrimaryAddress(
+                                                 interfaceList[usedInterface]);
+            tmpAddress = sk_interfaceInfoGetBroadcastAddress(
+                                                 interfaceList[usedInterface]);
+            if (tmpAddress)
+                *sockAddrBroadcastFound = *tmpAddress;
 
-			/* Diagnostics */
-			NW_TRACE_2(Configuration, 2, "Identified multicast enabled interface %s "
-				"having primary address %s",
-				sk_interfaceInfoGetName(interfaceList[usedInterface]),
-				inet_ntoa(sockAddrPrimaryFound->sin_addr));
+            nw_socketSetInterfaceIndexNo(this_,
+                sk_interfaceInfoGetInterfaceIndexNo(interfaceList[usedInterface]));
+
+            /* Diagnostics */
+            NW_TRACE_3(Configuration, 2, "Identified multicast enabled interface #%u (%s)"
+                "having primary address %s",
+                nw_socketGetInterfaceIndexNo(this_),
+                sk_interfaceInfoGetName(interfaceList[usedInterface]),
+                os_sockaddrAddressToString((os_sockaddr*) sockAddrPrimaryFound,
+                                                                    addressStr,
+                                                                    sizeof(addressStr)));
         }
-		/* Free mem used */
-		sk_interfaceInfoFreeAll(interfaceList, nofInterfaces);
+        /* Free mem used */
+        sk_interfaceInfoFreeAll(interfaceList, nofInterfaces);
 
     } else {
-    	result = SK_FALSE;
+        result = SK_FALSE;
     }
 
     return result;
@@ -124,30 +180,71 @@ nw_socketRetrieveMCInterface(
 static os_int
 nw_socketMulticastJoinGroup(
     nw_socket socket,
-    struct sockaddr_in sockAddrInterface,
-    struct sockaddr_in sockAddrMulticast)
+    os_sockaddr_storage sockAddrInterface,
+    os_sockaddr_storage sockAddrMulticast)
 {
     os_int result = SK_TRUE;
+    /* ip_mreq is IP V4 only */
     struct ip_mreq mreq;
+    /* This is the Ipv6 version */
+    os_ipv6_mreq ipv6mreq;
     os_result retVal;
     sk_bool res;
     os_socket dataSock;
+    char addressStr[INET6_ADDRSTRLEN];
+
     res = nw_socketGetDataSocket(socket, &dataSock);
+
     NW_CONFIDENCE(res);
 
-    mreq.imr_interface = sockAddrInterface.sin_addr;
-    mreq.imr_multiaddr = sockAddrMulticast.sin_addr;
+    if (sockAddrInterface.ss_family == AF_INET)
+    {
+        /* IPv4 code */
+        mreq.imr_interface = ((os_sockaddr_in*)&sockAddrInterface)->sin_addr;
+        mreq.imr_multiaddr = ((os_sockaddr_in*)&sockAddrMulticast)->sin_addr;
 
-    retVal = os_sockSetsockopt(dataSock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-        &mreq, sizeof(mreq));
-    SK_REPORT_SOCKFUNC(2, retVal,
-                       "join multicast group", "setsockopt");
-    NW_TRACE_1(Configuration, 3, "Joined multicast group with address %s",
-        inet_ntoa(sockAddrMulticast.sin_addr));
-    if (retVal != os_resultSuccess) {
-        result = SK_FALSE;
+        retVal = os_sockSetsockopt(dataSock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+            &mreq, sizeof(mreq));
+        SK_REPORT_SOCKFUNC(2, retVal,
+                           "join multicast group", "setsockopt");
+        NW_TRACE_1(Configuration, 3, "Joined multicast group with address %s",
+            inet_ntoa(((os_sockaddr_in*)&sockAddrMulticast)->sin_addr));
+        if (retVal != os_resultSuccess) {
+            result = SK_FALSE;
+        }
+        /* Control data currently sent P2P only, so no need to join multicast group */
     }
-    /* Control data currently sent P2P only, so no need to join multicast group */
+    else
+    {
+        /* IPv6 */
+        memset (&ipv6mreq, 0, sizeof(ipv6mreq));
+        memcpy (&ipv6mreq.ipv6mr_multiaddr,
+                  &((os_sockaddr_in6 *)&sockAddrMulticast)->sin6_addr,
+                  sizeof(ipv6mreq.ipv6mr_multiaddr));
+        ipv6mreq.ipv6mr_interface = nw_socketGetInterfaceIndexNo(socket);
+
+        retVal = os_sockSetsockopt(dataSock,IPPROTO_IPV6, IPV6_JOIN_GROUP,
+                                           &ipv6mreq,
+                                           sizeof(ipv6mreq));
+        SK_REPORT_SOCKFUNC(2, retVal,
+                           "join IPv6 multicast group", "setsockopt");
+        if (retVal != os_resultSuccess) {
+            NW_TRACE_2(Configuration, 3, "Failed to joined IPv6 multicast group with address %s using if #%d",
+                os_sockaddrAddressToString((os_sockaddr*) &sockAddrMulticast,
+                                                       addressStr,
+                                                       sizeof(addressStr)),
+                ipv6mreq.ipv6mr_interface);
+            result = SK_FALSE;
+        }
+        else
+        {
+            NW_TRACE_2(Configuration, 3, "Joined IPv6 multicast group with address %s using if #%d",
+                os_sockaddrAddressToString((os_sockaddr*) &sockAddrMulticast,
+                                                       addressStr,
+                                                       sizeof(addressStr)),
+                ipv6mreq.ipv6mr_interface);
+        }
+    }
 
     return result;
 }
@@ -155,23 +252,51 @@ nw_socketMulticastJoinGroup(
 static os_int
 nw_socketMulticastSetInterface(
     nw_socket socket,
-    struct sockaddr_in sockAddrInterface)
+    os_sockaddr_storage sockAddrInterface)
 {
     os_int result = SK_TRUE;
     os_result retVal;
     sk_bool res;
     os_socket dataSock;
+    char addressStr[INET6_ADDRSTRLEN];
+    os_uint interfaceNo = 0;
 
     res = nw_socketGetDataSocket(socket, &dataSock);
     NW_CONFIDENCE(res);
-    retVal = os_sockSetsockopt(dataSock, IPPROTO_IP, IP_MULTICAST_IF,
-        &(sockAddrInterface.sin_addr), sizeof(sockAddrInterface.sin_addr));
-    SK_REPORT_SOCKFUNC(2, retVal,
-                       "set outgoing multicast interface", "setsockopt");
-    NW_TRACE_1(Configuration, 3, "Set outgoing multicast interface to %s",
-        inet_ntoa(sockAddrInterface.sin_addr));
+
+    if (nw_configurationGetIsIPv6())
+    {
+         /* IPv6 */
+        interfaceNo = nw_socketGetInterfaceIndexNo(socket);
+        retVal = os_sockSetsockopt(dataSock,IPPROTO_IPV6, IPV6_MULTICAST_IF,
+                                           &interfaceNo,
+                                           sizeof(interfaceNo));
+        SK_REPORT_SOCKFUNC(2, retVal,
+                           "nw_socketMulticastSetInterface: Setting IPv6 mcast IF", "setsockopt");
+    }
+    else
+    {
+        os_sockaddr_in* ipv4Address = (os_sockaddr_in*) & sockAddrInterface;
+        retVal = os_sockSetsockopt(dataSock, IPPROTO_IP, IP_MULTICAST_IF,
+                    &(ipv4Address->sin_addr), sizeof(ipv4Address->sin_addr));
+        SK_REPORT_SOCKFUNC(2, retVal,
+                       "nw_socketMulticastSetInterface: setting outgoing multicast interface", "setsockopt");
+    }
     if (retVal != os_resultSuccess) {
         result = SK_FALSE;
+        NW_TRACE_2(Configuration, 3, "Setting outgoing multicast interface to %s, interface # (%u) failed",
+            os_sockaddrAddressToString((os_sockaddr*) &sockAddrInterface,
+                                    addressStr,
+                                    sizeof(addressStr)),
+            interfaceNo);
+    }
+    else
+    {
+        NW_TRACE_2(Configuration, 3, "Setting outgoing multicast interface to %s, interface # (%u) succeeded",
+            os_sockaddrAddressToString((os_sockaddr*) &sockAddrInterface,
+                                    addressStr,
+                                    sizeof(addressStr)),
+            interfaceNo);
     }
 
     return result;
@@ -180,10 +305,11 @@ nw_socketMulticastSetInterface(
 os_int
 nw_socketMulticastSetTTL(
     nw_socket socket,
-    c_ulong timeToLive)
+    os_uchar timeToLive)
 {
     os_int result = SK_TRUE;
     os_result retVal = os_resultFail;
+    os_uint ipv6Flag;
     sk_bool hasDataSocket;
     sk_bool hasControlSocket;
     os_socket dataSocket;
@@ -191,20 +317,41 @@ nw_socketMulticastSetTTL(
 
     hasDataSocket = nw_socketGetDataSocket(socket, &dataSocket);
     NW_CONFIDENCE(hasDataSocket);
-
     if (hasDataSocket) {
-        retVal = os_sockSetsockopt(dataSocket, IPPROTO_IP, IP_MULTICAST_TTL,
-                                   &timeToLive, sizeof(timeToLive));
-        SK_REPORT_SOCKFUNC(2, retVal,
+        ipv6Flag = timeToLive;
+        if (nw_configurationGetIsIPv6())
+        {
+            retVal = os_sockSetsockopt(dataSocket, IPPROTO_IPV6, IPV6_UNICAST_HOPS,
+                &ipv6Flag, sizeof(ipv6Flag));
+            SK_REPORT_SOCKFUNC(2, retVal,
+                               "setting multicast IPv6 hop limit option on dataSocket", "setsockopt");
+        }
+        else
+        {
+            retVal = os_sockSetsockopt(dataSocket, IPPROTO_IP, IP_MULTICAST_TTL,
+                &timeToLive, sizeof(timeToLive));
+            SK_REPORT_SOCKFUNC(2, retVal,
                            "setting multicast timetolive option", "setsockopt");
+        }
     }
 
     hasControlSocket = nw_socketGetControlSocket(socket, &controlSocket);
     if ((retVal == os_resultSuccess) && hasControlSocket) {
-        retVal = os_sockSetsockopt(controlSocket, IPPROTO_IP, IP_MULTICAST_TTL,
-                                   &timeToLive, sizeof(timeToLive));
-        SK_REPORT_SOCKFUNC(2, retVal,
+        ipv6Flag = timeToLive;
+        if (nw_configurationGetIsIPv6())
+        {
+            retVal = os_sockSetsockopt(controlSocket, IPPROTO_IPV6, IPV6_UNICAST_HOPS,
+                &ipv6Flag, sizeof(ipv6Flag));
+            SK_REPORT_SOCKFUNC(2, retVal,
+                               "setting multicast IPv6 hop limit option on control socket", "setsockopt");
+        }
+        else
+        {
+            retVal = os_sockSetsockopt(controlSocket, IPPROTO_IP, IP_MULTICAST_TTL,
+                &timeToLive, sizeof(timeToLive));
+            SK_REPORT_SOCKFUNC(2, retVal,
                            "setting multicast timetolive option", "setsockopt");
+        }
     }
 
     if (retVal != os_resultSuccess) {
@@ -218,7 +365,7 @@ nw_socketMulticastSetTTL(
 static os_int
 nw_socketMulticastSetOptions(
     nw_socket socket,
-    os_int loopsback)
+    os_uchar loopsback)
 {
     os_int result = SK_TRUE;
     os_result retVal = os_resultFail;
@@ -226,22 +373,45 @@ nw_socketMulticastSetOptions(
     sk_bool hasControlSocket;
     os_socket dataSocket;
     os_socket controlSocket;
+    os_uint ipv6Flag;
 
     hasDataSocket = nw_socketGetDataSocket(socket, &dataSocket);
     NW_CONFIDENCE(hasDataSocket);
     if (hasDataSocket) {
-        retVal = os_sockSetsockopt(dataSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
-                                   &loopsback, sizeof(loopsback));
-        SK_REPORT_SOCKFUNC(2, retVal,
-                           "setting multicast loopback option", "setsockopt");
+        if (nw_configurationGetIsIPv6())
+        {
+            ipv6Flag = (os_uint)loopsback;
+            retVal = os_sockSetsockopt(dataSocket, IPPROTO_IPV6, IPV6_MULTICAST_LOOP,
+                &ipv6Flag, sizeof(ipv6Flag));
+            SK_REPORT_SOCKFUNC(2, retVal,
+                               "setting dataSocket IPv6 multicast loopback option", "setsockopt");
+        }
+        else
+        {
+            retVal = os_sockSetsockopt(dataSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
+                &loopsback, sizeof(loopsback));
+            SK_REPORT_SOCKFUNC(2, retVal,
+                               "setting dataSocket multicast loopback option", "setsockopt");
+        }
     }
 
     hasControlSocket = nw_socketGetControlSocket(socket, &controlSocket);
     if ((retVal == os_resultSuccess) && hasControlSocket) {
-        retVal = os_sockSetsockopt(controlSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
-                                   &loopsback, sizeof(loopsback));
-        SK_REPORT_SOCKFUNC(2, retVal,
-                           "setting multicast loopback option", "setsockopt");
+        if (nw_configurationGetIsIPv6())
+        {
+            ipv6Flag = (os_uint)loopsback;
+            retVal = os_sockSetsockopt(controlSocket, IPPROTO_IPV6, IPV6_MULTICAST_LOOP,
+                &ipv6Flag, sizeof(ipv6Flag));
+            SK_REPORT_SOCKFUNC(2, retVal,
+                               "setting controlSocket IPv6 multicast loopback option", "setsockopt");
+        }
+        else
+        {
+            retVal = os_sockSetsockopt(controlSocket, IPPROTO_IP, IP_MULTICAST_LOOP,
+                &loopsback, sizeof(loopsback));
+            SK_REPORT_SOCKFUNC(2, retVal,
+                               "setting controlSocket multicast loopback option", "setsockopt");
+        }
     }
 
     if (retVal != os_resultSuccess) {
@@ -258,65 +428,76 @@ nw_socketMulticastSetOptions(
 
 /* ------------------------------- public ----------------------------------- */
 
+/**
+* Calls nw_socketRetrieveMCInterface() and caches the result.
+* @param this_ The this pointer for the nw_socket that we are initialising.
+* @see nw_socketRetrieveMCInterface()
+*/
 os_int
 nw_socketGetDefaultMulticastInterface(
+    nw_socket this_,
     const char *addressLookingFor,
     os_socket socket,
-    struct sockaddr_in *sockAddrPrimary,
-    struct sockaddr_in *sockAddrBroadcast)
+    os_sockaddr_storage* sockAddrPrimary,
+    os_sockaddr_storage* sockAddrBroadcast)
 {
     /* Evaluate the interfaces only once, after this use previous result */
+    /* @todo This has to all go. It's just a big bag of wrong */
     static os_int hadSuccessBefore = SK_FALSE;
-    static struct sockaddr_in sockAddrPrimaryFound;
-    static struct sockaddr_in sockAddrBroadcastFound;
+    static os_sockaddr_storage sockAddrPrimaryFound;
+    static os_sockaddr_storage sockAddrBroadcastFound;
+    static os_uint interfaceIndexNo = 0;
 
     if (!hadSuccessBefore) {
-        hadSuccessBefore = nw_socketRetrieveMCInterface(addressLookingFor, socket,
+        NW_TRACE(Configuration, 6,
+                       "nw_socketGetDefaultMulticastInterface: Retrieving default MC interface.");
+        hadSuccessBefore = nw_socketRetrieveMCInterface(this_, addressLookingFor, socket,
             &sockAddrPrimaryFound, &sockAddrBroadcastFound);
+        if (hadSuccessBefore)
+            interfaceIndexNo = nw_socketGetInterfaceIndexNo(this_);
     }
 
     if (hadSuccessBefore) {
         *sockAddrPrimary = sockAddrPrimaryFound;
         *sockAddrBroadcast = sockAddrBroadcastFound;
+        nw_socketSetInterfaceIndexNo(this_, interfaceIndexNo);
     }
 
     return hadSuccessBefore;
 }
 
-
+/**
+* @param address The multicast group address
+*/
 void
 nw_socketMulticastInitialize(
     nw_socket sock,
     sk_bool receiving,
-    sk_address address)
+    os_sockaddr_storage* address)
 {
-    struct sockaddr_in sockAddrPrimary;
-    struct sockaddr_in sockAddrMulticast;
-    c_ulong timeToLive;
+    os_sockaddr_storage sockAddrPrimary;
+    os_sockaddr_storage sockAddrMulticast;
+    os_uchar timeToLive;
     os_result setRes;
 
-
     timeToLive = NWCF_DEF(MulticastTimeToLive);
+    sockAddrPrimary = nw_socketPrimaryAddress(sock);
 
-#ifdef OS_SOCKET_BIND_FOR_MULTICAST
+    NW_CONFIDENCE(sockAddrPrimary.ss_family);
+    NW_CONFIDENCE(sockAddrPrimary.ss_family == AF_INET || sockAddrPrimary.ss_family == AF_INET6);
+
     if (receiving) {
         /* Join multicast group, for receiving socket only */
-        sockAddrPrimary.sin_addr.s_addr = nw_socketPrimaryAddress(sock);
-        sockAddrMulticast.sin_addr.s_addr = address;
+        sockAddrMulticast = *address;
         nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
-    } else {
+    }
+#ifdef OS_SOCKET_BIND_FOR_MULTICAST
+    else
+    {
         nw_socketBind(sock);
     }
-    /* Do not set outgoing multicast interface, doesn't work yet on windows */
-#else
-    /* Join multicast group and set options */
-    sockAddrPrimary.sin_addr.s_addr = nw_socketPrimaryAddress(sock);
-    sockAddrMulticast.sin_addr.s_addr = address;
-    if (receiving) {
-        nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
-    }
-    nw_socketMulticastSetInterface(sock, sockAddrPrimary);
 #endif
+    nw_socketMulticastSetInterface(sock, sockAddrPrimary);
 
     setRes = nw_socketMulticastSetTTL(sock, timeToLive);
     if (setRes == os_resultFail) {
@@ -328,46 +509,43 @@ nw_socketMulticastInitialize(
     nw_socketSetBroadcastOption(sock, SK_TRUE);
 }
 
-
 void
 nw_socketMulticastAddPartition(
     nw_socket sock,
     const char *addressString,
     sk_bool receiving,
-    c_ulong mTTL)
+    os_uchar mTTL)
 {
-    struct sockaddr_in sockAddrPrimary;
-    struct sockaddr_in sockAddrMulticast;
-    sk_address address;
+    os_sockaddr_storage sockAddrPrimary;
+    os_sockaddr_storage sockAddrMulticast;
+    os_sockaddr_storage address;
+    c_ulong timeToLive;
     sk_bool initialized = FALSE;
+    os_boolean success;
     os_result setRes;
+
     if (!nw_socketGetMulticastSupported(sock)) {
-    	NW_REPORT_ERROR("nw_socketMulticastAddPartition", "Partition uses multicast but multicast is not enabled");
+        NW_REPORT_ERROR("nw_socketMulticastAddPartition", "Partition uses multicast but multicast is not enabled");
     }
     if (sk_getAddressType(addressString) == SK_TYPE_MULTICAST) {
 
-        sockAddrPrimary.sin_addr.s_addr = nw_socketPrimaryAddress(sock);
-        address = sk_stringToAddress(addressString, NULL);
+        sockAddrPrimary = nw_socketPrimaryAddress(sock);
+        success = os_sockaddrStringToAddress(addressString,
+                                            (os_sockaddr*) &address,
+                                            !nw_configurationGetIsIPv6());
 
         if (!nw_socketGetMulticastInitialized(sock)) {
-            nw_socketMulticastInitialize(sock, receiving,address);
+            nw_socketMulticastInitialize(sock, receiving, &address);
             initialized = TRUE;
         }
-        if (address) {
-            sockAddrMulticast.sin_addr.s_addr = address;
-
+        if (success) {
+            sockAddrMulticast = address;
 
         /* Join multicast group, for receiving socket only */
-#ifdef OS_SOCKET_BIND_FOR_MULTICAST
         /* socket already joined a multicast group if nw_socketGetMulticastInitialized is true*/
-        if (receiving && !initialized) {
-                nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
-        }
-#else
         if (receiving && !initialized) {
             nw_socketMulticastJoinGroup(sock, sockAddrPrimary, sockAddrMulticast);
         }
-#endif
         setRes = nw_socketMulticastSetTTL(sock, mTTL);
         if (setRes == os_resultFail) {
             SK_REPORT_SOCKFUNC(1, os_resultFail,

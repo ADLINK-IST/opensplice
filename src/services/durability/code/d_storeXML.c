@@ -3370,8 +3370,10 @@ d_storeXMLOptimizeGroup(
                                             }
 
                                             /* Set sample time (always) after write\register time */
-                                            walkData.unregisterMsg->allocTime = v_timeGet();
-                                            walkData.unregisterMsg->writeTime = walkData.unregisterMsg->allocTime;
+                                            walkData.unregisterMsg->writeTime = v_timeGet();
+#ifndef _NAT_
+                                            walkData.unregisterMsg->allocTime = walkData.unregisterMsg->writeTime;
+#endif
                                         }
                                     }
                                 }

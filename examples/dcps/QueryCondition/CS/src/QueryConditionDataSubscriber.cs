@@ -45,7 +45,7 @@ namespace QueryConditionDataSubscriber
             }
 
             ITopic topic;
-            DDSEntityManager mgr = new DDSEntityManager();
+            DDSEntityManager mgr = new DDSEntityManager("QueryCondition");
             String partitionName = "QueryCondition example";
             String QueryConditionDataToSubscribe = args[0];
 
@@ -57,13 +57,13 @@ namespace QueryConditionDataSubscriber
             mgr.registerType(msgTS);
 
             // Create Topic
-            topic = mgr.createTopic("StockTrackerExclusive", "QueryCondition");
+            topic = mgr.createTopic("StockTrackerExclusive");
 
             // create Subscriber
             mgr.createSubscriber();
 
             // create DataReader
-            mgr.createReader("QueryCondition", false);
+            mgr.createReader(false);
 
             // Read Events
             IDataReader dreader = mgr.getReader();

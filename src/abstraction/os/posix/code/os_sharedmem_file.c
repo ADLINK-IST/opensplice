@@ -240,6 +240,9 @@ os_posix_getShmObjName(
             write(key_file_fd, buffer, strlen(buffer));
             snprintf(buffer, sizeof (buffer), "%d\n", (int)getpid());
             write(key_file_fd, buffer, strlen(buffer));
+            setpgrp(); /* Make this process the session leader. */
+            snprintf(buffer, sizeof (buffer), "%d\n", (int)getpgrp());
+            write(key_file_fd, buffer, strlen(buffer));
             close(key_file_fd);
         }
     }

@@ -342,6 +342,17 @@ namespace DDS
 
             return result;
         }
-    }
 
+        internal new void DeleteEntityAction(IntPtr entityData, IntPtr userData)
+        {
+            // Translate the UserData pointer into a valid C# language object.
+            SacsSuperClass entity = SacsSuperClass.fromUserData(entityData);
+
+            // If the UserData contained a valid object, then destruct it.
+            if (entity != null)
+            {
+                entity.Dispose();
+            }
+        }
+    }
 }

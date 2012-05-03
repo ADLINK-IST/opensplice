@@ -1,6 +1,6 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual C++ Express 2005
+# Visual Studio 2005
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ListenerData", "ListenerData\ListenerData.vcproj", "{442F477C-A7D4-4B1B-9951-7E6103505540}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ListenerDataPublisher", "ListenerDataPublisher\ListenerDataPublisher.vcproj", "{AF7DBA90-DA95-47EB-82E5-A6D0305ED12A}"

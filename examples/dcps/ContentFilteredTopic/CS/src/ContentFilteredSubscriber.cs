@@ -37,7 +37,7 @@ namespace ContentFilteredSubscriber
 		    }
 
             ITopic topic;
-            DDSEntityManager mgr = new DDSEntityManager();
+            DDSEntityManager mgr = new DDSEntityManager("ContentFilteredTopic");
             String partitionName = "ContentFilteredTopic example";
 
             // Create DomainParticipant
@@ -48,7 +48,7 @@ namespace ContentFilteredSubscriber
             mgr.registerType(msgTS);
 
             // Create Topic
-            topic = mgr.createTopic("StockTrackerExclusive", "ContentFilteredTopic");
+            topic = mgr.createTopic("StockTrackerExclusive");
 
             // ContentFilteredTopic
             mgr.createContentFilter("MyStockTopic", topic, args[0]);
@@ -57,7 +57,7 @@ namespace ContentFilteredSubscriber
             mgr.createSubscriber();
 
             // create DataReader
-            mgr.createReader("ContentFilteredTopic", true);
+            mgr.createReader(true);
             
             // Read Events
             IDataReader dreader = mgr.getReader();

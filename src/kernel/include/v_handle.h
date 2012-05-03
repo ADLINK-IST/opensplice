@@ -16,19 +16,19 @@
  *  \brief Kernel Handle Server: manages access to registered objects.
  *
  * The Kernel HandleServer class implements a object access manager service.
- * Objects can be registered to the handle server by calling v_handleNew.
- * This call will return a unique handle to the registered object.
- * Processes should claim this handle to gain access to the required object,
- * when access is no longer required the object its handle should be released.
- * Once a handle is deregistered by the v_handleFree method the handle will
- * become invalid and any future use of the handle will fail.
+ * Objects can be registered to the handle server and in return the handle
+ * server will return a unique handle for this object.
+ * Processes must claim this handle to gain access to the required object,
+ * when access is no longer required by the process the handle must be released.
+ * When an object will never be accessed anymore the handle can be deregistered.
+ * Once a handle is deregistered it will become invalid and any future use will fail.
  *
  * The following methods are provided:
  *
  *    v_handleServer v_handleServerNew      (c_base base);
  *    void           v_handleServerFree     (v_handleServer s);
- *    v_handle       v_handleServerRegister (v_handleServer s, c_object o);
  *
+ *    v_handle       v_handleServerRegister (v_handleServer s, c_object o);
  *    v_object       v_handleClaim          (v_handle h);
  *    void           v_handleRelease        (v_handle h);
  *    void           v_handleDeregister     (v_handle h);
@@ -184,11 +184,6 @@ v_handleRelease(
 OS_API v_handleResult
 v_handleDeregister(
     v_handle _this);
-
-OS_API v_handleResult
-v_handleRenew(
-    v_handle *_this);
-
 
 /**
  * \brief Future extensions.

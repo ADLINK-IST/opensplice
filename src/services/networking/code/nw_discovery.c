@@ -15,6 +15,7 @@
 /* Implementation */
 #include "os_stdlib.h"
 #include "os_heap.h"
+#include "os_socket.h"
 #include "c_typebase.h"
 #include "c_sync.h"
 #include "c_time.h"
@@ -36,6 +37,9 @@
 
 
 NW_CLASS(nw_discovery);
+/**
+* @extends nw_runnable
+*/
 NW_STRUCT(nw_discovery) {
     NW_EXTENDS(nw_runnable);
     nw_plugNetwork network;
@@ -51,7 +55,7 @@ typedef enum nw_discoveryState_e {
 NW_CLASS(nw_aliveNodesHashItem);
 NW_STRUCT(nw_aliveNodesHashItem) {
     v_networkId networkId;
-    nw_address address;
+    os_sockaddr_storage address;
     nw_name role;
     nw_discoveryStateType state;
     c_time maxHeartbeatIntervalAllowed;
@@ -64,12 +68,12 @@ NW_STRUCT(nw_aliveNodesHashItem) {
 NW_CLASS(nw_nodeListItem);
 NW_STRUCT(nw_nodeListItem) {
     v_networkId networkId;
-    nw_address address;
+    os_sockaddr_storage address;
     nw_nodeListItem next;
 };
 
 static nw_nodeListItem
-nw_nodeListAdd(nw_nodeListItem next, v_networkId networkId, nw_address address)
+nw_nodeListAdd(nw_nodeListItem next, v_networkId networkId, os_sockaddr_storage address)
 {
     nw_nodeListItem result = os_malloc(sizeof(*result));
     if ( result ) {
@@ -92,7 +96,7 @@ typedef enum nw_discMessageType_e {
 NW_CLASS(nw_discMessage);
 NW_STRUCT(nw_discMessage) {
     nw_networkId networkId ;
-    nw_address address ;
+    os_sockaddr_storage address ;
     nw_name expression;
     nw_nodeListItem nodeList;
     nw_discMessage next;
@@ -142,7 +146,7 @@ static void
 nw_messageBoxPushMessage(
     nw_discMessageBox messageBox,
     nw_networkId networkId,
-    nw_address address,
+    os_sockaddr_storage address,
     nw_name expression,
     nw_nodeListItem nodeList,
     nw_discMessageType messageType)
@@ -233,7 +237,7 @@ nw_rolescopeMatching(
     c_string pattern )
 
 {
-	c_bool   stop = FALSE;
+    c_bool   stop = FALSE;
     nw_bool  match =  TRUE;
     c_string strRef = NULL;
     c_string patternRef = NULL;
@@ -311,7 +315,9 @@ nw_RoleScopeMatch(
 /* --------------------- discoveryWriter (concrete) ------------------------- */
 
 static void nw_discoveryWriterTrigger(nw_runnable runnable);
-
+/**
+* @extends nw_discovery
+*/
 NW_STRUCT(nw_discoveryWriter) {
     NW_EXTENDS(nw_discovery);
     /* NetworkId of this network */
@@ -367,7 +373,7 @@ NW_CLASS(nw_discoveryMessage);
 #define NW_DISCTAG_ROLE         (1)
 #define NW_DISCTAG_REQ          (2)
 #define NW_DISCTAG_IPV4LIST     (3)
-
+#define NW_DISCTAG_IPV6LIST     (4)
 
 static void
 nw_discoveryWriterWriteMessageToNetwork(
@@ -494,10 +500,11 @@ nw_discoveryWriterWriteNodelistToDestination(
     nw_signedLength maxBytes;
     nw_bool result;
     nw_data len_field;
-    nw_address address;
+    os_uint32 v4Address;
     nw_networkId hostId;
     nw_length len;
     nw_nodeListItem oldItem;
+    char addressStr[INET6_ADDRSTRLEN];
 
     NW_TRACE_1(Discovery, 2, "Sending matching nodelist to node 0x%x", destination);
     /* First retrieve a buffer to write in */
@@ -526,28 +533,65 @@ nw_discoveryWriterWriteNodelistToDestination(
         messageBuffer += len;
         bufferLength -= (len+3);
         /* insert nodelist in message */
-        NW_CONFIDENCE(bufferLength >= 3);
-        *(messageBuffer++) = NW_DISCTAG_IPV4LIST;
-        len_field = messageBuffer; /* length placeholder */
-        messageBuffer += 2;
-        bufferLength -= 3;
-        len = 0;
-        NW_TRACE(Discovery, 4, "Sending List start ");
-        while (NodeList != NULL ) {
-            NW_CONFIDENCE(bufferLength >= 8);
-            address = nw_plugHostToNetwork(NodeList->address);
-            memcpy(messageBuffer,&address, 4);
-            messageBuffer += 4;
-            hostId = nw_plugHostToNetwork(NodeList->networkId);
-            memcpy(messageBuffer,&hostId, 4);
-            messageBuffer += 4;
-            bufferLength -= 8;
-            len += 8;
-            oldItem = NodeList;
-            NodeList = NodeList->next;
-            os_free(oldItem);
+        /* @todo dds#2523 Can simplify & remove repetition below. Want to see it work 1st */
+        if (nw_configurationGetIsIPv6())
+        {
+            /* IPv6 */
+            NW_CONFIDENCE(bufferLength >= 3);
+            *(messageBuffer++) = NW_DISCTAG_IPV6LIST;
+            len_field = messageBuffer; /* length placeholder */
+            messageBuffer += 2;
+            bufferLength -= 3;
+            len = 0;
+            NW_TRACE(Discovery, 4, "Sending IPv6 List start ");
+            while (NodeList != NULL ) {
+                os_sockaddr_in6* in6Address = (os_sockaddr_in6*) &NodeList->address;
+                NW_CONFIDENCE(bufferLength >= 20);
+                memcpy(messageBuffer,&in6Address->sin6_addr.s6_addr, 16);
+                messageBuffer += 16;
+                hostId = nw_plugHostToNetwork(NodeList->networkId);
+                memcpy(messageBuffer,&hostId, 4);
+                messageBuffer += 4;
+                bufferLength -= 20;
+                len += 8;
+                oldItem = NodeList;
+                NodeList = NodeList->next;
+                os_free(oldItem);
 
-            NW_TRACE_2(Discovery, 4, "Sending List Item 0x%x  address: 0x%x ", hostId, address );
+                NW_TRACE_2(Discovery, 4, "Sending IPv6 List Item 0x%x  address: %s ",
+                                         hostId,
+                                         os_sockaddrAddressToString((os_sockaddr*) in6Address,
+                                                                    addressStr,
+                                                                    sizeof(addressStr)));
+            }
+        }
+        else
+        {
+            /* IPv4 */
+            NW_CONFIDENCE(bufferLength >= 3);
+            *(messageBuffer++) = NW_DISCTAG_IPV4LIST;
+            len_field = messageBuffer; /* length placeholder */
+            messageBuffer += 2;
+            bufferLength -= 3;
+            len = 0;
+            NW_TRACE(Discovery, 4, "Sending List start ");
+            while (NodeList != NULL ) {
+                os_sockaddr_in* in4Addr = (os_sockaddr_in*) &NodeList->address;
+                NW_CONFIDENCE(bufferLength >= 8);
+                v4Address = nw_plugHostToNetwork(in4Addr->sin_addr.s_addr);
+                memcpy(messageBuffer,&v4Address, 4);
+                messageBuffer += 4;
+                hostId = nw_plugHostToNetwork(NodeList->networkId);
+                memcpy(messageBuffer,&hostId, 4);
+                messageBuffer += 4;
+                bufferLength -= 8;
+                len += 8;
+                oldItem = NodeList;
+                NodeList = NodeList->next;
+                os_free(oldItem);
+
+                NW_TRACE_2(Discovery, 4, "Sending List Item 0x%x  address: 0x%x ", hostId, in4Addr->sin_addr.s_addr );
+            }
         }
         /* now fill in the length */
         *(len_field++) = (os_uchar)len/256;
@@ -756,8 +800,10 @@ nw_discoveryWriterNew(
         result->scope = NWCF_DEFAULTED_ATTRIB(String, name, Scope, "","");
         if (*(result->scope) == '\0') {
             result->scope = NULL;
+            NW_TRACE(Discovery, 2, "Scope W#1 (null)");
+        } else {
+            NW_TRACE_1(Discovery, 2, "Scope W#1 %s",result->scope);
         }
-        NW_TRACE_1(Discovery, 2, "Scope W#1 %s",result->scope);
         result->role = nw_configurationGetDomainRole();
         result->probeList = NWCF_DEFAULTED_PARAM(String, name, ProbeList, "");
 
@@ -796,7 +842,9 @@ nw_discoveryWriterRespondToStartingNode(
     nw_discoveryWriter discoveryWriter,
     nw_networkId networkId)
 {
-    nw_messageBoxPushMessage(discoveryWriter->mbox, networkId, 0, NULL, NULL, NW_DISCBOX_RESPOND);
+    os_sockaddr_storage zeroAddress;
+    memset (&zeroAddress, 0, sizeof(zeroAddress));
+    nw_messageBoxPushMessage(discoveryWriter->mbox, networkId, zeroAddress, NULL, NULL, NW_DISCBOX_RESPOND);
     nw_discoveryWriterTrigger((nw_runnable)discoveryWriter);
 }
 
@@ -804,7 +852,7 @@ void
 nw_discoveryWriterSendRequest(
     nw_discoveryWriter discoveryWriter,
     nw_networkId networkId,
-    nw_address address,
+    os_sockaddr_storage address,
     nw_name expression)
 {
     nw_messageBoxPushMessage(discoveryWriter->mbox, networkId, address, expression, NULL, NW_DISCBOX_DOREQ);
@@ -818,7 +866,9 @@ nw_discoveryWriterSendList(
     nw_nodeListItem nodeList
     )
 {
-    nw_messageBoxPushMessage(discoveryWriter->mbox, networkId, 0, NULL, nodeList, NW_DISCBOX_SENDLIST);
+    os_sockaddr_storage zeroAddress;
+    memset (&zeroAddress, 0, sizeof(zeroAddress));
+    nw_messageBoxPushMessage(discoveryWriter->mbox, networkId, zeroAddress, NULL, nodeList, NW_DISCBOX_SENDLIST);
     nw_discoveryWriterTrigger((nw_runnable)discoveryWriter);
 }
 
@@ -828,7 +878,9 @@ nw_discoveryWriterSendList(
 static void nw_discoveryReaderFinalize(nw_runnable runnable);
 
 
-
+/**
+* @extends nw_discovery
+*/
 NW_STRUCT(nw_discoveryReader) {
     NW_EXTENDS(nw_discovery);
     /* Action routines and parameter */
@@ -885,7 +937,7 @@ static void
 nw_discoveryReaderRemoveNode(
     nw_discoveryReader discoveryReader,
     v_networkId networkId,
-    nw_address address,
+    os_sockaddr_storage address,
     nw_aliveNodesHashItem *itemFound)
 {
     nw_aliveNodesHashItem currentItem;
@@ -902,7 +954,7 @@ nw_discoveryReaderRemoveNode(
             currentItem = *currentItemPtr;
         } else if (currentItem->networkId == networkId) {
             found = TRUE;
-            NW_CONFIDENCE(currentItem->address == address);
+            NW_CONFIDENCE(os_sockaddrIPAddressEqual((os_sockaddr*)&currentItem->address, (os_sockaddr*)&address));
             *itemFound = currentItem;
             *currentItemPtr = currentItem->next;
             currentItem->next = NULL;
@@ -918,7 +970,7 @@ static void
 nw_discoveryReaderLookupOrCreateNode(
     nw_discoveryReader discoveryReader,
     v_networkId networkId,
-    nw_address address,
+    os_sockaddr_storage address,
     nw_aliveNodesHashItem *item,
     nw_bool *wasCreated)
 {
@@ -993,13 +1045,15 @@ nw_discoveryReaderBuildNodeList(
 
 
 
-
+/**
+* @param address The heartbeat sender's IP address
+*/
 static void
 nw_discoveryReaderReceivedHeartbeat(
     nw_discoveryReader discoveryReader,
     nw_data messageBuffer,
     nw_length bufferLength,
-    nw_address address,
+    os_sockaddr_storage address,
     c_time receivedTime)
 {
     NW_STRUCT(nw_discoveryMessage) discoveryMessage;
@@ -1018,6 +1072,7 @@ nw_discoveryReaderReceivedHeartbeat(
     nw_seqNr NodelistLen = 0;
     os_uchar tag;
     os_uint32 len;
+    char addressStr[INET6_ADDRSTRLEN];
 
     NW_CONFIDENCE(messageBuffer != NULL);
     NW_CONFIDENCE(bufferLength >= NW_DISCOVERY_MESSAGE_SIZE);
@@ -1048,8 +1103,38 @@ nw_discoveryReaderReceivedHeartbeat(
                 reqscope[len] = 0;
             break;
             case NW_DISCTAG_IPV4LIST:
-                Nodelist = messageBuffer;
-                NodelistLen = len;
+                if (! nw_configurationGetIsIPv6())
+                {
+                    Nodelist = messageBuffer;
+                    NodelistLen = len;
+                }
+                else
+                {
+                    NW_REPORT_ERROR_2("nw_discoveryReaderReceivedHeartbeat",
+                                      "IPv4 heartbeat received from network ID 0x%x, host %s in IPv6 networking service",
+                                      networkId,
+                                      os_sockaddrAddressToString((os_sockaddr*) &address,
+                                                                    addressStr,
+                                                                    sizeof(addressStr)));
+                    return;
+                }
+            break;
+            case NW_DISCTAG_IPV6LIST:
+                if (nw_configurationGetIsIPv6())
+                {
+                    Nodelist = messageBuffer;
+                    NodelistLen = len;
+                }
+                else
+                {
+                    NW_REPORT_ERROR_2("nw_discoveryReaderReceivedHeartbeat",
+                                      "IPv6 heartbeat received from network ID 0x%x, host %s in IPv4 networking service",
+                                      networkId,
+                                      os_sockaddrAddressToString((os_sockaddr*) &address,
+                                                                 addressStr,
+                                                                 sizeof(addressStr)));
+                    return;
+                }
             break;
         }
         messageBuffer += len;
@@ -1067,7 +1152,12 @@ nw_discoveryReaderReceivedHeartbeat(
             Discovery, 6,
             "Received heartbeat from node with id 0x%x, address 0x%x, role \"%s\" "
             "state is %s",
-            networkId, address, role, NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
+            networkId,
+            os_sockaddrAddressToString((os_sockaddr*) &address,
+                                     addressStr,
+                                     sizeof(addressStr)),
+            role,
+            NW_DISCOVERY_SIGN_TO_STATE(discoveryMessage.sign));
 
         switch (discoveryMessage.sign) {
             case NW_DISCOVERY_STOPPING_SIGN:
@@ -1117,7 +1207,12 @@ nw_discoveryReaderReceivedHeartbeat(
                     itemFound->networkId = networkId;
 
                     discoveryReader->aliveNodesCount++;
-                    NW_TRACE_3(Discovery, 2, "New node detected with id 0x%x, address 0x%x, role \"%s\"", networkId, address, role);
+                    NW_TRACE_3(Discovery, 2, "New node detected with id 0x%x, address %s, role \"%s\"",
+                                                networkId,
+                                                os_sockaddrAddressToString((os_sockaddr*) &address,
+                                                                            addressStr,
+                                                                            sizeof(addressStr)),
+                                                role);
                     NW_TRACE_2(Discovery, 3, "Node has heartbeatInterval %d.%3.3u",
                         heartbeatInterval.seconds, heartbeatInterval.nanoseconds/1000000U);
                     NW_TRACE_2(Discovery, 3, "Node has maxInterval %d.%3.3u",
@@ -1162,7 +1257,12 @@ nw_discoveryReaderReceivedHeartbeat(
                         }
 
                         discoveryReader->aliveNodesCount++;
-                        NW_TRACE_3(Discovery, 2, "New node detected with id 0x%x, address 0x%x, role \"%s\"", networkId, address, role);
+                        NW_TRACE_3(Discovery, 2, "New node detected with id 0x%x, address %s, role \"%s\"",
+                                                    networkId,
+                                                    os_sockaddrAddressToString((os_sockaddr*) &address,
+                                                                                 addressStr,
+                                                                                 sizeof(addressStr)),
+                                                     role);
                         NW_TRACE_2(Discovery, 3, "Node has heartbeatInterval %d.%3.3u",
                             heartbeatInterval.seconds, heartbeatInterval.nanoseconds/1000000U);
                         NW_TRACE_2(Discovery, 3, "Node has maxInterval %d.%3.3u",
@@ -1219,32 +1319,82 @@ nw_discoveryReaderReceivedHeartbeat(
          * if new set them to NW_DISCSTATE_KNOWN.
          */
         while ( discoveryReader->scope && Nodelist && NodelistLen > 0 ) {
-            nw_address nodeAddress;
-            nw_address nodeId;
-            memcpy(&nodeAddress,Nodelist,4);
-            Nodelist += 4;
-            memcpy(&nodeId,Nodelist,4);
-            nodeId = nw_plugNetworkToHost(nodeId);
-            nodeAddress = nw_plugNetworkToHost(nodeAddress);
-            Nodelist += 4;
-            NodelistLen -= 8;
-            NW_TRACE_2(Discovery, 4, "Processing Incoming Nodelistitem Id 0x%x, address 0x%x", nodeId, nodeAddress);
-            if (nodeId != discoveryReader->receiveChannel->nodeId) {
-                nw_discoveryReaderLookupOrCreateNode(discoveryReader,
-                    nodeId,nodeAddress,&itemFound, &wasCreated);
-                if( wasCreated ) {
-                    NW_TRACE_3(Discovery, 2, "Received from hostid:0x%x: New NodeId:0x%x, address:0x%x",networkId, nodeId, nodeAddress);
-                    itemFound->state = NW_DISCSTATE_KNOWN;
-                    itemFound->networkId = nodeId;
-                    itemFound->hasDied = TRUE;
-                    if (discoveryReader->scope &&
-                        discoveryReader->gpAddAction!= NULL) {
-                        discoveryReader->gpAddAction(nodeId, nodeAddress,
-                            receivedTime, discoveryReader->aliveNodesCount,
-                            discoveryReader->arg);
-                    }
+            os_sockaddr_storage nodeAddress;
+            os_uint32 nodeId;
 
-                    nw_discoveryWriterSendRequest(discoveryReader->discoveryWriter, nodeId, nodeAddress, discoveryReader->scope);
+            memset(&nodeAddress, 0, sizeof(nodeAddress));
+            if (nw_configurationGetIsIPv6())
+            {
+                /* IPv6 */
+                os_sockaddr_in6* in6Address = (os_sockaddr_in6*) &nodeAddress;
+                in6Address->sin6_family = AF_INET6;
+                memcpy(&in6Address->sin6_addr.s6_addr,Nodelist,16);
+                Nodelist += 16;
+                memcpy(&nodeId,Nodelist,4);
+                nodeId = nw_plugNetworkToHost(nodeId);
+                Nodelist += 4;
+                NodelistLen -= 20;
+                NW_TRACE_2(Discovery, 4, "Processing Incoming IPv6 Nodelistitem Id 0x%x, address %s",
+                                            nodeId,
+                                            os_sockaddrAddressToString((os_sockaddr*) in6Address,
+                                                                        addressStr,
+                                                                        sizeof(addressStr)));
+                if (nodeId != discoveryReader->receiveChannel->nodeId) {
+                    nw_discoveryReaderLookupOrCreateNode(discoveryReader,
+                        nodeId,nodeAddress,&itemFound, &wasCreated);
+                    if( wasCreated ) {
+                        NW_TRACE_3(Discovery, 2, "Received from hostid:0x%x: New IPv6 NodeId:0x%x, address:%s",
+                                                 networkId,
+                                                 nodeId,
+                                                 os_sockaddrAddressToString((os_sockaddr*) in6Address,
+                                                                        addressStr,
+                                                                        sizeof(addressStr)));
+                        itemFound->state = NW_DISCSTATE_KNOWN;
+                        itemFound->networkId = nodeId;
+                        itemFound->hasDied = TRUE;
+                        if (discoveryReader->scope &&
+                            discoveryReader->gpAddAction!= NULL) {
+                            discoveryReader->gpAddAction(nodeId, nodeAddress,
+                                receivedTime, discoveryReader->aliveNodesCount,
+                                discoveryReader->arg);
+                        }
+
+                        nw_discoveryWriterSendRequest(discoveryReader->discoveryWriter, nodeId, nodeAddress, discoveryReader->scope);
+                    }
+                }
+            }
+            else
+            {
+                os_sockaddr_in* in4Addr = (os_sockaddr_in*) &nodeAddress;
+                in4Addr->sin_family = AF_INET;
+                memcpy(&in4Addr->sin_addr.s_addr,Nodelist,4);
+                Nodelist += 4;
+                memcpy(&nodeId,Nodelist,4);
+                nodeId = nw_plugNetworkToHost(nodeId);
+                in4Addr->sin_addr.s_addr = nw_plugNetworkToHost(in4Addr->sin_addr.s_addr);
+                Nodelist += 4;
+                NodelistLen -= 8;
+                NW_TRACE_2(Discovery, 4, "Processing Incoming Nodelistitem Id 0x%x, address 0x%x", nodeId, in4Addr->sin_addr.s_addr);
+                if (nodeId != discoveryReader->receiveChannel->nodeId) {
+                    nw_discoveryReaderLookupOrCreateNode(discoveryReader,
+                        nodeId,nodeAddress,&itemFound, &wasCreated);
+                    if( wasCreated ) {
+                        NW_TRACE_3(Discovery, 2, "Received from hostid:0x%x: New NodeId:0x%x, address:0x%x",
+                                                    networkId,
+                                                    nodeId,
+                                                    in4Addr->sin_addr.s_addr);
+                        itemFound->state = NW_DISCSTATE_KNOWN;
+                        itemFound->networkId = nodeId;
+                        itemFound->hasDied = TRUE;
+                        if (discoveryReader->scope &&
+                            discoveryReader->gpAddAction!= NULL) {
+                            discoveryReader->gpAddAction(nodeId, nodeAddress,
+                                receivedTime, discoveryReader->aliveNodesCount,
+                                discoveryReader->arg);
+                        }
+
+                        nw_discoveryWriterSendRequest(discoveryReader->discoveryWriter, nodeId, nodeAddress, discoveryReader->scope);
+                    }
                 }
             }
         }
@@ -1262,9 +1412,9 @@ nw_discoveryReaderReceivedHeartbeat(
     } else {
         NW_TRACE_1(Discovery, 4, "Ignoring out of scope role \"%s\"", role);
     }
-    
+
     if ( role != no_role) {
-        
+
         os_free(role);
     }
 }
@@ -1281,6 +1431,7 @@ nw_discoveryReaderCheckForDiedNodes(
     c_time diffTime;
     c_equality eq;
     nw_aliveNodesHashItem itemFound = NULL;
+    nw_bool reconnectFree = FALSE;
 
     NW_TRACE(Discovery, 5, "Checking liveliness of nodes");
     for (i=0; i<discoveryReader->aliveNodesHashSize; i++) {
@@ -1320,7 +1471,7 @@ nw_discoveryReaderCheckForDiedNodes(
                             discoveryReader->arg);
                     }
                     if (discoveryReader->reconnectAllowed) {
-                        nw_aliveNodesHashItemFree(itemFound);
+                        reconnectFree = TRUE;
                     }
                 }
             } else {
@@ -1331,6 +1482,10 @@ nw_discoveryReaderCheckForDiedNodes(
                 nw_discoveryWriterSendRequest(discoveryReader->discoveryWriter, hashItem->networkId, hashItem->address, discoveryReader->scope);
             }
             hashItem = hashItem->next;
+
+            if (discoveryReader->reconnectAllowed && reconnectFree) {
+                nw_aliveNodesHashItemFree(itemFound);
+            }
         }
     }
 }
@@ -1345,10 +1500,11 @@ nw_discoveryReaderMain(
     c_bool terminationRequested;
     nw_data messageBuffer;
     nw_length bufferLength;
-    struct nw_senderInfo_s sender = {0,0};
+    struct nw_senderInfo_s sender;
     c_time now;
 
     nw_runnableSetRunState(runnable, rsRunning);
+    memset(&sender, 0, sizeof(sender));
 
     terminationRequested = (os_int)nw_runnableTerminationRequested(runnable);
     while (!terminationRequested) {
@@ -1371,13 +1527,13 @@ nw_discoveryReaderMain(
                                                     sender.ipAddress,
                                                     now);
             }
-	    os_mutexLock( &discoveryReader->checkRequestedMtx );
+        os_mutexLock( &discoveryReader->checkRequestedMtx );
             if (discoveryReader->checkRequested) {
                 nw_discoveryReaderCheckForDiedNodes(discoveryReader, now);
                 discoveryReader->checkRequested = FALSE;
 
             }
-	    os_mutexUnlock( &discoveryReader->checkRequestedMtx );
+        os_mutexUnlock( &discoveryReader->checkRequestedMtx );
         }
     }
 
@@ -1416,6 +1572,13 @@ nw_discoveryReaderNew(
 
     result = (nw_discoveryReader)os_malloc((os_uint32)sizeof(*result));
     if (result != NULL) {
+        os_sockaddr_storage dummy_address;
+        os_sockaddr_in6 sin6;
+
+        sin6.sin6_family = AF_INET6;
+        sin6.sin6_addr = os_in6addr_any;
+        memcpy(&dummy_address, &sin6, sizeof(sin6));
+
         /* Initialize parent */
         /* First determine its parameter path */
         schedPathNameSize = strlen(name) + strlen(NWCF_SEP) +
@@ -1449,9 +1612,9 @@ nw_discoveryReaderNew(
         result->discoveryWriter  = discoveryWriter;
         result->arg = arg;
         result->checkRequested = FALSE;
-	os_mutexAttrInit(&checkReqAttr);
-	checkReqAttr.scopeAttr = OS_SCOPE_PRIVATE;
-	os_mutexInit(&result->checkRequestedMtx, &checkReqAttr);
+        os_mutexAttrInit(&checkReqAttr);
+        checkReqAttr.scopeAttr = OS_SCOPE_PRIVATE;
+        os_mutexInit(&result->checkRequestedMtx, &checkReqAttr);
         result->receiveChannel = nw_plugNetworkNewReceiveChannel(
             ((nw_discovery)result)->network, name, NULL,NULL);
 
@@ -1494,10 +1657,18 @@ nw_discoveryReaderNew(
          *
          *  solved by creating a fake node at startup.
          */
+        if (!nw_configurationGetIsIPv6())
+        {
+            /* dummy_address was already initialised to IPv6 loopback at declaration */
+            os_sockaddr_in* in4Addr = (os_sockaddr_in*) &dummy_address;
+            in4Addr->sin_addr.s_addr = 0x0100007F;
+            in4Addr->sin_family = AF_INET;
+        }
+
         heartbeatInterval.seconds = 1;
         heartbeatInterval.nanoseconds = 0;
         nw_discoveryReaderLookupOrCreateNode(result,
-                           12345,0x0100007F, &itemFound, &wasCreated);
+                           12345,dummy_address, &itemFound, &wasCreated);
         if (wasCreated) {
             /* New item, initialize it */
             itemFound->maxHeartbeatIntervalAllowed = heartbeatInterval;
@@ -1514,7 +1685,7 @@ nw_discoveryReaderNew(
             result->aliveNodesCount++;
 
             if (result->startedAction != NULL) {
-                result->startedAction(12345, 0x0100007F,
+                result->startedAction(12345, dummy_address,
                     receivedTime, result->aliveNodesCount,
                     result->arg);
             }

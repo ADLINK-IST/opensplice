@@ -147,7 +147,7 @@ DDS_DataWriter createDataWriter(DDS_Publisher publisher, DDS_Topic topic)
    checkStatus(g_status, "DDS_Topic_get_qos");
    g_status = DDS_Publisher_copy_from_topic_qos(publisher, dataWriterQos, topicQos);
    checkStatus(g_status, "DDS_Publisher_copy_from_topic_qos");
-   dataWriterQos->writer_data_lifecycle.autodispose_unregistered_instances = TRUE;
+   dataWriterQos->writer_data_lifecycle.autodispose_unregistered_instances = FALSE;
    dataWriter = DDS_Publisher_create_datawriter(publisher, topic, dataWriterQos, NULL, DDS_STATUS_MASK_NONE);
    checkHandle(dataWriter, "DDS_Publisher_create_datawriter");
 

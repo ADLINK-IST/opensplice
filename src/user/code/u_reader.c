@@ -20,6 +20,7 @@
 #include "u__types.h"
 #include "v_public.h"
 #include "v_reader.h"
+#include "v_dataReader.h"
 #include "v_spliced.h"
 #include "v_participant.h"
 
@@ -281,7 +282,7 @@ u_readerGetMatchedPublications (
             c_iterFree(participants);
 
             result = u_resultFromKernel(
-                         v_splicedGetMatchedPublications(spliced, reader, action, arg));
+                         v_splicedGetMatchedPublications(spliced, v_dataReader(reader), action, arg));
             u_entityRelease(u_entity(_this));
         }
     }
@@ -317,7 +318,7 @@ u_readerGetMatchedPublicationData (
             c_iterFree(participants);
 
             result = u_resultFromKernel(
-                         v_splicedGetMatchedPublicationData(spliced, reader, u_instanceHandleToGID(publication_handle), action, arg));
+                         v_splicedGetMatchedPublicationData(spliced, v_dataReader(reader), u_instanceHandleToGID(publication_handle), action, arg));
             u_entityRelease(u_entity(_this));
         }
     }

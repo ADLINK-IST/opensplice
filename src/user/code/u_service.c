@@ -167,7 +167,7 @@ u_serviceNew(
     os_result osr;
 
     ks = NULL;
-    domain = u_userFindDomain(uri, timeout);
+    domain = u_domainOpen(uri, timeout);
     if (domain == NULL) {
         OS_REPORT(OS_ERROR,"u_serviceNew",0,
                   "Failure to open the kernel");
@@ -471,4 +471,30 @@ u_serviceEnableStatistics(
         }
     }
     return result;
+}
+
+u_result
+u_serviceRenewLease(
+    u_service _this,
+    v_duration leasePeriod)
+{
+    u_result r;
+    v_service kernelService;
+
+    if (_this == NULL) {
+        r = U_RESULT_ILL_PARAM;
+    } else {
+        r = u_entityReadClaim(u_entity(_this), (v_entity*)(&kernelService));
+        if(r == U_RESULT_OK)
+        {
+            assert(kernelService);
+            v_serviceRenewLease(kernelService, leasePeriod);
+            r = u_entityRelease(u_entity(_this));
+        } else {
+            OS_REPORT(OS_WARNING,
+                      "u_serviceRenewLease", 0,
+                      "Failed to claim service.");
+        }
+    }
+    return r;
 }

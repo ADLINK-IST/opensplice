@@ -20,7 +20,7 @@
 #include "os_heap.h"
 #include "os_report.h"
 
-#define SAJ_FUNCTION(name) Java_DDS_DomainParticipantFactory_##name
+#define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_DomainParticipantFactoryImpl_##name
 
 /*
  * Method: jniGetInstance
@@ -39,6 +39,7 @@ SAJ_FUNCTION(jniGetInstance)(
     jParticipantFactory = NULL;
 
     ldPreload = os_getenv("LD_PRELOAD");
+
     if(ldPreload){
         if(strstr(ldPreload, "jsig") == NULL){
             os_procSetSignalHandlingEnabled(0);
@@ -52,7 +53,7 @@ SAJ_FUNCTION(jniGetInstance)(
         gapiParticipantFactory = gapi_domainParticipantFactory_get_instance ();
 
         if(gapiParticipantFactory != NULL){
-            saj_construct_java_object(env, "DDS/DomainParticipantFactory",
+            saj_construct_java_object(env, PACKAGENAME"DomainParticipantFactoryImpl",
                                           (PA_ADDRCAST)gapiParticipantFactory,
                                           &jParticipantFactory);
         }

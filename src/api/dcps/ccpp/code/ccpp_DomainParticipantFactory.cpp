@@ -248,7 +248,7 @@ DDS::DomainParticipantFactory::create_participant (
         myParticipant = NULL;
         OS_REPORT(OS_ERROR,
                   "DDS::DomainParticipantFactory::create_participant", 0,
-                  "Unable to register TypeSupports for BuiltiTopics.");
+                  "Unable to register TypeSupports for BuiltinTopics.");
       }
     }
 

@@ -296,7 +296,6 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "\n");
     /* Generate inclusion of standard OpenSplice DDS type definition files */
     idl_fileOutPrintf(idl_fileCur(), "#include <sacpp_mapping.h>\n");
-//    idl_fileOutPrintf(idl_fileCur(), "#include <eOrb/idl_c.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
 #ifndef RP
     /* Generate code for inclusion of application specific include files */

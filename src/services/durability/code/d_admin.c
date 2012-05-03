@@ -50,6 +50,7 @@
 #include "os_heap.h"
 #include "os_mutex.h"
 #include "os_defs.h"
+#include "os_report.h"
 #include "c_base.h"
 
 /**
@@ -773,7 +774,6 @@ d_adminRemoveFellow(
     }
     return result;
 }
-
 
 struct findNsWalkData
 {
@@ -1684,6 +1684,7 @@ d_adminEventThreadStart(
     d_eventListener listener;
     int i;
     c_bool result;
+    os_result waitResult;
 
     admin = d_admin(arg);
 
@@ -1709,7 +1710,13 @@ d_adminEventThreadStart(
         os_mutexLock(&admin->eventMutex);
 
         if((c_iterLength(admin->eventQueue) == 0) && (admin->eventThreadTerminate == FALSE)){
-            os_condWait(&admin->eventCondition, &admin->eventMutex);
+            waitResult = os_condWait(&admin->eventCondition, &admin->eventMutex);
+            if (waitResult == os_resultFail)
+            {
+                OS_REPORT(OS_CRITICAL, "d_adminEventThreadStart", 0,
+                          "os_condWait failed - terminating thread");
+                admin->eventThreadTerminate = TRUE;
+            }
         }
         os_mutexUnlock(&admin->eventMutex);
     }
@@ -2147,6 +2154,7 @@ d_adminNameSpaceCheckConflicts(
 void
 d_adminReportMaster(
     d_admin admin,
+    d_fellow fellow,
     d_nameSpace fellowNameSpace,
     d_nameSpace oldFellowNameSpace)
 {
@@ -2170,15 +2178,12 @@ d_adminReportMaster(
         helper.conflict = 0;
         helper.stateConflicts = 0;
 
-        /* Only check when I'm complete */
-        if (durabilityState >= D_STATE_DISCOVER_PERSISTENT_SOURCE) {
-            /* Only check confirmed namespaces */
-            if (d_nameSpaceIsMasterConfirmed(fellowNameSpace)){
-                d_adminNameSpaceCheckConflicts (admin, nameSpace, &helper);
-            }
+        /* Only check when I'm complete and fellow is past injecting persistent data */
+        if ((durabilityState >= D_STATE_DISCOVER_PERSISTENT_SOURCE) && (d_fellowGetState(fellow) >= D_STATE_INJECT_PERSISTENT)) {
+            d_adminNameSpaceCheckConflicts (admin, nameSpace, &helper);
 
             /* If a conflict occured, create D_MASTER_CONFLICT event */
-            if (helper.conflict){
+            if (helper.conflict) {
                 /* Create copy from namespace (fellow namespace is likely to change) */
                 nameSpaceCopy = d_nameSpaceCopy (fellowNameSpace);
 

@@ -17,9 +17,11 @@ void
 v_messageSetAllocTime(
     v_message _this)
 {
+#ifndef _NAT_
     if (_this) {
         _this->allocTime = v_timeGet();
     }
+#endif    
 }
 
 

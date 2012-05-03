@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -52,10 +52,11 @@ v_instanceWrite (
     v_instance _this,
     v_message message);
 
-/* param count specifies the number of registrations that are unregisters */
+/* registration indicates the specific registration that needs to be unregistered. */
 void
 v_instanceUnregister (
-    v_instance _this,
-    c_long count);
+    v_instance instance,
+    v_registration registration,
+    c_time timestamp);
 
 #endif

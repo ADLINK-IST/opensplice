@@ -249,6 +249,7 @@ d_nameSpace             d_adminGetNameSpace                     (d_admin admin,
                                                                  os_char* name);
 
 void                    d_adminReportMaster                     (d_admin admin,
+                                                                 d_fellow fellow,
                                                                  d_nameSpace fellowNameSpace,
                                                                  d_nameSpace oldFellowNameSpace);
 

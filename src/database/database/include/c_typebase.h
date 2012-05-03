@@ -13,6 +13,7 @@
 #define C_TYPEBASE_H
 
 #include "os_defs.h"
+#include <limits.h>
 
 #if defined (__cplusplus)
 extern "C" {
@@ -92,27 +93,36 @@ typedef c_wchar            *c_wstring;
 typedef c_object           *c_array;
 typedef c_object           *c_sequence;
 
-/* min and max definitions */
+/* min and max definitions
+ * =======================
+ * These values are deliberately written as decimals, because of the following
+ * reasons:
+ *  1) (short)0x8000 == -32768, but (int)0x8000 == 32768, so we cannot guarantee
+ *     the correct value if written hexadecimal.
+ *  2) we cannot assume each platform uses the Two's Complement notation.
+ */
 #define C_MIN_CHAR             '\0'
 #define C_MAX_CHAR             '\0xff'
-#define C_MIN_OCTET            0
-#define C_MAX_OCTET            255
-#define C_MIN_SHORT(sa)       -32768##sa
-#define C_MAX_SHORT(sa)        32767##sa
-#define C_MIN_USHORT(sa)       0U##sa
-#define C_MAX_USHORT(sa)       65535U##sa
-#define C_MIN_LONG(sa)        -2147483648##sa
-#define C_MAX_LONG(sa)         2147483647U##sa
-#define C_MIN_ULONG(sa)        0U##sa
-#define C_MAX_ULONG(sa)        4294967295U##sa
-#define C_MIN_LONGLONG(sa)    -9223372036854775808##sa
-#define C_MAX_LONGLONG(sa)     9223372036854775807##sa
-#define C_MIN_ULONGLONG(sa)    0U##sa
-#define C_MAX_ULONGLONG(sa)    18446744073709551615U##sa
+#define C_MIN_OCTET            0                                /* 0x0                                  */
+#define C_MAX_OCTET            255                              /* 0xFF                                 */
+#define C_MIN_SHORT(sa)       -32768##sa                        /* 0x8000     Two's Complement          */
+#define C_MAX_SHORT(sa)        32767##sa                        /* 0x7FFF                               */
+#define C_MIN_USHORT(sa)       0U##sa                           /* 0x0                                  */
+#define C_MAX_USHORT(sa)       65535U##sa                       /* 0xFFFF                               */
+#define C_MIN_LONG(sa)        -2147483648##sa                   /* 0x80000000 Two's Complement          */
+#define C_MAX_LONG(sa)         2147483647U##sa                  /* 0x7FFFFFFF                           */
+#define C_MIN_ULONG(sa)        0U##sa                           /* 0x0                                  */
+#define C_MAX_ULONG(sa)        4294967295U##sa                  /* 0xFFFFFFFF                           */
+#define C_MIN_LONGLONG(sa)    -9223372036854775808##sa          /* 0x8000000000000000 Two's Complement  */
+#define C_MAX_LONGLONG(sa)     9223372036854775807##sa          /* 0x7FFFFFFFFFFFFFFF                   */
+#define C_MIN_ULONGLONG(sa)    0U##sa                           /* 0x0                                  */
+#define C_MAX_ULONGLONG(sa)    18446744073709551615U##sa        /* 0xFFFFFFFFFFFFFFFF                   */
 #define C_MIN_FLOAT            1.1754944909521339405E-38F
 #define C_MAX_FLOAT            3.4028234663852885981E+38F
 #define C_MIN_DOUBLE           1.1125369292536011856E-308
 #define C_MAX_DOUBLE           1.7976931348623157081E+308
+#define C_MIN_SIZE             0
+#define C_MAX_SIZE             OS_MAX_INTEGER(c_size)
 
 #ifdef NATIVESEQ
 
@@ -163,8 +173,7 @@ typedef enum c_valueKind {
     V_WCHAR,   V_WSTRING,
     V_FIXED,   V_OBJECT,
     V_VOIDP,
-    V_COUNT,
-    V_SIZE
+    V_COUNT
 } c_valueKind;
 
 typedef enum c_memoryThreshold_e
@@ -195,7 +204,6 @@ typedef struct c_value {
         c_bool       Boolean;
         c_voidp      Object;
         c_voidp      Voidp;
-        c_ulong      Size;
     } is;
 } c_value;
 

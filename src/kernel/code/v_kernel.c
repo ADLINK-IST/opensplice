@@ -101,6 +101,7 @@ v_new(
         OS_REPORT(OS_ERROR,
                   "v_new",0,
                   "Failed to create kernel object.");
+        assert(FALSE);
     }
     return o;
 }
@@ -123,6 +124,7 @@ v_objectNew(
         OS_REPORT(OS_ERROR,
                   "v_objectNew",0,
                   "Failed to create kernel object.");
+        assert(FALSE);
     }
     return o;
 }
@@ -317,7 +319,7 @@ v_kernelNew(
 #undef INITTYPE
 
 
-    kernel->pendingDisposeList = 
+    kernel->pendingDisposeList =
        c_listNew(v_kernelType(kernel, K_PENDINGDISPOSEELEMENT ));
     c_mutexInit(&kernel->pendingDisposeListMutex, SHARED_MUTEX);
 
@@ -344,7 +346,7 @@ v_kernelNew(
     kernel->configuration = NULL;
     kernel->userCount = 1;
     kernel->transactionCount = 0;
-
+    kernel->splicedRunning = TRUE;
     kernel->maxSamplesWarnLevel = V_KERNEL_MAX_SAMPLES_WARN_LEVEL_DEF;
     kernel->maxSamplesWarnShown = FALSE;
     kernel->maxSamplesPerInstanceWarnLevel = V_KERNEL_MAX_SAMPLES_PER_INSTANCES_WARN_LEVEL_DEF;
@@ -1058,6 +1060,11 @@ v_persistentSnapshotRequestNew(
         {
             request->uri = c_stringNew(base, uri);
         }
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_kernel::v_persistentSnapshotRequest",0,
+                  "Failed to create v_persistentSnapshotRequest object.");
+        assert(FALSE);
     }
 
     return request;

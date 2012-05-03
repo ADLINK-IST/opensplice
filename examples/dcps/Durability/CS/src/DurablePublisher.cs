@@ -48,7 +48,7 @@ namespace DurablePublisher
                 Boolean autodisposeFlag = Boolean.Parse(args[1].ToString());
                 Boolean automaticFlag = Boolean.Parse(args[2].ToString());
 
-                DDSEntityManager mgr = new DDSEntityManager();
+                DDSEntityManager mgr = new DDSEntityManager("Durability");
                 String partitionName = "Durability example";
 
                 // Set the Durability Kind
@@ -67,7 +67,7 @@ namespace DurablePublisher
                 mgr.registerType(stkTS);
 
                 // create Topic
-                mgr.createTopic("DurabilityData_Msg", "Durability");
+                mgr.createTopic("DurabilityData_Msg");
 
                 // create Publisher
                 mgr.createPublisher();

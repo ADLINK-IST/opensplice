@@ -83,7 +83,6 @@ _TopicFromKernelTopic (
     u_topic uTopic,
     const gapi_char *topicName,
     const gapi_char *typeName,
-    const _TypeSupport typesupport,
     const _DomainParticipant participant,
     const gapi_context *context);
 

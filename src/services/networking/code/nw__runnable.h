@@ -37,7 +37,7 @@ typedef struct nw_schedulingAttr_s {
     os_schedClass schedulingClass;
 } *nw_schedulingAttr;
 
-C_STRUCT(nw_runnable) {
+NW_STRUCT(nw_runnable) {
     char *name;
     os_threadId threadId;
     c_bool terminate;

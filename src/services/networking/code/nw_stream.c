@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /**
@@ -106,7 +106,7 @@ typedef void
  *  - management of the actual network buffer.
  *  - selection of copy method (to swap or not to swap).
  */
-C_STRUCT(nw_stream) {
+NW_STRUCT(nw_stream) {
     nw_plugChannel            channel;   /* associated channel (buffer provider) */
     nw_signedLength          *bytesLeft; /* reference to credit value for throttling. */
 
@@ -162,8 +162,8 @@ C_STRUCT(nw_stream) {
 #define nw_stream_renew(stream) \
         nw_stream(stream)->action(nw_stream(stream)->channel, \
                                   &nw_stream(stream)->bufferPtr, \
-                                  &nw_stream(stream)->length); 
-		
+                                  &nw_stream(stream)->length);
+
 nw_plugChannel
 nw_stream_channel (
     nw_stream _this)
@@ -250,9 +250,10 @@ typedef c_ulong
  *   collection kind. The nw_stream_writeCollection macro will use this table
  *   to select the collection specific copy method by means of indexing the
  *   table with the meta collection kind.
+ * @extends nw_stream_s
  */
-C_STRUCT(nw_writeStream) {
-    C_EXTENDS(nw_stream);
+NW_STRUCT(nw_writeStream) {
+    NW_EXTENDS(nw_stream);
     nw_stream_writePrim_method       writePrim[CM_COUNT];
     nw_stream_writeArray_method      writeArray[CM_COUNT];
     nw_stream_writeType_method       writeType[M_COUNT];
@@ -951,7 +952,7 @@ nw_stream_writeOpen (
 
     assert(channel);
     if (channel) {
-        _this = os_malloc(sizeof(C_STRUCT(nw_writeStream)));
+        _this = os_malloc(sizeof(NW_STRUCT(nw_writeStream)));
 
         _this->channel                   = channel;
         _this->copyKind                  = _COPY_KIND_;
@@ -1084,9 +1085,11 @@ typedef c_voidp
  *   collection kind. The nw_stream_writeCollection macro will use this table
  *   to select the collection specific copy method by means of indexing the
  *   table with the meta collection kind.
+ *
+ * @extends nw_stream_s
  */
-C_STRUCT(nw_readStream) {
-    C_EXTENDS(nw_stream);
+NW_STRUCT(nw_readStream) {
+    NW_EXTENDS(nw_stream);
     nw_stream_readPrim_method        readPrim[CM_COUNT];
     nw_stream_readArray_method       readArray[CM_COUNT];
     nw_stream_readType_method        readType[M_COUNT];
@@ -1174,7 +1177,7 @@ nw_stream_readOpaq(
         memcpy(dstPtr, srcPtr, copySize);
         dstPtr = &(dstPtr[copySize]);
     }
-    
+
     return data;
 }
 
@@ -1294,7 +1297,7 @@ nw_stream__readPrimArray(
 
     rest = length*dataSize;
     dstPtr = (c_octet *)data;
-    
+
     while (rest) {
         srcPtr = nw_stream_head(stream);
         avail = nw_stream_available(stream);
@@ -1357,7 +1360,7 @@ nw_stream__readPrimArraySwapped(
 
     restElements = length;
     dstPtr = (c_octet *)data;
-    
+
     while (restElements) {
         /* Determine the maximum number of elements
          * that can be copied at once.
@@ -1411,6 +1414,7 @@ nw_stream__readPrimArraySwapped(
                 for (j=rest;j<dataSize;j++) {
                     dstPtr[max-j] = srcPtr[j-rest];
                 }
+                dstPtr = &dstPtr[j];
                 restElements--;
             } else {
                 nw_stream_renew(stream);
@@ -1422,7 +1426,7 @@ nw_stream__readPrimArraySwapped(
 }
 
 C_CLASS(nw_stream_fragment);
-C_STRUCT(nw_stream_fragment) {
+NW_STRUCT(nw_stream_fragment) {
     c_char *data;
     c_long size;
 };
@@ -1443,12 +1447,12 @@ nw_stream_readString(
     c_ulong saveLen;
     c_bool isValidRef;
     c_bool isReady;
-    
+
     nw_stream_readPrim(stream, 1, &isValidRef);
-    
+
     /* assert(isValidRef==0 || isValidRef == 1);  paranoid check for boolean value */
     NW_REPORT_INFO_1(5, "nw_stream__readString ?/%d", stream->length);
-   
+
     if (isValidRef) {
         stringStart = (c_char *)nw_stream_head(stream);
         copyPtr = stringStart;
@@ -1469,7 +1473,7 @@ nw_stream_readString(
             }
             if (size == len) {
                 nw_stream_claim(stream,len);
-                fragment = os_malloc(sizeof(C_STRUCT(nw_stream_fragment)));
+                fragment = os_malloc(sizeof(NW_STRUCT(nw_stream_fragment)));
                 fragment->size = size;
                 fragment->data = os_malloc(size);
                 memcpy(fragment->data, stringStart, size);
@@ -1481,7 +1485,7 @@ nw_stream_readString(
             }
             totalLength += size;
         } while (!isReady);
-        
+
         if (c_iterLength(fragments)) {
             if (type) {
                 str = c_stringMalloc(c_getBase(type), totalLength);
@@ -1512,7 +1516,7 @@ nw_stream_readString(
             }
         }
     }
-    
+
     *(c_string *)data = str;
     return str;
 }
@@ -1556,7 +1560,7 @@ nw_stream_readStructure (
     c_member member;
     c_ulong size, i;
     c_voidp o;
-    
+
     size = c_arraySize(_this->members);
     for (i=0; i<size; i++) {
         member = _this->members[i];
@@ -1581,7 +1585,7 @@ nw_stream_readClass (
     c_ulong n;
     c_bool isValidRef;
     struct PropertyActionArg arg;
-    
+
     nw_stream_readPrim(stream, 1, &isValidRef);
     if (isValidRef) {
         if (data) {
@@ -1609,7 +1613,7 @@ nw_stream_readClass (
     } else {
         result = NULL;
     }
-    
+
     return result;
 }
 
@@ -1629,7 +1633,7 @@ nw_stream_readUnion (
     c_value switchValue;
     c_literal label;
     c_ulong n;
-    
+
     /* action for the union itself */
     /* No action, but separate actions for the switch and the data */
     /* action(c_type(utype), object, actionArg); */
@@ -1666,7 +1670,7 @@ nw_stream_readUnion (
         assert(FALSE);
     break;
     }
-    
+
     /* Determine the label corresponding to this field */
 
     activeCase = NULL;
@@ -1697,7 +1701,7 @@ nw_stream_readUnion (
         } else {
             length = utype->switchType->size;
         }
-        
+
         o = C_DISPLACE(data, (c_address)length);
         caseType = c_typeActualType(c_specifierType(activeCase));
         nw_stream_readType(stream, caseType, o);
@@ -1730,19 +1734,8 @@ nw_stream_readArray (
         nw_stream_readPrim(stream, 1, &isValidRef);
         if (isValidRef) {
             nw_stream_readPrim(stream, sizeof(c_ulong), &length);
-                     
-#if 0
-            if (*(c_voidp *)data) {
-                array = *(c_voidp *)data;
-            } else {
-                array = c_newBaseArrayObject(ctype,length);
-                *(c_voidp *)data = array;
-            }
-#else
-         
             array = c_newArray(ctype,length);
             *(c_voidp *)data = array;
-#endif
         }
     }
 
@@ -1791,17 +1784,8 @@ nw_stream_readSequence (
 
     if (isValidRef) {
         nw_stream_readPrim(stream, sizeof(c_ulong), &length);
-#if 0
-        if (*(c_voidp *)data) {
-            sequence = *(c_voidp *)data;
-        } else {
-            sequence = c_newBaseArrayObject(ctype,length);
-            *(c_voidp *)data = sequence;
-        }
-#else
-            sequence = c_newSequence(ctype,length);
-            *(c_voidp *)data = sequence;
-#endif
+        sequence = c_newSequence(ctype,length);
+        *(c_voidp *)data = sequence;
     }
 
     if (sequence) {
@@ -1851,11 +1835,14 @@ nw_stream_readSet (
         /* Read all elements and insert them into the set. */
         for (i=0; i<size; i++) {
             o = c_new(ctype->subType);
-            assert(o);
-            nw_stream_readType(stream, c_typeActualType(ctype->subType), o);
-            inserted = c_setInsert(set, o);
-            assert(inserted == o);
-            c_free(o);
+            if (o) {
+                nw_stream_readType(stream, c_typeActualType(ctype->subType), o);
+                inserted = c_setInsert(set, o);
+                assert(inserted == o);
+                c_free(o);
+            } else {
+                assert(FALSE);
+            }
         }
     }
 
@@ -1884,7 +1871,7 @@ nw_stream_readOpen (
 
     assert(channel);
     if (channel) {
-        _this = os_malloc(sizeof(C_STRUCT(nw_readStream)));
+        _this = os_malloc(sizeof(NW_STRUCT(nw_readStream)));
 
         _this->channel                   = channel;
         _this->copyKind                  = _COPY_KIND_;
@@ -1923,7 +1910,7 @@ nw_stream_readBegin (
     nw_senderInfo sender,
     plugReceiveStatistics prs)
 {
-	
+
     c_bool result = nw_plugReceiveChannelMessageStart(_this->channel,
                                              &_this->bufferPtr,
                                              &_this->length,
@@ -1939,13 +1926,16 @@ nw_stream_read (
     c_type type)
 {
     c_object object = NULL;
-    
+
     if (type) {
         if (c_typeIsRef(type)) {
             object = c_new(type);
-            assert(object);
-            object = nw_stream_readType(stream, type, object);
-            assert(object);
+            if (object) {
+                object = nw_stream_readType(stream, type, object);
+                assert(object);
+            } else {
+                assert(FALSE);
+            }
         } else {
             /* Class and interface reference created by deser algorithm */
             object = NULL;

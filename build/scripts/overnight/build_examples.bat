@@ -26,8 +26,8 @@ ECHO Build examples
 
 IF "%VS80COMNTOOLS%"=="" devenv examples.sln /upgrade
 
-devenv /useenv examples.sln /Clean %BUILD_CONFIG%
-devenv /useenv examples.sln /Rebuild %BUILD_CONFIG%
+devenv /useenv /Clean %BUILD_CONFIG% examples.sln
+devenv /useenv /Rebuild %BUILD_CONFIG% examples.sln
 
 ECHO Build Java examples
 ECHO Building dcps/standalone/Java/PingPong
@@ -54,8 +54,8 @@ echo "*** New API C/C++/C# Standalone and CORBA Examples ***********************
 IF "%VS80COMNTOOLS%"=="" devenv NewExamples.sln /upgrade
 cd "%OSPL_HOME%"/examples
 
-devenv NewExamples.sln /useenv /Clean %BUILD_CONFIG%
-devenv NewExamples.sln /useenv /Rebuild %BUILD_CONFIG%
+devenv /useenv /Clean %BUILD_CONFIG% NewExamples.sln
+devenv /useenv /Rebuild %BUILD_CONFIG% NewExamples.sln
 
 echo "*** New API Java examples **********************************************************************************"
 echo "Example dir is: %OSPL_HOME%/examples/dcps/HelloWorld/Java/Standalone/VS2005"

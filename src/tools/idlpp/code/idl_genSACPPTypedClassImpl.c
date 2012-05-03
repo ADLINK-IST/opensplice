@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl_program.h"
@@ -60,7 +60,7 @@ idl_fileOpen(
     /* Prepare file header template */
     snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%csacppTypedDcpsImplHeader", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
     /* QAC EXPECT 3416; No unexpected side effects here */
-    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) || 
+    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
         printf("No template found or protection violation (%s)\n", tmplFileName);
         return (idl_abort);
@@ -90,7 +90,7 @@ idl_fileOpen(
     /* Prepare class definition template */
     snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%csacppTypedDcpsImpl", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
     /* QAC EXPECT 3416; No unexpected side effects here */
-    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) || 
+    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
         printf("No template found or protection violation (%s)\n", tmplFileName);
         return (idl_abort);
@@ -101,7 +101,7 @@ idl_fileOpen(
     nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
     memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
     close(tmplFile);
-    
+
     idlpp_indent_level = 0;
 
     return idl_explore;
@@ -130,7 +130,6 @@ idl_structureOpen(
     idl_typeStruct structSpec,
     void *userData)
 {
-    c_char spaces[20];
     idl_tmplExp te;
 
     /* QAC EXPECT 3416; No unexpected side effects here */
@@ -140,9 +139,6 @@ idl_structureOpen(
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scope", idl_scopeStackCxx(scope, "::", NULL)));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", idl_cxxId(name)));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scopedtypename", idl_scopeStack(scope, "::", name)));
-        //idl_macroSetAdd(idlpp_macroSet, idl_macroNew("uniquetypename", idl_scopeStack(scope, "_", name)));
-        //snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
-        //idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
         idl_streamInFree(idlpp_inStream);
@@ -158,7 +154,6 @@ idl_unionOpen(
     idl_typeUnion unionSpec,
     void *userData)
 {
-    c_char spaces[20];
     idl_tmplExp te;
 
     /* QAC EXPECT 3416; No unexpected side effects here */
@@ -168,9 +163,6 @@ idl_unionOpen(
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scope", idl_scopeStackCxx(scope, "::", NULL)));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", idl_cxxId(name)));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scopedtypename", idl_scopeStack(scope, "::", name)));
-        //idl_macroSetAdd(idlpp_macroSet, idl_macroNew("uniquetypename", idl_scopeStack(scope, "_", name)));
-        //snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
-        //idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
         idl_streamInFree(idlpp_inStream);
@@ -186,7 +178,6 @@ idl_typedefOpenClose(
     idl_typeDef defSpec,
     void *userData)
 {
-    c_char spaces[20];
     idl_tmplExp te;
 
     if ((idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tstruct ||
@@ -197,9 +188,6 @@ idl_typedefOpenClose(
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scope", idl_scopeStackCxx(scope, "::", NULL)));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("typename", idl_cxxId(name)));
         idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scopedtypename", idl_scopeStack(scope, "::", name)));
-        //idl_macroSetAdd(idlpp_macroSet, idl_macroNew("uniquetypename", idl_scopeStack(scope, "_", name)));
-        //snprintf(spaces, (size_t)sizeof(spaces), "%d", idlpp_indent_level*4);
-        //idl_macroSetAdd(idlpp_macroSet, idl_macroNew("spaces", spaces));
         idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
         idl_streamInFree(idlpp_inStream);

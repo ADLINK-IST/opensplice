@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 package org.opensplice.config.meta;
@@ -18,7 +18,7 @@ public class MetaValueSize extends MetaValueNatural {
 
     public boolean setMaxValue(Object maxValue) {
         boolean result;
-        
+
         if(maxValue instanceof Long){
             this.maxValue = maxValue;
             result = true;
@@ -30,7 +30,7 @@ public class MetaValueSize extends MetaValueNatural {
 
     public boolean setMinValue(Object minValue) {
         boolean result;
-        
+
         if(minValue instanceof Long){
             this.minValue = minValue;
             result = true;
@@ -42,7 +42,7 @@ public class MetaValueSize extends MetaValueNatural {
 
     public boolean setDefaultValue(Object defaultValue) {
         boolean result;
-        
+
         if(defaultValue instanceof Long){
             this.defaultValue = defaultValue;
             result = true;

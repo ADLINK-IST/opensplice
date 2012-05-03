@@ -48,6 +48,7 @@ v_deadLineInstanceListNew(
         OS_REPORT(OS_ERROR,
                   "v_deadLineInstanceListNew",0,
                   "Failed to allocate v_deadLineInstanceList.");
+        assert(FALSE);
     }
 
     return list;
@@ -79,7 +80,7 @@ v_deadLineInstanceListSetDuration(
     list->leaseDuration = duration;
     if (list->deadlineLease != NULL) {
         if (c_timeCompare(duration, C_TIME_INFINITE) != C_EQ) {
-            v_leaseRenew(list->deadlineLease,duration);
+            v_leaseRenew(list->deadlineLease, &duration);
         } else {
             v_leaseManagerDeregister(list->leaseManager, list->deadlineLease);
             c_free(list->deadlineLease);
@@ -249,7 +250,7 @@ v_deadLineInstanceListCheckDeadlineMissed(
              */
             expiryTime = c_timeAdd(listItem->lastCheckTime, deadlineTime);
             expiryTime = c_timeSub(expiryTime, now);
-            v_leaseRenew(list->deadlineLease, expiryTime);
+            v_leaseRenew(list->deadlineLease, &expiryTime);
         }
     }
     return missed;

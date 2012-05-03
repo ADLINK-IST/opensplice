@@ -157,6 +157,7 @@ v_dataViewInstanceNew(
         OS_REPORT(OS_ERROR,
                   "v_dataViewInstanceNew",0,
                   "Failed to allocate v_dataViewInstancem");
+        assert(FALSE);
     }
 
     return instance;

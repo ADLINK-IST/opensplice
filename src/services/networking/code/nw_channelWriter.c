@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* Interface */
@@ -45,8 +45,11 @@
 
 /* ----------------------------------- Private ------------------------------ */
 
-C_STRUCT(nw_channelWriter){
-    C_EXTENDS(nw_channelUser);
+/**
+* @extends nw_channelUser_s
+*/
+NW_STRUCT(nw_channelWriter){
+    NW_EXTENDS(nw_channelUser);
     /* Networking channel to write to */
     nw_sendChannel sendChannel;
     /* Id of networking queue to read from */
@@ -257,7 +260,7 @@ nw_channelWriterMain(
                 assert( bytesWritten > 0); /* if permission grantedm the value must be greater 0 */
 
                 }
-                
+
                 writtenCountBytesThisBurst += bytesWritten;
 
 #define NW_IS_BUILTIN_DOMAINNAME(name) ((int)(name)[0] == (int)'_')
@@ -290,7 +293,7 @@ nw_channelWriterMain(
             }
             slowingDown = !nw_sendChannelFlush(channelWriter->sendChannel,
                                                TRUE, &credits, &pss);
-        } 
+        }
     }
     NW_TRACE_3(Send, 2,
                "Channel %s: %u messages (%u bytes) taken from queue and "

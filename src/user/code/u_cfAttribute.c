@@ -159,23 +159,25 @@ u_cfAttributeULongValue(
 c_bool
 u_cfAttributeSizeValue(
     u_cfAttribute attr,
-    c_ulong *ul)
+    c_size *size)
 {
     u_result r;
     c_bool result;
     v_cfAttribute kAttr;
     c_value value;
-    c_value resultValue;
 
     result = FALSE;
-    if ((attr != NULL) && (ul != NULL)) {
+    if ((attr != NULL) && (size != NULL)) {
         r = u_cfNodeReadClaim(u_cfNode(attr), (v_cfNode*)(&kAttr));
         if (r == U_RESULT_OK) {
             value = v_cfAttributeValue(kAttr);
-            result = u_cfValueScan(value, V_SIZE, &resultValue);
-
-            if (result == TRUE) {
-                *ul = resultValue.is.ULong;
+            if(value.kind == V_STRING){
+                result = u_cfDataSizeValueFromString(value.is.String, size);
+            }
+            else
+            {
+                OS_REPORT(OS_ERROR, "u_cfAttributeSizeValue", 0, "Value is not a string");
+                assert(value.kind == V_STRING);
             }
             u_cfNodeRelease(u_cfNode(attr));
         }

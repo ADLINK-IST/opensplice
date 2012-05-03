@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* Interface */
@@ -19,7 +19,10 @@
 #include "os.h"
 #include "v_networkReaderEntry.h"
 
-/* Derived class is exactly the same as the base class */
+/**
+* Derived class that is exactly the same as the base class
+* @extends nw_writer_s
+*/
 NW_STRUCT(nw_writerSync) {
     NW_EXTENDS(nw_writer);
     /* No members in derived class */
@@ -36,19 +39,19 @@ nw_writerSyncNew(
 {
     nw_writer result = NULL;
     nw_writerSync writerSync;
-    
+
     writerSync = (nw_writerSync)os_malloc(sizeof(*writerSync));
-    
+
     if (writerSync) {
         result = (nw_writer)writerSync;
         nw_writerInitialize(result, nw_writerSyncWriteMessage, NULL);
     }
-    
+
     return result;
 }
 
 
-static nw_bool 
+static nw_bool
 nw_writerSyncWriteMessage(
     nw_writer writer,
     v_networkReaderEntry entry,

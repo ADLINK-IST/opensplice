@@ -6,7 +6,7 @@ SUBSYSTEMS	:= spliced
 ifeq ($(INCLUDE_SERVICES_NETWORKING),yes)
 SUBSYSTEMS	+= networking
 ifeq ($(INCLUDE_SERVICES_DDSI),yes)
-SUBSYSTEMS	+= ddsi ddsi2
+SUBSYSTEMS	+= ddsi2
 endif
 endif
 

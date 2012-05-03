@@ -1,16 +1,16 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual C++ Express 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LifecycleData", "LifecycleData\LifecycleData.vcproj", "{442F477C-A7D4-4B1B-9951-7E6103505540}"
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LifecycleData", "LifeCycleData\LifeCycleData.vcproj", "{6525A87C-851B-4D8B-BF36-B440DED5C22A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LifecycleDataPublisher", "LifecycleDataPublisher\LifecycleDataPublisher.vcproj", "{AF7DBA90-DA95-47EB-82E5-A6D0305ED12A}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LifecycleDataPublisher", "LifeCycleDataPublisher\LifeCycleDataPublisher.vcproj", "{3616854F-35C0-44FF-ABB8-C807AC23E781}"
 	ProjectSection(ProjectDependencies) = postProject
-		{442F477C-A7D4-4B1B-9951-7E6103505540} = {442F477C-A7D4-4B1B-9951-7E6103505540}
+		{6525A87C-851B-4D8B-BF36-B440DED5C22A} = {6525A87C-851B-4D8B-BF36-B440DED5C22A}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LifecycleDataSubscriber", "LifecycleDataSubscriber\LifecycleDataSubscriber.vcproj", "{84B40937-C371-44EB-BA70-582A17C596A9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LifecycleDataSubscriber", "LifeCycleDataSubscriber\LifeCycleDataSubscriber.vcproj", "{C09FF026-1119-4B07-9F28-FD6242E9AE1D}"
 	ProjectSection(ProjectDependencies) = postProject
-		{442F477C-A7D4-4B1B-9951-7E6103505540} = {442F477C-A7D4-4B1B-9951-7E6103505540}
+		{6525A87C-851B-4D8B-BF36-B440DED5C22A} = {6525A87C-851B-4D8B-BF36-B440DED5C22A}
 	EndProjectSection
 EndProject
 Global
@@ -19,18 +19,18 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{442F477C-A7D4-4B1B-9951-7E6103505540}.Debug|Win32.ActiveCfg = Debug|Win32
-		{442F477C-A7D4-4B1B-9951-7E6103505540}.Debug|Win32.Build.0 = Debug|Win32
-		{442F477C-A7D4-4B1B-9951-7E6103505540}.Release|Win32.ActiveCfg = Release|Win32
-		{442F477C-A7D4-4B1B-9951-7E6103505540}.Release|Win32.Build.0 = Release|Win32
-		{AF7DBA90-DA95-47EB-82E5-A6D0305ED12A}.Debug|Win32.ActiveCfg = Debug|Win32
-		{AF7DBA90-DA95-47EB-82E5-A6D0305ED12A}.Debug|Win32.Build.0 = Debug|Win32
-		{AF7DBA90-DA95-47EB-82E5-A6D0305ED12A}.Release|Win32.ActiveCfg = Release|Win32
-		{AF7DBA90-DA95-47EB-82E5-A6D0305ED12A}.Release|Win32.Build.0 = Release|Win32
-		{84B40937-C371-44EB-BA70-582A17C596A9}.Debug|Win32.ActiveCfg = Debug|Win32
-		{84B40937-C371-44EB-BA70-582A17C596A9}.Debug|Win32.Build.0 = Debug|Win32
-		{84B40937-C371-44EB-BA70-582A17C596A9}.Release|Win32.ActiveCfg = Release|Win32
-		{84B40937-C371-44EB-BA70-582A17C596A9}.Release|Win32.Build.0 = Release|Win32
+		{6525A87C-851B-4D8B-BF36-B440DED5C22A}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6525A87C-851B-4D8B-BF36-B440DED5C22A}.Debug|Win32.Build.0 = Debug|Win32
+		{6525A87C-851B-4D8B-BF36-B440DED5C22A}.Release|Win32.ActiveCfg = Release|Win32
+		{6525A87C-851B-4D8B-BF36-B440DED5C22A}.Release|Win32.Build.0 = Release|Win32
+		{3616854F-35C0-44FF-ABB8-C807AC23E781}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3616854F-35C0-44FF-ABB8-C807AC23E781}.Debug|Win32.Build.0 = Debug|Win32
+		{3616854F-35C0-44FF-ABB8-C807AC23E781}.Release|Win32.ActiveCfg = Release|Win32
+		{3616854F-35C0-44FF-ABB8-C807AC23E781}.Release|Win32.Build.0 = Release|Win32
+		{C09FF026-1119-4B07-9F28-FD6242E9AE1D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C09FF026-1119-4B07-9F28-FD6242E9AE1D}.Debug|Win32.Build.0 = Debug|Win32
+		{C09FF026-1119-4B07-9F28-FD6242E9AE1D}.Release|Win32.ActiveCfg = Release|Win32
+		{C09FF026-1119-4B07-9F28-FD6242E9AE1D}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

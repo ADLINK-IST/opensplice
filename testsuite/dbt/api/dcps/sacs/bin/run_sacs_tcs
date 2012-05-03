@@ -21,6 +21,7 @@ TESTCASES="
     SACSTesterTypeSupport
     SACSTesterWaitSet
     SACSTesterWriter
+    SACSGetDiscoveredXxx
     "
 
 run_testcases    

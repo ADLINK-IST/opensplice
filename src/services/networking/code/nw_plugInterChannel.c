@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* Interface */
@@ -49,12 +49,12 @@ NW_STRUCT(nw_plugInterCommDataMessage) {
     /* The networkig partition via which this message has been sent */
     nw_partitionId sendingPartitionId;
     /* The node address that has sent the data */
-    nw_address sendingNodeAddress;
+    os_sockaddr_storage sendingNodeAddress;
     /* The packetnumber this message concerns */
     nw_seqNr packetNr;
     /* The current number of defrag buffers in use by the receive thread */
     nw_length currentRecvBuffer;
-    
+
 };
 NW_CLASS(nw_plugInterCommDataMessage);
 
@@ -64,7 +64,7 @@ NW_STRUCT(nw_plugInterCommAckMessage) {
     /* The networkig partition via which this ack has been sent */
     nw_partitionId sendingPartitionId;
     /* The node address that has sent the data */
-    nw_address sendingNodeAddress;
+    os_sockaddr_storage sendingNodeAddress;
     /* The ack data for this message */
     nw_seqNr startingNr;
     nw_seqNr closingNr;
@@ -79,7 +79,7 @@ NW_STRUCT(nw_plugInterCommBackupMessage) {
    /* The networkig partition via which this message has been sent */
    nw_partitionId sendingPartitionId;
    /* The node address that has sent the data */
-   nw_address sendingNodeAddress;
+   os_sockaddr_storage sendingNodeAddress;
    /* The complete message buffer */
    nw_plugDataBuffer backupBuffer;
    /* The current number of defrag buffers in use by the receive thread */
@@ -103,7 +103,7 @@ NW_STRUCT(nw_plugInterCommRequestMessage) {
     /* The nodeId that we request the data from */
     nw_seqNr servingNodeId;
     /* The node address that we request the data from */
-    nw_address servingNodeAddress;
+    os_sockaddr_storage servingNodeAddress;
     /* The nodeId which died and we request data for */
     nw_seqNr diedNodeId;
     /* The networking partition this data belongs to */
@@ -139,13 +139,13 @@ NW_CLASS(nw_ringBuffer);
         (((ringBuffer->head + 1) % ringBuffer->nofEntries) == ringBuffer->tail)
 #define NW_RINGBUFFER_IS_EMPTY(ringBuffer) \
         (ringBuffer->head == ringBuffer->tail)
-            
+
 static void
 nw_ringBufferPostDataEntry(
     nw_ringBuffer ringBuffer,
     nw_seqNr sendingNodeId,
     nw_partitionId sendingPartitionId,
-    nw_address sendingNodeAddress,
+    os_sockaddr_storage sendingNodeAddress,
     nw_seqNr packetNr,
     nw_length currentRecvBuffer)
 {
@@ -154,7 +154,7 @@ nw_ringBufferPostDataEntry(
     NW_CONFIDENCE(ringBuffer != NULL);
     NW_CONFIDENCE(ringBuffer->kind == NW_PLUGREL_DATA_RECEIVED);
     NW_CONFIDENCE(NW_RINGBUFFER_INDEX_IS_VALID(ringBuffer, ringBuffer->head));
-        
+
     if (!NW_RINGBUFFER_IS_FULL(ringBuffer)) {
         message = NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, ringBuffer->head);
         message->sendingNodeAddress = sendingNodeAddress;
@@ -174,7 +174,7 @@ nw_ringBufferProcessDataEntry(
     nw_ringBuffer ringBuffer,
     nw_seqNr *sendingNodeId,
     nw_partitionId *sendingPartitionId,
-    nw_address *sendingNodeAddress,
+    os_sockaddr_storage *sendingNodeAddress,
     nw_seqNr *packetNr,
     nw_length *currentRecvBuffer)
 {
@@ -187,7 +187,7 @@ nw_ringBufferProcessDataEntry(
     NW_CONFIDENCE(sendingNodeId != NULL);
     NW_CONFIDENCE(packetNr != NULL);
     NW_CONFIDENCE(currentRecvBuffer != NULL);
-        
+
     if (!NW_RINGBUFFER_IS_EMPTY(ringBuffer)) {
         message = NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, ringBuffer->tail);
         *sendingNodeAddress = message->sendingNodeAddress;
@@ -209,7 +209,7 @@ nw_ringBufferPostAckEntry(
     nw_ringBuffer ringBuffer,
     nw_seqNr sendingNodeId,
     nw_partitionId sendingPartitionId,
-    nw_address sendingNodeAddress,
+    os_sockaddr_storage sendingNodeAddress,
     nw_seqNr startingNr,
     nw_seqNr closingNr,
     nw_length remoteRecvBuffer)
@@ -220,7 +220,7 @@ nw_ringBufferPostAckEntry(
     NW_CONFIDENCE(ringBuffer->kind == NW_PLUGREL_ACK_RECEIVED);
     NW_CONFIDENCE(NW_RINGBUFFER_INDEX_IS_VALID(ringBuffer, ringBuffer->head));
 
-    if (!NW_RINGBUFFER_IS_FULL(ringBuffer)) {        
+    if (!NW_RINGBUFFER_IS_FULL(ringBuffer)) {
         message = NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, ringBuffer->head);
         message->sendingNodeId = sendingNodeId;
         message->sendingPartitionId = sendingPartitionId;
@@ -241,7 +241,7 @@ nw_ringBufferProcessAckEntry(
     nw_ringBuffer ringBuffer,
     nw_seqNr *sendingNodeId,
     nw_partitionId *sendingPartitionId,
-    nw_address *sendingNodeAddress,
+    os_sockaddr_storage *sendingNodeAddress,
     nw_seqNr *startingNr,
     nw_seqNr *closingNr,
     nw_length *remoteRecvBuffer)
@@ -256,7 +256,7 @@ nw_ringBufferProcessAckEntry(
     NW_CONFIDENCE(startingNr != NULL);
     NW_CONFIDENCE(closingNr != NULL);
     NW_CONFIDENCE(remoteRecvBuffer != NULL);
-        
+
     if (!NW_RINGBUFFER_IS_EMPTY(ringBuffer)) {
         message = NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, ringBuffer->tail);
         *sendingNodeId = message->sendingNodeId;
@@ -278,7 +278,7 @@ nw_ringBufferPostBackupEntry(
     nw_ringBuffer ringBuffer,
     nw_seqNr sendingNodeId,
     nw_partitionId sendingPartitionId,
-    nw_address sendingNodeAddress,
+    os_sockaddr_storage sendingNodeAddress,
     nw_plugDataBuffer backupBuffer,
     nw_length currentRecvBuffer)
 {
@@ -307,7 +307,7 @@ nw_ringBufferProcessBackupEntry(
     nw_ringBuffer ringBuffer,
     nw_seqNr *sendingNodeId,
     nw_partitionId *sendingPartitionId,
-    nw_address *sendingNodeAddress,
+    os_sockaddr_storage *sendingNodeAddress,
     nw_plugDataBuffer *backupBuffer,
     nw_length *currentRecvBuffer)
 {
@@ -350,7 +350,7 @@ nw_ringBufferPostAnnounceEntry(
     NW_CONFIDENCE(ringBuffer->kind == NW_PLUGREL_DATA_ANNOUNCE);
     NW_CONFIDENCE(NW_RINGBUFFER_INDEX_IS_VALID(ringBuffer, ringBuffer->head));
 
-    if (!NW_RINGBUFFER_IS_FULL(ringBuffer)) {        
+    if (!NW_RINGBUFFER_IS_FULL(ringBuffer)) {
         message = NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, ringBuffer->head);
         message->diedNodeId = diedNodeId;
         message->partitionId = partitionId;
@@ -380,7 +380,7 @@ nw_ringBufferProcessAnnounceEntry(
     NW_CONFIDENCE(diedNodeId != NULL);
     NW_CONFIDENCE(firstNr != NULL);
     NW_CONFIDENCE(lastNr != NULL);
-        
+
     if (!NW_RINGBUFFER_IS_EMPTY(ringBuffer)) {
         message = NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, ringBuffer->tail);
         *diedNodeId = message->diedNodeId;
@@ -399,7 +399,7 @@ static void
 nw_ringBufferPostRequestEntry(
     nw_ringBuffer ringBuffer,
     nw_seqNr servingNodeId,
-    nw_address servingNodeAddress,
+    os_sockaddr_storage servingNodeAddress,
     nw_seqNr diedNodeId,
     nw_partitionId partitionId,
     nw_seqNr firstNr,
@@ -411,7 +411,7 @@ nw_ringBufferPostRequestEntry(
     NW_CONFIDENCE(ringBuffer->kind == NW_PLUGREL_DATA_REQ);
     NW_CONFIDENCE(NW_RINGBUFFER_INDEX_IS_VALID(ringBuffer, ringBuffer->head));
 
-    if (!NW_RINGBUFFER_IS_FULL(ringBuffer)) {        
+    if (!NW_RINGBUFFER_IS_FULL(ringBuffer)) {
         message = NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, ringBuffer->head);
         message->servingNodeId = servingNodeId;
         message->servingNodeAddress = servingNodeAddress;
@@ -431,7 +431,7 @@ static nw_bool
 nw_ringBufferProcessRequestEntry(
     nw_ringBuffer ringBuffer,
     nw_seqNr *servingNodeId,
-    nw_seqNr *servingNodeAddress,
+    os_sockaddr_storage *servingNodeAddress,
     nw_seqNr *diedNodeId,
     nw_partitionId *partitionId,
     nw_seqNr *firstNr,
@@ -448,7 +448,7 @@ nw_ringBufferProcessRequestEntry(
     NW_CONFIDENCE(diedNodeId != NULL);
     NW_CONFIDENCE(firstNr != NULL);
     NW_CONFIDENCE(lastNr != NULL);
-        
+
     if (!NW_RINGBUFFER_IS_EMPTY(ringBuffer)) {
         message = NW_RINGBUFFER_ENTRY_BY_INDEX(ringBuffer, ringBuffer->tail);
         *servingNodeId = message->servingNodeId;
@@ -619,9 +619,9 @@ nw_ringBufferNew(
     os_uint32 nofEntries)
 {
     nw_ringBuffer result = NULL;
-    
+
     result = (nw_ringBuffer)os_malloc((os_uint32)sizeof(*result));
-    
+
     if (result != NULL) {
         result->kind = kind;
         result->entries = (nw_ringBufferEntry *)os_malloc(
@@ -655,7 +655,7 @@ nw_ringBufferNew(
         result->head = 0;
         result->tail = 0;
     }
-    
+
     return result;
 }
 
@@ -663,7 +663,7 @@ nw_ringBufferNew(
 static void
 nw_ringBufferFree(
     nw_ringBuffer ringBuffer)
-{    
+{
     if (ringBuffer != NULL) {
         if (ringBuffer->entries != NULL) {
             switch (ringBuffer->kind) {
@@ -690,7 +690,7 @@ nw_ringBufferFree(
         }
         os_free(ringBuffer);
     }
-}    
+}
 
 
 /* ------------------------ InterChannel communication ---------------------- */
@@ -711,7 +711,7 @@ nw_plugInterChannelNew(
     os_uint32 queueSize)
 {
     nw_plugInterChannel result;
-    
+
     result = (nw_plugInterChannel)os_malloc(sizeof(*result));
     if (result != NULL) {
         result->ringBufferDataReceived = nw_ringBufferNew(NW_PLUGREL_DATA_RECEIVED, queueSize);
@@ -738,7 +738,7 @@ nw_plugInterChannelFree(
         nw_ringBufferFree(plugInterChannel->ringBufferDataAnnounce);
         nw_ringBufferFree(plugInterChannel->ringBufferDataRequest);
         os_free(plugInterChannel);
-    }    
+    }
 }
 
 
@@ -766,7 +766,7 @@ nw_plugInterChannelIncarnate(
     }
 }
 
-                        
+
 void
 nw_plugInterChannelExcarnate(
     nw_plugInterChannel *interChannel)
@@ -791,7 +791,7 @@ nw_plugInterChannelPostDataReceivedMessage(
     nw_plugInterChannel plugInterChannel,
     nw_seqNr sendingNodeId,
     nw_partitionId sendingPartitionId,
-    nw_address sendingNodeAddress,
+    os_sockaddr_storage sendingNodeAddress,
     nw_seqNr packetNr,
     nw_length currentRecvBuffer)
 {
@@ -807,18 +807,18 @@ nw_plugInterChannelProcessDataReceivedMessage(
     nw_plugInterChannel plugInterChannel,
     nw_seqNr *sendingNodeId,
     nw_partitionId *sendingPartitionId,
-    nw_address *sendingNodeAddress,
+    os_sockaddr_storage *sendingNodeAddress,
     nw_seqNr *packetNr,
     nw_length *currentRecvBuffer)
 {
     nw_bool result;
-    
+
     NW_CONFIDENCE(plugInterChannel != NULL);
-    
+
     result = nw_ringBufferProcessDataEntry(plugInterChannel->ringBufferDataReceived,
                  sendingNodeId, sendingPartitionId, sendingNodeAddress, packetNr,currentRecvBuffer);
 DPRINT_DATA_PROCESS(result, *packetNr);
-                 
+
     return result;
 }
 
@@ -828,13 +828,13 @@ nw_plugInterChannelPostAckReceivedMessage(
     nw_plugInterChannel plugInterChannel,
     nw_seqNr sendingNodeId,
     nw_partitionId sendingPartitionId,
-    nw_address sendingNodeAddress,
+    os_sockaddr_storage sendingNodeAddress,
     nw_seqNr startingNr,
     nw_seqNr closingNr,
     nw_length remoteRecvBuffer)
 {
     NW_CONFIDENCE(plugInterChannel != NULL);
-    
+
 DPRINT_ACK_POST(startingNr, closingNr);
     nw_ringBufferPostAckEntry(plugInterChannel->ringBufferAckReceived,
         sendingNodeId, sendingPartitionId, sendingNodeAddress,
@@ -846,20 +846,20 @@ nw_plugInterChannelProcessAckReceivedMessage(
     nw_plugInterChannel plugInterChannel,
     nw_seqNr *sendingNodeId,
     nw_partitionId *sendingPartitionId,
-    nw_address *sendingNodeAddress,
+    os_sockaddr_storage *sendingNodeAddress,
     nw_seqNr *startingNr,
     nw_seqNr *closingNr,
     nw_length *remoteRecvBuffer)
 {
     nw_bool result;
-    
+
     NW_CONFIDENCE(plugInterChannel != NULL);
-    
+
     result = nw_ringBufferProcessAckEntry(plugInterChannel->ringBufferAckReceived,
                  sendingNodeId, sendingPartitionId, sendingNodeAddress,
                  startingNr, closingNr, remoteRecvBuffer);
 DPRINT_ACK_PROCESS(result, *startingNr, *closingNr);
-                 
+
     return result;
 }
 
@@ -868,7 +868,7 @@ nw_plugInterChannelPostBackupReceivedMessage(
     nw_plugInterChannel plugInterChannel,
     nw_seqNr sendingNodeId,
     nw_partitionId sendingPartitionId,
-    nw_address sendingNodeAddress,
+    os_sockaddr_storage sendingNodeAddress,
     nw_plugDataBuffer backupBuffer,
     nw_length currentRecvBuffer)
 {
@@ -883,7 +883,7 @@ nw_plugInterChannelProcessBackupReceivedMessage(
     nw_plugInterChannel plugInterChannel,
     nw_seqNr *sendingNodeId,
     nw_partitionId *sendingPartitionId,
-    nw_address *sendingNodeAddress,
+    os_sockaddr_storage *sendingNodeAddress,
     nw_plugDataBuffer *backupBuffer,
     nw_length *currentRecvBuffer)
 {
@@ -906,7 +906,7 @@ nw_plugInterChannelPostDataAnnounceMessage(
     nw_seqNr lastNr)
 {
     NW_CONFIDENCE(plugInterChannel != NULL);
-    
+
     nw_ringBufferPostAnnounceEntry(plugInterChannel->ringBufferDataAnnounce,
         diedNodeId, partitionId, firstNr, lastNr);
 }
@@ -920,12 +920,12 @@ nw_plugInterChannelProcessDataAnnounceMessage(
     nw_seqNr *lastNr)
 {
     nw_bool result;
-    
+
     NW_CONFIDENCE(plugInterChannel != NULL);
-    
+
     result = nw_ringBufferProcessAnnounceEntry(plugInterChannel->ringBufferDataAnnounce,
                  diedNodeId, partitionId, firstNr, lastNr);
-                 
+
     return result;
 }
 
@@ -933,7 +933,7 @@ void
 nw_plugInterChannelPostDataRequestMessage(
     nw_plugInterChannel plugInterChannel,
     nw_seqNr servingNodeId,
-    nw_address servingNodeAddress,
+    os_sockaddr_storage servingNodeAddress,
     nw_seqNr diedNodeId,
     nw_partitionId partitionId,
     nw_seqNr firstNr,
@@ -941,7 +941,7 @@ nw_plugInterChannelPostDataRequestMessage(
 {
     NW_CONFIDENCE(plugInterChannel != NULL);
 
-    
+
     nw_ringBufferPostRequestEntry(plugInterChannel->ringBufferDataRequest,
         servingNodeId, servingNodeAddress, diedNodeId, partitionId, firstNr, lastNr);
 }
@@ -950,36 +950,36 @@ nw_bool
 nw_plugInterChannelProcessDataRequestMessage(
     nw_plugInterChannel plugInterChannel,
     nw_seqNr *servingNodeId,
-    nw_address *servingNodeAddress,
+    os_sockaddr_storage *servingNodeAddress,
     nw_seqNr *diedNodeId,
     nw_partitionId *partitionId,
     nw_seqNr *firstNr,
     nw_seqNr *lastNr)
 {
     nw_bool result;
-    
+
     NW_CONFIDENCE(plugInterChannel != NULL);
-    
+
     result = nw_ringBufferProcessRequestEntry(plugInterChannel->ringBufferDataRequest,
                  servingNodeId, servingNodeAddress, diedNodeId, partitionId, firstNr, lastNr);
-                 
+
     return  result;
 }
 
 void
 nw_plugInterChannelSetTrigger(
-    nw_plugInterChannel plugInterChannel) 
+    nw_plugInterChannel plugInterChannel)
 {
     plugInterChannel->trigger = TRUE;
 }
 
 nw_bool
 nw_plugInterChannelGetTrigger(
-    nw_plugInterChannel plugInterChannel) 
+    nw_plugInterChannel plugInterChannel)
 {
     nw_bool result = plugInterChannel->trigger;
     plugInterChannel->trigger = FALSE;
-       
+
     return result;
 }
 

@@ -106,7 +106,7 @@ DDS::TypeSupport_impl::register_type(
         // Check if registered before. If type_name equals nil, then check for name of the struct.
         if (type_name)
         {
-            actual_name = const_cast<char *>(type_name);
+            actual_name = gapi_string_dup(const_cast<char *>(type_name));
         }
         else
         {
@@ -115,6 +115,8 @@ DDS::TypeSupport_impl::register_type(
 
         // Check if this TypeSupport was already registered before.
         alreadyRegistered = (gapi_domainParticipant_get_typesupport(participant_handle, actual_name) != NULL);
+
+        gapi_free(actual_name);
 
         // Delegate the register_type method to the GAPI.
         status = gapi_fooTypeSupport_register_type(

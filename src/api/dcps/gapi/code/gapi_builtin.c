@@ -170,7 +170,6 @@ _BuiltinSubscriberNew (
                             topic = _TopicFromKernelTopic(uTopic,
                                                           _BuiltinTopicName(i),
                                                           _BuiltinTopicTypeName(i),
-                                                          typeSupport,
                                                           participant,
                                                           NULL);
                             while (uTopic) {
@@ -379,10 +378,9 @@ builtinUserDataQosPolicyCopyout (
                 dst->value._length  = 0;
                 dst->value._release = TRUE;
             }
-
-            if ( dst->value._maximum >= len ) {
-                memcpy(dst->value._buffer, src->value, len);
-            }
+        }
+        if ( dst->value._maximum >= len ) {
+            memcpy(dst->value._buffer, src->value, len);
         }
     }
 
@@ -446,10 +444,9 @@ builtinTopicDataQosPolicyCopyout (
                 dst->value._length  = 0;
                 dst->value._release = TRUE;
             }
-
-            if ( dst->value._maximum >= len ) {
-                memcpy(dst->value._buffer, src->value, len);
-            }
+        }
+        if ( dst->value._maximum >= len ) {
+            memcpy(dst->value._buffer, src->value, len);
         }
     }
 
@@ -514,12 +511,11 @@ builtinPartitionQosPolicyCopyout (
                 dst->name._length  = 0;
                 dst->name._release = TRUE;
             }
-
-            if ( dst->name._maximum >= len ) {
-                unsigned long i;
-                for ( i = 0; i < len; i++ ) {
-                    dst->name._buffer[i] = gapi_string_dup(src->name[i]);
-                }
+        }
+        if ( dst->name._maximum >= len ) {
+            unsigned long i;
+            for ( i = 0; i < len; i++ ) {
+                dst->name._buffer[i] = gapi_string_dup(src->name[i]);
             }
         }
     }
@@ -592,10 +588,9 @@ builtinGroupDataQosPolicyCopyout (
                 dst->value._length  = 0;
                 dst->value._release = TRUE;
             }
-
-            if ( dst->value._maximum >= len ) {
-                memcpy(dst->value._buffer, src->value, len);
-            }
+        }
+        if ( dst->value._maximum >= len ) {
+            memcpy(dst->value._buffer, src->value, len);
         }
     }
 
@@ -660,10 +655,9 @@ userDataQosPolicyCopyout (
                 dst->value._length  = 0;
                 dst->value._release = TRUE;
             }
-
-            if ( dst->value._maximum >= len ) {
-                memcpy(dst->value._buffer, src->value, len);
-            }
+        }
+        if ( dst->value._maximum >= len ) {
+            memcpy(dst->value._buffer, src->value, len);
         }
     }
 

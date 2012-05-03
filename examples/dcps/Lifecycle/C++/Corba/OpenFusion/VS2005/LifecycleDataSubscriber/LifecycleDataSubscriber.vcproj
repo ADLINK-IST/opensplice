@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="8.00"
 	Name="LifecycleDataSubscriber"
-	ProjectGUID="{84B40937-C371-44EB-BA70-582A17C596A9}"
+	ProjectGUID="{1896EB63-79B9-44D8-9167-84D351DE72AB}"
 	RootNamespace="LifecycleDataSubscriber"
-	TargetFrameworkVersion="131072"
 	>
 	<Platforms>
 		<Platform
@@ -17,7 +16,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(ProjectDir)$(ConfigurationName)"
+			OutputDirectory="$(ProjectDir)..\$(ConfigurationName)"
 			IntermediateDirectory="$(ProjectDir)$(ConfigurationName)"
 			ConfigurationType="1"
 			>
@@ -38,9 +37,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB)&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP&quot;;..\LifecycleData\Generated;&quot;$(TAO_ROOT)\include&quot;;..\..\..\..\..\..\..\..\examples\common"
+				AdditionalIncludeDirectories="&quot;$(TAO_ROOT)\include&quot;;&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB)&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(ProjectDir)&quot;;..\Generated"
 				PreprocessorDefinitions="WIN32;$(SPLICE_ORB);_CRT_SECURE_NO_DEPRECATE"
-				RuntimeLibrary="2"
+				RuntimeLibrary="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -53,10 +52,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="TAO.lib ACE.lib TAO_AnyTypeCode.lib dcpsccpp.lib dcpsgapi.lib ddsdatabase.lib LifecycleData.lib"
+				AdditionalDependencies="TAOd.lib ACEd.lib TAO_AnyTypeCoded.lib dcpsccpp.lib dcpsgapi.lib ddsos.lib ddsdatabase.lib LifecycleData.lib"
+				OutputFile="$(OutDir)\$(ProjectName).exe"
 				AdditionalLibraryDirectories="&quot;$(OSPL_HOME)\lib&quot;;&quot;..\LifecycleData\$(ConfigurationName)&quot;;&quot;$(TAO_ROOT)\lib&quot;"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -75,6 +73,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -82,7 +83,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(ProjectDir)$(ConfigurationName)"
+			OutputDirectory="$(ProjectDir)..\$(ConfigurationName)"
 			IntermediateDirectory="$(ProjectDir)$(ConfigurationName)"
 			ConfigurationType="1"
 			>
@@ -103,9 +104,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB)&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP&quot;;..\LifecycleData\Generated;&quot;$(TAO_ROOT)\include&quot;;..\..\..\..\..\..\..\..\examples\common"
+				AdditionalIncludeDirectories="&quot;$(TAO_ROOT)\include&quot;;&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB)&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(ProjectDir)&quot;;..\Generated"
 				PreprocessorDefinitions="WIN32;$(SPLICE_ORB);_CRT_SECURE_NO_DEPRECATE"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -118,10 +119,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="TAO.lib ACE.lib TAO_AnyTypeCode.lib dcpsccpp.lib dcpsgapi.lib ddsdatabase.lib LifecycleData.lib"
+				AdditionalDependencies="TAO.lib ACE.lib TAO_AnyTypeCode.lib dcpsccpp.lib dcpsgapi.lib ddsdatabase.lib LifecycleData.lib ddsos.lib"
+				OutputFile="$(OutDir)\$(ProjectName).exe"
 				AdditionalLibraryDirectories="&quot;$(OSPL_HOME)\lib&quot;;&quot;..\LifecycleData\$(ConfigurationName)&quot;;&quot;$(TAO_ROOT)\lib&quot;"
-				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -140,6 +140,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"

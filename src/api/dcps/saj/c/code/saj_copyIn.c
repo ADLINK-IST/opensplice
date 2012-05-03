@@ -72,6 +72,8 @@ STATIC saj_copyResult saj_cfsiUnion      (sajCopyHeader *ch, jobject javaObject,
     /* String types */
 STATIC saj_copyResult saj_cfsiString     (sajCopyHeader *ch, jobject javaObject, jfieldID javaFID, saj_context *ctx);
 STATIC saj_copyResult saj_cfsiBString    (sajCopyHeader *ch, jobject javaObject, jfieldID javaFID, saj_context *ctx);
+STATIC saj_copyResult saj_cfsiBStringToArrChar
+                                         (sajCopyHeader *ch, jobject javaObject, jfieldID javaFID, saj_context *ctx);
     /* Array of object type */
 STATIC saj_copyResult saj_cfsiArray      (sajCopyHeader *ch, jobject javaObject, jfieldID javaFID, saj_context *ctx);
     /* Sequence of object type */
@@ -115,6 +117,8 @@ STATIC saj_copyResult saj_cfuiUnion      (sajCopyHeader *ch, jobject javaObject,
     /* String types */
 STATIC saj_copyResult saj_cfuiString     (sajCopyHeader *ch, jobject javaObject, jmethodID getterID, saj_context *ctx);
 STATIC saj_copyResult saj_cfuiBString    (sajCopyHeader *ch, jobject javaObject, jmethodID getterID, saj_context *ctx);
+STATIC saj_copyResult saj_cfuiBStringToArrChar
+                                         (sajCopyHeader *ch, jobject javaObject, jmethodID getterID, saj_context *ctx);
     /* Array of object type */
 STATIC saj_copyResult saj_cfuiArray      (sajCopyHeader *ch, jobject javaObject, jmethodID getterID, saj_context *ctx);
     /* Sequence of object type */
@@ -149,6 +153,8 @@ STATIC saj_copyResult saj_cfoiUnion      (sajCopyHeader *ch, jobject unionObject
     /* String types */
 STATIC saj_copyResult saj_cfoiString     (sajCopyHeader *ch, jobject stringObject, void *dstString, saj_context *ctx);
 STATIC saj_copyResult saj_cfoiBString    (sajCopyHeader *ch, jobject stringObject, void *dstString, saj_context *ctx);
+STATIC saj_copyResult saj_cfoiBStringToArrChar
+                                         (sajCopyHeader *ch, jobject stringObject, void *dstString, saj_context *ctx);
     /* Array of object type */
 STATIC saj_copyResult saj_cfoiArray      (sajCopyHeader *ch, jobject objectArray, void *dstArray, saj_context *ctx);
     /* Sequence of object type */
@@ -187,6 +193,7 @@ STATIC copyInFromStruct ciFromStruct[] = {
     saj_cfsiUnion,
     saj_cfsiString,
     saj_cfsiBString,
+    saj_cfsiBStringToArrChar,
     saj_cfsiArray,
     saj_cfsiSequence,
     saj_cfsiReference
@@ -223,6 +230,7 @@ STATIC copyInFromUnion ciFromUnion[] = {
     saj_cfuiUnion,
     saj_cfuiString,
     saj_cfuiBString,
+    saj_cfuiBStringToArrChar,
     saj_cfuiArray,
     saj_cfuiSequence,
     saj_cfuiReference
@@ -259,6 +267,7 @@ STATIC copyInFromArray ciFromArray[] = {
     saj_cfoiUnion,
     saj_cfoiString,
     saj_cfoiBString,
+    saj_cfoiBStringToArrChar,
     saj_cfoiArray,
     saj_cfoiSequence,
     saj_cfoiReference
@@ -2652,6 +2661,49 @@ saj_cfoiBString (
                 *dst = c_stringNew (ctx->base, (c_char *)strNative);
                 (*(ctx->javaEnv))->ReleaseStringUTFChars (ctx->javaEnv, (jstring)stringObject, strNative);
                 result = saj_copyGetStatus(ctx);
+                TRACE(printf ("JNI: ReleaseStringUTFChars (0x%x) = 0x%x\n", stringObject, strNative));
+                TRACE(printf ("Copied in string = %s @ offset = %d\n", *dst, ctx->offset));
+            } else {
+                result = SAJ_COPYRESULT_BAD_PARAMETER;
+                OS_REPORT(OS_ERROR, "dcpssaj", 0, "String bounds violation; length > maximum.");
+            }
+        }
+    } else {
+        result = SAJ_COPYRESULT_BAD_PARAMETER;
+        OS_REPORT(OS_ERROR, "dcpssaj", 0, "String bounds violation (null reference)");
+    }
+    return result;
+}
+
+STATIC saj_copyResult
+saj_cfoiBStringToArrChar (
+    sajCopyHeader *ch,
+    jobject stringObject,
+    void *dstArray,
+    saj_context *ctx)
+{
+    c_char *dst;
+    const char *strNative;
+    saj_copyResult result;
+    sajCopyBoundedString* cbs;
+    unsigned int length;
+
+    dst = (c_char *)(dstArray);
+    if(stringObject){
+        strNative = (*(ctx->javaEnv))->GetStringUTFChars (ctx->javaEnv, (jstring)stringObject, 0);
+        result = saj_copyGetStatus(ctx);
+
+        if(result == SAJ_COPYRESULT_OK){
+            cbs = (sajCopyBoundedString*)ch;
+            length = (unsigned int)strlen(strNative);
+            /* length must be smaller then max because the array internally is 1
+             * bigger then the string bounds to accomodate the '/o' char
+             */
+            if(length < cbs->max){
+                TRACE(printf ("JNI: GetStringUTFChars (0x%x) = 0x%x\n", stringObject, strNative));
+                strncpy(dst, strNative, cbs->max);/*max already takes the '/0' char into account*/
+                (*(ctx->javaEnv))->ReleaseStringUTFChars (ctx->javaEnv, (jstring)stringObject, strNative);
+                result = saj_copyGetStatus(ctx);
 
                 TRACE(printf ("JNI: ReleaseStringUTFChars (0x%x) = 0x%x\n", stringObject, strNative));
                 TRACE(printf ("Copied in string = %s @ offset = %d\n", *dst, ctx->offset));
@@ -2685,6 +2737,28 @@ saj_cfsiBString (
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, str));
         result = saj_cfoiBString (ch, str, dst, ctx);
+    }
+    return result;
+}
+
+STATIC saj_copyResult
+saj_cfsiBStringToArrChar (
+    sajCopyHeader *ch,
+    jobject javaObject,
+    jfieldID javaFID,
+    saj_context *ctx)
+{
+    jstring str;
+    void *dst;
+    saj_copyResult result;
+
+    dst = (void *)((PA_ADDRCAST)ctx->dst + ctx->offset);
+    str = (*(ctx->javaEnv))->GetObjectField (ctx->javaEnv, javaObject, javaFID);
+    result = saj_copyGetStatus(ctx);
+
+    if(result == SAJ_COPYRESULT_OK){
+        TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, str));
+        result = saj_cfoiBStringToArrChar (ch, str, dst, ctx);
     }
     return result;
 }
@@ -2786,6 +2860,28 @@ saj_cfuiBString (
     if(result == SAJ_COPYRESULT_OK){
         TRACE(printf ("JNI: CallObjectMethod (0x%x, %d) = 0x%x\n", javaObject, getterID, str));
         saj_cfoiBString (ch, str, dst, ctx);
+    }
+    return result;
+}
+
+STATIC saj_copyResult
+saj_cfuiBStringToArrChar (
+    sajCopyHeader *ch,
+    jobject javaObject,
+    jmethodID getterID,
+    saj_context *ctx)
+{
+    jstring str;
+    void* dst;
+    saj_copyResult result;
+
+    dst = (void *)ctx->dst;
+    str = (*(ctx->javaEnv))->CallObjectMethod (ctx->javaEnv, javaObject, getterID);
+    result = saj_copyGetStatus(ctx);
+
+    if(result == SAJ_COPYRESULT_OK){
+        TRACE(printf ("JNI: CallObjectMethod (0x%x, %d) = 0x%x\n", javaObject, getterID, str));
+        saj_cfoiBStringToArrChar (ch, str, dst, ctx);
     }
     return result;
 }

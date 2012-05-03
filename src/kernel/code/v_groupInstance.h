@@ -16,6 +16,7 @@
 #include "v_kernel.h"
 #include "v_writerInstance.h"
 #include "v_state.h"
+#include "v__group.h"
 
 #define v_groupInstance(_this) (C_CAST(_this,v_groupInstance))
 #define v_groupInstanceTemplate(_this) \
@@ -99,6 +100,12 @@ v_groupInstanceRegister (
     v_message *regMsg);
 
 v_writeResult
+v_groupInstanceRemoveRegistration(
+    v_groupInstance instance,
+    v_registration registration,
+    c_time timestamp);
+
+v_writeResult
 v_groupInstanceUnregister (
     v_groupInstance _this,
     v_message message);
@@ -146,10 +153,16 @@ v_groupInstanceGetRegisterMessages(
     c_ulong systemId,
     c_iter *messages);
 
-v_message
-v_groupInstanceGetRegisterMessageOfWriter(
-    v_groupInstance _this,
-    v_gid writerGid);
+c_bool
+v_groupInstanceHasRegistration(
+    v_groupInstance instance,
+    v_registration registration);
+
+v_registration
+v_groupInstanceGetRegistration(
+    v_groupInstance instance,
+    v_gid gidTemplate,
+    v_matchIdentityAction predicate);
 
 c_bool
 v_groupInstanceAcceptMessage(
@@ -165,9 +178,15 @@ void
 v_groupInstanceDisconnect(
     v_groupInstance _this);
 
-v_result
+v_writeResult
 v_groupInstanceDispose (
     v_groupInstance instance,
+    c_time timestamp);
+
+void
+v_groupInstancecleanup(
+    v_groupInstance _this,
+    v_registration registration,
     c_time timestamp);
 
 #endif

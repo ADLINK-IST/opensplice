@@ -16,9 +16,10 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../HelloWorld/README.html">HelloWorld </a></li>
   <li><a href ="../WaitSet/README.html">WaitSet </a></li>
   <li><a href ="../Listener/README.html">Listener </a></li>
-  <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>  
-  <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
-  <li><a href ="../Durability/README.html">Durability </a></li>
+  <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
+  <li><a href ="../QueryCondition/README.html">QueryCondition </a></li> 
+  <li> <a href ="../Lifecycle/README.html">Lifecycle</a></li> 
+  <li>Durability</li>
   <li> <a href ="../Ownership/README.html">Ownership</a></li>
   <li> <a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
 </ul>
@@ -208,11 +209,11 @@ is built:</p>
 	<p> It is recommended that you run the startSubscriber and startPublisher scripts in seperate terminals to avoid mixing the output.</p>
  
       <h5>Usage :</h5>
-        <ul><li> startPublisher.sh durability_kind autodispose_flag automatic_flag 
+        <ul><li> startPublisher.bat durability_kind autodispose_flag automatic_flag 
             <ul><li>durability_kind = transient | persistent </li>
                 <li>autodispose_flag = false | true</li>
                 <li>automatic_flag = false | true <br/>indicates if the publisher is run in interactive or automatic mode </li></ul></li>
-        <li> startSubscriber.sh durability_kind
+        <li> startSubscriber.bat durability_kind
             <ul><li>durability_kind = transient | persistent </li></ul></li>
         </ul>
   	

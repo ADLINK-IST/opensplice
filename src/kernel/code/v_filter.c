@@ -36,7 +36,8 @@ resolveField(
     if (field == NULL) {
         metaName = c_metaName(c_metaObject(property->type));
         OS_REPORT_2(OS_ERROR,
-                    "v_filterNew:",0,"Field %s not found in type %s\n",
+                    "kernel::v_filter::v_filterNew:",0,
+                    "Field %s not found in type %s\n",
                     name,metaName);
         c_free(metaName);
         c_free(property);
@@ -124,23 +125,44 @@ v_filterNew(
     kernel = v_objectKernel(t);
     type = v_topicMessageType(t);
 
-    if (!resolveFields(type,e)) {
-        filter = NULL;
-    } else {
-        filter = c_new(v_kernelType(kernel, K_FILTER));
-    }
-
-    if (filter) {
-        filter->topic = c_keep(t);
-        filter->predicate = c_filterNew(type,e,params);
-        if (filter->predicate == NULL) {
-            c_free(filter);
-            filter = NULL;
+    if (t) {
+        if (type) {
+            if (!resolveFields(type,e)) {
+                OS_REPORT_1(OS_ERROR,
+                            "kernel::v_filter::v_filterNew",0,
+                            "Failed to resolve fields in filter expression."
+                            OS_REPORT_NL "Topic = \"%s\"",
+                            v_topicName(t));
+                filter = NULL;
+            } else {
+                filter = c_new(v_kernelType(kernel, K_FILTER));
+    
+                if (filter) {
+                    filter->topic = c_keep(t);
+                    filter->predicate = c_filterNew(type,e,params);
+                    if (filter->predicate == NULL) {
+                        c_free(filter);
+                        filter = NULL;
+                    }
+                } else {
+                    OS_REPORT_1(OS_ERROR,
+                                "kernel::v_filter::v_filterNew",0,
+                                "Failed to allocate a filter."
+                                OS_REPORT_NL "Topic = \"%s\"",
+                                v_topicName(t));
+                    assert(FALSE);
+                }
+            }
+        } else {
+            OS_REPORT_1(OS_ERROR,
+                        "kernel::v_filter::v_filterNew",0,
+                        "Failed to resolve type for Topic \"%s\".",
+                        v_topicName(t));
         }
     } else {
         OS_REPORT(OS_ERROR,
-                  "v_filterNew",0,
-                  "Failed to allocate a filter.");
+                  "kernel::v_filter::v_filterNew",0,
+                  "Pre condition failed: Topic is not specified (NULL).");
     }
     return filter;
 }

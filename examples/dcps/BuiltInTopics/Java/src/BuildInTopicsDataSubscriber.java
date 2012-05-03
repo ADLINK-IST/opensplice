@@ -8,7 +8,6 @@ import DDS.*;
  * This examples application monitors the number of nodes that participate in a
  * DDS domain.
  * 
- * @author Niels Kortstee
  */
 public class BuildInTopicsDataSubscriber {
 	public static void main(String[] args) {

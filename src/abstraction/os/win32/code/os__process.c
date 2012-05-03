@@ -64,6 +64,18 @@ CtrlHandler(
     DWORD fdwCtrlType)
 {
     os_int32 terminate;
+
+    switch (fdwCtrlType) {
+    case CTRL_LOGOFF_EVENT:
+        /* It is not correct to ever exit when this event is received. see dds#2732
+        From MSDN re CTRL_LOGOFF_EVENT:
+        "A signal that the system sends to all console processes when a user is
+        logging off. This signal does not indicate which user is logging off, so
+        no assumptions can be made. Note that this signal is received only by
+        services. Interactive applications are terminated at logoff, so they are
+        not present when the system sends this signal." */
+        return TRUE;
+    }
 /*
     BOOL result;
 
@@ -792,46 +804,16 @@ os_procFigureIdentity(
 
     process_name = os_getenv("SPLICE_PROCNAME");
 
-    if (process_name != NULL) {
-        size = snprintf(procIdentity, procIdentitySize, "%s <%d>",
-                process_name, os_procIdToInteger(os_procIdSelf()));
+    if (process_name == NULL) {
+        process_name = GetCommandLine();
+    }
+
+    if(process_name){
+        size = snprintf(procIdentity, procIdentitySize, "PID <%d> %s",
+                    os_procIdToInteger(os_procIdSelf()), process_name);
     } else {
-        char *tmp;
-        DWORD nSize;
-        DWORD allocated = 0;
-
-        do {
-            /* While procIdentitySize could be used (since the caller cannot
-             * store more data anyway, it is not used. This way the amount that
-             * needs to be allocated to get the full-name can be determined. */
-            allocated++;
-            tmp = (char*) os_realloc(process_name, allocated * _OS_PROC_PROCES_NAME_LEN);
-            if(tmp){
-                process_name = tmp;
-
-                /* First parameter NULL retrieves module-name of executable */
-                nSize = GetModuleFileNameA (NULL, process_name, allocated * _OS_PROC_PROCES_NAME_LEN);
-            } else {
-                /* Memory-claim denied, revert to default */
-                size = 0;
-                if(process_name){
-                    os_free(process_name);
-                    process_name = NULL; /* Will break loop */
-                }
-            }
-
-        /* process_name will only be guaranteed to be NULL-terminated if nSize <
-         * (allocated * _OS_PROC_PROCES_NAME_LEN), so continue until that's true */
-        } while (process_name && nSize >= (allocated * _OS_PROC_PROCES_NAME_LEN));
-
-        if(process_name){
-            size = snprintf(procIdentity, procIdentitySize, "%s <%d>", process_name,
-                    os_procIdToInteger(os_procIdSelf()));
-            os_free(process_name);
-        } else {
-            /* Resolving failed, reverting to default */
-            size = 0;
-        }
+        /* Resolving failed, reverting to default */
+        size = 0;
     }
 
     if(size == 0){

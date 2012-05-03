@@ -222,8 +222,7 @@ else
             #Durability not run automated at present as it needs work done on synchronization
             #EXAMPLES=$EXAMPLES" dcps/Durability/C/Standalone/Posix "
             EXAMPLES=$EXAMPLES" dcps/HelloWorld/C/Standalone/Posix "
-            # Lifecycle example excluded as it needs further work
-            #EXAMPLES=$EXAMPLES" dcps/Lifecycle/C/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/C/Standalone/Posix "
             EXAMPLES=$EXAMPLES" dcps/Listener/C/Standalone/Posix "    
             EXAMPLES=$EXAMPLES" dcps/Ownership/C/Standalone/Posix "
             EXAMPLES=$EXAMPLES" dcps/QueryCondition/C/Standalone/Posix "
@@ -236,8 +235,7 @@ else
             #Durability not run automated at present as it needs work done on synchronization
             #EXAMPLES=$EXAMPLES" dcps/Durability/C++/Standalone/Posix "
             EXAMPLES=$EXAMPLES" dcps/HelloWorld/C++/Standalone/Posix "
-            # Lifecycle example excluded as it needs further work
-            #EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Standalone/Posix "
             EXAMPLES=$EXAMPLES" dcps/Listener/C++/Standalone/Posix "    
             EXAMPLES=$EXAMPLES" dcps/Ownership/C++/Standalone/Posix "
             EXAMPLES=$EXAMPLES" dcps/QueryCondition/C++/Standalone/Posix "
@@ -249,8 +247,7 @@ else
             #Durability not run automated at present as it needs work done on synchronization
             #EXAMPLES=$EXAMPLES" dcps/Durability/C++/Corba/OpenFusion/Posix "
             EXAMPLES=$EXAMPLES" dcps/HelloWorld/C++/Corba/OpenFusion/Posix "
-            # Lifecycle example excluded as it needs further work
-            #EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Corba/OpenFusion/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Corba/OpenFusion/Posix "
             EXAMPLES=$EXAMPLES" dcps/Listener/C++/Corba/OpenFusion/Posix "    
             EXAMPLES=$EXAMPLES" dcps/Ownership/C++/Corba/OpenFusion/Posix "
             EXAMPLES=$EXAMPLES" dcps/QueryCondition/C++/Corba/OpenFusion/Posix "
@@ -265,8 +262,7 @@ else
             #Durability not run automated at present as it needs work done on synchronization
             #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Standalone/Posix "
             EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Standalone/Posix "
-            # Lifecycle example excluded as it needs further work
-            #EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Standalone/Posix "
             EXAMPLES=$EXAMPLES" dcps/Listener/Java/Standalone/Posix "
             EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Standalone/Posix "
             EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Standalone/Posix "
@@ -278,8 +274,7 @@ else
             #Durability not run automated at present as it needs work done on synchronization
             #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Corba/JacORB/Posix "
             EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Corba/JacORB/Posix "
-            # Lifecycle example excluded as it needs further work
-            #EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Corba/JacORB/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Corba/JacORB/Posix "
             EXAMPLES=$EXAMPLES" dcps/Listener/Java/Corba/JacORB/Posix "
             EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Corba/JacORB/Posix "
             EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Corba/JacORB/Posix "
@@ -298,8 +293,7 @@ else
             #Durability not run automated at present as it needs work done on synchronization
             #EXAMPLES=$EXAMPLES" dcps/Durability/C/Standalone/VS2005 "
             EXAMPLES=$EXAMPLES" dcps/HelloWorld/C/Standalone/VS2005 "
-            # Lifecycle example excluded as it needs further work
-            #EXAMPLES=$EXAMPLES" dcps/Lifecycle/C/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/C/Standalone/VS2005 "
             EXAMPLES=$EXAMPLES" dcps/Listener/C/Standalone/VS2005 "    
             EXAMPLES=$EXAMPLES" dcps/Ownership/C/Standalone/VS2005 "
             EXAMPLES=$EXAMPLES" dcps/QueryCondition/C/Standalone/VS2005 "
@@ -311,8 +305,7 @@ else
             #Durability not run automated at present as it needs work done on synchronization
             #EXAMPLES=$EXAMPLES" dcps/Durability/C++/Standalone/VS2005 "
             EXAMPLES=$EXAMPLES" dcps/HelloWorld/C++/Standalone/VS2005 "
-            # Lifecycle example excluded as it needs further work
-            #EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Standalone/VS2005 "
             EXAMPLES=$EXAMPLES" dcps/Listener/C++/Standalone/VS2005 "    
             EXAMPLES=$EXAMPLES" dcps/Ownership/C++/Standalone/VS2005 "
             EXAMPLES=$EXAMPLES" dcps/QueryCondition/C++/Standalone/VS2005 "
@@ -340,8 +333,7 @@ else
             #Durability not run automated at present as it needs work done on synchronization
             #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Standalone/Windows "
             EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Standalone/Windows "
-            # Lifecycle example excluded as it needs further work
-            #EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Standalone/Windows "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Standalone/Windows "
             EXAMPLES=$EXAMPLES" dcps/Listener/Java/Standalone/Windows "
             EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Standalone/Windows "
             EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Standalone/Windows "
@@ -353,8 +345,7 @@ else
             #Durability not run automated at present as it needs work done on synchronization
             #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Corba/JacORB/Windows "
             EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Corba/JacORB/Windows "
-            # Lifecycle example excluded as it needs further work
-            #EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Corba/JacORB/Windows "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Corba/JacORB/Windows "
             EXAMPLES=$EXAMPLES" dcps/Listener/Java/Corba/JacORB/Windows "
             EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Corba/JacORB/Windows "
             EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Corba/JacORB/Windows "
@@ -405,8 +396,7 @@ else
     #Durability not run automated at present as it needs work done on synchronization
     #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/C/Standalone/VS2005 "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/C/Standalone/VS2005 "
-    # Lifecycle example excluded as it needs further work
-    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/C/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/C/Standalone/VS2005 "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/C/Standalone/VS2005 "    
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/C/Standalone/VS2005 "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/C/Standalone/VS2005 "
@@ -418,8 +408,7 @@ else
     #Durability not run automated at present as it needs work done on synchronization
     #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/C++/Standalone/VS2005 "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/C++/Standalone/VS2005 "
-    # Lifecycle example excluded as it needs further work
-    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/C++/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/C++/Standalone/VS2005 "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/C++/Standalone/VS2005 "    
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/C++/Standalone/VS2005 "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/C++/Standalone/VS2005 "
@@ -434,8 +423,7 @@ else
     #Durability not run automated at present as it needs work done on synchronization
     #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/Java/Standalone/Posix "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/Java/Standalone/Posix "
-    # Lifecycle example excluded as it needs further work
-    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Standalone/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Standalone/Posix "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/Java/Standalone/Posix "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/Java/Standalone/Posix "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/Java/Standalone/Posix "
@@ -450,8 +438,7 @@ else
     #Durability not run automated at present as it needs work done on synchronization
     #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/Java/Standalone/Windows "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/Java/Standalone/Windows "
-    # Lifecycle example excluded as it needs further work
-    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Standalone/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Standalone/Windows "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/Java/Standalone/Windows "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/Java/Standalone/Windows "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/Java/Standalone/Windows "
@@ -467,8 +454,7 @@ else
     #Durability not run automated at present as it needs work done on synchronization
     #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/C++/Corba/OpenFusion/VS2005 "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/C++/Corba/OpenFusion/VS2005 "
-    # Lifecycle example excluded as it needs further work
-    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/C++/Corba/OpenFusion/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/C++/Corba/OpenFusion/VS2005 "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/C++/Corba/OpenFusion/VS2005 "    
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/C++/Corba/OpenFusion/VS2005 "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/C++/Corba/OpenFusion/VS2005 "
@@ -485,8 +471,7 @@ else
     #Durability not run automated at present as it needs work done on synchronization
     #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/Java/Corba/JacORB/Posix "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/Java/Corba/JacORB/Posix "
-    # Lifecycle example excluded as it needs further work
-    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Corba/JacORB/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Corba/JacORB/Posix "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/Java/Corba/JacORB/Posix "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/Java/Corba/JacORB/Posix "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/Java/Corba/JacORB/Posix "
@@ -498,8 +483,7 @@ else
     #Durability not run automated at present as it needs work done on synchronization
     #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/Java/Corba/JacORB/Windows "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/Java/Corba/JacORB/Windows "
-    # Lifecycle example excluded as it needs further work
-    # SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Corba/JacORB/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Corba/JacORB/Windows "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/Java/Corba/JacORB/Windows "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/Java/Corba/JacORB/Windows "
     SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/Java/Corba/JacORB/Windows "

@@ -15,69 +15,45 @@ namespace LifecycleDataPublisher
         static void usage()
         {
             Console.WriteLine("*** ERROR ***");
-            Console.WriteLine("*** Usage: LifeCycleDataPublisher <autodispose_flag> [-action <action_number>]");
+            Console.WriteLine("*** Usage: LifeCycleDataPublisher <autodispose_flag> <writer_action>");
             Console.WriteLine("***        autodispose_flag = false | true");
-            Console.WriteLine("***        -action_number   = 1 | 2 | 3 | 4");
-            
+            Console.WriteLine("***        writer_action = dispose | unregister | stoppub");
+
             Environment.Exit(-1);
         }
 
         static void Main(string[] args)
         {
-            char choice = ' ';
-            bool interactive = true;
             bool autodispose_flag = false;
+            String writer_action;
+            ReturnCode status = ReturnCode.Error;
 
-            if (args.Length < 1)
-                usage();
-            autodispose_flag = Boolean.Parse(args[0]);
-
-            if (args.Length > 1)
+            if (args.Length < 2)
             {
-                if (!(args[1].Equals("-action")))
-                    usage();
-                if (args.Length < 2)
-                    usage();
-                choice = Char.Parse(args[2]);
-                if ((!choice.Equals('1')) && (!choice.Equals('2')) && (!choice.Equals('3')) && (!choice.Equals('4')))
-                    usage();
-                interactive = false;
-                Console.WriteLine("Choice : {0}", choice);
+                usage();
             }
 
-            // DDS Helper class instances for WriterState & Msg Topic
-            DDSEntityManager mgrWs = new DDSEntityManager();
-            DDSEntityManager mgr = new DDSEntityManager();            
+            if ((!args[0].Equals("true")) &&
+                (!args[0].Equals("false")) &&
+                (!args[1].Equals("dispose")) &&
+                (!args[1].Equals("unregister")) &&
+                (!args[1].Equals("stoppub")))
+            {
+                usage();
+            }
+
+            autodispose_flag = Boolean.Parse(args[0]);
+            writer_action = args[1];
+
+            // DDS Helper class instance for Msg Topic
+            DDSEntityManager mgr = new DDSEntityManager("Lifecycle");
 
             // Create domain participant
-            String partitionName = "Lifecycle";
-            mgrWs.createParticipant(partitionName);
+            String partitionName = "Lifecycle example";
+            mgr.createParticipant(partitionName);            
 
-            // Create Type
-            WriterStateTypeSupport wst = new WriterStateTypeSupport();
-            mgrWs.registerType(wst);
-
-            // Create Topic
-            String wsTopicName = "WriterState_Msg";
-            mgrWs.createTopic(wsTopicName, "Lifecycle");
-
-            // Create Publisher
-            mgrWs.createPublisher();
-
-            // Create DataWriter
-            mgrWs.createWriter();
-
-            // Publish Samples
-            IDataWriter dws_writer = mgrWs.getWriter();
-            WriterStateDataWriter WriterStateWriter = dws_writer as WriterStateDataWriter;
-
-            //-------------------Msg Topic-------------------------//
-            
             // Set AutoDispose Flag
             mgr.setAutoDispose(autodispose_flag);
-
-            // Create Participant
-            mgr.createParticipant(partitionName);
 
             // Create type
             MsgTypeSupport mt = new MsgTypeSupport();
@@ -85,126 +61,103 @@ namespace LifecycleDataPublisher
 
             // Create Topic
             String topicName = "Lifecycle_Msg";
-            mgr.createTopic(topicName, "Lifecycle");
+            mgr.createTopic(topicName);
 
             // Create Publisher
             mgr.createPublisher();
 
-            // Create DataWriter
+            // Create DataWriter(s)
             mgr.createWriter();
 
             // Publish Samples
             IDataWriter dwriter = mgr.getWriter();
             MsgDataWriter LifecycleWriter = dwriter as MsgDataWriter;
+            IDataWriter dwriter_stopper = mgr.getWriterStopper();
+            MsgDataWriter LifecycleWriter_stopper = dwriter_stopper as MsgDataWriter;
 
-            // Send MsgDataWriter state
-            WriterState wsInstance = new WriterState();
-            wsInstance.state = "SENDING SAMPLE";
-            Console.WriteLine("===[Publisher] : ");
-            Console.WriteLine("   Writer state: \" {0}", wsInstance.state, "\"");
-            ReturnCode status = WriterStateWriter.Write(wsInstance, InstanceHandle.Nil);
-            ErrorHandler.checkStatus(status, "WriterStateDataWriter.Write");
+            if (writer_action.Equals("dispose"))
+            {
+                // Send Msg (topic to monitor)
+                Msg msgInstance = new Msg();
+                msgInstance.userID = 1;
+                msgInstance.message = "Lifecycle_1";
+                msgInstance.writerStates = "SAMPLE_SENT -> INSTANCE_DISPOSED -> DATAWRITER_DELETED";
+                Console.WriteLine("=== [Publisher]  :");
+                Console.WriteLine("    userID   : {0}", msgInstance.userID);
+                Console.WriteLine("    Message  : \"{0}\"", msgInstance.message);
+                Console.WriteLine("    writerStates  : \"{0}\"", msgInstance.writerStates);
+                status = LifecycleWriter.Write(msgInstance, InstanceHandle.Nil);
+                ErrorHandler.checkStatus(status, "MsDataWriter.Write");
+                Thread.Sleep(500);
+                Console.WriteLine("=== [Publisher]  : SAMPLE_SENT");
 
-            // Send Msg (topic to monitor)
-            Msg msgInstance = new Msg();
-            msgInstance.userID = 1;
-            msgInstance.message = "Hello";
+                // Dispose instance
+                status = LifecycleWriter.Dispose(msgInstance, InstanceHandle.Nil);
+                ErrorHandler.checkStatus(status, "MsDataWriter.Dispose");
+                Console.WriteLine("=== [Publisher]  : INSTANCE_DISPOSED");
+            }
+            else if (writer_action.Equals("unregister"))
+            {
+                // Send Msg (topic to monitor)
+                Msg msgInstance = new Msg();
+                msgInstance.userID = 2;
+                msgInstance.message = "Lifecycle_2";
+                msgInstance.writerStates = "SAMPLE_SENT -> INSTANCE_UNREGISTERED -> DATAWRITER_DELETED";
+                Console.WriteLine("=== [Publisher]  :");
+                Console.WriteLine("    userID   : {0}", msgInstance.userID);
+                Console.WriteLine("    Message  : \"{0}\"", msgInstance.message);
+                Console.WriteLine("    writerStates  : \"{0}\"", msgInstance.writerStates);
+                status = LifecycleWriter.Write(msgInstance, InstanceHandle.Nil);
+                ErrorHandler.checkStatus(status, "MsDataWriter.Write");
+                Thread.Sleep(500);
+                Console.WriteLine("=== [Publisher]  : SAMPLE_SENT");
+
+                // Unregister instance : the auto_dispose_unregistered_instances flag
+                // is currently ignored and the instance is never disposed automatically
+                status = LifecycleWriter.UnregisterInstance(msgInstance, InstanceHandle.Nil);
+                ErrorHandler.checkStatus(status, "MsDataWriter.UnregisterInstance");
+                Console.WriteLine("=== [Publisher]  : INSTANCE_UNREGISTERED");
+            }
+            else if (writer_action.Equals("stoppub"))
+            {
+                Msg msgInstance = new Msg();
+                msgInstance.userID = 3;
+                msgInstance.message = "Lifecycle_3";
+                msgInstance.writerStates = "SAMPLE_SENT -> DATAWRITER_DELETED";
+                Console.WriteLine("=== [Publisher]  :");
+                Console.WriteLine("    userID   : {0}", msgInstance.userID);
+                Console.WriteLine("    Message  : \"{0}\"", msgInstance.message);
+                Console.WriteLine("    writerStates  : \"{0}\"", msgInstance.writerStates);
+                status = LifecycleWriter.Write(msgInstance, InstanceHandle.Nil);
+                ErrorHandler.checkStatus(status, "MsDataWriter.Write");
+                Thread.Sleep(500);
+                Console.WriteLine("=== [Publisher]  : SAMPLE_SENT");
+            }
+            
+            // Let the subscriber treat the previous writer state !!!
+            Console.WriteLine("=== [Publisher] waiting 500ms to let the subscriber treat the previous write state ...");
+            Thread.Sleep(500);
+
+            // Remove the DataWriter
+            mgr.deleteWriter(LifecycleWriter);
+            Thread.Sleep(500);
+            Console.WriteLine("=== [Publisher]  : DATAWRITER_DELETED");
+            
+            // Stop the subscriber
+            Msg stopMsg = new Msg();
+            stopMsg.userID = 4;
+            stopMsg.message = "Lifecycle_4";
+            stopMsg.writerStates = "STOPPING_SUBSCRIBER";
             Console.WriteLine("=== [Publisher]  :");
-            Console.WriteLine("    userID   : {0}", msgInstance.userID);
-            Console.WriteLine("    Message  : \" {0}", msgInstance.message);
-            status = LifecycleWriter.Write(msgInstance, InstanceHandle.Nil);
+            Console.WriteLine("    userID   : {0}", stopMsg.userID);
+            Console.WriteLine("    Message  : \"{0}\"", stopMsg.message);
+            Console.WriteLine("    writerStates  : \"{0}\"", stopMsg.writerStates);
+            status = LifecycleWriter_stopper.Write(stopMsg, InstanceHandle.Nil);
             ErrorHandler.checkStatus(status, "MsDataWriter.Write");
+            Thread.Sleep(500);
 
-            Thread.Sleep(2000);
-
-            // Send MsgDataWriter state
-            wsInstance.state = "SAMPLE SENT";
-            Console.WriteLine("===[Publisher] : ");
-            Console.WriteLine("   Writer state: \" {0}", wsInstance.state, "\"");
-            status = WriterStateWriter.Write(wsInstance, InstanceHandle.Nil);
-            ErrorHandler.checkStatus(status, "WriterStateDataWriter.Write");
-
-            if (interactive)
-            {
-                while ((choice != '1') && (choice != '2') && (choice != '3') && (choice != '4'))
-                {
-                    Console.WriteLine("=== Choose a character to continue : ");
-                    Console.WriteLine("    1  Dispose the instance");
-                    Console.WriteLine("    2  Unregister the instance");
-                    Console.WriteLine("    3  Stop the Publisher");
-                    Console.WriteLine("    4  Stop the Subscriber");
-                    choice = Char.Parse(Console.In.ReadLine());
-                }
-            }
-
-            switch (choice)
-            {
-                case '1' :
-                    {
-                        // Dispose instance
-                        status = LifecycleWriter.Dispose(msgInstance, InstanceHandle.Nil);
-                        ErrorHandler.checkStatus(status, "MsDataWriter.Dispose");
-                        // Send MsgDataWriter state
-                        wsInstance.state = "INSTANCE DISPOSED";
-                        Console.WriteLine("===[Publisher] : ");
-                        Console.WriteLine("   Writer state: \" {0}", wsInstance.state, "\"");
-                        status = WriterStateWriter.Write(wsInstance, InstanceHandle.Nil);
-                        ErrorHandler.checkStatus(status, "WriterStateDataWriter.Write");
-
-                        if (interactive)
-                        {
-                            Console.Write("\n=== enter a character to continue : ");
-                            choice = Char.Parse(Console.In.ReadLine());
-                        }
-                        break;
-                    }
-                case '2':
-                    {
-                        // Unregister instance : the autoDispose_flag is currently
-                        // ignored and the instance is never disposed automatically
-                        status = LifecycleWriter.UnregisterInstance(msgInstance, InstanceHandle.Nil);
-                        ErrorHandler.checkStatus(status, "MsgDataWriter.UnregisterInstance");
-
-                        // send MsgDataWriter state
-                        wsInstance.state = "INSTANCE UNREGISTERED";
-                        Console.WriteLine("===[Publisher] : ");
-                        Console.WriteLine("   Writer state: \" {0}", wsInstance.state, "\"");
-                        status = WriterStateWriter.Write(wsInstance, InstanceHandle.Nil);
-                        ErrorHandler.checkStatus(status, "WriterStateDataWriter.Write");
-
-                        if (interactive)
-                        {
-                            Console.Write("\n=== enter a character to continue : ");
-                            choice = Char.Parse(Console.In.ReadLine());
-                        }
-                        break;
-                    }
-                case '3':
-                    {
-                        break;
-                    }
-                case '4':
-                    {
-                        // send MsgDataWriter state
-                        wsInstance.state = "STOPPING SUBSCRIBER";
-                        Console.WriteLine("===[Publisher] : ");
-                        Console.WriteLine("   Writer state: \" {0}", wsInstance.state, "\"");
-                        status = WriterStateWriter.Write(wsInstance, InstanceHandle.Nil);
-                        ErrorHandler.checkStatus(status, "WriterStateDataWriter.Write");
-                        break;
-                    }
-            }
-
-            // Clean-up entities for Msg topic
-            // Remove the DataWriters
-            mgr.getPublisher().DeleteDataWriter(LifecycleWriter);
-
-            // send MsgDataWriter state
-            wsInstance.state = "DATAWRITER DELETED";
-            Console.WriteLine("===[Publisher] : ");
-            Console.WriteLine("   Writer state: \" {0}", wsInstance.state, "\"");
-            status = WriterStateWriter.Write(wsInstance, InstanceHandle.Nil);
-            ErrorHandler.checkStatus(status, "WriterStateDataWriter.Write");
+            // Remove the DataWriter stopper
+            mgr.deleteWriter(LifecycleWriter_stopper);
 
             // Remove the Publisher
             mgr.deletePublisher();
@@ -212,25 +165,8 @@ namespace LifecycleDataPublisher
             // Remove the Topic
             mgr.deleteTopic();
 
-            // Remove the Participant
-            mgr.deleteParticipant();
-
-            // Clean-up entities fpr WriterState topic
-            // Dispose the instance
-            status = WriterStateWriter.Dispose(wsInstance, InstanceHandle.Nil);
-            ErrorHandler.checkStatus(status, "WriterStateWriter.Dispose");
-
-            // Remove the DataWriter
-            mgrWs.getPublisher().DeleteDataWriter(WriterStateWriter);
-
-            // Remove the Publisher
-            mgrWs.deletePublisher();
-
-            // Remove the Topic
-            mgrWs.deleteTopic();
-
-            // Remove Participant
-            mgrWs.deleteParticipant();
+            // Remove the participant
+            mgr.deleteParticipant(); 
         }
     }
 }

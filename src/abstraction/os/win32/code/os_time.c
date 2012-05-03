@@ -28,13 +28,16 @@
 #include "os__time.h"
 #include "os__service.h"
 #include "os_thread.h"
+#include "os_report.h"
 #include "os_stdlib.h"
+#include "os_heap.h"
 #include "../common/code/os_time.c"
 
 static os_time (*_ospl_clockGet)(void) = NULL;
 static os_time _ospl_time = {0, 0};
 static LONGLONG _ospl_freq = 0; /* frequency of high performance counter */
 static LONGLONG _ospl_time_offset = 0;
+static int _ospl_time_synched = 0;
 static CRITICAL_SECTION _ospl_ctimeLock;
 
 /* default millisecond timer */
@@ -86,60 +89,100 @@ _hrTimeGet(void)
 }
 
 void
-os_timeModuleInit(void)
+os_timeModuleReinit(
+    const os_char* domainName)
 {
-    LARGE_INTEGER frequency;
-    const char *pipename;
+    os_char* pipename;
     struct os_servicemsg request;
     struct os_servicemsg reply;
     BOOL result;
     DWORD nRead;
     DWORD lastError;
-    LARGE_INTEGER hpt;
-    struct __timeb64 timebuffer;
+
+    if(!_ospl_time_synched)
+    {
+        pipename = os_constructPipeName(domainName);
+
+        if(pipename){
+            request.kind = OS_SRVMSG_GET_TIME;
+            reply.result = os_resultFail;
+            reply.kind = OS_SRVMSG_UNDEFINED;
+
+            do{
+                result = CallNamedPipe(
+                            TEXT(pipename),
+                            &request, sizeof(request),
+                            &reply, sizeof(reply),
+                            &nRead,
+                            NMPWAIT_WAIT_FOREVER);
+
+                if(!result)
+                {
+                    lastError = GetLastError();
+                }
+                else
+                {
+                    lastError = ERROR_SUCCESS;
+                }
+            }
+            while((!result) && (lastError == ERROR_PIPE_BUSY));
+
+            if (result && (nRead == sizeof(reply)))
+            {
+                if ((reply.result == os_resultSuccess) &&
+                    (reply.kind == OS_SRVMSG_GET_TIME))
+                {
+                    _ospl_time = reply._u.time.start_time;
+                    _ospl_time_offset = reply._u.time.time_offset;
+                    _ospl_time_synched = 1;
+
+                    OS_REPORT_4(OS_INFO, "os_timeModuleReinit", 0,
+                            "Synched time with domain '%s'. time=%d,%d, offset=%lld",
+                            domainName, _ospl_time.tv_sec, _ospl_time.tv_nsec,
+                            _ospl_time_offset);
+                }
+            } else {
+                OS_REPORT_2(OS_ERROR, "os_timeModuleReinit", 0,
+                        "Time synchronisation with domain '%s' failed (reason: %s)",
+                        domainName, lastError);
+            }
+            os_free(pipename);
+        }
+    }
+    return;
+}
+
+void
+os_timeModuleInit(void)
+{
+    LARGE_INTEGER frequency, qpc;
+    struct __timeb64 timebuf;
 
     InitializeCriticalSection(&_ospl_ctimeLock);
-    if (QueryPerformanceFrequency(&frequency) != 0) {
-		_ospl_freq = frequency.QuadPart;
+
+    if (QueryPerformanceFrequency(&frequency) != 0)
+    {
+        _ospl_freq = frequency.QuadPart;
         _ospl_clockGet = _hrTimeGet;
-        /* now get the time from the server */
-        pipename = os_servicePipeName();
-        request.kind = OS_SRVMSG_GET_TIME;
-        reply.result = os_resultFail;
-        reply.kind = OS_SRVMSG_UNDEFINED;
 
-        do{
-            result = CallNamedPipe(
-                         TEXT(pipename),
-                         &request, sizeof(request),
-                         &reply, sizeof(reply),
-                         &nRead,
-                         NMPWAIT_WAIT_FOREVER);
-            if(!result){
-                lastError = GetLastError();
-            } else {
-                lastError = ERROR_SUCCESS;
-            }
-        } while((!result) && (lastError == ERROR_PIPE_BUSY));
+        QueryPerformanceCounter(&qpc);
+        _ftime64_s(&timebuf);
 
-        if (!result || (nRead != sizeof(reply))) {
-            _ftime64(&timebuffer);
-            QueryPerformanceCounter(&hpt);
-            _ospl_time_offset = hpt.QuadPart;
-            _ospl_time.tv_sec = (os_timeSec)timebuffer.time;
-            _ospl_time.tv_nsec = timebuffer.millitm * 1000000;
-        } else {
-            if ((reply.result == os_resultSuccess) &&
-                (reply.kind == OS_SRVMSG_GET_TIME)) {
-                _ospl_time = reply._u.time.start_time;
-                _ospl_time_offset = reply._u.time.time_offset;
-            }
-        }
-    } else { /* no high performance timer available!
-                so we fall back to a millisecond clock.
-              */
-        _ospl_clockGet = _msTimeGet;
+        _ospl_time.tv_sec = (os_timeSec)timebuf.time;
+        _ospl_time.tv_nsec = timebuf.millitm * 1000000;
+        _ospl_time_offset = qpc.QuadPart;
     }
+    else
+    {
+        /* no high performance timer available!
+         * so we fall back to a millisecond clock.
+         */
+        _ospl_clockGet = _msTimeGet;
+        OS_REPORT_1(OS_WARNING, "os_timeModuleInit", 0,
+                "No high-resolution timer found (reason: %s), "\
+                "switching to millisecond resolution.", GetLastError());
+    }
+
 }
 
 void

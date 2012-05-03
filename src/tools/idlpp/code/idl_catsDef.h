@@ -15,6 +15,7 @@
 #include "c_metabase.h"
 #include "c_iterator.h"
 
+#include "idl_program.h"
 #include "idl_scope.h"
 
 C_CLASS(idl_catsDef);
@@ -51,6 +52,12 @@ void idl_catsDefAdd (
     const char *typeName,
     const char *catsList);
 
+c_bool
+idl_isCatsDefFor(
+    c_metaObject scope,
+    c_char *typeName,
+    c_char *key);
+
 void idl_catsDefDefSet (
     idl_catsDef catsDef);
 
@@ -59,11 +66,10 @@ idl_catsDefDefGet (
     void);
 
 os_boolean
-idl_catsListItemIsDefined (
-    idl_catsDef catsDef,
+idl_catsDef_isCatsDefined(
     idl_scope scope,
-    const char* typeName,
-    const char* itemName);
+    const char *name,
+    idl_typeSpec typeSpec);
 
 void
 idl_catsDefRestoreAll(

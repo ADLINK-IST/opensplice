@@ -16,7 +16,7 @@ echo "=== Launching Lifecycle "
 
 echo "=== (step 1)" 
 sh ./startPublisher.sh  false dispose > pubResult_1.txt&
-sh ./startSubscriber.sh "./subResult_1.txt" 
+sh ./startSubscriber.sh > subResult_1.txt
 $VG_OSPL_START ospl stop
 sleep 2
 

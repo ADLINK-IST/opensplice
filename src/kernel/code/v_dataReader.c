@@ -61,6 +61,30 @@
 #define v_dataReaderNotEmptyInstanceSet(_this) \
         (v_dataReader(_this)->index->notEmptyList)
 
+static const char* v_dataReaderResultStr[] = {
+    "INSERTED",
+    "OUTDATED",
+    "NOT_OWNER",
+    "MAX_SAMPLES",
+    "MAX_INSTANCES",
+    "INSTANCE_FULL",
+    "SAMPLE_LOST",
+    "DUPLICATE_SAMPLE",
+    "OUT_OF_MEMORY",
+    "INTERNAL_ERROR",
+    "UNDETERMINED",
+    "COUNT"};
+
+const char*
+v_dataReaderResultString(
+    v_dataReaderResult result)
+{
+    assert (result <= V_DATAREADER_COUNT);
+
+    return v_dataReaderResultStr[result];
+}
+
+
 static v_dataReaderInstance
 dataReaderLookupInstanceUnlocked(
     v_dataReader _this,
@@ -79,27 +103,36 @@ dataReaderLookupInstanceUnlocked(
 
     instance = v_dataReaderInstanceNew(_this, keyTemplate);
 
-    if (v_dataReaderQos(_this)->userKey.enable) {
-        /* In case of user defined keys the NotEmpty instance set contains all
-         * instances by definition and therefore the objects set that normally
-         * contains all instances is not used.
-         * So in that case the lookup instance must act on the Not Empty
-         * instance set.
-         */
-        found = c_find(v_dataReaderNotEmptyInstanceSet(_this),instance);
+    if (instance == NULL) {
+        OS_REPORT_2(OS_ERROR,
+                    "kernel::v_dataReader::dataReaderLookupInstanceUnlocked", 0,
+                    "Operation v_dataReaderInstanceNew(_this=0x%x, keyTemplate=0x%x) failed.",
+                     _this, keyTemplate);
+        found = NULL;
+        assert(FALSE);
     } else {
-        found = c_find(v_dataReaderAllInstanceSet(_this), instance);
-    }
+        if (v_dataReaderQos(_this)->userKey.enable) {
+            /* In case of user defined keys the NotEmpty instance set contains all
+             * instances by definition and therefore the objects set that normally
+             * contains all instances is not used.
+             * So in that case the lookup instance must act on the Not Empty
+             * instance set.
+             */
+            found = c_find(v_dataReaderNotEmptyInstanceSet(_this),instance);
+        } else {
+            found = c_find(v_dataReaderAllInstanceSet(_this), instance);
+        }
 
-    if (found != NULL) {
-        if (v_dataReaderInstanceEmpty(found)) {
-            if (v_stateTest(found->instanceState, L_NOWRITERS)) {
-                c_free(found);
-                found = NULL;
+        if (found != NULL) {
+            if (v_dataReaderInstanceEmpty(found)) {
+                if (v_stateTest(found->instanceState, L_NOWRITERS)) {
+                    c_free(found);
+                    found = NULL;
+                }
             }
         }
+        c_free(instance);
     }
-    c_free(instance);
 
     return found;
 }
@@ -118,14 +151,27 @@ dataReaderEntrySubscribe(
     assert(C_TYPECHECK(p,v_partition));
 
     kernel = v_objectKernel(e);
-    g = v_groupSetCreate(kernel->groupSet,p,e->topic);
-
-    if(v_groupPartitionAccessMode(g) == V_ACCESS_MODE_READ_WRITE ||
-       v_groupPartitionAccessMode(g) == V_ACCESS_MODE_READ)
-    {
-        v_groupAddEntry(g,v_entry(e));
+    if (kernel == NULL) {
+        OS_REPORT_1(OS_ERROR,
+                    "kernel::v_dataReader::dataReaderEntrySubscribe", 0,
+                    "Operation v_objectKernel(entity=0x%x) failed.",
+                     e);
+    } else {
+        g = v_groupSetCreate(kernel->groupSet,p,e->topic);
+        if (g == NULL) {
+            OS_REPORT_3(OS_ERROR,
+                        "kernel::v_dataReader::dataReaderEntrySubscribe", 0,
+                        "Operation v_groupSetCreate(groupSet=0x%x, partition=0x%x, topic=0x%x) failed.",
+                         kernel->groupSet, p, e->topic);
+        } else {
+            if(v_groupPartitionAccessMode(g) == V_ACCESS_MODE_READ_WRITE ||
+               v_groupPartitionAccessMode(g) == V_ACCESS_MODE_READ)
+            {
+                v_groupAddEntry(g,v_entry(e));
+            }
+            c_free(g);
+        }
     }
-    c_free(g);
 }
 
 static c_bool
@@ -201,12 +247,26 @@ onNewIndex(
     filter = v_filterNew(topic, a->_where, *a->params);
     entry = v_dataReaderEntryNew(a->dataReader, topic, filter);
     c_free(filter);
-    found = v_dataReaderAddEntry(a->dataReader,entry);
-    assert(entry == found);
-    c_free(found);
-    entry->index = c_keep(index);
-    index->entry = entry;
-    c_free(entry);
+    if (entry != NULL) {
+        found = v_dataReaderAddEntry(a->dataReader,entry);
+        if (found == entry) {
+            entry->index = c_keep(index);
+            index->entry = entry;
+        } else {
+            OS_REPORT_4(OS_ERROR,
+                        "kernel::v_dataReader::onNewIndex", 0,
+                        "Operation v_dataReaderAddEntry(dataReader=0x%x, entry=0x%x) failed"
+                        OS_REPORT_NL "Operation returned 0x%x but expected 0x%x",
+                        a->dataReader, entry, found, entry);
+        }
+        c_free(entry);
+        c_free(found);
+    } else {
+        OS_REPORT_3(OS_ERROR,
+                    "kernel::v_dataReader::onNewIndex", 0,
+                    "Operation v_dataReaderEntryNew(dataReader=0x%x, topic=0x%x, filter=0x%x) failed.",
+                     a->dataReader, topic, filter);
+    }
 }
 
 static c_bool
@@ -512,19 +572,26 @@ v_dataReaderNew (
     c_long i;
     v_topic topic;
 
+    if (name == NULL) {
+        name = "<No Name>";
+    }
     assert(C_TYPECHECK(subscriber,v_subscriber));
     kernel = v_objectKernel(subscriber);
     if (!q_isFnc(OQLexpr,Q_EXPR_PROGRAM)) {
-        OS_REPORT(OS_ERROR,
-                  "v_dataReaderNew",0,
-                  "Not a valid view expression.");
+        OS_REPORT_2(OS_ERROR,
+                    "kernel::v_dataReader::v_dataReaderNew",0,
+                    "Operation for Datareader (name=\"%s\") failed:"
+                    OS_REPORT_NL "Reason: expression=0x%x is not a valid view expression.",
+                    name, OQLexpr);
         return NULL;
     }
     expr = q_getPar(OQLexpr,0);
     if (!q_isFnc(expr,Q_EXPR_SELECT)) {
-        OS_REPORT(OS_ERROR,
-                  "v_dataReaderNew",0,
-                  "Not a valid select statement.");
+        OS_REPORT_2(OS_ERROR,
+                    "kernel::v_dataReader::v_dataReaderNew",0,
+                    "Operation for Datareader (name=\"%s\") failed:"
+                    OS_REPORT_NL "Reason: expression=0x%x is not a valid select statement.",
+                    name, OQLexpr);
         return NULL;
     }
     _projection = NULL;
@@ -550,9 +617,11 @@ v_dataReaderNew (
         term = q_getPar(expr,i++);
     }
     if (_from == NULL) {
-        OS_REPORT(OS_ERROR,
-                  "v_dataReaderNew",0,
-                  "Missing from clause.");
+        OS_REPORT_2(OS_ERROR,
+                    "kernel::v_dataReader::v_dataReaderNew",0,
+                    "Operation for Datareader (name=\"%s\") failed:"
+                    OS_REPORT_NL "Reason: Missing from clause in expression 0x%x.",
+                    name, OQLexpr);
         return NULL;
     }
     topic = v_lookupTopic (kernel, q_getId(_from));
@@ -562,127 +631,178 @@ v_dataReaderNew (
      */
     if(!topic)
     {
-        OS_REPORT_1(OS_ERROR, "v_dataReaderNew",0,
-                    "DataReader not created: "
-                    "Could not locate topic with name %s.",
-                    q_getId(_from));
+        OS_REPORT_2(OS_ERROR,
+                    "kernel::v_dataReader::v_dataReaderNew",0,
+                    "DataReader (name=\"%s\") not created: "
+                    "Could not locate topic with name \"%s\".",
+                    name, q_getId(_from));
         return NULL;
     }
-    if(v_topicAccessMode(topic) == V_ACCESS_MODE_READ ||
-       v_topicAccessMode(topic) == V_ACCESS_MODE_READ_WRITE)
+    if(v_topicAccessMode(topic) != V_ACCESS_MODE_READ &&
+       v_topicAccessMode(topic) != V_ACCESS_MODE_READ_WRITE)
     {
-        q = v_readerQosNew(kernel,qos);
-        if (q == NULL) {
-            OS_REPORT(OS_ERROR, "v_dataReaderNew", 0,
-                      "DataReader not created: inconsistent qos");
+        OS_REPORT_2(OS_ERROR,
+                    "kernel::v_dataReader::v_dataReaderNew", 0,
+                    "Creation of DataReader (name=\"%s\") failed."
+                    OS_REPORT_NL "Topic (name=\"%s\") does not have read access rights.",
+                    name, q_getId(_from));
+        c_free(topic);
+        return NULL;
+    }
+    c_free(topic);
+    topic = NULL;
+    q = v_readerQosNew(kernel,qos);
+    if (q == NULL) {
+        OS_REPORT_1(OS_ERROR,
+                    "kernel::v_dataReader::v_dataReaderNew", 0,
+                    "DataReader (name=\"%s\") not created: inconsistent qos",
+                    name);
+        return NULL;
+    }
+    if (v_isEnabledStatistics(kernel, V_STATCAT_READER)) {
+        readerStatistics = v_readerStatisticsNew(kernel);
+        if (readerStatistics == NULL) {
+            OS_REPORT_1(OS_ERROR,
+                        "kernel::v_dataReader::v_dataReaderNew", 0,
+                        "Failed to create Statistics for DataReader (name=\"%s\").",
+                        name);
+            assert(FALSE);
             return NULL;
         }
-        _this = v_dataReader(v_objectNew(kernel,K_DATAREADER));
-        _this->shareCount = 1;
-        _this->views = NULL;
-        _this->sampleCount = 0;
-        _this->notReadCount = 0;
-        _this->maxInstances = FALSE;
-        _this->depth = 0x7fffffff; /* MAX_INT */
-        _this->cachedSample = NULL;
-        _this->triggerValue = NULL;
-        _this->updateCnt = 0;
+    } else {
+        readerStatistics = NULL;
+    }
+    _this = v_dataReader(v_objectNew(kernel,K_DATAREADER));
+    if (_this == NULL) {
+        OS_REPORT_1(OS_ERROR,
+                    "kernel::v_dataReader::v_dataReaderNew", 0,
+                    "v_objectNew(kernel=0x%x DataReader (name=\"%s\") not created: inconsistent qos",
+                    name);
+        c_free(readerStatistics);
+        return NULL;
+    }
+    _this->shareCount = 1;
+    _this->views = NULL;
+    _this->sampleCount = 0;
+    _this->notReadCount = 0;
+    _this->maxInstances = FALSE;
+    _this->depth = 0x7fffffff; /* MAX_INT */
+    _this->cachedSample = NULL;
+    _this->triggerValue = NULL;
+    _this->walkRequired = TRUE;
+    _this->updateCnt = 0;
 #define _SL_
 #ifdef _SL_
-        _this->cachedSampleCount = 0;
+    _this->cachedSampleCount = 0;
 #endif
-        _this->readCnt = 0;
+    _this->readCnt = 0;
 
 #ifdef _MSG_STAMP_
-        v_dataReaderLogInit(_this);
+    v_dataReaderLogInit(_this);
 #endif
 
+    v_readerInit(v_reader(_this),name,
+                 subscriber,q,
+                 v_statistics(readerStatistics),
+                 enable);
 
-        if (v_isEnabledStatistics(kernel, V_STATCAT_READER)) {
-            readerStatistics = v_readerStatisticsNew(kernel);
-        } else {
-            readerStatistics = NULL;
+    if (q->share.enable) {
+        if(!subscriber->qos->share.enable){
+            OS_REPORT(OS_ERROR,
+                      "kernel::v_dataReader::v_dataReaderNew", 0,
+                      "Creating a shared dataReader in a non-shared subscriber.");
+            assert(FALSE);
         }
-        v_readerInit(v_reader(_this),name,
-                     subscriber,q,
-                     v_statistics(readerStatistics),
-                     enable);
-
-        if (q->share.enable) {
-            assert(subscriber->qos->share.enable);
-
-            if(!subscriber->qos->share.enable){
-                OS_REPORT(OS_ERROR, "v_dataReaderNew", 0,
-                "Creating a shared dataReader in a non-shared subscriber.");
-            }
-            v_subscriberLockShares(subscriber);
-            found = v_dataReader(v_subscriberAddShareUnsafe(subscriber,v_reader(_this)));
-            if (found != _this) {
-               /* Make sure to set the index and deadline list to NULL,
-                * because v_publicFree will cause a crash in the
-                * v_dataReaderDeinit otherwise.
-                */
-                _this->index = NULL;
-                _this->deadLineList = NULL;
-                /*v_publicFree to free reference held by the handle server.*/
-                v_publicFree(v_public(_this));
-                /*Now free the local reference as well.*/
-                c_free(_this);
-                pa_increment(&(found->shareCount));
-                v_subscriberUnlockShares(subscriber);
-                c_free(q);
-                return c_keep(found);
-            }
+        v_subscriberLockShares(subscriber);
+        found = v_dataReader(v_subscriberAddShareUnsafe(subscriber,v_reader(_this)));
+        if (found != _this) {
+           /* Existing shared DataReader so abort reader creation and
+            * return existing DataReader.
+            */
+           /* Make sure to set the index and deadline list to NULL,
+            * because v_publicFree will cause a crash in the
+            * v_dataReaderDeinit otherwise.
+            */
+            _this->index = NULL;
+            _this->deadLineList = NULL;
+            /*v_publicFree to free reference held by the handle server.*/
+            v_publicFree(v_public(_this));
+            /*Now free the local reference as well.*/
+            c_free(_this);
+            pa_increment(&(found->shareCount));
+            v_subscriberUnlockShares(subscriber);
+            c_free(q);
+            return c_keep(found);
         }
-        c_free(q);
+    }
+    c_free(q);
 
-        arg.dataReader = _this;
-        arg._where = _where;
-        arg.params = &params;
-        _this->index = v_indexNew(_this, _from, onNewIndex, &arg);
-        if (_this->index) {
-            instanceType = v_dataReaderInstanceType(_this);
-            sampleProperty = c_property(c_metaResolve(c_metaObject(instanceType),
+    arg.dataReader = _this;
+    arg._where = _where;
+    arg.params = &params;
+    _this->index = v_indexNew(_this, _from, onNewIndex, &arg);
+    if (_this->index) {
+        instanceType = v_dataReaderInstanceType(_this);
+        sampleProperty = c_property(c_metaResolve(c_metaObject(instanceType),
                                                   "sample"));
-            c_free(instanceType);
-            /* the sampleExtent is created with the synchronized parameter
-             * set to TRUE.
-             * So the extent will use a mutex to guarantee reentrancy.
-             * This is needed because samples are kept, copied and freed
-             * outside the reader lock.
-             */
+        c_free(instanceType);
+        /* the sampleExtent is created with the synchronized parameter
+         * set to TRUE.
+         * So the extent will use a mutex to guarantee reentrancy.
+         * This is needed because samples are kept, copied and freed
+         * outside the reader lock.
+         */
+        if (sampleProperty != NULL) {
             _this->sampleExtent = c_extentSyncNew(sampleProperty->type,128,TRUE);
-            _this->projection = v_projectionNew(_this,_projection);
+            if (_this->sampleExtent != NULL) {
+                _this->projection = v_projectionNew(_this,_projection);
 
+                participant = v_participant(subscriber->participant);
+                assert(participant != NULL);
+                _this->deadLineList =
+                    v_deadLineInstanceListNew(c_getBase(c_object(_this)),
+                                              participant->leaseManager,
+                                              q->deadline.period,
+                                              V_LEASEACTION_READER_DEADLINE_MISSED,
+                                              v_public(_this));
 
-            if (q->share.enable) {
-                v_subscriberUnlockShares(subscriber);
-            }
-
-            participant = v_participant(subscriber->participant);
-            assert(participant != NULL);
-            _this->deadLineList =
-                v_deadLineInstanceListNew(c_getBase(c_object(_this)),
-                                          participant->leaseManager,
-                                          q->deadline.period,
-                                          V_LEASEACTION_READER_DEADLINE_MISSED,
-                                          v_public(_this));
-
-            if (enable) {
-                v_dataReaderEnable(_this);
+                if (enable) {
+/* TODO : result checking and error propagation */
+                    v_dataReaderEnable(_this);
+                }
+            } else {
+                OS_REPORT_2(OS_ERROR,
+                            "kernel::v_dataReader::v_dataReaderNew", 0,
+                            "Creation of DataReader (name=\"%s\") failed."
+                            OS_REPORT_NL "Operation c_extentSyncNew(type=0x%x, 128, TRUE) failed.",
+                            name, sampleProperty->type);
+                v_readerDeinit(v_reader(_this));
+                c_free(_this);
+                _this = NULL;
             }
         } else {
+            OS_REPORT_2(OS_ERROR,
+                        "kernel::v_dataReader::v_dataReaderNew", 0,
+                        "Creation of DataReader (name=\"%s\") failed."
+                        OS_REPORT_NL "Operation c_metaResolve(scope=0x%x, \"sample\") failed.",
+                        name, instanceType);
             v_readerDeinit(v_reader(_this));
             c_free(_this);
             _this = NULL;
         }
-
-    }else
-    {
-        OS_REPORT_2(OS_ERROR, "v_dataReaderNew", 0,
-                    "Creation of DataReader <%s> failed. Topic %s."
-                    "does not have read access rights.", name, q_getId(_from));
+    } else {
+        OS_REPORT_5(OS_ERROR,
+                    "kernel::v_dataReader::v_dataReaderNew", 0,
+                    "Creation of DataReader (name=\"%s\") failed."
+                    OS_REPORT_NL
+                    "Operation v_indexNew(_this=0x%x, _from=0x%x, action=0x%x, arg=0x%x) failed.",
+                    name, _this, _from, onNewIndex, &arg);
+        v_readerDeinit(v_reader(_this));
+        c_free(_this);
         _this = NULL;
+    }
+    if (q->share.enable) {
+        v_subscriberUnlockShares(subscriber);
     }
     return _this;
 }
@@ -722,13 +842,13 @@ v_dataReaderEnable(
             }
         }
 
+/* TODO : result checking and error propagation */
         v_subscriberAddReader(subscriber,v_reader(_this));
 
         kernel = v_objectKernel(_this);
         builtinMsg = v_builtinCreateSubscriptionInfo(kernel->builtin, _this);
         v_writeBuiltinTopic(kernel, V_SUBSCRIPTIONINFO_ID, builtinMsg);
         c_free(builtinMsg);
-        result = V_RESULT_OK;
     } else {
         result = V_RESULT_ILL_PARAM;
     }
@@ -844,7 +964,13 @@ writeSlave(
     v_readerSample sample,
     c_voidp arg)
 {
-    return v_dataViewWrite(v_dataView(arg),sample);
+    c_bool result = TRUE;
+
+    if (v_readerSampleTestState(sample, L_VALIDDATA))
+    {
+        result = v_dataViewWrite(v_dataView(arg),sample);
+    }
+    return result;
 }
 
 static c_bool
@@ -937,6 +1063,33 @@ C_STRUCT(readSampleArg) {
     c_iter emptyList;
 };
 C_CLASS(readSampleArg);
+
+
+
+c_bool
+v_dataReaderWalkInstances (
+    v_dataReader _this,
+    v_dataReaderInstanceAction action,
+    c_voidp arg)
+{
+    c_bool proceed;
+
+    if (_this != NULL) {
+        assert(C_TYPECHECK(_this, v_dataReader));
+        proceed = c_readAction(v_dataReaderNotEmptyInstanceSet(_this),
+                              (c_action)action,
+                              arg);
+    } else {
+        proceed = FALSE;
+        OS_REPORT(OS_ERROR,"v_dataReaderWalkInstances",0,
+                   "dataReader object is NULL");
+    }
+    assert(_this != NULL);
+
+    return proceed;
+
+}
+
 
 static c_bool
 instanceReadSamples(
@@ -1521,6 +1674,8 @@ queryNotifyDataAvailable(
     if (v_observableCount(v_observable(q)) > 0) {
         event->source = v_publicHandle(v_public(query));
         v_dataReaderQueryNotifyDataAvailable(v_dataReaderQuery(query),event);
+    } else {
+        v_dataReaderQuery(query)->walkRequired = TRUE;
     }
 
     return TRUE;
@@ -1604,6 +1759,8 @@ v_dataReaderNotifyIncompatibleQos(
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_dataReader));
 
+    v_observerLock(v_observer(_this));
+
     changed = v_statusNotifyIncompatibleQos(v_entity(_this)->status, id);
 
     if (changed) {
@@ -1611,11 +1768,11 @@ v_dataReaderNotifyIncompatibleQos(
         event.kind = V_EVENT_INCOMPATIBLE_QOS;
         event.source = v_publicHandle(v_public(_this));
         event.userData = NULL;
-        v_observerLock(v_observer(_this));
         v_observerNotify(v_observer(_this), &event, NULL);
-        v_observerUnlock(v_observer(_this));
         v_observableNotify(v_observable(_this), &event);
     }
+
+    v_observerUnlock(v_observer(_this));
 }
 
 void
@@ -1626,9 +1783,6 @@ v_dataReaderNotifySubscriptionMatched (
 {
     c_bool changed;
     C_STRUCT(v_event) e;
-
-    v_kernel kernel;
-    v_message builtinMsg;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_dataReader));

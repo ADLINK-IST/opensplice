@@ -317,7 +317,9 @@ nw_entryHashInsert(
 
 /* ---------------------------- receiveChannel ------------------------------ */
 
-
+/**
+* @extends nw_channel_s
+*/
 NW_STRUCT(nw_receiveChannel){
     NW_EXTENDS(nw_channel);
     /* Currently found entry */
@@ -460,7 +462,7 @@ nw_receiveChannelRead(
     	 * the entry still might be non-NULL, correct this */
     	lookupArg.entryFound = NULL;
     }
-    
+
     /* Retrieve entry, but only if we still have the previous message */
     if (*entryPtr == NULL) {
       *entryPtr = lookupArg.entryFound;
@@ -470,7 +472,9 @@ nw_receiveChannelRead(
 
 /* ------------------------------- sendChannel ------------------------------ */
 
-
+/**
+* @extends nw_channel_s
+*/
 NW_STRUCT(nw_sendChannel){
     NW_EXTENDS(nw_channel);
     /* No attributes introduced (yet) */

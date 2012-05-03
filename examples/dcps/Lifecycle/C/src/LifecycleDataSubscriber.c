@@ -19,7 +19,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <string.h>
 #include "os_time.h"
 #include "dds_dcps.h"
@@ -49,8 +51,13 @@ int main(int argc, char *argv[])
    DDS_DataReader msgDataReader;
 
    unsigned long j, inputChar;
-   os_time os_delay20ms = (os_time)  {0, 20000000};
-   os_time os_delay200ms = (os_time) {0, 200000000};
+
+   DDS_boolean closed = FALSE;
+   int nbIter = 1;
+   int nbIterMax = 100;
+
+   os_time os_delay20ms = {0, 20000000};
+   os_time os_delay200ms = {0, 200000000};
 
    // Force the output to be unbuffered.
    setbuf(stdout, (char *) 0);
@@ -81,9 +88,6 @@ int main(int argc, char *argv[])
    printf("\n=== [Subscriber] Ready...");
 
    msgInfoSeq->_length = 0;
-   DDS_boolean closed = FALSE;
-   int nbIter = 1;
-   int nbIterMax = 100;
    while ((closed == FALSE) && (nbIter < nbIterMax))
    {
       g_status = LifecycleData_MsgDataReader_read(msgDataReader, msgSeq, msgInfoSeq, 1, DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);

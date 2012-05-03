@@ -27,6 +27,7 @@
 #include "sd__resultCodesXMLMetadata.h"
 #include "sd_stringsXML.h"
 #include "sd_deepwalkMeta.h"
+#include "c_stringSupport.h"
 
 #define SD_FORMAT_ID      0x584DU    /* currently the same as XML */
 #define SD_FORMAT_VERSION 0x0001U
@@ -739,7 +740,14 @@ sd_createOrLookupScope(
     c_char *currentSrc, *currentDst;
     int len;
     c_object o;
-    
+
+    /* if the scopeName is the empty string, then the scope is the general scope, i.e.
+     * the general module, thus the base.
+     */
+    if(c_compareString(scopeName, "") == C_EQ)
+    {
+        return c_metaObject(base);
+    }
     len = strlen(scopeName) + 1;
     helperString = os_malloc(len);
     memset(helperString, 0, len);

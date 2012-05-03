@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef NW_SOCKET_H
@@ -21,7 +21,6 @@ typedef struct nw_socket_s *nw_socket;
 typedef os_uchar   sk_bool;
 typedef os_ushort  sk_portNr;     /* Internally converted into n_port_t */
 typedef os_uint32  sk_length;     /* Internally converted into size_t */
-typedef os_uint32  sk_address;    /* Networking address */
 typedef os_uint32  sk_partitionId; /* Networking partition */
 
 typedef enum sk_addressType_e {
@@ -49,32 +48,36 @@ nw_socket   nw_socketReceiveNew(
 
 void        nw_socketFree(
                 nw_socket sock);
-sk_bool		nw_socketGetMulticastSupported(
-				nw_socket sock);
 
-sk_bool		nw_socketGetMulticastInitialized(
-				nw_socket sock);
+os_uint nw_socketGetInterfaceIndexNo(nw_socket this_);
 
-void		nw_socketSetMulticastInitialized(
-				nw_socket sock,
-				sk_bool mi);
+void nw_socketSetInterfaceIndexNo(nw_socket this_, os_uint indexNo);
+
+sk_bool     nw_socketGetMulticastSupported(
+                nw_socket sock);
+
+sk_bool     nw_socketGetMulticastInitialized(
+                nw_socket sock);
+
+void        nw_socketSetMulticastInitialized(
+                nw_socket sock,
+                sk_bool mi);
 
 sk_bool     nw_socketLoopsback(
                 nw_socket sock);
 
-
-sk_address  nw_socketPrimaryAddress(
+os_sockaddr_storage nw_socketPrimaryAddress(
                 nw_socket sock);
 
-sk_address  nw_socketBrodcastAddress(
+os_sockaddr_storage  nw_socketBrodcastAddress(
                 nw_socket sock);
 
-sk_address  nw_socketDataAddress(
+os_sockaddr_storage  nw_socketDataAddress(
                 nw_socket sock);
 
 os_int      nw_socketPrimaryAddressCompare(
                 nw_socket sock,
-                sk_address toCompare);
+                os_sockaddr* toCompare);
 
 
 
@@ -94,7 +97,7 @@ sk_length   nw_socketSendData(
 
 sk_length   nw_socketSendDataTo(
                 nw_socket sock,
-                sk_address receiverAddress,
+                os_sockaddr_storage receiverAddress,
                 void *buffer,
                 sk_length length);
 
@@ -112,13 +115,13 @@ sk_length  nw_socketSendControl(
 
 sk_length   nw_socketSendControlTo(
                 nw_socket sock,
-                sk_address receiverAddress,
+                os_sockaddr_storage receiverAddress,
                 void *buffer,
                 sk_length length);
 
 sk_length   nw_socketReceive(
                 nw_socket sock,
-                sk_address *senderAddress,
+                os_sockaddr_storage *senderAddress,
                 void *buffer,
                 sk_length length,
                 os_time *timeOut,

@@ -60,12 +60,12 @@ csharp_check ()
         fi
     fi
 
+    MAIN_DRIVE=`echo $SYSTEMDRIVE | awk -F ':' '{ print $1 }'`
     if [ $CSC_NOT_FOUND != 0 ]
     then
-        MAIN_DRIVE=`echo $SYSTEMDRIVE | awk -F ':' '{ print $1 }'`
         if [ ! -d "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework" ]
         then
-            echo "Error - no valid Microsoft.NET Framwork compiler found. Please *PREFIX* its location to your PATH"
+            echo "Error - no valid Microsoft.NET Framwork. Please *PREFIX* its location to your PATH"
             return 1
         fi
         VERSIONS=`ls /cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework | grep -E ^v`
@@ -100,7 +100,7 @@ csharp_check ()
                 then
                     continue
                 fi
-
+                FOUND_VERSION=$i
                 PATH="/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$i:$PATH"
                 break
             fi
@@ -111,6 +111,32 @@ csharp_check ()
             return 1
         fi
     fi
+
+    pathcheck al.exe
+    AL_NOT_FOUND=$?
+    if [ $AL_NOT_FOUND != 0 ]
+    then
+        if [ ! -f "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$FOUND_VERSION/al.exe" ]
+        then
+            if [ ! -f "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/v2.0.50727/al.exe" ]
+            then
+                if [ ! -f "/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v6.0A/bin/al.exe" ]
+                then
+                    if [ ! -f "/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v5.0A/bin/al.exe" ]
+                    then
+                        echo "Error - no Assembly Linker found (al.exe). Please *PREFIX* its location to your PATH"
+                        return 1
+                    else
+                        PATH="$PATH:/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v5.0A/bin/"
+                    fi
+                else
+                    PATH="$PATH:/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v6.0A/bin/"
+                fi
+            else
+                PATH="$PATH:/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/v2.0.50727/"  
+            fi                
+        fi
+    fi           
 
     echo "OK - using version `csc -help | grep \"Framework version\" | awk '{ print $NF }'`"
     return 0
@@ -207,8 +233,8 @@ msvs_check ()
 
         LIB="$DOS_CONV_PATH\VC\LIB;"
         SDK_DIR="$UNIX_CONV_PATH/../Microsoft SDKs/Windows/v6.0A"
-	FrameworkSDKDir=`cygpath -u "$SDK_DIR"`
-		PATH="$FrameworkSDKDir/bin:$PATH"
+        FrameworkSDKDir=`cygpath -u "$SDK_DIR"`
+        PATH="$FrameworkSDKDir/bin:$PATH"
         set_var FrameworkSDKDir "$FrameworkSDKDir"
         set_var LIBPATH "$LIBPATH"
         set_var LIB "$LIB"
@@ -495,6 +521,9 @@ javac_check ()
             ;;
         SunOS)
             JAVA_PATH_EXT=sparc
+            ;;
+        AIX)
+            JAVA_PATH_EXT=ppc
             ;;
         CYGWIN_NT*)
             JAVA_PATH_EXT=i386

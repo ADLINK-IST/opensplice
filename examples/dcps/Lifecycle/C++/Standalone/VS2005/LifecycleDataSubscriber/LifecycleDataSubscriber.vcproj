@@ -39,7 +39,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot;;..\LifecycleData\Generated"
+				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot;;..\Generated"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
@@ -114,7 +114,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot;;..\LifecycleData\Generated"
+				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot;;..\Generated"
 				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"

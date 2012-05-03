@@ -170,6 +170,7 @@ v_networkQueueNew(
         OS_REPORT(OS_ERROR,
                   "v_networkQueueNew",0,
                   "Failed to allocate network queue.");
+        assert(FALSE);
     }
     return result;
 }    
@@ -286,73 +287,73 @@ v_networkQueueWrite(
         newMarkerCreated = TRUE;
         if (queue->freeStatusMarkers == NULL) {
             marker = v_networkStatusMarker(c_new(queue->statusMarkerType));
+            if (marker == NULL) {
+                OS_REPORT(OS_ERROR,
+                          "v_networkQueueWrite",0,
+                          "Failed to allocate v_networkStatusMarker object.");
+                c_mutexUnlock(&queue->mutex);
+                return FALSE;
+            }
         } else {
             marker = queue->freeStatusMarkers;
             queue->freeStatusMarkers = marker->next;
         }
 
-        if (marker != NULL) {
-            marker->sendBefore = sendBefore;
-            marker->priority = priorityLookingFor;
-            marker->firstSample = NULL;
-            marker->lastSample = NULL;
-            marker->next = *currentMarkerPtr; /* no keep, transfer refCount */
-            if (marker->next == NULL) {
-                queue->lastStatusMarker = marker; /* no keep, not reference counted */
-            }
-            *currentMarkerPtr = marker; /* no keep, transfer refCount */
-        } else {
-            OS_REPORT(OS_ERROR,
-                  "v_networkQueueWrite",0,
-                  "Failed to send message.");
-            c_mutexUnlock(&queue->mutex);
-            return FALSE;
+        marker->sendBefore = sendBefore;
+        marker->priority = priorityLookingFor;
+        marker->firstSample = NULL;
+        marker->lastSample = NULL;
+        marker->next = *currentMarkerPtr; /* no keep, transfer refCount */
+        if (marker->next == NULL) {
+            queue->lastStatusMarker = marker; /* no keep, not reference counted */
         }
+        *currentMarkerPtr = marker; /* no keep, transfer refCount */
     }
     V_MESSAGE_STAMP(msg,readerLookupTime); 
     assert(marker != NULL);
     if (queue->freeSamples == NULL) {
         newHolder = c_new(queue->sampleType);
+        if (newHolder == NULL) {
+            OS_REPORT(OS_ERROR,
+                      "v_networkQueueWrite",0,
+                      "Failed to allocate v_networkQueueSample object.");
+            result = FALSE;
+            c_mutexUnlock(&queue->mutex);
+            return result;
+        }
     } else {
         newHolder = queue->freeSamples;
         queue->freeSamples = newHolder->next;
     }
 
-    if (newHolder) {
-        queue->currentMsgCount++;
+    queue->currentMsgCount++;
 
-        /* numberOfSamplesInserted & numberOfSamplesWaiting + stats*/
-        v_networkQueueStatisticsAdd(numberOfSamplesInserted,queue->statistics);
-        v_networkQueueStatisticsCounterInc(numberOfSamplesWaiting,queue->statistics);
+    /* numberOfSamplesInserted & numberOfSamplesWaiting + stats*/
+    v_networkQueueStatisticsAdd(numberOfSamplesInserted,queue->statistics);
+    v_networkQueueStatisticsCounterInc(numberOfSamplesWaiting,queue->statistics);
 
-        newHolder->message = c_keep(msg);
-        newHolder->entry = c_keep(entry);
-        newHolder->sequenceNumber = sequenceNumber;
-        newHolder->sender = sender;
-        newHolder->sendTo = sendTo;
-        newHolder->receiver = receiver;
+    newHolder->message = c_keep(msg);
+    newHolder->entry = c_keep(entry);
+    newHolder->sequenceNumber = sequenceNumber;
+    newHolder->sender = sender;
+    newHolder->sendTo = sendTo;
+    newHolder->receiver = receiver;
 
-        if (marker->lastSample != NULL) {
-            newHolder->next = v_networkQueueSample(marker->lastSample)->next; /* no keep, transfer refCount */
-            v_networkQueueSample(marker->lastSample)->next = newHolder; /* no keep, transfer refCount */
-        } else {
-            newHolder->next = marker->firstSample; /* no keep, transfer refCount */
-            marker->firstSample = newHolder; /* no keep, transfer refCount */
-        }
-        marker->lastSample = newHolder;
-
-
-        /* Write done, wake up waiters if needed */
-        if (wasEmpty && queue->threadWaiting) {
-            if (sendNow || v_networkQueueHasExpiringData(queue)) {
-                c_condBroadcast(&queue->cv);
-            }
-        }
+    if (marker->lastSample != NULL) {
+        newHolder->next = v_networkQueueSample(marker->lastSample)->next; /* no keep, transfer refCount */
+        v_networkQueueSample(marker->lastSample)->next = newHolder; /* no keep, transfer refCount */
     } else {
-        OS_REPORT(OS_ERROR,
-              "v_networkQueueWrite",0,
-              "Failed to send message.");
-        result = FALSE;
+    newHolder->next = marker->firstSample; /* no keep, transfer refCount */
+        marker->firstSample = newHolder; /* no keep, transfer refCount */
+    }
+    marker->lastSample = newHolder;
+
+
+    /* Write done, wake up waiters if needed */
+    if (wasEmpty && queue->threadWaiting) {
+        if (sendNow || v_networkQueueHasExpiringData(queue)) {
+            c_condBroadcast(&queue->cv);
+        }
     }
 
     c_mutexUnlock(&queue->mutex);

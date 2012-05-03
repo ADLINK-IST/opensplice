@@ -22,12 +22,16 @@ typedef void (*u_domainAction)(u_domain domain, u_domainActionArg arg);
 
 #define u_resultFromKernel(r) ((u_result)r)
 
+u_result
+u_userAddDomain(
+    u_domain domain);
+
 u_domain
-u_userCreateDomain (
+u_userLookupDomain(
     const c_char *uri);
 
 u_result
-u_userDeleteDomain (
+u_userRemoveDomain(
     u_domain domain);
 
 c_address

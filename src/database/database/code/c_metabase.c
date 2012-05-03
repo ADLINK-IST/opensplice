@@ -388,7 +388,9 @@ c_metaDefine(
     case M_RELATION:
     case M_UNIONCASE:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        o->kind = kind;
+        if (o) {
+            o->kind = kind;
+        }
     break;
     case M_COLLECTION:
     case M_ENUMERATION:
@@ -396,37 +398,47 @@ c_metaDefine(
     case M_TYPEDEF:
     case M_BASE:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        o->kind = kind;
-        c_type(o)->base = base; /* REMARK c_keep(base); */
+        if (o) {
+            o->kind = kind;
+            c_type(o)->base = base; /* REMARK c_keep(base); */
+        }
     break;
     case M_UNION:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        o->kind = kind;
-        c_union(o)->scope = c_scopeNew(base);
-        c_type(o)->base = base; /* REMARK c_keep(base); */
+        if (o) {
+            o->kind = kind;
+            c_union(o)->scope = c_scopeNew(base);
+            c_type(o)->base = base; /* REMARK c_keep(base); */
+        }
     break;
     case M_STRUCTURE:
     case M_EXCEPTION:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        o->kind = kind;
-        c_structure(o)->scope = c_scopeNew(base);
-        c_type(o)->base = base; /* REMARK c_keep(base); */
+        if (o) {
+            o->kind = kind;
+            c_structure(o)->scope = c_scopeNew(base);
+            c_type(o)->base = base; /* REMARK c_keep(base); */
+        }
     break;
     case M_MODULE:
-          o = (c_baseObject)c_new(c_getMetaType(base,kind));
-          o->kind = kind;
-          c_module(o)->scope = c_scopeNew(base);
-          c_mutexInit(&c_module(o)->mtx, SHARED_MUTEX);
+        o = (c_baseObject)c_new(c_getMetaType(base,kind));
+        if (o) {
+            o->kind = kind;
+            c_module(o)->scope = c_scopeNew(base);
+            c_mutexInit(&c_module(o)->mtx, SHARED_MUTEX);
+        }
     break;
     case M_CLASS:
     case M_INTERFACE:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        o->kind = kind;
-        if (kind == M_CLASS) {
-            c_class(o)->extends = NULL;
+        if (o) {
+            o->kind = kind;
+            if (kind == M_CLASS) {
+                c_class(o)->extends = NULL;
+            }
+            c_interface(o)->scope = c_scopeNew(base);
+            c_type(o)->base = base; /* REMARK c_keep(base); */
         }
-        c_interface(o)->scope = c_scopeNew(base);
-        c_type(o)->base = base; /* REMARK c_keep(base); */
     break;
     default:
         o = NULL;
@@ -1409,6 +1421,8 @@ c_objectIsType(
         return FALSE;
     }
     switch(o->kind) {
+    case M_EXTENT:
+    case M_EXTENTSYNC:
     case M_TYPEDEF:
     case M_CLASS:
     case M_COLLECTION:

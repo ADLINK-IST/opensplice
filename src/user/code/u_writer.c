@@ -732,7 +732,6 @@ u_writerCopyKeysFromInstanceHandle (
     v_writer writer;
     v_message message;
     void *from;
-    c_bool found;
 
     result = u_instanceHandleClaim(handle, &instance);
 

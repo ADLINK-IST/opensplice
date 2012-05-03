@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
-	Name="LifecyclePublisher"
-	ProjectGUID="{AF7DBA90-DA95-47EB-82E5-A6D0305ED12A}"
-	RootNamespace="LifecyclePublisher"
-	TargetFrameworkVersion="196613"
+	Version="8.00"
+	Name="LifecycleDataPublisher"
+	ProjectGUID="{C4E1A8CC-827D-45A0-9A7A-54D01ACC9EF2}"
+	RootNamespace="LifecycleDataPublisher"
 	>
 	<Platforms>
 		<Platform
@@ -17,10 +16,10 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			OutputDirectory="$(ProjectDir)..\$(ConfigurationName)"
+			IntermediateDirectory="$(ProjectDir)$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -40,12 +39,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot;;..\Lifecycle\Generated"
+				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C\SAC&quot;;..\Generated"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
-				RuntimeLibrary="0"
+				RuntimeLibrary="1"
 				WarningLevel="1"
 				DebugInformationFormat="1"
+				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -58,9 +59,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="dcpssacpp.lib dcpsgapi.lib ddsdatabase.lib ddsos.lib Lifecycle.lib"
+				AdditionalDependencies="dcpssac.lib dcpsgapi.lib ddsdatabase.lib ddsos.lib LifecycleData.lib"
 				OutputFile="$(OutDir)\$(ProjectName).exe"
-				AdditionalLibraryDirectories="&quot;$(OSPL_HOME)\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(OSPL_HOME)\lib&quot;;&quot;..\Lifecycle\$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -81,6 +82,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -88,10 +92,10 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			OutputDirectory="$(ProjectDir)..\$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			CharacterSet="2"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -111,12 +115,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot;;..\Lifecycle\Generated"
+				AdditionalIncludeDirectories="&quot;$(OSPL_HOME)\include&quot;;&quot;$(OSPL_HOME)\include\sys&quot;;&quot;$(OSPL_HOME)\include\dcps\C\SAC&quot;;..\Generated"
+				PreprocessorDefinitions="_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="0"
 				WarningLevel="1"
 				DebugInformationFormat="1"
+				CompileAs="1"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -129,9 +135,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="dcpssacpp.lib dcpsgapi.lib ddsdatabase.lib ddsos.lib Lifecycle.lib"
+				AdditionalDependencies="dcpssac.lib dcpsgapi.lib ddsdatabase.lib ddsos.lib LifecycleData.lib"
 				OutputFile="$(OutDir)\$(ProjectName).exe"
-				AdditionalLibraryDirectories="&quot;$(OSPL_HOME)\lib&quot;;&quot;$(SolutionDir)$(ConfigurationName)&quot;"
+				AdditionalLibraryDirectories="&quot;$(OSPL_HOME)\lib&quot;;&quot;..\Lifecycle\$(ConfigurationName)&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -152,6 +158,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -167,7 +176,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\..\src\LifecyclePublisher.cpp"
+				RelativePath="..\..\..\src\LifecycleDataPublisher.c"
 				>
 			</File>
 		</Filter>
@@ -175,12 +184,6 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
-			>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 		</Filter>
 	</Files>

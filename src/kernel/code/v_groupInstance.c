@@ -92,11 +92,10 @@ v_groupInstanceCheckCount(
     inconsistent = 0;
     reg = instance->registrations;
     while (reg != NULL) {
-        unreg = instance->unregisterMessages;
+        unreg = instance->unregistrations;
         while ((unreg != NULL) && (!inconsistent)) {
-            if ((unreg->message == reg->message) ||
-                (v_gidCompare(unreg->message->writerGID,
-                              reg->message->writerGID) == C_EQ)) {
+            if (c_timeCompare(unreg->writeTime, reg->writeTime) == C_EQ ||
+                (v_gidCompare(unreg->writerGID, reg->writerGID) == C_EQ)) {
                 inconsistent = 1;
             }
             assert(!inconsistent);
@@ -109,22 +108,18 @@ v_groupInstanceCheckCount(
     while (reg != NULL) {
         unreg = reg->next;
         if (unreg != NULL) {
-            if ((unreg->message == reg->message) ||
-                (v_gidCompare(unreg->message->writerGID,
-                              reg->message->writerGID) == C_EQ)) {
+            if (v_gidCompare(unreg->writerGID, reg->writerGID) == C_EQ) {
                 inconsistent = 1;
             }
         }
         assert(!inconsistent);
         reg = reg->next;
     }
-    unreg = instance->unregisterMessages;
+    unreg = instance->unregistrations;
     while (unreg != NULL) {
         reg = unreg->next;
         if (reg != NULL) {
-            if ((unreg->message == reg->message) ||
-                (v_gidCompare(unreg->message->writerGID,
-                              reg->message->writerGID) == C_EQ)) {
+            if (v_gidCompare(unreg->writerGID, reg->writerGID) == C_EQ) {
                 inconsistent = 1;
             }
         }
@@ -160,9 +155,7 @@ v_groupInstanceValidateRegistrations(
                 unreg = reg->next;
 
                 if (unreg != NULL) {
-                    if ((unreg->message == reg->message) ||
-                        (v_gidCompare(unreg->message->writerGID,
-                                      reg->message->writerGID) == C_EQ)) {
+                    if (v_gidCompare(unreg->writerGID, reg->writerGID) == C_EQ) {
                         OS_REPORT(OS_ERROR, "v_groupInstance", 0,
                                 "instance->registrations has duplicate registrations.");
                         result = FALSE;
@@ -172,27 +165,25 @@ v_groupInstanceValidateRegistrations(
             }
         }
     }
-    unreg = instance->unregisterMessages;
+    unreg = instance->unregistrations;
     if(unreg != NULL){
         if(!c_checkType(unreg, "v_registration")){
             OS_REPORT(OS_ERROR, "v_groupInstance", 0,
-                    "instance->unregisterMessages is corrupted.");
+                    "instance->unregistrations is corrupted.");
             assert(FALSE);
             result = FALSE;
         } else if(c_refCount(unreg) != 1){
             OS_REPORT(OS_ERROR, "v_groupInstance", 0,
-                    "instance->unregisterMessages refCount != 1.");
+                    "instance->unregistrations refCount != 1.");
             assert(FALSE);
             result = FALSE;
         } else {
             while (unreg != NULL) {
                 reg = unreg->next;
                 if (reg != NULL) {
-                    if ((unreg->message == reg->message) ||
-                        (v_gidCompare(unreg->message->writerGID,
-                                      reg->message->writerGID) == C_EQ)) {
+                    if (v_gidCompare(unreg->writerGID, reg->writerGID) == C_EQ) {
                         OS_REPORT(OS_ERROR, "v_groupInstance", 0,
-                                "instance->unregisterMessages has duplicate registrations.");
+                                "instance->unregistrations has duplicate registrations.");
                         result = FALSE;
                     }
                 }
@@ -228,16 +219,17 @@ v_groupAllocInstance(
         instance = v_groupInstance(c_new(type));
 #endif
         if (instance) {
-			_ABORT_(c_refCount(instance) == 1);
-	        kernel = v_objectKernel(_this);
-	        v_object(instance)->kernel = kernel;
-	        v_objectKind(instance) = K_GROUPINSTANCE;
-	        instance->targetCache = v_groupCacheNew(kernel, V_CACHE_TARGETS);
-    	    instance->group = (c_voidp)_this;
+            _ABORT_(c_refCount(instance) == 1);
+            kernel = v_objectKernel(_this);
+            v_object(instance)->kernel = kernel;
+            v_objectKind(instance) = K_GROUPINSTANCE;
+            instance->targetCache = v_groupCacheNew(kernel, V_CACHE_TARGETS);
+            instance->group = (c_voidp)_this;
             if (instance->targetCache == NULL) {
                 OS_REPORT(OS_ERROR,
                           "v_groupAllocInstance",0,
                           "Failed to allocate targetCache.");
+                assert(FALSE);
                 c_free(instance);
                 instance = NULL;
             }
@@ -245,6 +237,7 @@ v_groupAllocInstance(
             OS_REPORT(OS_ERROR,
                       "v_groupAllocInstance",0,
                       "Failed to allocate group instance.");
+            assert(FALSE);
         }
     } else {
         instance = _this->cachedInstance;
@@ -284,13 +277,13 @@ v_groupInstanceInit (
 
     _this->epoch              = C_TIME_ZERO;
     _this->registrations      = NULL;
-    _this->unregisterMessages = NULL;
+    _this->unregistrations    = NULL;
     _this->oldest             = NULL;
     _this->messageCount       = 0;
     _this->count              = 0;
     _this->state              = 0;
-    _this->owner.exclusive	  =
-    		(topicQos->ownership.kind == V_OWNERSHIP_EXCLUSIVE);
+    _this->owner.exclusive      =
+            (topicQos->ownership.kind == V_OWNERSHIP_EXCLUSIVE);
 
     v_stateSet(_this->state, L_EMPTY);
     assert(v_groupInstanceHead(_this) == NULL);
@@ -310,7 +303,7 @@ v_groupInstanceNew(
     assert(C_TYPECHECK(message,v_message));
 
     _this = v_groupAllocInstance(group);
-    v_groupInstanceInit(_this,message);
+    v_groupInstanceInit(_this, message);
     CHECK_REGISTRATIONS(_this);
 
     return _this;
@@ -343,8 +336,8 @@ v_groupInstanceFree(
     if (c_refCount(instance) == 1) {
         c_free(instance->registrations);
         instance->registrations = NULL;
-        c_free(instance->unregisterMessages);
-        instance->unregisterMessages = NULL;
+        c_free(instance->unregistrations);
+        instance->unregistrations = NULL;
 
         /* make sure it is removed from any purge list! */
         instance->epoch = C_TIME_ZERO;
@@ -448,39 +441,48 @@ v_groupInstanceRegister (
      * inserting it.
      * In case there already exists a registration for the given writer
      * then keep the newest.
-     * Under normal condition register messages are always followd by an
+     * Under normal condition register messages are always followed by an
      * unregister message but message can be reordered due to transport.
      */
     found = NULL;
-    if (instance->unregisterMessages) {
-        v_registration previous = NULL;
+    if (instance->unregistrations) {
         c_time delay = {5,0};
         c_time purgeTime = v_timeGet();
 
         purgeTime = c_timeSub(purgeTime,delay);
-        registration = &instance->unregisterMessages;
-        while ((*registration != NULL) && (found == NULL)) {
-            if (v_gidCompare((*registration)->message->writerGID,
-                             message->writerGID) == C_EQ) {
+
+        /*
+         * Keep track of the address of the current registration to be able to
+         * redirect the content of the previous item in the registration list
+         * when removing the current registration.
+         */
+        registration = &instance->unregistrations;
+        while (*registration != NULL && found == NULL) {
+            if (v_gidCompare((*registration)->writerGID, message->writerGID) == C_EQ) {
                 found = *registration;
-                (*registration) = found->next;
+                /* Pull registration from list by redirecting the contents of the
+                 * previous registration pointer to the next registration. */
+                *registration = found->next;
                 found->next = NULL;
             } else {
 #if 1
                 /* Temporary implementation. Final solution must be more efficient.
                  * e.g. by walking from oldest to newer and use of an active garbage collector.
                  * The purgeDelay should also be specified via a configuration parameter.
+                 * TODO: check whether correct timing is used (was allocTime of message,
+                 * now it's the writeTime in the v_registration).
                  */
-                if (c_timeCompare((*registration)->message->allocTime,purgeTime) == C_LT) {
-                    c_free(*registration);
+                if (c_timeCompare((*registration)->writeTime, purgeTime) == C_LT) {
+                    found = *registration;
+                    /* Pull registration from list by redirecting the contents of the
+                     * previous registration pointer to the next registration. */
+                    *registration = found->next;
+                    found->next = NULL;
+                    c_free(found);
                     found = NULL;
-                    if (previous) {
-                        previous->next = NULL;
-                    } else {
-                        instance->unregisterMessages = NULL;
-                    }
-                } else {
-                    previous = *registration;
+                }
+                else
+                {
                     registration = &((*registration)->next);
                 }
 #else
@@ -491,12 +493,11 @@ v_groupInstanceRegister (
     }
     if (found == NULL) {
         /* No unregister message found so start looking for a register
-         * message.
+         * message in the registration list.
          */
         registration = &instance->registrations;
-        while ((*registration != NULL) && (found == NULL)) {
-            if (v_gidCompare((*registration)->message->writerGID,
-                             message->writerGID) == C_EQ) {
+        while (*registration != NULL && found == NULL) {
+            if (v_gidCompare((*registration)->writerGID, message->writerGID) == C_EQ) {
                 found = *registration;
             } else {
                 registration = &((*registration)->next);
@@ -509,15 +510,18 @@ v_groupInstanceRegister (
             found = c_new(v_kernelType(v_objectKernel(instance),
                                        K_REGISTRATION));
             if (found) {
-                found->message = createRegistration(instance,message);
+                found->writerGID = message->writerGID;
+                found->qos = c_keep(message->qos);
+                found->writeTime = message->writeTime;
                 found->next = instance->registrations;
                 instance->registrations = found;
-                *regMsg = c_keep(found->message);
+                *regMsg = createRegistration(instance, message);
                 result = V_WRITE_REGISTERED;
             } else {
                 OS_REPORT(OS_ERROR,
                   "v_groupInstanceRegister",0,
-                  "Failed to register DataWriter.");
+                  "Failed to allocate v_registration object.");
+                assert(FALSE);
                 result = V_WRITE_PRE_NOT_MET;
             }
         } else {
@@ -531,10 +535,11 @@ v_groupInstanceRegister (
              * do miss a generation count increase!
              */
             if (v_messageStateTest(message, L_REGISTER)) {
-                if(c_timeCompare(message->writeTime,
-                                 found->message->writeTime) == C_GT) {
-                    c_free(found->message);
-                    found->message = createRegistration(instance,message);
+                if(c_timeCompare(message->writeTime, found->writeTime) == C_GT)
+                {
+                    c_free(found->qos);
+                    found->qos = c_keep(message->qos);
+                    found->writeTime = message->writeTime;
                 }
             }
             result = V_WRITE_SUCCESS;
@@ -544,18 +549,19 @@ v_groupInstanceRegister (
            If given message is older, return WRITE_SUCCESS,
            so no explicit register message is send.
         */
-        if (c_timeCompare(found->message->writeTime,
+        if (c_timeCompare(found->writeTime,
                           message->writeTime) == C_GT) {
             /* reinsert as unregister message */
-            found->next = instance->unregisterMessages;
-            instance->unregisterMessages = found;
+            found->next = instance->unregistrations;
+            instance->unregistrations = found;
             result = V_WRITE_SUCCESS;
         } else {
-            c_free(found->message);
-            found->message = createRegistration(instance,message);
+            c_free(found->qos);
+            found->qos = c_keep(message->qos);
+            found->writeTime = message->writeTime;
             found->next = instance->registrations;
             instance->registrations = found;
-            *regMsg = c_keep(found->message);
+            *regMsg = createRegistration(instance, message);
             result = V_WRITE_REGISTERED;
         }
     }
@@ -576,46 +582,141 @@ v_groupInstanceRemoveUnregistrationIfObsolete(
     v_groupInstance instance,
     v_gid writerGID)
 {
-	v_registration *unregistration;
-	v_registration unregistrationFound;
-	v_groupSample sample;
-	v_groupSample sampleFound;
+    v_registration *unregistration;
+    v_registration unregistrationFound;
+    v_groupSample sample;
+    v_groupSample sampleFound;
 
-	CHECK_REGISTRATIONS(instance);
-	/* First find the corresponding unregister message, if available */
-    unregistration = &instance->unregisterMessages;
+    CHECK_REGISTRATIONS(instance);
+    /*
+     * First find the corresponding unregister message, if available.
+     * Keep track of the address of the current unregistration to be able to
+     * redirect the content of the previous item in the unregistration list
+     * when removing the current unregistration.
+     */
+    unregistration = &instance->unregistrations;
     unregistrationFound = NULL;
-    while ((*unregistration != NULL) && (unregistrationFound == NULL)) {
-        if (v_gidCompare((*unregistration)->message->writerGID, writerGID) == C_EQ) {
+    while (*unregistration != NULL && unregistrationFound == NULL)
+    {
+        if (v_gidCompare((*unregistration)->writerGID, writerGID) == C_EQ)
+        {
             unregistrationFound = *unregistration;
-        } else {
+        }
+        else
+        {
             unregistration = &((*unregistration)->next);
         }
     }
     /* Only continue in case the unregistration exists */
-    if (unregistrationFound != NULL) {
-    	/* Now figure out if the instance contains any messages
+    if (unregistrationFound != NULL)
+    {
+        /* Now figure out if the instance contains any messages
          * from this gid */
-	    sample = v_groupSample(instance->oldest);
-	    sampleFound = NULL;
-	    while ((sample != NULL) && (sampleFound == NULL)) {
-	    	if (v_gidCompare(v_groupSampleTemplate(sample)->message->writerGID, writerGID) == C_EQ) {
-	    		sampleFound = sample;
-	    	} else {
-	            sample = sample->newer;
-	    	}
-	    }
-	    if (sampleFound == NULL) {
-	    	/* No sample found for this gid so remove the
-                 * corresponding unregister message */
-	    	*unregistration = unregistrationFound->next;
-	    	unregistrationFound->next = NULL;
-	    	c_free(unregistrationFound);
-	    }
+        sample = v_groupSample(instance->oldest);
+        sampleFound = NULL;
+        while (sample != NULL && sampleFound == NULL)
+        {
+            if (v_gidCompare(v_groupSampleTemplate(sample)->message->writerGID,
+                    writerGID) == C_EQ)
+            {
+                sampleFound = sample;
+            }
+            else
+            {
+                sample = sample->newer;
+            }
+        }
+        if (sampleFound == NULL)
+        {
+            /* No sample found for this gid so remove the corresponding
+             * unregistration message. Pull the registration from the list
+             * by redirecting the contents of the previous registration pointer
+             * to the next registration. */
+            *unregistration = unregistrationFound->next;
+            unregistrationFound->next = NULL;
+            c_free(unregistrationFound);
+        }
     }
     CHECK_REGISTRATIONS(instance);
 }
 
+v_writeResult
+v_groupInstanceRemoveRegistration(
+    v_groupInstance instance,
+    v_registration registration,
+    c_time timestamp)
+{
+    v_writeResult result;
+    v_registration *reg;
+    v_registration found;
+
+    assert(instance != NULL);
+    assert(C_TYPECHECK(instance,v_groupInstance));
+    assert(registration != NULL);
+    assert(C_TYPECHECK(registration, v_registration));
+    CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
+
+    /*
+     * Keep track of the address of the current registration to be able to
+     * redirect the content of the previous item in the registration list
+     * when removing the current registration.
+     */
+    reg = &instance->registrations;
+    found = NULL;
+    while (*reg != NULL && found == NULL)
+    {
+        if (v_gidCompare((*reg)->writerGID, registration->writerGID) == C_EQ)
+        {
+            found = *reg;
+            /* Pull registration from list by redirecting the contents of the
+             * previous registration pointer to the next registration. */
+            *reg = found->next;
+            found->next = NULL;
+        }
+        else
+        {
+            /* must be in else clause,
+             * since then clause could have NULL-ified..
+             */
+            reg = &((*reg)->next);
+        }
+    }
+    if (found != NULL)
+    {
+        /* If registration is currently owning instance, reset owner */
+        if (v_gidCompare(registration->writerGID, instance->owner.gid) == C_EQ)
+        {
+            instance->owner.strength = 0;
+            v_gidSetNil(instance->owner.gid);
+            instance->owner.strength = 0;
+        }
+
+        /* Insert the registration into the unregistration list. */
+        found->writeTime = timestamp;
+        found->next = instance->unregistrations;
+        instance->unregistrations = found;
+        result = V_WRITE_UNREGISTERED;
+    }
+    if (instance->registrations == NULL)
+    {
+        /* no more writers, so set state to NOWRITERS */
+        v_stateSet(instance->state, L_NOWRITERS);
+    }
+
+    if (result == V_WRITE_UNREGISTERED)
+    {
+        /* Unregister succeeded, remove unregister message in case there
+         * are no messages in the instance at all.
+         */
+        v_groupInstanceRemoveUnregistrationIfObsolete(instance, registration->writerGID);
+    }
+
+    CHECK_COUNT(instance);
+    CHECK_REGISTRATIONS(instance);
+    return result;
+
+}
 
 v_writeResult
 v_groupInstanceUnregister (
@@ -634,45 +735,63 @@ v_groupInstanceUnregister (
     CHECK_COUNT(instance);
     CHECK_REGISTRATIONS(instance);
 
+    /*
+     * Keep track of the address of the current registration to be able to
+     * redirect the content of the previous item in the registration list
+     * when removing the current registration.
+     */
     registration = &instance->registrations;
     found = NULL;
-    while (((*registration) != NULL) && (found == NULL)) {
-        if (v_gidCompare((*registration)->message->writerGID,
-                         message->writerGID) == C_EQ) {
+    while (*registration != NULL && found == NULL)
+    {
+        if (v_gidCompare((*registration)->writerGID, message->writerGID) == C_EQ)
+        {
             found = *registration;
-            (*registration) = found->next;
+            /* Pull registration from list by redirecting the contents of the
+             * previous registration pointer to the next registration. */
+            *registration = found->next;
             found->next = NULL;
-        } else {
+        }
+        else
+        {
             /* must be in else clause,
              * since then clause could have NULL-ified..
              */
             registration = &((*registration)->next);
         }
     }
-    if (found != NULL) {
-        if (c_timeCompare(found->message->writeTime,
-                          message->writeTime) == C_GT) {
+    if (found != NULL)
+    {
+        if (c_timeCompare(found->writeTime, message->writeTime) == C_GT)
+        {
             /* reinsert registration */
             result = V_WRITE_SUCCESS;
             found->next = instance->registrations;
             instance->registrations = found;
-        } else {
+        }
+        else
+        {
 
-        	/* If message is currently owning instance, reset owner */
-        	equality = v_gidCompare (message->writerGID, instance->owner.gid);
-        	if (equality == C_EQ) {
-        		instance->owner.strength = 0;
-        		v_gidSetNil(instance->owner.gid);
-        		instance->owner.strength = 0;
-        	}
+            /* If message is currently owning instance, reset owner */
+            equality = v_gidCompare (message->writerGID, instance->owner.gid);
+            if (equality == C_EQ)
+            {
+                instance->owner.strength = 0;
+                v_gidSetNil(instance->owner.gid);
+                instance->owner.strength = 0;
+            }
 
-            c_free(found->message);
-            found->message = c_keep(message);
-            found->next = instance->unregisterMessages;
-            instance->unregisterMessages = found;
+            c_free(found->qos);
+            found->qos = c_keep(message->qos);
+            found->writeTime = message->writeTime;
+            /* Insert the registration into the unregistration list. */
+            found->next = instance->unregistrations;
+            instance->unregistrations = found;
             result = V_WRITE_UNREGISTERED;
         }
-    } else {
+    }
+    else
+    {
         /* registration not found, should not happen */
         OS_REPORT(OS_WARNING,
           "v_groupInstanceUnregister",0,
@@ -680,16 +799,18 @@ v_groupInstanceUnregister (
 
         result = V_WRITE_SUCCESS;
     }
-    if (instance->registrations == NULL) {
+    if (instance->registrations == NULL)
+    {
         /* no more writers, so set state to NOWRITERS */
         v_stateSet(instance->state, L_NOWRITERS);
     }
 
-    if (result == V_WRITE_UNREGISTERED) {
-    	/* Unregister succeeded, remove unregistermessage in case there
+    if (result == V_WRITE_UNREGISTERED)
+    {
+        /* Unregister succeeded, remove unregister message in case there
          * are no messages in the instance at all.
          */
-    	v_groupInstanceRemoveUnregistrationIfObsolete(instance, message->writerGID);
+        v_groupInstanceRemoveUnregistrationIfObsolete(instance, message->writerGID);
     }
 
     CHECK_COUNT(instance);
@@ -714,7 +835,7 @@ v_groupInstanceWalkRegistrations (
 
     registration = instance->registrations;
     while ((registration != NULL) && (proceed == TRUE)) {
-        proceed = action(registration,arg);
+        proceed = action(registration, arg);
         registration = registration->next;
     }
     CHECK_COUNT(instance);
@@ -738,7 +859,7 @@ v_groupInstanceWalkUnregisterMessages (
     CHECK_COUNT(instance);
     CHECK_REGISTRATIONS(instance);
 
-    registration = instance->unregisterMessages;
+    registration = instance->unregistrations;
 
     while ((registration != NULL) && (proceed == TRUE)) {
         proceed = action(registration,arg);
@@ -760,19 +881,29 @@ v_groupInstanceCreateMessage(
     v_group group;
     v_message message = NULL;
 
-    if (_this != NULL) {
+    if (_this != NULL)
+    {
         group = v_groupInstanceGroup(_this);
         message = v_topicMessageNew(v_groupTopic(group));
-        if (message != NULL) {
+        if (message != NULL)
+        {
             messageKeyList = v_topicMessageKeyList(v_groupTopic(group));
             instanceKeyList = v_groupKeyList(group);
             assert(c_arraySize(messageKeyList) == c_arraySize(instanceKeyList));
             nrOfKeys = c_arraySize(messageKeyList);
-            for (i=0;i<nrOfKeys;i++) {
+            for (i=0;i<nrOfKeys;i++)
+            {
                 c_fieldCopy(instanceKeyList[i],_this,
                             messageKeyList[i],message);
             }
             c_free(instanceKeyList);
+        }
+        else
+        {
+            OS_REPORT_1(OS_ERROR,
+                      "v_groupInstance",0,
+                      "v_groupInstanceCreateMessage(_this=0x%x)\n"
+                      "        Failed to allocate a v_message.", message);
         }
     }
     return message;
@@ -833,40 +964,40 @@ v_groupInstanceInsert(
 
     /* Exclusive ownership handling */
     if (instance->owner.exclusive) {
-    	if (!v_messageQos_isExclusive(message->qos)) {
-    		/* If ownership Qos settings does not match, message should not be inserted */
-    		return V_WRITE_SUCCESS_NOT_STORED;
-    	}else
-    	{
-    		if (v_gidIsValid (instance->owner.gid))
-    		{
-    			/* Instance has a valid owner, check if owner same as from message */
-				equality = v_gidCompare (message->writerGID, instance->owner.gid);
-				if (equality != C_EQ) {
-					/* Instance owner is not same as message, compare strength */
-					msgStrength = v_messageQos_getOwnershipStrength(message->qos);
-					if (msgStrength == instance->owner.strength) {
-						if (equality == C_GT) {
-							/* A writer (which is not the owner) with same ownership strength
-							 * and higher GID becomes new owner to guarantee that same owner
-							 * is selected everywhere */
-							instance->owner.gid = message->writerGID;
-						}
-					}else if (msgStrength > instance->owner.strength) {
-						/* A writer with a higher strength becomes new owner */
-						instance->owner.gid = message->writerGID;
-						instance->owner.strength = msgStrength;
-					}else {
-						/* Messages from a writer with lower strength are discarded */
-						return V_WRITE_SUCCESS_NOT_STORED;
-					}
-				}
-    		}else {
-    			/* Instance has no owner, so assign writer of message */
-    			instance->owner.gid = message->writerGID;
-    			instance->owner.strength = v_messageQos_getOwnershipStrength(message->qos);
-    		}
-    	}
+        if (!v_messageQos_isExclusive(message->qos)) {
+            /* If ownership Qos settings does not match, message should not be inserted */
+            return V_WRITE_SUCCESS_NOT_STORED;
+        }else
+        {
+            if (v_gidIsValid (instance->owner.gid))
+            {
+                /* Instance has a valid owner, check if owner same as from message */
+                equality = v_gidCompare (message->writerGID, instance->owner.gid);
+                if (equality != C_EQ) {
+                    /* Instance owner is not same as message, compare strength */
+                    msgStrength = v_messageQos_getOwnershipStrength(message->qos);
+                    if (msgStrength == instance->owner.strength) {
+                        if (equality == C_GT) {
+                            /* A writer (which is not the owner) with same ownership strength
+                             * and higher GID becomes new owner to guarantee that same owner
+                             * is selected everywhere */
+                            instance->owner.gid = message->writerGID;
+                        }
+                    }else if (msgStrength > instance->owner.strength) {
+                        /* A writer with a higher strength becomes new owner */
+                        instance->owner.gid = message->writerGID;
+                        instance->owner.strength = msgStrength;
+                    }else {
+                        /* Messages from a writer with lower strength are discarded */
+                        return V_WRITE_SUCCESS_NOT_STORED;
+                    }
+                }
+            }else {
+                /* Instance has no owner, so assign writer of message */
+                instance->owner.gid = message->writerGID;
+                instance->owner.strength = v_messageQos_getOwnershipStrength(message->qos);
+            }
+        }
     }
 
     group = v_group(instance->group);
@@ -1010,6 +1141,11 @@ v_groupInstanceInsert(
                 c_free(ptr);
                 ptr = oldest;
             }
+            /* Now we also need to decrease the already increased counter for
+             * the number of historical samples in the group, because a
+             * WRITE sample has been removed.
+             */
+            group->count--;
         }
     }
     if (v_messageStateTest(v_groupSampleMessage(v_groupInstanceHead(instance)), L_DISPOSED)) {
@@ -1112,13 +1248,13 @@ v_groupInstanceDisposeTime (
     return v_groupSampleMessage(v_groupInstanceHead(instance->oldest))->writeTime;
 }
 
-void
-v_groupInstanceGetRegisterMessages(
+c_bool
+v_groupInstanceHasRegistration(
     v_groupInstance instance,
-    c_ulong systemId,
-    c_iter *messages)
+    v_registration registration)
 {
     v_registration reg;
+    c_bool result = FALSE;
 
     assert(instance != NULL);
     assert(C_TYPECHECK(instance,v_groupInstance));
@@ -1126,43 +1262,49 @@ v_groupInstanceGetRegisterMessages(
     CHECK_REGISTRATIONS(instance);
 
     reg = instance->registrations;
-    while (reg != NULL) {
-        if (v_gidSystemId(reg->message->writerGID) == systemId) {
-            *messages = c_iterInsert(*messages, c_keep(reg->message));
+    while ((reg != NULL) && (result == FALSE)) {
+        /* TODO: When singleton registrations have been implemented, then
+         * the gidCompare can be replaced by an ordinary pointer comparison.
+         */
+        if (v_gidCompare(reg->writerGID, registration->writerGID) == C_EQ) {
+            result = TRUE;
         }
         reg = reg->next;
     }
-    CHECK_COUNT(instance);
-    CHECK_REGISTRATIONS(instance);
+
+    return result;
 }
 
-v_message
-v_groupInstanceGetRegisterMessageOfWriter(
+v_registration
+v_groupInstanceGetRegistration(
     v_groupInstance instance,
-    v_gid writerGid)
+    v_gid gidTemplate,
+    v_matchIdentityAction predicate)
 {
     v_registration reg;
-    v_message found;
+    c_bool found = FALSE;
 
     assert(instance != NULL);
     assert(C_TYPECHECK(instance,v_groupInstance));
     CHECK_COUNT(instance);
     CHECK_REGISTRATIONS(instance);
 
-    found = NULL;
     reg = instance->registrations;
-    while ((reg != NULL) && (found == NULL)) {
-        if (v_gidCompare(reg->message->writerGID, writerGid) == C_EQ) {
-            found = c_keep(reg->message);
+    while (reg != NULL && !found)
+    {
+        if (predicate(reg->writerGID, gidTemplate) == C_EQ)
+        {
+            found = TRUE;
         }
-        reg = reg->next;
+        else
+        {
+            reg = reg->next;
+        }
     }
-    CHECK_COUNT(instance);
-    CHECK_REGISTRATIONS(instance);
 
-    return found;
-
+    return c_keep(reg);
 }
+
 
 void
 v_groupInstancePurgeTimed(
@@ -1199,7 +1341,7 @@ v_groupInstancePurgeTimed(
 
 
 
-v_result
+v_writeResult
 v_groupInstanceDispose (
     v_groupInstance instance,
     c_time timestamp)
@@ -1225,5 +1367,41 @@ v_groupInstanceDispose (
     CHECK_COUNT(instance);
     assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
     assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
-    return V_RESULT_OK;
+    return V_WRITE_SUCCESS;
 }
+
+
+/*
+ * TODO: The code snippet below can be removed when v_groupUnregisterByGidTemplate
+ * starts using the part in the #if 0 clause instead of in its #else clause.
+ */
+#if 1
+void
+v_groupInstancecleanup(v_groupInstance _this, v_registration registration, c_time timestamp)
+{
+    v_message unregMsg, disposeMsg;
+    v_group group;
+
+    group = v_groupInstanceGroup(_this);
+    if (v_messageQos_isAutoDispose(registration->qos)) {
+        unregMsg = v_groupInstanceCreateMessage(_this);
+        if (unregMsg) {
+            v_nodeState(unregMsg) = L_DISPOSED;
+            unregMsg->qos = c_keep(registration->qos); /* since messageQos does not contain refs */
+            unregMsg->writerGID = registration->writerGID; /* pretend this message comes from the original writer! */
+            unregMsg->writeTime = timestamp;
+            v_groupWrite(group, unregMsg, NULL, V_NETWORKID_ANY);
+            c_free(unregMsg);
+        }
+    }
+    disposeMsg = v_groupInstanceCreateMessage(_this);
+    if (disposeMsg) {
+        v_nodeState(disposeMsg) = L_UNREGISTER;
+        disposeMsg->qos = c_keep(registration->qos); /* since messageQos does not contain refs */
+        disposeMsg->writerGID = registration->writerGID; /* pretend this message comes from the original writer! */
+        disposeMsg->writeTime = timestamp;
+        v_groupWrite(group, disposeMsg, NULL, V_NETWORKID_ANY);
+        c_free(disposeMsg);
+    }
+}
+#endif

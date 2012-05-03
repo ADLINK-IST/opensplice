@@ -21,6 +21,11 @@ $VG_MESSAGEBOARD java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.MessageB
 
 sleep 2
 
+echo start UserLoad
+$VG_USERLOAD java -classpath $OSPL_HOME/jar/dcpssaj.jar:bld chatroom.UserLoad &
+
+sleep 2
+
 echo start Chatter
 $VG_CHATTER java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.Chatter
 

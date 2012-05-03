@@ -87,8 +87,7 @@ v_entryWrite(
     case K_DATAREADER:
         writeResult = v_dataReaderEntryWrite(v_dataReaderEntry(e),
                                              o,
-                                             instance,
-                                             C_TIME_MIN_INFINITE);
+                                             instance);
     break;
     case K_NETWORKREADER:
         writeResult = v_networkReaderEntryWrite(v_networkReaderEntry(e),

@@ -36,7 +36,7 @@ namespace WaitSetPublisher
     {
         static void Main(string[] args)
         {
-            DDSEntityManager mgr = new DDSEntityManager();
+            DDSEntityManager mgr = new DDSEntityManager("WaitSet");
             String partitionName = "WaitSet example";
 
             // create Domain Participant
@@ -47,7 +47,7 @@ namespace WaitSetPublisher
             mgr.registerType(msgTS);
 
             // create Topic
-            mgr.createTopic("WaitSetData_Msg", "WaitSet");
+            mgr.createTopic("WaitSetData_Msg");
 
             // create Publisher
             mgr.createPublisher();

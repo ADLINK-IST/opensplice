@@ -838,21 +838,29 @@ makeRange(
         switch (e->kind) {
         case CQ_NE:
             range = c_new(c_qRangeType(c__getBase(e)));
-            range->startKind = B_UNDEFINED;
-            range->endKind   = B_EXCLUDE;
-            range->startExpr = c_keep(valueExpr);
-            range->endExpr = c_keep(valueExpr);
-            range->end   = v;
-            range->start = v;
-            rangeList = c_iterNew(range);
+            if (range) {
+                range->startKind = B_UNDEFINED;
+                range->endKind   = B_EXCLUDE;
+                range->startExpr = c_keep(valueExpr);
+                range->endExpr = c_keep(valueExpr);
+                range->end   = v;
+                range->start = v;
+                rangeList = c_iterNew(range);
+            } else {
+                assert(FALSE);
+            }
             range = c_new(c_qRangeType(c__getBase(e)));
-            range->startKind = B_EXCLUDE;
-            range->endKind   = B_UNDEFINED;
-            range->startExpr = c_keep(valueExpr);
-            range->endExpr = c_keep(valueExpr);
-            range->end   = v;
-            range->start = v;
-            rangeList = c_iterAppend(rangeList,range);
+            if (range) {
+                range->startKind = B_EXCLUDE;
+                range->endKind   = B_UNDEFINED;
+                range->startExpr = c_keep(valueExpr);
+                range->endExpr = c_keep(valueExpr);
+                range->end   = v;
+                range->start = v;
+                rangeList = c_iterAppend(rangeList,range);
+            } else {
+                assert(FALSE);
+            }
 
             /* In case v is a value of a reference type (string or object)
              * it should have been c_keeped when assigned to the 'start' and
@@ -878,26 +886,29 @@ makeRange(
             return NULL;
         }
         range = c_new(c_qRangeType(c__getBase(e)));
-        if (inverse) {
-            range->startKind = endKind;
-            range->endKind   = startKind;
+        if (range) {
+            if (inverse) {
+                range->startKind = endKind;
+                range->endKind   = startKind;
+            } else {
+                range->startKind = startKind;
+                range->endKind   = endKind;
+            }
+
+            range->startExpr = c_keep(valueExpr);
+            range->endExpr = c_keep(valueExpr);
+            range->end   = v;
+            range->start = v;
+
+            if (v.kind == V_STRING) {
+                c_keep(c_keep(v.is.String));
+            }
+            if (v.kind == V_OBJECT) {
+                c_keep(c_keep(v.is.Object));
+            }
         } else {
-            range->startKind = startKind;
-            range->endKind   = endKind;
+            assert(FALSE);
         }
-
-        range->startExpr = c_keep(valueExpr);
-        range->endExpr = c_keep(valueExpr);
-        range->end   = v;
-        range->start = v;
-
-        if (v.kind == V_STRING) {
-            c_keep(c_keep(v.is.String));
-        }
-        if (v.kind == V_OBJECT) {
-            c_keep(c_keep(v.is.Object));
-        }
-
         return c_iterNew(range);
     default:
     break;
@@ -1142,10 +1153,12 @@ makeExprQuery(
 #define _CASE_(eq) \
         case Q_EXPR_##eq: \
             r = c_qExpr(c_new(c_qFuncType(base))); \
-            r->kind=CQ_##eq; \
-            c_qFunc(r)->params = c_arrayNew(c_object_t(base),2); \
-            c_qFunc(r)->params[0] = makeExprQuery(q_leftPar(e),t,varList,fixed); \
-            c_qFunc(r)->params[1] = makeExprQuery(q_rightPar(e),t,varList,fixed)
+            if (r) { \
+                r->kind=CQ_##eq; \
+                c_qFunc(r)->params = c_arrayNew(c_object_t(base),2); \
+                c_qFunc(r)->params[0] = makeExprQuery(q_leftPar(e),t,varList,fixed); \
+                c_qFunc(r)->params[1] = makeExprQuery(q_rightPar(e),t,varList,fixed); \
+            }
 
     base = c__getBase(t);
     switch (q_getKind(e)) {
@@ -1174,28 +1187,44 @@ makeExprQuery(
             f = c_fieldNew(t,qn);
             if (f == NULL) {
                 r = c_qExpr(c_new(c_qConstType(base)));
-                r->kind = CQ_CONST;
-                c_qConst(r)->value = c_stringValue(c_stringNew(base,qn));
+                if (r) {
+                    r->kind = CQ_CONST;
+                    c_qConst(r)->value = c_stringValue(c_stringNew(base,qn));
+                } else {
+                    assert(FALSE);
+                }
             } else {
                 r = c_qExpr(c_new(c_qFieldType(base)));
-                r->kind = CQ_FIELD;
-                c_qField(r)->field = f;
+                if (r) {
+                    r->kind = CQ_FIELD;
+                    c_qField(r)->field = f;
+                } else {
+                    assert(FALSE);
+                }
             }
         break;
         case Q_EXPR_CALLBACK:
             r = c_qExpr(c_new(c_qFuncType(base)));
-            r->kind = CQ_CALLBACK;
-            c_qFunc(r)->params = c_arrayNew(c_object_t(base),3);
+            if (r) {
+                r->kind = CQ_CALLBACK;
+                c_qFunc(r)->params = c_arrayNew(c_object_t(base),3);
                 c = c_qExpr(c_new(c_qTypeType(base)));
-                c->kind = CQ_TYPE;
-                c_qType(c)->type = c_keep(q_getTyp(q_getPar(e,0)));
-            c_qFunc(r)->params[0] = c;
+                if (c) {
+                    c->kind = CQ_TYPE;
+                    c_qType(c)->type = c_keep(q_getTyp(q_getPar(e,0)));
+                }
+                c_qFunc(r)->params[0] = c;
                 c = c_qExpr(c_new(c_qConstType(base)));
-                c->kind = CQ_CONST;
-                c_qConst(c)->value.kind = V_ADDRESS;
-                c_qConst(c)->value.is.Address = (c_address)q_getPar(e,1);
-            c_qFunc(r)->params[1] = c;
-            c_qFunc(r)->params[2] = makeExprQuery(q_getPar(e,2),t,varList,fixed);
+                if (c) {
+                    c->kind = CQ_CONST;
+                    c_qConst(c)->value.kind = V_ADDRESS;
+                    c_qConst(c)->value.is.Address = (c_address)q_getPar(e,1);
+                }
+                c_qFunc(r)->params[1] = c;
+                c_qFunc(r)->params[2] = makeExprQuery(q_getPar(e,2),t,varList,fixed);
+            } else {
+                assert(FALSE);
+            }
         break;
         default:
             OS_REPORT_1(OS_API_INFO,
@@ -1209,34 +1238,54 @@ makeExprQuery(
     break;
     case T_INT:
         r = c_qExpr(c_new(c_qConstType(base)));
-        r->kind = CQ_CONST;
-        c_qConst(r)->value.kind = V_LONGLONG;
-        c_qConst(r)->value.is.LongLong = q_getInt(e);
+        if (r) {
+            r->kind = CQ_CONST;
+            c_qConst(r)->value.kind = V_LONGLONG;
+            c_qConst(r)->value.is.LongLong = q_getInt(e);
+        } else {
+            assert(FALSE);
+        }
     break;
     case T_DBL:
         r = c_qExpr(c_new(c_qConstType(base)));
-        r->kind = CQ_CONST;
-        c_qConst(r)->value.kind = V_DOUBLE;
-        c_qConst(r)->value.is.Double = q_getDbl(e);
+        if (r) {
+            r->kind = CQ_CONST;
+            c_qConst(r)->value.kind = V_DOUBLE;
+            c_qConst(r)->value.is.Double = q_getDbl(e);
+        } else {
+            assert(FALSE);
+        }
     break;
     case T_CHR:
         r = c_qExpr(c_new(c_qConstType(base)));
-        r->kind = CQ_CONST;
-        c_qConst(r)->value.kind = V_CHAR;
-        c_qConst(r)->value.is.Char = q_getChr(e);
+        if (r) {
+            r->kind = CQ_CONST;
+            c_qConst(r)->value.kind = V_CHAR;
+            c_qConst(r)->value.is.Char = q_getChr(e);
+        } else {
+            assert(FALSE);
+        }
     break;
     case T_STR:
         r = c_qExpr(c_new(c_qConstType(base)));
-        r->kind = CQ_CONST;
-        c_qConst(r)->value.kind = V_STRING;
-        c_qConst(r)->value.is.String = c_stringNew(base,q_getStr(e));
+        if (r) {
+            r->kind = CQ_CONST;
+            c_qConst(r)->value.kind = V_STRING;
+            c_qConst(r)->value.is.String = c_stringNew(base,q_getStr(e));
+        } else {
+            assert(FALSE);
+        }
     break;
     case T_ID:
         f = c_fieldNew(t,q_getId(e));
         if (f != NULL) {
             r = c_qExpr(c_new(c_qFieldType(base)));
-            r->kind = CQ_FIELD;
-            c_qField(r)->field = f;
+            if (r) {
+                r->kind = CQ_FIELD;
+                c_qField(r)->field = f;
+            } else {
+                assert(FALSE);
+            }
         } else {
             r = NULL;
         }
@@ -1246,24 +1295,32 @@ makeExprQuery(
         var = c_iterResolve(*varList,c_qVarCompare,&id);
         if (var == NULL) {
             r = c_qExpr(c_new(c_qConstType(base)));
-            r->kind = CQ_CONST;
-            c_qConst(r)->value = c_undefinedValue();
-            var = c_qVar(c_new(c_qVarType(base)));
+            if (r) {
+                r->kind = CQ_CONST;
+                c_qConst(r)->value = c_undefinedValue();
+                var = c_qVar(c_new(c_qVarType(base)));
 #if 1
-            var->type = NULL;
+                var->type = NULL;
 #endif
-            var->id = id;
-            var->keys = c_setNew(c_qKeyType(base));
-            var->variable = c_qConst(c_keep(r));
-            *varList = c_iterAppend(*varList,var);
+                var->id = id;
+                var->keys = c_setNew(c_qKeyType(base));
+                var->variable = c_qConst(c_keep(r));
+                *varList = c_iterAppend(*varList,var);
+            } else {
+                assert(FALSE);
+            }
         } else {
             r = c_keep(c_qExpr(var->variable));
         }
         return r;
     case T_TYP:
         r = c_qExpr(c_new(c_qTypeType(base)));
-        r->kind = CQ_TYPE;
-        c_qType(r)->type = q_getTyp(e);
+        if (r) {
+            r->kind = CQ_TYPE;
+            c_qType(r)->type = q_getTyp(e);
+        } else {
+            assert(FALSE);
+        }
     break;
     default:
         OS_REPORT_1(OS_API_INFO,
@@ -1353,41 +1410,45 @@ makeKeyQuery (
     keyExpr = q_takeField(term,c_fieldName(field));
     base = c__getBase(field);
     key = c_new(c_qKeyType(base));
-    key->field = c_keep(field);
-    key->expr = makeExprQuery(keyExpr,type,&KeyVarList,fixed);
-    while ((var = c_iterTakeFirst(KeyVarList)) != NULL) {
-        foundVar = c_iterResolve(*varList,c_qVarCompare,&var->id);
-        if (foundVar != NULL) {
-            foundKey = c_insert(foundVar->keys,key);
-            assert(foundKey == key);
-            c_free(var);
-        } else {
+    if (key) {
+        key->field = c_keep(field);
+        key->expr = makeExprQuery(keyExpr,type,&KeyVarList,fixed);
+        while ((var = c_iterTakeFirst(KeyVarList)) != NULL) {
+            foundVar = c_iterResolve(*varList,c_qVarCompare,&var->id);
+            if (foundVar != NULL) {
+                foundKey = c_insert(foundVar->keys,key);
+                assert(foundKey == key);
+                c_free(var);
+            } else {
 #if 1
-            c_type t;
-            t = c_typeActualType(c_fieldType(field));
-            assert(var->type == NULL);
-            var->type = NULL;
-            switch (c_baseObject(t)->kind) {
-            case M_ENUMERATION:
-                var->type = c_keep(t);
-            break;
-            case M_PRIMITIVE:
-                if (c_primitive(t)->kind == P_BOOLEAN) {
+                c_type t;
+                t = c_typeActualType(c_fieldType(field));
+                assert(var->type == NULL);
+                var->type = NULL;
+                switch (c_baseObject(t)->kind) {
+                case M_ENUMERATION:
                     var->type = c_keep(t);
+                break;
+                case M_PRIMITIVE:
+                    if (c_primitive(t)->kind == P_BOOLEAN) {
+                        var->type = c_keep(t);
+                    }
+                break;
+                default:
+                break;
                 }
-            break;
-            default:
-            break;
-            }
 #endif
-            c_qConst(var->variable)->value.kind = valueKind;
-            *varList = c_iterAppend(*varList,var);
-            foundKey = c_insert(var->keys,key);
-            assert(foundKey == key);
+                c_qConst(var->variable)->value.kind = valueKind;
+                *varList = c_iterAppend(*varList,var);
+                foundKey = c_insert(var->keys,key);
+                assert(foundKey == key);
+            }
         }
+        c_iterFree(KeyVarList);
+    } else {
+        assert(FALSE);
     }
     q_dispose(keyExpr);
-    c_iterFree(KeyVarList);
     return key;
 }
 
@@ -1760,6 +1821,11 @@ c_qPredNew(
     }
     PRINT_EXPR("Par:\n",e);
 
+    if (e == NULL) {
+        /* empty condition => always TRUE (equals qPred == NULL) */
+        *qPred = NULL;
+        return CQ_RESULT_OK;
+    }
     if (keyList == NULL) {
         nrOfKeys = 0;
     } else {
@@ -1768,10 +1834,14 @@ c_qPredNew(
     fixed = FALSE;
     if (nrOfKeys == 0) {
         p = c_new(c_qPredType(base));
-        p->keyField = NULL;
-        p->expr = makeExprQuery(e,type,&varList,&fixed);
-        p->next = NULL;
-        q_dispose(e);
+        if (p) {
+            p->keyField = NULL;
+            p->expr = makeExprQuery(e,type,&varList,&fixed);
+            p->next = NULL;
+            q_dispose(e);
+        } else {
+            assert(FALSE);
+        }
     } else {
         q_disjunctify(e);
         PRINT_EXPR("Par (disjunctified):\n",e);
@@ -1780,19 +1850,23 @@ c_qPredNew(
         p = NULL;
         while ((term = q_takeTerm(&e)) != NULL) {
             *ptr = c_new(c_qPredType(base));
-            (*ptr)->keyField = c_arrayNew(c_qKeyType(base),nrOfKeys);
-            for (k=0;k<nrOfKeys;k++) {
-                (*ptr)->keyField[k] = makeKeyQuery(&term,
-                                                   type,
-                                                   keyList[k],
-                                                   &varList,
-                                                   &fixed);
+            if (*ptr) {
+                (*ptr)->keyField = c_arrayNew(c_qKeyType(base),nrOfKeys);
+                for (k=0;k<nrOfKeys;k++) {
+                    (*ptr)->keyField[k] = makeKeyQuery(&term,
+                                                       type,
+                                                       keyList[k],
+                                                       &varList,
+                                                       &fixed);
+                }
+                (*ptr)->expr = makeExprQuery(term,type,&varList,
+                                                       &fixed);
+                (*ptr)->next = NULL;
+                ptr = &(*ptr)->next;
+                q_dispose(term);
+            } else {
+                assert(FALSE);
             }
-            (*ptr)->expr = makeExprQuery(term,type,&varList,
-                                                   &fixed);
-            (*ptr)->next = NULL;
-            ptr = &(*ptr)->next;
-            q_dispose(term);
         }
         assert(e == NULL);
         PRINT_PRED("Predicate:\n",p);
@@ -1878,9 +1952,13 @@ c_qPredOptimize(
                  */
                 c_free(resultPred->expr);
                 resultPred->expr = c_qExpr(c_new(c_qConstType(c__getBase(_this))));
-                resultPred->expr->kind = CQ_CONST;
-                c_qConst(resultPred->expr)->value = c_boolValue(FALSE);
-                predPrev = pred;
+                if (resultPred->expr) {
+                    resultPred->expr->kind = CQ_CONST;
+                    c_qConst(resultPred->expr)->value = c_boolValue(FALSE);
+                    predPrev = pred;
+                } else {
+                    assert(FALSE);
+                }
             } else {
                 predPrev->next = c_keep(pred->next);
                 c_free(pred);

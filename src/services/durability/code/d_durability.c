@@ -163,13 +163,13 @@ d_durabilityUpdateLease(
         sleepTime = durability->configuration->livelinessUpdateInterval;
 
         while(durability->splicedRunning){
-            u_participantRenewLease(u_participant(durability->service),
+            u_serviceRenewLease(durability->service,
                             durability->configuration->livelinessExpiryTime);
             os_nanoSleep(sleepTime);
         }
         expiryTime.seconds = 20;
         expiryTime.nanoseconds = 0;
-        u_participantRenewLease(u_participant(durability->service), expiryTime);
+        u_serviceRenewLease(durability->service, expiryTime);
     }
     return NULL;
 }
@@ -1030,7 +1030,6 @@ d_durabilityWaitForAttachToGroup(
             case STATE_TERMINATED:
             case STATE_DIED:
             default:
-                name = (c_char*)c_iterTakeFirst(services);
                 d_printTimedEvent(durability,
                           D_LEVEL_WARNING,
                           D_THREAD_GROUP_LOCAL_LISTENER,
@@ -1039,6 +1038,7 @@ d_durabilityWaitForAttachToGroup(
                 OS_REPORT_1(OS_WARNING, D_CONTEXT_DURABILITY, 0,
                           "Not waiting for service %s to attach to the group.",
                           name);
+                name = (c_char*)c_iterTakeFirst(services);
                 break;
             }
         }

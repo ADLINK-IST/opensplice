@@ -79,7 +79,8 @@ v_topicFree(
 
 OS_API v_result
 v_topicEnable(
-    v_topic topic);
+    v_topic topic,
+    v_topic* found_topic);
 
 OS_API void
 v_topicAnnounce(
@@ -112,7 +113,7 @@ v_topicGetInconsistentTopicStatus(
     v_statusAction action,
     c_voidp arg);
 
-OS_API v_result 
+OS_API v_result
 v_topicDisposeAllData(v_topic topic);
 
 OS_API v_result

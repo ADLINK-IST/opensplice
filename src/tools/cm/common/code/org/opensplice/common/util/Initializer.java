@@ -28,7 +28,6 @@ import javax.swing.JOptionPane;
  *  @date Sep 1, 2004
  */
 public class Initializer {
-    private final String vendorString = "Sun Microsystems Inc.";
     
     /**
      * Initializes the application, using the configuration that is supplied
@@ -101,35 +100,31 @@ public class Initializer {
         boolean result = true;
                 
         String version = System.getProperty("java.version");
-        String vendor  = System.getProperty("java.vm.vendor"); 
         StringTokenizer tokenizer = new StringTokenizer(version, ".");
         
-        if(!this.vendorString.equals(vendor)){
-            this.printVersionErrorAndExit(vendor, version);
-            result = false;
-        } else if(tokenizer.hasMoreTokens()){
-            token = Integer.parseInt(tokenizer.nextToken());
+	if(tokenizer.hasMoreTokens()){
+             token = Integer.parseInt(tokenizer.nextToken());
             
             if(token < 1){
-                this.printVersionErrorAndExit(vendor, version);
+                this.printVersionErrorAndExit(version);
             }
             
             if(tokenizer.hasMoreTokens()){
                 token = Integer.parseInt(tokenizer.nextToken());
                 
                 if(token < 4){
-                    this.printVersionErrorAndExit(vendor, version);
+                    this.printVersionErrorAndExit(version);
                 } else if(token == 4){
                     result = false;
                 }
             }
             else{
-                this.printVersionErrorAndExit(vendor, version);
+                this.printVersionErrorAndExit(version);
                 result = false;
             }
         }
         else{
-            this.printVersionErrorAndExit(vendor, version);
+            this.printVersionErrorAndExit(version);
             result = false;
         }
         return result;
@@ -139,12 +134,8 @@ public class Initializer {
      * Prints JVM version demands as well as the used version and exits the 
      * application.
      */
-    private void printVersionErrorAndExit(String vendor, String version){
-        if((vendor != null) && (!this.vendorString.equals(vendor))){
-            System.err.println("Your Java vendor is '" + vendor + "', but '" + this.vendorString + "' is required.\nBailing out...");
-        } else {
-            System.err.println("Your Java version is '" + version + "', but version >= '1.4' is required.\nBailing out...");
-        }
+    private void printVersionErrorAndExit(String version){
+	System.err.println("Your Java version is '" + version + "', but version >= '1.4' is required.\nBailing out...");
         System.exit(0);
     }
     

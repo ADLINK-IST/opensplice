@@ -11,7 +11,7 @@ $VG_START_SLEEP
 
 echo "=== Launching WaitSet "
 sh ./startPublisher.sh  > pubResult.txt	&
-sh ./startSubscriber.sh "./subResult.txt" 
+sh ./startSubscriber.sh > subResult.txt
 
 echo "=== Checking WaitSet Subscriber results"
 JOINED=`grep "a MsgWriter joined" subResult.txt | wc -l`;

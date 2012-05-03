@@ -29,6 +29,7 @@ namespace DDSAPIHelper
 
         private IPublisher publisher;
         private IDataWriter writer;
+        private IDataWriter writerStopper;
 
         private ISubscriber subscriber;
         private IDataReader reader;
@@ -37,6 +38,17 @@ namespace DDSAPIHelper
         private String partitionName;
         private String durabilityKind = "transient";
         private Boolean autoDisposeFlag = false;
+        private ReturnCode status = ReturnCode.Error;
+        private String exampleName;
+
+        /// <summary>
+        /// The constructor to use for creating the various entities.
+        /// </summary>
+        /// <param name="name">The example name to create an entity manager. This is used to manage different example needs.</param>
+        public DDSEntityManager(String name)
+        {
+            exampleName = name;
+        }
 
         /// <summary>
         /// Create Domain Participant
@@ -78,7 +90,8 @@ namespace DDSAPIHelper
         /// </summary>
         public void deleteParticipant()
         {
-            dpf.DeleteParticipant(participant);
+            status = dpf.DeleteParticipant(participant);
+            ErrorHandler.checkStatus(status, "DomainParticipantFactory.DeleteParticipant");
         }
         /// <summary>
         /// Register the type we are interested with the DDS Infrastructure
@@ -87,7 +100,7 @@ namespace DDSAPIHelper
         public void registerType(ITypeSupport ts)
         {
             typeName = ts.TypeName;
-            ReturnCode status = ts.RegisterType(participant, typeName);
+            status = ts.RegisterType(participant, typeName);
             ErrorHandler.checkStatus(status, "ITypeSupport.RegisterType");
         }
 
@@ -99,17 +112,18 @@ namespace DDSAPIHelper
         /// creating the topic for. This is used to define any specific Qos that the example
         /// requires.</param>
         /// <returns>The newly created Topic</returns>
-        public ITopic createTopic(String topicName, String exampleNameToCreateTopicFor)
+        public ITopic createTopic(String topicName)
         {
-            ReturnCode status = ReturnCode.Error;
-            participant.GetDefaultTopicQos(ref topicQos);
+            status = participant.GetDefaultTopicQos(ref topicQos);
+            ErrorHandler.checkStatus(status, "DomainParticipant.GetDefaultTopicQos");
 
-            switch (exampleNameToCreateTopicFor)
+            switch (exampleName)
             {
                 case "ContentFilteredTopic":
                 case "Durability":
                 case "HelloWorld":
                 case "WaitSet":
+                case "Lifecycle":
                     topicQos.Reliability.Kind = ReliabilityQosPolicyKind.ReliableReliabilityQos;
                     if (durabilityKind.Equals("transient"))
                         topicQos.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;
@@ -178,7 +192,7 @@ namespace DDSAPIHelper
             }
             else
             {
-                ReturnCode status = participant.DeleteContentFilteredTopic(filteredTopic);
+                status = participant.DeleteContentFilteredTopic(filteredTopic);
                 ErrorHandler.checkStatus(status, "DDS.DomainParticipant.DeleteContentFilteredTopic");
             }
         }
@@ -188,7 +202,7 @@ namespace DDSAPIHelper
         /// </summary>
         public void deleteTopic()
         {
-            ReturnCode status = participant.DeleteTopic(topic);
+            status = participant.DeleteTopic(topic);
             ErrorHandler.checkStatus(
                     status, "DDS.DomainParticipant.DeleteTopic");
         }
@@ -198,7 +212,7 @@ namespace DDSAPIHelper
         /// </summary>
         public void createPublisher()
         {
-            ReturnCode status = participant.GetDefaultPublisherQos(ref pubQos);
+            status = participant.GetDefaultPublisherQos(ref pubQos);
             ErrorHandler.checkStatus(status, "DomainParticipant.GetDefaultPublisherQos");
 
             pubQos.Partition.Name = new String[1];
@@ -213,16 +227,19 @@ namespace DDSAPIHelper
         /// </summary>
         public void deletePublisher()
         {
-            participant.DeletePublisher(publisher);
+            status = participant.DeletePublisher(publisher);
+            ErrorHandler.checkStatus(status, "DomainParticipant.DeletePublisher");
         }
 
         /// <summary>
-        /// Create a DataWriter
+        /// Create DataWriter(s)
         /// </summary>
         public void createWriter()
         {
-            publisher.GetDefaultDataWriterQos(ref WQosH);
-            publisher.CopyFromTopicQos(ref WQosH, topicQos);
+            status = publisher.GetDefaultDataWriterQos(ref WQosH);
+            ErrorHandler.checkStatus(status, "Publisher.GetDefaultDataWriterQos");
+            status = publisher.CopyFromTopicQos(ref WQosH, topicQos);
+            ErrorHandler.checkStatus(status, "Publisher.CopyFromTopicQos");
             if (durabilityKind.Equals("transient"))
                 WQosH.Durability.Kind = DurabilityQosPolicyKind.TransientDurabilityQos;
             else
@@ -235,6 +252,26 @@ namespace DDSAPIHelper
                     null,
                     StatusKind.Any);
             ErrorHandler.checkHandle(writer, "Publisher.CreateDataWriter");
+
+            if (exampleName.Equals("Lifecycle"))
+            {
+                writerStopper = publisher.CreateDataWriter(
+                    topic,
+                    WQosH,
+                    null,
+                    StatusKind.Any);
+                ErrorHandler.checkHandle(writerStopper, "Publisher.CreateDataWriter");
+            }
+        }
+
+        /// <summary>
+        /// Method to delete a data writer.
+        /// </summary>
+        /// <param name="dataWriter">The DataWriter instance to delete.</param>
+        public void deleteWriter(IDataWriter dataWriter)
+        {
+            status = publisher.DeleteDataWriter(dataWriter);
+            ErrorHandler.checkStatus(status, "Publisher.DeleteDataWriter");
         }
 
         /// <summary>
@@ -242,7 +279,7 @@ namespace DDSAPIHelper
         /// </summary>
         public void createSubscriber()
         {
-            ReturnCode status = participant.GetDefaultSubscriberQos(ref subQos);
+            status = participant.GetDefaultSubscriberQos(ref subQos);
             ErrorHandler.checkStatus(status, "DomainParticipant.GetDefaultSubscriberQos");
 
             subQos.Partition.Name = new String[1];
@@ -257,7 +294,8 @@ namespace DDSAPIHelper
         /// </summary>
         public void deleteSubscriber()
         {
-            participant.DeleteSubscriber(subscriber);
+            status = participant.DeleteSubscriber(subscriber);
+            ErrorHandler.checkStatus(status, "Participant.DeleteSubscriber");
         }
 
         /// <summary>
@@ -268,15 +306,14 @@ namespace DDSAPIHelper
         /// example requires.</param>
         /// <param name="filtered">This param determines whether a reader will be created
         /// for a normal or filtered topic.</param>
-        public void createReader(String exampleNameToCreateReaderFor, Boolean filtered)
+        public void createReader(Boolean filtered)
         {
-            ReturnCode status;
             status = subscriber.GetDefaultDataReaderQos(ref RQosH);
             ErrorHandler.checkStatus(status, "Subscriber.GetDefaultDataReaderQoS");
             status = subscriber.CopyFromTopicQos(ref RQosH, topicQos);
             ErrorHandler.checkStatus(status, "Subscriber.CopyFromTopicQoS");
 
-            switch (exampleNameToCreateReaderFor)
+            switch (exampleName)
             {                
                 case "ContentFilteredTopic": 
                 case "Listener":
@@ -293,6 +330,7 @@ namespace DDSAPIHelper
                 case "Ownership":
                 case "WaitSet":
                 case "QueryCondition":
+                case "Lifecycle":
                     break;
                 default:
                     break;
@@ -335,6 +373,15 @@ namespace DDSAPIHelper
         }
 
         /// <summary>
+        /// Accessor method to get the class's DataWriter stopper. Only available for the Lifecycle example.
+        /// </summary>
+        /// <returns></returns>
+        public IDataWriter getWriterStopper()
+        {
+            return writerStopper;
+        }
+
+        /// <summary>
         /// Accessor method to get the class's Publisher
         /// </summary>
         /// <returns></returns>
@@ -370,6 +417,10 @@ namespace DDSAPIHelper
             return participant;
         }
 
+        /// <summary>
+        /// Accessor method to get the class's DomainParticipantFactory
+        /// </summary>
+        /// <returns></returns>
         public IDomainParticipantFactory getDomainParticipantFactory()
         {
             return dpf;

@@ -15,6 +15,7 @@
 #include "d_readerListener.h"
 #include "d__readerListener.h"
 #include "d__mergeAction.h"
+#include "d__group.h"
 #include "d_groupLocalListener.h"
 #include "d_actionQueue.h"
 #include "d_sampleRequest.h"
@@ -1878,6 +1879,43 @@ d_sampleChainListenerInsertMergeAction(
 }
 
 void
+d_sampleChainListenerCheckUnfulfilled(
+    d_sampleChainListener listener,
+    d_nameSpace nameSpace,
+    d_networkAddress fellowAddress) {
+
+    d_admin admin;
+    d_chain chain;
+    d_groupsRequest request;
+    d_publisher publisher;
+    int i;
+
+    if (listener) {
+        admin = d_listenerGetAdmin(d_listener(listener));
+        publisher = d_adminGetPublisher(admin);
+
+        d_listenerLock(d_listener(listener));
+
+        for(i=0; i<c_iterLength(listener->unfulfilledChains); i++){
+            chain = c_iterObject(listener->unfulfilledChains, i);
+
+            if (d_nameSpaceIsIn(nameSpace, chain->request->partition, chain->request->topic)) {
+                /* Re-request group from (master) fellow so we're sure to have the latest group completeness */
+                request = d_groupsRequestNew(admin, chain->request->partition, chain->request->topic);
+
+                /* Write request */
+                d_publisherGroupsRequestWrite(publisher, request, fellowAddress);
+
+                /* Free request */
+                d_groupsRequestFree(request);
+            }
+        }
+
+        d_listenerUnlock(d_listener(listener));
+    }
+}
+
+void
 d_chainFellowFree(
     d_fellow fellow)
 {
@@ -2017,6 +2055,9 @@ d_chainBeadNew(
 
     chainBead = d_chainBead(os_malloc(C_SIZEOF(d_chainBead)));
     chainBead->message = message;
+#ifndef _NAT_
+    chainBead->message->allocTime = v_timeGet();
+#endif
     chainBead->sender = d_networkAddressNew(
                                     sender->systemId,
                                     sender->localId,

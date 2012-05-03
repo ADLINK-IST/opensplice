@@ -28,7 +28,8 @@ struct baseFind {
 
 void                d_printState                (d_durability durability, 
                                                  d_configuration config, 
-                                                 const char* threadName);
+                                                 const char* threadName,
+                                                 char* header);
 
 void                d_findBaseAction            (v_entity entity,
                                                  c_voidp args);

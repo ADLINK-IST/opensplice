@@ -44,12 +44,12 @@ u_domainProtectCount(
     u_domain _this);
 
 u_result
-u_domainAdd (
+u_domainAddParticipant (
     u_domain _this,
     u_participant p);
 
 u_result
-u_domainRemove (
+u_domainRemoveParticipant (
     u_domain _this,
     u_participant p);
 
@@ -61,10 +61,6 @@ c_bool
 u_domainCheckHandleServer (
     u_domain _this,
     c_long serverId);
-
-os_sharedHandle
-u_domainSharedMemoryHandle (
-    u_domain domain);
 
 c_voidp
 u_domainGetCopy (

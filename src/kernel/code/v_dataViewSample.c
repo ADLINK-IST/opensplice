@@ -64,7 +64,8 @@ v_dataViewSampleNew(
     } else {
         OS_REPORT(OS_ERROR,
                   "v_dataViewSampleNew",0,
-                  "Failed to allocate v_dataViewSample.");
+                  "Failed to allocate v_dataViewSample object.");
+        assert(FALSE);
     }
     return sample;
 }

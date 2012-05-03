@@ -430,8 +430,8 @@ idl_labelValueVal (
  * idl_labelValue
  ***********************************************************/
 
-c_long
-idl_contiguousSize(
-    idl_typeSpec typeSpec);
+c_bool
+idl_isContiguous(
+    c_type type);
 
 #endif /* IDL_TYPESPECIFIER_H */

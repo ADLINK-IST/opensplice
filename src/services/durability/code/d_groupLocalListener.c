@@ -12,8 +12,11 @@
 #include "os.h"
 #include "d_groupLocalListener.h"
 #include "d_nameSpacesRequestListener.h"
+#include "d_nameSpacesRequest.h"
+#include "d__durability.h"
 #include "d__groupLocalListener.h"
 #include "d__sampleChainListener.h"
+#include "d__group.h"
 #include "d_listener.h"
 #include "d_admin.h"
 #include "d_eventListener.h"
@@ -67,23 +70,55 @@ struct createPersistentSnapshotHelper {
  * lazy alignment where injection of data fails.
  */
 
+
+struct checkNameSpacesHelper {
+    d_nameSpacesRequest request;
+    d_publisher publisher;
+    c_iter retryFellows;
+    os_time retryTime;
+    os_time retryDelay;
+};
+
 static c_bool
 checkNameSpaces(
     d_fellow fellow,
     c_voidp args)
 {
-    c_bool* ready;
+    struct checkNameSpacesHelper *helper;
     d_communicationState state;
+    d_networkAddress fellowAddress;
+    os_time retryTime;
 
-    ready = (c_bool*)args;
+    helper = (struct checkNameSpacesHelper*)args;
     state = d_fellowGetCommunicationState (fellow);
 
-    if(state == D_COMMUNICATION_STATE_UNKNOWN){
-        *ready = FALSE;
+    /* If an incomplete fellow is found, send a namespaces request to that fellow, and reset the retryTime.
+     * The fellow is added to the retryFellows list and removed from the administration (by the caller function),
+     * when retryTime eventually exceeds and the fellow is still in the list.
+     * */
+    if (state == D_COMMUNICATION_STATE_APPROVED) {
+        c_iterTake(helper->retryFellows, fellow);
     } else {
-        *ready = TRUE;
+        if (!c_iterContains(helper->retryFellows, fellow)) {
+            fellowAddress = d_fellowGetAddress(fellow);
+            d_messageSetAddressee(d_message(helper->request), fellowAddress);
+            d_publisherNameSpacesRequestWrite(helper->publisher, helper->request, fellowAddress);
+            /* Increase retrytime, in case this is a new fellow give it a fair chance to respond */
+            retryTime = os_timeGet();
+            helper->retryDelay = os_timeAdd(retryTime, helper->retryDelay);
+            c_iterAppend(helper->retryFellows, fellow);
+            d_networkAddressFree(fellowAddress);
+        }
     }
-    return *ready;
+
+    return TRUE;
+}
+
+static void
+checkNameSpacesRemoveFellowAction(
+   void* o, void* userData)
+{
+    d_adminRemoveFellow((d_admin)userData, (d_fellow)o);
 }
 
 d_groupLocalListener
@@ -180,6 +215,7 @@ struct groupInfo {
     d_durability durability;
 };
 
+
 static c_bool
 requestGroups(
     d_fellow fellow,
@@ -191,6 +227,9 @@ requestGroups(
     c_long i;
     d_nameSpace ns;
     c_bool notInitial;
+    d_admin admin;
+    d_subscriber subscriber;
+    d_sampleChainListener sampleChainListener;
 
     info = (struct groupInfo*)args;
 
@@ -228,6 +267,13 @@ requestGroups(
                           D_THREAD_GROUP_LOCAL_LISTENER,
                           "I am very lazy and will not request groups from master '%d'.\n",
                           addr->systemId);
+
+                    /* Request groups that are still being aligned */
+                    admin = info->durability->admin;
+                    subscriber = d_adminGetSubscriber(admin);
+                    sampleChainListener = d_subscriberGetSampleChainListener(subscriber);
+                    d_sampleChainListenerCheckUnfulfilled(sampleChainListener, ns, master);
+
                     toRequest = FALSE;
                 } else {
                     toRequest = TRUE;
@@ -782,11 +828,13 @@ d_groupLocalListenerDetermineMasters(
     c_long length, i;
     d_nameSpace nameSpace;
     d_subscriber subscriber;
+    d_publisher publisher;
     d_nameSpacesRequestListener nsrListener;
     d_networkAddress unaddressed, myAddress, master, lastMaster;
+    struct checkNameSpacesHelper checkNsHelper;
     struct masterInfo mastership;
     os_time sleepTime, endTime;
-    c_bool nsComplete, proceed, conflicts, firstTime, cont;
+    c_bool conflicts, firstTime, cont, proceed;
     d_quality myQuality;
     c_bool iAmAMaster;
     d_serviceState myState, fellowState;
@@ -799,6 +847,7 @@ d_groupLocalListenerDetermineMasters(
     configuration = d_durabilityGetConfiguration(durability);
     length = c_iterLength(nameSpaces);
     subscriber = d_adminGetSubscriber(admin);
+    publisher = d_adminGetPublisher(admin);
     nsrListener = d_subscriberGetNameSpacesRequestListener(subscriber);
     unaddressed = d_networkAddressUnaddressed();
     myAddress = d_adminGetMyAddress(admin);
@@ -811,6 +860,11 @@ d_groupLocalListenerDetermineMasters(
     sleepTime.tv_sec = 0;
     sleepTime.tv_nsec = 100000000;
     mastership.durability = durability;
+
+    checkNsHelper.request = d_nameSpacesRequestNew(admin);
+    checkNsHelper.retryFellows = c_iterNew(NULL);
+    checkNsHelper.publisher = publisher;
+    checkNsHelper.retryDelay = os_timeAdd(configuration->heartbeatUpdateInterval, configuration->heartbeatUpdateInterval);
 
     do {
         conflicts = FALSE;
@@ -1024,28 +1078,41 @@ d_groupLocalListenerDetermineMasters(
                 /*To make sure the do-while is done at least once more: */
                 conflicts = TRUE;
             }
+
             /*Wait twice the heartbeat period*/
             endTime = os_timeGet();
-            endTime = os_timeAdd(endTime, configuration->heartbeatUpdateInterval);
-            endTime = os_timeAdd(endTime, configuration->heartbeatUpdateInterval);
+            endTime = os_timeAdd(endTime, checkNsHelper.retryDelay);
 
             d_printTimedEvent(durability, D_LEVEL_INFO,
                        D_THREAD_GROUP_LOCAL_LISTENER,
                        "Waiting twice the heartbeat period: 2*%f seconds.\n",
                        os_timeToReal(configuration->heartbeatUpdateInterval));
 
-            nsComplete = TRUE;
-            proceed = TRUE;
+            proceed = FALSE;
 
-            while(d_durabilityMustTerminate(durability) == FALSE && proceed ){
+            while((d_durabilityMustTerminate(durability) == FALSE) && (proceed == FALSE)) {
                 os_nanoSleep(sleepTime);
 
-                if(os_timeCompare(os_timeGet(), endTime) > 0){
-                    proceed = FALSE;
-                    d_adminFellowWalk(admin, checkNameSpaces, &nsComplete);
-                    proceed = !nsComplete;
+                if(os_timeCompare(os_timeGet(), endTime) > 0) {
+                    d_adminFellowWalk(admin, checkNameSpaces, &checkNsHelper);
+
+                    if (c_iterLength(checkNsHelper.retryFellows) > 0) {
+                        d_printTimedEvent(durability, D_LEVEL_INFO, D_THREAD_GROUP_LOCAL_LISTENER,
+                            "Found %d incomplete fellow(s)\n", c_iterLength(checkNsHelper.retryFellows));
+                        proceed = FALSE;
+                        if(os_timeCompare(os_timeGet(), checkNsHelper.retryTime) > 0) {
+                            /* There hasn't been a new incomplete fellow for the last 2*heartbeat period, remove any remaining incomplete fellows */
+                            c_iterWalk(checkNsHelper.retryFellows, checkNameSpacesRemoveFellowAction, (void*)admin);
+                            proceed = TRUE;
+                        }
+                    } else {
+                        d_printTimedEvent(durability, D_LEVEL_INFO, D_THREAD_GROUP_LOCAL_LISTENER,
+                            "All fellows' namespaces complete\n");
+                        proceed = TRUE;
+                    }
                 }
             }
+
         } else if(d_durabilityMustTerminate(durability) == FALSE){
             assert(conflicts == FALSE);
             /*No more conflicts; all masters have been confirmed*/
@@ -1072,6 +1139,9 @@ d_groupLocalListenerDetermineMasters(
             }
         }
     } while ((conflicts == TRUE) && (d_durabilityMustTerminate(durability) == FALSE));
+
+    d_nameSpacesRequestFree(checkNsHelper.request);
+    c_iterFree(checkNsHelper.retryFellows);
 
     os_mutexUnlock(&listener->masterLock);
 

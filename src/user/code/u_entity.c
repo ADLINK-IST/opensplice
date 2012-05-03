@@ -101,7 +101,8 @@ u_entityNew(
     u_entity e = NULL;
 
     if (ke == NULL) {
-        OS_REPORT(OS_ERROR, "u_entityNew", 0,
+        OS_REPORT(OS_ERROR,
+                  "user::u_entity::u_entityNew", 0,
                   "No Kernel entity specified.");
         return NULL;
     }
@@ -146,7 +147,8 @@ u_entityNew(
     case K_GROUPQUEUE:     _NEW_(u_groupQueue, U_GROUPQUEUE);         break;
     case K_KERNEL:         _NEW_(u_domain, U_DOMAIN);                 break;
     default:
-        OS_REPORT_1(OS_ERROR, "u_entityNew", 0,
+        OS_REPORT_1(OS_ERROR,
+                    "user::u_entity::u_entityNew", 0,
                     "Unknown entity %d", v_objectKind(ke));
         e = NULL;
         assert(FALSE);
@@ -200,7 +202,7 @@ u_entityInit(
         }
     } else {
         OS_REPORT_1(OS_ERROR,
-                    "u_entityInit", 0,
+                    "user::u_entity::u_entityInit", 0,
                     "Out of memory: unable to create handle for Entity 0x%x.",
                     e);
         result = U_RESULT_OUT_OF_MEMORY;
@@ -226,7 +228,7 @@ u_entityCheckType(
             result = _this;
         } else {
             OS_REPORT_2(OS_ERROR,
-                        "u_entityCheckType", 0,
+                        "user::u_entity::u_entityCheckType", 0,
                         "User layer Entity type check failed, "
                         "type = %s but expected %s",
                         u_kindImage(u_entityKind(_this)),
@@ -324,15 +326,19 @@ u_entityDeinit(
                         case K_DATAREADERINSTANCE:
                         break;
                         default:
-                            OS_REPORT_1(OS_ERROR,"u_entityDeinit",0,
+                            OS_REPORT_1(OS_ERROR,
+                                        "user::u_entity::u_entityDeinit",0,
                                         "illegal entity kind (%d) specified",
                                         v_objectKind(o));
                         break;
                         }
                         r = u_entityRelease(_this);
                         if (r != U_RESULT_OK) {
-                            OS_REPORT(OS_ERROR,"u_entityDeinit",0,
-                                      "Internal error: release entity failed.");
+                            OS_REPORT_2(OS_ERROR,
+                                        "user::u_entity::u_entityDeinit",0,
+                                        "Operation u_entityRelease(entity=0x%x) failed."
+                                        OS_REPORT_NL "Result = %s.",
+                                        _this, u_resultImage(r));
                         }
                     }/* else
                       * This happens when an entity is freed and its u_participant
@@ -341,12 +347,14 @@ u_entityDeinit(
 #undef _FREE_
                     u_domainUnprotect(domain);
                 } else {
-                    OS_REPORT(OS_WARNING,"u_entityDeinit",0,
+                    OS_REPORT(OS_ERROR,
+                              "user::u_entity::u_entityDeinit",0,
                               "u_domainProtect() failed.");
                 }
             } else {
-                OS_REPORT(OS_WARNING,"u_entityDeinit",0,
-                          "u_participantDomain() failed.");
+                OS_REPORT_1(OS_ERROR,"user::u_entity::u_entityDeinit",0,
+                            "Operation u_entityDomain(entity=0x%x) failed.",
+                            _this);
             }
         }
         _this->kind = U_UNDEFINED;
@@ -407,7 +415,8 @@ u_entityFree(
         case U_WAITSET:          _FREE_(u_waitset);
         case U_GROUP:            _FREE_(u_group);
         default:
-            OS_REPORT_1(OS_ERROR,"u_entityFree",0,
+            OS_REPORT_1(OS_ERROR,
+                        "user::u_entity::u_entityFree",0,
                         "illegal entity kind (%d) specified",
                         _this->kind);
         break;
@@ -441,25 +450,25 @@ u_entityClaimCommon(
 {
     static os_boolean serviceWarningGiven = OS_FALSE;
     static os_boolean appWarningGiven = OS_FALSE;
-    u_participant p;
     u_domain domain;
     u_result r;
     u_kind entityKind;
+    os_boolean isService = OS_FALSE;
 
     /* Precondition: entity must be locked. */
     if (_this != NULL && ke != NULL) {
         *ke = NULL;
         entityKind = u_entityKind(_this);
-        if (_this->participant == NULL) {
-            if(entityKind == U_PARTICIPANT)
+        /* Verify if this entity is or belong to a service */
+        if(_this->participant == NULL)
+        {
+            if(entityKind == U_SERVICE)
             {
-                p = u_participant(_this);
-            } else
-            {
-                p = NULL;
+                isService = OS_TRUE;
             }
-        } else {
-            p = _this->participant;
+        } else if(u_entityKind(u_entity(_this->participant)) == U_SERVICE)
+        {
+            isService = OS_TRUE;
         }
         domain = u_entityDomain(_this);
         if (domain) {
@@ -470,7 +479,8 @@ u_entityClaimCommon(
                     *ke = v_entity(u_domain(_this)->kernel);
                     if(*ke == NULL)
                     {
-                        OS_REPORT_1(OS_WARNING, "u_entityClaimCommon", 0,
+                        OS_REPORT_1(OS_ERROR,
+                                    "user::u_entity::u_entityClaimCommon", 0,
                                     "Unable to obtain kernel entity for domain 0x%x",
                                     _this);
                         r = U_RESULT_INTERNAL_ERROR;
@@ -480,7 +490,8 @@ u_entityClaimCommon(
                 {
                     r = u_handleClaim(_this->handle,ke);
                     if (r != U_RESULT_OK) {
-                        OS_REPORT_4(OS_WARNING, "u_entityClaimCommon", 0,
+                        OS_REPORT_4(OS_WARNING,
+                                    "user::u_entity::u_entityClaimCommon", 0,
                                     "Invalid handle detected: result = %s, "
                                     "Handle = %d, Entity = 0x%x (kind = %s)",
                                     u_resultImage(r), (int)_this->handle,
@@ -489,56 +500,73 @@ u_entityClaimCommon(
                     }
                 }
             } else if (r == U_RESULT_DETACHING) {
-                OS_REPORT_2(OS_WARNING, "u_entityClaimCommon", 0,
+                OS_REPORT_2(OS_WARNING,
+                            "user::u_entity::u_entityClaimCommon", 0,
                             "Claim Entity failed because the process "
                             "is detaching from the domain. Entity = 0x%x (kind = %s)",
                             _this, u_kindImage(_this->kind));
             } else {
-                OS_REPORT_4(OS_WARNING, "u_entityClaimCommon", 0,
+                OS_REPORT_4(OS_ERROR, "u_entityClaimCommon", 0,
                             "u_domainProtect() failed: result = %s, "
                             "Domain = 0x%x, Entity = 0x%x (kind = %s)",
                             u_resultImage(r), domain, _this, u_kindImage(_this->kind));
             }
-            if (r == U_RESULT_OK && performMemCheck)
+            if (r == U_RESULT_OK)
             {
-                c_memoryThreshold status;
-                c_base base;
-                os_boolean isService = OS_FALSE;
-
-                base = c_getBase(c_object(*ke));
-                status = c_baseGetMemThresholdStatus(base);
-                if(p)
+                /* If the participant we found earlier is not a service, then
+                 * we must verify if the spliced is still running. If it not
+                 * running anymore we must return an error and not allow the
+                 * claim operation to complete.
+                 */
+                if(!isService && u_entityKind(_this) != U_PARTICIPANT)
                 {
-                    u_kind kind;
+                    v_kernel kernel;
 
-                    kind = u_entityKind(u_entity(p));
-                    if(kind == U_SERVICE)
+                    kernel = v_objectKernel(v_object(*ke));
+                    if(!kernel->splicedRunning)
                     {
-                        isService = OS_TRUE;
-                    }
+                        OS_REPORT_1(OS_ERROR, "u_entityClaimCommon", 0,
+                            "The splice deamon is no longer running for entity 0x%x. "
+                            "Unable to continue, a restart of the splice deamon and "
+                            "all applications is required.",
+                            _this);
+                        r = U_RESULT_INTERNAL_ERROR;
+                    }/* else let splicedRunning remain false */
                 }
-                if(isService && status == C_MEMTHRESHOLD_SERV_REACHED)
+                if(performMemCheck && r == U_RESULT_OK)
                 {
-                    if(!serviceWarningGiven)
-                    {
-                        serviceWarningGiven = OS_TRUE;
-                        OS_REPORT(OS_WARNING, "u_entityClaimCommon", 0,
-                              "Unable to complete claim for service. Shared memory has run out. Shutdown all applications and restart the deamon.");
+                    c_memoryThreshold status;
+                    c_base base;
 
-                    }
-                    r = U_RESULT_OUT_OF_MEMORY;
-                } else if(status == C_MEMTHRESHOLD_APP_REACHED)
-                {
-                    if(!appWarningGiven)
+                    base = c_getBase(c_object(*ke));
+                    status = c_baseGetMemThresholdStatus(base);
+                    if(isService && status == C_MEMTHRESHOLD_SERV_REACHED)
                     {
-                        appWarningGiven = OS_TRUE;
-                        OS_REPORT(OS_WARNING, "u_entityClaimCommon", 0,
-                            "Unable to complete claim for application. Shared memory has run out. Shutdown all applications and restart the deamon.");
+                        if(!serviceWarningGiven)
+                        {
+                            serviceWarningGiven = OS_TRUE;
+                            OS_REPORT(OS_WARNING, "u_entityClaimCommon", 0,
+                                  "Unable to complete claim for service. Shared "
+                                  "memory has run out. You can try to free up some "
+                                  "memory by terminating (a) DDS application(s).");
+
+                        }
+                        r = U_RESULT_OUT_OF_MEMORY;
+                    } else if(status == C_MEMTHRESHOLD_APP_REACHED)
+                    {
+                        if(!appWarningGiven)
+                        {
+                            appWarningGiven = OS_TRUE;
+                            OS_REPORT(OS_WARNING, "u_entityClaimCommon", 0,
+                                "Unable to complete claim for application. Shared "
+                                "memory has run out. You can try to free up some "
+                                "memory by terminating (a) DDS application(s).");
+                        }
+                        r = U_RESULT_OUT_OF_MEMORY;
+                    } else
+                    {
+                        r = U_RESULT_OK;
                     }
-                    r = U_RESULT_OUT_OF_MEMORY;
-                } else
-                {
-                    r = U_RESULT_OK;
                 }
                 /* If the result has become not ok, release the handle claim */
                 if(r != U_RESULT_OK)
@@ -550,12 +578,12 @@ u_entityClaimCommon(
                     if(r2 != U_RESULT_OK)
                     {
                         OS_REPORT(OS_WARNING,"u_entityClaimCommon",0,
-                            "u_entityRelease() failed after shared memory check failed prior.");
+                            "u_entityRelease() failed.");
                     }
                 }
             }
         } else {
-            OS_REPORT_2(OS_WARNING,"u_entityClaimCommon",0,
+            OS_REPORT_2(OS_ERROR,"u_entityClaimCommon",0,
                         "Could not resolve Domain from Entity 0x%x (kind = %s)",
                         _this, u_kindImage(_this->kind));
             r = U_RESULT_ILL_PARAM;
@@ -581,22 +609,25 @@ u_entityRelease(
         {
             result = u_handleRelease(_this->handle);
             if (result != U_RESULT_OK) {
-                OS_REPORT_2(OS_INFO, "u_entityRelease", 0,
-                            "Failed to release the handle of entity 0x%x, "
-                            "result = %s (This is normal on process exit)",
-                            _this, u_resultImage(result));
+                OS_REPORT_3(OS_INFO,
+                            "user::u_entity::u_entityRelease", 0,
+                            "Failed to release the handle of entity 0x%x (kind = %s),"
+                            OS_REPORT_NL "result = %s (This is normal on process exit)",
+                            _this, u_kindImage(entityKind), u_resultImage(result));
             }
         }
         domain = u_entityDomain(_this);
         if (domain) {
             result = u_domainUnprotect(domain);
             if (result != U_RESULT_OK) {
-                OS_REPORT(OS_INFO, "u_entityRelease", 0,
+                OS_REPORT(OS_INFO,
+                          "user::u_entity::u_entityRelease", 0,
                           "u_domainUnprotect() failed.");
             }
         }
     } else {
-        OS_REPORT(OS_ERROR, "u_entityRelease", 0,
+        OS_REPORT(OS_ERROR,
+                  "user::u_entity::u_entityRelease", 0,
                   "Invalid parameter specified");
         result = U_RESULT_ILL_PARAM;
     }
@@ -934,6 +965,7 @@ u_entityQoS(
     } else {
         result = u_entityReadClaim(_this, &ke);
         if (result == U_RESULT_OK) {
+
             vq = v_entityGetQos(ke);
             /* now copy qos */
             *qos = u_qosNew(vq);

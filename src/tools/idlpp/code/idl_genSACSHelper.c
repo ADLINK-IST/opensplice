@@ -363,7 +363,7 @@ c_bool
 idl_isPredefined(
     const c_char *scopedName)
 {
-    c_long i;
+    c_ulong i;
     c_bool predefined = FALSE;
 
     /* Iterate over the list of predefined C# datatypes and compare them to the
@@ -387,7 +387,7 @@ const c_char *
 idl_translateIfPredefined(
     const c_char *scopedName)
 {
-    c_long i;
+    c_ulong i;
 
     /* Iterate over the list of predefined C# datatypes and compare them to the
      * current IDL datatype. If there is a match, translate the IDL datatype

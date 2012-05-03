@@ -37,6 +37,7 @@ v_lifespanAdminNew(
         OS_REPORT(OS_ERROR,
                   "v_lifespanAdminNew",0,
                   "Failed to allocate lifespan admin.");
+        assert(FALSE);
     }
     return admin;
 }

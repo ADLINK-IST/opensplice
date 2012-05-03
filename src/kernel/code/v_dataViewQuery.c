@@ -996,6 +996,7 @@ v_dataViewQuerySetParams(
                 v_dataViewUnlock(v);
             } else {
                 predicate = q_exprCopy(expression);
+                q_prefixFieldNames(&predicate,"sample.sample.message.userData");
 
 #if PRINT_QUERY
                 printf("v_datyaViewQuerySetParams\n");

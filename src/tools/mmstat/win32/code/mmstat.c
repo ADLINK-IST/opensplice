@@ -220,6 +220,8 @@ main (int argc, char *argv[])
       }
       printf("Trying to open connection with the OpenSplice system using URI:\n" \
              "'%s'...\n", sddsURI);
+   } else {
+       sddsURI = uri;
    }
 
    ur = u_userInitialise();
@@ -227,7 +229,7 @@ main (int argc, char *argv[])
    if(ur == U_RESULT_OK)
    {
       pqos = u_participantQosNew(NULL);
-      participant = u_participantNew(uri, 30, "mmstat", (v_qos)pqos, TRUE);
+      participant = u_participantNew(sddsURI, 30, "mmstat", (v_qos)pqos, TRUE);
       u_participantQosFree(pqos);
 
       if(participant)

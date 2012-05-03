@@ -60,7 +60,7 @@ C_STRUCT(d_configuration){
     c_iter        policies;
     os_time       startTime;
     c_ulong       persistentUpdateInterval;
-
+    c_ulong       persistentThreadCount;
     v_duration    latencyBudget;
     c_long        transportPriority;
     v_duration    heartbeatLatencyBudget;

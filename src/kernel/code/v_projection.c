@@ -104,6 +104,7 @@ v_mappingNew(
         OS_REPORT(OS_ERROR,
                   "v_mappingNew",0,
                   "Failed to allocate mapping rule.");
+        assert(FALSE);
     }
     return rule;
 }
@@ -241,6 +242,7 @@ v_projectionNew(
         OS_REPORT(OS_ERROR,
                   "v_projectionNew",0,
                   "Failed to allocate projection.");
+        assert(FALSE);
     }
 
     return p;

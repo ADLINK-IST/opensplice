@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v_dataViewInstance.h"
@@ -94,7 +94,7 @@ typedef struct ParamDesc {
     c_type    ftype;
     c_long    pnum;
 } ParamDesc;
-    
+
 typedef struct RelationInfo {
     ParamDesc p1;
     ParamDesc p2;
@@ -185,7 +185,7 @@ createAndValidateParameters (
     gapi_boolean valid = FALSE;
     gapi_long max,size;
     gapi_unsigned_long i;
- 
+
     assert(e);
 
     *args = NULL;
@@ -252,7 +252,7 @@ getReaderType (
         c_free(f);
     }
 }
-    
+
 u_query
 gapi_expressionCreateQuery (
     gapi_expression expression,
@@ -264,7 +264,7 @@ gapi_expressionCreateQuery (
     u_query  query = NULL;
     c_type   type  = NULL;
     gapi_boolean valid = TRUE;
-    
+
     assert(expression);
     assert(reader);
 
@@ -279,14 +279,14 @@ gapi_expressionCreateQuery (
     }
 
     if ( valid && expression->expr ) {
-        if ( createAndValidateParameters(expression, parameters, &args) ) { 
+        if ( createAndValidateParameters(expression, parameters, &args) ) {
             query = u_queryNew(reader, queryName, expression->expr, args);
             if ( !query ) {
                 OS_REPORT(OS_ERROR,
                           "Creation of query", 0,
                           "Creation of query failed");
             }
-            os_free(args); 
+            os_free(args);
             q_dispose(expression->expr);
             expression->expr = NULL;
         }
@@ -309,7 +309,7 @@ gapi_expressionSetQueryArgs (
     assert(query);
     assert(parameters);
 
-    if ( createAndValidateParameters(expression, parameters, &args) ) { 
+    if ( createAndValidateParameters(expression, parameters, &args) ) {
         uResult = u_querySet(query, args);
         if ( uResult != U_RESULT_OK ) {
             OS_REPORT(OS_ERROR,
@@ -317,7 +317,7 @@ gapi_expressionSetQueryArgs (
                       "Set parameters failed");
         }
         result = kernelResultToApiResult(uResult);
-        os_free(args); 
+        os_free(args);
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
     }
@@ -358,7 +358,7 @@ readerCallback (
         sampleState = v_readerSampleState(view_instance->sample);
     } else if ( v_objectKind(o) == K_DATAREADERINSTANCE) {
         instance = v_dataReaderInstance(o);
-        sample = v_readerSample(v_dataReaderInstanceHead(instance));
+        sample = v_readerSample(v_dataReaderInstanceNewest(instance));
         sampleState = sample->sampleState;
     } else {
         OS_REPORT_2(OS_ERROR,
@@ -372,7 +372,7 @@ readerCallback (
     instanceState = instance->instanceState;
 
     mask = ((gapi_readerMask *)((PA_ADDRCAST)arg.is.LongLong));
- 
+
     sampleStateMask   = (c_long)(mask->sampleStateMask);
     viewStateMask     = (c_long)(mask->viewStateMask);
     instanceStateMask = (c_long)(mask->instanceStateMask);
@@ -407,7 +407,7 @@ readerCallback (
                 }
             }
         }
-    
+
         if (viewStateFlag) {
             instanceStateFlag = FALSE;
             if (!instanceStateMask) {
@@ -434,7 +434,7 @@ readerCallback (
             if (instanceStateFlag) {
                 result->is.Boolean = TRUE;
 		returnValue = TRUE;
-            }    
+            }
         }
     }
     return returnValue;
@@ -446,33 +446,33 @@ fillReaderMaskState(
     q_expr expr)
 {
     gapi_unsigned_long istate;
-    
+
     if(mask->instanceStateMask){
         if (v_stateTest(mask->instanceStateMask,
                         GAPI_NOT_ALIVE_DISPOSED_INSTANCE_STATE)) {
             istate = q_exprGetInstanceState(expr);
             q_exprSetInstanceState(expr, istate | L_DISPOSED);
-        } 
+        }
         if (v_stateTest(mask->instanceStateMask,
                                GAPI_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE)) {
             istate = q_exprGetInstanceState(expr);
             q_exprSetInstanceState(expr, istate | L_NOWRITERS);
-        } 
+        }
         if (v_stateTest(mask->instanceStateMask, GAPI_ALIVE_INSTANCE_STATE)) {
              istate = q_exprGetInstanceState(expr);
              q_exprSetInstanceState(expr, istate | L_WRITE);
         }
-    }   
-    
-    if(mask->sampleStateMask){                               
+    }
+
+    if(mask->sampleStateMask){
         if (v_stateTest(mask->sampleStateMask,GAPI_READ_SAMPLE_STATE)) {
             q_exprSetSampleState(expr, L_READ);
         } else {
             q_exprSetSampleState(expr, L_WRITE);
         }
     }
-    
-    if(mask->viewStateMask){                               
+
+    if(mask->viewStateMask){
         if (v_stateTest(mask->viewStateMask, GAPI_NEW_VIEW_STATE)) {
             q_exprSetViewState(expr, L_NEW);
         } else {
@@ -491,7 +491,7 @@ actionReadCondition(
     c_type type;
     c_address mask;
     c_bool noCondition;
-    
+
     noCondition = TRUE;
     ca->expr = gapi_expressionNew(NULL);
 
@@ -502,7 +502,7 @@ actionReadCondition(
                             F3(Q_EXPR_CALLBACK,
                                (q_expr)q_newTyp(type),
                                (q_expr)readerCallback,q_newInt(mask)));
-        
+
         fillReaderMaskState(ca->mask, ca->expr->expr);
     }
 }
@@ -616,7 +616,7 @@ getMaxParameterNumber (
     default:
     break;
     }
-    
+
     return max;
 }
 
@@ -683,7 +683,7 @@ createParameterInfo (
     q_expr e2;
     gapi_unsigned_long len;
     RelationInfo *rel;
-    
+
     if ( q_getKind(expr) == T_FNC ) {
         switch ( q_getTag(expr) ) {
         case Q_EXPR_EQ:
@@ -800,14 +800,14 @@ validEnumValue (
 
     return found;
 }
-    
+
 
 static gapi_boolean
 isNatural (
     ParamType t)
 {
     gapi_boolean result = FALSE;
-    
+
     switch ( t ) {
     case PARAM_TYPE_SHORT:
     case PARAM_TYPE_USHORT:
@@ -830,7 +830,7 @@ isUnsigned (
     ParamType t)
 {
     gapi_boolean result = FALSE;
-    
+
     switch ( t ) {
     case PARAM_TYPE_USHORT:
     case PARAM_TYPE_ULONG:
@@ -850,7 +850,7 @@ isFloat (
     ParamType t)
 {
     gapi_boolean result = FALSE;
-    
+
     switch ( t ) {
     case PARAM_TYPE_FLOAT:
     case PARAM_TYPE_DOUBLE:
@@ -899,8 +899,8 @@ splitEnumFullname (
 
     return result;
 }
-         
-        
+
+
 static gapi_boolean
 checkFieldVersusField (
     ParamDesc *p1,
@@ -951,7 +951,7 @@ checkFieldVersusField (
     }
 
     return valid;
-                
+
 }
 
 
@@ -961,7 +961,7 @@ checkFieldVersusConst (
     ParamDesc *p2)
 {
     gapi_boolean valid = FALSE;
-    
+
     if ( (p1->ptype != PARAM_TYPE_CHAR) && (p1->ptype == p2->ptype) ) {
          valid = TRUE;
     } else {
@@ -973,14 +973,14 @@ checkFieldVersusConst (
         case PARAM_TYPE_ULONG: valid = isNumber(p2->ptype); break;
         case PARAM_TYPE_LONGLONG: valid = isNumber(p2->ptype); break;
         case PARAM_TYPE_ULONGLONG: valid = isNumber(p2->ptype); break;
-        case PARAM_TYPE_FLOAT: valid = isNumber(p2->ptype); break; 
-        case PARAM_TYPE_DOUBLE: valid = isNumber(p2->ptype); break; 
+        case PARAM_TYPE_FLOAT: valid = isNumber(p2->ptype); break;
+        case PARAM_TYPE_DOUBLE: valid = isNumber(p2->ptype); break;
         case PARAM_TYPE_BOOLEAN:
             if ( p2->ptype == PARAM_TYPE_CHAR ) {
                 c_char n = q_getChr(p2->expr);
                 if ( (n == 0) || (n == 1) ) {
                     valid = TRUE;
-                } 
+                }
             }
         break;
         case PARAM_TYPE_CHAR:
@@ -995,7 +995,7 @@ checkFieldVersusConst (
             if ( p2->ptype == PARAM_TYPE_STRING ) {
                 c_char *enumValue = q_getStr(p2->expr);
                 c_type actualType = c_typeActualType(p1->ftype);
-                
+
                 if ( validEnumValue(c_enumeration(actualType), enumValue) ) {
                     valid = TRUE;
                 }
@@ -1018,7 +1018,7 @@ getFieldFromExpr (
     c_field f    = NULL;
     c_char *name = NULL;
     gapi_boolean alloc = FALSE;
-    
+
     if ( q_isId(e) ) {
         name = q_getId(e);
     } else if ( q_isFnc(e, Q_EXPR_PROPERTY) ) {
@@ -1037,7 +1037,7 @@ getFieldFromExpr (
 
     return f;
 }
-            
+
 
 
 static gapi_boolean
@@ -1064,7 +1064,7 @@ resolveFieldType (
                 }
                 c_free(f);
             }
-            
+
             if ( rinfo->p2.kind == PARAM_KIND_FIELD ) {
                 f = getFieldFromExpr(e->type, rinfo->p2.expr);
 
@@ -1076,7 +1076,7 @@ resolveFieldType (
                 }
                 c_free(f);
             }
-            
+
             if ( rinfo->p1.kind == PARAM_KIND_VAR ) {
                 rinfo->p1.ptype = rinfo->p2.ptype;
                 rinfo->p1.ftype = rinfo->p2.ftype;
@@ -1192,7 +1192,7 @@ setAndValidateEnumValue (
 #define stringIsUShort    stringIsNumber
 #define stringIsLong      stringIsNumber
 #define stringIsULong     stringIsNumber
-#define stringIsLongLong  stringIsNumber    
+#define stringIsLongLong  stringIsNumber
 #define stringIsULongLong stringIsNumber
 #define stringIsFloat     stringIsNumber
 #define stringIsDouble    stringIsNumber
@@ -1362,6 +1362,6 @@ printParamRelation (
         printf(">\n");
     }
 }
-                
+
 
 

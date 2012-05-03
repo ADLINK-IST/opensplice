@@ -279,6 +279,19 @@ v_dataReaderQueryNew (
 #endif
     e = q_takePar(predicate,0);
     if (!resolveFields(r,e)) {
+        c_char *rname;
+        if (name == NULL) {
+           name = "<NULL>";
+        }
+        rname = v_entityName(r);
+        if (rname == NULL) {
+            rname = "<NoName>";
+        }
+        OS_REPORT_2(OS_ERROR,
+                    "kernel::v_dataReaderQuery::v_dataReaderQueryNew",0,
+                    "Operation failed: unable to resolve dataReader type fields for query=\"%s\""
+                    OS_REPORT_NL "DataReader = \"%s\"",
+                    name, rname);
         q_dispose(e);
         return NULL;
     }
@@ -307,7 +320,9 @@ v_dataReaderQueryNew (
     q_disjunctify(e);
 #if PRINT_QUERY
     printf("v_datyaReaderQueryNew\n");
-    printf("after disjunctify:\n=============================================\n"); q_print(e,0); printf("\n=============================================\n");
+    printf("after disjunctify:\n=============================================\n");
+    q_print(e,0);
+    printf("\n=============================================\n");
 #endif
     e = q_removeNots(e);
 #if PRINT_QUERY
@@ -653,12 +668,12 @@ v_instanceContainsSample(
         v_dataReaderInstance instance,
         v_dataReaderSample sample)
 {
-    v_dataReaderSample head = v_dataReaderInstanceHead(instance);
-    v_dataReaderSample tail = v_dataReaderInstanceTail(instance);
-    while (head != sample && head != tail) {
-        head = head->prev;
+    v_dataReaderSample newest = v_dataReaderInstanceNewest(instance);
+    v_dataReaderSample index = v_dataReaderInstanceOldest(instance);
+    while (index != sample && index != newest) {
+        index = index->newer;
     }
-    return (head == sample);
+    return (index == sample);
 
 }
 
@@ -698,14 +713,14 @@ v_dataReaderQueryTriggerTest(
                                 pass = c_queryEval(_this->instanceQ[i],instance);
                             }
                             if ((_this->sampleQ[i] != NULL) && pass) {
-                                v_dataReaderSample head;
-                                head = v_dataReaderInstanceHead(instance);
-                                if (_this->triggerValue != head) {
-                                    v_dataReaderInstanceSetHead(instance,_this->triggerValue);
+                                v_dataReaderSample newest;
+                                newest = v_dataReaderInstanceNewest(instance);
+                                if (_this->triggerValue != newest) {
+                                    v_dataReaderInstanceSetNewest(instance,_this->triggerValue);
                                 }
                                 pass = c_queryEval(_this->sampleQ[i],instance);
-                                if (_this->triggerValue != head) {
-                                    v_dataReaderInstanceSetHead(instance,head);
+                                if (_this->triggerValue != newest) {
+                                    v_dataReaderInstanceSetNewest(instance,newest);
                                 }
                             }
                         }
@@ -845,14 +860,14 @@ v_dataReaderQueryRead (
                                     pass = c_queryEval(_this->instanceQ[i],instance);
                                 }
                                 if ((_this->sampleQ[i] != NULL) && pass) {
-                                    v_dataReaderSample head;
-                                    head = v_dataReaderInstanceHead(instance);
-                                    if (_this->triggerValue != head) {
-                                        v_dataReaderInstanceSetHead(instance,_this->triggerValue);
+                                    v_dataReaderSample newest;
+                                    newest = v_dataReaderInstanceNewest(instance);
+                                    if (_this->triggerValue != newest) {
+                                        v_dataReaderInstanceSetNewest(instance,_this->triggerValue);
                                     }
                                     pass = c_queryEval(_this->sampleQ[i],instance);
-                                    if (_this->triggerValue != head) {
-                                        v_dataReaderInstanceSetHead(instance,head);
+                                    if (_this->triggerValue != newest) {
+                                        v_dataReaderInstanceSetNewest(instance,newest);
                                     }
                                 }
                             }
@@ -1222,14 +1237,14 @@ v_dataReaderQueryTake(
                                     pass = c_queryEval(_this->instanceQ[i],instance);
                                 }
                                 if ((_this->sampleQ[i] != NULL) && pass) {
-                                    v_dataReaderSample head;
-                                    head = v_dataReaderInstanceHead(instance);
-                                    if (_this->triggerValue != head) {
-                                        v_dataReaderInstanceSetHead(instance,_this->triggerValue);
+                                    v_dataReaderSample newest;
+                                    newest = v_dataReaderInstanceNewest(instance);
+                                    if (_this->triggerValue != newest) {
+                                        v_dataReaderInstanceSetNewest(instance,_this->triggerValue);
                                     }
                                     pass = c_queryEval(_this->sampleQ[i],instance);
-                                    if (_this->triggerValue != head) {
-                                        v_dataReaderInstanceSetHead(instance,head);
+                                    if (_this->triggerValue != newest) {
+                                        v_dataReaderInstanceSetNewest(instance,newest);
                                     }
                                 }
                             }
@@ -1615,9 +1630,7 @@ v_dataReaderQuerySetParams(
                 result = c_querySetParams(_this->instanceQ[i],params) &&
                          c_querySetParams(_this->sampleQ[i],params);
             }
-            if (result) {
-                v_dataReaderUnLock(r);
-            } else {
+            if (!result) {
                 /* One or more of the assignments failed so rebuild the
                  * query from the expression with the new parameter values.
                  */
@@ -1702,7 +1715,6 @@ v_dataReaderQuerySetParams(
                     }
                 }
                 c_iterFree(list);
-                v_dataReaderUnLock(r);
 #if PRINT_QUERY
                 printf("End v_dataReaderQuerySetParams\n\n");
 #endif
@@ -1719,6 +1731,7 @@ v_dataReaderQuerySetParams(
                 q_dispose(predicate);
             }
             result = TRUE;
+            _this->walkRequired = TRUE;
 
 #if 1
             if(_this->params){
@@ -1822,9 +1835,9 @@ v_dataReaderQuerySetParams(
                   "no source");
         result = FALSE;
     }
+    v_dataReaderUnLock(r);
 
     if (result == TRUE) {
-        _this->walkRequired = TRUE;
         if (v_observableCount(v_observable(_this)) > 0) {
             C_STRUCT(v_event) event;
 

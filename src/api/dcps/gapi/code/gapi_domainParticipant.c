@@ -35,6 +35,8 @@
 
 /* kernel includes */
 #include "v_event.h"
+#include "v_message.h"
+#include "v_readerSample.h"
 
 /* value to represent the platform dependent default */
 #define GAPI_DEFAULT_LISTENER_STACKSIZE 0
@@ -1449,7 +1451,6 @@ gapi_domainParticipant_find_topic (
     v_duration vDuration;
     u_topic uTopic = NULL;
     char *typeName = NULL;
-    const char *regTypeName = NULL;
     _TypeSupport typeSupport = NULL;
     gapi_context context;
 
@@ -1485,65 +1486,10 @@ gapi_domainParticipant_find_topic (
             if (uTopic) {
                 typeName = (char *)u_topicTypeName(uTopic);
             }
-            if (typeName) {
-                typeSupport = _DomainParticipantFindTypeSupport(participant, typeName);
-                if (typeSupport) {
-                    regTypeName = _DomainParticipantGetRegisteredTypeName(participant, typeSupport);
-                    if (!kernelCheckTopicKeyList(uTopic,
-                             _TypeSupportTypeKeys(typeSupport))) {
-                        OS_REPORT_2(OS_API_INFO,
-                                    "gapi_domainParticipant_find_topic", 21,
-                                    "incompatible keylist between "
-                                    "found topic <%s> and "
-                                    "known typeSupport <%s>",
-                                    topic_name, regTypeName);
-                        u_topicFree(uTopic);
-                        uTopic = NULL;
-                    }
-                } else {
-                    gapi_char *keys = kernelTopicGetKeys(uTopic);
-                    if (keys) {
-                        /* Topic is not locally defined so create a substitute
-                         * that contains only whats known.
-                         */
-                        typeSupport = _TypeSupportNew(typeName, keys,
-                                                      NULL, NULL, NULL, NULL,
-                                                      0, NULL, NULL, NULL);
-                        os_free(keys);
-                    } else {
-                        /* TODO Verification correctness of the outcome of
-                         * this state.
-                         */
-                    }
 
-                    if (typeSupport) {
-                        regTypeName = typeName;
-                        result = _TypeSupportGenericCopyInit(typeSupport,
-                                                             participant);
-                        if (result != GAPI_RETCODE_OK) {
-                            gapi_free(_EntityRelease(typeSupport));
-                            typeSupport = NULL;
-                        }
-                    }
-
-                    if (typeSupport) {
-                        result = _DomainParticipantRegisterType(participant,
-                                                                typeSupport,
-                                                                regTypeName);
-                        if (result == GAPI_RETCODE_OK) {
-                            _EntityRelease(typeSupport);
-                        } else {
-                            gapi_free(_EntityRelease(typeSupport));
-                            u_topicFree(uTopic);
-                            uTopic = NULL;
-                        }
-                    }
-                }
-            }
-
-            if (uTopic) {
+            if (uTopic && typeName) {
                 topic = _TopicFromKernelTopic(uTopic, topic_name,
-                                              regTypeName, typeSupport,
+                                              typeName,
                                               participant, &context);
                 if ( !topic ) {
                     u_topicFree(uTopic);
@@ -2372,11 +2318,13 @@ gapi_domainParticipant_assert_liveliness (
 {
     _DomainParticipant participant;
     gapi_returnCode_t result;
+    u_result uResult;
 
     participant = gapi_domainParticipantClaim(_this, &result);
     if ( participant != NULL) {
         if (_EntityEnabled(participant)) {
-            u_participantAssertLiveliness(U_PARTICIPANT_GET(participant));
+            uResult = u_participantAssertLiveliness(U_PARTICIPANT_GET(participant));
+            result = kernelResultToApiResult(uResult);
         } else {
             OS_REPORT(OS_WARNING,
                       "gapi_domainParticipant_assert_liveliness", 0,
@@ -2891,6 +2839,7 @@ stopListenerEventThread (
     ListenerThreadInfo *info;
     gapi_boolean        result = FALSE;
     gapi_returnCode_t gResult = GAPI_RETCODE_OK;
+    os_result waitResult;
 
     info = &_this->listenerThreadInfo;
 
@@ -2904,7 +2853,14 @@ stopListenerEventThread (
           os_condBroadcast(&info->cond);
           do
           {
-             os_condWait(&info->cond, &info->mutex );
+             waitResult = os_condWait(&info->cond, &info->mutex );
+             if (waitResult == os_resultFail)
+             {
+                OS_REPORT(OS_CRITICAL, "stopListenerEventThread", 0,
+                          "os_condWait failed - initial state STARTING");
+                os_mutexUnlock(&info->mutex);
+                return result;
+             }
           } while ( info->threadState != STOPPED );
           os_mutexUnlock(&info->mutex);
 
@@ -2933,7 +2889,14 @@ stopListenerEventThread (
        {
           do
           {
-             os_condWait(&info->cond, &info->mutex );
+             waitResult = os_condWait(&info->cond, &info->mutex );
+             if (waitResult == os_resultFail)
+             {
+                OS_REPORT(OS_CRITICAL, "stopListenerEventThread", 0,
+                          "os_condWait failed - initial state STOPPING");
+                os_mutexUnlock(&info->mutex);
+                return result;
+             }
           } while ( info->threadState != STOPPED );
           result = TRUE;
           os_mutexUnlock(&info->mutex);
@@ -2955,6 +2918,7 @@ _DomainParticipantAddListenerInterest (
 {
     ListenerThreadInfo *info;
     gapi_boolean        result = FALSE;
+    os_result waitResult;
 
     info = &_this->listenerThreadInfo;
 
@@ -2975,7 +2939,14 @@ _DomainParticipantAddListenerInterest (
        {
           while ( info->threadState == STOPPING )
           {
-             os_condWait(&info->cond, &info->mutex );
+             waitResult = os_condWait(&info->cond, &info->mutex );
+             if (waitResult == os_resultFail)
+             {
+                OS_REPORT(OS_CRITICAL, "_DomainParticipantAddListenerInterest", 0,
+                          "os_condWait failed - initial state STOPPING / STOPPED");
+                os_mutexUnlock(&info->mutex);
+                return result;
+             }
           };
           info->toAddList = c_iterInsert(info->toAddList,
                                          _EntityHandle(status->entity));
@@ -3022,10 +2993,90 @@ _DomainParticipantRemoveListenerInterest (
 gapi_returnCode_t
 gapi_domainParticipant_get_discovered_participants (
     gapi_domainParticipant _this,
-    gapi_instanceHandleSeq  *participant_handles)
+    gapi_ReaderInstanceAction action,
+    c_voidp arg)
 {
-    return GAPI_RETCODE_UNSUPPORTED;
+    gapi_subscriber s;
+    u_subscriber us;
+    c_iter readers;
+    u_dataReader r;
+    _Entity entity;
+    u_result uResult;
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
+
+    s = gapi_domainParticipant_get_builtin_subscriber (_this);
+    if (s) {
+        entity = gapi_entityClaim(s, NULL);
+        if (entity) {
+            us =   U_SUBSCRIBER_GET(entity);
+            _EntityRelease(entity);
+            if (us) {
+                readers = u_subscriberLookupReaders(us,"DCPSParticipant");
+                if (readers) {
+                    r = c_iterTakeFirst(readers);
+                    if (r) {
+                        uResult = u_dataReaderWalkInstances(r,action,arg);
+                        result = kernelResultToApiResult(uResult);
+                    } else {
+                        result = GAPI_RETCODE_ERROR;
+                        OS_REPORT(OS_ERROR,
+                                  "gapi_domainParticipant_get_discovered_participants", 0,
+                                  "iterTakeFirst for reader returned NULL");
+                    }
+                } else {
+                    result = GAPI_RETCODE_ERROR;
+                    OS_REPORT(OS_ERROR,
+                              "gapi_domainParticipant_get_discovered_participants", 0,
+                              "no reader found for the builtin subscriber");
+                  }
+            } else {
+                result = GAPI_RETCODE_ERROR;
+                OS_REPORT(OS_ERROR,
+                          "gapi_domainParticipant_get_discovered_participants", 0,
+                          "no valid subscriber entity");
+            }
+        } else {
+            result = GAPI_RETCODE_ERROR;
+            OS_REPORT(OS_ERROR,
+                      "gapi_domainParticipant_get_discovered_participants", 0,
+                      "gapi_entityClaim failed on builtin subscriber");
+        }
+    } else {
+        result = GAPI_RETCODE_ERROR;
+        OS_REPORT(OS_ERROR,
+                  "gapi_domainParticipant_get_discovered_participants", 0,
+                  "failed to get builtin subscriber");
+    }
+
+
+    return result;
 }
+
+
+struct copyDiscoveredDataArg
+{
+    c_voidp to;
+    _DataReader reader;
+    gapi_readerAction action;
+};
+
+static c_bool
+copyDiscoveredData(
+    c_object from,
+    c_voidp to)
+{
+    v_message msg;
+    c_voidp sample;
+    struct copyDiscoveredDataArg *arg = (struct copyDiscoveredDataArg *) to;
+
+    if (from) {
+        msg = v_message(C_REFGET(v_readerSample(from), arg->reader->messageOffset));
+        sample = C_DISPLACE(msg, arg->reader->userdataOffset);
+        arg->action(sample, arg->to);
+    }
+    return FALSE;
+}
+
 
 /*     ReturnCode_t
  *     get_discovered_participant_data (
@@ -3035,10 +3086,58 @@ gapi_domainParticipant_get_discovered_participants (
 gapi_returnCode_t
 gapi_domainParticipant_get_discovered_participant_data (
     gapi_domainParticipant _this,
-    gapi_participantBuiltinTopicData *participant_data,
-    gapi_instanceHandle_t  handle)
+    c_voidp participant_data,
+    gapi_instanceHandle_t  handle,
+    gapi_readerAction action
+
+    )
 {
-    return GAPI_RETCODE_UNSUPPORTED;
+    gapi_subscriber s;
+    gapi_dataReader reader;
+    u_dataReader r;
+    _DataReader _reader;
+    u_result uResult;
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
+
+    s = gapi_domainParticipant_get_builtin_subscriber (_this);
+    if (s) {
+        reader = gapi_subscriber_lookup_datareader(s, "DCPSParticipant");
+        if (reader) {
+            _reader = gapi_dataReaderClaim(reader, NULL);
+            if (_reader) {
+                struct copyDiscoveredDataArg arg;
+
+                arg.to = participant_data;
+                arg.reader = _reader;
+                arg.action = action;
+                r =  U_DATAREADER_GET(_reader);
+                uResult = u_readerReadInstance(u_reader(r),
+                        handle,
+                        copyDiscoveredData,
+                        &arg);
+                _EntityRelease(_reader);
+                result = kernelResultToApiResult(uResult);
+            } else {
+                result = GAPI_RETCODE_ERROR;
+                OS_REPORT(OS_ERROR,
+                          "gapi_domainParticipant_get_discovered_participant_data", 0,
+                          "gapi_entityClaim failed on builtin reader");
+            }
+        } else {
+           result = GAPI_RETCODE_ERROR;
+           OS_REPORT(OS_ERROR,
+                     "gapi_domainParticipant_get_discovered_participant_data", 0,
+                     "no reader found for the builtin subscriber");
+        }
+    } else {
+        result = GAPI_RETCODE_ERROR;
+        OS_REPORT(OS_ERROR,
+                "gapi_domainParticipant_get_discovered_participant_data", 0,
+                "no valid subscriber entity");
+    }
+
+
+   return result;
 }
 
 /*     ReturnCode_t
@@ -3048,11 +3147,87 @@ gapi_domainParticipant_get_discovered_participant_data (
 gapi_returnCode_t
 gapi_domainParticipant_get_discovered_topics (
     gapi_domainParticipant _this,
-    gapi_instanceHandleSeq  *topic_handles)
+    gapi_ReaderInstanceAction action,
+    c_voidp arg)
 {
-    return GAPI_RETCODE_UNSUPPORTED;
-}
+    gapi_subscriber s;
+    u_subscriber us;
+    c_iter readers;
+    u_dataReader r;
+    _Entity entity;
+    u_result uResult;
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
 
+    s = gapi_domainParticipant_get_builtin_subscriber (_this);
+    if (s) {
+       entity = gapi_entityClaim(s, NULL);
+       if (entity) {
+           us =   U_SUBSCRIBER_GET(entity);
+           _EntityRelease(entity);
+           if (us) {
+               readers = u_subscriberLookupReaders(us,"DCPSTopic");
+               if (readers) {
+                   r = c_iterTakeFirst(readers);
+                   if (r) {
+                       uResult = u_dataReaderWalkInstances(r,action,arg);
+                       result = kernelResultToApiResult(uResult);
+                   } else {
+                       result = GAPI_RETCODE_ERROR;
+                       OS_REPORT(OS_ERROR,
+                                 "gapi_domainParticipant_get_discovered_topics", 0,
+                                 "iterTakeFirst for reader returned NULL");
+                   }
+               } else {
+                   result = GAPI_RETCODE_ERROR;
+                   OS_REPORT(OS_ERROR,
+                             "gapi_domainParticipant_get_discovered_topics", 0,
+                             "no reader found for the builtin subscriber");
+                 }
+           } else {
+               result = GAPI_RETCODE_ERROR;
+               OS_REPORT(OS_ERROR,
+                         "gapi_domainParticipant_get_discovered_topics", 0,
+                         "no valid subscriber entity");
+           }
+       } else {
+           result = GAPI_RETCODE_ERROR;
+           OS_REPORT(OS_ERROR,
+                     "gapi_domainParticipant_get_discovered_topics", 0,
+                     "gapi_entityClaim failed on builtin subscriber");
+       }
+    } else {
+       result = GAPI_RETCODE_ERROR;
+       OS_REPORT(OS_ERROR,
+                 "gapi_domainParticipant_get_discovered_topics", 0,
+                 "failed to get builtin subscriber");
+    }
+
+
+    return result;
+}
+struct copyDiscoveredTopicDataArg
+{
+    c_voidp to;
+    _DataReader reader;
+    gapi_readerAction action;
+};
+
+static c_bool
+copyDiscoveredTopicData(
+    c_object from,
+    c_voidp to)
+{
+    v_message msg;
+    c_voidp sample;
+    struct copyDiscoveredTopicDataArg *arg = (struct copyDiscoveredTopicDataArg *) to;
+
+    if (from) {
+        msg = v_message(C_REFGET(v_readerSample(from), arg->reader->messageOffset));
+        sample = C_DISPLACE(msg, arg->reader->userdataOffset);
+        arg->action(sample, arg->to);
+    }
+    return FALSE;
+}
 /*     ReturnCode_t
  *     get_discovered_topic_data (
  *         in InstanceHandle_t handle,
@@ -3061,10 +3236,56 @@ gapi_domainParticipant_get_discovered_topics (
 gapi_returnCode_t
 gapi_domainParticipant_get_discovered_topic_data (
     gapi_domainParticipant _this,
-    gapi_topicBuiltinTopicData *topic_data,
-    gapi_instanceHandle_t  handle)
+    c_voidp topic_data,
+    gapi_instanceHandle_t  handle,
+    gapi_readerAction action)
 {
-    return GAPI_RETCODE_UNSUPPORTED;
+    gapi_subscriber s;
+    gapi_dataReader reader;
+    u_dataReader r;
+    _DataReader _reader;
+    u_result uResult;
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
+
+    s = gapi_domainParticipant_get_builtin_subscriber (_this);
+    if (s) {
+        reader = gapi_subscriber_lookup_datareader(s, "DCPSTopic");
+        if (reader) {
+            _reader = gapi_dataReaderClaim(reader, NULL);
+            if (_reader) {
+                struct copyDiscoveredTopicDataArg arg;
+
+                arg.to = topic_data;
+                arg.reader = _reader;
+                arg.action = action;
+                r =  U_DATAREADER_GET(_reader);
+                uResult = u_readerReadInstance(u_reader(r),
+                        handle,
+                        copyDiscoveredTopicData,
+                        &arg);
+                _EntityRelease(_reader);
+                result = kernelResultToApiResult(uResult);
+            } else {
+                result = GAPI_RETCODE_ERROR;
+                OS_REPORT(OS_ERROR,
+                          "gapi_domainParticipant_get_discovered_topic_data", 0,
+                          "gapi_entityClaim failed on builtin reader");
+            }
+        } else {
+           result = GAPI_RETCODE_ERROR;
+           OS_REPORT(OS_ERROR,
+                     "gapi_domainParticipant_get_discovered_topic_data", 0,
+                     "no reader found for the builtin subscriber");
+        }
+    } else {
+        result = GAPI_RETCODE_ERROR;
+        OS_REPORT(OS_ERROR,
+                "gapi_domainParticipant_get_discovered_topic_data", 0,
+                "no valid subscriber entity");
+    }
+
+
+   return result;
 }
 
 struct check_handle_arg {

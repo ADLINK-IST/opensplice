@@ -225,7 +225,6 @@ install_example()
             cp -r ${OSPL_HOME}/${EXAMPLE_CS_PATH}/Standalone/${EXAMPLE_PLATFORM}/* \
                     ${HDE_dir}/${EXAMPLE_CS_PATH}/Standalone/${EXAMPLE_PLATFORM}
 
-
 	    #Then get rid of the builder which could bear a distinct name
             # (from the one we intend to install it with)
             rm -f ${HDE_dir}/${EXAMPLE_CS_PATH}/Standalone/${EXAMPLE_PLATFORM}/${EXAMPLE_BUILDER_NAME}
@@ -266,7 +265,7 @@ install_example()
 
             # Then recopy the builder with the target name on the install.
             install_ascii_file "${OSPL_HOME}/${EXAMPLE_CPP_PATH}/Standalone/${EXAMPLE_PLATFORM}/${EXAMPLE_BUILDER_NAME}" \
-               ${HDE_dir}/${EXAMPLE_CPP_PATH}/Standalone/${EXAMPLE_PLATFORM} ${EXAMPLE_BUILDER_NAME_ON_PRODUCT}
+               ${HDE_dir}/${EXAMPLE_CPP_PATH}/Standalone/${EXAMPLE_PLATFORM} ${EXAMPLE_BUILDER_NAME_ON_PRODUCT} nocheck
 
             # Corba/OpenFusion
             mkdir -p ${HDE_dir}/${EXAMPLE_CPP_PATH}/Corba
@@ -281,7 +280,7 @@ install_example()
             rm -f ${HDE_dir}/${EXAMPLE_CPP_PATH}/Corba/OpenFusion/${EXAMPLE_PLATFORM}/makefile_*
 
             install_ascii_file "${OSPL_HOME}/${EXAMPLE_CPP_PATH}/Corba/OpenFusion/${EXAMPLE_PLATFORM}/${EXAMPLE_BUILDER_NAME}" \
-                    ${HDE_dir}/${EXAMPLE_CPP_PATH}/Corba/OpenFusion/${EXAMPLE_PLATFORM} ${EXAMPLE_BUILDER_NAME_ON_PRODUCT}
+                   ${HDE_dir}/${EXAMPLE_CPP_PATH}/Corba/OpenFusion/${EXAMPLE_PLATFORM} ${EXAMPLE_BUILDER_NAME_ON_PRODUCT} nocheck
         fi
     fi
 
@@ -314,7 +313,7 @@ install_example()
 
             # Then recopy the builder with the target name on the install.
             install_ascii_file "${OSPL_HOME}/${EXAMPLE_C_PATH}/Standalone/${EXAMPLE_PLATFORM}/${EXAMPLE_BUILDER_NAME}" \
-               ${HDE_dir}/${EXAMPLE_C_PATH}/Standalone/${EXAMPLE_PLATFORM} ${EXAMPLE_BUILDER_NAME_ON_PRODUCT}
+               ${HDE_dir}/${EXAMPLE_C_PATH}/Standalone/${EXAMPLE_PLATFORM} ${EXAMPLE_BUILDER_NAME_ON_PRODUCT} nocheck
         fi
     fi
 
@@ -490,7 +489,7 @@ make_mirror_and_builder ()
                 #Move the source and do another distro as the tests check the HDE directory
                 echo Making "${BUILDER_TARGET}" builder for "${FULLINSTTYPE}", platform \
                     "${SOURCE_TARGET}, environment ${ENV} With NO SOURCE"
-                sleep 3 &
+                sleep 600 &
                 TMP_PID=$!
                 mkdir /tmp/$TMP_PID
                 mv $HDE_dir/src /tmp/$TMP_PID/.
@@ -650,7 +649,7 @@ set_init_envs ()
         x86.win32)
             target_suffix_exe=".exe"
             ;;
-        PPC604.vxworks6*)
+        *.vxworks6*)
             target_suffix_exe=".vxe"
             ;;
     esac
@@ -911,10 +910,6 @@ install_hde_target ()
     then
         sed -e "s/__RELEASE__/${target_version}/g" \
             -e "s/__EXE__/${target_suffix_exe}/g" \
-            ${OSPL_HOME}/etc/ospl_ddsi.xml > ${HDE_dir}/etc/config/ospl_ddsi.xml
-
-        sed -e "s/__RELEASE__/${target_version}/g" \
-            -e "s/__EXE__/${target_suffix_exe}/g" \
             ${OSPL_HOME}/etc/ospl_ddsi2.xml > ${HDE_dir}/etc/config/ospl_ddsi2.xml
 
         sed -e "s/__RELEASE__/${target_version}/g" \
@@ -1033,7 +1028,6 @@ install_hde_target ()
 
                 if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
                 then
-                    install_bin_file ${target_release} ${HDE_dir} bin ddsi${target_suffix_exe}
                     install_bin_file ${target_release} ${HDE_dir} bin ddsi2${target_suffix_exe}
                 fi
             fi
@@ -1147,7 +1141,7 @@ install_hde_target ()
         then
             echo "*     Create and sign a Global Assembly for the SACS DLL"
             cskeyfile=`cygpath -d "${OSPL_HOME}/src/api/dcps/sacs/dcpssacs.snk"`
-            csoutdir=`cygpath -d "${HDE_dir}/lib/"`
+            csoutdir=`cygpath -d "${HDE_dir}/bin/"`
             csmodfile=`cygpath -d "${OSPL_HOME}/lib/${target}${source_env}/dcpssacs.netmodule"`
             csoutfile="${csoutdir}${CS_ASSEMBLY_NAME}.dll"
 
@@ -1372,7 +1366,7 @@ install_hde_target ()
     mkdir ${HDE_dir}/examples/dcps/standalone
 
     # New examples not supported on wince, vxworks or integrity yet so do not include
-    if [ "${SOURCE_TARGET_SHORT}" != "wince" -a "${SOURCE_TARGET_SHORT}" != "vxworks" -a "${SOURCE_TARGET_SHORT}" != "int" ]
+    if [ "${SOURCE_TARGET_SHORT}" != "wince" -a "${SOURCE_TARGET_SHORT}" != "vxworks" -a "${SOURCE_TARGET_SHORT}" != "int" -a "${SOURCE_TARGET_SHORT}" != "elinos" ]
     then
         # oall the new examples for all Languages (including Corba options);
         # each Language/Corba option is installed only if the target platform is compatible.
@@ -1380,8 +1374,7 @@ install_hde_target ()
         install_example "ContentFilteredTopic"
         install_example "Durability"
         install_example "HelloWorld"
-        # The Lifecycle example is being excluded for now as it needs further work
-        #install_example "Lifecycle"
+        install_example "Lifecycle"
         install_example "Listener"
         install_example "Ownership"
         install_example "QueryCondition"
@@ -1918,7 +1911,7 @@ install_hde_target ()
     #
     printf "*     Creating source release ... "
     mkdir ${HDE_dir}/src
-    sleep 3 &
+    sleep 600 &
     TMP_PID=$!
     mkdir /tmp/$TMP_PID
     OSPL_SRC=/tmp/$TMP_PID/OpenSpliceDDS
@@ -2167,7 +2160,6 @@ install_rts_target ()
                 install_bin_file ${release} ${RTS_dir} bin durability${target_suffix_exe}
                 if [ "${INCLUDE_SERVICES_DDSI}" = "yes" ]
                 then
-                    install_bin_file ${release} ${RTS_dir} bin ddsi${target_suffix_exe}
                     install_bin_file ${release} ${RTS_dir} bin ddsi2${target_suffix_exe}
                 fi
             fi
@@ -2236,7 +2228,7 @@ install_rts_target ()
     then
        printf "*     Create and sign a Global Assembly for the SACS DLL ..."
        cskeyfile=`cygpath -d "${OSPL_HOME}/src/api/dcps/sacs/dcpssacs.snk"`
-       csoutdir=`cygpath -d "${RTS_dir}/lib/"`
+       csoutdir=`cygpath -d "${RTS_dir}/bin/"`
        csmodfile=`cygpath -d "${OSPL_HOME}/lib/${target}${source_env}/dcpssacs.netmodule"`
        csoutfile="${csoutdir}${CS_ASSEMBLY_NAME}.dll"
 

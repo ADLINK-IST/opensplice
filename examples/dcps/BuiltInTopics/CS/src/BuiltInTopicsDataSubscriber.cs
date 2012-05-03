@@ -45,7 +45,7 @@ namespace BuiltInTopicsDataSubscriber
             }
 
             string hostName;
-            DDSEntityManager mgr = new DDSEntityManager();
+            DDSEntityManager mgr = new DDSEntityManager("BuiltinTopics");
 
             // create domain participant
             mgr.createParticipant("BuiltInTopics");

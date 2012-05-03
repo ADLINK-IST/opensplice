@@ -589,7 +589,7 @@ serializeData(
 
 	do {
 		nofOctets = in_ddsiSubmessageInfoTimestampSerializeInstantly(
-					&(message->allocTime),
+					&(message->writeTime),
 					&(_this->serializer));
 		IN_BREAK_IF(nofOctets<0);
 		total += nofOctets;

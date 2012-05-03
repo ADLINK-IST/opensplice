@@ -59,6 +59,7 @@ v_historicalDataRequestNew(
         OS_REPORT(OS_ERROR,
                   "v_historicalDataRequestNew",0,
                   "Failed to allocate request.");
+        assert(FALSE);
     }
 
     return request;

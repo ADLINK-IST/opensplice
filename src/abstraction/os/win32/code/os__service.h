@@ -55,4 +55,7 @@ os_createPipeNameFromMutex(os_mutex *mutex);
 os_char *
 os_createPipeNameFromCond(os_cond *cond);
 
+os_char *
+os_constructPipeName(const os_char * name);
+
 #endif /* OS_WIN32__SERVICE_H__ */

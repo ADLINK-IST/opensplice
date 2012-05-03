@@ -167,7 +167,7 @@ nw_ringBufferProcessEntry(
         *sendTo = bufferEntry->sendTo;
         *receiver = bufferEntry->receiver;
 #ifndef NDEBUG
-        memset(bufferEntry, 0, sizeof(C_STRUCT(nw_ringBufferEntry)));
+        memset(bufferEntry, 0, sizeof(NW_STRUCT(nw_ringBufferEntry)));
 #endif
         NW_RINGBUFFER_DEC(ringBuffer);
         result = TRUE;
@@ -181,7 +181,7 @@ nw_ringBufferProcessEntry(
 /* -----------------------------------------------------------------------------
  * - the actual writerAsync class
  * -------------------------------------------------------------------------- */
-C_STRUCT(nw_writerAsync) {
+NW_STRUCT(nw_writerAsync) {
     struct nw_writer_s writer; /* Multiple inheritance */
     struct nw_runnable_s runnable; /* Multiple inheritance */
 #ifdef _MI_

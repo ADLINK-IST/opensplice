@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef NW__PLUGCONTROLBUFFER_H
@@ -59,13 +59,17 @@ NW_STRUCT(nw_plugControlMessage) {
 /* Important note: make sure that this message has the same memory layout on all
  *                 supported platforms. endianness may differ but alignment
  *                 needs to match */
-/* Data announce messages and data request messages, as used un the mutli-node reliability functionality 
+/* Data announce messages and data request messages, as used un the mutli-node reliability functionality
  * are indicated by special values of the RecvBufferInUse - field:
  * -1 indicated a Data Announce message
  * -2 indicates a Data Request message
  * In both cases the contained messages use the nw_plugControlAltMessage layout
  */
 NW_CLASS(nw_plugControlBuffer);
+
+/**
+* @extends nw_plugBuffer_s
+*/
 NW_STRUCT(nw_plugControlBuffer) {
     NW_EXTENDS(nw_plugBuffer);
     /* The number of messages within this fragment  */

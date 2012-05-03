@@ -48,7 +48,7 @@ main(int argc, const char *argv[])
    DDS_boolean isAutodisposeTrue;
    DDS_boolean isAutodisposeFalse;
    DDS_boolean isAutomated;
-   os_time delay_10s = { 10, 0 };
+   os_time delay_180s = { 180, 0 };
 
    if( argc < 4 )
    {
@@ -119,8 +119,8 @@ main(int argc, const char *argv[])
    }
    else
    {
-      printf( "\n === sleeping 10s..." );;
-      os_nanoSleep(delay_10s);
+      printf( "\n === sleeping 180s..." );;
+      os_nanoSleep(delay_180s);
 
    }
 

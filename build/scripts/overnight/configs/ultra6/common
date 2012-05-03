@@ -1,0 +1,15 @@
+HOME_PATH=/var/sun38/dds
+
+JAVA_HOME=/usr/local/jdk1.6.0
+TAO_ROOT=$HOME_PATH/INSTALLED_FOR_DDS/TAO161_0-SunOS-5.10-studio12-inline-32bit-OpenSpliceDDS_v4.1_UNSUPPORTED_091104
+JACORB_HOME=$HOME_PATH/INSTALLED\ FOR\ DDS/JacORBME
+
+PATH=$HOME_PATH/INSTALLED\ FOR\ DDS/make/:/usr/sfw/bin:/usr/local/studio12/SUNWspro/bin/:/usr/bin:/usr/local/bin/:/opt/sfw/bin/:/usr/ccs/bin/
+LD_LIBRARY_PATH=$TAO_ROOT/lib:$LD_LIBRARY_PATH
+
+export HOME_PATH
+export JAVA_HOME
+export TAO_ROOT
+export JACORB_HOME
+export PATH
+export LD_LIBRARY_PATH

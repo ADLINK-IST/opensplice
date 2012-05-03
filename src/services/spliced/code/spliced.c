@@ -19,6 +19,7 @@
 #include "c_stringSupport.h"
 
 #include "spliced.h"
+#include "s_misc.h"
 #include "s_configuration.h"
 #include "report.h"
 #include "serviceMonitor.h"
@@ -99,6 +100,20 @@ argumentsCheck(
         printf("<URI> file://<abs path to configuration> \n");
         exit(SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR);
     }
+}
+static void *
+leaseRenewThread(
+    void *arg)
+{
+    spliced this = (spliced)arg;
+    os_time delay;
+    delay.tv_sec = this->config->leaseRenewalPeriod.seconds;
+    delay.tv_nsec = this->config->leaseRenewalPeriod.nanoseconds;
+    while (!this->terminate && (this->systemHaltCode == SPLICED_EXIT_CODE_OK)) {
+        u_serviceRenewLease(this->service, this->config->leasePeriod);
+        os_nanoSleep(delay);
+    }
+    return NULL;
 }
 
 void
@@ -317,10 +332,6 @@ startServices(
            else if (!strcmp(info->name,"durability"))
            {
               vg_cmd = os_getenv("VG_DURABILITY");
-           }
-           else if (!strcmp(info->name,"ddsi"))
-           {
-              vg_cmd = os_getenv("VG_DDSI");
            }
            else if (!strcmp(info->name,"snetworking"))
            {
@@ -679,7 +690,7 @@ splicedFree(void)
 
     if (this != NULL) {
         if (this->service != NULL) {
-            u_participantRenewLease(u_participant(this->service), lease);
+            u_serviceRenewLease(this->service, lease);
 
             if (!u_serviceChangeState(u_service(this->service),STATE_TERMINATING)) {
                 OS_REPORT(OS_ERROR,OSRPT_CNTXT_SPLICED,0,
@@ -819,6 +830,7 @@ OPENSPLICE_MAIN (ospl_spliced)
     os_time delay;
     os_result osr;
     int retCode = SPLICED_EXIT_CODE_OK;
+    os_threadId lrt;
 
     u_userInitialise();
 
@@ -891,10 +903,16 @@ OPENSPLICE_MAIN (ospl_spliced)
 
         delay.tv_sec = this->config->leaseRenewalPeriod.seconds;
         delay.tv_nsec = this->config->leaseRenewalPeriod.nanoseconds;
+
+        osr = os_threadCreate(&lrt, S_THREAD_LEASE_RENEW_THREAD, &this->config->leaseRenewScheduling, leaseRenewThread, this);
+        if (osr != os_resultSuccess) {
+            splicedExit("Failed to start lease renew thread.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
+        }
+
         while (!this->terminate && (this->systemHaltCode == SPLICED_EXIT_CODE_OK)) {
-            u_participantRenewLease(u_participant(this->service), this->config->leasePeriod);
             os_nanoSleep(delay);
         }
+        os_threadWaitExit(lrt, NULL);
     }
     if(this->systemHaltCode != SPLICED_EXIT_CODE_OK && retCode == SPLICED_EXIT_CODE_OK)
     {
@@ -904,3 +922,5 @@ OPENSPLICE_MAIN (ospl_spliced)
     splicedFree();
     return retCode;
 }
+
+

@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef U_PARTICIPANT_H
@@ -33,7 +33,6 @@
  *  u_participantAssertLiveliness();
  *  u_participantDisable();
  *  u_participantGetConfiguration();
- *  u_participantRenewLease();
  *  u_participantFindTopic();
  *  u_participantGetBuiltinSubscriber();
  *  u_participantDeleteHistoricalData ();
@@ -157,22 +156,6 @@ u_participantGetConfiguration(
     u_participant _this);
 
 /**
- * \brief Renews the lease of the participant.
- *
- * This method renews the lease of the participant by adding the lease period
- * to the current time.
- *
- * \param _this The participant proxy to operate on.
- *
- * \return U_RESULT_OK the participant is disabled.<br>
- *         U_RESULT_ILL_PARAM if the specified participant is incorrect.
- */
-OS_API u_result
-u_participantRenewLease(
-    u_participant _this,
-    v_duration leasePeriod);
-
-/**
  * \brief asks the system to find the topic specified by a given name.
  *
  * This method will search the nodal domain for the topic(s) identified
@@ -199,7 +182,7 @@ u_participantFindTopic(
  * \brief returns the built-in subscriber.
  *
  * This method returns the built-in subscriber, which holds built-in datareader's for every
- * built-in topic. These datareader's can be obtained using the method 
+ * built-in topic. These datareader's can be obtained using the method
  * <code>u_subscriberLookupDatareader</code>.
  *
  * \param _this         The participant proxy to operate on.
@@ -228,7 +211,7 @@ u_participantAssertLiveliness(
  * \brief Delete historical data from the nodal domain.
  *
  * This method deletes all local non volatile data that matches the partition
- * and topic expression. 
+ * and topic expression.
  *
  * \param _this          The Participant.
  * \param partitionExpr  The partition expression.
@@ -428,7 +411,7 @@ u_participantContainsTopic(
  *
  * This method provides the list of all local created topics which are
  * associated to this participant by creation and match the value of
- * topic_name. Wildcard characters are not (yet) supported, however 
+ * topic_name. Wildcard characters are not (yet) supported, however
  * not specifying a name (NULL) implies '*' meaning all topics.
  * Multiple Topics for one name is supported.
  *

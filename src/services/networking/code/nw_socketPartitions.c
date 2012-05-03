@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -21,7 +21,7 @@
 
 NW_STRUCT(nw_addressList) {
     nw_addressList next;
-    sk_address address;
+    os_sockaddr_storage address;
 };
 
 /* addressList methods */
@@ -30,7 +30,7 @@ NW_STRUCT(nw_addressList) {
 
 static nw_addressList
 nw_addressListNew(
-        sk_address address)
+        os_sockaddr_storage address)
 {
     nw_addressList result = NULL;
 
@@ -61,7 +61,7 @@ nw_addressListFree(
 static nw_bool
 nw_addressListAppend(
     nw_addressList addressList,
-    sk_address address)
+    os_sockaddr_storage address)
 {
     nw_bool result = FALSE;
     nw_bool found;
@@ -74,11 +74,13 @@ nw_addressListAppend(
         /* Walk to the last element */
         /* This is not in the main loop and not many items are expected in this list */
         nextItem = currentItem->next;
-        found = (currentItem->address == address);
+        found = os_sockaddrIPAddressEqual((os_sockaddr*) &currentItem->address,
+                                         (os_sockaddr*) &address);
         while (nextItem && !found) {
             currentItem = nextItem;
             nextItem = currentItem->next;
-            found = (currentItem->address == address);
+            found = os_sockaddrIPAddressEqual((os_sockaddr*) &currentItem->address,
+                                             (os_sockaddr*) &address);
         }
         if (!found) {
             NW_CONFIDENCE(nextItem == NULL);
@@ -91,11 +93,12 @@ nw_addressListAppend(
 
 /* public */
 
-sk_address
+os_sockaddr_storage
 nw_addressListGetAddress(
     nw_addressList addressList)
 {
-    sk_address result = (sk_address)0;
+    os_sockaddr_storage result;
+    memset(&result, 0, sizeof(result));
     if (addressList) {
         result = addressList->address;
     }
@@ -131,7 +134,7 @@ NW_STRUCT(nw_partition) {
 nw_partition
 nw_partitionNew(
     sk_partitionId id,
-    sk_address address,
+    os_sockaddr_storage address,
     sk_bool connected,
     sk_bool compression,
     nw_partition nextInHash,
@@ -214,7 +217,7 @@ nw_bool
 nw_socketPartitionsAdd(
     nw_socketPartitions socketPartitions,
     sk_partitionId partitionId,
-    sk_address address,
+    os_sockaddr_storage address,
     sk_bool connected,
     sk_bool compression,
     c_ulong mTTL)

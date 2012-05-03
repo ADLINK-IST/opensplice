@@ -3,4 +3,4 @@ cd ../Release/
 echo.
 ListenerDataPublisher.exe
 echo.
-pause
+cd ../Bat

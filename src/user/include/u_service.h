@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef U_SERVICE_H
@@ -41,19 +41,19 @@ extern "C" {
  *
  * \param state the state of the splice service
  * \param usrData Is the same pointer as given at setting the listener.
- */ 
+ */
 typedef void (*u_serviceSplicedaemonListener)(v_serviceStateKind spliceDaemonState, c_voidp usrData);
 
 /**
  * \brief Creates a new service in the kernel and returns a proxy to that service.
- * 
+ *
  * A service is uniquely identified by its name. The given lease period is a
  * contract between the service and the kernel. This contract specifies that
  * during the given period the kernel will keep all resources. When the
  * lease/contract is not renewed, all resources used by the service are removed
  * from the kernel.
- * 
- * 
+ *
+ *
  * \param kernel       the kernel.
  * \param name         the unique name of the service
  * \param extStateName the name of the subclass of <code>v_serviceState</code>
@@ -91,7 +91,7 @@ u_serviceDeinit(
 
 /** \brief The <code>u_service</code> destructor.
  *
- * The destructor frees the kernel service associated with this proxy 
+ * The destructor frees the kernel service associated with this proxy
  * and then frees this proxy.
  *
  * \param service The service proxy to operate on.
@@ -106,7 +106,7 @@ u_serviceFree(
  * \brief Returns the name of the service.
  *
  * Each service is uniquely identified by a name and each service has
- * a state object. 
+ * a state object.
  *
  * \param service      the service proxy to operate on.
  *
@@ -181,7 +181,7 @@ u_serviceChangeState(
  * <code>STATE_TERMINATING</code>, <code>STATE_TERMINATED</code> and
  * <code>STATE_DIED</code>.
  * The state <code>STATE_NONE</code> is returned when an error has occurred.
- * 
+ *
  * \param service the service proxy to operate on.
  *
  * \return the state kind of the given service.
@@ -214,6 +214,22 @@ OS_API u_result
 u_serviceEnableStatistics(
     u_service service,
     const char *categoryName);
+
+/**
+ * \brief Renews the lease of the service.
+ *
+ * This method renews the lease of the service by adding the lease period
+ * to the current time.
+ *
+ * \param _this The service proxy to operate on.
+ *
+ * \return U_RESULT_OK the service is disabled.<br>
+ *         U_RESULT_ILL_PARAM if the specified service is incorrect.
+ */
+OS_API u_result
+u_serviceRenewLease(
+    u_service _this,
+    v_duration leasePeriod);
 
 #undef OS_API
 

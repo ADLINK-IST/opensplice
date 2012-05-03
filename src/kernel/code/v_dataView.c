@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* Interface */
@@ -251,21 +251,57 @@ v_dataViewInit(
     assert(dataViewSampleType != NULL);
     dataViewInstanceType = dataViewInstanceTypeNew(kernel, dataViewSampleType);
     assert(dataViewInstanceType != NULL);
-    if (qos->userKey.enable) {
-        if (qos->userKey.expression) {
+    /* When the view has defined its own keys, then grab the key-definition from
+     * the userKeyQosPolicy and the key-values from the messages that are passed.
+     */
+    if (qos->userKey.enable)
+    {
+        if (qos->userKey.expression)
+        {
             totalSize = strlen(qos->userKey.expression) + 1;
             keyExpr = os_malloc(totalSize);
-            os_strncpy(keyExpr, qos->userKey.expression,totalSize);
-        } else {
+            os_strncpy(keyExpr, qos->userKey.expression, totalSize);
+        }
+        else
+        {
             keyExpr = NULL;
         }
-        prefix = "sample.sample.message.userData.";
-    } else {
+    }
+    /* When the view-spectrum  is fully slaved to a reader, then grab the key-
+     * definition from the corresponding dataReader. These keys can either be
+     * the original keys as specified on the topic, or the reader may have
+     * overruled the topic keys by means of its own userKeyQosPolicy.
+     */
+    else if (v_reader(dataReader)->qos->userKey.enable)
+    {
+        if (v_reader(dataReader)->qos->userKey.expression)
+        {
+            totalSize = strlen(v_reader(dataReader)->qos->userKey.expression) + 1;
+            keyExpr = os_malloc(totalSize);
+            os_strncpy(keyExpr, v_reader(dataReader)->qos->userKey.expression, totalSize);
+        }
+        else
+        {
+            keyExpr = NULL;
+        }
+    }
+    else
+    {
         v_topic topic;
         topic = v_dataReaderGetTopic(dataReader);
-        keyExpr = v_topicMessageKeyExpr(topic);
-        prefix = "sample.sample.message.";
+        if (v_topicKeyExpr(topic) != NULL)
+        {
+            totalSize = strlen(v_topicKeyExpr(topic)) + 1;
+            keyExpr = os_malloc(totalSize);
+            os_strncpy(keyExpr, v_topicKeyExpr(topic), totalSize);
+        }
+        else
+        {
+            keyExpr = NULL;
+        }
+        c_free(topic);
     }
+    prefix = "sample.sample.message.userData.";
     if (keyExpr != NULL) {
         keyExprNames = c_splitString(keyExpr,", \t");
         nrOfKeys = c_iterLength(keyExprNames);
@@ -324,6 +360,7 @@ v_dataViewNew(
         OS_REPORT(OS_ERROR,
                   "v_dataViewNew",0,
                   "Failed to create a v_dataReaderView.");
+        assert(FALSE);
     }
     return dataView;
 }

@@ -37,7 +37,7 @@ namespace WaitSetSubscriber
  
         static void Main(string[] args)
         {            
-            DDSEntityManager mgr = new DDSEntityManager();
+            DDSEntityManager mgr = new DDSEntityManager("WaitSet");
             String partitionName = "WaitSet example";
 
             // create Domain Participant
@@ -48,13 +48,13 @@ namespace WaitSetSubscriber
             mgr.registerType(msgTS);
 
             // create Topic
-            mgr.createTopic("WaitSetData_Msg", "WaitSet");
+            mgr.createTopic("WaitSetData_Msg");
 
             // create Subscriber
             mgr.createSubscriber();
 
             // create DataReader
-            mgr.createReader("WaitSet", false);
+            mgr.createReader(false);
 
             // Read Events
 

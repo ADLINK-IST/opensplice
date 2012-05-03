@@ -2,7 +2,7 @@
 # included by bld/$(SPLICE_TARGET)/makefile
 
 TARGET_CSMOD = $(DDS_DCPSSACS)
-CS_NAMESPCS	 = DDS DDS/OpenSplice DDS/OpenSplice/Gapi DDS/OpenSplice/Database DDS/OpenSplice/CustomMarshalers
+CS_NAMESPCS	 = DDS DDS/OpenSplice DDS/OpenSplice/Gapi DDS/OpenSplice/Database DDS/OpenSplice/CustomMarshalers DDS/OpenSplice/Kernel
 
 # Also specify an assembly for testing purposes.
 TARGET_ASSEMBLY = $(CSLIB_PREFIX)$(DDS_DCPSSACS)$(CSLIB_POSTFIX)

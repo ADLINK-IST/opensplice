@@ -341,10 +341,15 @@ c_mmMalloc(
             pa_increment(&mm->fails);
             c_mutexUnlock(&mm->mapLock);
             OS_REPORT_2(OS_ERROR,"c_mmbase",0,
-                        "Memory claim denied: required size (%d) "
-                        "exceeds available resources (%d)!",
+                        "Memory claim denied: Was unable to allocate from reusable memory pool and the required size (%d) "
+                        "exceeds available (non-reusable) resources (%d)! To remedy this situation try to configure a bigger "
+                        "value for the OpenSplice/Domain/Database/Threshold value, most likely a database size is configured "
+                        "that is bigger than the default without adapting the default threshold value accordingly (hint: "
+                        "likely the solution if memory claim is denied while deleting large amounts of entities/data or when using "
+                        "very big topic sizes). Alternatively the value configured for the OpenSplice/Domain/Database/Size value "
+                        "has to be increased (hint: likely the solution if memory claim is denied while receiving a lot of data).",
                          chunkSize,
-                         (mm->listEnd + chunkSize - mm->mapEnd));
+                         (mm->listEnd - mm->mapEnd));
             if (chunkSize <= HighWaterMark) {
                 if (mm->outOfMemoryAction) {
 #ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
@@ -412,10 +417,15 @@ c_mmMalloc(
                 c_mutexUnlock(&mm->mapLock);
                 c_mutexUnlock(&mm->listLock);
                 OS_REPORT_2(OS_ERROR,"c_mmbase",0,
-                            "Memory claim denied: "
-                            "required size (%d) exceeds available resources (%d)!",
-                             chunkSize,
-                             (mm->listEnd + chunkSize - mm->mapEnd));
+                        "Memory claim denied: Was unable to allocate from reusable memory pool and the required size (%d) "
+                        "exceeds available (non-reusable) resources (%d)! To remedy this situation try to configure a bigger "
+                        "value for the OpenSplice/Domain/Database/Threshold value, most likely a database size is configured "
+                        "that is bigger than the default without adapting the default threshold value accordingly (hint: "
+                        "likely the solution if memory claim is denied while deleting large amounts of entities/data or when using "
+                        "very big topic sizes). Alternatively the value configured for the OpenSplice/Domain/Database/Size value "
+                        "has to be increased (hint: likely the solution if memory claim is denied while receiving a lot of data).",
+                         chunkSize,
+                         (mm->listEnd - mm->mapEnd));
                 if (chunkSize <= HighWaterMark) {
                     if (mm->outOfMemoryAction) {
 #ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS

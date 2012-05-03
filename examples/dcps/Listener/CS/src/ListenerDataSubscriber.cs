@@ -36,7 +36,7 @@ namespace ListenerDataSubscriber
     {
         static void Main(string[] args)
         {
-            DDSEntityManager mgr = new DDSEntityManager();
+            DDSEntityManager mgr = new DDSEntityManager("Listener");
             ReturnCode status = ReturnCode.Error;
             ListenerDataListener myListener;
             String partitionName = "Listener Example";
@@ -50,13 +50,13 @@ namespace ListenerDataSubscriber
             mgr.registerType(msgTS);
 
             // create Topic
-            mgr.createTopic("ListenerData_Msg", "Listener");
+            mgr.createTopic("ListenerData_Msg");
 
             // create Subscriber
             mgr.createSubscriber();
 
             // create DataReader
-            mgr.createReader("Listener", false);
+            mgr.createReader(false);
 
             IDataReader dreader = mgr.getReader();            
 

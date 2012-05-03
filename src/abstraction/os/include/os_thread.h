@@ -38,14 +38,16 @@ extern "C" {
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 /* Number of slots in Thread Private Memory */
-#define OS_THREAD_MEM_ARRAY_SIZE		(16)
+#define OS_THREAD_MEM_ARRAY_SIZE (6)
 
-/* Pre-allocated slots */
-#define OS_THREAD_CLOCK_OFFSET   (1)  /* Attached to clock offset on windows platform */
-#define OS_THREAD_UT_TRACE       (2)  /* Attached to tracing facility */
-#define OS_THREAD_JVM            (10) /* Attached Java virtual machine */
-#define OS_THREAD_PROTECT        (11) /* Attached to user-layer protect */
-#define OS_THREAD_API_INFO       (12) /* Attached to API reports */
+typedef enum os_threadMemoryIndex {
+    OS_THREAD_CLOCK_OFFSET,
+    OS_THREAD_UT_TRACE,
+    OS_THREAD_JVM,
+    OS_THREAD_PROTECT,
+    OS_THREAD_API_INFO,
+    OS_THREAD_WARNING 
+} os_threadMemoryIndex;
 
 /** \brief Platform dependent thread identification
  */

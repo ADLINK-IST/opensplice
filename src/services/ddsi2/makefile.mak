@@ -3,7 +3,7 @@
 
 ifeq (,$(findstring shmt,$(SPLICE_TARGET)))
 TARGET_EXEC	:= ddsi2
-ODL_MODULES	:= osplserModule
+ODL_MODULES	:= nn_osplserModule
 
 include	$(OSPL_HOME)/setup/makefiles/target.mak
 

@@ -69,13 +69,15 @@ d_storeResult
 d_groupInfoWrite(
     d_groupInfo _this,
     const d_store store,
-    const v_groupAction action);
+    const v_groupAction action,
+    d_sample sample);
 
 d_storeResult
 d_groupInfoDispose(
     d_groupInfo _this,
     const d_store store,
-    const v_groupAction action);
+    const v_groupAction action,
+    d_sample sample);
 
 d_storeResult
 d_groupInfoExpungeSample(
@@ -115,6 +117,12 @@ d_groupInfoBackup(
     const d_store store,
     d_groupInfo* backup);
 
+
+d_sample
+d_groupInfoSampleNew (
+    d_groupInfo _this,
+    d_instance instance,
+    v_message msg);
 
 #if defined (__cplusplus)
 }

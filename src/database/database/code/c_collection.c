@@ -3225,9 +3225,11 @@ c_listNew(
     }
     os_freea(name);
     c = (c_collection)c_new(c_type(o));
-    c_list(c)->cache = c_mmCacheCreate(c_baseMM(base),
-                                       C_SIZEOF(c_listNode),
-                                       _PREALLOC_);
+    if (c) {
+        c_list(c)->cache = c_mmCacheCreate(c_baseMM(base),
+                                           C_SIZEOF(c_listNode),
+                                           _PREALLOC_);
+    }
     c_free(o);
     return c;
 }
@@ -3279,13 +3281,15 @@ c_setNew(
     }
     os_freea(name);
     c = (c_collection)c_new(c_type(o));
-    c_set(c)->cache = c_mmCacheCreate(c_baseMM(base),
-                                      C_SIZEOF(c_setNode),
-                                      _PREALLOC_);
-    c_avlTree(c)->root = NULL;
-    c_avlTree(c)->offset = 0;
-    c_avlTree(c)->size = 0;
-    c_avlTree(c)->mm = NULL;
+    if (c) {
+        c_set(c)->cache = c_mmCacheCreate(c_baseMM(base),
+                                          C_SIZEOF(c_setNode),
+                                          _PREALLOC_);
+        c_avlTree(c)->root = NULL;
+        c_avlTree(c)->offset = 0;
+        c_avlTree(c)->size = 0;
+        c_avlTree(c)->mm = NULL;
+    }
     c_free(o);
     return c;
 }
@@ -3337,14 +3341,16 @@ c_bagNew(
     }
     os_freea(name);
     c = (c_collection)c_new(c_type(o));
-    c_bag(c)->cache = c_mmCacheCreate(c_baseMM(base),
-                                      C_SIZEOF(c_bagNode),
-                                      _PREALLOC_);
-    c_avlTree(c)->root = NULL;
-    c_avlTree(c)->offset = 0;
-    c_avlTree(c)->size = 0;
-    c_avlTree(c)->mm = NULL;
-    c_bag(c)->count = 0;
+    if (c) {
+        c_bag(c)->cache = c_mmCacheCreate(c_baseMM(base),
+                                          C_SIZEOF(c_bagNode),
+                                          _PREALLOC_);
+        c_avlTree(c)->root = NULL;
+        c_avlTree(c)->offset = 0;
+        c_avlTree(c)->size = 0;
+        c_avlTree(c)->mm = NULL;
+        c_bag(c)->count = 0;
+    }
     c_free(o);
     return c;
 }
@@ -3445,21 +3451,23 @@ c_tableNew(
 
     t = c_table(c_new(c_type(o)));
     c_free(o);
-    t->count = 0;
-    nrOfKeys = c_iterLength(fieldList);
-    if (nrOfKeys>0) {
-        t->key = c_arrayNew(c_resolve(base,"c_field"),nrOfKeys);
-        for (i=0;i<nrOfKeys;i++) {
-            t->key[i] = c_iterTakeFirst(fieldList);
+    if (t) {
+        t->count = 0;
+        nrOfKeys = c_iterLength(fieldList);
+        if (nrOfKeys>0) {
+            t->key = c_arrayNew(c_resolve(base,"c_field"),nrOfKeys);
+            for (i=0;i<nrOfKeys;i++) {
+                t->key[i] = c_iterTakeFirst(fieldList);
+            }
+        } else {
+            t->key = NULL;
         }
-    } else {
-        t->key = NULL;
+        c_iterFree(fieldList);
+        t->cache = c_mmCacheCreate(c_baseMM(base),
+                                   C_SIZEOF(c_tableNode),
+                                   _PREALLOC_);
+        t->object = NULL;
     }
-    c_iterFree(fieldList);
-    t->cache = c_mmCacheCreate(c_baseMM(base),
-                               C_SIZEOF(c_tableNode),
-                               _PREALLOC_);
-    t->object = NULL;
     return (c_collection)t;
 }
 #undef C_TABLE_ANONYMOUS_NAME
@@ -3506,10 +3514,12 @@ c_queryNew(
 
         q = c_query(c_new(c_type(o)));
         c_free(o);
-        q->source = c;
-        q->pred = pred;
+        if (q) {
+            q->source = c;
+            q->pred = pred;
 
-        c_qPredOptimize(q->pred);
+            c_qPredOptimize(q->pred);
+        }
     } else {
         q = NULL;
     }
@@ -3575,9 +3585,10 @@ c_queryNew(
         os_freea(name);
         q = c_query(c_new(c_type(o)));
         c_free(o);
-        q->source = c;
-        q->pred = pred;
-
+        if (q) {
+            q->source = c;
+            q->pred = pred;
+        }
     } else {
         q = NULL;
     }

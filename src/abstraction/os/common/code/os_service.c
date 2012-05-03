@@ -37,7 +37,7 @@ os_serviceName(void)
 }
 
 void
-os_createPipeNameFromDomainName(os_char *name)
+os_createPipeNameFromDomainName(const os_char *name)
 {
 }
 

@@ -44,6 +44,10 @@ JCC              = javac
 	#JAR
 JAR		 = jar
 
+#JAVAH
+JAVAH            = javah
+JAVAH_FLAGS      = -force
+
 	#Java
 JAVA		 = java
 JAVA_SRCPATH_SEP = ;

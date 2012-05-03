@@ -154,19 +154,43 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Generated\LifecycleData.cpp"
+				RelativePath="..\Generated\LifecycleData.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Generated\LifecycleDataDcps.cpp"
+				RelativePath="..\..\..\..\idl\LifecycleData.idl"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(ProjectDir)&#x0D;&#x0A;idlpp  -I&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot; -I&quot;..\Generated&quot; -I&quot;$(OSPL_HOME)\examples\dcps\Lifecycle\idl&quot; -l cpp -S -d &quot;..\Generated&quot;  &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+						AdditionalDependencies=""
+						Outputs="ccpp_$(InputName).h;$(InputName).h;$(InputName).cpp;$(InputName)Dcps.idl;$(InputName)Dcps_impl.h;$(InputName)Dcps_impl.cpp;$(InputName)SplDcps.h;$(InputName)SplDcps.cpp;$(InputName)Dcps.h;$(InputName)Dcps.cpp"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="cd $(ProjectDir)&#x0D;&#x0A;idlpp  -I&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot; -I&quot;..\Generated&quot; -I&quot;$(OSPL_HOME)\examples\dcps\Lifecycle\idl&quot; -l cpp -S -d &quot;..\Generated&quot;  &quot;$(InputPath)&quot;&#x0D;&#x0A;"
+						AdditionalDependencies=""
+						Outputs="ccpp_$(InputName).h;$(InputName).h;$(InputName).cpp;$(InputName)Dcps.idl;$(InputName)Dcps_impl.h;$(InputName)Dcps_impl.cpp;$(InputName)SplDcps.h;$(InputName)SplDcps.cpp;$(InputName)Dcps.h;$(InputName)Dcps.cpp"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\Generated\LifecycleDataDcps.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Generated\LifecycleDataDcps_impl.cpp"
+				RelativePath="..\Generated\LifecycleDataDcps_impl.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\Generated\LifecycleDataSplDcps.cpp"
+				RelativePath="..\Generated\LifecycleDataSplDcps.cpp"
 				>
 			</File>
 		</Filter>
@@ -176,7 +200,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\Generated\ccpp_LifecycleData.h"
+				RelativePath="..\Generated\ccpp_LifecycleData.h"
 				>
 			</File>
 			<File
@@ -188,48 +212,20 @@
 				>
 			</File>
 			<File
-				RelativePath=".\Generated\LifecycleData.h"
+				RelativePath="..\Generated\LifecycleData.h"
 				>
 			</File>
 			<File
-				RelativePath=".\Generated\LifecycleDataDcps.h"
+				RelativePath="..\Generated\LifecycleDataDcps.h"
 				>
 			</File>
 			<File
-				RelativePath=".\Generated\LifecycleDataDcps_impl.h"
+				RelativePath="..\Generated\LifecycleDataDcps_impl.h"
 				>
 			</File>
 			<File
-				RelativePath=".\Generated\LifecycleDataSplDcps.h"
+				RelativePath="..\Generated\LifecycleDataSplDcps.h"
 				>
-			</File>
-		</Filter>
-		<Filter
-			Name="Idl Files"
-			>
-			<File
-				RelativePath="..\..\..\..\idl\LifecycleData.idl"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="cd $(ProjectDir)&#x0D;&#x0A;idlpp -I&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot; -I&quot;..&quot; -I$(ProjectDir)..\..\..\..\idl -l cpp -S -d Generated &quot;$(ProjectDir)..\..\..\..\idl\$(InputName).idl&quot;&#x0D;&#x0A;"
-						AdditionalDependencies=""
-						Outputs="ccpp_$(InputName).h;$(InputName).h;$(InputName).cpp;$(InputName)Dcps.idl;$(InputName)Dcps_impl.h;$(InputName)Dcps_impl.cpp;$(InputName)SplDcps.h;$(InputName)SplDcps.cpp;$(InputName)Dcps.h;$(InputName)Dcps.cpp"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="cd $(ProjectDir)&#x0D;&#x0A;idlpp -I&quot;$(OSPL_HOME)\include\dcps\C++\SACPP&quot; -I&quot;..&quot; -I$(ProjectDir)..\..\..\..\idl -l cpp -S -d Generated &quot;$(ProjectDir)..\..\..\..\idl\$(InputName).idl&quot;&#x0D;&#x0A;"
-						AdditionalDependencies=""
-						Outputs="ccpp_$(InputName).h;$(InputName).h;$(InputName).cpp;$(InputName)Dcps.idl;$(InputName)Dcps_impl.h;$(InputName)Dcps_impl.cpp;$(InputName)SplDcps.h;$(InputName)SplDcps.cpp;$(InputName)Dcps.h;$(InputName)Dcps.cpp"
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 	</Files>

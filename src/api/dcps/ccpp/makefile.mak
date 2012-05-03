@@ -60,10 +60,12 @@ CPPFLAGS	+= -DOSPL_BUILD_DCPSCCPP
 
 CXXINCS  += $(ORB_INCLUDE)
 CXXINCS  += -I$(OSPL_HOME)/src/kernel/include
+CXXINCS  += -I$(OSPL_HOME)/src/user/include
 CXXINCS  += -I$(OSPL_HOME)/src/database/database/include
 CXXINCS  += -I$(OSPL_HOME)/src/api/dcps/ccpp/include
 CXXINCS  += -I$(OSPL_HOME)/src/api/dcps/ccpp/orb/$(SPLICE_ORB)
 CXXINCS  += -I$(OSPL_HOME)/src/api/dcps/gapi/include
+
 
 CXXFLAGS += $(SHCFLAGS) $(MTCFLAGS)
 
@@ -71,7 +73,7 @@ CXXFLAGS += $(SHCFLAGS) $(MTCFLAGS)
 LDFLAGS  += $(SHLDFLAGS)
 
 LDLIBS   += $(SHLDLIBS)
-LDLIBS   += -l$(DDS_DCPSGAPI) -l$(DDS_DATABASE) -l$(DDS_OS)
+LDLIBS   += -l$(DDS_DCPSGAPI) -l$(DDS_DATABASE) -l$(DDS_OS) -l$(DDS_KERNEL) -l$(DDS_USER)
 LDLIBS   += $(LDLIBS_CXX) $(ORB_LDLIBS)
 
 .PHONY: make_idl_preprocessor

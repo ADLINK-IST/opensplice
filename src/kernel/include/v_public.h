@@ -42,7 +42,6 @@ OS_API v_handle v_publicHandle    (v_public o);
 OS_API v_gid    v_publicGid       (v_public o);
 OS_API void     v_publicFree      (v_public o);
 OS_API void     v_publicDispose   (v_public o);
-OS_API v_handleResult v_publicRenew (v_public o);
 
 OS_API c_voidp  v_publicSetUserData (v_public o, c_voidp userData);
 OS_API c_voidp  v_publicGetUserData (v_public o);

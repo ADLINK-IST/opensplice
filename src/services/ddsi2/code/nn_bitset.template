@@ -1,0 +1,23 @@
+/* -*- c -*- */
+
+NN_C99_INLINE int nn_bitset_isset (unsigned numbits, const unsigned *bits, unsigned idx)
+{
+  return idx < numbits && (bits[idx/32] & (1u << (31 - (idx%32))));
+}
+
+NN_C99_INLINE void nn_bitset_set (unsigned numbits, unsigned *bits, unsigned idx)
+{
+  assert (idx < numbits);
+  bits[idx/32] |= 1u << (31 - (idx%32));
+}
+
+NN_C99_INLINE void nn_bitset_clear (unsigned numbits, unsigned *bits, unsigned idx)
+{
+  assert (idx < numbits);
+  bits[idx/32] &= ~(1u << (31 - (idx%32)));
+}
+
+NN_C99_INLINE void nn_bitset_zero (unsigned numbits, unsigned *bits)
+{
+  memset (bits, 0, 4 * ((numbits + 31) / 32));
+}

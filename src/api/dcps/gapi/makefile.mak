@@ -5,8 +5,8 @@ TARGET_DLIB	:= $(DDS_DCPSGAPI)
 
 include	$(OSPL_HOME)/setup/makefiles/target.mak
 
-ifeq ($(PROC),mpc7448)
-CFLAGS_OPT=$(ALT_CFLAGS_OPT)
+ifneq (,$(ALT_CFLAGS_OPT))
+   CFLAGS_OPT=$(ALT_CFLAGS_OPT)
 endif
 
 CPPFLAGS	+= -DOSPL_BUILD_DCPSGAPI

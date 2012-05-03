@@ -54,6 +54,7 @@ include	     $(OSPL_HOME)/setup/makefiles/target.mak
 CPPFLAGS	+= -DOSPL_BUILD_DCPSCCPP
 
 CXXINCS		+= -I$(OSPL_HOME)/src/kernel/include
+CXXINCS     += -I$(OSPL_HOME)/src/user/include
 CXXINCS		+= -I$(OSPL_HOME)/src/database/database/include
 CXXINCS		+= -I$(OSPL_HOME)/src/api/dcps/sacpp/include
 CXXINCS		+= -I$(OSPL_HOME)/src/api/dcps/ccpp/include
@@ -64,7 +65,7 @@ CXXFLAGS += $(SHCFLAGS) $(MTCFLAGS)
 # Fine tune the Linker flags.
 LDFLAGS += $(SHLDFLAGS)
 LDLIBS  += $(SHLDLIBS)
-LDLIBS  += -l$(DDS_DCPSGAPI) -l$(DDS_DATABASE) -l$(DDS_OS)
+LDLIBS  += -l$(DDS_DCPSGAPI) -l$(DDS_DATABASE) -l$(DDS_OS) -l$(DDS_KERNEL) -l$(DDS_USER)
 LDLIBS  += $(LDLIBS_CXX)
 
 .PHONY: make_idl_preprocessor

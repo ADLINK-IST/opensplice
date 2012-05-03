@@ -149,6 +149,7 @@ u_userExit(void)
     u_user u;
     u_domain domain;
     os_result mr = os_resultFail;
+    u_result r;
     c_long i;
 
     u = u__userLock();
@@ -168,21 +169,36 @@ u_userExit(void)
         for (i = 1; (i <= u->domainCount); i++) {
             domain = u->domainList[i].domain;
             if (domain) {
-                u_domainDetachParticipants(domain);
-                u_userKernelClose(domain);
+                r = u_domainDetachParticipants(domain);
+                if (r != U_RESULT_OK) {
+                    OS_REPORT_2(OS_ERROR,
+                                "user::u_user::u_userExit", 0,
+                                "Operation u_domainDetachParticipants(0x%x) failed."
+                                OS_REPORT_NL "result = %s",
+                                domain, u_resultImage(r));
+                } else {
+                    r = u_domainFree(domain);
+                    if (r != U_RESULT_OK) {
+                        OS_REPORT_2(OS_ERROR,
+                                    "user::u_user::u_userExit", 0,
+                                    "Operation u_domainFree(0x%x) failed."
+                                    OS_REPORT_NL "result = %s",
+                                    domain, u_resultImage(r));
+                    }
+                }
             }
         }
-
         user = NULL;
 
         /* Destroy the user-layer mutex */
         mr = os_mutexDestroy(&u->mutex);
         if(mr != os_resultSuccess){
-            OS_REPORT_1(OS_WARNING,"u_userExit",0,
-                        "User-layer mutex destroy failed: os_result == %d.",
+            OS_REPORT_1(OS_ERROR,
+                        "user::u_user::u_userExit",0,
+                        "Operation os_mutexDestroy(0x%x) failed:"
+                        OS_REPORT_NL "os_result == %d.",
                         mr);
         }
-
         /* Free the user-object */
         os_free(u);
 
@@ -291,8 +307,10 @@ u_userInitialise()
     void* initUser;
 
     initCount = pa_increment(&_ospl_userInitCount);
-    /* Iff 0 after increment, overflow has occurred. This can only realistically
-     * happen when u_userDetach() is called more often than u_userInitialize(). */
+    /* If initCount == 0 then an overflow has occurred.
+     * This can only realistically happen when u_userDetach()
+     * is called more often than u_userInitialize().
+     */
     assert(initCount != 0);
 
     if (initCount == 1) {
@@ -412,6 +430,44 @@ u_userAddDomain(
     return result;
 }
 
+u_result
+u_userRemoveDomain(
+    u_domain domain)
+{
+    u_domainAdmin ka;
+    u_user u;
+    u_result result;
+    c_long i;
+
+    if (domain == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "user::u_user::u_userRemoveDomain", 0,
+                  "Illegal parameter: Domain = NULL.");
+        return U_RESULT_ILL_PARAM;
+    }
+    result = U_RESULT_ILL_PARAM;
+    u = u__userLock();
+    if(u){
+        ka = NULL;
+        for (i=1; (i<=u->domainCount && ka == NULL); i++) {
+            if (u->domainList[i].domain == domain) {
+                ka = &u->domainList[i];
+                ka->refCount--;
+                ka->domain = NULL;
+                result = U_RESULT_OK;
+            }
+        }
+        u__userUnlock();
+        if (result != U_RESULT_OK) {
+            OS_REPORT_1(OS_ERROR,
+                        "user::u_user::u_userRemoveDomain", 0,
+                        "Illegal parameter: Unknown Domain = 0x%x.",
+                        domain);
+        }
+    }
+    return result;
+}
+
 u_domain
 u_userLookupDomain(
     const c_char *uri)
@@ -423,18 +479,21 @@ u_userLookupDomain(
 
     domain = NULL;
 
-    if (uri == NULL || strlen (uri) == 0) {
-        uri = os_getenv ("OSPL_URI");
-    }
-
     u = u__userLock();
     if (u) {
+        if (uri == NULL || strlen (uri) == 0) {
+            uri = os_getenv ("OSPL_URI");
+            if (uri == NULL) {
+                uri = "";
+            }
+        }
         /* If the domain is already opened by the process,
            return the domain object.
            Otherwise open the domain and add to the administration */
         for (i=1; (i<=u->domainCount && domain == NULL); i++) {
-            if (u_domainCompareDomainId(u->domainList[i].domain,(void *)uri)) {
-                ka = &u->domainList[i];
+            ka = &u->domainList[i];
+            if (u_domainCompareDomainId(ka->domain,(void *)uri))
+            {
                 ka->refCount++;
                 domain = ka->domain;
             }
@@ -446,164 +505,6 @@ u_userLookupDomain(
                 "User layer not initialized");
     }
     return domain;
-}
-
-/* Only use for spliced, also see comment in body.
- */
-u_domain
-u_userCreateDomain (
-    const c_char *uri)
-{
-    u_domain _this = NULL;
-    u_result result;
-
-    _this = u_domainNew(uri);
-
-    result = u_userAddDomain(_this);
-
-   /* The spliced will free this admin twice.
-    * As being a participant it will close the connection to
-    * the Domain in u_participantDeinit() and will destroy the
-    * Domain in u_domainFree.
-    * So besides creating a Domain with u_domainNew this method
-    * also lookups the Domain like normal participants do.
-    */
-    u_userLookupDomain(uri);
-    return _this;
-}
-
-/* timeout -1 identifies probe where no error
- * report is expected during normal flow
- */
-u_domain
-u_userFindDomain(
-    const c_char *uri,
-    c_long timeout)
-{
-    u_domain domain;
-    u_result result;
-
-    domain = u_userLookupDomain(uri);
-
-    if (domain == NULL) {
-        if (uri == NULL || strlen (uri) == 0) {
-            uri = os_getenv ("OSPL_URI");
-        }
-
-        domain = u_domainOpen(uri, timeout);
-        if (domain != NULL) {
-            result = u_userAddDomain(domain);
-            if (result != U_RESULT_OK) {
-                u_domainFree(domain);
-                domain = NULL;
-            }
-        } else {
-            /* If timeout = -1, don't report */
-            if (timeout >= 0) {
-                if (uri == NULL) {
-                    OS_REPORT(OS_ERROR,
-                              "u_userKernelOpen",0,
-                              "Failed to open: The default domain");
-                } else {
-                    OS_REPORT_1(OS_ERROR,
-                                "u_userKernelOpen",0,
-                                "Failed to open: %s",uri);
-                }
-            }
-        }
-    }
-    return domain;
-}
-
-u_result
-u_userKernelClose(
-    u_domain domain)
-{
-    u_domainAdmin ka;
-    u_user u;
-    u_result r;
-    c_object object;
-    c_long i;
-    c_bool detach = FALSE;
-
-    u = u__userLock();
-    if ( u ){
-        r = U_RESULT_ILL_PARAM;
-        for (i=1; (i<=u->domainCount) && (r != U_RESULT_OK); i++) {
-            ka = &u->domainList[i];
-            if (ka->domain == domain) {
-                ka->refCount--;
-                if (ka->refCount == 0) {
-                    object = c_iterTakeFirst(ka->keepList);
-                    while (object) {
-                        c_free(object);
-                        object = c_iterTakeFirst(ka->keepList);
-                    }
-                    c_iterFree(ka->keepList);
-                    ka->keepList = NULL;
-                    u->domainList[i].domain = NULL;
-                    detach = TRUE;
-                }
-                r = U_RESULT_OK;
-            }
-        }
-        u__userUnlock();
-
-        if (detach) {
-            u_domainClose(domain);
-        }
-    } else {
-        OS_REPORT(OS_ERROR,
-                "u_userKernelClose",0,
-                "User layer not initialized");
-        r = U_RESULT_NOT_INITIALISED;
-    }
-    return r;
-}
-
-u_result
-u_userDeleteDomain (
-    u_domain domain)
-{
-    u_domainAdmin ka;
-    u_user u;
-    u_result r;
-    c_long i;
-    c_bool free = FALSE;
-
-    u = u__userLock();
-    if ( u ){
-        r = U_RESULT_ILL_PARAM;
-        for (i=1; (i<=u->domainCount) && (r != U_RESULT_OK); i++) {
-            ka = &u->domainList[i];
-            if (ka->domain == domain) {
-                u->domainList[i].domain = NULL;
-                ka->refCount--;
-                assert(ka->refCount == 0);
-                if (ka->refCount != 0) {
-                    OS_REPORT_1(OS_ERROR,
-                        "u_userDeleteDomain",0,
-                        "Kernel being freed is still referenced %d time(s) "
-                        "in user-layer, should be 0",
-                        ka->refCount);
-                }
-                /* Always free if found */
-                free = TRUE;
-                r = U_RESULT_OK;
-            }
-        }
-        u__userUnlock();
-
-        if (free) {
-            u_domainFree(domain);
-        }
-    } else {
-        OS_REPORT(OS_ERROR,
-                "u_userDeleteDomain",0,
-                "User layer not initialized");
-        r = U_RESULT_NOT_INITIALISED;
-    }
-    return r;
 }
 
 c_long

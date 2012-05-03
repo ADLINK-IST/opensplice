@@ -27,7 +27,8 @@ C_STRUCT(d_storeMMF){
     c_char* storeFilePath;
     os_mmfHandle mmfHandle;
     d_groupList groups; /* local groupList reconstructed from storeKernel */
-
+    os_uint32 actionsInProgress;
+    os_cond actionCondition;
     d_storeMMFKernel storeKernel;
 };
 

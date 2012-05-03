@@ -24,6 +24,8 @@
 #define TRACE(function)         /*function*/
 #define CACHE_BLOCKSIZE		(100)
 #define STATIC
+#define SAJ_COPYCACHE_FIELDDESCRIPTOR_SIZE (512)
+#define SAJ_COPYCACHE_CLASSDESCRIPTOR_SIZE (512)
 
 C_CLASS(saj_context);
 #define saj_context(o)		((saj_context)(o))
@@ -144,6 +146,12 @@ os_char*
 saj_charToString(
     const os_char source);
 
+static os_boolean
+saj_copyCacheIsPragmaStacPossiblyDefined(
+    char* fieldDescriptor, /* inout */
+    os_uint32 size,
+    os_boolean forClassDescriptor);
+
 static char *
 saj_dekeyedId (
     char *name)
@@ -203,7 +211,7 @@ STATIC void saj_copyCacheWriteIndex (saj_copyCache copyCache, void *data, os_uin
 STATIC void saj_copyCacheFinalize (saj_copyCache copyCache);
 STATIC void saj_cacheHeader (sajCopyHeader *header, sajCopyType type, os_uint32 size);
 
-STATIC void saj_metaObject (c_type o, saj_context context);
+STATIC void saj_metaObject (c_type o, saj_context context, os_boolean stacRequested);
 STATIC void saj_cacheStructBuild (c_structure o, saj_context context);
 STATIC void saj_cacheStructMember (c_member o, saj_context context);
 STATIC void saj_cacheUnionLabel (c_literal lit, saj_context ctx);
@@ -235,8 +243,9 @@ STATIC void saj_cacheSeqFloatBuild (c_collectionType o, saj_context context);
 STATIC void saj_cacheSeqDoubleBuild (c_collectionType o, saj_context context);
 STATIC void saj_cacheStringBuild (c_collectionType o, saj_context context);
 STATIC void saj_cacheBStringBuild (c_collectionType o, saj_context context);
+STATIC void saj_cacheBStringToArrCharBuild (c_collectionType o, saj_context context);
 STATIC void saj_cacheEnumBuild (c_enumeration o, saj_context ctx);
-STATIC void saj_cacheArrObjectBuild (c_collectionType o, saj_context ctx);
+STATIC void saj_cacheArrObjectBuild (c_collectionType o, saj_context ctx, os_boolean stacRequested);
 STATIC void saj_cacheSeqObjectBuild (c_collectionType o, saj_context ctx);
 STATIC void saj_scopedTypeName (c_char *buffer, c_long bufferSize, c_metaObject object, const os_char separator, saj_copyCache copyCache);
 STATIC void saj_fieldDescriptor (c_type type, char *descriptor, unsigned int size, saj_copyCache copyCache);
@@ -422,7 +431,8 @@ saj_copyCacheFinalize (
 STATIC void
 saj_metaObject(
     c_type o,
-    saj_context context)
+    saj_context context,
+    os_boolean stacRequested)
 {
     assert (o);
     assert (context);
@@ -504,6 +514,7 @@ saj_metaObject(
             if (c_collectionType(o)->maxSize > 0) {
                 /* bounded string */
                 saj_cacheBStringBuild (c_collectionType(o), context);
+
             } else {
                 saj_cacheStringBuild (c_collectionType(o), context);
             }
@@ -596,7 +607,13 @@ saj_metaObject(
                     break;
                 case P_CHAR:
                     /* char */
-                    saj_cacheArrCharBuild (c_collectionType(o), context);
+                    if(stacRequested)
+                    {
+                        saj_cacheBStringToArrCharBuild (c_collectionType(o), context);
+                    } else
+                    {
+                        saj_cacheArrCharBuild (c_collectionType(o), context);
+                    }
                     break;
                 case P_OCTET:
                     /* byte */
@@ -615,7 +632,7 @@ saj_metaObject(
                 }
             } else {
                 /** array of object */
-                saj_cacheArrObjectBuild (c_collectionType(o), context);
+                saj_cacheArrObjectBuild (c_collectionType(o), context, stacRequested);
             }
         }
         break;
@@ -626,7 +643,7 @@ saj_metaObject(
         saj_cacheStructBuild (c_structure(o), context);
         break;
     case M_TYPEDEF:
-        saj_metaObject (c_typeDef(o)->alias, context);
+        saj_metaObject (c_typeDef(o)->alias, context, stacRequested);
         break;
     case M_UNION:
         saj_cacheUnionBuild (c_union(o), context);
@@ -718,14 +735,70 @@ saj_copyCacheResolveTypeDef(
     return object;
 }
 
+os_boolean
+saj_copyCacheIsPragmaStacPossiblyDefined(
+    char* fieldDescriptor, /* inout */
+    os_uint32 size,
+    os_boolean forClassDescriptor)
+{
+    os_uint32 i = 0;
+    os_uint32 arraysDetected = 0;
+    os_boolean charTypeDetected = OS_FALSE;
+    os_boolean stacRequested = OS_FALSE;
+    /* It could be that pragma stac is at play. This pragma works on bounded strings
+     * as well as bounded strings within arrays. So the descriptor that failed should
+     * look something like '[C' or '[[C' or '[[[C', etc. We'll search for this occurance
+     * in the field descriptor. Basically only the last '[C' (i.e. the char array)
+     * will need to be replaced to a string type, the other arrays ('[' chars in the
+     * descriptor) can remain in tact.
+     */
+    for(i = 0; i < size && (arraysDetected == 0 || !charTypeDetected); i++)
+    {
+        if(fieldDescriptor[i] == '[')
+        {
+            arraysDetected++;
+        } else if(arraysDetected > 0 &&
+                  fieldDescriptor[i] == 'C')
+        {
+            charTypeDetected = OS_TRUE;
+        } else
+        {
+            /* not relevant, exit */
+            i = SAJ_COPYCACHE_FIELDDESCRIPTOR_SIZE;
+        }
+    }
+    if(arraysDetected > 0 && charTypeDetected)
+    {
+        assert(i >= 2);/* should have found at least one '[' char and one 'C' char */
+        /* if the field descriptor is needed for a class description and only
+         * one array level is detected then it means we need to fill the
+         * descriptor string following JNI class descriptor rules.
+         * This means that we can not use the leading 'L' character nor the
+         * trailing ';' character.
+         * In all other cases, thus including class descriptor with more then
+         * one level of arrays we can use the standard way
+         */
+        if(forClassDescriptor && arraysDetected == 1)
+        {
+            snprintf (&(fieldDescriptor[i-2]),size-(i-2)-1, "java/lang/String");
+        } else
+        {
+            snprintf (&(fieldDescriptor[i-2]),size-(i-2)-1, "Ljava/lang/String;");
+        }
+        stacRequested = OS_TRUE;
+    }
+    return stacRequested;
+}
+
 STATIC void
 saj_cacheStructMember (
     c_member o,
     saj_context ctx)
 {
     sajCopyStructMember member;
-    char fieldDescriptor[512];
+    char fieldDescriptor[SAJ_COPYCACHE_FIELDDESCRIPTOR_SIZE];
     os_boolean bstringToCArray = OS_FALSE;
+    os_boolean stacRequested = OS_FALSE;
     c_baseObject baseObject;
 
     fieldDescriptor[0] = '\0';
@@ -755,6 +828,22 @@ saj_cacheStructMember (
                 fieldDescriptor);
             (*ctx->javaEnv)->ExceptionDescribe(ctx->javaEnv);
             bstringToCArray = OS_TRUE;
+        } else
+        {
+            stacRequested = saj_copyCacheIsPragmaStacPossiblyDefined(
+                fieldDescriptor,
+                SAJ_COPYCACHE_FIELDDESCRIPTOR_SIZE,
+                OS_FALSE);
+            if(stacRequested)
+            {
+                (*ctx->javaEnv)->ExceptionClear(ctx->javaEnv);
+                member.javaFID = (*ctx->javaEnv)->GetFieldID (
+                    ctx->javaEnv,
+                    ctx->javaClass,
+                    saj_dekeyedId(c_specifier(o)->name),
+                    fieldDescriptor);
+                (*ctx->javaEnv)->ExceptionDescribe(ctx->javaEnv);
+            }
         }
     }
     saj_exceptionCheck (ctx->javaEnv);
@@ -770,12 +859,12 @@ saj_cacheStructMember (
             (int)member.javaFID));
 
     saj_copyCacheWrite (ctx->copyCache, &member, sizeof(member));
-    if(!bstringToCArray)
-    {
-        saj_metaObject (c_specifier(o)->type, ctx);
-    } else
+    if(bstringToCArray)
     {
         saj_cacheArrCharToBStringBuild (c_collectionType(c_specifier(o)->type), ctx);
+    } else
+    {
+        saj_metaObject (c_specifier(o)->type, ctx, stacRequested);
     }
 }
 
@@ -894,10 +983,12 @@ saj_cacheUnionCaseField (
     printf ("JNI: GetMethodID (0x%x, \"%s\", \"%s\") = %d\n", ctx->javaClass, c_specifier(o)->name, operatorDescr, unionCase.setterWithDiscrID);
 #endif
     if ( (*(ctx->javaEnv))->ExceptionCheck (ctx->javaEnv))
+    {
         (*(ctx->javaEnv))->ExceptionClear(ctx->javaEnv);
+    }
 
     saj_copyCacheWrite (ctx->copyCache, &unionCase, sizeof(unionCase));
-    saj_metaObject (c_specifier(o)->type, ctx);
+    saj_metaObject (c_specifier(o)->type, ctx, OS_FALSE);
 }
 
 STATIC void
@@ -1336,16 +1427,26 @@ saj_cacheArrDoubleBuild (
 STATIC void
 saj_cacheArrObjectBuild (
     c_collectionType o,
-    saj_context ctx)
+    saj_context ctx,
+    os_boolean stacRequested)
 {
     saj_context context;
     sajCopyObjectArray objectArrHeader;
-    char classDescriptor [512];
+    char classDescriptor [SAJ_COPYCACHE_CLASSDESCRIPTOR_SIZE];
     os_uint32 headerIndex;
     jclass javaClass;
 
     classDescriptor [0] = '\0';
     saj_classDescriptor (c_typeActualType(o->subType), classDescriptor, sizeof(classDescriptor), ctx->copyCache);
+    if(stacRequested)
+    {
+        os_boolean tmp;
+        tmp = saj_copyCacheIsPragmaStacPossiblyDefined(
+            classDescriptor,
+            SAJ_COPYCACHE_CLASSDESCRIPTOR_SIZE,
+            OS_TRUE);
+        assert(tmp == stacRequested);
+    }
     javaClass = (*(ctx->javaEnv))->FindClass (ctx->javaEnv, classDescriptor);
 #if JNI_TRACE
     printf ("JNI: FindClass (\"%s\") = 0x%x\n", classDescriptor, javaClass);
@@ -1373,7 +1474,7 @@ saj_cacheArrObjectBuild (
     context->javaClass = objectArrHeader.arrayClass;
     context->copyCache = ctx->copyCache;
     context->typeStack = ctx->typeStack;
-    saj_metaObject (c_typeActualType(o->subType), context);
+    saj_metaObject (c_typeActualType(o->subType), context, stacRequested);
     saj_copyCacheUpdateSize (ctx->copyCache, headerIndex);
     os_free (context);
 }
@@ -1459,8 +1560,8 @@ saj_cacheSeqObjectBuild (
         context->javaEnv = ctx->javaEnv;
         context->javaClass = objectSeqHeader.seqClass;
         context->copyCache = ctx->copyCache;
-	context->typeStack = ctx->typeStack;
-        saj_metaObject (c_typeActualType(o->subType), context);
+	    context->typeStack = ctx->typeStack;
+        saj_metaObject (c_typeActualType(o->subType), context, OS_FALSE);
         os_free (context);
     }
     saj_copyCacheUpdateSize (ctx->copyCache, headerIndex);
@@ -1599,6 +1700,18 @@ saj_cacheBStringBuild (
 
     TRACE (printf ("BString\n"));
     saj_cacheHeader ((sajCopyHeader *)&bstringHeader, sajBString, sizeof(bstringHeader));
+    bstringHeader.max = o->maxSize;
+    saj_copyCacheWrite (ctx->copyCache, &bstringHeader, sizeof(bstringHeader));
+}
+
+STATIC void
+saj_cacheBStringToArrCharBuild (
+    c_collectionType o,
+    saj_context ctx)
+{
+    sajCopyBoundedString bstringHeader;
+    TRACE (printf ("BString To Char Array\n"));
+    saj_cacheHeader ((sajCopyHeader *)&bstringHeader, sajBStringToArrChar, sizeof(bstringHeader));
     bstringHeader.max = o->maxSize;
     saj_copyCacheWrite (ctx->copyCache, &bstringHeader, sizeof(bstringHeader));
 }
@@ -2360,6 +2473,9 @@ cacheDump (
     case sajBString:
 	printf ("BString\n");
 	break;
+    case sajBStringToArrChar:
+	printf ("sajBStringToArrChar\n");
+	break;
     case sajEnum:
 	printf ("Enum\n");
 	break;
@@ -2505,12 +2621,12 @@ saj_copyCacheBuild (
     context = os_malloc (C_SIZEOF(saj_context));
     if (context) {
         context->copyCache = copyCache;
-	context->javaEnv = env;
-	context->typeStack = c_iterNew (NULL);
-        saj_metaObject (c_type(object), context);
-	saj_copyCacheFinalize (context->copyCache);
-	c_iterFree (context->typeStack);
-	TRACE (saj_copyCacheDump (context->copyCache));
+        context->javaEnv = env;
+        context->typeStack = c_iterNew (NULL);
+        saj_metaObject (c_type(object), context, OS_FALSE);
+        saj_copyCacheFinalize (context->copyCache);
+        c_iterFree (context->typeStack);
+        TRACE (saj_copyCacheDump (context->copyCache));
     }
     os_free (context);
 }

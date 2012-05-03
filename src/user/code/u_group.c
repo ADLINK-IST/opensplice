@@ -134,7 +134,14 @@ u_groupNew(
                                 "Multiple topics found with name = <%s>.",
                                 topicName);
                 }
+
                 ktopic = c_iterTakeFirst(topics);
+
+                /* If ktopic == NULL, the topic definition is unknown.
+                 * This is not critical since it may become known in the near future.
+                 * In that case the caller is responsible for retrying to create this group,
+                 * and log something if, eventually, the group still cannot be created.
+                 */
                 if (ktopic != NULL) {
                     kpartition = v_partitionNew(kernel, partitionName, NULL);
                     if (kpartition != NULL) {
@@ -162,11 +169,6 @@ u_groupNew(
                                     partitionName, topicName);
                     }
                     c_free(ktopic);
-                }else {
-                    OS_REPORT_2(OS_ERROR,"u_groupNew", 0,
-                                    "Topic not (yet) known. "
-                                    "For Partition <%s> and Topic <%s>.",
-                                    partitionName, topicName);
                 }
                 ktopic = c_iterTakeFirst(topics);
                 while (ktopic != NULL) {

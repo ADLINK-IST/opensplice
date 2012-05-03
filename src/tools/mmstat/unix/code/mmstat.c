@@ -277,7 +277,10 @@ OPENSPLICE_MAIN (ospl_mmstat)
 
         printf("Trying to open connection with the OpenSplice system using URI:\n" \
                "'%s'...\n", sdds_uri);
-        os_free(sdds_uri);
+    }
+    else
+    {
+        sdds_uri = os_strdup(uri);
     }
 
     ur = u_userInitialise();
@@ -285,7 +288,7 @@ OPENSPLICE_MAIN (ospl_mmstat)
     if (ur == U_RESULT_OK)
     {
         pqos = u_participantQosNew(NULL);
-        participant = u_participantNew(uri, 30, "mmstat", (v_qos)pqos, TRUE);
+        participant = u_participantNew(sdds_uri, 30, "mmstat", (v_qos)pqos, TRUE);
         u_participantQosFree(pqos);
 
         if(participant)
@@ -506,7 +509,7 @@ OPENSPLICE_MAIN (ospl_mmstat)
         printf("Is the OpenSplice system running?\n");
         OS_REPORT(OS_ERROR,"mmstat", 0, "Failed to initialise.");
     }
-
+    os_free(sdds_uri);
     printf("\nExiting now...\n");
 
 #ifdef INTEGRITY

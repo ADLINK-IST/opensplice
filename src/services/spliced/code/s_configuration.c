@@ -242,20 +242,20 @@ s_configurationValueSize(
     s_configuration configuration,
     u_cfElement     element,
     const char      *tag,
-    void            (* const setAction)(s_configuration config, c_ulong ulongValue))
+    void            (* const setAction)(s_configuration config, c_size size))
 {
     c_iter   iter;
     u_cfData data;
-    c_ulong  ulongValue;
+    c_size  size;
     c_bool   found;
 
     iter = u_cfElementXPath(element, tag);
     data = u_cfData(c_iterTakeFirst(iter));
     while (data != NULL) {
-        found = u_cfDataSizeValue(data, &ulongValue);
+        found = u_cfDataSizeValue(data, &size);
         /* QAC EXPECT 2100; */
         if (found == TRUE) {
-            setAction(configuration, ulongValue);
+            setAction(configuration, size);
         }
         u_cfDataFree(data);
         data = u_cfData(c_iterTakeFirst(iter));
@@ -393,29 +393,47 @@ s_configurationSetLeaseRenewalPeriod(
     s_configurationSetDuration(&(config->leaseRenewalPeriod), frac);
 }
 
-static void s_configurationSetSchedulingClass( os_threadAttr *tattr, 
+
+static void s_configurationSetSchedulingClass( os_threadAttr *tattr,
                                                const c_char* class )
 {
    if (os_strcasecmp(class, "Timeshare") == 0)
    {
       tattr->schedClass = OS_SCHED_TIMESHARE;
-   } 
+   }
    else if (os_strcasecmp(class, "Realtime") == 0)
    {
       tattr->schedClass = OS_SCHED_REALTIME;
    }
-   else 
+   else
    {
       tattr->schedClass = OS_SCHED_DEFAULT;
    }
-}  
+}
 
-static void 
+static void
 s_configurationSetKernelManagerSchedulingClass( s_configuration config,
                                                 const c_char* class)
 {
    s_configurationSetSchedulingClass( &config->kernelManagerScheduling, class );
 }
+
+static void
+s_configurationSetLeaseRenewSchedulingClass(
+    s_configuration config,
+    const c_char* class)
+{
+    s_configurationSetSchedulingClass( &config->leaseRenewScheduling, class );
+}
+
+static void
+s_configurationSetLeaseRenewSchedulingPriority(
+    s_configuration config,
+    c_long priority)
+{
+    config->leaseRenewScheduling.schedPriority = priority;
+}
+
 
 static void s_configurationSetKernelManagerSchedulingPriority(
    s_configuration config,
@@ -612,6 +630,9 @@ s_configurationInit(
 
         os_threadAttrInit(&config->cAndMCommandScheduling);
         config->cAndMCommandScheduling.stackSize = 512*1024; /* 512KB */
+
+        os_threadAttrInit(&config->leaseRenewScheduling);
+        config->leaseRenewScheduling.stackSize = 512*1024; /* 512KB */
     }
 }
 
@@ -786,6 +807,8 @@ s_configurationRead(
         s_configurationValueFloat(config, domain, "ServiceTerminatePeriod/#text", s_configurationSetServiceTerminatePeriod);
         s_configurationValueFloat(config, domain, "Lease/ExpiryTime/#text", s_configurationSetLeasePeriod);
         s_configurationAttrValueFloat(config, domain, "Lease/ExpiryTime", "update_factor", s_configurationSetLeaseRenewalPeriod);
+        s_configurationValueString (config, domain, "Watchdog/Scheduling/Class/#text", s_configurationSetLeaseRenewSchedulingClass);
+        s_configurationValueLong   (config, domain, "Watchdog/Scheduling/Priority/#text", s_configurationSetLeaseRenewSchedulingPriority);
     }
 
     if (dcfg) {
@@ -811,7 +834,7 @@ s_configurationRead(
          iter = u_cfElementXPath(domain,
                                  "ControlAndMonitoringCommandReceiver[@enabled='false']");
          node = u_cfNode(c_iterTakeFirst(iter));
-         /* Enabled unless explictly disabled in config */ 
+         /* Enabled unless explictly disabled in config */
          config->enableCandMCommandThread=(!node);
          if ( node != NULL )
          {
@@ -826,7 +849,7 @@ s_configurationRead(
             node = u_cfNode(c_iterTakeFirst(iter));
             while (node != NULL)
             {
-               if (u_cfNodeKind(node) == V_CFELEMENT) 
+               if (u_cfNodeKind(node) == V_CFELEMENT)
                {
                   attribute = u_cfElementAttribute(u_cfElement(node), "name");
                   if (attribute)
@@ -845,7 +868,7 @@ s_configurationRead(
                node = u_cfNode(c_iterTakeFirst(iter));
             }
             c_iterFree(iter);
-            
+
          }
     }
 

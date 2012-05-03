@@ -43,7 +43,7 @@ namespace DurableSubscriber
             }
             else
             {                
-                DDSEntityManager mgr = new DDSEntityManager();
+                DDSEntityManager mgr = new DDSEntityManager("Durability");
                 String partitionName = "Durability Example";
 
                 String durabilityKind = args[0];
@@ -59,11 +59,11 @@ namespace DurableSubscriber
                 mgr.registerType(msgTS);
 
                 // create Topic
-                mgr.createTopic("DurabilityData_Msg", "Durability");
+                mgr.createTopic("DurabilityData_Msg");
 
                 // create Subscriber
                 mgr.createSubscriber();
-                mgr.createReader("Durability", false);
+                mgr.createReader(false);
 
                 IDataReader dreader = mgr.getReader();
                 MsgDataReader DurabilityDataReader = dreader as MsgDataReader;

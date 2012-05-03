@@ -108,7 +108,7 @@ public class DurabilityDataPublisher {
 			}
 		} else {
 			try {
-				Thread.currentThread().sleep(2000);// sleep for 2 s
+				Thread.currentThread().sleep(180000);// sleep for 2 s
 			} catch (InterruptedException ie) {
 			}
 		}

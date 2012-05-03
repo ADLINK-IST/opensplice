@@ -39,30 +39,36 @@ c_extentSyncNew(
     }
     if (sync) {
         _this = c_new(c_getMetaType(type->base,M_EXTENTSYNC));
-        c_baseObject(_this)->kind = M_EXTENTSYNC;
+        if (_this) {
+            c_baseObject(_this)->kind = M_EXTENTSYNC;
+        }
     } else {
         _this = c_new(c_getMetaType(type->base,M_EXTENT));
-        c_baseObject(_this)->kind = M_EXTENT;
+        if (_this) {
+            c_baseObject(_this)->kind = M_EXTENT;
+        }
     }
-    _this->sync = sync;
-    c_typeDef(_this)->alias = c_keep(type);
-    c_type(_this)->base = type->base;
-    c_type(_this)->alignment = type->alignment;
-    c_type(_this)->size = type->size;
-    c_type(_this)->objectCount = 0;
-    c_metaObject(_this)->definedIn = c_metaObject(type->base);
-    c_metaObject(_this)->name = NULL;
+    if (_this) {
+        _this->sync = sync;
+        c_typeDef(_this)->alias = c_keep(type);
+        c_type(_this)->base = type->base;
+        c_type(_this)->alignment = type->alignment;
+        c_type(_this)->size = type->size;
+        c_type(_this)->objectCount = 0;
+        c_metaObject(_this)->definedIn = c_metaObject(type->base);
+        c_metaObject(_this)->name = NULL;
 
-    if (sync) {
-        c_mutexInit(&c_extentSync(_this)->mutex,SHARED_MUTEX);
-    }
+        if (sync) {
+            c_mutexInit(&c_extentSync(_this)->mutex,SHARED_MUTEX);
+        }
 
-    if (blockSize == 0) {
-        _this->cache = NULL;
-    } else {
-        _this->cache = c_mmCacheCreate(c_baseMM(type->base),
-                                       c_memsize(type),
-                                       blockSize);
+        if (blockSize == 0) {
+            _this->cache = NULL;
+        } else {
+            _this->cache = c_mmCacheCreate(c_baseMM(type->base),
+                                           c_memsize(type),
+                                           blockSize);
+        }
     }
     return _this;
 }

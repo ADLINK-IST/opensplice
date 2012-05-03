@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -58,6 +58,8 @@
 #define NWCF_DEF_Interface              NWCF_FIRSTAVAILABLE_EXPR
 #define NWCF_ATTRIB_forced              "forced"                     /* boolean */
 #define NWCF_DEF_forced                 (FALSE)
+#define NWCF_ATTRIB_ipv6                "ipv6"                     /* boolean */
+#define NWCF_DEF_ipv6                   (FALSE)
 /* ------------------ General/Reconnection ---------------------- */
 #define NWCF_NAME_Reconnection          "Reconnection"                /* string */
 #define NWCF_ATTRIB_allowed             "allowed"                      /* ulong */
@@ -192,6 +194,7 @@
 #define NWCF_NAME_FragmentSize        "FragmentSize"                   /* ulong */
 #define NWCF_DEF_FragmentSize         (1300U)
 #define NWCF_MIN_FragmentSize         (200U)
+#define NWCF_MAX_FragmentSize         (4294967295U)                    /* max int */
 
 /* ------------------- Channels/Channel/Sending/MaxRetries ----------------------- */
 #define NWCF_NAME_MaxRetries          "MaxRetries"                     /* ulong */
@@ -201,6 +204,7 @@
 /* ------------------ Channels/Channel/Sending/MaxBurstSize ---------------------- */
 #define NWCF_NAME_MaxBurstSize        "MaxBurstSize"                           /* ulong */
 #define NWCF_DEF_MaxBurstSize         (0x3FFFFFFFU)               /* 1 GB/ResolutionTick*/
+#define NWCF_MAX_MaxBurstSize         (0x3FFFFFFFU)               /* 1 GB/ResolutionTick*/
 #define NWCF_MIN_MaxBurstSize         (1024U)
 
 /* ------------------ Channels/Channel/Sending/ThrottleThreshold ---------------------- */
@@ -222,7 +226,7 @@
 /* The default if TRUE because in older OpenSplice versions, there was no
  * configuration option and it was always set to true... */
 #define NWCF_NAME_DontRoute           "DontRoute"                      /* bool */
-#define NWCF_DEF_DontRoute            (TRUE) 
+#define NWCF_DEF_DontRoute            (TRUE)
 
 /* ----------------- Channels/Channel/Sending/DontFrag ---------------------- */
 #define NWCF_NAME_DontFragment        "DontFragment"                   /* bool */

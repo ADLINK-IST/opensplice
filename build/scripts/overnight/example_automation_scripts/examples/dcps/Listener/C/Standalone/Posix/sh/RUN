@@ -10,27 +10,16 @@ $VG_OSPL_START ospl start
 $VG_START_SLEEP
 
 echo "=== Launching Listener "
-sh ./startSubscriber.sh > subResult.txt &
-sh ./startPublisher.sh  > pubResult.txt	&
-
+sh ./startPublisher.sh  > pubResult.txt
+sh ./startSubscriber.sh > subResult.txt
 
 echo "=== Checking Listener Subscriber results"
-grep "message received" subResult.txt > tmpSubResult.txt
-grep "userID" subResult.txt >> tmpSubResult.txt
-grep "Message :" subResult.txt >> tmpSubResult.txt
-
-# 
-IS_CORBA=`echo $PWD | grep Corba | wc -l`
-if [  "$IS_CORBA" =  1 ];then
-   # Corba
-   diff -B -w tmpSubResult.txt ../../../../../expected_results/subResult.txt > subdiff.txt
-else
-   # Standalone
-   diff -B -w tmpSubResult.txt ../../../../expected_results/subResult.txt > subdiff.txt
-fi
-
-if [ -s subdiff.txt ] || [ ! -r subResult.txt ];then
-   echo NOK
+n1=`grep "message received" subResult.txt  |wc -l`;
+n2=`grep "userID" subResult.txt  |wc -l`;
+n3=`grep "Message :" subResult.txt  |wc -l`;
+echo === n1=$n1 n2=$n2 n3=$n3
+if [ $n1 -eq 0 ] || [ $n2 -eq 0 ] || [ $n3 -eq 0 ] || [ ! -r subResult.txt ];then
+   echo NOK 
    echo "*** ERROR : example Listener failed ";
    cat subdiff.txt;
 else

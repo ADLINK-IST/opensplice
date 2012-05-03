@@ -78,11 +78,11 @@ getSem(
     DWORD nRead;
     os_result osr;
     DWORD lastError;
-    
+
     pipename = os_createPipeNameFromCond(cond);
     if (pipename == NULL) {
        pipename = os_servicePipeName();
-       OS_DEBUG_1("getSem", "Failed to get a domain name from cond, using default %s %d", pipename);
+       OS_DEBUG_1("getSem", "Failed to get a domain name from cond, using default %s", pipename);
     }
     request.kind = OS_SRVMSG_CREATE_SEMAPHORE;
     reply.result = os_resultFail;
@@ -131,7 +131,7 @@ returnSem(
     pipename = os_createPipeNameFromCond(cond);
     if (pipename == NULL) {
        pipename = os_servicePipeName();
-       OS_DEBUG_1("returnSem", "Failed to get a domain name from cond, using default %s %d", pipename);
+       OS_DEBUG_1("returnSem", "Failed to get a domain name from cond, using default %s", pipename);
     }
     request.kind = OS_SRVMSG_DESTROY_SEMAPHORE;
     request._u.id = cond->qId;
@@ -182,7 +182,7 @@ condTimedWait(
 
         hQueue = OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, name);
         if (hQueue == NULL) {
-            OS_DEBUG_1("condTimedWait", "OpenSemaphore failed %d", (int)GetLastError());
+            OS_DEBUG_2("condTimedWait", "OpenSemaphore %s failed %d", name, (int)GetLastError());
             assert(0);
             return os_resultFail;
         }
@@ -194,7 +194,7 @@ condTimedWait(
             os_getShmBaseAddressFromPointer(cond));
         hMtx = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
         if (hMtx == NULL) {
-            OS_DEBUG_1("condTimedWait", "OpenEvent failed %d", (int)GetLastError());
+            OS_DEBUG_2("condTimedWait", "OpenEvent %s failed %d", name, (int)GetLastError());
             CloseHandle(hQueue);
             assert(0);
             return os_resultFail;
@@ -256,7 +256,7 @@ condSignal(
 
         hQueue = OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, name);
         if (hQueue == NULL) {
-            OS_DEBUG_1("condSignal", "OpenSemaphore failed %d", (int)GetLastError());
+            OS_DEBUG_2("condSignal", "OpenSemaphore %s failed %d", name, (int)GetLastError());
             assert(0);
             return os_resultFail;
         }

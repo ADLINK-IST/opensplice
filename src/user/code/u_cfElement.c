@@ -266,24 +266,28 @@ c_bool
 u_cfElementAttributeSizeValue(
     u_cfElement element,
     const c_char *attributeName,
-    c_ulong *ul)
+    c_size *size)
 {
     u_result r;
     c_bool result;
     v_cfElement ke;
     c_value value;
-    c_value resultValue;
 
     result = FALSE;
-    if ((element != NULL) && (ul != NULL)) {
+    if ((element != NULL) && (size != NULL)) {
         r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
         if (r == U_RESULT_OK) {
             value = v_cfElementAttributeValue(ke, attributeName);
-            result = u_cfValueScan(value, V_SIZE, &resultValue);
 
-            if (result == TRUE) {
-                *ul = resultValue.is.ULong;
+            if(value.kind == V_STRING){
+                result = u_cfDataSizeValueFromString(value.is.String,size);
             }
+            else
+            {
+                OS_REPORT(OS_ERROR, "u_cfElementAttributeSizeValue", 0, "Value is not a string");
+                assert(value.kind == V_STRING);
+            }
+
             u_cfNodeRelease(u_cfNode(element));
         }
     }

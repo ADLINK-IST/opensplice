@@ -33,6 +33,16 @@ extern "C" {
 
 typedef void (*u_copyIn)(c_type type, void *data, void *to);
 
+typedef c_bool
+(*u_dataReaderInstanceAction)(v_dataReaderInstance instance, c_voidp arg);
+
+
+OS_API u_result
+u_dataReaderWalkInstances (
+    u_dataReader _this,
+    u_dataReaderInstanceAction action,
+    c_voidp arg);
+
 OS_API u_dataReader
 u_dataReaderNew(
     u_subscriber _scope,

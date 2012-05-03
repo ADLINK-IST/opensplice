@@ -16,8 +16,8 @@ CINCS += -I$(OSPL_HOME)/src/cppgen/include
 
 include	$(OSPL_HOME)/src/tools/idlpp/makefile_templates.mak
 
-ifeq ($(PROC),mpc7448)
-CFLAGS_OPT=$(ALT_CFLAGS_OPT)
+ifneq (,$(ALT_CFLAGS_OPT))
+   CFLAGS_OPT=$(ALT_CFLAGS_OPT)
 endif
 
 $(ACE_TAO_1_4_1_TMPLS): $(CCPP_TEMPLATES)

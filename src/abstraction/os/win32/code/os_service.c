@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include "os_time.h"
 
 #include "code/os__debug.h"
 #include "code/os__sharedmem.h"
@@ -42,6 +43,10 @@
 #define OS_SERVICE_PIPE_PREFIX "\\\\.\\pipe\\"
 #define OS_SERVICE_DEFAULT_NAME "osplOSService"
 #define OS_SERVICE_DEFAULT_PIPE_NAME OS_SERVICE_PIPE_PREFIX OS_SERVICE_DEFAULT_NAME
+
+static os_time _ospl_clock_starttime = {0, 0};
+static LONGLONG _ospl_clock_freq = 0; /* frequency of high performance counter */
+static LONGLONG _ospl_clock_offset = 0;
 
 struct _pipe_instance
 {
@@ -80,13 +85,6 @@ struct eventService {
 static HANDLE _ospl_serviceThreadId = 0;
 static char *_ospl_servicePipeName = OS_SERVICE_DEFAULT_PIPE_NAME;
 static char *_ospl_serviceName = OS_SERVICE_DEFAULT_NAME;
-static os_time _ospl_clock_starttime = {0, 0};
-static LONGLONG _ospl_clock_freq = 0; /* frequency of high performance counter */
-static LONGLONG _ospl_clock_offset = 0;
-static os_char *
-os_constructPipeName(
-    os_char * name);
-
 
 /* Generic pool functions */
 static void
@@ -131,12 +129,13 @@ createSem(
 
     /* Vista and on have tightened security WRT shared memory
     we need to grant rights to interactive users et al via a discretionary
-    access control list */
+    access control list. NULL atributes did not allow interactive
+    users other than process starter to access */
 
     ZeroMemory(&security_attributes, sizeof(security_attributes));
     security_attributes.nLength = sizeof(security_attributes);
     sec_descriptor_ok = ConvertStringSecurityDescriptorToSecurityDescriptor
-                            ("D:P(A;OICI;GA;;;SY)(A;OICI;GA;;;BA)(A;OICI;GA;;;IU)", /* grant all acess to system, admins, and users */
+                            ("D:P(A;OICI;GA;;;WD)", /* grant all acess to world (everyone) */
                             SDDL_REVISION_1,
                             &security_attributes.lpSecurityDescriptor,
                             NULL);
@@ -148,6 +147,7 @@ createSem(
               id,
               os_getShmBaseAddressFromPointer(NULL));
 
+    /* Note that NULL sec attributes would be default access - believed != 'everyone' */
     namedSem = CreateSemaphore((os_sharedMemIsGlobal() && sec_descriptor_ok ? &security_attributes : NULL),
                                 0,
                                 0x7fffffff,
@@ -172,12 +172,13 @@ createEv(
 
     /* Vista and on have tightened security WRT shared memory
     we need to grant rights to interactive users et al via a discretionary
-    access control list */
+    access control list. NULL atributes did not allow interactive
+    users other than process starter to access */
 
     ZeroMemory(&security_attributes, sizeof(security_attributes));
     security_attributes.nLength = sizeof(security_attributes);
     sec_descriptor_ok = ConvertStringSecurityDescriptorToSecurityDescriptor
-                            ("D:P(A;OICI;GA;;;SY)(A;OICI;GA;;;BA)(A;OICI;GA;;;IU)", /* grant all acess to system, admins, and users */
+                            ("D:P(A;OICI;GA;;;WD)", /* grant all acess to 'world' (everyone) */
                             SDDL_REVISION_1,
                             &security_attributes.lpSecurityDescriptor,
                             NULL);
@@ -189,6 +190,7 @@ createEv(
               id,
               os_getShmBaseAddressFromPointer(NULL));
 
+    /* Note that NULL sec attributes would be default access - believed != 'everyone' */
     namedEv = CreateEvent((os_sharedMemIsGlobal() && sec_descriptor_ok ? &security_attributes : NULL),
                            FALSE,
                            FALSE,
@@ -653,10 +655,10 @@ os_createPipeNameFromCond(os_cond *cond)
     }
     return os_constructPipeName(name);
 }
-     
+
 os_char *
 os_constructPipeName(
-    os_char * name)
+    const os_char *name)
 {
     os_char *n;
     os_uint32 i, len;
@@ -682,7 +684,7 @@ os_constructPipeName(
 
 void
 os_createPipeNameFromDomainName(
-    os_char *name)
+    const os_char *name)
 {
     assert(name);
     if (name == NULL) {
@@ -701,26 +703,104 @@ os_serviceStart(
     os_result r;
     DWORD threadIdent;
     LARGE_INTEGER frequency;
-    LARGE_INTEGER hpt;
-    struct __timeb64 timebuffer;
     HANDLE initializedEvent;
     DWORD result;
+    LARGE_INTEGER p0, p1, p_best;
+    LONGLONG limit, prev_diff, t_diff, limit_best, t_diff_best, t_diff_start;
+    struct __timeb64 t0, t1, t_best, t_start;
     char uniqueName[16 + sizeof(UNIQUE_PREFIX)];
 
     r = os_resultSuccess;
     initializedEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 
-    if (QueryPerformanceFrequency(&frequency) != 0) {
+    if (QueryPerformanceFrequency(&frequency) != 0)
+    {
         _ospl_clock_freq = frequency.QuadPart;
-        _ftime64(&timebuffer);
-        QueryPerformanceCounter(&hpt);
-        _ospl_clock_offset = hpt.QuadPart;
-        _ospl_clock_starttime.tv_sec = (os_timeSec)timebuffer.time;
-        _ospl_clock_starttime.tv_nsec = timebuffer.millitm * 1000000;
-    } /*else {  no high performance timer available!
-                so we fall back to a millisecond clock.
+        /* Synchronization of the clock:
+         * See: http://msdn.microsoft.com/en-us/magazine/cc163996.aspx
+         */
+        limit = 15 * 2; /* 15 usec accuracy requested. */
+        limit_best = -1;
+        t_diff_best = -1;
+        _ftime64_s(&t_start);
 
-    }*/
+        do
+        {
+            prev_diff = 0;
+            QueryPerformanceCounter(&p0);
+            _ftime64_s(&t0);
+
+            do
+            {
+                _ftime64_s(&t1);
+                QueryPerformanceCounter(&p1);
+
+                if((t0.time == t1.time) && (t0.millitm == t1.millitm))
+                {
+                    prev_diff = p1.QuadPart - p0.QuadPart;
+                    p0 = p1;
+                }
+            }
+            while((t0.time == t1.time) && (t0.millitm == t1.millitm));
+
+            if (t1.millitm >= t0.millitm)
+            {
+                t_diff = t1.millitm - t0.millitm;
+                t_diff += (t1.time - t0.time) * 1000;
+            }
+            else
+            {
+                t_diff = t1.millitm - t0.millitm + 1000;
+                t_diff += (t1.time * 1000) - (t0.time * 1000) - 1000;
+            }
+
+            if((t_diff_best == -1) || (t_diff <= t_diff_best))
+            {
+                if( (limit_best == -1) ||
+                    ((p1.QuadPart - p0.QuadPart + prev_diff) < limit_best))
+                {
+                    t_diff_best = t_diff;
+                    p_best = p1;
+                    t_best = t1;
+                    limit_best = p1.QuadPart - p0.QuadPart + prev_diff;
+                }
+            }
+            if (t1.millitm >= t_start.millitm)
+            {
+                t_diff_start = t1.millitm - t_start.millitm;
+                t_diff_start += (t1.time - t_start.time) * 1000;
+            }
+            else
+            {
+                t_diff_start = t1.millitm - t_start.millitm + 1000;
+                t_diff_start += (t1.time * 1000) - (t_start.time * 1000) - 1000;
+            }
+
+        }
+        while( ((t_diff > 15) ||
+               ((p1.QuadPart - p0.QuadPart + prev_diff) >= limit)) &&
+               (t_diff_start < 2000));
+
+        _ospl_clock_starttime.tv_sec = (os_timeSec)t_best.time;
+        _ospl_clock_starttime.tv_nsec = t_best.millitm * 1000000;
+        _ospl_clock_offset = p_best.QuadPart;
+
+        OS_REPORT_7(OS_INFO, "os_serviceStart", 0,
+            "Time sync took: %lld ms; resolution= %lld ms, accuracy=%lld us, "
+            "time=%d,%d, offset=%lld and frequency=%lld\n",
+            t_diff_start, t_diff_best, limit_best/2,
+            _ospl_clock_starttime.tv_sec, _ospl_clock_starttime.tv_nsec,
+            _ospl_clock_offset, _ospl_clock_freq);
+    }
+    else
+    {
+        /* no high performance timer available!
+         * so we fall back to a millisecond clock.
+         */
+        OS_REPORT_1(OS_WARNING, "os_serviceStart", 0,
+                "No high-resolution timer found (reason: %s), "\
+                "switching to millisecond resolution.", GetLastError());
+    }
 
     if (name == NULL) {
         snprintf(uniqueName, sizeof(uniqueName), "%s%d",

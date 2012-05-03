@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -126,4 +126,64 @@ c_compareString (
     if (result < 0) return C_LT;
     if (result > 0) return C_GT;
     return C_EQ;
+}
+
+/** \brief string trimmer
+*
+* Returns a newly allocated string with the same contents as the original string
+* without the leading and trailing whitespace characters.
+*
+* Precondition:
+*   s != NULL
+* Postcondition:
+*   None
+*
+* Possible results:
+* - return trimmed s
+* - if original string only contains spaces, return null-terminated empty string
+*/
+c_char *
+c_trimString(
+    const c_char *s)
+{
+    const c_char *begin;
+    const c_char *end;
+    c_char *result = NULL;
+    c_size size;
+
+    if(s){
+        /* ltrim
+         * While begin is not the end of the string, and is a space, move right.
+         * End result: begin points at the first non-space character in the string,
+         * or has reached the end.
+         */
+        begin = s;
+        while(*begin != '\0' && isspace(*begin))
+        {
+            begin++;
+        }
+
+        /* rtrim
+         * While end is bigger than begin, and the character left of the current is a space
+         * move to the left.
+         * End result: end points to the first space character after the last non-space
+         * character in the string, or to the end of the string.
+         */
+        end = s + strlen(s); /* end now points to the '\0' character */
+        while(end > begin && isspace(*(end-1)))
+        {
+            end--;
+        }
+
+        /* either end-begin = 0, in case of an empty string, or bigger than 0, if
+         * there is at least one non-space character.
+         */
+        assert(end >= begin);
+        size = end - begin;
+        result = os_malloc((size + 1) * sizeof(c_char)); /* +1 for the '\0' character */
+        memcpy(result, begin, size);
+        result[size] = '\0'; /* null-terminated string */
+    }
+
+    return result;
 }

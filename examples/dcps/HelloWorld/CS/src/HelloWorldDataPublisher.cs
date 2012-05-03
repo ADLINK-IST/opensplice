@@ -36,7 +36,7 @@ namespace HelloWorldDataPublisher
     {
         static void Main(string[] args)
         {
-            DDSEntityManager mgr = new DDSEntityManager();
+            DDSEntityManager mgr = new DDSEntityManager("HelloWorld");
             String partitionName = "HelloWorld example";
 
             // create Domain Participant
@@ -48,7 +48,7 @@ namespace HelloWorldDataPublisher
             mgr.registerType(msgTS);
 
             // create Topic
-            mgr.createTopic("HelloWorldData_Msg", "HelloWorld");
+            mgr.createTopic("HelloWorldData_Msg");
 
             // create Publisher
             mgr.createPublisher();

@@ -81,6 +81,7 @@ typedef enum {
     /* String types */
     sajString,
     sajBString,
+    sajBStringToArrChar,
     /* Array of object type */
     sajArray,
     /* Sequence of object type */

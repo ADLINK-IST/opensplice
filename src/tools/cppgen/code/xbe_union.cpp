@@ -492,7 +492,7 @@ be_union::GenerateCopyMF(be_ClientHeader& source)
    }
 
    os << tab << "m__d = that._d();" << nl; //don't forget the discriminant
-   os << tab << "m__d_set = TRUE;" << nl;
+   os << tab << "m__d_set = that.m__d_set;" << nl;
    source.Outdent();
 
    os << tab << "}" << nl;

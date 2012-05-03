@@ -21,11 +21,11 @@ void
 v_cacheNodeCheck(
     v_cacheNode node)
 {
-    if (node->owner.next) {
-        assert(v_cacheNode(node->owner.next)->owner.prev == node);
+    if (node->connections.next) {
+        assert(v_cacheNode(node->connections.next)->connections.prev == node);
     }
-    if (node->owner.prev) {
-        assert(v_cacheNode(node->owner.prev)->owner.next == node);
+    if (node->connections.prev) {
+        assert(v_cacheNode(node->connections.prev)->connections.next == node);
     }
     if (node->targets.next) {
         assert(v_cacheNode(node->targets.next)->targets.prev == node);
@@ -47,8 +47,8 @@ v_cacheNodeInit(
     v_cacheNode node)
 {
     if (node) {
-        node->owner.next = NULL;
-        node->owner.prev = NULL;
+        node->connections.next = NULL;
+        node->connections.prev = NULL;
         node->targets.next = NULL;
         node->targets.prev = NULL;
         node->sources.next = NULL;
@@ -65,7 +65,14 @@ v_cacheNodeNew (
     assert(C_TYPECHECK(cache,v_cache));
 
     node = c_new(cache->itemType);
-    v_cacheNodeInit(node);
+    if (node) {
+        v_cacheNodeInit(node);
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_cacheNode::v_cacheNodeNew",0,
+                  "Failed to allocate v_cacheNode object.");
+        assert(FALSE);
+    }
     return node;
 }
 
@@ -76,7 +83,6 @@ v_cacheNew (
     v_cacheKind kind)
 {
     c_base base = NULL;
-    c_type cache_t;
     v_cache cache = NULL;
 
     assert(C_TYPECHECK(cache,v_cache));
@@ -85,13 +91,16 @@ v_cacheNew (
     if (type) {
         base = c_getBase(type);
         if (base) {
-            cache_t = c_keep(v_kernelType(kernel,K_CACHE));
-            cache = c_new(cache_t);
-            c_free(cache_t);
+            cache = c_new(v_kernelType(kernel,K_CACHE));
             if (cache) {
                 cache->kind = kind;
                 cache->itemType = c_keep(type);
                 v_cacheNodeInit(v_cacheNode(cache));
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_cacheNode::v_cacheNew",0,
+                          "Failed to allocate v_cache object.");
+                assert(FALSE);
             }
         }
     }
@@ -108,14 +117,14 @@ v_cacheDeinit (
 
     v_cacheNodeCheck(v_cacheNode(cache));
     switch (cache->kind) {
-    case V_CACHE_OWNER:
-        node = v_cacheNode(cache)->owner.next;
+    case V_CACHE_CONNECTION:
+        node = v_cacheNode(cache)->connections.next;
         while (node != NULL) {
             v_cacheNodeCheck(node);
             assert(C_TYPECHECK(node,v_cacheNode));
-            next = node->owner.next;
+            next = node->connections.next;
             v_cacheNodeRemove(node,V_CACHE_ANY); /* also frees node. */
-            node = v_cacheNode(cache)->owner.next;
+            node = v_cacheNode(cache)->connections.next;
             assert(next == node);
             v_cacheNodeCheck(v_cacheNode(cache));
         }
@@ -168,11 +177,11 @@ v_cacheInsert (
     v_cacheNodeCheck(v_cacheNode(cache));
     v_cacheNodeCheck(node);
     switch (cache->kind) {
-    case V_CACHE_OWNER:
-        nodeLink = &node->owner;
-        cacheLink = &v_cacheNode(cache)->owner;
+    case V_CACHE_CONNECTION:
+        nodeLink = &node->connections;
+        cacheLink = &v_cacheNode(cache)->connections;
         if (cacheLink->next != NULL) {
-            headLink = &v_cacheNode(cacheLink->next)->owner;
+            headLink = &v_cacheNode(cacheLink->next)->connections;
             headLink->prev = node;
         }
     break;
@@ -226,13 +235,13 @@ v_cacheWalk (
     v_cacheNodeCheck(v_cacheNode(cache));
     proceed = TRUE;
     switch (cache->kind) {
-    case V_CACHE_OWNER:
-        node = v_cacheNode(cache)->owner.next;
+    case V_CACHE_CONNECTION:
+        node = v_cacheNode(cache)->connections.next;
         while ((node != NULL) && (proceed)) {
             v_cacheNodeCheck(node);
             assert(C_TYPECHECK(node,v_cacheNode));
             proceed = action(node,arg);
-            node = node->owner.next;
+            node = node->connections.next;
         }
     break;
     case V_CACHE_TARGETS:
@@ -272,13 +281,13 @@ v_cacheNodeRemove (
     v_cacheNodeCheck(node);
 
     switch (kind) {
-    case V_CACHE_OWNER:
-        nodeLink = &node->owner;
+    case V_CACHE_CONNECTION:
+        nodeLink = &node->connections;
         if (nodeLink->next != NULL) {
-            v_cacheNode(nodeLink->next)->owner.prev = nodeLink->prev;
+            v_cacheNode(nodeLink->next)->connections.prev = nodeLink->prev;
         }
         if (nodeLink->prev != NULL) {
-            v_cacheNode(nodeLink->prev)->owner.next = nodeLink->next;
+            v_cacheNode(nodeLink->prev)->connections.next = nodeLink->next;
         }
         nodeLink->next = NULL;
         nodeLink->prev = NULL;
@@ -314,7 +323,7 @@ v_cacheNodeRemove (
     break;
     case V_CACHE_ANY:
         assert(c_refCount(node) > 1);
-        v_cacheNodeRemove(node,V_CACHE_OWNER);
+        v_cacheNodeRemove(node,V_CACHE_CONNECTION);
         v_cacheNodeRemove(node,V_CACHE_TARGETS);
     break;
     default:

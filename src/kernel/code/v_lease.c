@@ -119,40 +119,67 @@ v_leaseUnlock(
 void
 v_leaseRenew(
     v_lease lease,
-    v_duration leaseDuration)
+    v_duration* leaseDuration /* may be NULL */)
 {
     c_iter observers = NULL;
     v_leaseManager observer;
+    c_time newExpiryTime;
+    c_equality cmp;
 
     if (lease != NULL) {
         assert(C_TYPECHECK(lease, v_lease));
 
         v_leaseLock(lease);
-        lease->expiryTime = c_timeAdd(v_timeGet(), leaseDuration);
-        lease->duration = leaseDuration;
-        /* Collect all observers, so they can be notified of the lease change
-         * Must do a seperate collect as the lease mutex is 'lower' then the
-         * leaseManager mutex. So to prevent deadlock we can not directly notify
-         * the lease manager as we walk the collection
+        /* Is a new lease duration provided, if so replace the current lease
+         * duration with the new one
          */
-        if(lease->observers)
+        if(leaseDuration != NULL)
         {
-            c_walk(lease->observers, v_leaseCollectObservers, &observers);
-        }
-        v_leaseUnlock(lease);
-        if(observers)
+            lease->duration = *leaseDuration;
+        } /* else do nothing */
+        /* Calculate the new expiry time */
+        newExpiryTime = c_timeAdd(v_timeGet(), lease->duration);
+        /* Is the new expiryTime earlier then the current expiryTime? */
+        cmp = c_timeCompare(newExpiryTime, lease->expiryTime);
+        /* Always replace the current expiry time with the new expiryTime */
+        lease->expiryTime = newExpiryTime;
+        /* If the new expiryTime is earlier then the previous expiryTime. Then
+         * this means the observers must be notified so they can take the
+         * earlier expiryTime into account
+         */
+        if (cmp == C_LT)
         {
-            observer = v_leaseManager(c_iterTakeFirst(observers));
-            while (observer != NULL)
+
+            /* Collect all observers, so they can be notified of the lease change
+             * Must do a seperate collect as the lease mutex is 'lower' then the
+             * leaseManager mutex. So to prevent deadlock we can not directly notify
+             * the lease manager as we walk the collection
+             */
+            if(lease->observers)
             {
-                v_leaseManagerNotify(
-                    observer,
-                    lease,
-                    V_EVENT_LEASE_RENEWED);
-                c_free(observer);
-                observer = v_leaseManager(c_iterTakeFirst(observers));
+                c_walk(lease->observers, v_leaseCollectObservers, &observers);
             }
-            c_iterFree(observers);
+            v_leaseUnlock(lease);
+            if(observers)
+            {
+                observer = v_leaseManager(c_iterTakeFirst(observers));
+                while (observer != NULL)
+                {
+                    v_leaseManagerNotify(
+                        observer,
+                        lease,
+                        V_EVENT_LEASE_RENEWED);
+                    c_free(observer);
+                    observer = v_leaseManager(c_iterTakeFirst(observers));
+                }
+                c_iterFree(observers);
+            }
+        } else
+        {
+            /* No need to notify observers, the new expiryTime is not earlier
+             * then what it was before.
+             */
+            v_leaseUnlock(lease);
         }
     }
 }
@@ -162,25 +189,9 @@ v_leaseCollectObservers(
     c_object o,
     c_voidp arg)
 {
-    c_iter observers;
-
-    observers = *((c_iter*)arg);
-    observers = c_iterInsert(observers, c_keep(o));
-
+    c_iter *observers = (c_iter*)arg;
+    *observers = c_iterInsert(*observers, c_keep(o));
     return TRUE;
-}
-
-void
-v_leaseUpdate(
-    v_lease lease)
-{
-    if (lease != NULL) {
-        assert(C_TYPECHECK(lease, v_lease));
-
-        v_leaseLock(lease);
-        lease->expiryTime = c_timeAdd(v_timeGet(), lease->duration);
-        v_leaseUnlock(lease);
-    }
 }
 
 void

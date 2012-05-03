@@ -19,8 +19,14 @@
 #include "saj_extTopicListener.h"
 #include "saj_publisherListener.h"
 #include "saj_subscriberListener.h"
+#include "saj_copyOut.h"
+#include "saj_copyCache.h"
 
 #include "gapi.h"
+
+#include "v_public.h"
+#include "v_dataReaderInstance.h"
+#include "u_instanceHandle.h"
 
 #include "os_report.h"
 
@@ -482,16 +488,6 @@ SAJ_FUNCTION(jniLookupTopicdescription) (
     }
     gapiTopicDescription = gapi_domainParticipant_lookup_topicdescription(
                                                     participant, topicName);
-    if (gapiTopicDescription == GAPI_OBJECT_NIL) {
-        /* this is not entirely MT-safe with respect to having one unique
-         * instance per topic, what is needed is a user layer participant
-         * method lookup_or_create.
-         */
-        gapiTopicDescription = (gapi_topicDescription)
-            gapi_domainParticipant_find_topic(participant,
-                                              topicName,
-                                              &duration_zero);
-    }
     if (gapiTopicDescription != GAPI_OBJECT_NIL){
         javaTopicDescription = saj_read_java_address(gapiTopicDescription);
 
@@ -1242,6 +1238,39 @@ SAJ_FUNCTION(jniGetDefaultTopicQos) (
     return (jint)result;
 }
 
+
+struct copyInstanceHandle {
+    JNIEnv *env;
+    c_ulong index;
+    jlongArray seq;
+};
+
+static c_bool
+copyInstanceHandle(
+    v_dataReaderInstance instance,
+    c_voidp arg)
+{
+    c_bool result = TRUE;
+    struct copyInstanceHandle *a = (struct copyInstanceHandle *)arg;
+    JNIEnv *env = a->env;
+    jlong ghandle;
+    jint length;
+
+    if (a->index == 0) {
+        length = (jint) v_dataReaderInstanceGetNotEmptyInstanceCount(instance);
+
+        /*buffer alloc*/
+        if (a->seq == NULL || length != (*env)->GetArrayLength(env, a->seq)) {
+            a->seq = (*env)->NewLongArray(env, length);
+        } /* else ok */
+    }
+
+    ghandle = (jlong) u_instanceHandleNew((v_public)instance);
+    (*env)->SetLongArrayRegion(env, a->seq, (jint) a->index, 1, &ghandle);
+    a->index++;
+
+    return result;
+}
 /*
  * Class:     org_opensplice_dds_dcps_DomainParticipantImpl
  * Method:    jniGetDiscoveredParticipants
@@ -1250,34 +1279,34 @@ SAJ_FUNCTION(jniGetDefaultTopicQos) (
 JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DomainParticipantImpl_jniGetDiscoveredParticipants
   (JNIEnv *env, jobject this, jobject jseqHolder)
 {
-    saj_returnCode rc;
     gapi_domainParticipant participant;
-    gapi_instanceHandleSeq *participant_handles;
     jint result;
-    jintArray jarray;
+    jlongArray jarray;
+
+    struct copyInstanceHandle cih;
 
     result = (jint)GAPI_RETCODE_ERROR;
-    rc = SAJ_RETCODE_ERROR;
 
     if(jseqHolder != NULL){
         participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
 
-        participant_handles = gapi_instanceHandleSeq__alloc();
+        jarray = (jlongArray) (*env)->GetObjectField(env, jseqHolder,
+                                GET_CACHED(instanceHandleSeqHolder_value_fid));
+        cih.env = env;
+        cih.index = 0;
+        cih.seq = jarray;
 
         result = (jint)gapi_domainParticipant_get_discovered_participants(
-                                                participant, participant_handles);
+                                                participant, copyInstanceHandle, &cih);
         if(result == GAPI_RETCODE_OK) {
-            rc = saj_instanceHandleSequenceCopyOut(env, participant_handles, &jarray);
 
-            if(rc == SAJ_RETCODE_OK){
+            if(jarray != cih.seq){
                 (*env)->SetObjectField(env, jseqHolder,
-                        GET_CACHED(instanceHandleSeqHolder_value_fid), jarray);
+                        GET_CACHED(instanceHandleSeqHolder_value_fid), (jobject) cih.seq);
                 (*env)->DeleteLocalRef(env, jarray);
-            } else {
-                result = (jint)GAPI_RETCODE_ERROR;
             }
         }
-        gapi_free(participant_handles);
+
     } else {
         result = (jint)GAPI_RETCODE_BAD_PARAMETER;
     }
@@ -1290,38 +1319,39 @@ JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DomainParticipantImpl_jniGet
  * Signature: (JLDDS/ParticipantBuiltinTopicDataHolder;)I
  */
 JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DomainParticipantImpl_jniGetDiscoveredParticipantData
-  (JNIEnv *env, jobject this, jobject jdataHolder, jlong jhandle)
+  (JNIEnv *env, jobject this, jobject jdataHolder, jlong jhandle, jlong copyCache)
 {
-    saj_returnCode rc;
     gapi_domainParticipant participant;
-    gapi_participantBuiltinTopicData *participant_data;
     gapi_instanceHandle_t handle = (gapi_instanceHandle_t)jhandle;
     jint result;
-    jobjectArray jarray;
-
-    result = (jint)GAPI_RETCODE_ERROR;
-    rc = SAJ_RETCODE_ERROR;
+    jobject jParticipantData;
+    C_STRUCT(saj_dstInfo) dstInfo;
+    sajReaderCopyCache *rcc = saj_copyCacheReaderCache((saj_copyCache)(PA_ADDRCAST)copyCache);
 
     if(jdataHolder != NULL){
-        jarray = NULL;
         participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
-
-        participant_data = gapi_participantBuiltinTopicData__alloc();
-
+        jParticipantData = (*env)->GetObjectField (env, jdataHolder, rcc->dataHolder_value_fid);
+        dstInfo.javaEnv = env;
+        dstInfo.javaObject = jParticipantData;
+        dstInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
         result = (jint)gapi_domainParticipant_get_discovered_participant_data(
-                                                participant, participant_data, handle);
+                participant,
+                &dstInfo,
+                handle,
+                saj_copyOutStruct);
         if(result == GAPI_RETCODE_OK) {
-            if(rc == SAJ_RETCODE_OK){
-                /* Considered unsupported at this level since copyOut for sample needs to be added. */
-                result = (jint)GAPI_RETCODE_UNSUPPORTED;
+            if (dstInfo.javaObject != NULL) {
+                if (dstInfo.javaObject != jParticipantData) {
+                    (*env)->SetObjectField (env, jdataHolder, rcc->dataHolder_value_fid, dstInfo.javaObject);
+                } /* else ok */
             } else {
                 result = (jint)GAPI_RETCODE_ERROR;
             }
         }
-        gapi_free(participant_data);
     } else {
         result = (jint)GAPI_RETCODE_BAD_PARAMETER;
     }
+
     return result;
 }
 
@@ -1333,34 +1363,34 @@ JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DomainParticipantImpl_jniGet
 JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DomainParticipantImpl_jniGetDiscoveredTopics
   (JNIEnv *env, jobject this, jobject jseqHolder)
 {
-    saj_returnCode rc;
     gapi_domainParticipant participant;
-    gapi_instanceHandleSeq *topic_handles;
     jint result;
-    jintArray jarray;
+    jlongArray jarray;
+
+    struct copyInstanceHandle cih;
 
     result = (jint)GAPI_RETCODE_ERROR;
-    rc = SAJ_RETCODE_ERROR;
 
     if(jseqHolder != NULL){
         participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
 
-        topic_handles = gapi_instanceHandleSeq__alloc();
+        jarray = (jlongArray) (*env)->GetObjectField(env, jseqHolder,
+                                GET_CACHED(instanceHandleSeqHolder_value_fid));
+        cih.env = env;
+        cih.index = 0;
+        cih.seq = jarray;
 
         result = (jint)gapi_domainParticipant_get_discovered_topics(
-                                                participant, topic_handles);
+                                                participant, copyInstanceHandle, &cih);
         if(result == GAPI_RETCODE_OK) {
-            rc = saj_instanceHandleSequenceCopyOut(env, topic_handles, &jarray);
 
-            if(rc == SAJ_RETCODE_OK){
+            if(jarray != cih.seq){
                 (*env)->SetObjectField(env, jseqHolder,
-                        GET_CACHED(instanceHandleSeqHolder_value_fid), jarray);
+                        GET_CACHED(instanceHandleSeqHolder_value_fid), (jobject) cih.seq);
                 (*env)->DeleteLocalRef(env, jarray);
-            } else {
-                result = (jint)GAPI_RETCODE_ERROR;
             }
         }
-        gapi_free(topic_handles);
+
     } else {
         result = (jint)GAPI_RETCODE_BAD_PARAMETER;
     }
@@ -1373,40 +1403,40 @@ JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DomainParticipantImpl_jniGet
  * Signature: (JLDDS/TopicBuiltinTopicDataHolder;)I
  */
 JNIEXPORT jint JNICALL Java_org_opensplice_dds_dcps_DomainParticipantImpl_jniGetDiscoveredTopicData
-  (JNIEnv *env, jobject this, jobject jdataHolder, jlong jhandle)
+(JNIEnv *env, jobject this, jobject jdataHolder, jlong jhandle, jlong copyCache)
 {
-    saj_returnCode rc;
-    gapi_domainParticipant participant;
-    gapi_topicBuiltinTopicData *topic_data;
-    gapi_instanceHandle_t handle = (gapi_instanceHandle_t)jhandle;
-    jint result;
-    jobjectArray jarray;
+  gapi_domainParticipant participant;
+  gapi_instanceHandle_t handle = (gapi_instanceHandle_t)jhandle;
+  jint result;
+  jobject jTopicData;
+  C_STRUCT(saj_dstInfo) dstInfo;
+  sajReaderCopyCache *rcc = saj_copyCacheReaderCache((saj_copyCache)(PA_ADDRCAST)copyCache);
 
-    result = (jint)GAPI_RETCODE_ERROR;
-    rc = SAJ_RETCODE_ERROR;
+  if(jdataHolder != NULL){
+      participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
+      jTopicData = (*env)->GetObjectField (env, jdataHolder, rcc->dataHolder_value_fid);
+      dstInfo.javaEnv = env;
+      dstInfo.javaObject = jTopicData;
+      dstInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
+      result = (jint)gapi_domainParticipant_get_discovered_topic_data(
+              participant,
+              &dstInfo,
+              handle,
+              saj_copyOutStruct);
+      if(result == GAPI_RETCODE_OK) {
+          if (dstInfo.javaObject != NULL) {
+              if (dstInfo.javaObject != jTopicData) {
+                  (*env)->SetObjectField (env, jdataHolder, rcc->dataHolder_value_fid, dstInfo.javaObject);
+              } /* else ok */
+          } else {
+              result = (jint)GAPI_RETCODE_ERROR;
+          }
+      }
+  } else {
+      result = (jint)GAPI_RETCODE_BAD_PARAMETER;
+  }
 
-    if(jdataHolder != NULL){
-        jarray = NULL;
-        participant = (gapi_domainParticipant)saj_read_gapi_address(env, this);
-
-        topic_data = gapi_topicBuiltinTopicData__alloc();
-
-        result = (jint)gapi_domainParticipant_get_discovered_topic_data(
-                                                participant, topic_data, handle);
-        if(result == GAPI_RETCODE_OK) {
-            if(rc == SAJ_RETCODE_OK){
-                /* Considered unsupported at this level since copyOut for sample needs to be added. */
-                result = (jint)GAPI_RETCODE_UNSUPPORTED;
-            } else {
-                result = (jint)GAPI_RETCODE_ERROR;
-            }
-        }
-        gapi_free(topic_data);
-    } else {
-        result = (jint)GAPI_RETCODE_BAD_PARAMETER;
-    }
-    return result;
-
+  return result;
 }
 
 /*

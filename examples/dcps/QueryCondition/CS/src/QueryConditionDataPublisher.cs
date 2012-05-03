@@ -37,7 +37,7 @@ namespace QueryConditionDataPublisher
     {
         static void Main(string[] args)
         {
-            DDSEntityManager mgr = new DDSEntityManager();
+            DDSEntityManager mgr = new DDSEntityManager("QueryCondition");
             String partitionName = "QueryCondition example";
 
             // create Domain Participant
@@ -48,7 +48,7 @@ namespace QueryConditionDataPublisher
             mgr.registerType(msgTS);
 
             // create Topic
-            mgr.createTopic("StockTrackerExclusive", "QueryCondition");
+            mgr.createTopic("StockTrackerExclusive");
 
             // create Publisher
             mgr.createPublisher();

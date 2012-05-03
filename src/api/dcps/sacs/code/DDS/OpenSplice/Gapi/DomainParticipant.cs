@@ -1,18 +1,18 @@
-﻿// The OpenSplice DDS Community Edition project.
+// The OpenSplice DDS Community Edition project.
 //
 // Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
-// 
+//
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
 //  License Version 3 dated 29 June 2007, as published by the
 //  Free Software Foundation.
-// 
+//
 //  This library is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  Lesser General Public License for more details.
-// 
+//
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
 //  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -328,18 +328,21 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipant_get_discovered_participants")]
         public static extern ReturnCode get_discovered_participants(
             IntPtr _this,
-            IntPtr participant_handles);
+            Delegate action,
+            IntPtr arg);
 
         /*     ReturnCode_t
          *     get_discovered_participant_data (
          *         in InstanceHandle_t handle,
-         *         inout ParticipantBuiltinTopicData *participant_data);
+         *         inout ParticipantBuiltinTopicData *participant_data,
+         *         in gapi_readerAction action);
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipant_get_discovered_participant_data")]
         public static extern ReturnCode get_discovered_participant_data(
             IntPtr _this,
             IntPtr participant_data,
-            InstanceHandle handle);
+            long handle,
+            Delegate action);
 
         /*     ReturnCode_t
          *     get_discovered_topics (
@@ -347,8 +350,9 @@ namespace DDS.OpenSplice.Gapi
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipant_get_discovered_topics")]
         public static extern ReturnCode get_discovered_topics(
-            IntPtr _this,
-            IntPtr topic_handles);
+           IntPtr _this,
+           Delegate action,
+           IntPtr arg);
 
         /*     ReturnCode_t
          *     get_discovered_topic_data (
@@ -359,7 +363,8 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode get_discovered_topic_data(
             IntPtr _this,
             IntPtr topic_data,
-            InstanceHandle handle);
+            long handle,
+            Delegate action);
 
         /*     Boolean
          *     contains_entity (

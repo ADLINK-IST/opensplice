@@ -67,8 +67,10 @@ v_groupQueueInit(
 
     queue->head    = NULL;
     queue->tail    = NULL;
+    queue->marker  = NULL;
     queue->maxSize = maxSize;
     queue->size    = 0;
+    queue->markerReached = FALSE;
 
     v_groupStreamInit(v_groupStream(queue), name, subscriber, qos);
 }
@@ -102,6 +104,35 @@ v_groupQueueFree(
     v_groupStreamFree(v_groupStream(queue));
 }
 
+/* v_groupQueueTake takes until it encounters the marker */
+void
+v_groupQueueSetMarker(
+    v_groupQueue queue)
+{
+    assert(C_TYPECHECK(queue,v_groupQueue));
+
+    v_observerLock(v_observer(queue));
+
+    queue->marker = queue->tail;
+    queue->markerReached = FALSE;
+
+    v_observerUnlock(v_observer(queue));
+}
+
+void
+v_groupQueueResetMarker(
+    v_groupQueue queue)
+{
+    assert(C_TYPECHECK(queue,v_groupQueue));
+
+    v_observerLock(v_observer(queue));
+
+    queue->marker = NULL;
+    queue->markerReached = FALSE;
+
+    v_observerUnlock(v_observer(queue));
+}
+
 v_groupAction
 v_groupQueueRead(
     v_groupQueue queue)
@@ -131,23 +162,31 @@ v_groupQueueTake(
 
     assert(C_TYPECHECK(queue,v_groupQueue));
 
+    action = NULL;
+
     v_observerLock(v_observer(queue));
 
     if(queue->head){
-        sample = queue->head;
-        action = c_keep(sample->action);
-        queue->head = sample->next;
-        sample->next = NULL;
-        queue->size--;
-        c_free(sample);
+    	if (!queue->markerReached) {
+			sample = queue->head;
+			action = c_keep(sample->action);
 
-        if(queue->size == 0){
-            queue->tail = NULL;
-            v_statusReset(v_entity(queue)->status,V_EVENT_DATA_AVAILABLE);
-        }
-    } else {
-        action = NULL;
+			if (queue->marker && (queue->marker == sample)) {
+				queue->markerReached = TRUE;
+			}
+
+			queue->head = sample->next;
+			sample->next = NULL;
+			queue->size--;
+			c_free(sample);
+
+			if(queue->size == 0){
+				queue->tail = NULL;
+				v_statusReset(v_entity(queue)->status,V_EVENT_DATA_AVAILABLE);
+			}
+    	}
     }
+
     v_observerUnlock(v_observer(queue));
 
     return action;
@@ -186,8 +225,8 @@ v_groupQueueWrite(
                       "v_groupQueue", 0,
                       "The v_groupQueue is full, message rejected.");
         } else {
-            kernel         = v_objectKernel(queue);
-            sample         = c_new(v_kernelType(kernel, K_GROUPQUEUESAMPLE));
+            kernel = v_objectKernel(queue);
+            sample = c_new(v_kernelType(kernel, K_GROUPQUEUESAMPLE));
             if (sample) {
                 sample->action = c_keep(action);
                 sample->next   = NULL;
@@ -199,12 +238,19 @@ v_groupQueueWrite(
                     queue->head = sample;
                     queue->tail = sample;
                 }
+
+                /* Floating marker, only set if marker is enabled. */
+                if (queue->marker) {
+                    queue->marker = sample;
+                }
+
                 queue->size++;
                 v_groupStreamNotifyDataAvailable(v_groupStream(queue));
             } else {
                 OS_REPORT(OS_ERROR,
                           "v_groupQueueWrite",0,
-                          "Failed to allocate sample.");
+                          "Failed to allocate v_groupQueueSample object.");
+                assert(FALSE);
             }
         }
     break;
@@ -219,4 +265,22 @@ v_groupQueueWrite(
     v_observerUnlock(v_observer(queue));
 
     return result;
+}
+
+c_ulong
+v_groupQueueSize(
+    v_groupQueue _this)
+{
+    c_ulong size;
+
+    assert(C_TYPECHECK(_this,v_groupQueue));
+
+    if(_this){
+        v_observerLock(v_observer(_this));
+        size = _this->size;
+        v_observerUnlock(v_observer(_this));
+    } else {
+        size = 0;
+    }
+    return size;
 }

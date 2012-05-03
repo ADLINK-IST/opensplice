@@ -10,6 +10,7 @@ SUBSYSTEMS	 += contentFilteredTopic
 SUBSYSTEMS	 += domainParticipant
 SUBSYSTEMS	 += domainParticipantFactory
 SUBSYSTEMS	 += errorInfo
+SUBSYSTEMS   += getDiscoveredXxx
 SUBSYSTEMS	 += histDataWithCondition
 SUBSYSTEMS	 += listener
 SUBSYSTEMS	 += publisher

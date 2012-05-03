@@ -18,4 +18,15 @@
 
 char *idl_genXMLmeta (c_type type);
 
+/*
+ * dds#2745
+ * Allows to replace
+ * 'A very very big string'
+ * by :
+ * 'a very"
+ * "very big"
+ * "string'
+ */
+char *idl_cutXMLmeta (char *meta);
+
 #endif /* IDL_GENMETAHELPER_H */

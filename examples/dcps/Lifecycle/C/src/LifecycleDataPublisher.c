@@ -18,7 +18,9 @@
  ************************************************************************/
 #include <stdlib.h>
 #include <stdio.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <string.h>
 #include "dds_dcps.h"
 #include "CheckStatus.h"
@@ -36,9 +38,9 @@ void usage()
 
 main(int argc, const char *argv[])
 {
-   os_time os_delay_500ms = (os_time) {  0, 500000000  };
-   os_time os_delay_200ms = (os_time) {  0, 200000000  };
-   os_time os_delay_2ms = (os_time) {  0, 2000000  };
+   os_time os_delay_500ms = {  0, 500000000  };
+   os_time os_delay_200ms =  {  0, 200000000  };
+   os_time os_delay_2ms = {  0, 2000000  };
    int x, i;
    DDS_boolean autodispose_unregistered_instances = FALSE;
 
@@ -48,6 +50,9 @@ main(int argc, const char *argv[])
    DDS_DataWriter msgWriter;
    DDS_DataWriter msgWriter_stopper;
 
+   int messageLength;
+   LifecycleData_Msg *sample_Msg;
+    
    // Force the output to be unbuffered.
    setbuf(stdout, (char *) 0);
 
@@ -102,7 +107,7 @@ main(int argc, const char *argv[])
         // Publish a Msg Sample and dispose the instance
          LifecycleData_Msg *sample_Msg = LifecycleData_Msg__alloc();
         sample_Msg->userID = 1;
-        int messageLength = strlen("Lifecycle_1");
+        messageLength = strlen("Lifecycle_1");
         sample_Msg->message = DDS_string_alloc(messageLength);
         snprintf(sample_Msg->message, messageLength + 1, "%s", "Lifecycle_1");
         messageLength = strlen("SAMPLE_SENT -> INSTANCE_DISPOSED -> DATAWRITER_DELETED");
@@ -133,7 +138,7 @@ main(int argc, const char *argv[])
         // Publish a Msg Sample and unregister the instance
         LifecycleData_Msg *sample_Msg = LifecycleData_Msg__alloc();
         sample_Msg->userID = 1;
-        int messageLength = strlen("Lifecycle_2");
+        messageLength = strlen("Lifecycle_2");
         sample_Msg->message = DDS_string_alloc(messageLength);
         snprintf(sample_Msg->message, messageLength + 1, "%s", "Lifecycle_2");
         messageLength = strlen("SAMPLE_SENT -> INSTANCE_UNREGISTERED -> DATAWRITER_DELETED");
@@ -163,7 +168,7 @@ main(int argc, const char *argv[])
         // Publish a Msg Sample
         LifecycleData_Msg *sample_Msg = LifecycleData_Msg__alloc();
         sample_Msg->userID = 1;
-        int messageLength = strlen("Lifecycle_3");
+        messageLength = strlen("Lifecycle_3");
         sample_Msg->message = DDS_string_alloc(messageLength);
         snprintf(sample_Msg->message, messageLength + 1, "%s", "Lifecycle_3");
         messageLength = strlen("SAMPLE_SENT -> DATAWRITER_DELETED");
@@ -192,9 +197,9 @@ main(int argc, const char *argv[])
    
    printf("\n=== [Publisher]  : Sending a message to stop the subscriber");
    /* send a Msg sample to stop the subscriber */
-   LifecycleData_Msg *sample_Msg = LifecycleData_Msg__alloc();
+   sample_Msg = LifecycleData_Msg__alloc();
    sample_Msg->userID = 1;
-   int messageLength = strlen("Lifecycle_4");
+   messageLength = strlen("Lifecycle_4");
    sample_Msg->message = DDS_string_alloc(messageLength);
    snprintf(sample_Msg->message, messageLength + 1, "%s", "Lifecycle_4");
    messageLength = strlen("STOPPING_SUBSCRIBER");

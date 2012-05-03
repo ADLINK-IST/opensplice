@@ -151,7 +151,7 @@ createInstanceType (
             c_property(o)->type = c_keep(sampleType);
             c_free(o);
             o = c_metaDeclare(c_metaObject(instanceType),
-                              "tail",M_ATTRIBUTE);
+                              "oldest",M_ATTRIBUTE);
             c_property(o)->type = (c_type)c_metaResolveType(c_metaObject(base),
                                                     "c_voidp");
             assert(c_property(o)->type);
@@ -445,5 +445,24 @@ v_indexNew(
 
     assert(C_TYPECHECK(index,v_index));
     return index;
+}
+
+c_bool
+v_indexWalk(
+    v_index _this,
+    c_action action,
+    c_voidp arg)
+{
+    v_reader reader;
+    c_bool result;
+    assert(C_TYPECHECK(_this,v_index));
+
+    reader = v_reader(_this->reader);
+    if (reader->qos->userKey.enable) {
+        result = c_tableWalk(_this->notEmptyList, action, arg);
+    } else {
+        result = c_tableWalk(_this->objects, action, arg);
+    }
+    return result;
 }
 

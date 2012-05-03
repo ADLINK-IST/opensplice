@@ -78,8 +78,9 @@ v_serviceStateNew(
                 v_object(s)->kernel = k;
             } else {
                 OS_REPORT(OS_ERROR,
-                  "v_serviceStateNew",0,
-                  "Failed to allocate service state.");
+                          "v_serviceStateNew",0,
+                          "Failed to allocate v_serviceState object.");
+                assert(FALSE);
             }
         } else {
             s = NULL;

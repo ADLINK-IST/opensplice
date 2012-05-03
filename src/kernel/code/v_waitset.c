@@ -158,6 +158,7 @@ v_waitsetEventNew(
             OS_REPORT(OS_ERROR,
                       "v_waitsetEventNew",0,
                       "Failed to allocate event.");
+            assert(FALSE);
         }
     }
     return event;
@@ -209,22 +210,43 @@ v_waitsetNotify(
         if (e->kind == V_EVENT_HISTORY_DELETE) {
             /* delete historical data */
             wehd = c_new(v_kernelType(k,K_WAITSETEVENTHISTORYDELETE));
-            base = c_getBase(c_object(_this));
-            hde = (v_historyDeleteEventData)e->userData;
+            if (wehd) {
+                base = c_getBase(c_object(_this));
+                hde = (v_historyDeleteEventData)e->userData;
 
-            wehd->deleteTime    = hde->deleteTime;
-            wehd->partitionExpr = c_stringNew(base,hde->partitionExpression);
-            wehd->topicExpr     = c_stringNew(base,hde->topicExpression);
+                wehd->deleteTime    = hde->deleteTime;
+                wehd->partitionExpr = c_stringNew(base,hde->partitionExpression);
+                wehd->topicExpr     = c_stringNew(base,hde->topicExpression);
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_waitset::v_waitsetNotify",0,
+                          "Failed to allocate v_waitsetEventHistoryDelete object.");
+                assert(FALSE);
+            }
             event = (v_waitsetEvent)wehd;
         } else if (e->kind == V_EVENT_HISTORY_REQUEST) {
             /* request historical data */
             wehr = c_new(v_kernelType(k, K_WAITSETEVENTHISTORYREQUEST));
-            wehr->request = (v_historicalDataRequest)c_keep(e->userData);
+            if (wehr) {
+                wehr->request = (v_historicalDataRequest)c_keep(e->userData);
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_waitset::v_waitsetNotify",0,
+                          "Failed to allocate v_waitsetEventHistoryRequest object.");
+                assert(FALSE);
+            }
             event = (v_waitsetEvent)wehr;
         } else if (e->kind == V_EVENT_PERSISTENT_SNAPSHOT) {
             /* request persistent snapshot data */
             weps = c_new(v_kernelType(k, K_WAITSETEVENTPERSISTENTSNAPSHOT));
-            weps->request = (v_persistentSnapshotRequest)c_keep(e->userData);
+            if (weps) {
+                weps->request = (v_persistentSnapshotRequest)c_keep(e->userData);
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_waitset::v_waitsetNotify",0,
+                          "Failed to allocate v_waitsetEventPersistentSnapshot object.");
+                assert(FALSE);
+            }
             event = (v_waitsetEvent)weps;
 
         } else {

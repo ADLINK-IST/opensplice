@@ -109,7 +109,7 @@ removeProcesses(
         Sleep(1000);
         r = os_procCheckStatus(pid, &procResult);
     }
-    kill_descendents (pid, OS_SIGKILL);
+    kill_descendents ((DWORD) os_procIdToInteger(pid), OS_SIGKILL);
 }
 
 #undef MAX_STATUSCHECKS

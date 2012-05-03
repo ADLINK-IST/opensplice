@@ -131,15 +131,6 @@ v_publicFree (
     v_handleDeregister(o->handle);
 }
 
-v_handleResult
-v_publicRenew (
-    v_public o)
-{
-    assert(C_TYPECHECK(o,v_public));
-
-    return v_handleRenew(&o->handle);
-}
-
 static v_handle
 gidToHandle(
     v_gid id,

@@ -290,6 +290,7 @@ d_configurationInit(
         d_configurationSetPersistentStoreSleepTime              (config, D_DEFAULT_PERSISTENT_STORE_SLEEP_TIME);
         d_configurationSetPersistentStoreSessionTime            (config, D_DEFAULT_PERSISTENT_STORE_SESSION_TIME);
         d_configurationSetPersistentQueueSize                   (config, D_DEFAULT_PERSISTENT_QUEUE_SIZE);
+        d_configurationSetPersistentSMPCount                    (config, D_DEFAULT_PERSISTENT_SMP_COUNT);
         d_configurationSetOptimizeUpdateInterval                (config, D_DEFAULT_OPTIMIZE_INTERVAL);
 
         d_configurationSetInitialRequestCombinePeriod           (config, D_DEFAULT_INITIAL_REQUEST_COMBINE_PERIOD);
@@ -327,6 +328,7 @@ d_configurationInit(
             d_configurationValueULong  (config, element, "Persistent/QueueSize/#text", d_configurationSetPersistentQueueSize);
             d_configurationValueString (config, element, "Persistent/StoreMode/#text", d_configurationSetPersistentStoreMode);
 
+            d_configurationValueULong  (config, element, "Persistent/SmpCount/#text", d_configurationSetPersistentSMPCount);
             d_configurationValueSize (config, element, "Persistent/MemoryMappedFileStore/Size/#text", d_configurationSetPersistentMMFStoreSize);
             d_configurationValueMemAddr (config, element, "Persistent/MemoryMappedFileStore/Address/#text", d_configurationSetPersistentMMFStoreAddress);
 
@@ -606,11 +608,13 @@ d_configurationReport(
             "- Persistent.StoreMode                        : %s\n" \
             "- Persistent.MemoryMappedFile.Size            : %u\n" \
             "- Persistent.MemoryMappedFile.Address         : %#x\n" \
+            "- Persistent.SmpCount                         : %u\n" \
             "- Persistent.QueueSize                        : %u\n"
             , pstoreDir
             , pstoreMode
             , config->persistentMMFStoreSize
             , config->persistentMMFStoreAddress
+            , config->persistentThreadCount
             , config->persistentQueueSize);
 
     d_printEvent(durability, D_LEVEL_CONFIG,
@@ -1590,6 +1594,18 @@ d_configurationSetPersistentQueueSize(
 }
 
 void
+d_configurationSetPersistentSMPCount(
+    d_configuration config,
+    c_ulong count)
+{
+    config->persistentThreadCount = count;
+
+    if (config->persistentThreadCount < D_MINIMUM_PERSISTENT_SMP_COUNT) {
+        config->persistentThreadCount = D_MINIMUM_PERSISTENT_SMP_COUNT;
+    }
+}
+
+void
 d_configurationSetOptimizeUpdateInterval(
     d_configuration config,
     c_ulong size)
@@ -1733,6 +1749,40 @@ d_configurationAttrValueLong(
 }
 
 void
+d_configurationAttrValueULong(
+    d_configuration configuration,
+    u_cfElement  element,
+    const char * tag,
+    const char * attr,
+    void         (* const setAction)(d_configuration config, c_ulong longValue) )
+{
+    c_iter   iter;
+    u_cfElement e;
+    u_cfAttribute a;
+    c_ulong  ulongValue;
+    c_bool   found;
+
+    iter = u_cfElementXPath(element, tag);
+    e = u_cfElement(c_iterTakeFirst(iter));
+
+    while (e != NULL) {
+        a = u_cfElementAttribute(e, attr);
+
+        if(a){
+            found = u_cfAttributeULongValue(a, &ulongValue);
+            /* QAC EXPECT 2100; */
+            if (found == TRUE) {
+                setAction(configuration, ulongValue);
+            }
+            u_cfAttributeFree(a);
+        }
+        u_cfElementFree(e);
+        e = u_cfElement(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+void
 d_configurationAttrValueFloat(
     d_configuration configuration,
     u_cfElement  element,
@@ -1866,20 +1916,20 @@ d_configurationValueSize(
     d_configuration configuration,
     u_cfElement     element,
     const char      *tag,
-    void            (* const setAction)(d_configuration config, c_ulong ulongValue))
+    void            (* const setAction)(d_configuration config, c_size size))
 {
     c_iter   iter;
     u_cfData data;
-    c_ulong  ulongValue;
+    c_size  size;
     c_bool   found;
 
     iter = u_cfElementXPath(element, tag);
     data = u_cfData(c_iterTakeFirst(iter));
     while (data != NULL) {
-        found = u_cfDataSizeValue(data, &ulongValue);
+        found = u_cfDataSizeValue(data, &size);
         /* QAC EXPECT 2100; */
         if (found == TRUE) {
-            setAction(configuration, ulongValue);
+            setAction(configuration, size);
         }
         u_cfDataFree(data);
         data = u_cfData(c_iterTakeFirst(iter));

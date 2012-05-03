@@ -31,6 +31,8 @@
 #include "CheckStatus.h"
 #include "ccpp_Chat.h"
 
+#define TERMINATION_MESSAGE -1 
+
 using namespace DDS;
 using namespace Chat;
 
@@ -249,7 +251,10 @@ main (
 
     /* Start the sleeper thread. */
     tHandle = CreateThread(NULL, 0, delayedEscape, NULL, 0, &tid);
-
+    
+    /* Print a message that the UserLoad has opened. */
+    cout << "UserLoad has opened: disconnect a Chatter with userID = " << TERMINATION_MESSAGE << " to close it...." << endl << endl;
+    
     while (!closed) {
         /* Wait until at least one of the Conditions in the waitset triggers. */
         status = userLoadWS->wait(guardList, DURATION_INFINITE);
@@ -309,6 +314,10 @@ main (
                             msgList.length() << " messages." << endl;
                         status = loadAdmin->return_loan(msgList, infoSeq2);
                         checkStatus(status, "Chat::ChatMessageDataReader::return_loan");
+                        if(nsList[j].userID == TERMINATION_MESSAGE) {
+                           printf("Termination message received: exiting...\n");
+                           closed = true;
+                        }
                     }
                     status = nameServer->return_loan(nsList, infoSeq);
                     checkStatus(status, "Chat::NameServiceDataReader::return_loan");

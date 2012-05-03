@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -113,15 +113,6 @@ u_cfValueScan(
         __CASE__(LONGLONG,c_longlong);
         __CASE__(ULONGLONG,c_ulonglong);
         __CASE__(FLOAT,c_float);
-        case V_SIZE:
-        {
-            c_ulong dest;
-            result = u_cfDataSizeValueFromString(value.is.String,&dest);
-            if (result) {
-                *valuePtr = c_ulongValue(dest);
-            }
-        }
-        break;
         case V_BOOLEAN:
         {
             c_bool dest;

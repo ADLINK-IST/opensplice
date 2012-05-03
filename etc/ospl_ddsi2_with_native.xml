@@ -1,6 +1,6 @@
 <OpenSplice>
    <Domain>
-      <Name>OpenSpliceV5.4.1_DDSI2_cohabitation</Name>
+      <Name>OpenSpliceV5.5_DDSI2_cohabitation</Name>
       <Database>
          <Size>10485760</Size>
       </Database>
@@ -37,6 +37,12 @@
          <EnableMulticastLoopback>true</EnableMulticastLoopback>
          <CoexistWithNativeNetworking>true</CoexistWithNativeNetworking>
       </General>
+      <Compatibility>
+         <!-- the following are necessary for general, well-behaved interoperability -->
+	 <StandardsConformance>lax</StandardsConformance>
+         <!-- the following one is necessary only for TwinOaks CoreDX DDS compatibility -->
+         <ExplicitlyPublishQosSetToDefault>true</ExplicitlyPublishQosSetToDefault>
+      </Compatibility>
       <Discovery>
          <DomainId>0</DomainId>
       </Discovery>

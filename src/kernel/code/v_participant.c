@@ -28,6 +28,7 @@
 #include "v_event.h"
 #include "v_public.h"
 #include "v_proxy.h"
+#include "v_service.h"
 
 #include "v_topic.h"
 #include "v_subscriberQos.h"
@@ -44,6 +45,12 @@
 
 #define V_BUILTINSUBSCRIBER_NAME "__BUILTIN SUBSCRIBER__"
 
+static v_result
+v_participantMonitorSpliceDeamonLiveliness(
+    v_kernel kernel,
+    const c_char *name,
+    v_participant participant);
+
 v_participant
 v_participantNew(
     v_kernel kernel,
@@ -54,6 +61,7 @@ v_participantNew(
 {
     v_participant p;
     v_participantQos q;
+    v_result result;
 
     assert(C_TYPECHECK(kernel,v_kernel));
     /* Do not use C_TYPECHECK on qos parameter,
@@ -71,11 +79,75 @@ v_participantNew(
         p = v_participant(v_objectNew(kernel,K_PARTICIPANT));
 
         v_participantInit(p,name,q,s,enable);
+        result = v_participantMonitorSpliceDeamonLiveliness(kernel, name, p);
+        if(result != V_RESULT_OK)
+        {
+            OS_REPORT(OS_ERROR, "v_participant", 0,
+                "Unable to monitor the splice deamon's liveliness. It is possible no splice deamon "
+                "was available to monitor.");
+        } /* else do nothing, it went ok */
+
         c_free(q);
         v_addParticipant(kernel,p);
     }
 
     return p;
+}
+
+v_result
+v_participantMonitorSpliceDeamonLiveliness(
+    v_kernel kernel,
+    const c_char *name,
+    v_participant participant)
+{
+    v_result result;
+    c_iter participants;
+    v_participant splicedParticipant;
+
+    assert(C_TYPECHECK(participant,v_participant));
+    assert(C_TYPECHECK(kernel,v_kernel));
+
+    if(!name || (0 != strcmp(name, V_SPLICED_NAME) && 0 != strcmp(name, V_BUILT_IN_PARTICIPANT_NAME)))
+    {
+        participants = v_resolveParticipants(kernel, V_SPLICED_NAME);
+        if(c_iterLength(participants) == 1)
+        {
+            splicedParticipant = v_participant(c_iterTakeFirst(participants));
+            assert(splicedParticipant);
+            result = v_leaseManagerRegister(
+                participant->leaseManager,
+                v_service(splicedParticipant)->lease,
+                V_LEASEACTION_SPLICED_DEATH_DETECTED,
+                v_public(kernel),
+                FALSE /* only observing, do not repeat */);
+            if(result != V_RESULT_OK)
+            {
+                OS_REPORT_3(OS_ERROR, "v_participant", 0,
+                    "A fatal error was detected when trying to register the spliced's liveliness lease "
+                    "to the lease manager of participant %p (%s). The result code was %d.", participant, name, result);
+            }
+            c_iterFree(participants);
+        } else
+        {
+            result = V_RESULT_INTERNAL_ERROR;
+            OS_REPORT_4(OS_ERROR, "v_participant", 0,
+                "A fatal error was detected when trying to register the spliced's liveliness lease "
+                "to the lease manager of participant %p (%s). Found %d splice deamon(s), but expected to find 1!. "
+                "The result code was %d.", participant, name, c_iterLength(participants), result);
+            /* empty the iterator to avoid memory leaks, in cases where it is bigger then 1 */
+            while(c_iterLength(participants) > 0)
+            {
+                c_iterTakeFirst(participants);
+            }
+            c_iterFree(participants);
+        }
+    } else
+    {
+        /* else do nothing, exception for splice deamon monitoring are made for
+         * the splice deamon participant and the built in participant*/
+        result = V_RESULT_OK;
+    }
+    return result;
 }
 
 void
@@ -103,7 +175,7 @@ v_participantInit(
     /* Currently default LIVELINESS policy is used: kind=AUTOMATIC,
      * duration=INFINITE This setting implies no lease registration.
     */
-    p->lease = NULL;
+
     p->leaseManager = v_leaseManagerNew(kernel);
     p->resendQuit = FALSE;
     c_mutexInit(&p->resendMutex, SHARED_MUTEX);
@@ -209,15 +281,8 @@ void
 v_participantDeinit(
     v_participant p)
 {
-    v_kernel kernel;
-
     assert(C_TYPECHECK(p,v_participant));
 
-    kernel = v_objectKernel(p);
-
-    v_leaseManagerDeregister(kernel->livelinessLM, p->lease);
-    c_free(p->lease);
-    p->lease = NULL;
     v_leaseManagerFree(p->leaseManager);
     p->leaseManager = NULL;
 
@@ -429,19 +494,6 @@ v_participantAssertLiveliness(
     c_lockUnlock(&p->lock);
 }
 
-void
-v_participantRenewLease(
-    v_participant p,
-    v_duration leasePeriod)
-{
-    assert(p != NULL);
-    assert(C_TYPECHECK(p, v_participant));
-
-    c_lockWrite(&p->lock);
-    v_leaseRenew(p->lease, leasePeriod);
-    c_lockUnlock(&p->lock);
-}
-
 v_subscriber
 v_participantGetBuiltinSubscriber(
     v_participant p)
@@ -550,6 +602,7 @@ v_participantResendManagerMain(
     v_writer w;
     v_handleResult r;
     c_time waitTime = { RESEND_SECS, RESEND_NANOSECS };
+    c_syncResult waitResult = SYNC_RESULT_SUCCESS;
 
     assert(C_TYPECHECK(p,v_participant));
 
@@ -557,9 +610,16 @@ v_participantResendManagerMain(
     while (!p->resendQuit) {
 
         if (c_count(p->resendWriters) == 0) {
-            c_condWait(&p->resendCond, &p->resendMutex);
+            waitResult = c_condWait(&p->resendCond, &p->resendMutex);
         } else {
-            c_condTimedWait(&p->resendCond, &p->resendMutex, waitTime);
+            waitResult = c_condTimedWait(&p->resendCond, &p->resendMutex, waitTime);
+        }
+
+        if (waitResult == SYNC_RESULT_FAIL)
+        {
+            OS_REPORT(OS_CRITICAL, "v_participantResendManagerMain", 0,
+                      "c_condTimedWait / c_condWait failed - thread will terminate");
+            p->resendQuit = TRUE;
         }
 
         if (!p->resendQuit) {

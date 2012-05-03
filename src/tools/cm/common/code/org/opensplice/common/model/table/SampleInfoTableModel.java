@@ -223,9 +223,13 @@ public class SampleInfoTableModel extends DefaultTableModel{
                     this.setValueAt("N/A", row++, 1);
                     this.setValueAt("N/A", row++, 1);
                 }
-                
                 this.setValueAt(Long.toString(msg.getSampleSequenceNumber()), row++, 1);
-                this.setValueAt(msg.getQos().getReliabilityKind().toString(), row++, 1);
+
+                if(msg.getQos() != null){
+                    this.setValueAt(msg.getQos().getReliabilityKind().toString(), row++, 1);
+                } else {
+                    this.setValueAt("N/A", row++, 1);
+                }
                 
                 success = true;
             }

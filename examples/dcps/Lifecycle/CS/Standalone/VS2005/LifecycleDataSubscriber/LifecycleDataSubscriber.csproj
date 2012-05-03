@@ -29,9 +29,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="__CS_ASSEMBLY_NAME__, Version=__CS_DLL_VERSION__, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="dcpssacsAssembly, Version=5.4.1.14987, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(OSPL_HOME)\bin\__CS_ASSEMBLY_NAME__.dll</HintPath>
+      <HintPath>$(OSPL_HOME)\bin\dcpssacsAssembly.dll</HintPath>
     </Reference>
     <Reference Include="DDSAPIHelper, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

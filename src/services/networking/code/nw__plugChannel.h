@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef NW__PLUGCHANNEL_H
@@ -25,36 +25,37 @@
  * this */
 
 NW_CLASS(nw_messageBox);
+
 NW_STRUCT(nw_plugChannel) {
-    /* Identity of this channel */
+    /** Identity of this channel */
     char *name;
     nw_seqNr Id;
-    /* Identity of the node */
+    /** Identity of the node */
     nw_seqNr nodeId;
-    /* Sending or receiving channel */
+    /** Sending or receiving channel */
     nw_communicationKind communication;
-    /* Partition administration, read only */
+    /** Partition administration, read only */
     nw_plugPartitions partitions;
-    /* Qos offered */
+    /** Qos offered */
     nw_reliabilityKind reliabilityOffered;
     nw_priorityKind priorityOffered;
     nw_latencyBudget latencyBudgetOffered;
-    /* The socket abstraction to read from or write to */
+    /** The socket abstraction to read from or write to */
     nw_socket socket;
-    /* Size of a single fragment */
+    /** Size of a single fragment */
     nw_length fragmentLength;
-    /* Pointer to object for inter-channel communication */
+    /** Pointer to object for inter-channel communication */
     nw_plugInterChannel interChannelComm;
-    /* Threadsafe message box for posting events */
-    nw_messageBox messageBox; 
-    /* Callback in case of an fatal error */
+    /** Threadsafe message box for posting events */
+    nw_messageBox messageBox;
+    /** Callback in case of an fatal error */
     nw_onFatalCallBack onFatal;
     c_voidp onFatalUsrData;
-    /* Allow reconnection after a remote node has died or stopped earlier */
+    /** Allow reconnection after a remote node has died or stopped earlier */
     nw_bool reconnectAllowed;
     ut_crc crc;
-};    
-  
+};
+
 /* Protected functions for descendants */
 
 /* Getters (read only) */
@@ -81,7 +82,7 @@ void nw_plugChannelInitialize(
 
 void nw_plugChannelFinalize(
          nw_plugChannel channel);
-         
+
 typedef enum nw_messageBoxMessageType_e {
     NW_MBOX_UNDEFINED,
     NW_MBOX_NODE_STARTED,
@@ -95,7 +96,7 @@ typedef enum nw_messageBoxMessageType_e {
 nw_bool nw_plugChannelProcessMessageBox(
          nw_plugChannel channel,
          nw_networkId *networkId /* out */,
-         nw_address *address,
+         os_sockaddr_storage *address,
          c_string *list,
          nw_messageBoxMessageType *messageType /* out */);
 

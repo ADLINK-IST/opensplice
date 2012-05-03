@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -20,12 +20,18 @@
 #include "kernelModule.h"
 #include "u_networkReader.h"
 
+#define NW_STRUCT(name)  struct name##_s
+#define NW_EXTENDS(type) NW_STRUCT(type) _parent
+#define NW_CLASS(name)   typedef NW_STRUCT(name) *name
+
 NW_CLASS(nw_ringBuffer);
 
-
+/**
+* @extends nw_runnable_s
+*/
 NW_STRUCT(nw_channelUser) {
-    C_EXTENDS(nw_runnable);
-    u_networkReader reader; 
+    NW_EXTENDS(nw_runnable);
+    u_networkReader reader;
     c_iter messageBuffer;
     os_mutex messageBufferMutex;
 };
@@ -40,7 +46,7 @@ void        nw_channelUserInitialize(
                 const nw_runnableMainFunc runnableMainFunc,
                 const nw_runnableTriggerFunc triggerFunc,
                 const nw_runnableFinalizeFunc finalizeFunc);
-                
+
 void        nw_channelUserFinalize(
                 nw_channelUser channelUser);
 

@@ -42,8 +42,11 @@
 
 /* ------------------------------- Private ---------------------------------- */
 
-C_STRUCT(nw_channelReader){
-    C_EXTENDS(nw_channelUser);
+/**
+* @extends nw_channelUser_s
+*/
+NW_STRUCT(nw_channelReader){
+    NW_EXTENDS(nw_channelUser);
     /* Networking reader */
     u_networkReader reader;
     /* Networking channel */
@@ -210,7 +213,7 @@ nw_channelReaderMain(
                      nw_ReceiveChannelUpdate(v_networkingStatistics(v_entity(n)->statistics)->channels[channelReader->stat_channel_id],channelReader->rcs);
             }
          }
-  	
+
         /* Read messages from the network */
         nw_receiveChannelRead(channelReader->receiveChannel,
                               &message,
@@ -219,16 +222,16 @@ nw_channelReaderMain(
                               channelReader,
                               &prs);
 
-       
+
         if (entry != NULL &&
     		   !(NW_SECURITY_CHECK_FOR_SUBSCRIBE_PERMISSION_OF_RECEIVER(entry))) {
-       
-    	   /* drop the message */ 
+
+    	   /* drop the message */
     	   c_free(message);
     	   message = NULL;
-    	   entry = NULL; 
-        } 
-    
+    	   entry = NULL;
+        }
+
         if (entry != NULL) {
 
 #define NW_IS_BUILTIN_DOMAINNAME(name) ((int)(name)[0] == (int)'_')

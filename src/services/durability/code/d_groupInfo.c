@@ -110,6 +110,7 @@ d_instanceNew(
         OS_REPORT(OS_ERROR,
                   "d_instanceNew",0,
                   "Failed to allocate instance.");
+        assert(FALSE);
     }
     return instance;
 }
@@ -185,8 +186,8 @@ d_groupInfoGetInstance (
     return instance;
 }
 
-static d_sample
-d_sampleNew (
+d_sample
+d_groupInfoSampleNew (
     d_groupInfo _this,
     d_instance instance,
     v_message msg)
@@ -204,8 +205,9 @@ d_sampleNew (
         sample->newer = NULL;
     } else {
         OS_REPORT(OS_ERROR,
-              "d_sampleNew",0,
+              "d_groupInfoSampleNew",0,
               "Failed to allocate sample.");
+        assert(FALSE);
     }
     return sample;
 }
@@ -214,7 +216,8 @@ static d_storeResult
 d_instanceInsert(
     d_instance instance,
     v_message msg,
-    d_groupInfo groupInfo)
+    d_groupInfo groupInfo,
+    d_sample toInsert)
 {
     d_sample sample;
     d_sample oldest;
@@ -231,7 +234,13 @@ d_instanceInsert(
         return D_STORE_RESULT_ILL_PARAM;
     }
     topicQos = groupInfo->topic->qos;
-    sample = d_sampleNew(groupInfo, instance, msg);
+
+    if(toInsert){
+        sample = toInsert;
+        sample->instance = instance;
+    } else {
+        sample = d_groupInfoSampleNew(groupInfo, instance, msg);
+    }
 
     if (!sample) {
         return D_STORE_RESULT_OUT_OF_RESOURCES;
@@ -519,8 +528,10 @@ createUnregisterMessage(
     /* Set nodestate to unregister */
     v_nodeState(unregisterMessage) = L_UNREGISTER;
 
-    unregisterMessage->allocTime = v_timeGet();
-    unregisterMessage->writeTime = unregisterMessage->allocTime;
+    unregisterMessage->writeTime = v_timeGet();
+#ifndef _NAT_
+    unregisterMessage->allocTime = unregisterMessage->writeTime;
+#endif
 
     return unregisterMessage;
 }
@@ -681,6 +692,7 @@ d_groupInfoNew (
             OS_REPORT(OS_ERROR,
                       "d_groupInfoNew",0,
                       "Failed to allocate d_groupInfo.");
+            assert(FALSE);
             group = NULL;
         }
     } else {
@@ -780,7 +792,8 @@ d_storeResult
 d_groupInfoWrite(
     d_groupInfo _this,
     const d_store store,
-    const v_groupAction action)
+    const v_groupAction action,
+    d_sample sample)
 {
     d_storeResult result;
     d_instance instance;
@@ -789,7 +802,7 @@ d_groupInfoWrite(
         instance = d_groupInfoGetInstance(_this, action, &result);
 
         if(instance){
-            result = d_instanceInsert(instance, action->message, _this);
+            result = d_instanceInsert(instance, action->message, _this, sample);
             c_free(instance);
         }
     } else {
@@ -802,7 +815,8 @@ d_storeResult
 d_groupInfoDispose(
     d_groupInfo _this,
     const d_store store,
-    const v_groupAction action)
+    const v_groupAction action,
+    d_sample sample)
 {
     d_storeResult result;
     d_instance instance;
@@ -811,7 +825,7 @@ d_groupInfoDispose(
         instance = d_groupInfoGetInstance(_this, action, &result);
 
         if(instance){
-            result = d_instanceInsert(instance, action->message, _this);
+            result = d_instanceInsert(instance, action->message, _this, sample);
             c_free(instance);
 
             if(result == D_STORE_RESULT_OK){
@@ -969,6 +983,7 @@ d_groupInfoBackup(
             result = D_STORE_RESULT_OUT_OF_RESOURCES;
         }
     } else {
+        assert(FALSE);
         result = D_STORE_RESULT_OUT_OF_RESOURCES;
     }
     return result;

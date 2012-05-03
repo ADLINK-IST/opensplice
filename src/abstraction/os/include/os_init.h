@@ -77,7 +77,7 @@ OS_API const char *
 os_versionString(void);
 
 OS_API void
-os_createPipeNameFromDomainName(char *name);
+os_createPipeNameFromDomainName(const char *name);
 
 
 #undef OS_API

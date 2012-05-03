@@ -481,8 +481,7 @@ defineTopic(
 
     if (topicType != NULL) {
         qos = createTopicQos(kernel, info);
-        newTopic = v__topicNew(kernel, info->name,
-                              info->type_name, info->key_list, qos, FALSE);
+        newTopic = v_topicNew(kernel, info->name, info->type_name, info->key_list, qos);
         if (newTopic != NULL) {
             result = TRUE;
         }
@@ -1026,69 +1025,67 @@ v_splicedProcessPublicationInfo
                               msg, NULL, NULL);
             if (oldMsg != NULL) {
                 oldInfo = v_builtinPublicationInfoData(kernel->builtin,oldMsg);
+
                 if (oldInfo != NULL) {
                     requestedMessages = lookupMatchingReadersByTopic(spliced, oldInfo);
-                }
-            }
+                    reqMsg = c_iterTakeFirst(requestedMessages);
 
-            reqMsg = c_iterTakeFirst(requestedMessages);
-            while (reqMsg != NULL) {
-                assert(oldInfo);
+                    while (reqMsg != NULL) {
+                        rInfo = v_builtinSubscriptionInfoData(kernel->builtin,reqMsg);
+                        r = v_dataReader(v_gidClaim(rInfo->key, kernel));
 
-                rInfo = v_builtinSubscriptionInfoData(kernel->builtin,reqMsg);
-                r = v_dataReader(v_gidClaim(rInfo->key, kernel));
+                        /* if r == NULL in this context, this method returns FALSE */
+                        if (r != NULL && readerWriterMatch(rInfo, r, oldInfo, NULL) == TRUE) {
+                            newLivState = V_STATUSLIVELINESS_DELETED;
 
-                /* if r == NULL in this context, this method returns FALSE */
-                if (r != NULL && readerWriterMatch(rInfo, r, oldInfo, NULL) == TRUE) {
-                    newLivState = V_STATUSLIVELINESS_DELETED;
-
-                    if (checkOfferedRequested(oldInfo, rInfo, compatible) == TRUE) {
-                        /* Notify the reader that a matching publication disappeared */
-                        v_dataReaderNotifySubscriptionMatched(r, oInfo->key, TRUE);
-                    }
-                }
-
-                if (r != NULL) {
-                    /* Determine old liveliness state.
-                     * Pretend w == NULL, so match is entirely determined by
-                     * the old writer partition information!
-                     * We need to determine the previous state!
-                     */
-                    if (oldInfo != NULL) {
-                        if (readerWriterMatch(rInfo, r, oldInfo, NULL)) {
                             if (checkOfferedRequested(oldInfo, rInfo, compatible) == TRUE) {
-                                oldLivState = (oldInfo->alive?V_STATUSLIVELINESS_ALIVE:V_STATUSLIVELINESS_NOTALIVE);
-                            } else {
-                                oldLivState = V_STATUSLIVELINESS_DELETED;
+                                /* Notify the reader that a matching publication disappeared */
+                                v_dataReaderNotifySubscriptionMatched(r, oInfo->key, TRUE);
                             }
-                        } else {
-                            oldLivState = V_STATUSLIVELINESS_DELETED;
                         }
-                    } else {
-                        oldLivState = V_STATUSLIVELINESS_UNKNOWN;
+
+                        if (r != NULL) {
+                            /* Determine old liveliness state.
+                             * Pretend w == NULL, so match is entirely determined by
+                             * the old writer partition information!
+                             * We need to determine the previous state!
+                             */
+                            if (oldInfo != NULL) {
+                                if (readerWriterMatch(rInfo, r, oldInfo, NULL)) {
+                                    if (checkOfferedRequested(oldInfo, rInfo, compatible) == TRUE) {
+                                        oldLivState = (oldInfo->alive?V_STATUSLIVELINESS_ALIVE:V_STATUSLIVELINESS_NOTALIVE);
+                                    } else {
+                                        oldLivState = V_STATUSLIVELINESS_DELETED;
+                                    }
+                                } else {
+                                    oldLivState = V_STATUSLIVELINESS_DELETED;
+                                }
+                            } else {
+                                oldLivState = V_STATUSLIVELINESS_UNKNOWN;
+                            }
+                            v_dataReaderNotifyLivelinessChanged(r, oInfo->key,
+                                                                oldLivState, newLivState,
+                                                                msg);
+                            v_gidRelease(rInfo->key, kernel);
+                        }
+
+                        c_free(reqMsg);
+                        reqMsg = c_iterTakeFirst(requestedMessages);
                     }
-                    v_dataReaderNotifyLivelinessChanged(r, oInfo->key,
-                                                        oldLivState, newLivState,
-                                                        msg);
-                    v_gidRelease(rInfo->key, kernel);
+                    c_iterFree(requestedMessages);
+
+                    if(oInfo->key.systemId != kernel->GID.systemId) {
+                       /* If the message is disposed, the writer is no longer alive,
+                        * so cleanup all resources taken by this writer. But only if this
+                        * writer is a remote writer!
+                        * DO NOT USE local time, but use the production time of the
+                        * builtin topic! This is needed, since the time might not be
+                        * aligned properly!
+                        */
+                       doCleanupPublication(spliced, oldInfo, &msg->writeTime);
+                    }
                 }
-
-                c_free(reqMsg);
-                reqMsg = c_iterTakeFirst(requestedMessages);
             }
-            c_iterFree(requestedMessages);
-
-            if(oInfo->key.systemId != kernel->GID.systemId) {
-               /* If the message is disposed, the writer is no longer alive,
-                * so cleanup all resources taken by this writer. But only if this
-                * writer is a remote writer!
-                * DO NOT USE local time, but use the production time of the
-                * builtin topic! This is needed, since the time might not be
-                * aligned properly!
-                */
-               doCleanupPublication(spliced, oInfo, &msg->writeTime);
-            }
-
         } else {
             w = v_writer(v_gidClaim(oInfo->key, kernel));
 
@@ -1842,6 +1839,7 @@ v_splicedFree(
 
     /* Stop heartbeats */
     v_serviceFree(v_service(spliced));
+    v_kernel(v_object(spliced)->kernel)->splicedRunning = FALSE;
 }
 
 void
@@ -1952,7 +1950,7 @@ v_splicedCheckHeartbeats(
         c_mutexUnlock(&spliced->mtx);
         c_iterFree(arg.missed);
     }
-    v_leaseRenew(spliced->hbCheck, arg.nextPeriod);
+    v_leaseRenew(spliced->hbCheck, &(arg.nextPeriod));
 }
 
 /**************************************************************
@@ -2089,38 +2087,6 @@ v_splicedPrepareTermination(
 }
 
 static void
-cleanup(
-   v_message regMsg,
-   v_group g,
-   c_time *writeTime)
-{
-    v_message msg;
-
-    if (v_messageQos_isAutoDispose(regMsg->qos)) {
-        msg = v_topicMessageNew(g->topic);
-        if (msg) {
-            v_topicMessageCopyKeyValues(g->topic, msg, regMsg);
-            v_nodeState(msg) = L_DISPOSED;
-            msg->qos = c_keep(regMsg->qos); /* since messageQos does not contain refs */
-            msg->writerGID = regMsg->writerGID; /* pretend this message comes from the original writer! */
-            msg->writeTime = *writeTime;
-            v_groupWrite(g, msg, NULL, V_NETWORKID_ANY);
-            c_free(msg);
-        }
-    }
-    msg = v_topicMessageNew(g->topic);
-    if (msg) {
-        v_topicMessageCopyKeyValues(g->topic, msg, regMsg);
-        v_nodeState(msg) = L_UNREGISTER;
-        msg->qos = c_keep(regMsg->qos); /* since messageQos does not contain refs */
-        msg->writerGID = regMsg->writerGID; /* pretend this message comes from the original writer! */
-        msg->writeTime = *writeTime;
-        v_groupWrite(g, msg, NULL, V_NETWORKID_ANY);
-        c_free(msg);
-    }
-}
-
-static void
 doCleanupPublication(
     v_spliced spliced,
     struct v_publicationInfo *oInfo,
@@ -2129,8 +2095,6 @@ doCleanupPublication(
     v_kernel kernel;
     int i, len;
     v_group group;
-    c_iter messages;
-    v_message regMsg;
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
@@ -2141,19 +2105,15 @@ doCleanupPublication(
      * the group that all instances of the writer must be unregistered
      */
     len = c_arraySize(oInfo->partition.name);
-    for (i = 0; i < len; i++) {
+    for (i = 0; i < len; i++)
+    {
         group = v_groupSetGet(kernel->groupSet,
             oInfo->partition.name[i],
             oInfo->topic_name);
         /* A group does not necessarily have to exist locally! */
-        if (group != NULL) {
-            messages = v_groupGetRegisterMessagesOfWriter(group, oInfo->key);
-            regMsg = v_message(c_iterTakeFirst(messages));
-            while (regMsg != NULL) {
-                cleanup(regMsg, group, cleanTime);
-                regMsg = v_message(c_iterTakeFirst(messages));
-            }
-            c_iterFree(messages);
+        if (group != NULL)
+        {
+            v_groupDisconnectWriter(group, oInfo, *cleanTime);
             c_free(group);
         }
     }
@@ -2161,22 +2121,6 @@ doCleanupPublication(
 
 #define GC_DELAY_SEC  (0)
 #define GC_DELAY_NSEC (20000000) /* 20ms */
-static void
-cleanupWriters(
-    c_iter deadWriters,
-    v_group g,
-    c_time *writeTime)
-{
-    v_message regMsg;
-
-    regMsg = v_message(c_iterTakeFirst(deadWriters));
-    while (regMsg != NULL) {
-        cleanup(regMsg, g, writeTime);
-        c_free(regMsg);
-        regMsg = v_message(c_iterTakeFirst(deadWriters));
-    }
-    c_iterFree(deadWriters);
-}
 
 void
 v_splicedGarbageCollector(
@@ -2189,46 +2133,57 @@ v_spliced spliced)
     c_long length;
     v_group g;
     os_time delay = {GC_DELAY_SEC, GC_DELAY_NSEC};
-    c_iter deadWriters; /* list of register messages of died writers */
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
 
     kernel = v_objectKernel(spliced);
     /* wait until kernelmanager has initialized */
-    while (!spliced->missedHB) {
+    while (!spliced->missedHB)
+    {
         os_nanoSleep(delay);
     }
     /*Continue for as long as the spliced doesn't need to terminate*/
-    while (!spliced->quit) {
+    while (!spliced->quit)
+    {
         /*Check if a heartbeat has been missed*/
         c_mutexLock(&spliced->mtx);
         missedHBMsg = c_take(spliced->missedHB);
         c_mutexUnlock(&spliced->mtx);
 
-        groups = v_groupSetSelectAll(kernel->groupSet);
-        g = v_group(c_iterTakeFirst(groups));
 
         /* If a heartbeat has been missed, walk over all groups and clean up
          * data from writers on the removed node.
          */
-        if (missedHBMsg) {
-            missedHB = v_builtinHeartbeatInfoData(kernel->builtin,missedHBMsg);
+        if (missedHBMsg)
+        {
+            missedHB = v_builtinHeartbeatInfoData(kernel->builtin, missedHBMsg);
             OS_REPORT_1(OS_WARNING, "v_spliced", 0,
-                "Missed heartbeat for node %d", v_gidSystemId(missedHB->id));
+                    "Missed heartbeat for node %d", v_gidSystemId(missedHB->id));
 
-            while ((g != NULL) && (!spliced->quit)) {
+            /* If a heartbeat is missed, identify the node in question and
+             * walk over all builtin DCPSPublication instances. */
+            g = v_groupSetGet(kernel->groupSet, V_BUILTIN_PARTITION, V_PUBLICATIONINFO_NAME);
+            /* A group does not necessarily have to exist locally! */
+            if (g != NULL)
+            {
+                /* Disconnect all the node's registrations from this group. Note
+                 * that the heartbeat's period is an effectively cleanup time.
+                 */
+                v_groupDisconnectNode(g, missedHB);
                 os_nanoSleep(delay);
-                deadWriters = v_groupGetRegisterMessages(g, v_gidSystemId(missedHB->id));
-                cleanupWriters(deadWriters, g, &missedHB->period /* effectively cleanup time */);
-                v_groupUpdatePurgeList(g);
                 c_free(g);
-                g = v_group(c_iterTakeFirst(groups));
+                g = NULL;
             }
             c_free(missedHBMsg);
-        } else {
+        }
+        else
+        {
             /*If no heartbeat is missed, do some garbage collection.*/
-            while ((g != NULL) && (!spliced->quit)) {
+            groups = v_groupSetSelectAll(kernel->groupSet);
+            g = v_group(c_iterTakeFirst(groups));
+            while ((g != NULL) && (!spliced->quit))
+            {
                 v_groupUpdatePurgeList(g);
                 c_free(g);
 
@@ -2243,27 +2198,32 @@ v_spliced spliced)
                 /* A heartbeat has been missed, stop updating purgeLists now
                  * but don't forget to free the iter of groups.
                  */
-                if(length != 0){
+                if(length != 0)
+                {
                     g = NULL;
-                } else {
+                }
+                else
+                {
                     os_nanoSleep(delay);
                     g = v_group(c_iterTakeFirst(groups));
                 }
             }
-        }
-        /* Make sure each group is freed if the while loops above are
-         * interrupted.
-         */
-        if(g != NULL){
-            c_free(g);
-        }
-        g = v_group(c_iterTakeFirst(groups));
-
-        while(g != NULL){
-            c_free(g);
+            /* Make sure each group is freed if the while loops above are
+             * interrupted.
+             */
+            if(g != NULL)
+            {
+                c_free(g);
+            }
             g = v_group(c_iterTakeFirst(groups));
+
+            while(g != NULL)
+            {
+                c_free(g);
+                g = v_group(c_iterTakeFirst(groups));
+            }
+            c_iterFree(groups);
         }
-        c_iterFree(groups);
     }
 }
 
@@ -2288,7 +2248,7 @@ v_splicedStartHeartbeat(
         result = v_leaseManagerRegister(
             kernel->livelinessLM,
             spliced->hbCheck,
-            V_LEASEACTION_HEARTBEAT_SEND,
+            V_LEASEACTION_HEARTBEAT_CHECK,
             v_public(spliced),
             TRUE /* repeat lease if expired */);
         if(result != V_RESULT_OK)
@@ -2360,7 +2320,7 @@ disposeAllDataCandMCommand(
    c_iter list;
    v_group group;
    v_topic topic;
-   v_result res;
+   v_writeResult res;
    struct v_commandDisposeAllData *disposeCmd;
 
    assert(spliced != NULL);
@@ -2380,7 +2340,7 @@ disposeAllDataCandMCommand(
           while (group)
           {
              res = v_groupDisposeAll( group, timestamp );
-             if ( res != V_RESULT_OK )
+             if ( res != V_WRITE_SUCCESS )
              {
                 OS_REPORT(OS_WARNING, "spliced", 0,
                           "Dispose All Data failed due to internal error.");
@@ -2432,12 +2392,19 @@ disposeAllDataCandMCommand(
              v_pendingDisposeElement new;
 
              new = c_new( v_kernelType(kernel, K_PENDINGDISPOSEELEMENT ) );
-             new->disposeCmd.topicExpr = c_stringNew(base, disposeCmd->topicExpr);
-             new->disposeCmd.partitionExpr = c_stringNew(base,
-                                                         disposeCmd->partitionExpr);
-             new->disposeTimestamp = timestamp;
+             if (new) {
+                 new->disposeCmd.topicExpr = c_stringNew(base, disposeCmd->topicExpr);
+                 new->disposeCmd.partitionExpr = c_stringNew(base,
+                                                             disposeCmd->partitionExpr);
+                 new->disposeTimestamp = timestamp;
 
-             c_append( kernel->pendingDisposeList, new );
+                 c_append( kernel->pendingDisposeList, new );
+             } else {
+                 OS_REPORT(OS_ERROR,
+                           "v_spliced::disposeAllDataCandMCommand", 0,
+                           "Failed to allocated v_pendingDisposeElement object.");
+                 assert(FALSE);
+             }
           }
           c_mutexUnlock(&kernel->pendingDisposeListMutex);
        }

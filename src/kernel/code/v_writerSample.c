@@ -62,6 +62,7 @@ _v_writerSampleNew(
         OS_REPORT(OS_ERROR,
                   "v_writerSampleNew",0,
                   "Failed to allocate sample.");
+        assert(FALSE);
     }
 
     assert(C_TYPECHECK(sample,v_writerSample));

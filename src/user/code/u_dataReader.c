@@ -318,6 +318,25 @@ u_dataReaderDataAvailableTest(
     return avail;
 }
 
+u_result
+u_dataReaderWalkInstances (
+    u_dataReader _this,
+    u_dataReaderInstanceAction action,
+    c_voidp arg)
+{
+    v_dataReader reader;
+    u_result result;
+
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
+
+        if (result == U_RESULT_OK) {
+            v_dataReaderWalkInstances(reader,action,arg);
+            u_entityRelease(u_entity(_this));
+        }
+   return result;
+}
+
+
 C_STRUCT(readActionArg) {
     u_readerAction action;
     c_voidp arg;

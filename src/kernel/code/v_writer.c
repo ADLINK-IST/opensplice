@@ -121,12 +121,13 @@ v_writerGroupSetAdd (
     if (proxy) {
         proxy->group = c_keep(g);
         proxy->next = set->firstGroup;
-	    proxy->targetCache = v_writerCacheNew(kernel, V_CACHE_OWNER);
+	    proxy->targetCache = v_writerCacheNew(kernel, V_CACHE_CONNECTION);
         set->firstGroup = proxy;
     } else {
         OS_REPORT(OS_ERROR,
                   "v_writerGroupSetAdd",0,
                   "Failed to allocate proxy.");
+        assert(FALSE);
     }
 
     return c_keep(proxy);
@@ -778,7 +779,7 @@ assertLiveliness (
     v_kernel kernel;
     v_message builtinMsg;
 
-    v_leaseRenew(w->livelinessLease, w->qos->liveliness.lease_duration);
+    v_leaseRenew(w->livelinessLease, &(w->qos->liveliness.lease_duration));
     if (w->alive == FALSE) {
         kernel = v_objectKernel(w);
         w->alive = TRUE;
@@ -798,7 +799,7 @@ writerDispose(
     v_writeResult result = V_WRITE_SUCCESS;
     v_writerInstance found;
     v_writerQos qos;
-    c_time until;
+    c_time until,now;
     c_bool implicit = FALSE;
 
     assert(C_TYPECHECK(w,v_writer));
@@ -812,8 +813,14 @@ writerDispose(
 
     v_nodeState(message) = L_DISPOSED;
 
+#ifdef _NAT_
+    now = v_timeGet();
+#else
+    now = message->allocTime;
+#endif
+
     if (c_timeIsZero(timestamp)) {
-        timestamp = message->allocTime;
+        timestamp = now;
     }
 
     message->writeTime = timestamp;
@@ -826,7 +833,7 @@ writerDispose(
 
     qos = w->qos;
     if (!w->infWait) {
-        until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
+        until = c_timeAdd(now, qos->reliability.max_blocking_time);
     }
 
     while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
@@ -919,7 +926,7 @@ writerUnregister(
     v_writerSample sample;
     v_writerQos qos;
     v_message dispose;
-    c_time until;
+    c_time until,now;
 
     assert(C_TYPECHECK(w,v_writer));
     assert(C_TYPECHECK(message,v_message));
@@ -934,8 +941,14 @@ writerUnregister(
 
     v_nodeState(message) = L_UNREGISTER;
 
+#ifdef _NAT_
+    now = v_timeGet();
+#else
+    now = message->allocTime;
+#endif
+
     if (c_timeIsZero(timestamp)) {
-        timestamp = message->allocTime;
+        timestamp = now;
     }
 
     message->writeTime = timestamp;
@@ -943,7 +956,7 @@ writerUnregister(
 
     qos = w->qos;
     if (!w->infWait) {
-        until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
+        until = c_timeAdd(now, qos->reliability.max_blocking_time);
     }
     while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
            (w->count >= qos->resource.max_samples)) {
@@ -1088,7 +1101,7 @@ v_writerAssertByPublisher(
         }
         v_observerUnlock(v_observer(w));
 
-        v_leaseRenew(w->livelinessLease, w->qos->liveliness.lease_duration);
+        v_leaseRenew(w->livelinessLease, &(w->qos->liveliness.lease_duration));
         v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
         c_free(builtinMsg);
     }
@@ -1464,13 +1477,14 @@ v_writerEnable(
         writer->infWait = (c_timeCompare(qos->reliability.max_blocking_time,
                                          C_TIME_INFINITE) == C_EQ);
 
+        assert(writer->publisher != NULL);
+        participant = v_participant(v_publisher(writer->publisher)->participant);
+        assert(participant != NULL);
+        
         /* Register with the lease manager for periodic resending
          * This has to be done for all kinds of reliability because
          * dispose-messages always have to be sent reliably */
         /* The only condition is existence of writer->history */
-        assert(writer->publisher != NULL);
-        participant = v_participant(v_publisher(writer->publisher)->participant);
-        assert(participant != NULL);
         if (participant) {
             /* Add writer as observer of participant in case liveliness is
              * BY PARTICIPANT
@@ -1480,8 +1494,10 @@ v_writerEnable(
                 v_observableAddObserver(v_observable(writer),
                                         v_observer(participant),
                                         NULL);
+                v_observerUnlock(v_observer(writer));
                 v_observerSetEvent(v_observer(participant),
-                                   V_EVENT_LIVELINESS_ASSERT);
+                        V_EVENT_LIVELINESS_ASSERT);
+                v_observerLock(v_observer(writer));
             }
         }
 
@@ -1729,9 +1745,6 @@ v_writerNotifyPublicationMatched (
     c_bool changed;
     C_STRUCT(v_event) e;
 
-    v_kernel kernel;
-    v_message builtinMsg;
-
     assert(w != NULL);
     assert(C_TYPECHECK(w,v_writer));
 
@@ -1743,10 +1756,12 @@ v_writerNotifyPublicationMatched (
         e.source = v_publicHandle(v_public(w));
         e.userData = NULL;
         v_observerNotify(v_observer(w), &e, NULL);
+        v_observerUnlock(v_observer(w));
         v_observableNotify(v_observable(w), &e);
+    } else {
+        v_observerUnlock(v_observer(w));
     }
 
-    v_observerUnlock(v_observer(w));
 }
 
 void
@@ -1821,6 +1836,7 @@ v_writerNotifyLivelinessLost(
     C_STRUCT(v_event) e;
     v_kernel kernel;
     v_message builtinMsg;
+    v_duration duration = C_TIME_INFINITE;
 
     assert(C_TYPECHECK(w,v_writer));
 
@@ -1839,7 +1855,7 @@ v_writerNotifyLivelinessLost(
 
     v_observerUnlock(v_observer(w));
     /* suspend liveliness check */
-    v_leaseRenew(w->livelinessLease, C_TIME_INFINITE);
+    v_leaseRenew(w->livelinessLease, &(duration));
 
     v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
     c_free(builtinMsg);
@@ -1859,7 +1875,7 @@ v_writerRegister(
     v_writeResult result = V_WRITE_SUCCESS;
     v_writerInstance instance, found;
     v_writerQos qos;
-    c_time until;
+    c_time until,now;
 
     assert(C_TYPECHECK(w,v_writer));
     assert(message != NULL);
@@ -1874,8 +1890,14 @@ v_writerRegister(
 
     v_nodeState(message) = L_REGISTER;
 
+#ifdef _NAT_
+        now = v_timeGet();
+#else
+        now = message->allocTime;
+#endif
+
     if (c_timeIsZero(timestamp)) {
-        timestamp = message->allocTime;
+        timestamp = now;
     }
 
     message->writeTime = timestamp;
@@ -1889,7 +1911,7 @@ v_writerRegister(
 #endif
     qos = w->qos;
     if (!w->infWait) {
-        until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
+        until = c_timeAdd(now, qos->reliability.max_blocking_time);
     }
     while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
            (w->count >= qos->resource.max_samples)) {
@@ -2005,7 +2027,7 @@ v_writerWrite(
     v_writeResult result = V_WRITE_SUCCESS;
     v_writerInstance found;
     v_writerQos qos;
-    c_time until;
+    c_time until,now;
     c_bool implicit = FALSE;
     c_ulong blocked; /* Used for statistics */
     enum v_livelinessKind livKind;
@@ -2026,8 +2048,14 @@ v_writerWrite(
 
     v_nodeState(message) = L_WRITE;
 
+#ifdef _NAT_
+        now = v_timeGet();
+#else
+        now = message->allocTime;
+#endif
+
     if (c_timeIsZero(timestamp)) {
-        timestamp = message->allocTime;
+        timestamp = now;
     }
 
     message->writeTime = timestamp;
@@ -2040,7 +2068,7 @@ v_writerWrite(
 
     qos = w->qos;
     if (!w->infWait) {
-        until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
+        until = c_timeAdd(now, qos->reliability.max_blocking_time);
     }
     blocked = 0;
     while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
@@ -2224,7 +2252,7 @@ v_writerWriteDispose(
     v_writeResult result = V_WRITE_SUCCESS;
     v_writerInstance found;
     v_writerQos qos;
-    c_time until;
+    c_time until,now;
     c_bool implicit = FALSE;
     enum v_livelinessKind livKind;
     C_STRUCT(v_event) event;
@@ -2243,8 +2271,14 @@ v_writerWriteDispose(
 
     v_nodeState(message) = L_WRITE | L_DISPOSED;
 
+#ifdef _NAT_
+        now = v_timeGet();
+#else
+        now = message->allocTime;
+#endif
+
     if (c_timeIsZero(timestamp)) {
-        timestamp = message->allocTime;
+        timestamp = now;
     }
 
     message->writeTime = timestamp;
@@ -2257,7 +2291,7 @@ v_writerWriteDispose(
 
     qos = w->qos;
     if (!w->infWait) {
-        until = c_timeAdd(timestamp, qos->reliability.max_blocking_time);
+        until = c_timeAdd(now, qos->reliability.max_blocking_time);
     }
     while ((qos->resource.max_samples != V_LENGTH_UNLIMITED) &&
            (w->count >= qos->resource.max_samples)) {

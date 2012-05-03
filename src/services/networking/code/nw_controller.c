@@ -45,7 +45,7 @@
 #define NW_SUBSCRIBER_NAME      "Networking subscriber"
 #define NW_READER_NAME          "Networking reader"
 
-C_STRUCT(nw_controller) {
+NW_STRUCT(nw_controller) {
     /* My owner */
     u_service service;
 
@@ -95,7 +95,7 @@ onNewGroupReaderAction(
     controller = actionArg->controller;
     group = actionArg->group;
 
-    
+
     /* Lookup an entry from the new group to check if we have not been
      * notified of this before... */
     entry = v_networkReaderLookupEntry(reader, group);
@@ -171,7 +171,7 @@ onNewGroup(
     newGroups = v_serviceTakeNewGroups(kservice);
     group = v_group(c_iterTakeFirst(newGroups));
     actionArg.controller = controller;
-    
+
     while (group) {
         actionArg.group = group;
         u_entityAction(u_entity(controller->reader), onNewGroupReaderAction,
@@ -223,7 +223,7 @@ getNetworkId(
      *       retrieved from the network/os layer. */
 
     time = os_timeGet();
-    
+
     return time.tv_nsec;
 }
 
@@ -232,7 +232,7 @@ getNetworkId(
 static void
 onNodeStarted(
     v_networkId networkId,
-    nw_address address,
+    os_sockaddr_storage address,
     c_time detectedTime,
     os_uint32 aliveCount,
     nw_discoveryMsgArg arg)
@@ -270,7 +270,7 @@ onNodeStarted(
 static void
 onNodeStopped(
     v_networkId networkId,
-    nw_address address,
+    os_sockaddr_storage address,
     c_time detectedTime,
     os_uint32 aliveCount,
     nw_discoveryMsgArg arg)
@@ -297,7 +297,7 @@ onNodeStopped(
 static void
 onNodeDied(
     v_networkId networkId,
-    nw_address address,
+    os_sockaddr_storage address,
     c_time detectedTime,
     os_uint32 aliveCount,
     nw_discoveryMsgArg arg)
@@ -324,7 +324,7 @@ onNodeDied(
 static void
 onGpAdd(
     v_networkId networkId,
-    nw_address address,
+    os_sockaddr_storage address,
     c_time detectedTime,
     os_uint32 aliveCount,
     nw_discoveryMsgArg arg)
@@ -348,7 +348,7 @@ onGpAdd(
 static void
 onGpRemove(
     v_networkId networkId,
-    nw_address address,
+    os_sockaddr_storage address,
     c_time detectedTime,
     os_uint32 aliveCount,
     nw_discoveryMsgArg arg)
@@ -421,7 +421,7 @@ nw_controllerInitializeChannels(
                 if (attr != NULL) {
                     if (!u_cfAttributeStringValue(attr, &channelName)) {
                         NW_REPORT_ERROR("Controller Initialization", "Error in channel name");
-                        /* FIXME, Memory leak here... */
+                        /* @todo FIXME, Memory leak here... */
                         channelName = nw_stringDup("");
                     }
                     /* insert channel statistics here */
@@ -538,12 +538,12 @@ nw_controllerSplitPartitionTopic(
             *partitionPart = os_malloc(partitionLen + 1);
            os_strncpy(*partitionPart, partitionPos, partitionLen);
             (*partitionPart)[partitionLen] = '\0';
-			topicPos = &(dotPos[1]);
-			topicLen = strlen(topicPos);
-			*topicPart = os_malloc(topicLen + 1);
-			os_strncpy(*topicPart, topicPos, topicLen);
-			(*topicPart)[topicLen] = '\0';
-			result = TRUE;
+            topicPos = &(dotPos[1]);
+            topicLen = strlen(topicPos);
+            *topicPart = os_malloc(topicLen + 1);
+            os_strncpy(*topicPart, topicPos, topicLen);
+            (*topicPart)[topicLen] = '\0';
+            result = TRUE;
         }
     }
 
@@ -577,6 +577,24 @@ nw_controllerInitializePartitions(
     char *topicExpression;
     /* Checking if the address is valid */
     sk_addressType addressType;
+    char* interfaceAddress;
+    /* Default to not IPv6 */
+    c_bool isIPv6 = FALSE;
+
+
+    interfaceAddress = NWCF_SIMPLE_PARAM(String, NWCF_ROOT(General), Interface);
+
+    /* If the network interface or global partition contains ':' this must be an attempt
+    to configure an IPv6 service - it's certainly not valid for an IPv4 address or interface
+    name */
+    isIPv6 = (strchr(NWCF_SIMPLE_PARAM(String, NWCF_ROOT(General), Interface), ':') != NULL)
+                || (strchr(NWCF_DEFAULTED_ATTRIB(String, NWCF_ROOT(GlobalPartition),
+                            NWPartitionAddress, "", ""), ':') != NULL);
+
+    /* Configure if this service is IPv6 (or not) from the value of the ipv6 attribute on the network interface
+    element if present, if it's not present set true if either the above two addresses appear to be IPv6, or false
+    otherwise */
+    nw_configurationSetIsIPv6(NWCF_DEFAULTED_ATTRIB(Bool, NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Interface), ipv6, isIPv6, isIPv6));
 
     controller->partitions = nw_partitionsNew();
 
@@ -600,24 +618,24 @@ nw_controllerInitializePartitions(
                 connected = NWCF_DEF(Connected);
             }
 
-	    attrSecurityPolicy = u_cfElementAttribute(partition, NWCF_ATTRIB(NWSecurityPolicy));
+        attrSecurityPolicy = u_cfElementAttribute(partition, NWCF_ATTRIB(NWSecurityPolicy));
 
-	    if (attrSecurityPolicy!=NULL) {
-		u_cfAttributeStringValue(attrSecurityPolicy, &securityPolicy);
-	    } else {
-		/* no security policy, no protection */
-		securityPolicy = NULL;
-	    }
+        if (attrSecurityPolicy!=NULL) {
+        u_cfAttributeStringValue(attrSecurityPolicy, &securityPolicy);
+        } else {
+        /* no security policy, no protection */
+        securityPolicy = NULL;
+        }
 
-	    /* Compiling wihtout security feature, if configuration is
-	     * declaring security profile we must tell user that it does not
-	     * take any effect */
-	    if (NW_SECURITY_DISABLED && securityPolicy) {
-	    	NW_REPORT_WARNING_2("initializing network",
-				    "Security feature not available, configured security profile  '%s' will not take effect on network partition %s",
-				    securityPolicy, partitionName);
+        /* Compiling wihtout security feature, if configuration is
+         * declaring security profile we must tell user that it does not
+         * take any effect */
+        if (NW_SECURITY_DISABLED && securityPolicy) {
+            NW_REPORT_WARNING_2("initializing network",
+                    "Security feature not available, configured security profile  '%s' will not take effect on network partition %s",
+                    securityPolicy, partitionName);
 
-	    }
+        }
 
             nw_partitionsAddPartition(controller->partitions, iPartition,
                 partitionName, partitionAddress, securityPolicy, connected);
@@ -757,9 +775,16 @@ nw_controllerInitialize(
     controller->networkId = getNetworkId(controller);
     controller->bridge = nw_bridgeNew(controller->networkId);
 
+    controller->discoveryReader = NULL;
+    controller->discoveryWriter = NULL;
+
     nw_controllerInitializeChannels(controller,onFatal,onFatalUsrData);
 
-     NW_REPORT_WARNING_1("nw_controllerInitialize","my NodeId = 0x%x",controller->networkId);
+     /*  NW_REPORT_WARNING_1("nw_controllerInitialize","my NodeId = 0x%x",controller->networkId);
+          *  Straight to OS_REPORT to overule the filtering based on (undocumented) configuration
+          */
+     OS_REPORT_1(OS_INFO, NW_SERVICENAME ": " "nw_controllerInitialize", 0, "my NodeId = 0x%x",controller->networkId);
+
      NW_TRACE_1(Discovery, 1, "Networking service has handed out nodeId 0x%x",
          controller->networkId);
 }
@@ -846,7 +871,7 @@ nw_controllerStart(
         for (i=0; i<controller->nofChannelUsers; i++) {
             nw_runnableStart((nw_runnable)NW_CHANNELUSER_BY_ID(controller, i));
         }
-        
+
         /* Set the listener of the service */
         u_dispatcherGetEventMask(u_dispatcher(controller->service), &mask);
         u_dispatcherSetEventMask(u_dispatcher(controller->service),

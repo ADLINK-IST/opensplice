@@ -59,7 +59,8 @@ v_writerInstanceNew(
         } else {
             OS_REPORT(OS_ERROR,
                       "v_writerInstanceNew",0,
-                      "Failed to allocate instance.");
+                      "Failed to allocate v_writerInstance object.");
+            assert(FALSE);
         }
     }
     v_writerInstanceInit(instance,message);
