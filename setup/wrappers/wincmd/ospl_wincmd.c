@@ -15,7 +15,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#define MAX_ARGS 256
+#define MAX_ARGS 512
 
 extern char **environ;
 typedef char *cptr;
