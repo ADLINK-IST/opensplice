@@ -23,13 +23,13 @@ LD_SO=$(CXX)
 LD_FLAGS=
 LD_LIBS=-lstdc++
 
-OSPLICE_LIBS=-lddsdatabase -ldcpsgapi -ldcpsccpp
+OSPLICE_LIBS=-lddsdatabase -ldcpsgapi -ldcpsccpp -lddsos
 
 bld/%.o : ../../../src/%.cpp
 	@echo "Compiling $<"
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< -o $@
 
-all : dirs exec/BuiltInTopicsDataSubscriber 
+all : dirs exec/BuiltInTopicsDataSubscriber
 	@echo ">>>> all done"
 
 dirs :
@@ -46,5 +46,5 @@ clean :
 	@rm -f *.o
 	@rm -rf bld
 	@rm -rf exec
-	
-	
+
+

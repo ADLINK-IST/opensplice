@@ -41,7 +41,7 @@ $(DCPS_SRC_FILES) : ../../../idl/LifecycleData.idl
 	@echo "Compiling $< with SPLICE IDL compiler"
 	@mkdir -p bld
 	@$(OSPLICE_COMP) $(INCLUDES) $<
-	
+
 
 exec/LifecycleDataPublisher : $(DCPS_OBJ_FILES) bld/LifecycleDataPublisher.o bld/CheckStatus.o  bld/DDSEntitiesManager.o
 	@echo "Linking LifecycleDataPublisher"
@@ -50,7 +50,7 @@ exec/LifecycleDataPublisher : $(DCPS_OBJ_FILES) bld/LifecycleDataPublisher.o bld
 exec/LifecycleDataSubscriber : $(DCPS_OBJ_FILES) bld/LifecycleDataSubscriber.o bld/CheckStatus.o bld/DDSEntitiesManager.o
 	@echo "Linking LifecycleDataSubscriber"
 	@mkdir -p exec
-	@$(LD) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS) $(LD_LIBS)	
+	@$(LD) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS) $(LD_LIBS)
 
 
 
@@ -58,5 +58,5 @@ clean :
 	@rm -f *.o
 	@rm -rf bld
 	@rm -rf exec
-	
-	
+
+

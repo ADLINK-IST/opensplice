@@ -27,7 +27,7 @@ LD_LIBS=-lstdc++
 #OpenSplice idl preprocessor
 OSPLICE_COMP=$(OSPL_HOME)/bin/idlpp -C -l cpp -d bld
 
-OSPLICE_LIBS=-lddsdatabase -ldcpsgapi -ldcpsccpp
+OSPLICE_LIBS=-lddsdatabase -ldcpsgapi -ldcpsccpp -lddsos
 
 DCPS_SRC_FILES = bld/DurabilityDataC.cpp bld/DurabilityDataDcpsC.cpp bld/DurabilityDataDcps_impl.cpp bld/DurabilityDataSplDcps.cpp
 DCPS_OBJ_FILES = $(patsubst %.cpp, %.o, $(DCPS_SRC_FILES))
@@ -52,7 +52,7 @@ $(DCPS_SRC_FILES) : ../../../../idl/DurabilityData.idl
 	@$(ORB_IDL_COMPILER) $(ORB_IDL_OUTPUT) bld $(INCLUDES) $(ORB_IDL_FLAGS) $<
 	@@echo "Compiling $< Typed Interfaces with TAO IDL compiler"
 	@$(ORB_IDL_COMPILER) $(ORB_IDL_OUTPUT) bld $(INCLUDES) $(ORB_IDL_FLAGS) bld/DurabilityDataDcps.idl
-	
+
 
 exec/DurabilityDataPublisher : $(DCPS_OBJ_FILES) bld/DurabilityDataPublisher.o bld/CheckStatus.o  bld/DDSEntityManager.o
 	@echo "Linking DurabilityDataPublisher"
@@ -68,5 +68,5 @@ clean :
 	@rm -f *.o
 	@rm -rf bld
 	@rm -rf exec
-	
-	
+
+
