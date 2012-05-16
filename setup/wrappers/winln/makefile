@@ -4,8 +4,8 @@ VS_LIBS = -L"$(VS_HOME)/VC/lib" -L"$(VS_HOME)/VC/PlatformSDK/lib"
 endif
 
 ifeq ("$(VS_VER)","15")
-VS_INCLUDE += -I"$(VS_HOME)/VC/include" -I"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/Include" 
-VS_LIBS = -L"$(VS_HOME)/VC/lib" -L"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/lib"
+VS_INCLUDE += -I"$(VS_HOME)/VC/include" -I"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/Include"  -I"$(WINDOWSSDKDIR)/Include"
+VS_LIBS = -L"$(VS_HOME)/VC/lib" -L"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/lib"  -L"$(WINDOWSSDKDIR)/lib"
 endif
 
 $(OSPL_HOME)/bin/ospl_winln.exe: ospl_winln.exe
