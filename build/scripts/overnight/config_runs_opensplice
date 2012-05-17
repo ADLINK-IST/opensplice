@@ -1,7 +1,4 @@
 ################################ master runs ##################################
-E   opensplice/rhel4d/x86.linux2.6-dev 12 heads/master none
-E   opensplice/rhel4d/x86.linux2.6-release 12 heads/master none
-
 M   opensplice/rhel4e/x86.linux2.6-dev 12 heads/master none
 M   opensplice/rhel4e/x86.linux2.6-release 12 heads/master none
 
