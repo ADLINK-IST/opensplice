@@ -3959,9 +3959,11 @@ static int handle_NackFrag (struct receiver_state *rst, const NackFrag_t *msg, U
   }
   else
   {
+    const unsigned base = msg->fragmentNumberState.bitmap_base - 1;
     nn_log (LC_TRACE, "scheduling requested frags ...\n");
     for (i = 0; i < (int) msg->fragmentNumberState.numbits; i++)
-      transmit_fragment (NULL, rn->writer, seq, whcn->serdata, i, rn->proxy_reader);
+      if (nn_bitset_isset (msg->fragmentNumberState.numbits, msg->fragmentNumberState.bits, i))
+        transmit_fragment (NULL, rn->writer, seq, whcn->serdata, base + i, rn->proxy_reader);
   }
   nn_log (LC_TRACE, ")\n");
  out:

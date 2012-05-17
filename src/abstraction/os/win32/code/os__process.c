@@ -381,42 +381,6 @@ os_procExit(
     exit((int)status);
 }
 
-struct readPipeHelper{
-    os_procId pid;
-    HANDLE hChildStdoutWr;
-    HANDLE hChildStdoutRd;
-};
-
-static void*
-readFromPipe(
-    void* args)
-{
-    DWORD dwRead, dwWritten;
-    CHAR chBuf[4096];
-    int proceed = 1;
-    HANDLE hStdout;
-    struct readPipeHelper* helper;
-
-    helper = (struct readPipeHelper*)args;
-    hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    WaitForSingleObject (helper->pid, 0);
-    CloseHandle(helper->hChildStdoutWr);
-    while (proceed) {
-        if((!ReadFile(helper->hChildStdoutRd, chBuf, 4096, &dwRead, NULL)) ||
-           (dwRead == 0)) {
-            proceed = 0;
-        }
-        if (!WriteFile(hStdout, chBuf, dwRead, &dwWritten, NULL)) {
-            proceed = 0;
-        }
-    }
-    CloseHandle(helper->hChildStdoutRd);
-    os_free(helper);
-
-    return NULL;
-}
-
 #define OS_STRLEN_SPLICE_PROCNAME (16) /* strlen("SPLICE_PROCNAME="); */
 
 /** \brief Create a process that is an instantiation of a program
@@ -453,9 +417,6 @@ os_procCreate(
     LPTCH environmentCopy;
 
     SECURITY_ATTRIBUTES saAttr;
-    struct readPipeHelper* helper;
-    os_threadId tid;
-    os_threadAttr tattr;
 
     os_schedClass effective_process_class;
     os_int32 effective_priority;
@@ -479,15 +440,8 @@ os_procCreate(
         saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
         saAttr.bInheritHandle = TRUE;
         saAttr.lpSecurityDescriptor = NULL;
-        helper = (struct readPipeHelper*)os_malloc(sizeof(struct readPipeHelper));
-
-        if (!CreatePipe(&(helper->hChildStdoutRd), &(helper->hChildStdoutWr), &saAttr, 0)) {
-            OS_DEBUG_1("os_procCreate", "CreatePipe failed with %d", (int)GetLastError());
-        }
-        SetHandleInformation(helper->hChildStdoutRd, HANDLE_FLAG_INHERIT, 0);
-
-        si.hStdError = helper->hChildStdoutWr;
-        si.hStdOutput = helper->hChildStdoutWr;
+        si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+        si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
         si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
         si.dwFlags |= STARTF_USESTDHANDLES;
     }
@@ -572,13 +526,6 @@ os_procCreate(
     }
 
     *procId = (os_procId)process_info.hProcess;
-
-    if (procAttr->activeRedirect) {
-        helper->pid = (os_procId)process_info.hProcess;
-        os_threadAttrInit(&tattr);
-        os_threadCreate(&tid, "readFromPipeThread", &tattr, readFromPipe, helper);
-        os_threadWaitExit(tid, NULL);
-    }
 
     os_free(inargs);
 

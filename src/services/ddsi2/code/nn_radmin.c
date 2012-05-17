@@ -1451,12 +1451,12 @@ int nn_defrag_nackmap (struct nn_defrag *defrag, os_int64 seq, os_uint32 maxfrag
     os_uint32 bound = iv->min / fragsz;
     if ((iv->min % fragsz) != 0)
       ++bound;
-    for (; i < map->bitmap_base + map->numbits && i <= bound; i++)
+    for (; i < map->bitmap_base + map->numbits && i < bound; i++)
     {
       int x = (int) (i - map->bitmap_base);
       nn_bitset_set (map->numbits, map->bits, x);
     }
-    i = 1 + iv->maxp1 / fragsz;
+    i = iv->maxp1 / fragsz;
     iv = avl_findsucc (&s->u.defrag.fragtree, iv);
   }
   /* Fragments missing beyond the last interval - the only loop for an
