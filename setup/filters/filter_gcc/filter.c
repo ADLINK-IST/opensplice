@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <limits.h>
 
-char line_base [1024][512];
+char line_base [4096][512];
 FILE *gcc_log;
 FILE *filter_log;
 

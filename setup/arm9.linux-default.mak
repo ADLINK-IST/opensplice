@@ -1,8 +1,8 @@
 # target context is set in platform specific config.mak
 
 # Set name context of used tooling
-CC              = arm-v5te-linux-gnueabi-gcc
-CXX             = arm-v5te-linux-gnueabi-g++
+CC              = arm-angstrom-linux-gnueabi-gcc
+CXX             = arm-angstrom-linux-gnueabi-g++
 CSC             = csc
 FILTER          = filter_gcc
 LD_SO           = $(CC)
@@ -11,12 +11,12 @@ YACC            = bison
 LEX	            = flex
 MAKE            = make
 TOUCH           = touch
-AR              = arm-v5te-linux-gnueabi-ar
+AR              = arm-angstrom-linux-gnueabi-ar
 AR_CMDS         = rv
 MAKEDEPFLAGS    = -M
-CPP             = arm-v5te-linux-gnueabi-cpp
-GCPP            = arm-v5te-linux-gnueabi-g++ -E
-GCOV            = arm-v5te-linux-gnueabi-gcov
+CPP             = arm-angstrom-linux-gnueabi-cpp
+GCPP            = arm-angstrom-linux-gnueabi-g++ -E
+GCOV            = arm-angstrom-linux-gnueabi-gcov
 JCC             = javac
 JAR             = jar
 JAVA            = java
