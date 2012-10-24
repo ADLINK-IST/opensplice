@@ -1,6 +1,6 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_ddskernel_incl, ospl_base {
+project : ospl_ddskernel_incl, ospl_ddsserialization, ospl_base {
   lit_libs += ddskernel
 }

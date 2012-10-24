@@ -70,11 +70,11 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 // behaviour -case compiler flag was added which sets 
 // BE_Globals::case_sensitive.
 
-#include <os_stdlib.h>
-#include <os_heap.h>
-#include <idl.h>
-#include <idl_extern.h>
-#include <xbe_globals.h>
+#include "os_stdlib.h"
+#include "os_heap.h"
+#include "idl.h"
+#include "idl_extern.h"
+#include "xbe_globals.h"
 
 Identifier::Identifier (const char * s, long x, long y, long z)
 {

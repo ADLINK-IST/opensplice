@@ -5,6 +5,10 @@ TARGET_DLIB	:= $(DDS_DCPSGAPI)
 
 include	$(OSPL_HOME)/setup/makefiles/target.mak
 
+ifneq (,$(ALT_CFLAGS_OPT))
+   CFLAGS_OPT=$(ALT_CFLAGS_OPT)
+endif
+
 CPPFLAGS	+= -DOSPL_BUILD_DCPSGAPI
 CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
 CINCS		+= -I$(OSPL_HOME)/src/utilities/include

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,7 +12,7 @@
 #include "idl_genSplHelper.h"
 #include "idl_tmplExp.h"
 
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 
 /* Print the specified indentation the the default output file,
    the indent is specified in units of 4 space characters
@@ -47,8 +47,8 @@ idl_scopedTypeName (
 
     /* QAC EXPECT 3416; No unexpected side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tseq) {
-	/* Sequences map to c_array */
-	scopedTypeName = "c_array";
+	/* Sequences map to c_sequence */
+	scopedTypeName = "c_sequence";
         /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tbasic) {
 	/* For basic types take the corresponding type name supported by the splice database */
@@ -82,8 +82,8 @@ idl_scopedSplTypeName (
 
     /* QAC EXPECT 3416; No unexpected side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tseq) {
-	/* Sequences map to c_array */
-	strncpy (scopedTypeName, "c_array", sizeof(scopedTypeName));
+	/* Sequences map to c_sequence */
+	os_strncpy (scopedTypeName, "c_sequence", sizeof(scopedTypeName));
         /* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tbasic) {
 	/* For basic types take the corresponding type name supported by the splice database */
@@ -91,9 +91,9 @@ idl_scopedSplTypeName (
 	if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
 	    /* in case of bounded string the type name must become c_string 	*/
 	    /* type name is of form "C_STRING<xx>"				*/
-	    strncpy (scopedTypeName, "c_string", sizeof(scopedTypeName));
+	   os_strncpy (scopedTypeName, "c_string", sizeof(scopedTypeName));
 	} else {
-	    strncpy (scopedTypeName, idl_typeSpecName(idl_typeSpec(typeSpec)), sizeof(scopedTypeName));
+	   os_strncpy (scopedTypeName, idl_typeSpecName(idl_typeSpec(typeSpec)), sizeof(scopedTypeName));
 	}
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct ||
 	idl_typeSpecType(typeSpec) == idl_tunion) {
@@ -134,7 +134,7 @@ idl_scopedSplTypeName (
 	}
     IDL enumerations are identified by: enum <scoped-enum-name>
     IDL typedefs are formed by the scoped type name
-    IDL sequences are mapped on: c_array
+    IDL sequences are mapped on: c_sequence
 */
 c_char *
 idl_scopedTypeIdent (
@@ -181,7 +181,7 @@ idl_scopedTypeIdent (
                 idl_typeSpecName(idl_typeSpec(typeSpec))));
 	/* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_array");
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_sequence");
     } else {
 	/* Do nothing, only to prevent dangling else-ifs QAC messages */
     }
@@ -204,7 +204,7 @@ idl_scopedTypeIdent (
 	}
     IDL enumerations are identified by: enum <scoped-enum-name>
     IDL typedefs are formed by the scoped type name
-    IDL sequences are mapped on: c_array
+    IDL sequences are mapped on: c_sequence
 */
 
 c_char *
@@ -252,7 +252,7 @@ idl_scopedSplTypeIdent (
                 idl_typeSpecName(idl_typeSpec(typeSpec))));
 	/* QAC EXPECT 3416; No unexpected side effects here */
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_array");
+	snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "c_sequence");
     } else {
 	/* Do nothing, only to prevent dangling else-ifs QAC messages */
     }

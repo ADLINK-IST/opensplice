@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,8 +19,8 @@
 #include "u_entity.h"
 #include "v_subscriber.h"
 #include "v_subscriberQos.h"
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 #include <stdio.h>
 
 c_char*
@@ -109,7 +109,7 @@ cmx_subscriberInit(
     v_subscriber subscriber;
     
     subscriber = v_subscriber(entity);
-    sprintf(buf, "<kind>SUBSCRIBER</kind>");
+    os_sprintf(buf, "<kind>SUBSCRIBER</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

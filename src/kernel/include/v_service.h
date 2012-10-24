@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_SERVICE_H
@@ -38,25 +38,25 @@ extern "C" {
 
 /**
  * \brief The <code>v_service</code> constructor.
- * 
+ *
  * The constructor will create a new <code>v_service</code> object and a
  * corresponding <code>v_serviceState</code> object.
  * The <code>extStateName</code> parameter can be used to create the instance
  * of a subclass of <code>v_serviceState</code>. This can be used by services
- * to store their own state information in the kernel. Only the attributes 
+ * to store their own state information in the kernel. Only the attributes
  * defined in the <code>v_serviceState</code> class are initialised. It is
  * up to the service to initialise all attributes of the subclass.
- * The given lease period is a contract between the service and the 
+ * The given lease period is a contract between the service and the
  * kernel. This contract specifies that during the given period the kernel
  * will keep all resources. When the lease/contract is not renewed, all
  * resources used by the service are removed from the kernel.
  *
- * \param manager     The serviceManager 
+ * \param manager     The serviceManager
  * \param name        The name of the service.
  * \param extSateName The name of a subclass of <code>v_serviceState</code>
  * \param leasePeriod The duration of the validity of this service.
  *
- * \return NULL if memory allocation failed, otherwise 
+ * \return NULL if memory allocation failed, otherwise
  *         a reference to a newly created <code>v_service</code> object.
  */
 OS_API v_service
@@ -68,7 +68,7 @@ v_serviceNew(
     v_statistics s);
 
 /**
- * \brief The initialisation function, which can be used by classes that 
+ * \brief The initialisation function, which can be used by classes that
  *        extend from this class.
  *
  * \param service     The service object to operate on.
@@ -88,7 +88,7 @@ v_serviceInit(
  * The object is really freed, if no more references to this object exist.
  * The function <code>v_serviceDeinit</code> is called to free all used
  * resources by this object.
- * 
+ *
  * \param service the service object to operate on.
  */
 OS_API void
@@ -96,10 +96,10 @@ v_serviceFree(
     v_service service);
 
 /**
- * \brief The de-initialisation function, that frees all used resources 
+ * \brief The de-initialisation function, that frees all used resources
  *        by this object.
  *
- * This function is called by <code>v_serviceFree</code>, but can 
+ * This function is called by <code>v_serviceFree</code>, but can
  * also be called by destructor's of subclasses. All used resources by this
  * object are freed.
  *
@@ -201,6 +201,19 @@ v_serviceFillNewGroups(
 OS_API c_iter
 v_serviceTakeNewGroups(
     v_service service);
+
+/**
+ * \brief Renews the lease of the service.
+ *
+ * This method renews the lease of the service by adding the
+ * lease period to the current time.
+ *
+ * \param service The service to operate on.
+ */
+OS_API void
+v_serviceRenewLease(
+    v_service service,
+    v_duration leasePeriod);
 
 #undef OS_API
 

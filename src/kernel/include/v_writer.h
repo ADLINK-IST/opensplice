@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -52,6 +52,10 @@ extern "C" {
 
 #define v_writerParticipant(_this) \
         v_publisherParticipant(v_writerPublisher(_this))
+
+OS_API const char*
+v_writeResultString(
+    v_writeResult result);
 
 OS_API v_writer
 v_writerNew(
@@ -189,6 +193,11 @@ OS_API v_result
 v_writerWaitForAcknowledgments(
 	v_writer w,
 	v_duration timeout);
+
+OS_API c_bool
+v_writerContainsInstance(
+    v_writer _this,
+    v_writerInstance instance);
 
 #undef OS_API
 

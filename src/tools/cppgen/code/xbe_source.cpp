@@ -1,16 +1,16 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl.h"
-#include "ctype.h"
+#include <ctype.h>
 #include "idl_extern.h"
 #include "xbe_source.h"
 #include "xbe.h"
@@ -245,6 +245,11 @@ pbbool be_ClientHeader::Open (const DDS_StdString& mainFilename)
       ndefname = Ifndefize(BE_Globals::ClientHeaderFilename);
       os << "#ifndef " << (const char*) ndefname << nl;
       os << "#define " << (const char*) ndefname << nl << nl;
+      if (BE_Globals::UserDLL != (const char *)"" &&
+          BE_Globals::UserDLLHeader != (const char *)"" )
+      {
+        os << "#include \"" << BE_Globals::UserDLLHeader << "\"" << nl;
+      }
       os << "#include \"sacpp_mapping.h\"" << nl;
       os << "#include \"sacpp_DDS_DCPS.h\"" << nl;
 
@@ -430,7 +435,7 @@ pbbool be_ServerHeader::Open(const DDS_StdString& mainFilename)
       {
          if (!BE_Globals::gen_onefile)
          {
-            os << "#include \"" << (const char*)DDSRealIncludeFiles::includes[FindFilename(BE_Globals::ClientHeaderFilename)] << "\"" << nl;       
+            os << "#include \"" << (const char*)DDSRealIncludeFiles::includes[FindFilename(BE_Globals::ClientHeaderFilename)] << "\"" << nl;
          }
       }
 

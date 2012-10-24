@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -16,9 +16,9 @@
  * shared memory segments
  */
 
-#include <os_heap.h>
-#include <os_abstract.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_abstract.h"
+#include "os_stdlib.h"
 
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -139,7 +139,7 @@ os_svr4_findKeyFile(
                 if (os_svr4_matchKey(key_file_name, name)) {
                     kfn = os_malloc(strlen(key_file_name) + 1);
                     if (kfn != NULL) {
-                        strcpy(kfn, key_file_name);
+                        os_strcpy(kfn, key_file_name);
                     }
                     entry = NULL;
                 } else {
@@ -171,7 +171,7 @@ static int
 os_svr4_removeFromPreviousSession(
     const char *name,
     void *map_address,
-    os_uint32 size)
+    os_address size)
 {
     char *kfn = NULL;
     int shmid;
@@ -196,42 +196,44 @@ os_svr4_removeFromPreviousSession(
                                 result = 0;
                             }
                         } else {
-                            OS_REPORT_2(OS_ERROR,
+                            OS_REPORT_3(OS_ERROR,
                                         "os_svr4_removeFromPreviousSession", 1,
-                                        "shmget failed with error %d (%s)",
-                                        errno, name);
+                                        "Operation shmget failed with error (%d) = \"%s\"\n"
+                                        "Domain      : \"%s\"",
+                                        errno, strerror(errno), name);
                             result = 0;
                         }
                     } else {
                         if (shmctl(shmid, IPC_STAT, &shmid_ds) == -1) {
-                            OS_REPORT_2(OS_ERROR,
+                            OS_REPORT_3(OS_ERROR,
                                         "os_svr4_removeFromPreviousSession", 1,
-                                        "shmctl (IPC_STAT) failed with error "
-                                        "%d (%s)",
-                                          errno, name);
+                                        "Operation shmctl (IPC_STAT) failed with error (%d) = \"%s\"\n"
+                                        "Domain      : \"%s\"",
+                                        errno, strerror(errno), name);
                             result = 0;
                         } else if (shmid_ds.shm_nattch) {
                             OS_REPORT_1(OS_WARNING,
                                         "os_svr4_removeFromPreviousSession", 2,
-                                        "still users attached (%s)",
+                                        "still users attached to Domain: (%s)",
                                         name);
                             result = 0;
                         } else if (shmctl(shmid, IPC_RMID, NULL) == -1) {
-                            OS_REPORT_2(OS_ERROR,
+                            OS_REPORT_3(OS_ERROR,
                                         "os_svr4_removeFromPreviousSession", 1,
-                                        "shmctl (IPC_RMID) failed with error "
-                                        "%d (%s)",
-                                        errno, name);
+                                        "Operation shmctl (IPC_RMID) failed with error (%d) = \"%s\"\n"
+                                        "Domain      : \"%s\"",
+                                        errno, strerror(errno), name);
                             result = 0;
                         } else if (os_destroyKey(name) == -1) {
                             result = 0;
                         }
                     }
                 } else {
-                    OS_REPORT_2(OS_ERROR,
+                    OS_REPORT_3(OS_ERROR,
                                 "os_svr4_removeFromPreviousSession", 1,
-                                "ftok failed with error %d (%s)",
-                                errno, name);
+                                "Operation ftok failed with error (%d) = \"%s\"\n"
+                                "Domain      : \"%s\"",
+                                errno, strerror(errno), name);
                 }
 	    } else {
                 OS_REPORT_1(OS_WARNING,
@@ -243,10 +245,11 @@ os_svr4_removeFromPreviousSession(
 	    }
         } else {
             if (errno != ENOENT) {
-                OS_REPORT_2(OS_ERROR,
+                OS_REPORT_3(OS_ERROR,
                             "os_svr4_removeFromPreviousSession", 1,
-                            "stat failed with error %d (%s)",
-                            errno, name);
+                            "Operation stat failed with error (%d) = \"%s\"\n"
+                            "Domain      : \"%s\"",
+                            errno, strerror(errno), name);
                 result = 0;
             }
         }
@@ -275,7 +278,7 @@ static key_t
 os_svr4_getKey(
     const char *name,
     void *map_address,
-    os_uint32 size)
+    os_address size)
 {
     int key_file_fd;
     char *key_file_name;
@@ -315,16 +318,13 @@ os_svr4_getKey(
                 int pmask = os_svr4_get_kfumask();
                 OS_REPORT_7(OS_INFO,
                             "os_svr4_getKey", 1,
-                            "The user file-creation mask (0%o%o%o) set for the "
-                            "service\n              specifies exclusive read "
-                            "or write access for at least\n              "
-                            "one of the access catagories.\n              "
-                            "Read and write access should always be paired,\n"
-                            "              both prohibit or granted for each "
-                            "access catagory.\n              Therefore the "
-                            "service has set the user access permissions\n"
-                            "              for the key file associated to "
-                            "this domain to (0%o%o%o).\nDomain      : \"%s\"",
+                            "The user file-creation mask (0%o%o%o) set for the service specifies"
+                            OS_REPORT_NL "exclusive read or write access for at least one of the access catagories."
+                            OS_REPORT_NL "Read and write access should always be paired,"
+                            OS_REPORT_NL "both prohibit or granted for each access catagory."
+                            OS_REPORT_NL "Therefore the service has set the user access permissions"
+                            OS_REPORT_NL "for the shared memory segment associated to this domain to (0%o%o%o).\n"
+                            "Domain      : \"%s\"",
                              (pmask & (S_IWUSR | S_IRUSR)) >> 6,
                              (pmask & (S_IWGRP | S_IRGRP)) >> 3,
                               pmask & (S_IWOTH | S_IROTH),
@@ -340,11 +340,14 @@ os_svr4_getKey(
             snprintf(buffer, sizeof (buffer), PA_ADDRFMT"\n",
                      (PA_ADDRCAST)map_address);
             write(key_file_fd, buffer, strlen(buffer));
-            snprintf(buffer, sizeof (buffer), "%x\n", (unsigned int)size);
+            snprintf(buffer, sizeof (buffer), PA_ADDRFMT"\n", (PA_ADDRCAST)size);
             write(key_file_fd, buffer, strlen(buffer));
             snprintf(buffer, sizeof (buffer), "SVR4-IPCSHM\n");
             write(key_file_fd, buffer, strlen(buffer));
             snprintf(buffer, sizeof (buffer), "%d\n", (int)getpid());
+            write(key_file_fd, buffer, strlen(buffer));
+            setpgrp(); /* Make this process the session leader. */
+            snprintf(buffer, sizeof (buffer), "%d\n", (int)getpgrp());
             write(key_file_fd, buffer, strlen(buffer));
             close(key_file_fd);
         }
@@ -395,12 +398,12 @@ os_svr4_getMapAddress(
  * Find the key file related to the named shared memory area.
  * When found, read the size from the 3rd line.
  */
-static os_uint32
+static os_address
 os_svr4_getSize(
     const char *name)
 {
     char *key_file_name;
-    os_uint size = 0;
+    os_address size = 0;
     FILE *key_file;
     char line[512];
 
@@ -411,7 +414,7 @@ os_svr4_getSize(
             fgets(line, sizeof(line), key_file);
             fgets(line, sizeof(line), key_file);
             fgets(line, sizeof(line), key_file);
-            sscanf(line, "%x", (os_uint32 *)&size);
+            sscanf(line,  PA_ADDRFMT, (PA_ADDRCAST *)&size);
             fclose(key_file);
         }
         os_free(key_file_name);
@@ -440,10 +443,11 @@ os_destroyKey(
     if (key_file_name ==  NULL) {
         rv = -1;
     } else if (unlink(key_file_name) == -1) {
-        OS_REPORT_2(OS_WARNING,
+        OS_REPORT_3(OS_WARNING,
                     "os_destroyKey", 1,
-                    "unlink failed with error %d (%s)",
-                    errno, name);
+                    "Operation unlink failed with error (%d) = \"%s\"\n"
+                    "Domain      : \"%s\"",
+                    errno, strerror(errno), name);
         os_free(key_file_name);
         rv = -1;
     } else {
@@ -468,7 +472,7 @@ os_result
 os_svr4_sharedMemoryCreate(
     const char *name,
     const os_sharedAttr *sharedAttr,
-    os_uint32 size)
+    os_address size)
 {
     int shmid;
     int cmask;
@@ -509,16 +513,13 @@ os_svr4_sharedMemoryCreate(
             int pmask = os_svr4_get_shmumask();
             OS_REPORT_7(OS_INFO,
                         "os_svr4_sharedMemoryCreate", 1,
-                        "The shared-memory-creation mask (0%o%o%o) set for the "
-                        "service \n              specifies exclusive read or write "
-                        "access for at least one of the\n              "
-                        "access catagories.\n              Read and write "
-                        "access should always be paired,\n              both "
-                        "prohibit or granted for each access catagory.\n"
-                        "              Therefore the service has set the "
-                        "user access permissions\n              for the "
-                        "shared memory segment associated to this domain"
-                        "to (0%o%o%o).\nDomain      : \"%s\"",
+                        "The shared-memory-creation mask (0%o%o%o) set for the service specifies"
+                        OS_REPORT_NL "exclusive read or write access for at least one of the access catagories."
+                        OS_REPORT_NL "Read and write access should always be paired,"
+                        OS_REPORT_NL "both prohibit or granted for each access catagory."
+                        OS_REPORT_NL "Therefore the service has set the user access permissions"
+                        OS_REPORT_NL "for the shared memory segment associated to this domain to (0%o%o%o).\n"
+                        "Domain      : \"%s\"",
                          (pmask & (S_IWUSR | S_IRUSR)) >> 6,
                          (pmask & (S_IWGRP | S_IRGRP)) >> 3,
                           pmask & (S_IWOTH | S_IROTH),
@@ -531,13 +532,15 @@ os_svr4_sharedMemoryCreate(
         shmid = shmget (key, size,
                         IPC_CREAT | IPC_EXCL | (OS_PERMISSION & (~cmask)));
         if (shmid == -1) {
-            OS_REPORT_2 (OS_WARNING,
-                         "os_svr4_sharedMemoryCreate", 1,
-                         "shmget failed with error %d (%s)",
-                         errno, name);
+            OS_REPORT_4(OS_ERROR,
+                        "os_svr4_sharedMemoryCreate", 1,
+                        "Operation shmget failed with error (%d) = \"%s\""
+                        OS_REPORT_NL "The required SHM size was "PA_SIZEFMT" bytes.\n"
+                        "Domain      : \"%s\"",
+                        errno, strerror(errno), size, name);
             rv = os_resultFail;
         } else {
-	    rv = os_resultSuccess;
+            rv = os_resultSuccess;
         }
     }
     return rv;
@@ -567,32 +570,49 @@ os_svr4_sharedMemoryDestroy(
 
     key = os_svr4_getKey(name, NULL, 0);
     if (key == -1) {
+        OS_REPORT_4(OS_ERROR,
+                    "os_svr4_sharedMemoryDestroy", 1,
+                    "Operation os_svr4_getKey(%s,NULL,0) failed with error (%d) = \"%s\"\n"
+                    "Domain name : \"%s\"",
+                    key, errno, strerror(errno), name);
         rv = os_resultFail;
     } else {
         shmid = shmget(key, 0, 0);
         if (shmid == -1) {
+            OS_REPORT_4(OS_ERROR,
+                        "os_svr4_sharedMemoryDestroy", 1,
+                        "Operation shmget(%d,0,0) failed with error (%d) = \"%s\"\n"
+                        "Domain name : \"%s\"",
+                        key, errno, strerror(errno), name);
             rv = os_resultFail;
         } else {
             result = shmctl(shmid, IPC_STAT, &shmid_ds);
             if (result == -1) {
-                OS_REPORT_2(OS_ERROR,
+                OS_REPORT_5(OS_ERROR,
                             "os_svr4_sharedMemoryDestroy", 1,
-                            "shmctl (IPC_STAT) failed with error %d (%s)",
-                            errno, name);
+                            "Operation shmctl (%d,IPC_STAT,0x%x) failed with error (%d) = \"%s\"\n"
+                            "Domain name : \"%s\"",
+                            shmid, &shmid_ds, errno, strerror(errno), name);
                 rv = os_resultFail;
             } else if (shmid_ds.shm_nattch) {
-                OS_REPORT_1(OS_WARNING,
+                OS_REPORT_2(OS_ERROR,
                             "os_svr4_sharedMemoryDestroy", 3,
-                            "still users attached (%s)",
-                            name);
+                            "Failed to destroy shm for Domain=\"%s\"."
+                            OS_REPORT_NL "Reason: still %d users attached.",
+                            name, shmid_ds.shm_nattch);
                 rv = os_resultFail;
             } else if (shmctl(shmid, IPC_RMID, NULL) == -1) {
-                OS_REPORT_2(OS_ERROR,
+                OS_REPORT_4(OS_ERROR,
                             "os_svr4_sharedMemoryDestroy", 1,
-                            "shmctl (IPC_RMID) failed with error %d (%s)",
-                            errno, name);
+                            "Operation shmctl (%d,IPC_RMID,NULL) failed with error (%d) = \"%s\"\n"
+                            "Domain name : \"%s\"",
+                            shmid, errno, strerror(errno), name);
                 rv = os_resultFail;
             } else if (os_destroyKey(name) == -1) {
+                OS_REPORT_1(OS_ERROR,
+                            "os_svr4_sharedMemoryDestroy", 3,
+                            "Failed to destroy shm key for Domain=\"%s\".",
+                            name);
                 rv = os_resultFail;
             } else {
                 rv = os_resultSuccess;
@@ -625,7 +645,6 @@ os_svr4_sharedMemoryAttach(
     void *map_address;
     void *request_address;
     os_result rv;
-    char errorBuf[128];
 
     key = os_svr4_getKey(name, NULL, 0);
     if (key == -1) {
@@ -634,42 +653,42 @@ os_svr4_sharedMemoryAttach(
         request_address = os_svr4_getMapAddress(name);
         shmid = shmget(key, 0, 0);
         if (shmid == -1) {
-            OS_REPORT_2(OS_WARNING,
-                        "os_svr4_sharedMemoryAttach", 1,
-                        "shmget failed with error %d (%s)",
-                        errno, name);
+            OS_REPORT_5(OS_ERROR,
+                        "os::svr4::os_svr4_sharedMemoryAttach", 1,
+                        "Operation shmget(%d,0,0) failed."
+                        OS_REPORT_NL "result = \"%s\" (%d)"
+			OS_REPORT_NL "Domain id = \"%s\" (0x%x)",
+                        key,strerror(errno),errno, name,request_address);
             rv = os_resultFail;
         }
-        else if ((map_address = shmat(shmid, request_address, SHM_RND)) != request_address) {
-            rv = os_resultFail;
-            if (map_address == (void *)-1) {
-                memset(errorBuf, 0, 128);
-#ifndef NO_STRERROR_R
-                success = strerror_r(errno, errorBuf, 128);
-#else
-                success = 1;
-#endif
-                if(success == 1){
-                    sprintf(errorBuf, "Unkown error");
+        else {
+            map_address = shmat(shmid, request_address, SHM_RND);
+            if (map_address != request_address) {
+                rv = os_resultFail;
+                if (map_address == (void *)-1) {
+                    OS_REPORT_4 (OS_ERROR,
+                                 "os_svr4_sharedMemoryAttach", 1,
+                                 "Operation shmat failed for %s "
+                                 "with errno (%d) = \"%s\""
+                                 OS_REPORT_NL "requested address was %p",
+                                 name, errno, strerror(errno), request_address);
+                    shmdt(map_address);
+                } else {
+                    OS_REPORT_3(OS_WARNING,
+                                "os_svr4_sharedMemoryAttach", 1,
+                                "mapped address doesn't match requested"
+                                OS_REPORT_NL "Requested address "PA_ADDRFMT" "
+                                "is not aligned using "PA_ADDRFMT" instead.\n"
+                                "Domain      : \"%s\"",
+                                request_address, map_address, name);
+                    *mapped_address = map_address;
+                    rv = os_resultSuccess;
                 }
-                OS_REPORT_3 (OS_ERROR,
-                             "os_svr4_sharedMemoryAttach", 1,
-                             "shmat failed for %s with errno %d (%s)",
-                             name, errno, errorBuf);
-                shmdt(map_address);
-	    } else {
-                OS_REPORT_3 (OS_WARNING,
-                             "os_svr4_sharedMemoryAttach", 1,
-                             "mapped address does not match requested address "
-                             "(%s). requested address "PA_ADDRFMT" is not aligned using "PA_ADDRFMT" instead",
-                             name,request_address,map_address);
+            } else {
                 *mapped_address = map_address;
                 rv = os_resultSuccess;
-	    }
-	} else {
-            *mapped_address = map_address;
-            rv = os_resultSuccess;
-	}
+            }
+        }
     }
     return rv;
 }
@@ -688,10 +707,11 @@ os_svr4_sharedMemoryDetach(
     os_result rv;
 
     if (shmdt(address) == -1) {
-        OS_REPORT_2(OS_ERROR,
+        OS_REPORT_3(OS_ERROR,
                     "os_svr4_sharedMemoryDetach", 1,
-                    "shmdt failed with error %d (%s)",
-                    errno, name);
+                    "Operation shmdt failed with error (%d) = \"%s\"\n"
+                    "Domain      : \"%s\"",
+                    errno, strerror(errno), name);
         rv = os_resultFail;
     } else {
         rv = os_resultSuccess;
@@ -702,9 +722,9 @@ os_svr4_sharedMemoryDetach(
 os_result
 os_svr4_sharedSize(
     const char *name,
-    os_uint32 *size)
+    os_address *size)
 {
-    os_uint32 s;
+    os_address s;
     os_result rv;
 
     s = os_svr4_getSize(name);

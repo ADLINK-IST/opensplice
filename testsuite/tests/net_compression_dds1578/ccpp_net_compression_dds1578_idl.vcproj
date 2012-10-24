@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="ccpp_net_compression_dds1578_idl"
-	ProjectGUID="{D287EA8B-FECA-1BAD-EC4B-04567D83A2AC}"
+	ProjectGUID="{D287EA8B-FECA-1BAD-EC4B-04567883A2AC}"
 	RootNamespace="ccpp_net_compression_dds1578_idl"
 	Keyword="Win32Proj"
 	SignManifests="true"

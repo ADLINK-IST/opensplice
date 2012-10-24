@@ -1,14 +1,15 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
+#include <math.h>
 #include "os.h"
 #include "os_report.h"
 #include "q_expr.h"
@@ -17,7 +18,7 @@
 #include "c__collection.h"
 #include "c_misc.h"
 #include "c_metabase.h"
-#include "c_querybase.h"
+#include "c__querybase.h"
 #include "c_metafactory.h"
 #include "c_stringSupport.h"
 #include "c_avltree.h"
@@ -34,6 +35,61 @@
 #define c_table(c) ((C_STRUCT(c_table) *)(c))
 #define c_query(c) ((C_STRUCT(c_query) *)(c))
 #define c_array(c) ((c_array)(c))
+
+#ifndef NDEBUG
+/* Cannot add this checking yet until proper locking on kernel configuration
+ * is implemented.
+#define _CONSISTENCY_CHECKING_
+ */
+#endif
+
+#ifdef _CONSISTENCY_CHECKING_
+
+    #define _STATISTICS_ \
+            c_ulong accessCount; \
+            c_ulong readCount;
+
+    #define _ACCESS_BEGIN_(t) \
+            if (pa_increment(&c_table(t)->accessCount) != 1) { \
+                abort(); \
+            }
+
+    #define _ACCESS_END_(t) \
+            if (c_table(t)->accessCount != 1) { \
+                abort(); \
+            } else { \
+                pa_decrement(&c_table(t)->accessCount); \
+            }
+
+    #define _READ_BEGIN_(t) \
+            if (pa_increment(&c_table(t)->accessCount) != 1) { \
+                abort(); \
+            }
+
+    #define _READ_END_(t) \
+            if (c_table(t)->accessCount != 1) { \
+                abort(); \
+            } else { \
+                pa_decrement(&c_table(t)->accessCount); \
+            }
+
+    #define _CHECK_CONSISTENCY_(t,n) \
+            if ((c_table(t)->accessCount != 1) || \
+                (((c_tableNode)n)->table != (c_voidp)(t))) \
+            { \
+                abort(); \
+            }
+
+#else
+
+    #define _STATISTICS_
+    #define _ACCESS_BEGIN_(t)
+    #define _ACCESS_END_(t)
+    #define _READ_BEGIN_(t)
+    #define _READ_END_(t)
+    #define _CHECK_CONSISTENCY_(t,n)
+
+#endif
 
 C_CLASS(c_listNode);
 C_CLASS(c_setNode);
@@ -63,6 +119,7 @@ C_STRUCT(c_table) {
     c_array key;
     c_ulong count;
     c_mmCache cache;
+    _STATISTICS_
 };
 
 C_STRUCT(c_query) {
@@ -110,6 +167,20 @@ readOne(
     return FALSE;
 }
 
+static c_bool
+c_collectionIsType(
+    c_collection c,
+    c_collKind kind)
+{
+    c_type type = c__getType(c);
+
+    type = c_typeActualType(type);
+    if (c_baseObject(type)->kind != M_COLLECTION) {
+        return FALSE;
+    }
+    return c_collectionType(type)->kind == kind;
+}
+
 /* ============================================================================*/
 /* LIST COLLECTION TYPE                                                        */
 /* ============================================================================*/
@@ -126,6 +197,8 @@ c_listInsert (
 {
     C_STRUCT(c_list) *l = (C_STRUCT(c_list) *)_this;
     c_listNode n;
+
+    assert(c_collectionIsType(_this, C_LIST));
 
     n = (c_listNode)c_mmCacheMalloc(l->cache);
     n->object = c_keep(o);
@@ -148,6 +221,8 @@ c_listRemove (
     C_STRUCT(c_list) *l = (C_STRUCT(c_list) *)_this;
     c_listNode n,p;
     c_object found;
+
+    assert(c_collectionIsType(_this, C_LIST));
 
     p = NULL;
     n = l->head;
@@ -186,6 +261,8 @@ c_listTemplateRemove (
     c_listNode n,p;
     c_object found;
 
+    assert(c_collectionIsType(_this, C_LIST));
+
     p = NULL;
     n = l->head;
     while ((n != NULL) && (!condition(n->object,arg))) {
@@ -221,6 +298,8 @@ c_listReplace (
     c_listNode n;
     c_object found;
 
+    assert(c_collectionIsType(_this, C_LIST));
+
     n = l->head;
     while ((n != NULL) && (n->object != o)) n = n->next;
     if (n == NULL) {
@@ -240,6 +319,7 @@ c_long
 c_listCount (
     c_list _this)
 {
+    assert(c_collectionIsType(_this, C_LIST));
     return ((C_STRUCT(c_list) *)_this)->count;
 }
 
@@ -254,6 +334,8 @@ c_listRead(
     c_listNode n;
     c_bool proceed;
     c_qPred pred;
+
+    assert(c_collectionIsType(_this, C_LIST));
 
     proceed = TRUE;
     n = l->head;
@@ -282,6 +364,9 @@ c_listReadOne (
     c_qPred q)
 {
     c_object o = NULL;
+
+    assert(c_collectionIsType(_this, C_LIST));
+
     c_listRead(_this,q,readOne,&o);
     return o;
 }
@@ -293,6 +378,8 @@ c_listTakeOne (
 {
     c_object o;
     c_object found;
+
+    assert(c_collectionIsType(_this, C_LIST));
 
     o = c_listReadOne(_this,q);
     if (o == NULL) {
@@ -315,6 +402,8 @@ c_listTake (
     c_bool proceed = TRUE;
     c_object o;
 
+    assert(c_collectionIsType(_this, C_LIST));
+
     while (proceed) {
         o = c_listTakeOne(_this,q);
         if (o != NULL) {
@@ -335,6 +424,8 @@ c_listSelect (
 {
     C_STRUCT(collectActionArg) arg;
 
+    assert(c_collectionIsType(_this, C_LIST));
+
     arg.results = c_iterNew(NULL);
     if (max < 1) {
         max = 0x7fffffff; /* RP: MAXINT */
@@ -351,6 +442,8 @@ c_listWalk(
     c_voidp actionArg)
 {
     c_listNode n;
+
+    assert(c_collectionIsType(_this, C_LIST));
 
     n = ((C_STRUCT(c_list) *)_this)->head;
     while (n != NULL) {
@@ -369,6 +462,8 @@ c_append (
 {
     C_STRUCT(c_list) *l = c_list(list);
     c_listNode n;
+
+    assert(c_collectionIsType(list, C_LIST));
 
     if (o == NULL) {
         return NULL;
@@ -397,6 +492,9 @@ c_concat (
     C_STRUCT(c_list) *h = c_list(head);
     C_STRUCT(c_list) *t = c_list(tail);
 
+    assert(c_collectionIsType(head, C_LIST));
+    assert(c_collectionIsType(tail, C_LIST));
+
     if (h->tail == NULL) {
         assert(h->head == NULL);
         h->head = t->head;
@@ -418,6 +516,8 @@ c_replaceAt (
     c_listNode n;
     c_object r;
     c_long i;
+
+    assert(c_collectionIsType(list, C_LIST));
 
     n = l->head;
     for (i=0;i<index;i++) {
@@ -441,6 +541,8 @@ c_insertAfter (
     C_STRUCT(c_list) *l = c_list(list);
     c_listNode n,p;
     c_long i;
+
+    assert(c_collectionIsType(list, C_LIST));
 
     n = l->head;
     for (i=0;i<index;i++) {
@@ -471,6 +573,8 @@ c_insertBefore (
     c_listNode *n,p;
     c_long i;
 
+    assert(c_collectionIsType(list, C_LIST));
+
     n = &l->head;
     for (i=0;i<index;i++) {
         if (*n == NULL) return FALSE;
@@ -499,6 +603,8 @@ c_readAt (
     c_listNode n;
     c_long i;
 
+    assert(c_collectionIsType(list, C_LIST));
+
     n = l->head;
     for (i=0;i<index;i++) {
         if (n == NULL) return NULL;
@@ -519,6 +625,8 @@ c_removeAt (
     c_listNode n,p;
     c_object o;
     c_long i;
+
+    assert(c_collectionIsType(list, C_LIST));
 
     p = NULL;
     n = l->head;
@@ -558,6 +666,8 @@ c_readLast (
     c_list list)
 {
     C_STRUCT(c_list) *l = c_list(list);
+
+    assert(c_collectionIsType(list, C_LIST));
 
     if (l->tail == NULL) {
         return NULL;
@@ -606,6 +716,8 @@ c_setInsert (
     C_STRUCT(c_set) *s = (C_STRUCT(c_set) *)_this;
     c_setNode f,n;
 
+    assert(c_collectionIsType(_this, C_SET));
+
     n = (c_setNode)c_mmCacheMalloc(s->cache);
     n->object = c_keep(o);
     f = c_avlTreeInsert((c_avlTree)s,n,c_setCompare,NULL);
@@ -625,6 +737,8 @@ c_setReplace (
 {
     C_STRUCT(c_set) *s = (C_STRUCT(c_set) *)_this;
     c_setNode f,n;
+
+    assert(c_collectionIsType(_this, C_SET));
 
     if (arg != NULL) {
         /* supress warnings */
@@ -651,6 +765,8 @@ c_setRemove (
     c_setNode f;
     C_STRUCT(c_setNode) n;
     c_object object;
+
+    assert(c_collectionIsType(_this, C_SET));
 
     n.object = o;
     f = c_avlTreeRemove((c_avlTree)s,&n,c_setCompare,NULL,condition,arg);
@@ -699,6 +815,8 @@ c_setRead(
 {
     C_STRUCT(setReadActionArg) a;
 
+    assert(c_collectionIsType(_this, C_SET));
+
     a.query = q;
     a.action = action;
     a.arg = arg;
@@ -712,6 +830,8 @@ c_setSelect (
     c_long max)
 {
     C_STRUCT(collectActionArg) arg;
+
+    assert(c_collectionIsType(_this, C_SET));
 
     arg.results = c_iterNew(NULL);
     if (max < 1) {
@@ -728,6 +848,9 @@ c_setReadOne (
     c_qPred q)
 {
     c_object o = NULL;
+
+    assert(c_collectionIsType(_this, C_SET));
+
     c_setRead(_this,q,readOne,&o);
     return o;
 }
@@ -739,6 +862,8 @@ c_setTakeOne (
 {
     c_object o;
     c_object found;
+
+    assert(c_collectionIsType(_this, C_SET));
 
     o = c_setReadOne(_this,q);
     if (o == NULL) {
@@ -761,6 +886,8 @@ c_setTake (
     c_bool proceed = TRUE;
     c_object o;
 
+    assert(c_collectionIsType(_this, C_SET));
+
     while (proceed) {
         o = c_setTakeOne(_this,q);
         if (o != NULL) {
@@ -776,6 +903,7 @@ c_long
 c_setCount (
     c_set _this)
 {
+    assert(c_collectionIsType(_this, C_SET));
     return c_avlTreeCount((c_avlTree)_this);
 }
 
@@ -799,6 +927,8 @@ c_setWalk(
     c_voidp actionArg)
 {
     struct c_setWalkActionArg arg;
+
+    assert(c_collectionIsType(s, C_SET));
 
     arg.action = action;
     arg.arg = actionArg;
@@ -839,6 +969,8 @@ c_bagInsert (
     C_STRUCT(c_bag) *b = (C_STRUCT(c_bag) *)_this;
     c_bagNode f,n;
 
+    assert(c_collectionIsType(_this, C_BAG));
+
     n = (c_bagNode)c_mmCacheMalloc(b->cache);
     n->object = c_keep(o);
     n->count = 1;
@@ -861,6 +993,8 @@ c_bagReplace (
 {
     C_STRUCT(c_bag) *b = (C_STRUCT(c_bag) *)_this;
     c_bagNode f,n;
+
+    assert(c_collectionIsType(_this, C_BAG));
 
     if (arg != NULL) {
         /* supress warnings */
@@ -890,6 +1024,8 @@ c_bagRemove (
     c_bagNode f;
     C_STRUCT(c_bagNode) n;
     c_object object;
+
+    assert(c_collectionIsType(_this, C_BAG));
 
     n.object = o;
     f = c_avlTreeFind((c_avlTree)b,&n,c_bagCompare,NULL);
@@ -950,6 +1086,8 @@ c_bagRead(
 {
     C_STRUCT(bagReadActionArg) a;
 
+    assert(c_collectionIsType(_this, C_BAG));
+
     a.query = q;
     a.action = action;
     a.arg = arg;
@@ -963,6 +1101,8 @@ c_bagSelect (
     c_long max)
 {
     C_STRUCT(collectActionArg) arg;
+
+    assert(c_collectionIsType(_this, C_BAG));
 
     arg.results = c_iterNew(NULL);
     if (max < 1) {
@@ -979,6 +1119,9 @@ c_bagReadOne (
     c_qPred q)
 {
     c_object o = NULL;
+
+    assert(c_collectionIsType(_this, C_BAG));
+
     c_bagRead(_this,q,readOne,&o);
     return o;
 }
@@ -990,6 +1133,8 @@ c_bagTakeOne (
 {
     c_object o;
     c_object found;
+
+    assert(c_collectionIsType(_this, C_BAG));
 
     o = c_bagReadOne(_this,q);
     if (o == NULL) {
@@ -1012,6 +1157,8 @@ c_bagTake (
     c_bool proceed = TRUE;
     c_object o;
 
+    assert(c_collectionIsType(_this, C_BAG));
+
     while (proceed) {
         o = c_bagTakeOne(_this,q);
         if (o != NULL) {
@@ -1027,6 +1174,7 @@ c_long
 c_bagCount (
     c_bag _this)
 {
+    assert(c_collectionIsType(_this, C_BAG));
     return ((C_STRUCT(c_bag) *)_this)->count;
 }
 
@@ -1052,6 +1200,8 @@ c_bagWalk(
 {
     struct c_bagWalkActionArg arg;
 
+    assert(c_collectionIsType(bag, C_BAG));
+
     arg.action = action;
     arg.arg = actionArg;
     return c_avlTreeWalk((c_avlTree)bag,c_bagWalkAction,&arg,C_INFIX);
@@ -1065,6 +1215,9 @@ C_STRUCT(c_tableNode) {
     C_EXTENDS(c_avlNode);
     c_value keyValue;
     c_object object;
+#ifdef _CONSISTENCY_CHECKING_
+    c_voidp table;
+#endif
 };
 
 static c_equality
@@ -1097,6 +1250,14 @@ c_tableInsert (
     c_long i, nrOfKeys;
     c_mm mm;
 
+    assert(c_collectionIsType(_this, C_DICTIONARY));
+
+    if (o == NULL) {
+        return NULL;
+    }
+
+    _ACCESS_BEGIN_(t);
+
     mm = MM(t);
     n = NULL;
     index = &t->object;
@@ -1110,6 +1271,11 @@ c_tableInsert (
         if (n == NULL) {
             n = (c_tableNode)c_mmCacheMalloc(t->cache);
             memset(n,0,C_SIZEOF(c_tableNode));
+#ifdef _CONSISTENCY_CHECKING_
+            n->table = (c_voidp)_this;
+        } else {
+            _CHECK_CONSISTENCY_(t,n);
+#endif
         }
         n->keyValue = c_fieldValue(t->key[i],o);
         if (*index == NULL) {
@@ -1120,6 +1286,7 @@ c_tableInsert (
             n = NULL;
         } else {
             c_valueFreeRef(n->keyValue);
+            _CHECK_CONSISTENCY_(t,f);
         }
         index = &f->object;
     }
@@ -1131,6 +1298,9 @@ c_tableInsert (
         t->count++;
         *index = c_keep(o);
     }
+
+    _ACCESS_END_(t);
+
     return *index;
 }
 
@@ -1148,6 +1318,14 @@ c_tableReplace (
     c_long i, nrOfKeys;
     c_mm mm;
 
+    assert(c_collectionIsType(_this, C_DICTIONARY));
+
+    if (o == NULL) {
+        return NULL;
+    }
+
+    _ACCESS_BEGIN_(t);
+
     mm = MM(t);
     n = NULL;
     index = &t->object;
@@ -1161,40 +1339,48 @@ c_tableReplace (
         if (n == NULL) {
             n = (c_tableNode)c_mmCacheMalloc(t->cache);
             memset(n,0,C_SIZEOF(c_tableNode));
+#ifdef _CONSISTENCY_CHECKING_
+            n->table = (c_voidp)_this;
+        } else {
+            _CHECK_CONSISTENCY_(t,n);
+#endif
         }
         n->keyValue = c_fieldValue(t->key[i],o);
         if (n->keyValue.kind == V_UNDEFINED) {
             OS_REPORT_1(OS_WARNING,"Database Collection",0,
                         "c_tableReplace: Key (%s) value undefined",
                         c_fieldName(t->key[i]));
-            return o;
+            c_mmCacheFree(t->cache,n);
+            _ACCESS_END_(t);
+            return NULL;
         }
         if (*index == NULL) {
             *index = c_avlTreeNew(mm,0);
         }
         f = c_avlTreeInsert(*index,n,c_keyCompare,NULL);
-        if (f == n) {
-            n = NULL;
-        } else {
+        _CHECK_CONSISTENCY_(t,f);
+        if (f != n) {
             c_valueFreeRef(n->keyValue);
+            c_mmCacheFree(t->cache,n);
         }
+        n = NULL;
         index = &f->object;
     }
-    if (n != NULL) {
-        c_mmCacheFree(t->cache,n);
-    }
-    if (*index == NULL) {
-        t->count++;
-        *index = c_keep(o);
-    } else {
-        if (condition != NULL) {
-            if (!condition(*index,o,arg)) {
-                return o;
-            }
+    object = *index;
+    if (condition != NULL) {
+        if (condition(object,o,arg)) {
+            *index = c_keep(o);
+        } else {
+            object = NULL;
         }
-        object = *index;
+    } else {
+        if (*index == NULL) {
+            t->count++;
+        }
         *index = c_keep(o);
     }
+    _ACCESS_END_(t);
+
     return object;
 }
 
@@ -1238,7 +1424,12 @@ c_tableRemove (
     c_bool allowed = TRUE;
     C_STRUCT(removeConditionArg) wrapperArg;
 
+    assert(c_collectionIsType(_this, C_DICTIONARY));
+
+    _ACCESS_BEGIN_(t);
+
     if (t->object == NULL) {
+        _ACCESS_END_(t);
         return NULL;
     }
     if (t->key == NULL) {
@@ -1258,6 +1449,7 @@ c_tableRemove (
         } else {
             object = NULL;
         }
+        _ACCESS_END_(t);
         return object;
     }
     stack = (c_tableNode *)os_alloca(sizeof(c_tableNode)*nrOfKeys);
@@ -1268,12 +1460,18 @@ c_tableRemove (
             OS_REPORT_1(OS_WARNING,"Database Collection",0,
                         "c_tableRemove: Key (%s) value undefined",
                         c_fieldName(t->key[i]));
+            _ACCESS_END_(t);
             return o;
         }
         stack[i] = c_avlTreeFind(index,&n,c_keyCompare,NULL);
         if (stack[i] == NULL) {
             os_freea(stack);
+            _ACCESS_END_(t);
             return NULL;
+#ifdef _CONSISTENCY_CHECKING_
+        } else {
+            _CHECK_CONSISTENCY_(t,stack[i]);
+#endif
         }
         index = stack[i]->object;
         c_valueFreeRef(n.keyValue);
@@ -1283,6 +1481,7 @@ c_tableRemove (
         OS_REPORT_1(OS_WARNING,"Database Collection",0,
                     "c_tableRemove: Key (%s) value undefined",
                      c_fieldName(t->key[i]));
+        _ACCESS_END_(t);
         return o;
     }
 
@@ -1290,12 +1489,14 @@ c_tableRemove (
     wrapperArg.object = o;
     wrapperArg.arg = arg;
     found = c_avlTreeRemove(index,&n,c_keyCompare,NULL,
-        c_tableRemoveConditionWrapper,&wrapperArg);
+                            c_tableRemoveConditionWrapper,&wrapperArg);
     if (found != NULL) {
         t->count--;
         for(i-=1;i>0;i--) {
             if (c_avlTreeCount(stack[i]->object) == 0) {
-                c_avlTreeRemove(stack[i-1]->object,stack[i],c_keyCompare,NULL, NULL, NULL);
+                c_avlTreeRemove(stack[i-1]->object,stack[i],
+                                c_keyCompare,
+                                NULL, NULL, NULL);
                 c_avlTreeFree(stack[i]->object);
                 c_valueFreeRef(stack[i]->keyValue);
                 c_mmCacheFree(t->cache,stack[i]);
@@ -1305,7 +1506,9 @@ c_tableRemove (
         }
         if (i==0) {
             if (c_avlTreeCount(stack[0]->object) == 0) {
-                c_avlTreeRemove(t->object,stack[0],c_keyCompare,NULL, NULL, NULL);
+                c_avlTreeRemove(t->object,stack[0],
+                                c_keyCompare,
+                                NULL, NULL, NULL);
                 c_avlTreeFree(stack[0]->object);
                 c_valueFreeRef(stack[0]->keyValue);
                 c_mmCacheFree(t->cache,stack[0]);
@@ -1323,6 +1526,8 @@ c_tableRemove (
     }
     c_valueFreeRef(n.keyValue);
     os_freea(stack);
+    _ACCESS_END_(t);
+
     return object;
 }
 
@@ -1338,10 +1543,16 @@ c_tableFind (
     c_object object;
     c_long i, nrOfKeys;
 
+    assert(c_collectionIsType(_this, C_DICTIONARY));
+
+    _READ_BEGIN_(t);
+
     if (t->object == NULL) {
+        _READ_END_(t);
         return NULL;
     }
     if (keyValues == NULL) {
+        _READ_END_(t);
         return t->object;
     }
     nrOfKeys = c_arraySize(t->key);
@@ -1352,10 +1563,12 @@ c_tableFind (
         assert(n.keyValue.kind != V_UNDEFINED);
         found = c_avlTreeFind(object,&n,c_keyCompare,NULL);
         if (found == NULL) {
+            _READ_END_(t);
             return NULL;
         }
         object = found->object;
     }
+    _READ_END_(t);
     return c_keep(object);
 }
 #endif
@@ -1415,13 +1628,19 @@ c_tableNext (
     c_long nrOfKeys;
     c_object data;
 
+    assert(c_collectionIsType(table, C_DICTIONARY));
+
+    _READ_BEGIN_(t);
     if (t == NULL) {
+        _READ_END_(t);
         return NULL;
     }
     if (t->object == NULL) {
+        _READ_END_(t);
         return NULL;
     }
     if (t->key == NULL) {
+        _READ_END_(t);
         if (o == NULL) {
             return t->object;
         }
@@ -1429,7 +1648,9 @@ c_tableNext (
     }
     nrOfKeys = c_arraySize(t->key);
     if (nrOfKeys == 0) {
+        _READ_END_(t);
         if (o == NULL) {
+            _CHECK_CONSISTENCY_(t,t->object);
             return t->object;
         }
         return NULL;
@@ -1442,13 +1663,16 @@ c_tableNext (
             if (node == NULL) {
                 return NULL;
             } else {
+                _CHECK_CONSISTENCY_(t,node);
                 data = node->object;
             }
             nrOfKeys--;
         }
+        _READ_END_(t);
         return data;
     } else {
         node = tableNext(o,t->object,t->key,0);
+        _READ_END_(t);
         if (node == NULL) { /* o is last record of table */
             return NULL;
         } else {
@@ -1463,6 +1687,9 @@ C_STRUCT(tableReadActionArg) {
     c_qPred query;
     c_action action;
     c_voidp arg;
+#ifdef _CONSISTENCY_CHECKING_
+    C_STRUCT(c_table) *t;
+#endif
 };
 C_CLASS(tableReadActionArg);
 
@@ -1481,6 +1708,8 @@ tableReadAction(
     c_value v;
     c_qPred pred;
 
+    _CHECK_CONSISTENCY_(arg->t,n);
+
     if ((arg->keyIndex > 0) && (arg->query != NULL)) {
         key = arg->query->keyField[arg->keyIndex-1];
         if (key->expr != NULL) {
@@ -1494,7 +1723,9 @@ tableReadAction(
     if (arg->query == NULL) {
         if (arg->keyIndex < (c_arraySize(arg->key))) {
             arg->keyIndex++;
-            proceed = c_avlTreeWalk((c_avlTree)n->object,tableReadAction,arg,C_INFIX);
+            proceed = c_avlTreeWalk((c_avlTree)n->object,
+                                    tableReadAction,arg,
+                                    C_INFIX);
             arg->keyIndex--;
             return proceed;
         }
@@ -1521,7 +1752,9 @@ tableReadAction(
         key = arg->query->keyField[arg->keyIndex];
         arg->keyIndex++;
         if ((key->range == NULL) || (c_arraySize(key->range) == 0)) {
-            proceed = c_avlTreeWalk((c_avlTree)n->object,tableReadAction,arg,C_INFIX);
+            proceed = c_avlTreeWalk((c_avlTree)n->object,
+                                    tableReadAction,arg,
+                                    C_INFIX);
         } else {
             nrOfRanges = c_arraySize(key->range);
             i=0;
@@ -1541,7 +1774,7 @@ tableReadAction(
                         OS_REPORT_1(OS_ERROR,"Database Collection",0,
                                     "Internal error: undefined range kind %d",range->startKind);
                         assert(FALSE);
-                        return FALSE;                   
+                        return FALSE;
                     }
                     switch (range->endKind) {
                     case B_UNDEFINED: endRef = NULL; endInclude = TRUE;  break;
@@ -1583,7 +1816,11 @@ c_tableRead (
     c_bool proceed = TRUE;
     c_qPred pred;
 
+    assert(c_collectionIsType(_this, C_DICTIONARY));
+
+    _READ_BEGIN_(t);
     if (t->object == NULL) {
+        _READ_END_(t);
         return proceed;
     }
 
@@ -1607,6 +1844,7 @@ c_tableRead (
                 }
             }
         }
+        _READ_END_(t);
         return proceed;
     }
 
@@ -1614,6 +1852,10 @@ c_tableRead (
     a.key = t->key;
     a.action = action;
     a.arg = arg;
+#ifdef _CONSISTENCY_CHECKING_
+    a.t = t;
+    root.table = (c_voidp)t;
+#endif
     if (q == NULL) {
         a.keyIndex = 0;
         a.query = q;
@@ -1625,6 +1867,7 @@ c_tableRead (
         proceed = tableReadAction(&root,&a);
         q = q->next;
     }
+    _READ_END_(t);
     return proceed;
 }
 
@@ -1635,6 +1878,8 @@ c_tableSelect (
     c_long max)
 {
     C_STRUCT(collectActionArg) arg;
+
+    assert(c_collectionIsType(_this, C_DICTIONARY));
 
     arg.results = c_iterNew(NULL);
     if (max < 1) {
@@ -1651,6 +1896,9 @@ c_tableReadOne (
     c_qPred q)
 {
     c_object o = NULL;
+
+    assert(c_collectionIsType(t, C_DICTIONARY));
+
     c_tableRead(t,q,readOne,&o);
     return o;
 }
@@ -1666,6 +1914,9 @@ C_STRUCT(tableTakeActionArg) {
     c_bool proceed;
     c_mm mm;
     c_mmCache cache;
+#ifdef _CONSISTENCY_CHECKING_
+    C_STRUCT(c_table) *t;
+#endif
 };
 
 C_CLASS(tableTakeActionArg);
@@ -1684,6 +1935,8 @@ tableTakeAction(
     c_long i,nrOfRanges;
     c_value v;
     c_qPred pred;
+
+    _CHECK_CONSISTENCY_(arg->t,n);
 
     if ((arg->keyIndex > 0) && (arg->pred != NULL)) {
         key = arg->pred->keyField[arg->keyIndex-1];
@@ -1805,7 +2058,7 @@ tableTakeAction(
                                     "Internal error: undefined range kind %d",
                                     range->endKind);
                         assert(FALSE);
-                        return FALSE;                    
+                        return FALSE;
                     }
                 }
                 do {
@@ -1865,6 +2118,9 @@ c_tableTake (
     c_object o = NULL;
     c_qPred pred;
 
+    assert(c_collectionIsType(_this, C_DICTIONARY));
+
+    _ACCESS_BEGIN_(t);
     if (t->key == NULL) {
         nrOfKeys = 0;
     } else {
@@ -1872,6 +2128,7 @@ c_tableTake (
     }
 
     if (t->object == NULL) {
+        _ACCESS_END_(t);
         return FALSE;
     }
 
@@ -1901,6 +2158,7 @@ c_tableTake (
         }
         proceed = action(o,arg);
         c_free(o);
+        _ACCESS_END_(t);
         return proceed;
     }
 
@@ -1911,6 +2169,10 @@ c_tableTake (
     a.count = 0;
     a.proceed = TRUE;
     a.cache = t->cache;
+#ifdef _CONSISTENCY_CHECKING_
+    a.t = t;
+    root.table = (c_voidp)t;
+#endif
     root.object = t->object;
     if (p == NULL) {
         a.keyIndex = 0;
@@ -1926,6 +2188,7 @@ c_tableTake (
         p = p->next;
     }
     t->count -= a.count;
+    _ACCESS_END_(t);
     return proceed;
 }
 
@@ -1936,6 +2199,8 @@ c_tableTakeOne(
 {
     c_object o = NULL;
 
+    assert(c_collectionIsType(t, C_DICTIONARY));
+
     c_tableTake(t,p,readOne,&o);
 
     return o;
@@ -1945,6 +2210,7 @@ c_long
 c_tableCount (
     c_table _this)
 {
+    assert(c_collectionIsType(_this, C_DICTIONARY));
     return ((C_STRUCT(c_table) *)_this)->count;
 }
 
@@ -1981,6 +2247,9 @@ c_tableWalk(
     struct c_tableWalkActionArg walkActionArg;
     c_bool result = TRUE;
 
+    assert(c_collectionIsType(_this, C_DICTIONARY));
+
+    _READ_BEGIN_(t);
     if (t->count > 0) {
         if ((t->key == NULL) || (c_arraySize(t->key) == 0)) {
             result = action(t->object,actionArg);
@@ -1994,18 +2263,21 @@ c_tableWalk(
                                    C_INFIX);
         }
     }
+    _READ_END_(t);
     return result;
 }
 
-int
+c_long
 c_tableGetKeyValues(
     c_table table,
     c_object object,
     c_value *values)
 {
-    int i, nrOfKeys;
+    c_long i, nrOfKeys;
     c_value *currentValuePtr = values;
     C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
+
+    assert(c_collectionIsType(table, C_DICTIONARY));
 
     assert(table != NULL);
     assert(object != NULL);
@@ -2018,16 +2290,18 @@ c_tableGetKeyValues(
     return nrOfKeys;
 }
 
-int
+c_long
 c_tableSetKeyValues(
     c_table table,
     c_object object,
     c_value *values)
 {
-    int i, nrOfKeys;
+    c_long i, nrOfKeys;
     c_value *currentValue;
     c_field *currentField;
     C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
+
+    assert(c_collectionIsType(table, C_DICTIONARY));
 
     nrOfKeys = c_arraySize(t->key);
     if (nrOfKeys > 0) {
@@ -2042,11 +2316,13 @@ c_tableSetKeyValues(
     return nrOfKeys;
 }
 
-int
+c_long
 c_tableNofKeys(
     c_table table)
 {
     C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
+
+    assert(c_collectionIsType(table, C_DICTIONARY));
 
     return c_arraySize(t->key);
 }
@@ -2057,6 +2333,8 @@ c_tableKeyList(
 {
     C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
 
+    assert(c_collectionIsType(table, C_DICTIONARY));
+
     return c_keep(t->key);
 }
 
@@ -2064,9 +2342,11 @@ c_char *
 c_tableKeyExpr(
     c_table table)
 {
-    int i, nrOfKeys, size;
+    c_long i, nrOfKeys, size;
     c_char *expr;
     C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
+
+    assert(c_collectionIsType(table, C_DICTIONARY));
 
     size = 0;
     nrOfKeys = c_arraySize(t->key);
@@ -2076,9 +2356,9 @@ c_tableKeyExpr(
     expr = (c_char *)os_malloc(size);
     expr[0] = (c_char)0;
     for (i=0;i<nrOfKeys;i++) {
-        strcat(expr,c_fieldName(t->key[i]));
+        os_strcat(expr,c_fieldName(t->key[i]));
         if (i < (nrOfKeys-1)) {
-            strcat(expr,",");
+            os_strcat(expr,",");
         }
     }
     return expr;
@@ -2121,6 +2401,8 @@ c_queryRead(
     c_collection source;
     c_type type;
 
+    assert(c_collectionIsType((c_query)query, C_QUERY));
+
     pred = query->pred;
     source = query->source;
     type = c__getType(source);
@@ -2152,6 +2434,9 @@ c_queryReadOne (
     c_qPred q)
 {
     c_object o = NULL;
+
+    assert(c_collectionIsType((c_query)b, C_QUERY));
+
     c_queryRead(b,q,readOne,&o);
     return o;
 }
@@ -2167,6 +2452,8 @@ c_querySelect (
     c_type type;
     c_collection source;
     c_qPred pred;
+
+    assert(c_collectionIsType((c_query)query, C_QUERY));
 
     source = query->source;
     type = c__getType(source);
@@ -2211,6 +2498,8 @@ c_queryTake(
     c_collection source;
     c_type type;
 
+    assert(c_collectionIsType((c_query)query, C_QUERY));
+
     pred = query->pred;
     source = query->source;
     type = c__getType(source);
@@ -2242,8 +2531,41 @@ c_queryTakeOne (
     c_qPred q)
 {
     c_object o = NULL;
+
+    assert(c_collectionIsType((c_query)b, C_QUERY));
+
     c_queryTake(b,q,readOne,&o);
     return o;
+}
+
+c_qPred
+c_queryGetPred(
+		c_query _this)
+{
+	assert(_this);
+	if(_this){
+		return c_query(_this)->pred;
+	} else {
+	    OS_REPORT(OS_ERROR,"Database Collection",0,
+	                       "c_queryGetPred: given query is NULL");
+	}
+
+	return NULL;
+}
+
+void
+c_querySetPred(
+		c_query _this,
+		c_qPred p)
+{
+	assert(_this);
+
+	if(_this){
+		c_query(_this)->pred = p;
+	} else {
+	    OS_REPORT(OS_ERROR,"Database Collection",0,
+	                       "c_querySetPred: given query is NULL");
+	}
 }
 
 /*============================================================================*/
@@ -2360,21 +2682,15 @@ c_exists (
     c_collection c,
     c_object o)
 {
-    c_type type = c__getType(c);
-    c_bool equality = FALSE;
-    c_object replaced;
+    c_bool equal = FALSE;
+    c_object found;
 
-    type = c_typeActualType(type);
-    if (c_baseObject(type)->kind != M_COLLECTION) {
-        OS_REPORT_1(OS_ERROR,"Database Collection",0,
-                    "c_exists: given entity (%d) is not a collection",
-                    c_collectionType(type)->kind);
-        assert(FALSE);
-        return NULL;
+    found = c_find(c,o);
+    if (found == o) {
+        equal = TRUE;
     }
-    replaced = c_replace(c,o,checkEquality,(c_voidp)&equality);
-    assert(replaced == NULL);
-    return equality;
+    c_free(found);
+    return equal;
 }
 
 static c_bool
@@ -2770,32 +3086,74 @@ c_arrayNew(
     c_base base;
     c_type arrayType;
     c_char *name;
-    c_long size;
+    c_long str_size;
     c_array _this = NULL;
 
     if (length == 0) {
         /* NULL is specified to represent an array of length 0. */
         return NULL;
-    }
-    if (length < 0) {
+    } else if (length < 0) {
         OS_REPORT_1(OS_ERROR,
                     "Database Collection",0,
                     "Illegal array size %d specified",
                     length);
-    }
-    base = c__getBase(subType);
-    if (c_metaObject(subType)->name != NULL) {
-        size = strlen(c_metaObject(subType)->name)+16 /* digits for length */ +9;
-        name = (char *)os_alloca(size);
-        sprintf(name,"ARRAY<%s,%d>",c_metaObject(subType)->name, length);
-        arrayType = c_type(c_metaResolve(c_metaObject(base), name));
-        if (arrayType == NULL) {
-            arrayType = c_metaArrayTypeNew(c_metaObject(base),
-                                           name,subType,length);
-        }
+    } else if (c_metaObject(subType)->name != NULL) {
+        base = c__getBase(subType);
+        str_size =    strlen(c_metaObject(subType)->name)
+                    + 7 /* ARRAY<> */
+                    + 1; /* \0 character */
+        name = (char *)os_alloca(str_size);
+        os_sprintf(name,"ARRAY<%s>",c_metaObject(subType)->name);
+        arrayType = c_metaArrayTypeNew(c_metaObject(base), name,subType,0);
+        assert(arrayType);
         os_freea(name);
-        _this = (c_array)c_new(arrayType);
+        _this = (c_array)c_newArray(c_collectionType(arrayType), length);
         c_free(arrayType);
+    }
+
+    return _this;
+}
+
+c_sequence
+c_sequenceNew(
+    c_type subType,
+    c_long maxsize,
+    c_long length)
+{
+    c_base base;
+    c_type sequenceType;
+    c_char *name;
+    c_long str_size;
+    c_sequence _this = NULL;
+
+    if (length < 0) {
+        OS_REPORT_1(OS_ERROR,
+                    "Database Collection",0,
+                    "Illegal sequence size %d specified",
+                    length);
+    } else if (c_metaObject(subType)->name != NULL) {
+        base = c__getBase(subType);
+
+        if(maxsize == 0){
+            str_size =  strlen(c_metaObject(subType)->name)
+                        + 10 /* SEQUENCE<> */
+                        + 1; /* \0 character */
+            name = (char *)os_alloca(str_size);
+            os_sprintf(name,"SEQUENCE<%s>",c_metaObject(subType)->name);
+        } else {
+            str_size =  strlen(c_metaObject(subType)->name)
+                        + 11 /* SEQUENCE<,> */
+                        + ((int)(log10((double)maxsize))) + 1 /* digits for maxsize */
+                        + 1; /* \0 character */
+            name = (char *)os_alloca(str_size);
+            os_sprintf(name,"SEQUENCE<%s,%d>",c_metaObject(subType)->name, maxsize);
+        }
+        sequenceType = c_metaSequenceTypeNew(c_metaObject(base), name, subType,
+                maxsize);
+        assert(sequenceType);
+        os_freea(name);
+        _this = (c_sequence)c_newSequence(c_collectionType(sequenceType), length);
+        c_free(sequenceType);
     }
 
     return _this;
@@ -2813,12 +3171,12 @@ c_arrayNew_w_header(
 
     if (length == 0)
     {
-    	_this = c_newArray (arrayType, length);
+        _this = c_newArray (arrayType, length);
     }else {
-    	_this = c_arrayNew (arrayType->subType, length);
+        _this = c_arrayNew (arrayType->subType, length);
     }
 
-	return _this;
+    return _this;
 }
 
 #define C_LIST_ANONYMOUS_NAME "LIST<******>"
@@ -2837,11 +3195,11 @@ c_listNew(
     if (c_metaObject(subType)->name != NULL) {
         size = strlen(c_metaObject(subType)->name)+7;
         name = (char *)os_alloca(size);
-        sprintf(name,"LIST<%s>",c_metaObject(subType)->name);
+        os_sprintf(name,"LIST<%s>",c_metaObject(subType)->name);
         found = c_metaResolve(c_metaObject(base), name);
     } else {
         name = (char *)os_alloca(strlen(C_LIST_ANONYMOUS_NAME) + 1);
-        strcpy(name, C_LIST_ANONYMOUS_NAME);
+        os_strcpy(name, C_LIST_ANONYMOUS_NAME);
         found = NULL;
     }
 
@@ -2867,9 +3225,11 @@ c_listNew(
     }
     os_freea(name);
     c = (c_collection)c_new(c_type(o));
-    c_list(c)->cache = c_mmCacheCreate(c_baseMM(base),
-                                       C_SIZEOF(c_listNode),
-                                       _PREALLOC_);
+    if (c) {
+        c_list(c)->cache = c_mmCacheCreate(c_baseMM(base),
+                                           C_SIZEOF(c_listNode),
+                                           _PREALLOC_);
+    }
     c_free(o);
     return c;
 }
@@ -2891,11 +3251,11 @@ c_setNew(
     if (c_metaObject(subType)->name != NULL) {
         size = strlen(c_metaObject(subType)->name)+6;
         name = (char *)os_alloca(size);
-        sprintf(name,"SET<%s>",c_metaObject(subType)->name);
+        os_sprintf(name,"SET<%s>",c_metaObject(subType)->name);
         found = c_metaResolve(c_metaObject(base), name);
     } else {
         name = (char *)os_alloca(strlen(C_SET_ANONYMOUS_NAME) + 1);
-        strcpy(name, C_SET_ANONYMOUS_NAME);
+        os_strcpy(name, C_SET_ANONYMOUS_NAME);
         found = NULL;
     }
 
@@ -2921,9 +3281,15 @@ c_setNew(
     }
     os_freea(name);
     c = (c_collection)c_new(c_type(o));
-    c_set(c)->cache = c_mmCacheCreate(c_baseMM(base),
-                                      C_SIZEOF(c_setNode),
-                                      _PREALLOC_);
+    if (c) {
+        c_set(c)->cache = c_mmCacheCreate(c_baseMM(base),
+                                          C_SIZEOF(c_setNode),
+                                          _PREALLOC_);
+        c_avlTree(c)->root = NULL;
+        c_avlTree(c)->offset = 0;
+        c_avlTree(c)->size = 0;
+        c_avlTree(c)->mm = NULL;
+    }
     c_free(o);
     return c;
 }
@@ -2945,11 +3311,11 @@ c_bagNew(
     if (c_metaObject(subType)->name != NULL) {
         size = strlen(c_metaObject(subType)->name)+6;
         name = (char *)os_alloca(size);
-        sprintf(name,"BAG<%s>",c_metaObject(subType)->name);
+        os_sprintf(name,"BAG<%s>",c_metaObject(subType)->name);
         found = c_metaResolve(c_metaObject(base), name);
     } else {
         name = (char *)os_alloca(strlen(C_BAG_ANONYMOUS_NAME) + 1);
-        strcpy(name, C_BAG_ANONYMOUS_NAME);
+        os_strcpy(name, C_BAG_ANONYMOUS_NAME);
         found = NULL;
     }
 
@@ -2975,9 +3341,16 @@ c_bagNew(
     }
     os_freea(name);
     c = (c_collection)c_new(c_type(o));
-    c_bag(c)->cache = c_mmCacheCreate(c_baseMM(base),
-                                      C_SIZEOF(c_bagNode),
-                                      _PREALLOC_);
+    if (c) {
+        c_bag(c)->cache = c_mmCacheCreate(c_baseMM(base),
+                                          C_SIZEOF(c_bagNode),
+                                          _PREALLOC_);
+        c_avlTree(c)->root = NULL;
+        c_avlTree(c)->offset = 0;
+        c_avlTree(c)->size = 0;
+        c_avlTree(c)->mm = NULL;
+        c_bag(c)->count = 0;
+    }
     c_free(o);
     return c;
 }
@@ -3006,16 +3379,16 @@ c_tableNew(
         if (keyNames) {
             size = strlen(c_metaObject(subType)->name)+strlen(keyNames)+7;
             name = (char *)os_alloca(size);
-            sprintf(name,"MAP<%s,%s>",c_metaObject(subType)->name, keyNames);
+            os_sprintf(name,"MAP<%s,%s>",c_metaObject(subType)->name, keyNames);
         } else {
             size = strlen(c_metaObject(subType)->name)+6;
             name = (char *)os_alloca(size);
-            sprintf(name,"MAP<%s>",c_metaObject(subType)->name);
+            os_sprintf(name,"MAP<%s>",c_metaObject(subType)->name);
         }
         found = c_metaResolve(c_metaObject(base), name);
     } else {
         name = (char *)os_alloca(strlen(C_TABLE_ANONYMOUS_NAME)+1);
-        strcpy(name, C_TABLE_ANONYMOUS_NAME);
+        os_strcpy(name, C_TABLE_ANONYMOUS_NAME);
         found = NULL;
     }
 
@@ -3078,21 +3451,23 @@ c_tableNew(
 
     t = c_table(c_new(c_type(o)));
     c_free(o);
-
-    nrOfKeys = c_iterLength(fieldList);
-    if (nrOfKeys>0) {
-        t->key = c_arrayNew(c_resolve(base,"c_field"),nrOfKeys);
-        for (i=0;i<nrOfKeys;i++) {
-            t->key[i] = c_iterTakeFirst(fieldList);
+    if (t) {
+        t->count = 0;
+        nrOfKeys = c_iterLength(fieldList);
+        if (nrOfKeys>0) {
+            t->key = c_arrayNew(c_resolve(base,"c_field"),nrOfKeys);
+            for (i=0;i<nrOfKeys;i++) {
+                t->key[i] = c_iterTakeFirst(fieldList);
+            }
+        } else {
+            t->key = NULL;
         }
-    } else {
-        t->key = NULL;
+        c_iterFree(fieldList);
+        t->cache = c_mmCacheCreate(c_baseMM(base),
+                                   C_SIZEOF(c_tableNode),
+                                   _PREALLOC_);
+        t->object = NULL;
     }
-    c_iterFree(fieldList);
-    c_table(t)->cache = c_mmCacheCreate(c_baseMM(base),
-                                        C_SIZEOF(c_tableNode),
-                                        _PREALLOC_);
-    t->object = NULL;
     return (c_collection)t;
 }
 #undef C_TABLE_ANONYMOUS_NAME
@@ -3125,7 +3500,7 @@ c_queryNew(
         if (c_metaObject(subType)->name != NULL) {
             size = strlen(c_metaObject(subType)->name)+8;
             name = c_stringMalloc(base,size);
-            sprintf(name,"QUERY<%s>",c_metaObject(subType)->name);
+            os_sprintf(name,"QUERY<%s>",c_metaObject(subType)->name);
         } else {
             name = c_stringNew(base,"QUERY<******>");
         }
@@ -3139,10 +3514,12 @@ c_queryNew(
 
         q = c_query(c_new(c_type(o)));
         c_free(o);
-        q->source = c;
-        q->pred = pred;
+        if (q) {
+            q->source = c;
+            q->pred = pred;
 
-        c_qPredOptimize(q->pred);
+            c_qPredOptimize(q->pred);
+        }
     } else {
         q = NULL;
     }
@@ -3178,11 +3555,11 @@ c_queryNew(
         if (c_metaObject(subType)->name != NULL) {
             size = strlen(c_metaObject(subType)->name)+8;
             name = (char *)os_alloca(size);
-            sprintf(name,"QUERY<%s>",c_metaObject(subType)->name);
+            os_sprintf(name,"QUERY<%s>",c_metaObject(subType)->name);
             found = c_metaResolve(c_metaObject(base), name);
         } else {
             name = (char *)os_alloca(strlen(C_QUERY_ANONYMOUS_NAME) + 1);
-            strcpy(name, C_QUERY_ANONYMOUS_NAME);
+            os_strcpy(name, C_QUERY_ANONYMOUS_NAME);
             found = NULL;
         }
 
@@ -3208,10 +3585,10 @@ c_queryNew(
         os_freea(name);
         q = c_query(c_new(c_type(o)));
         c_free(o);
-        q->source = c;
-        q->pred = pred;
-
-        c_qPredOptimize(q->pred);
+        if (q) {
+            q->source = c;
+            q->pred = pred;
+        }
     } else {
         q = NULL;
     }
@@ -3284,14 +3661,14 @@ c_clear (
 
 c_bool
 c_querySetParams (
-    c_collection query,
+    c_collection _this,
     c_value params[])
 {
     c_type type;
     c_bool result = TRUE;
 
-    if (query != NULL) {
-        type = c__getType(query);
+    if (_this != NULL) {
+        type = c__getType(_this);
         type = c_typeActualType(type);
         if (c_baseObject(type)->kind != M_COLLECTION) {
             OS_REPORT(OS_ERROR,
@@ -3305,7 +3682,7 @@ c_querySetParams (
                         c_collectionType(type)->kind);
             result = FALSE;
         } else {
-            result = c_qPredSetArguments(c_query(query)->pred,params);
+            result = c_qPredSetArguments(c_query(_this)->pred,params);
         }
     }
     return result;
@@ -3313,12 +3690,12 @@ c_querySetParams (
 
 c_bool
 c_queryEval(
-    c_collection query,
+    c_collection _this,
     c_object o)
 {
     c_qPred pred;
 
-    pred = c_query(query)->pred;
+    pred = c_query(_this)->pred;
     while (pred != NULL) {
         if (c_qPredEval(pred,o)) {
             return TRUE;

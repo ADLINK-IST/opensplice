@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -29,7 +29,14 @@ v_deliveryWaitListWait (
 
     if (_this->readerGID != NULL) {
         c_mutexLock(&_this->mutex);
-        r = c_condTimedWait(&_this->cv,&_this->mutex,timeout);
+        if(c_timeCompare(timeout, C_TIME_INFINITE) != C_EQ)
+        {
+            r = c_condTimedWait(&_this->cv,&_this->mutex,timeout);
+        }
+        else
+        {
+            r = c_condWait(&_this->cv,&_this->mutex);
+        }
         c_mutexUnlock(&_this->mutex);
 
         switch (r) {
@@ -194,15 +201,20 @@ v_deliveryWaitListNew(
             waitlist->guard = _this;
             c_mutexInit(&waitlist->mutex, SHARED_MUTEX);
             c_condInit(&waitlist->cv, &waitlist->mutex, SHARED_COND);
-        }
-        found = c_tableInsert(_this->waitlists, waitlist);
-        if (found != waitlist) {
-            /* This should not happen! */
+            found = c_tableInsert(_this->waitlists, waitlist);
+            if (found != waitlist) {
+                /* This should not happen! */
+                OS_REPORT(OS_ERROR,
+                          "v_deliveryWaitListNew",0,
+                          "detected inconsistent waitlist admin.");
+                c_free(waitlist);
+                waitlist = NULL;
+            }
+        } else {
             OS_REPORT(OS_ERROR,
                       "v_deliveryWaitListNew",0,
-                      "detected inconsistent waitlist admin.");
-            c_free(waitlist);
-            waitlist = NULL;
+                      "Failed to allocate v_deliveryWaitList object.");
+            assert(FALSE);
         }
     } else {
         OS_REPORT(OS_ERROR,

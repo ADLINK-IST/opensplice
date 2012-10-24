@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,5 +17,5 @@
  * means of a mutex
  */
 
-#include <../common/code/os_rwlock_by_mutex.c>
-#include <../common/code/os_rwlock_attr.c>
+#include "../common/code/os_rwlock_by_mutex.c"
+#include "../common/code/os_rwlock_attr.c"

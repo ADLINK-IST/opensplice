@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -17,10 +17,10 @@
 #pragma ghs nowarning 997
 #endif
 
-#include <c_base.h>
-#include <c_metabase.h>
-#include <v_kernel.h>
-#include <os_if.h>
+#include "c_base.h"
+#include "c_metabase.h"
+#include "v_kernel.h"
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_DCPSGAPI
 #define OS_API OS_API_EXPORT
@@ -62,8 +62,11 @@ typedef c_bool      gapi_boolean;
 typedef c_string    gapi_string;
 #endif
 
-typedef void (*_dealloactorType)(void *object);
+typedef gapi_boolean (*_dealloactorType)(void *object);
 typedef void *(*_bufferAllocatorType)(gapi_unsigned_long len);
+typedef c_bool (*gapi_ReaderInstanceAction)(v_dataReaderInstance instance, c_voidp arg);
+typedef void (*gapi_readerAction) (c_voidp from, c_voidp to);
+
 
 /* Generic DDS object pointer */
 
@@ -79,7 +82,7 @@ typedef gapi_handle gapi_object;
 /* Private obj management functions */
 OS_API void *
 gapi__malloc (
-    void (*ff)(void *),
+    gapi_boolean (*ff)(void *),
     gapi_unsigned_long hl,
     gapi_unsigned_long len);
 
@@ -122,7 +125,7 @@ OS_API void *
 gapi_sequence_malloc (
     void);
 
-OS_API void
+OS_API gapi_boolean
 gapi_sequence_free (
     void *sequence);
 
@@ -2071,6 +2074,7 @@ gapi_topicBuiltinTopicDataSeq_allocbuf (gapi_unsigned_long len);
  *     LivelinessQosPolicy liveliness;
  *     ReliabilityQosPolicy reliability;
  *     LifespanQosPolicy lifespan;
+ *     DestinationOrderQosPolicy destination_order;
  *     UserDataQosPolicy user_data;
  *     OwnershipQosPolicy ownership;
  *     OwnershipStrengthQosPolicy ownership_strength;
@@ -2091,6 +2095,7 @@ typedef C_STRUCT(gapi_publicationBuiltinTopicData) {
     gapi_livelinessQosPolicy liveliness;
     gapi_reliabilityQosPolicy reliability;
     gapi_lifespanQosPolicy lifespan;
+    gapi_destinationOrderQosPolicy destination_order;
     gapi_userDataQosPolicy user_data;
     gapi_ownershipQosPolicy ownership;
     gapi_ownershipStrengthQosPolicy ownership_strength;
@@ -2279,10 +2284,14 @@ OS_API gapi_instanceHandle_t
 gapi_entity_get_instance_handle (
     gapi_entity _this);
 
+OS_API typedef void (*gapi_delete_action)(void *userData, void *arg);
+
 OS_API void
 gapi_object_set_user_data (
     gapi_object _this,
-    void *userData);
+    void *userData,
+    gapi_delete_action deleteAction,
+    void *deleteActionArg);
 
 OS_API void *
 gapi_object_get_user_data (
@@ -2471,18 +2480,14 @@ gapi_domainParticipant_delete_multitopic (
     gapi_domainParticipant _this,
     const gapi_multiTopic a_multitopic);
 
-
 typedef void (*gapi_deleteEntityAction)(void *entity_data, void *arg);
-
 
 /*     ReturnCode_t
  *     delete_contained_entities();
  */
 OS_API gapi_returnCode_t
 gapi_domainParticipant_delete_contained_entities (
-    gapi_domainParticipant _this,
-    gapi_deleteEntityAction action,
-    void *action_arg);
+    gapi_domainParticipant _this);
 
 /*     ReturnCode_t
  *     set_qos(
@@ -2631,7 +2636,9 @@ gapi_domainParticipant_get_default_topic_qos (
 OS_API gapi_returnCode_t
 gapi_domainParticipant_get_discovered_participants (
     gapi_domainParticipant _this,
-    gapi_instanceHandleSeq  *participant_handles);
+    gapi_ReaderInstanceAction action,
+    c_voidp arg);
+
 
 /*     ReturnCode_t
  *     get_discovered_participant_data (
@@ -2641,8 +2648,9 @@ gapi_domainParticipant_get_discovered_participants (
 OS_API gapi_returnCode_t
 gapi_domainParticipant_get_discovered_participant_data (
     gapi_domainParticipant _this,
-    gapi_participantBuiltinTopicData *participant_data,
-    gapi_instanceHandle_t  handle);
+    c_voidp participant_data,
+    gapi_instanceHandle_t handle,
+    gapi_readerAction action);
 
 /*     ReturnCode_t
  *     get_discovered_topics (
@@ -2651,7 +2659,8 @@ gapi_domainParticipant_get_discovered_participant_data (
 OS_API gapi_returnCode_t
 gapi_domainParticipant_get_discovered_topics (
     gapi_domainParticipant _this,
-    gapi_instanceHandleSeq  *topic_handles);
+    gapi_ReaderInstanceAction action,
+    c_voidp arg);
 
 /*     ReturnCode_t
  *     get_discovered_topic_data (
@@ -2661,8 +2670,9 @@ gapi_domainParticipant_get_discovered_topics (
 OS_API gapi_returnCode_t
 gapi_domainParticipant_get_discovered_topic_data (
     gapi_domainParticipant _this,
-    gapi_topicBuiltinTopicData *topic_data,
-    gapi_instanceHandle_t handle);
+    c_voidp topic_data,
+    gapi_instanceHandle_t handle,
+    gapi_readerAction action);
 
 /*     Boolean
  *     contains_entity (
@@ -2779,23 +2789,7 @@ gapi_domainParticipantFactory_delete_participant (
  */
 OS_API gapi_returnCode_t
 gapi_domainParticipantFactory_delete_contained_entities(
-    gapi_domainParticipantFactory _this,
-    gapi_deleteEntityAction action,
-    void *action_arg);
-
-OS_API gapi_returnCode_t
-gapi_domainParticipantFactory_delete_participant_w_action (
-    gapi_domainParticipantFactory _this,
-    const gapi_domainParticipant  a_participant,
-    gapi_deleteEntityAction       delete_action,
-    void                         *action_arg);
-
-OS_API gapi_returnCode_t
-gapi_domainParticipantFactory_delete_participant_w_action_ext (
-    gapi_domainParticipantFactory _this,
-    const gapi_domainParticipant  a_participant,
-    gapi_deleteEntityAction       delete_action,
-    void                         *action_arg);
+    gapi_domainParticipantFactory _this);
 
 /*     DomainParticipant
  *     lookup_participant(
@@ -2850,7 +2844,7 @@ gapi_domainParticipantFactory_get_default_participant_qos (
 OS_API gapi_domain
 gapi_domainParticipantFactory_lookup_domain (
     gapi_domainParticipantFactory _this,
-    gapi_domainId_t domain_id);
+    const gapi_domainId_t domain_id);
 
 
 /*     ReturnCode_t
@@ -3279,9 +3273,7 @@ gapi_publisher_lookup_datawriter (
  */
 OS_API gapi_returnCode_t
 gapi_publisher_delete_contained_entities (
-    gapi_publisher _this,
-    gapi_deleteEntityAction action,
-    void *action_arg);
+    gapi_publisher _this);
 
 /*     ReturnCode_t
  *     set_qos(
@@ -3671,9 +3663,7 @@ gapi_subscriber_delete_datareader (
  */
 OS_API gapi_returnCode_t
 gapi_subscriber_delete_contained_entities (
-    gapi_subscriber _this,
-    gapi_deleteEntityAction action,
-    void *action_arg);
+    gapi_subscriber _this);
 
 /*     DataReader
  *     lookup_datareader(
@@ -3988,9 +3978,7 @@ gapi_dataReader_delete_readcondition (
  */
 OS_API gapi_returnCode_t
 gapi_dataReader_delete_contained_entities (
-    gapi_dataReader _this,
-    gapi_deleteEntityAction action,
-    void *action_arg);
+    gapi_dataReader _this);
 
 /*     DataReaderView
   *     create_view (
@@ -4361,9 +4349,7 @@ gapi_dataReaderView_delete_readcondition (
  */
 OS_API gapi_returnCode_t
 gapi_dataReaderView_delete_contained_entities (
-    gapi_dataReaderView _this,
-    gapi_deleteEntityAction action,
-    void *action_arg);
+    gapi_dataReaderView _this);
 
 
 /*
@@ -4565,10 +4551,7 @@ gapi_fooTypeSupport__alloc (
     gapi_unsigned_long alloc_size,
     gapi_topicAllocBuffer alloc_buffer,
     gapi_writerCopy writer_copy,
-    gapi_readerCopy reader_copy,
-    gapi_createDataWriter create_datawriter,
-    gapi_createDataReader create_datareader);
-
+    gapi_readerCopy reader_copy);
 
 /*
  * The following FooDataWriter operations are not for

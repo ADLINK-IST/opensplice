@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,6 +13,7 @@
 #define SACPP_DDS_DCPS_H
 
 #include "os_defs.h"
+#include "os_stdlib.h"
 #include "sacpp_if.h"
 
 #if !defined NULL
@@ -177,7 +178,7 @@ SACPP_API inline char * DDS::string_dup (const char * s)
    if (s)
    {
       ret = DDS::string_alloc (strlen (s));
-      strcpy (ret, s);
+      os_strcpy (ret, s);
    }
 
    return ret;

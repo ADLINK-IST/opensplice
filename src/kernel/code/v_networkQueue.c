@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -64,7 +64,7 @@ v_networkQueueUpdateNextWakeup(
 {
     c_time now;
     c_time soon;
-    c_time oldWakeup;
+    c_time newWakeup;
     c_ulonglong msecsTime;
     c_ulonglong msecsResult;
     c_ulonglong msecsLeftOver;
@@ -74,7 +74,6 @@ v_networkQueueUpdateNextWakeup(
     if (queue->periodic) {
         now = v_timeGet();
         soon = c_timeAdd(now, minSleepTime);
-        oldWakeup = queue->nextWakeup;
         TIME_TO_MSEC(soon, msecsTime);
         /* Do a ++ because we are doing a ceil and TIME_TO_MSEC is doing a trunc.
          * Only if time was an exact multiple of milliseconds, this approach is
@@ -82,9 +81,11 @@ v_networkQueueUpdateNextWakeup(
         msecsTime++;
         msecsLeftOver = (msecsTime - queue->phaseMilliSeconds) % queue->msecsResolution;
         msecsResult = msecsTime - msecsLeftOver + queue->msecsResolution;
-        MSEC_TO_TIME(msecsResult, queue->nextWakeup);
-        *hasChanged = (oldWakeup.nanoseconds != queue->nextWakeup.nanoseconds) ||
-                      (oldWakeup.seconds != queue->nextWakeup.seconds);
+        MSEC_TO_TIME(msecsResult, newWakeup);
+        if (c_timeCompare(newWakeup,queue->nextWakeup) == C_GT) {
+            queue->nextWakeup = newWakeup;
+            *hasChanged = TRUE;
+        }
     }
 }
 
@@ -169,6 +170,7 @@ v_networkQueueNew(
         OS_REPORT(OS_ERROR,
                   "v_networkQueueNew",0,
                   "Failed to allocate network queue.");
+        assert(FALSE);
     }
     return result;
 }    
@@ -285,73 +287,73 @@ v_networkQueueWrite(
         newMarkerCreated = TRUE;
         if (queue->freeStatusMarkers == NULL) {
             marker = v_networkStatusMarker(c_new(queue->statusMarkerType));
+            if (marker == NULL) {
+                OS_REPORT(OS_ERROR,
+                          "v_networkQueueWrite",0,
+                          "Failed to allocate v_networkStatusMarker object.");
+                c_mutexUnlock(&queue->mutex);
+                return FALSE;
+            }
         } else {
             marker = queue->freeStatusMarkers;
             queue->freeStatusMarkers = marker->next;
         }
 
-        if (marker != NULL) {
-            marker->sendBefore = sendBefore;
-            marker->priority = priorityLookingFor;
-            marker->firstSample = NULL;
-            marker->lastSample = NULL;
-            marker->next = *currentMarkerPtr; /* no keep, transfer refCount */
-            if (marker->next == NULL) {
-                queue->lastStatusMarker = marker; /* no keep, not reference counted */
-            }
-            *currentMarkerPtr = marker; /* no keep, transfer refCount */
-        } else {
-            OS_REPORT(OS_ERROR,
-                  "v_networkQueueWrite",0,
-                  "Failed to send message.");
-            c_mutexUnlock(&queue->mutex);
-            return FALSE;
+        marker->sendBefore = sendBefore;
+        marker->priority = priorityLookingFor;
+        marker->firstSample = NULL;
+        marker->lastSample = NULL;
+        marker->next = *currentMarkerPtr; /* no keep, transfer refCount */
+        if (marker->next == NULL) {
+            queue->lastStatusMarker = marker; /* no keep, not reference counted */
         }
+        *currentMarkerPtr = marker; /* no keep, transfer refCount */
     }
     V_MESSAGE_STAMP(msg,readerLookupTime); 
     assert(marker != NULL);
     if (queue->freeSamples == NULL) {
         newHolder = c_new(queue->sampleType);
+        if (newHolder == NULL) {
+            OS_REPORT(OS_ERROR,
+                      "v_networkQueueWrite",0,
+                      "Failed to allocate v_networkQueueSample object.");
+            result = FALSE;
+            c_mutexUnlock(&queue->mutex);
+            return result;
+        }
     } else {
         newHolder = queue->freeSamples;
         queue->freeSamples = newHolder->next;
     }
 
-    if (newHolder) {
-        queue->currentMsgCount++;
+    queue->currentMsgCount++;
 
-        /* numberOfSamplesInserted & numberOfSamplesWaiting + stats*/
-        v_networkQueueStatisticsAdd(numberOfSamplesInserted,queue->statistics);
-        v_networkQueueStatisticsCounterInc(numberOfSamplesWaiting,queue->statistics);
+    /* numberOfSamplesInserted & numberOfSamplesWaiting + stats*/
+    v_networkQueueStatisticsAdd(numberOfSamplesInserted,queue->statistics);
+    v_networkQueueStatisticsCounterInc(numberOfSamplesWaiting,queue->statistics);
 
-        newHolder->message = c_keep(msg);
-        newHolder->entry = c_keep(entry);
-        newHolder->sequenceNumber = sequenceNumber;
-        newHolder->sender = sender;
-        newHolder->sendTo = sendTo;
-        newHolder->receiver = receiver;
+    newHolder->message = c_keep(msg);
+    newHolder->entry = c_keep(entry);
+    newHolder->sequenceNumber = sequenceNumber;
+    newHolder->sender = sender;
+    newHolder->sendTo = sendTo;
+    newHolder->receiver = receiver;
 
-        if (marker->lastSample != NULL) {
-            newHolder->next = v_networkQueueSample(marker->lastSample)->next; /* no keep, transfer refCount */
-            v_networkQueueSample(marker->lastSample)->next = newHolder; /* no keep, transfer refCount */
-        } else {
-            newHolder->next = marker->firstSample; /* no keep, transfer refCount */
-            marker->firstSample = newHolder; /* no keep, transfer refCount */
-        }
-        marker->lastSample = newHolder;
-
-
-        /* Write done, wake up waiters if needed */
-        if (wasEmpty && queue->threadWaiting) {
-            if (sendNow || v_networkQueueHasExpiringData(queue)) {
-                c_condBroadcast(&queue->cv);
-            }
-        }
+    if (marker->lastSample != NULL) {
+        newHolder->next = v_networkQueueSample(marker->lastSample)->next; /* no keep, transfer refCount */
+        v_networkQueueSample(marker->lastSample)->next = newHolder; /* no keep, transfer refCount */
     } else {
-        OS_REPORT(OS_ERROR,
-              "v_networkQueueWrite",0,
-              "Failed to send message.");
-        result = FALSE;
+    newHolder->next = marker->firstSample; /* no keep, transfer refCount */
+        marker->firstSample = newHolder; /* no keep, transfer refCount */
+    }
+    marker->lastSample = newHolder;
+
+
+    /* Write done, wake up waiters if needed */
+    if (wasEmpty && queue->threadWaiting) {
+        if (sendNow || v_networkQueueHasExpiringData(queue)) {
+            c_condBroadcast(&queue->cv);
+        }
     }
 
     c_mutexUnlock(&queue->mutex);
@@ -518,7 +520,8 @@ v_networkQueueWait(
     /* Now go to sleep if needed */
     while (result == V_WAITRESULT_NONE) {
         if (queue->periodic) {
-            interval = c_timeSub(queue->nextWakeup, v_timeGet());
+            c_time org =  v_timeGet();
+            interval = c_timeSub(queue->nextWakeup,org);
             eq = c_timeCompare(minSleepTime, interval);
             if (eq == C_LT) {
                 queue->threadWaiting = TRUE;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,6 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
+#include <math.h>
 #include "c_typebase.h"
 #include "c_base.h" /* for c_keep and c_free */
 
@@ -247,7 +248,7 @@ c_valueImage(
     switch (value.kind) {
     case V_ADDRESS:
         {
-            snprintf(buf,1024,PA_ADDRFMT,(PA_ADDRCAST)value.is.Address);
+            snprintf(buf,1024,"0x"PA_ADDRFMT,(PA_ADDRCAST)value.is.Address);
         }
     break;
     case V_BOOLEAN:
@@ -298,11 +299,12 @@ c_valueImage(
     break;
     _CASE_(V_FLOAT,     "%0.7g",Float);
     _CASE_(V_DOUBLE,    "%0.15g",Double);
+            snprintf(buf,1024,"0x"PA_ADDRFMT,(PA_ADDRCAST)value.is.Address);
      case  V_WCHAR:     snprintf(buf,1024,"(a-wchar-value)"); break;
-     case  V_WSTRING:   snprintf(buf,1024,"(a-wstring-value)"); break;
-     case  V_FIXED:     snprintf(buf,1024,"(a-fixed-value)"); break;
-     case  V_OBJECT:    snprintf(buf,1024,"(an-object-value)"); break;
-     case  V_VOIDP:     snprintf(buf,1024,"(an-voidp-value)"); break;
+     case  V_WSTRING:   snprintf(buf,1024,"0x"PA_ADDRFMT, (PA_ADDRCAST)value.is.WString); break;
+     case  V_FIXED:     snprintf(buf,1024,"0x"PA_ADDRFMT, (PA_ADDRCAST)value.is.Fixed); break;
+     case  V_OBJECT:    snprintf(buf,1024,"0x"PA_ADDRFMT, (PA_ADDRCAST)value.is.Object); break;
+     case  V_VOIDP:     snprintf(buf,1024,"0x"PA_ADDRFMT, (PA_ADDRCAST)value.is.Voidp); break;
      case  V_UNDEFINED:  snprintf(buf,1024,"(an-undefined-value)"); break;
      default: assert(FALSE);
     }
@@ -633,7 +635,7 @@ c_valuePOW (
     c_value v2)
 {
 #define _CASE_(l,s,t) case l: v1.is.s = \
-                              (t)pow((double)v1.is.s, v2.is.s); break
+                              (t)pow(v1.is.s, v2.is.s); break
     switch (v1.kind) {
     _CASE_(V_ADDRESS,Address,c_address);
     _CASE_(V_SHORT,Short,c_short);

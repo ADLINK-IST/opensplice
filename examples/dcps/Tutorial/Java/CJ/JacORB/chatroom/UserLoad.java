@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -30,6 +30,7 @@ public class UserLoad extends Thread {
 
     /* entities required by all threads. */
     public static GuardCondition            escape;
+    public static final int                 TERMINATION_MESSAGE = -1; 
     
     /**
      * Sleeper thread: sleeps 60 seconds and then triggers the WaitSet.
@@ -283,6 +284,13 @@ public class UserLoad extends Thread {
         
         /* Start the sleeper thread. */
         new UserLoad().start();
+        
+        /* Print a message that the UserLoad has opened. */
+        System.out.println(
+                "UserLoad has opened: disconnect a Chatter " +
+                "with userID = " + 
+                TERMINATION_MESSAGE +
+                "to close it....\n");
       
         while (!closed) {
             /* Wait until at least one of the Conditions in the 
@@ -363,6 +371,11 @@ public class UserLoad extends Thread {
                                 "Chat.ChatMessageDataReader.return_loan");
                             msgList.value = null;
                             infoSeq2.value = null;
+                            if(nsList.value[j].userID == TERMINATION_MESSAGE)
+                            {
+                            	System.out.println("Termination message received: exiting...");
+                                closed = true;
+                            }
                         }
                         status = nameServer.return_loan(nsList, infoSeq);
                         ErrorHandler.checkStatus(

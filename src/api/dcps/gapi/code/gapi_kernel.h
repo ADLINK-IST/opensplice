@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,7 +13,7 @@
 #define GAPI_KERNEL_H
 
 #include "u_entity.h"
-#include "u_kernel.h"
+#include "u_domain.h"
 #include "u_writer.h"
 #include "u_participant.h"
 

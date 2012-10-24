@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -33,7 +33,6 @@ extern "C" {
  * user component can return.
  */
 
-#if 1
 typedef v_result u_result;
 
 #define U_RESULT_UNDEFINED            V_RESULT_UNDEFINED
@@ -49,25 +48,9 @@ typedef v_result u_result;
 #define U_RESULT_INCONSISTENT_QOS     V_RESULT_INCONSISTENT_QOS
 #define U_RESULT_IMMUTABLE_POLICY     V_RESULT_IMMUTABLE_POLICY
 #define U_RESULT_PRECONDITION_NOT_MET V_RESULT_PRECONDITION_NOT_MET
+#define U_RESULT_ALREADY_DELETED      V_RESULT_ALREADY_DELETED
 #define U_RESULT_UNSUPPORTED          V_RESULT_UNSUPPORTED
-#else
-typedef enum {
-    U_RESULT_UNDEFINED,
-    U_RESULT_OK,
-    U_RESULT_INTERRUPTED,
-    U_RESULT_NOT_INITIALISED,
-    U_RESULT_OUT_OF_MEMORY,
-    U_RESULT_INTERNAL_ERROR,
-    U_RESULT_ILL_PARAM,
-    U_RESULT_CLASS_MISMATCH,
-    U_RESULT_DETACHING,
-    U_RESULT_TIMEOUT,
-    U_RESULT_INCONSISTENT_QOS,
-    U_RESULT_IMMUTABLE_POLICY,
-    U_RESULT_PRECONDITION_NOT_MET,
-    U_RESULT_UNSUPPORTED
-} u_result;
-#endif
+
 typedef enum {
     U_SERVICE_NETWORKING,
     U_SERVICE_DURABILITY,
@@ -80,20 +63,22 @@ typedef enum {
 } u_serviceKind;
 
 typedef enum {
+    U_UNDEFINED,
     U_ENTITY, U_PARTICIPANT, U_PUBLISHER, U_WRITER, U_SERVICE,
     U_SERVICEMANAGER, U_SUBSCRIBER, U_READER, U_NETWORKREADER,
-    U_GROUPQUEUE, U_QUERY, U_DATAVIEW, U_PARTITION, U_TOPIC,
-    U_GROUP, U_VIEW, U_WAITSET,
+    U_GROUPQUEUE, U_QUERY, U_DATAVIEW, U_PARTITION, U_TOPIC, U_CFTOPIC,
+    U_GROUP, U_WAITSET, U_DOMAIN,
     U_COUNT
 } u_kind;
 
 C_CLASS(u_object);
 C_CLASS(u_entity);
 C_CLASS(u_dispatcher);
-C_CLASS(u_kernel);
+C_CLASS(u_domain);
 C_CLASS(u_group);
 C_CLASS(u_partition);
 C_CLASS(u_topic);
+C_CLASS(u_contentFilteredTopic);
 C_CLASS(u_waitset);
 C_CLASS(u_participant);
 C_CLASS(u_publisher);
@@ -114,8 +99,12 @@ C_CLASS(u_waitsetHistoryRequestEvent);
 C_CLASS(u_waitsetPersistentSnapshotEvent);
 
 OS_API c_char *
-u_result_image(
+u_resultImage(
     u_result result);
+
+OS_API c_char *
+u_kindImage(
+    u_kind kind);
 
 #undef OS_API
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,7 +12,7 @@
 #include "cmx__groupqueue.h"
 #include "v_groupQueue.h"
 #include <stdio.h>
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 
 c_char*
 cmx_groupQueueInit(
@@ -22,7 +22,7 @@ cmx_groupQueueInit(
     v_groupQueue groupqueue;
     
     groupqueue = v_groupQueue(entity);
-    sprintf(buf, "<kind>GROUPQUEUE</kind>");
+    os_sprintf(buf, "<kind>GROUPQUEUE</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

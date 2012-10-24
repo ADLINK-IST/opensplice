@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "d_persistentDataListener.h"
@@ -37,6 +37,396 @@
 #include "v_time.h"
 #include "c_laptime.h"
 #include "os_report.h"
+#include "os_thread.h"
+#include "os_abstract.h"
+
+static d_storeResult
+d_storeGroupAction(
+    v_groupAction msg,
+    d_persistentDataListener listener,
+    d_store persistentStore,
+    os_time waitTime)
+{
+    v_message message;
+    d_storeResult result;
+    c_ulong storeCount, disposeCount, lifespanCount, cleanupCount, deleteCount;
+    c_ulong registerCount, unregisterCount;
+
+    storeCount = 0;
+    disposeCount = 0;
+    lifespanCount = 0;
+    cleanupCount = 0;
+    deleteCount = 0;
+    registerCount = 0;
+    unregisterCount = 0;
+
+    message = v_message(msg->message);
+
+    switch(msg->kind){
+        case V_GROUP_ACTION_WRITE:
+            do {
+                result = d_storeMessageStore(persistentStore, msg);
+
+                if(result == D_STORE_RESULT_OK){
+                    pa_increment(&(listener->pstats.samplesStored));
+                } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                    os_nanoSleep(waitTime);
+                }
+            } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
+            break;
+        case V_GROUP_ACTION_DISPOSE:
+            do {
+                result = d_storeInstanceDispose(persistentStore, msg);
+
+                if(result == D_STORE_RESULT_OK){
+                    pa_increment(&(listener->pstats.instancesDisposed));
+                } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                    os_nanoSleep(waitTime);
+                }
+            } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
+
+            break;
+        case V_GROUP_ACTION_LIFESPAN_EXPIRE:
+            do {
+                result = d_storeMessageExpunge(persistentStore, msg);
+
+                if(result == D_STORE_RESULT_OK){
+                    pa_increment(&(listener->pstats.samplesLifespanExpired));
+                } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                    os_nanoSleep(waitTime);
+                }
+            } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
+            break;
+        case V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE:
+            do {
+                result = d_storeInstanceExpunge(persistentStore, msg);
+
+                if(result == D_STORE_RESULT_OK){
+                    pa_increment(&(listener->pstats.instancesCleanupDelayExpired));
+                } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                    os_nanoSleep(waitTime);
+                }
+            } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
+            break;
+        case V_GROUP_ACTION_DELETE_DATA:
+            do {
+                result = d_storeDeleteHistoricalData(persistentStore, msg);
+
+                if(result == D_STORE_RESULT_OK){
+                    pa_increment(&(listener->pstats.eventsDeleteHistoricalData));
+                } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                    os_nanoSleep(waitTime);
+                }
+            } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
+            break;
+        case V_GROUP_ACTION_REGISTER:
+            do {
+                result = d_storeInstanceRegister(persistentStore, msg);
+
+                if(result == D_STORE_RESULT_OK){
+                    pa_increment(&(listener->pstats.instancesRegistered));
+                } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                    os_nanoSleep(waitTime);
+                }
+            } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
+            break;
+        case V_GROUP_ACTION_UNREGISTER:
+            do {
+                result = d_storeInstanceUnregister(persistentStore, msg);
+
+                if(result == D_STORE_RESULT_OK){
+                    pa_increment(&(listener->pstats.instancesUnregistered));
+                } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                    os_nanoSleep(waitTime);
+                }
+            } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
+            break;
+        case V_GROUP_ACTION_DISPOSE_ALL:  /*fallthrough on purpose.*/
+        default:
+            OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
+                    "storeGroupAction: Unknown or unsupported group action received (%d)",
+                    msg->kind);
+            assert(FALSE);
+            result = D_STORE_RESULT_ERROR;
+            break;
+    }
+    if(result != D_STORE_RESULT_OK){
+        if(listener->lastResult != result){
+            OS_REPORT_2(OS_ERROR, D_CONTEXT, 0,
+                "storeGroupAction: Error in handling action on persistent storage. Action: '%d' and Reason: '%d'\n",
+                msg->kind,
+                result);
+            listener->lastResult = result;
+        }
+    }
+    return result;
+}
+
+/* Start persistent action */
+static void
+d_persistentDataListenerSMPTake(
+    v_entity entity,
+    c_voidp args)
+{
+    struct takeData* data;
+    d_persistentDataListener listener;
+    d_admin admin;
+    d_subscriber subscriber;
+    d_durability durability;
+    d_store store;
+    v_groupQueue queue;
+    c_ulong size;
+    os_time waitTime, startTime, totalTime;
+    struct persistentStatistics stats;
+    os_result waitResult;
+
+    data  = (struct takeData*)args;
+    listener = data->listener;
+    admin = d_listenerGetAdmin(d_listener(listener));
+    durability = d_adminGetDurability(admin);
+    subscriber = d_adminGetSubscriber(admin);
+    store = d_subscriberGetPersistentStore(subscriber);
+    queue = v_groupQueue(entity);
+    waitTime.tv_sec = 0;
+    waitTime.tv_nsec = 100000000; /*100ms*/
+
+    /* Only start persistent action when samples are available */
+    size = v_groupQueueSize(queue);
+
+    if(!d_durabilityMustTerminate(data->durability) && (size > 0)){
+        os_mutexLock(&(listener->pmutex));
+
+        /* Listener threads cannot be active outside persistent action */
+        if(listener->runCount != 0){
+            d_printTimedEvent(durability, D_LEVEL_SEVERE,
+                    D_THREAD_PERISTENT_DATA_LISTENER,
+                    "Durability administration corrupt!! %d persistent threads active outside persistent action.\n",
+                    listener->runCount);
+        }
+
+        /* Prepare statistics */
+        memcpy(&stats, &(listener->pstats), sizeof(struct persistentStatistics));
+        startTime = os_timeGet();
+
+        /* Threads will read until mark, so they will not starve because of fluctuating data throughput (there is always data available until mark is reached). */
+        v_groupQueueSetMarker(queue);
+
+        /* Start persistent action */
+        d_storeActionStart(store);
+        listener->runCount = c_iterLength(listener->persistentThreads);
+        os_condBroadcast(&(listener->pcond));
+        os_mutexUnlock(&(listener->pmutex));
+
+        /* Wait until threads finished processing */
+        os_mutexLock(&(listener->pauseMutex));
+        while(listener->runCount > 0 && !d_durabilityMustTerminate(data->durability)){
+            waitResult = os_condTimedWait(&(listener->pauseCond), &(listener->pauseMutex), &waitTime);
+            if (waitResult == os_resultFail)
+            {
+                OS_REPORT(OS_CRITICAL, "d_persistentDataListenerSMPTake", 0,
+                          "os_condTimedWait failed - thread will terminate");
+                break;
+            }
+        }
+        os_mutexUnlock(&(listener->pauseMutex));
+
+        os_mutexLock(&(listener->pmutex));
+        if((listener->runCount != 0) && (!d_durabilityMustTerminate(data->durability))){
+            d_printTimedEvent(durability, D_LEVEL_SEVERE,
+                    D_THREAD_PERISTENT_DATA_LISTENER,
+                    "Durability administration corrupt!! %d persistent threads active outside persistent action.\n",
+                    listener->runCount);
+        }
+
+        /* Stop action */
+        d_storeActionStop(store);
+
+        /* Process statistics */
+        totalTime = os_timeSub(os_timeGet(), startTime);
+        {
+            c_ulong samplesStored, samplesLifespanExpired;
+            c_ulong instancesDisposed, instancesCleanupDelayExpired;
+            c_ulong instancesRegistered, instancesUnregistered;
+            c_ulong eventsDeleteHistoricalData, eventsDisposeAll;
+            c_ulong total;
+
+            samplesStored = listener->pstats.samplesStored - stats.samplesStored;
+            samplesLifespanExpired = listener->pstats.samplesLifespanExpired - stats.samplesLifespanExpired;
+            instancesDisposed = listener->pstats.instancesDisposed - stats.instancesDisposed;
+            instancesCleanupDelayExpired = listener->pstats.instancesCleanupDelayExpired - stats.instancesCleanupDelayExpired;
+            instancesRegistered = listener->pstats.instancesRegistered - stats.instancesRegistered;
+            instancesUnregistered = listener->pstats.instancesUnregistered - stats.instancesUnregistered;
+            eventsDeleteHistoricalData = listener->pstats.eventsDeleteHistoricalData - stats.eventsDeleteHistoricalData;
+            eventsDisposeAll = listener->pstats.eventsDisposeAll - stats.eventsDisposeAll;
+            total = samplesStored + samplesLifespanExpired + instancesDisposed + instancesCleanupDelayExpired +
+                    instancesRegistered + instancesUnregistered + eventsDeleteHistoricalData + eventsDisposeAll;
+
+
+            if(total != 0){
+                listener->totalActions += total;
+                listener->totalTime = os_timeAdd(listener->totalTime, totalTime);
+
+                d_printTimedEvent(durability, D_LEVEL_FINEST,
+                    D_THREAD_PERISTENT_DATA_LISTENER,
+                    "Current:\n" \
+                    "samplesStored=%d, " \
+                    "samplesLifespanExpired=%d, " \
+                    "instancesDisposed=%d, " \
+                    "instancesCleanupDelayExpired=%d, " \
+                    "instancesRegistered=%d, " \
+                    "instancesUnregistered=%d, " \
+                    "eventsDeleteHistoricalData=%d, " \
+                    "eventsDisposeAll=%d\n",
+                    samplesStored,
+                    samplesLifespanExpired,
+                    instancesDisposed,
+                    instancesCleanupDelayExpired,
+                    instancesRegistered,
+                    instancesUnregistered,
+                    eventsDeleteHistoricalData,
+                    eventsDisposeAll);
+
+                d_printTimedEvent(durability, D_LEVEL_FINE,
+                    D_THREAD_PERISTENT_DATA_LISTENER,
+                    "Current: performed %d persistent store actions in %.6f seconds (%.2f actions/sec)\n",
+                    total, os_timeToReal(totalTime), ((double)total)/os_timeToReal(totalTime));
+
+                d_printTimedEvent(durability, D_LEVEL_FINE,
+                    D_THREAD_PERISTENT_DATA_LISTENER,
+                    "Total: performed %d persistent store actions in %.6f seconds (%.2f actions/sec)\n",
+                    listener->totalActions, os_timeToReal(listener->totalTime),
+                    ((double)listener->totalActions)/os_timeToReal(listener->totalTime));
+
+                /*
+                d_printTimedEvent(durability, D_LEVEL_FINEST,
+                    D_THREAD_PERISTENT_DATA_LISTENER,
+                    "Total:\n" \
+                    "-samplesStored=%d\n" \
+                    "-samplesLifespanExpired=%d\n" \
+                    "-instancesDisposed=%d\n" \
+                    "-instancesCleanupDelayExpired=%d\n" \
+                    "-instancesRegistered=%d\n" \
+                    "-instancesUnregistered=%d\n" \
+                    "-eventsDeleteHistoricalData=%d\n" \
+                    "-eventsDisposeAll=%d\n",
+                    listener->pstats.samplesStored,
+                    listener->pstats.samplesLifespanExpired,
+                    listener->pstats.instancesDisposed,
+                    listener->pstats.instancesCleanupDelayExpired,
+                    listener->pstats.instancesRegistered,
+                    listener->pstats.instancesUnregistered,
+                    listener->pstats.eventsDeleteHistoricalData,
+                    listener->pstats.eventsDisposeAll);
+                */
+            }
+        }
+        os_mutexUnlock(&(listener->pmutex));
+    }
+    return;
+}
+
+static void
+d_getKernelEntity(
+    v_entity entity,
+    c_voidp args)
+{
+    v_entity* e;
+
+    e = (v_entity*)args;
+    *e = entity;
+}
+
+/* Persistent thread implementation */
+static void*
+d_smpPersist(
+    void* data)
+{
+    d_persistentDataListener listener;
+    d_admin admin;
+    d_subscriber subscriber;
+    d_store store;
+    d_storeResult result;
+    d_durability durability;
+    u_result ur;
+    os_time waitTime;
+    v_groupQueue queue;
+    c_ulong runCount;
+    c_bool terminate;
+    v_groupAction msg;
+    unsigned int count;
+    os_result waitResult;
+
+    count = 0;
+    listener = d_persistentDataListener(data);
+    admin = d_listenerGetAdmin(d_listener(listener));
+    durability = d_adminGetDurability(admin);
+    subscriber = d_adminGetSubscriber(admin);
+    store = d_subscriberGetPersistentStore(subscriber);
+    u_entityAction(u_entity(listener->queue), d_getKernelEntity, &queue);
+
+    waitTime.tv_sec = 0;
+    waitTime.tv_nsec = 100000000; /*100ms*/
+    ur = U_RESULT_OK;
+
+    terminate = d_durabilityMustTerminate(durability);
+
+    while(!terminate){
+        os_mutexLock(&(listener->pmutex));
+
+        terminate = d_durabilityMustTerminate(durability);
+
+        /* Wait for persistent action */
+        if(!terminate){
+            do {
+                waitResult = os_condWait(&(listener->pcond), &(listener->pmutex));
+                if (waitResult == os_resultFail)
+                {
+                   OS_REPORT(OS_CRITICAL, "d_smpPersist", 0,
+                             "os_condWait failed - in persistent worker thread");
+                   break;
+                }
+                terminate = d_durabilityMustTerminate(durability);
+            } while((listener->runCount == 0) && (!terminate));
+        }
+        os_mutexUnlock(&(listener->pmutex));
+
+        d_printTimedEvent(durability, D_LEVEL_SEVERE,
+                D_THREAD_PERISTENT_DATA_LISTENER,
+                "Worker thread awake! Now taking data...\n");
+
+        /* Take samples */
+        msg = v_groupQueueTake(queue);
+
+        /* Store all messages */
+        while(!terminate && msg){
+            count++;
+            result = d_storeGroupAction(msg, listener, store, waitTime);
+            c_free(msg);
+            msg = v_groupQueueTake(queue);
+            terminate = d_durabilityMustTerminate(durability);
+        }
+
+        if (msg == NULL) {
+        	/* If no samples are found, decrease runcount */
+            runCount = pa_decrement(&listener->runCount);
+
+            /* Wake up main listener thread */
+            if(runCount == 0){
+                os_mutexLock(&(listener->pauseMutex));
+                os_condSignal(&(listener->pauseCond));
+                os_mutexUnlock(&(listener->pauseMutex));
+            }
+        }
+
+        d_printTimedEvent(durability, D_LEVEL_SEVERE,
+                D_THREAD_PERISTENT_DATA_LISTENER,
+                "Worker sleeping again... (processed: %d, runCount=%d)\n",
+                count, listener->runCount);
+
+    }
+    return NULL;
+}
+
 
 static d_persistentGroup
 d_persistentGroupNew(
@@ -166,7 +556,7 @@ d_persistentDataListenerTake(
     c_bool allDone = FALSE;
     c_bool terminate;
     int i, max;
-    os_time sleepTime, sessionEndTime;
+    os_time sleepTime, sessionEndTime, waitTime;
     d_configuration config;
 
     assert(C_TYPECHECK(entity, v_groupQueue));
@@ -190,6 +580,8 @@ d_persistentDataListenerTake(
         max = 20;
         sleepTime = os_timeMulReal(config->persistentStoreSleepTime, 0.05e0);
     }
+    waitTime.tv_sec = 0;
+    waitTime.tv_nsec = 100000000; /*100ms*/
 
     while(allDone == FALSE){
         msg   = v_groupQueueTake(queue);
@@ -202,57 +594,87 @@ d_persistentDataListenerTake(
 
             switch(msg->kind){
                 case V_GROUP_ACTION_WRITE:
-                    result = d_storeMessageStore(data->persistentStore, msg);
+                    do {
+                        result = d_storeMessageStore(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        storeCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            storeCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
                 case V_GROUP_ACTION_DISPOSE:
-                    result = d_storeInstanceDispose(data->persistentStore, msg);
+                    do {
+                        result = d_storeInstanceDispose(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        disposeCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            disposeCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
+
                     break;
                 case V_GROUP_ACTION_LIFESPAN_EXPIRE:
-                    result = d_storeMessageExpunge(data->persistentStore, msg);
+                    do {
+                        result = d_storeMessageExpunge(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        lifespanCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            lifespanCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
                 case V_GROUP_ACTION_CLEANUP_DELAY_EXPIRE:
-                    result = d_storeInstanceExpunge(data->persistentStore, msg);
+                    do {
+                        result = d_storeInstanceExpunge(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        cleanupCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            cleanupCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
                 case V_GROUP_ACTION_DELETE_DATA:
-                    result = d_storeDeleteHistoricalData(data->persistentStore, msg);
+                    do {
+                        result = d_storeDeleteHistoricalData(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        deleteCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            deleteCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
                 case V_GROUP_ACTION_REGISTER:
-                	result = d_storeInstanceRegister(data->persistentStore, msg);
+                    do {
+                        result = d_storeInstanceRegister(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        registerCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            registerCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
                 case V_GROUP_ACTION_UNREGISTER:
-                	result = d_storeInstanceUnregister(data->persistentStore, msg);
+                    do {
+                        result = d_storeInstanceUnregister(data->persistentStore, msg);
 
-                    if(result == D_STORE_RESULT_OK){
-                        unregisterCount++;
-                    }
+                        if(result == D_STORE_RESULT_OK){
+                            unregisterCount++;
+                        } else if(result == D_STORE_RESULT_PRECONDITION_NOT_MET){
+                            os_nanoSleep(waitTime);
+                        }
+                    } while(result == D_STORE_RESULT_PRECONDITION_NOT_MET);
                     break;
+                case V_GROUP_ACTION_DISPOSE_ALL:  /*fallthrough on purpose.*/
                 default:
                     OS_REPORT_1(OS_ERROR, "d_persistentDataListenerTake", 0,
-                                "Unknown group action received (%d)", msg->kind);
+                                "Unknown or unsupported group action received (%d)", msg->kind);
                     assert(FALSE);
                     result = D_STORE_RESULT_ERROR;
                     break;
@@ -403,6 +825,8 @@ d_persistentDataListenerInit(
     d_durability durability;
     d_admin admin;
     v_readerQos qos;
+    os_mutexAttr mattr;
+    os_condAttr cattr;
 
     d_listenerInit(d_listener(listener), subscriber, NULL, d_persistentDataListenerDeinit);
     assert(d_objectIsValid(d_object(listener), D_LISTENER) == TRUE);
@@ -418,6 +842,30 @@ d_persistentDataListenerInit(
     listener->optimizeUpdateInterval = config->persistentUpdateInterval;
     listener->lastResult             = D_STORE_RESULT_OK;
     d_readerQosFree(qos);
+
+    listener->persistentThreads = c_iterNew(NULL);
+    listener->pstats.samplesStored = 0;
+    listener->pstats.samplesLifespanExpired = 0;
+    listener->pstats.instancesDisposed = 0;
+    listener->pstats.instancesCleanupDelayExpired = 0;
+    listener->pstats.instancesRegistered = 0;
+    listener->pstats.instancesUnregistered = 0;
+    listener->pstats.eventsDeleteHistoricalData = 0;
+    listener->pstats.eventsDisposeAll = 0;
+
+    os_mutexAttrInit(&mattr);
+    mattr.scopeAttr = OS_SCOPE_PRIVATE;
+    os_mutexInit(&(listener->pmutex), &mattr);
+    os_mutexInit(&(listener->pauseMutex), &mattr);
+
+    os_condAttrInit(&cattr);
+    cattr.scopeAttr = OS_SCOPE_PRIVATE;
+    os_condInit(&(listener->pcond), &(listener->pmutex), &cattr);
+    os_condInit(&(listener->pauseCond), &(listener->pauseMutex), &cattr);
+
+    listener->totalTime.tv_sec = 0;
+    listener->totalTime.tv_nsec = 0;
+    listener->totalActions = 0;
 }
 
 void
@@ -438,6 +886,15 @@ d_persistentDataListenerDeinit(
             listener->queue = NULL;
         }
         d_tableFree(listener->groups);
+
+        if(listener->persistentThreads){
+            c_iterFree(listener->persistentThreads);
+            listener->persistentThreads = NULL;
+        }
+        os_condDestroy(&(listener->pcond));
+        os_condDestroy(&(listener->pauseCond));
+        os_mutexDestroy(&(listener->pmutex));
+        os_mutexDestroy(&(listener->pauseMutex));
     }
 }
 
@@ -467,6 +924,9 @@ d_persistentDataListenerStart(
     d_waitsetAction action;
     d_durability durability;
     d_configuration configuration;
+    c_ulong i;
+    os_threadAttr tattr;
+    os_threadId tid, *toStore;
 
     assert(listener);
     result = FALSE;
@@ -482,6 +942,26 @@ d_persistentDataListenerStart(
         subscriber    = d_adminGetSubscriber(admin);
 
         if(d_listener(listener)->attached == FALSE){
+            listener->totalTime.tv_sec = 0;
+            listener->totalTime.tv_nsec = 0;
+            listener->totalActions = 0;
+
+            /* Initialise smpthreads when storemode is MMF and more than one thread is configured */
+            if(configuration->persistentStoreMode == D_STORE_TYPE_MEM_MAPPED_FILE){
+                os_threadAttrInit(&tattr);
+
+                if(configuration->persistentThreadCount > 1){
+                    listener->runCount = 0;
+                    for(i=0; i<configuration->persistentThreadCount; i++){
+                        os_threadCreate(&tid, "smpPersist", &tattr, d_smpPersist, listener);
+
+                        toStore = (os_threadId*)(os_malloc(sizeof(os_threadId)));
+                        *toStore = tid;
+                        c_iterAppend(listener->persistentThreads, toStore);
+                    }
+                }
+            }
+
             ur = u_dispatcherSetEventMask(dispatcher, V_EVENT_DATA_AVAILABLE);
 
             if(ur == U_RESULT_OK){
@@ -526,6 +1006,7 @@ d_persistentDataListenerStop(
     d_admin admin;
     d_subscriber subscriber;
     d_waitset waitset;
+    os_threadId* tid;
 
     assert(d_objectIsValid(d_object(listener), D_LISTENER));
     result = FALSE;
@@ -541,6 +1022,18 @@ d_persistentDataListenerStop(
 
             if(result == TRUE) {
                 d_waitsetEntityFree(listener->waitsetData);
+
+                os_mutexLock(&(listener->pmutex));
+                os_condBroadcast(&(listener->pcond));
+                os_mutexUnlock(&(listener->pmutex));
+
+                tid = (os_threadId*)(c_iterTakeFirst(listener->persistentThreads));
+
+                while(tid){
+                    os_threadWaitExit(*tid, NULL);
+                    os_free(tid);
+                    tid = (os_threadId*)(c_iterTakeFirst(listener->persistentThreads));
+                }
                 ur = U_RESULT_OK;
             } else {
                 ur = U_RESULT_ILL_PARAM;
@@ -567,6 +1060,7 @@ d_persistentDataListenerAction(
     d_persistentDataListener listener;
     d_admin admin;
     d_subscriber subscriber;
+    d_durability durability;
     struct takeData data;
     c_bool terminate;
     d_serviceState state;
@@ -604,7 +1098,18 @@ d_persistentDataListenerAction(
 
         }
 
-        u_entityAction(u_entity(o), d_persistentDataListenerTake, &data);
+        if(c_iterLength(listener->persistentThreads) > 0){
+
+            durability = d_adminGetDurability(admin);
+
+            d_printTimedEvent(durability, D_LEVEL_FINEST,
+                                D_THREAD_PERISTENT_DATA_LISTENER,
+                                "Using SMP for persistency.\n");
+
+            u_entityAction(u_entity(o), d_persistentDataListenerSMPTake, &data);
+        } else {
+            u_entityAction(u_entity(o), d_persistentDataListenerTake, &data);
+        }
     }
     return event->events;
 }

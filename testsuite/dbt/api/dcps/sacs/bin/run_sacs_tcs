@@ -7,11 +7,11 @@ TESTCASES="
     SACSTesterBoundsCheck
     SACSTesterBuiltin
     SACSTesterCondition
-    SACSContentFilteredTopicTester
+    SACSTesterContentFilteredTopic
     SACSTesterParticipant
-    SACSTester
-    SACSErrorInfoTester
-    SACSHistDataWithConditionTester
+    SACSTesterDomainParticipantFactory
+    SACSTesterErrorInfo
+    SACSTesterHistDataWithCondition
     SACSTesterListener
     SACSTesterPublisher
     SACSTesterReader
@@ -19,8 +19,9 @@ TESTCASES="
     SACSTesterSubscriber
     SACSTesterTopic
     SACSTesterTypeSupport
-    SACSWaitSetTester
+    SACSTesterWaitSet
     SACSTesterWriter
+    SACSGetDiscoveredXxx
     "
 
 run_testcases    

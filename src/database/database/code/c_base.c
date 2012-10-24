@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,6 +9,7 @@
  *   for full copyright notice and license terms.
  *
  */
+#include "os_stdlib.h"
 #include "os_report.h"
 #include "os_abstract.h"
 #include "c_avltree.h"
@@ -19,6 +20,7 @@
 #include "c__base.h"
 #include "c_metafactory.h"
 #include "c_querybase.h"
+#include "c__querybase.h"
 #include "c__collection.h"
 #include "c__field.h"
 #include "c__metabase.h"
@@ -60,7 +62,7 @@ static char* CHECK_REF_FILE = NULL;
     \
     if(!CHECK_REF_FILE){ \
         CHECK_REF_FILE = os_malloc(24); \
-        sprintf(CHECK_REF_FILE, "mem.log"); \
+        os_sprintf(CHECK_REF_FILE, "mem.log"); \
     } \
     s = backtrace(tr, CHECK_REF_DEPTH);\
     strs = backtrace_symbols(tr, s);\
@@ -95,7 +97,6 @@ C_STRUCT(c_header) {
 };
 
 C_CLASS(c_arrayHeader);
-
 /* The inheritance macro C_EXTEND is put at the end of the struct.
  * This is required since we must extend on the lower part of the memory.
  * Note that this requires a different approach for cast operations.
@@ -123,7 +124,7 @@ c_stringMalloc(
     c_long length)
 {
     c_header header;
-    c_string s;
+    c_string s = NULL;
 
     if (base == NULL) {
         return NULL;
@@ -134,6 +135,7 @@ c_stringMalloc(
         header->type = c_keep(base->string_type);
         pa_increment(&base->string_type->objectCount);
         header->refCount = 1;
+        s = (c_string)c_oid(header);
 #ifndef NDEBUG
         header->confidence = CONFIDENCE;
 #ifdef OBJECT_WALK
@@ -145,7 +147,6 @@ c_stringMalloc(
 #endif
 #endif
     }
-    s = (c_string)c_oid(header);
     return s;
 }
 
@@ -161,7 +162,7 @@ c_stringNew(
 
     s = c_stringMalloc(base, strlen(str) + 1);
 
-    strcpy(s,str);
+    os_strcpy(s,str);
     return s;
 }
 
@@ -672,6 +673,7 @@ c_baseInit (
 
     o = c_metaDeclare(c_metaObject(base),"c_threadId",M_STRUCTURE);
     c_metaTypeInit(o,sizeof(c_threadId),C_ALIGNMENT(c_threadId));
+    c_free(o);
 
     o = c_metaDefine(c_metaObject(base),M_STRUCTURE);
     type = c_member_t(base);
@@ -1165,7 +1167,8 @@ c_base
 c_create (
     const c_char *name,
     void *address,
-    c_long  size)
+    c_size size,
+    c_size threshold)
 {
     c_mm  mm;
     c_base base;
@@ -1179,7 +1182,7 @@ c_create (
                     size,MIN_DB_SIZE);
         return NULL;
     }
-    mm = c_mmCreate(address,size);
+    mm = c_mmCreate(address,size, threshold);
 
     header = (c_header)c_mmMalloc(mm, MEMSIZE(C_SIZEOF(c_base)));
     if (header) {
@@ -1195,9 +1198,19 @@ c_create (
         tempbase = (c_base)c_oid(header);
         base = (c_base)c_mmBind(mm, name, tempbase);
         if (base != tempbase) {
+            const c_char *_name;
+            if (name) {
+                _name = name;
+            } else {
+                _name = "NULL";
+            }
+            OS_REPORT_4(OS_ERROR,
+                        "c_base::c_create",0,
+                        "Internal error, memory management seems corrupted.\n"
+                        "             mm = 0x%x, name = %s,\n"
+                        "             tempbase = 0x%x, base = 0x%x",
+                        mm, name, tempbase, base);
             c_mmFree(mm, tempbase);
-            OS_REPORT(OS_ERROR,"c_base::c_create",0,
-                      "Internal error, memory management seems corrupted");
             return NULL;
         }
         base->mm = mm;
@@ -1242,9 +1255,9 @@ c_open (
     namelength = strlen(name);
 
     if (namelength == 0) {
-        return c_create("HEAPDATABASE", NULL, 0);
+        return c_create("HEAPDATABASE", NULL, 0, 0);
     }
-    mm = c_mmCreate(address,0);
+    mm = c_mmCreate(address,0, 0);
     base = (c_base)c_mmLookup(mm, name);
     if (base == NULL) {
         OS_REPORT_1(OS_ERROR,
@@ -1369,6 +1382,13 @@ c_memsize (
     return MEMSIZE(c_typeSize(type));
 }
 
+c_memoryThreshold
+c_baseGetMemThresholdStatus(
+    c_base _this)
+{
+    return c_mmbaseGetMemThresholdStatus(_this->mm);
+}
+
 c_object
 c_new (
     c_type type)
@@ -1377,28 +1397,25 @@ c_new (
     c_object o;
     c_long size;
 
+    assert(type);
+
     size = c_typeSize(type);
 
-    if (size <= 0) {
+    if ((c_baseObjectKind(type) == M_COLLECTION) &&
+            ((c_collectionTypeKind(type) == C_ARRAY)
+                || (c_collectionTypeKind(type) == C_SEQUENCE))) {
+        OS_REPORT(OS_ERROR,
+                    "Database c_new",0,
+                    "c_new cannot create C_ARRAY nor C_SEQUENCE, use c_newArray or c_newSequence respectively");
+        assert(0); /* crash in dev, so that the error is easily found */
+        o = NULL;
+    } else if (size <= 0) {
         OS_REPORT_1(OS_ERROR,
                     "Database c_new",0,
                     "Illegal size %d specified",size);
         o = NULL;
     } else {
-        if ((c_baseObjectKind(type) == M_COLLECTION) &&
-            ((c_collectionTypeKind(type) == C_ARRAY) ||
-             (c_collectionTypeKind(type) == C_SEQUENCE))) {
-            c_arrayHeader hdr;
-
-            hdr = (c_arrayHeader)c_mmMalloc(type->base->mm,
-                                            ARRAYMEMSIZE(size));
-            if (hdr) {
-                hdr->size = c_collectionTypeMaxSize(type);
-                header = (c_header)&hdr->_parent;
-            }
-        } else {
-            header = (c_header)c_mmMalloc(type->base->mm, MEMSIZE(size));
-        }
+        header = (c_header)c_mmMalloc(type->base->mm, MEMSIZE(size));
         if (header) {
             header->refCount = 1;
             header->type = c_keep(type);
@@ -1438,29 +1455,30 @@ c_new (
     return o;
 }
 
-c_long
-c_arraySize(
-    c_array _this)
-{
-    if (_this) {
-        return (c_long)(c_arrayHeader(_this)->size);
-    } else {
-        return 0;
-    }
-}
-
-c_array
-c_newArray (
+/*
+ * Use the macro definitions c_newArray and c_newSequence instead, respectively
+ * for creating an array or a sequence for legibility.
+ */
+c_object
+c_newBaseArrayObject (
     c_collectionType arrayType,
     c_long size)
 {
     c_long allocSize;
-    c_array o = NULL;
+    c_object o = NULL;
 
-    if ((c_collectionTypeKind(arrayType) == C_ARRAY) ||
-        (c_collectionTypeKind(arrayType) == C_SEQUENCE)) {
-        if ((c_collectionTypeMaxSize(arrayType) == 0) ||
-            (c_collectionTypeMaxSize(arrayType) >= size)) {
+    assert(arrayType);
+    assert(
+        (c_collectionTypeKind(arrayType) == C_ARRAY && size > 0)
+        ||
+        (c_collectionTypeKind(arrayType) == C_SEQUENCE && size >= 0)
+        );
+
+    if ((c_collectionTypeKind(arrayType) == C_ARRAY)
+         || (c_collectionTypeKind(arrayType) == C_SEQUENCE)) {
+        if (    (c_collectionTypeKind(arrayType) == C_ARRAY && size > 0)
+                ||
+                (c_collectionTypeKind(arrayType) == C_SEQUENCE && size >= 0) ) {
             c_arrayHeader hdr;
             c_header header;
             c_type subType;
@@ -1481,6 +1499,7 @@ c_newArray (
             }
             hdr = (c_arrayHeader)c_mmMalloc(c_type(arrayType)->base->mm,
                                             ARRAYMEMSIZE(allocSize));
+
             if (hdr) {
                 hdr->size = size;
                 header = (c_header)&hdr->_parent;
@@ -1491,6 +1510,14 @@ c_newArray (
                 pa_increment(&header->type->objectCount);
 
                 o = c_oid(header);
+
+                /*
+                 * When an array is freed via c_free, it also checks whether it contains
+                 * references and if they need to be freed. If the user did not fill the whole array
+                 * a c_free on garbage data could be performed, which causes undefined behaviour.
+                 * Therefore the whole array is set on 0.
+                 */
+                memset(o, 0, allocSize);
 
 #ifndef NDEBUG
                 header->confidence = CONFIDENCE;
@@ -1504,16 +1531,14 @@ c_newArray (
 #endif
             }
         } else {
-            OS_REPORT_2(OS_ERROR,
-                        "Database c_newArray",0,
-                        "Specified size %d does not comply to type "
-                        "specific max size %d",
-                        size, c_collectionTypeMaxSize(arrayType));
+            OS_REPORT_1(OS_ERROR,
+                        "Database c_newBaseArrayObject",0,
+                        "Illegal size %d specified", size);
         }
     } else {
         OS_REPORT(OS_ERROR,
-                  "Database c_newArray",0,
-                  "Specified collection type is not an array nor a sequence");
+                  "Database c_newBaseArrayObject",0,
+                  "Specified type is not an array nor a sequence");
     }
     return o;
 }
@@ -1565,6 +1590,17 @@ c_object2mem (
 
     return header;
 }
+
+#ifndef NDEBUG
+void
+c__assertValidDatabaseObject(
+    c_voidp o)
+{
+    assert(o);
+    assert(c_header(o)->confidence == CONFIDENCE);
+    assert(c_header(o)->refCount > 0);
+}
+#endif
 
 static c_bool _c_freeReferences(c_metaObject metaObject, c_object o);
 #define c_freeReferences(m,o) ((m && o)? _c_freeReferences(m,o):TRUE)
@@ -1745,7 +1781,14 @@ _c_freeReferences (
         case C_SEQUENCE:
             ACTUALTYPE(type,c_collectionType(metaObject)->subType);
             ar = (c_array)o;
-            length = c_collectionType(metaObject)->maxSize;
+
+            if(c_collectionType(metaObject)->kind == C_ARRAY
+                && c_collectionType(metaObject)->maxSize > 0){
+                length = c_collectionType(metaObject)->maxSize;
+            } else {
+                length = c_arraySize(ar);
+            }
+
             if (c_typeIsRef(type)) {
                 for (i=0;i<length;i++) {
                     c_free(ar[i]);
@@ -1942,7 +1985,7 @@ c_free (
 #ifndef NDEBUG
                 {
                     c_long size;
-                    size = c_typeSize(type);
+                    size = c_arraySize(object);
                     memset(hdr,0,ARRAYMEMSIZE(size));
     }
 #endif
@@ -2162,6 +2205,123 @@ c_baseOnLowOnMemory(
             c_mmOnLowOnMemory(mm,action,arg);
         }
     }
+}
+
+c_long
+c_arraySize(
+    c_array _this)
+{
+    if (_this) {
+        assert(c_header(_this)->confidence == CONFIDENCE);
+        assert(
+            /* For backward compatibility purposes this function can still be used
+             * to obtain the length of sequences as well, but new code should use
+             * the c_sequenceSize operation instead.
+             */
+            (c_baseObjectKind(c_header(_this)->type) == M_COLLECTION)
+            && (
+                    (c_collectionTypeKind(c_header(_this)->type) == C_ARRAY)
+                    || (c_collectionTypeKind(c_header(_this)->type) == C_SEQUENCE)
+               )
+            );
+        return (c_long)(c_arrayHeader(_this)->size);
+    } else {
+        return 0;
+    }
+}
+
+c_long
+c_sequenceSize(
+    c_sequence _this)
+{
+    if (_this) {
+        assert(c_header(_this)->confidence == CONFIDENCE);
+        assert(c_baseObjectKind(c_header(_this)->type) == M_COLLECTION &&
+                c_collectionTypeKind(c_header(_this)->type) == C_SEQUENCE);
+        return (c_long)(c_arrayHeader(_this)->size);
+    } else {
+        return 0;
+    }
+}
+
+c_object
+c_baseCheckPtr(
+    c_base _this,
+    void *ptr)
+{
+    c_object o;
+    c_type type;
+    c_arrayHeader hdr;
+    c_header header;
+    c_voidp addr;
+    c_mm mm;
+
+    o = NULL;
+    if (_this != NULL) {
+        mm = c_baseMM(_this);
+        if (mm != NULL) {
+            /* First assume that the address refers to an array object.
+             * Note that not the array headre size is substracted but
+             * the header size instead. This is not correct but is
+             * compensated by shifting the address at the end of the loop.
+             * Fixing this issue requires a partial redesign of this
+             * operation.
+             */
+            hdr = c_mmCheckPtr(c_baseMM(_this), c_header(ptr));
+            while ((hdr != NULL) && (o == NULL)) {
+                /* Check if header->type refers to valid type. */
+                header = &hdr->_parent;
+                addr = c_mmCheckPtr(c_baseMM(_this), c_header(header->type));
+                if (addr != NULL) {
+                    type = c_oid(addr);
+                    if ((type == NULL) ||
+                        (type->base != _this) ||
+                        (!c_objectIsType(type)))
+                    {
+                        /* Invalid array hdr, so try if it is a normal header. */
+                        header = (c_header)hdr;
+                        addr = c_mmCheckPtr(c_baseMM(_this), c_header(header->type));
+                        if (addr != NULL) {
+                            type = c_oid(addr);
+                            if ((type != NULL) &&
+                                (type->base == _this) &&
+                                (c_objectIsType(type)))
+                            {
+                                /* We have a valid address! */
+                                o = c_oid(header);
+                            }
+                        }
+                    } else {
+                        /* We have a valid address! */
+                        o = c_oid(header);
+                    }
+                } else {
+                    /* Invalid array hdr, so try if it is a normal header. */
+                    header = (c_header)hdr;
+                    addr = c_mmCheckPtr(c_baseMM(_this), c_header(header->type));
+                    if (addr != NULL) {
+                        type = c_oid(addr);
+                        if ((type != NULL) &&
+                            (type->base == _this) &&
+                            (c_objectIsType(type)))
+                        {
+                            /* We have a valid address! */
+                            o = c_oid(header);
+                        }
+                    }
+                }
+                hdr = (c_arrayHeader)(C_ADDRESS(hdr) - 4);
+            }
+        } else {
+            OS_REPORT_1(OS_ERROR,"c_baseCheckPtr", 0,
+                        "Could not resolve Memory Manager for Database (0x%x)",
+                        _this);
+        }
+    } else {
+        OS_REPORT(OS_ERROR,"c_baseCheckPtr", 0,
+                  "Bad Parameter: Database = NULL");
+    }
+    return o;
 }
 
 #ifndef NDEBUG

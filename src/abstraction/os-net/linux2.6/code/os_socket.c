@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,8 +19,8 @@
  *  \brief socket management
  */
 
-#include <os_heap.h>
+#include "os_heap.h"
 #include <string.h>
 
 /* include OS specific socket management implementation		*/
-#include <../common/code/os_socket.c>
+#include "../common/code/os_socket.c"

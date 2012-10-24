@@ -67,8 +67,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 // utl_string.cc - Implementation of quick and dirty TEMPORARY String
 //     for IDL compiler
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Constructors
@@ -90,7 +90,7 @@ UTL_String::UTL_String(const char *str)
       alloced = len + 1;
       p_str = new char [alloced];
       c_str = new char [alloced];
-      strcpy(p_str, str);
+      os_strcpy(p_str, str);
       canonicalize();
    }
 }
@@ -129,7 +129,7 @@ UTL_String::UTL_String(UTL_String *s)
          alloced = len + 1;
          p_str = new char [alloced];
          c_str = new char [alloced];
-         strcpy(p_str, b);
+         os_strcpy(p_str, b);
          canonicalize();
       }
    }

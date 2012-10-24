@@ -248,7 +248,7 @@ int driver_main(int argc, char **argv)
 
             for (int tmpcounter = 0; tmpcounter < DRV_nfiles; tmpcounter++)
             {
-               sprintf(tmp_command, "%s %s\0", cmdstr, DRV_files[tmpcounter]);
+               os_sprintf(tmp_command, "%s %s\0", cmdstr, DRV_files[tmpcounter]);
 
                _flushall ();
 

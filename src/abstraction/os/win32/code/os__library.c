@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -35,7 +35,7 @@ os_libraryOpen(
     
     if(name && (strlen(name) > 0)){
         if(attr->autoTranslate == OS_TRUE){
-            _snprintf(dllName, 64, "%s.dll", name);
+            snprintf(dllName, 64, "%s.dll", name);
             handle = LoadLibrary(dllName);
         } else {
             handle = LoadLibrary(name);

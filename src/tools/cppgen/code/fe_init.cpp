@@ -77,10 +77,10 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * stack as the outermost scope.
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
-#include <fe_private.h>
+#include "fe_private.h"
 
 /*
  * Create a scoped name

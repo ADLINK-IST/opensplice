@@ -29,7 +29,11 @@ run_testcase ()
     printTestHeader $TESTCASE
     ospl start
     sleep 2
-    ./$d
+    if [ `uname | awk '/_NT-/'` ]; then 
+        ./$d;
+    else
+        mono $d.exe;
+    fi
     ospl stop
 }
 

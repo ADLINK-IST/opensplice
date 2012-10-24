@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,6 +14,7 @@
 #include "jni_misc.h"
 #include "jni_participant.h"
 #include "os_heap.h"
+#include "os_stdlib.h"
 
 jni_topic
 jni_topicNew(
@@ -39,16 +40,16 @@ jni_topicNew(
             
             size = (size_t)(strlen(name) + temp);
             jni_topicDescription(topic)->name = (char*)(os_malloc(size));
-            strncpy(jni_topicDescription(topic)->name, name, size);
+           os_strncpy(jni_topicDescription(topic)->name, name, size);
             
             size = (size_t)(strlen(typeName) + temp);
             jni_topicDescription(topic)->typeName = (char*)(os_malloc(size));
-            strncpy(jni_topicDescription(topic)->typeName, typeName, size);
+           os_strncpy(jni_topicDescription(topic)->typeName, typeName, size);
             
             if(keyList != NULL){
                 size = (size_t)(strlen(keyList) + temp);
                 jni_topicDescription(topic)->keyList = (char*)(os_malloc(size));
-                strncpy(jni_topicDescription(topic)->keyList, keyList, size);
+               os_strncpy(jni_topicDescription(topic)->keyList, keyList, size);
             }
             else{
                 jni_topicDescription(topic)->keyList = NULL;

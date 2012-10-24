@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -17,19 +17,26 @@
 
 u_result
 u_dataReaderInit (
-    u_dataReader _this);
+    u_dataReader _this,
+    u_subscriber s);
 
 u_result
 u_dataReaderDeinit (
     u_dataReader _this);
 
 u_result
-u_dataReaderClaim(
+u_dataReaderAddView(
     u_dataReader _this,
-    v_dataReader *dataReader);
+    u_dataView view);
 
 u_result
-u_dataReaderRelease(
-    u_dataReader _this);
+u_dataReaderRemoveView(
+    u_dataReader _this,
+    u_dataView view);
+
+u_result
+u_dataReaderTopicName(
+    u_dataReader _this,
+    c_char **name);
 
 #endif

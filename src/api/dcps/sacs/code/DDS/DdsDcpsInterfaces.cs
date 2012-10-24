@@ -1,6 +1,6 @@
 // The OpenSplice DDS Community Edition project.
 //
-// Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
+// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
 // 
 //  This library is free software; you can redistribute it and/or
@@ -34,13 +34,15 @@ namespace DDS
     /// <summary>
     /// Base class for all Conditions that maybe attached to a WaitSet.
     /// </summary>
-    /// <remarks>This class is the base class for all the conditions that may be attached to a WaitSet.
+    /// <remarks>
+    /// This class is the base class for all the conditions that may be attached to a WaitSet.
     /// This base class is specialized in three classes by the Data Distribution Service:
     /// GuardCondition, StatusCondition and ReadCondition (also there is a
     /// QueryCondition which is a specialized ReadCondition).
     /// Each Condition has a trigger_value that can be TRUE or FALSE and is set by
     /// the Data Distribution Service (except a GuardCondition) depending on the
-    /// evaluation of the Condition.</remarks>
+    /// evaluation of the Condition.
+    /// </remarks>
     public interface ICondition
     {
         /// <summary>
@@ -645,7 +647,7 @@ namespace DDS
         /// If an Entity has not yet been enabled, the only operations that can be invoked on it
         /// are: the ones to set, get or copy the QosPolicy settings, the ones that set (or get) the
         /// listener, the ones that get the StatusCondition, the GetStatusChanges
-        /// operation (although the status of a disabled entity never changes), and the ‘factory’
+        /// operation (although the status of a disabled entity never changes), and the factory
         /// operations that create, delete or lookup(This includes the LookupTopicDescription but not FindTopic)
         /// other Entities. Other operations will return the error NotEnabled.
         /// Entities created from a factory that is disabled, are created disabled regardless of
@@ -679,7 +681,7 @@ namespace DDS
         /// </remarks>
         IStatusCondition StatusCondition { get; }
         /// <summary>
-        /// This operation returns a mask with the communication statuses in the Entity that are “triggered”.
+        /// This operation returns a mask with the communication statuses in the Entity that are triggered.
         /// </summary>
         /// <remarks>
         /// This operation returns a mask with the communication statuses in the Entity that
@@ -688,7 +690,7 @@ namespace DDS
         /// whether a change has occurred even when the status seems unchanged because the
         /// status changed back to the original status.
         /// When the Entity is first created or if the Entity is not enabled, all
-        /// communication statuses are in the “un-triggered” state so the mask returned by the
+        /// communication statuses are in the un-triggered state so the mask returned by the
         /// operation is empty.
         /// The result value is a bit mask in which each bit shows which value has changed.
         /// Each status bit is declared as a constant and can be used in an AND operation to
@@ -1458,6 +1460,124 @@ namespace DDS
         ReturnCode GetCurrentTime(out Time currentTime);
         ITypeSupport GetTypeSupport(string registeredName);
         ITypeSupport LookupTypeSupport(string registeredTypeName);
+        
+        /// <summary>
+		/// This operation retrieves the list of DomainParticipants that have been discovered in the domain.
+		/// </summary>
+		/// <remarks>
+		///This operation retrieves the list of DomainParticipants that have been discovered in the domain and that the application
+		///has not indicated should be ignored by means of the DomainParticipant ignore_participant operation.
+		///The participant_handles sequence and its buffer may be pre-allocated by the
+		///application and therefore must either be re-used in a subsequent invocation of the
+		///get_discovered_participants operation or be released by
+		///calling free on the returned participant_handles. If the pre-allocated
+		///sequence is not big enough to hold the number of associated participants, the
+		///sequence will automatically be (re-)allocated to fit the required size.
+		///The handles returned in the participant_handles sequence are the ones that
+		///are used by the DDS implementation to locally identify the corresponding matched
+		///Participant entities. You can access more detailed information about a particular
+		///participant by passing its participant_handle to the get_discovered_participant_data operation.
+		/// </remarks>
+		/// <param name="participantHandles"></param>
+		/// <returns>Return values are:
+		/// <list type="bullet">
+		/// <item>Ok - the list of associated participants has successfully been obtained.</item>
+		/// <item>Error - an internal error has occurred.</item>
+		/// <item>AlreadyDeleted - the DomainParticipant has already been deleted</item>
+		/// <item>OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+		/// <item>Unsupported - OpenSplice is configured not to maintain the information about associated participants</item>
+		/// <item>NotEnabled - the DomainParticipant is not enabled.</item>
+		/// <item>IllegalOperation- the operation is invoked on an inappropriate object.</item>
+		/// </list>
+		/// </returns>
+        ReturnCode GetDiscoveredParticipants (ref InstanceHandle[] participantHandles);
+        
+        /// <summary>
+		/// This operation retrieves information on a DomainParticipant that has been discovered on the network.
+		/// </summary>
+		/// <remarks>
+		///This operation retrieves information on a DomainParticipant that has been discovered on the network. The participant
+		///must be in the same domain as the participant on which this operation is invoked and must not have been ignored by
+		///means of the DomainParticipant ignore_participant operation.
+		///The partition_handle must correspond to a partition currently
+		///associated with the DomainParticipant, otherwise the operation will fail and return
+		///Error. The operation get_discovered_participant_data
+		///can be used to find more detailed information about a particular participant that is found with the 
+		///get_discovered_participants operation.
+		/// </remarks>
+        /// <param name="participantData"></param>
+        /// <param name="participantHandle"></param>
+		/// <returns>Return values are:
+		/// <list type="bullet">
+		/// <item>Ok - the information on the specified participant has been successfully retrieved</item>
+		/// <item>Error - an internal error has occurred.</item>
+		/// <item>AlreadyDeleted - the DomainParticipant has already been deleted</item>
+		/// <item>OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+		/// <item>Unsupported - OpenSplice is configured not to maintain the information about associated participants</item>
+		/// <item>NotEnabled - the DomainParticipant is not enabled.</item>
+		/// <item>IllegalOperation- the operation is invoked on an inappropriate object.
+		/// </list>
+		/// </returns>
+        ReturnCode GetDiscoveredParticipantData (ref ParticipantBuiltinTopicData data, InstanceHandle handle);
+        /// <summary>
+		/// This operation retrieves the list of Topics that have been discovered in the domain
+		/// </summary>
+		/// <remarks>
+		///This operation retrieves the list of Topics that have been discovered in the domain and that the application has not
+		///indicated should be ignored by means of the DomainParticipant ignore_topic operation.
+		///The topic_handles sequence and its buffer may be pre-allocated by the
+		///application and therefore must either be re-used in a subsequent invocation of the
+		///get_discovered_topics operation or be released by
+		///calling free on the returned topic_handles. If the pre-allocated
+		///sequence is not big enough to hold the number of associated participants, the
+		///sequence will automatically be (re-)allocated to fit the required size.
+		///The handles returned in the topic_handles sequence are the ones that
+		///are used by the DDS implementation to locally identify the corresponding matched
+		///Topic entities. You can access more detailed information about a particular
+		///topic by passing its topic_handle to the get_discovered_topic_data operation.
+		/// </remarks>
+		/// <param name="topicHandles"></param>
+		/// <returns>Return values are:
+		/// <list type="bullet">
+		/// <item>Ok - the list of associated topic has successfully been obtained.</item>
+		/// <item>Error - an internal error has occurred.</item>
+		/// <item>AlreadyDeleted - the DomainParticipant has already been deleted</item>
+		/// <item>OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+		/// <item>Unsupported - OpenSplice is configured not to maintain the information about associated topics</item>
+		/// <item>NotEnabled - the DomainParticipant is not enabled.</item>
+		/// <item>IllegalOperation- the operation is invoked on an inappropriate object.
+		/// </list>
+		/// </returns>
+        ReturnCode GetDiscoveredTopics (ref InstanceHandle[] topicHandles);
+        
+        /// <summary>
+		/// This operation retrieves information on a Topic that has been discovered on the network.
+		/// </summary>
+		/// <remarks>
+		///This operation retrieves information on a Topic that has been discovered on the network. The topic must have been
+		///created by a participant in the same domain as the participant on which this operation is invoked and must not have been
+		///ignored by means of the DomainParticipant ignore_topic operation.
+		///The topic_handle must correspond to a topic currently
+		///associated with the DomainParticipant, otherwise the operation will fail and return Error. 
+		///The operation get_discovered_topic_data can be used to find more detailed information about a particular topic that is found with the 
+		///get_discovered_topics operation.
+		/// </remarks>
+		/// <param name="topicData"></param>
+		/// <param name="topicHandle"></param>
+		/// <returns>Return values are:
+		/// <list type="bullet">
+		/// <item>Ok - the information on the specified topic has been successfully retrieved</item>
+		/// <item>Error - an internal error has occurred.</item>
+		/// <item>AlreadyDeleted - the DomainParticipant has already been deleted</item>
+		/// <item>OutOfResources - the Data Distribution Service ran out of resources to complete this operation.</item>
+		/// <item>Unsupported - OpenSplice is configured not to maintain the information about associated topics</item>
+		/// <item>NotEnabled - the DomainParticipant is not enabled.</item>
+		/// <item>IllegalOperation- the operation is invoked on an inappropriate object.
+		/// </list>
+		/// </returns>
+        ReturnCode GetDiscoveredTopicData (ref TopicBuiltinTopicData data, InstanceHandle handle);
+        
+        
     }
 
     public interface ITypeSupport
@@ -1683,7 +1803,7 @@ namespace DDS
         /// <item>AlreadyDeleted - The ContentFilteredTopic has already been deleted.</item>
         /// <item>OutOfResources - The DDS ran out of resources to complete this operation.</item>
         /// <item>BadParameter - The number of parameters in expression_parameters does not match the 
-        /// number of “%n” tokens in the expression for this ContentFilteredTopic or one of the parameters
+        /// number of tokens in the expression for this ContentFilteredTopic or one of the parameters
         /// is an illegal parameter.</item>          
         /// </list>
         /// </returns>
@@ -2073,14 +2193,14 @@ namespace DDS
         /// corresponding QosPolicy settings in a_datawriter_qos (replacing the values
         /// in dataWriterQos, if present). This will only apply to the common
         /// QosPolicy settings in each "Entity" Qos.
-        /// This is a “convenience” operation, useful in combination with the operations
+        /// This is a convenience operation, useful in combination with the operations
         /// GetDefaultDataWriterQos and Topic.GetQos. The operation
         /// CopyFromTopicQos can be used to merge the DataWriter default
         /// QosPolicy settings with the corresponding ones on the TopicQos. The resulting
         /// DataWriterQos can then be used to create a new DataWriter, or set its
         /// DataWriterQos.
         /// This operation does not check the resulting dataWriterQos for consistency.
-        /// This is because the “merged” datawWriterQos may not be the final one, as the
+        /// This is because the merged datawWriterQos may not be the final one, as the
         /// application can still modify some QosPolicy settings prior to applying the
         /// DataWriterQos to the DataWriter.
         /// </remarks>
@@ -2211,7 +2331,7 @@ namespace DDS
         /// has committed through its LivelinessQosPolicy) was respected.
         /// This means, that the status represents whether the DataWriter failed to actively
         /// signal its liveliness within the offered liveliness period. If the liveliness is lost, the
-        /// DataReader objects will consider the DataWriter as no longer “alive”.
+        /// DataReader objects will consider the DataWriter as no longer alive.
         /// The LivelinessLostStatus can also be monitored using a
         /// DataWriterListener or by using the associated StatusCondition.
         /// </remarks>
@@ -2664,14 +2784,14 @@ namespace DDS
         /// This operation will copy the QosPolicy settings in topicQos to the
         /// corresponding QosPolicy settings in dataReaderQos (replacing the values
         /// in datareaderQos, if present).
-        /// This is a “convenience” operation, useful in combination with the operations
+        /// This is a convenience operation, useful in combination with the operations
         /// GetDefaultDataWriterQos and Topic.get_qos. The operation
         /// CopyFromTopicQos can be used to merge the DataReader default
         /// QosPolicy settings with the corresponding ones on the Topic. The resulting
         /// DataReaderQos can then be used to create a new DataReader, or set its
         /// DataReaderQos.
         /// This operation does not check the resulting dataReaderQos for self
-        /// consistency. This is because the “merged” dataReaderQos may not be the
+        /// consistency. This is because the merged dataReaderQos may not be the
         /// final one, as the application can still modify some QosPolicy settings prior to
         /// applying the DataReaderQos to the DataReader.
         /// </remarks>
@@ -2697,7 +2817,7 @@ namespace DDS
     /// that identifies the samples to be read. The DataReader may give access to several instances of the data type, 
     /// which are distinguished from each other by their key. 
     /// DataReader is an abstract class. It is specialized for each particular application data type. 
-    /// For a fictional application data type “Foo” (defined in the module SPACE) 
+    /// For a fictional application data type Foo (defined in the module SPACE) 
     /// the specialized class would be SPACE.FooDataReader.
     /// </summary>
     public interface IDataReader : IEntity
@@ -2752,7 +2872,7 @@ namespace DDS
         /// <param name="instanceStates">a mask, which selects only those samples with the desired instance states.</param>
         /// <param name="queryExpression">the query string, which must be a subset of the SQL query language.</param>
         /// <param name="queryParameters">a sequence of strings which are the parameter values used in the 
-        /// SQL query string (i.e., the “%n” tokens in the expression). The number of values in queryParameters 
+        /// SQL query string (i.e., the tokens in the expression). The number of values in queryParameters 
         /// must be equal or greater than the highest referenced %n token in the queryExpression 
         /// (e.g.if %1 and %8 are used as parameters in the queryExpression, the queryParameters 
         /// should at least contain n+1 = 9 values).</param>
@@ -2789,11 +2909,11 @@ namespace DDS
         ReturnCode DeleteReadCondition(IReadCondition condition);
         /// <summary>
         /// This operation deletes all the Entity objects that were created by means of one of the 
-        /// “Create” operations on the DataReader.
+        /// Create operations on the DataReader.
         /// </summary>
         /// <remarks>
         /// This operation deletes all the Entity objects that were created by means of one of
-        /// the “Create” operations on the DataReader. In other words, it deletes all
+        /// the Create operations on the DataReader. In other words, it deletes all
         /// QueryCondition and ReadCondition objects contained by the DataReader.
         /// </remarks>
         /// <returns>Return codes are:
@@ -2912,7 +3032,7 @@ namespace DDS
         /// This obtains returns the LivelinessChangedStatus struct of the DataReader.
         /// This struct contains the information whether the liveliness of one or more
         /// DataWriter objects that were writing instances read by the DataReader has
-        /// changed. In other words, some DataWriter have become “alive” or “not alive”.
+        /// changed. In other words, some DataWriter have become alive or not alive.
         /// The LivelinessChangedStatus can also be monitored using a
         /// DataReaderListener or by using the associated StatusCondition.
         /// </remarks>
@@ -3009,7 +3129,7 @@ namespace DDS
         /// </returns>
         ReturnCode GetSampleLostStatus(ref SampleLostStatus status);
         /// <summary>
-        /// This operation will block the application thread until all “historical” data is received.
+        /// This operation will block the application thread until all historical data is received.
         /// </summary>
         /// <remarks>
         /// This operation behaves differently for DataReader objects which have a
@@ -3017,16 +3137,16 @@ namespace DDS
         /// DataReader obj ects which have a VOLATILE_DURABILITY_QOS
         /// DurabilityQosPolicy.
         /// As soon as an application enables a non-VOLATILE_DURABILITY_QOS
-        /// DataReader it will start receiving both “historical” data, i.e. the data that was
+        /// DataReader it will start receiving both historical data, i.e. the data that was
         /// written prior to the time the DataReader joined the domain, as well as any new
         /// data written by the DataWriter objects. There are situations where the application
-        /// logic may require the application to wait until all “historical” data is received. This
+        /// logic may require the application to wait until all historical data is received. This
         /// is the purpose of the WaitForHistoricalData operation. 
         /// As soon as an application enables a VOLATILE_DURABILITY_QOS DataReader it
-        /// will not start receiving “historical” data but only new data written by the
+        /// will not start receiving historical data but only new data written by the
         /// DataWriter objects. By calling WaitForHistoricalData the DataReader
         /// explicitly requests the Data Distribution Service to start receiving also the
-        /// “historical” data and to wait until either all “historical” data is received, or the
+        /// historical data and to wait until either all historical data is received, or the
         /// duration specified by the max_wait parameter has elapsed, whichever happens
         /// first.
         /// </remarks>

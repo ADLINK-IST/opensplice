@@ -16,4 +16,4 @@ CFLAGS_DEBUG     =
 LDFLAGS          += -MANIFEST -NODEFAULTLIB:MSVCRTD
 JCFLAGS          = -g:none
 #Csc compiler flags
-CSFLAGS_DEBUG    =
+CSFLAGS_DEBUG    = 

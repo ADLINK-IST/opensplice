@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -36,7 +36,8 @@ resolveField(
     if (field == NULL) {
         metaName = c_metaName(c_metaObject(property->type));
         OS_REPORT_2(OS_ERROR,
-                    "v_filterNew:",0,"Field %s not found in type %s\n",
+                    "kernel::v_filter::v_filterNew:",0,
+                    "Field %s not found in type %s\n",
                     name,metaName);
         c_free(metaName);
         c_free(property);
@@ -67,39 +68,46 @@ resolveFields (
     q_expr p;
     c_long i;
     c_char *name;
+    c_bool result;
 
+    result = TRUE;
     switch(q_getKind(e)) {
-    case T_FNC:
-        switch(q_getTag(e)) {
-        case Q_EXPR_PROPERTY:
-            name = q_propertyName(e);
+        case T_FNC:
+            switch(q_getTag(e)) {
+                case Q_EXPR_PROPERTY:
+                    name = q_propertyName(e);
+                    p = resolveField(type,name);
+                    os_free(name);
+                    if (p != NULL) {
+                        q_swapExpr(e,p);
+                        q_dispose(p);
+                    } else {
+                        result = FALSE;
+                    }
+                    break;
+                default: /* process sub-expression, fail if a field cannot be resolved */
+                    i=0;
+                    while ((result) && ((p = q_getPar(e,i)) != NULL)) {
+                        result = resolveFields(type,p);
+                        i++;
+                    }
+                    break;
+            }
+            break;
+        case T_ID:
+            name = q_getId(e);
             p = resolveField(type,name);
-            os_free(name);
             if (p != NULL) {
                 q_swapExpr(e,p);
                 q_dispose(p);
+            } else {
+                result = FALSE;
             }
-        break;
-        default: /* process sub-expression */
-            i=0;
-            while ((p = q_getPar(e,i)) != NULL) {
-                resolveFields(type,p);
-                i++;
-            }
-        }
-    break;
-    case T_ID:
-        name = q_getId(e);
-        p = resolveField(type,name);
-        if (p != NULL) {
-            q_swapExpr(e,p);
-            q_dispose(p);
-        }
-    break;
-    default:
-    break;
+            break;
+        default:
+            break;
     }
-    return TRUE;
+    return result;
 }
 
 v_filter
@@ -117,21 +125,44 @@ v_filterNew(
     kernel = v_objectKernel(t);
     type = v_topicMessageType(t);
 
-    if (!resolveFields(type,e)) {
-        return NULL;
-    }
-    filter = c_new(v_kernelType(kernel, K_FILTER));
-    if (filter) {
-        filter->topic = c_keep(t);
-        filter->predicate = c_filterNew(type,e,params);
-        if (filter->predicate == NULL) {
-            c_free(filter);
-            filter = NULL;
+    if (t) {
+        if (type) {
+            if (!resolveFields(type,e)) {
+                OS_REPORT_1(OS_ERROR,
+                            "kernel::v_filter::v_filterNew",0,
+                            "Failed to resolve fields in filter expression."
+                            OS_REPORT_NL "Topic = \"%s\"",
+                            v_topicName(t));
+                filter = NULL;
+            } else {
+                filter = c_new(v_kernelType(kernel, K_FILTER));
+    
+                if (filter) {
+                    filter->topic = c_keep(t);
+                    filter->predicate = c_filterNew(type,e,params);
+                    if (filter->predicate == NULL) {
+                        c_free(filter);
+                        filter = NULL;
+                    }
+                } else {
+                    OS_REPORT_1(OS_ERROR,
+                                "kernel::v_filter::v_filterNew",0,
+                                "Failed to allocate a filter."
+                                OS_REPORT_NL "Topic = \"%s\"",
+                                v_topicName(t));
+                    assert(FALSE);
+                }
+            }
+        } else {
+            OS_REPORT_1(OS_ERROR,
+                        "kernel::v_filter::v_filterNew",0,
+                        "Failed to resolve type for Topic \"%s\".",
+                        v_topicName(t));
         }
     } else {
         OS_REPORT(OS_ERROR,
-                  "v_filterNew",0,
-                  "Failed to allocate a filter.");
+                  "kernel::v_filter::v_filterNew",0,
+                  "Pre condition failed: Topic is not specified (NULL).");
     }
     return filter;
 }

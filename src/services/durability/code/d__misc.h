@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -28,7 +28,8 @@ struct baseFind {
 
 void                d_printState                (d_durability durability, 
                                                  d_configuration config, 
-                                                 const char* threadName);
+                                                 const char* threadName,
+                                                 char* header);
 
 void                d_findBaseAction            (v_entity entity,
                                                  c_voidp args);

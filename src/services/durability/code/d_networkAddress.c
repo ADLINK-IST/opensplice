@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -47,7 +47,6 @@ d_networkAddressEquals(
     d_networkAddress addr2)
 {
     c_bool result = FALSE;
-
 
     if( (addr1->systemId    == addr2->systemId) &&
         (addr1->localId     == addr2->localId) &&

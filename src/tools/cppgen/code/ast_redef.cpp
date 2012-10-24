@@ -69,8 +69,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  *     is allowed
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Return TRUE if the node d represents an IDL construct whose name

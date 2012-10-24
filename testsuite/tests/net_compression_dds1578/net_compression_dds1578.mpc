@@ -16,9 +16,8 @@ project(ccpp*idl): ccpp_typesupport {
   custom_only = 1
 }
 
-project(ccpp*pub): ccpp_dcps_application {
+project(ccpp*pub): ccpp_dcps_application, ospl_cmxml {
   after += ccpp*idl
-  libs += cmxml
 
   Source_Files {
     publisher.cpp
@@ -36,9 +35,8 @@ project(ccpp*pub): ccpp_dcps_application {
   }
 }
 
-project(ccpp*sub): ccpp_dcps_application {
+project(ccpp*sub): ccpp_dcps_application, ospl_cmxml {
   after += ccpp*idl
-  libs += cmxml
 
   Source_Files {
     subscriber.cpp

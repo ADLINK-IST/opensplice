@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,8 +17,8 @@
 #include "u_reader.h"
 #include "u_query.h"
 #include "v_dataReaderQuery.h"
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 #include <stdio.h>
 
 c_char*
@@ -76,7 +76,7 @@ cmx_queryInit(
 
     if(query->expression){
         if(query->params){
-            sprintf(buf, 
+            os_sprintf(buf, 
                 "<kind>QUERY</kind>"
                 "<expression><![CDATA[%s]]></expression>"
                 "<params><![CDATA[%s]]></params>"
@@ -88,7 +88,7 @@ cmx_queryInit(
                 query->sampleMask,
                 query->viewMask);
         } else {
-            sprintf(buf, 
+            os_sprintf(buf, 
                 "<kind>QUERY</kind>"
                 "<expression><![CDATA[%s]]></expression>"
                 "<params></params>"
@@ -102,7 +102,7 @@ cmx_queryInit(
         }
     } else {
         if(query->params){
-            sprintf(buf, 
+            os_sprintf(buf, 
                 "<kind>QUERY</kind>"
                 "<expression></expression>"
                 "<params><![CDATA[%s]]></params>"
@@ -114,7 +114,7 @@ cmx_queryInit(
                 query->sampleMask,
                 query->viewMask);
         } else {
-            sprintf(buf, 
+            os_sprintf(buf, 
                 "<kind>QUERY</kind>"
                 "<expression></expression>"
                 "<params></params>"

@@ -1,0 +1,35 @@
+$VG_OSPL_START ospl start
+$VG_START_SLEEP
+
+BLOKSIZE=100
+BLOKCOUNT=100
+
+$VG_PONG exec/$SPLICE_TARGET/pong.exe PongRead PongWrite &
+
+sleep 2
+
+$VG_PING_M exec/$SPLICE_TARGET/ping.exe $BLOKCOUNT $BLOKSIZE m PongRead PongWrite
+
+sleep 2
+
+$VG_PING_Q exec/$SPLICE_TARGET/ping.exe $BLOKCOUNT $BLOKSIZE q PongRead PongWrite
+
+sleep 2
+
+$VG_PING_S exec/$SPLICE_TARGET/ping.exe $BLOKCOUNT $BLOKSIZE s PongRead PongWrite
+
+sleep 2
+
+$VG_PING_B exec/$SPLICE_TARGET/ping.exe $BLOKCOUNT $BLOKSIZE b PongRead PongWrite
+
+sleep 2
+
+$VG_PING_F exec/$SPLICE_TARGET/ping.exe $BLOKCOUNT $BLOKSIZE f PongRead PongWrite
+
+sleep 2
+
+$VG_PING_T exec/$SPLICE_TARGET/ping.exe 1  10 t PongRead PongWrite 
+
+sleep 4
+
+$VG_OSPL_STOP ospl stop

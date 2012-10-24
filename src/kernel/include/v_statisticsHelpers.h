@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -61,7 +61,12 @@
 #define unit_v_reader_numberOfSamplesRead                  unit_samples
 #define unit_v_reader_numberOfSamplesTaken                 unit_samples
 #define unit_v_reader_numberOfReads                        unit_calls
+#define unit_v_reader_numberOfInstanceReads                unit_calls
+#define unit_v_reader_numberOfNextInstanceReads            unit_calls
+#define unit_v_reader_numberOfInstanceLookups              unit_calls
 #define unit_v_reader_numberOfTakes                        unit_calls
+#define unit_v_reader_numberOfInstanceTakes                unit_calls
+#define unit_v_reader_numberOfNextInstanceTakes            unit_calls
 
 #define resettable_v_reader_numberOfSamples                         (FALSE)
 #define resettable_v_reader_numberOfInstances                       (FALSE)
@@ -81,14 +86,27 @@
 #define resettable_v_reader_numberOfSamplesRejectedBySamplesLimit   (TRUE)
 #define resettable_v_reader_numberOfSamplesRejectedByInstancesLimit (TRUE)
 #define resettable_v_reader_numberOfReads                           (TRUE)
+#define resettable_v_reader_numberOfInstanceReads                   (TRUE)
+#define resettable_v_reader_numberOfNextInstanceReads               (TRUE)
+#define resettable_v_reader_numberOfInstanceLookups                 (TRUE)
 #define resettable_v_reader_numberOfTakes                           (TRUE)
+#define resettable_v_reader_numberOfInstanceTakes                   (TRUE)
+#define resettable_v_reader_numberOfNextInstanceTakes               (TRUE)
 
 /* QUERY */
-#define unit_v_query_numberOfReads                        unit_calls
-#define unit_v_query_numberOfTakes                        unit_calls
+#define unit_v_query_numberOfReads                                  unit_calls
+#define unit_v_query_numberOfInstanceReads                          unit_calls
+#define unit_v_query_numberOfNextInstanceReads                      unit_calls
+#define unit_v_query_numberOfTakes                                  unit_calls
+#define unit_v_query_numberOfInstanceTakes                          unit_calls
+#define unit_v_query_numberOfNextInstanceTakes                      unit_calls
 
 #define resettable_v_query_numberOfReads                           (TRUE)
+#define resettable_v_query_numberOfInstanceReads                   (TRUE)
+#define resettable_v_query_numberOfNextInstanceReads               (TRUE)
 #define resettable_v_query_numberOfTakes                           (TRUE)
+#define resettable_v_query_numberOfInstanceTakes                   (TRUE)
+#define resettable_v_query_numberOfNextInstanceTakes               (TRUE)
 
 /* WRITER */
 #define unit_v_writer_numberOfWrites                                unit_calls

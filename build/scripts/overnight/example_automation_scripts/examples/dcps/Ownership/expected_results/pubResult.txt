@@ -1,0 +1,5 @@
+../exec/OwnershipDataPublisher pub1 5 40 1
+=== [Publisher] Publisher pub1 with strength : 5 / sending 40 prices ... stop_subscriber flag=1
+=== Stopping the subscriber
+er pub2 10 5 0
+=== [Publisher] Publisher pub2 with strength : 10 / sending 5 prices ... stop_subscriber flag=0

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -16,6 +16,7 @@
 #include "c_base.h"
 #include "c_iterator.h"
 
+#include "gapi_genericCopyBuffer.h"
 #include "gapi_genericCopyCache.h"
 
 #define TRACE(function)     /* function */
@@ -649,6 +650,8 @@ gapi_cacheUnionLabel (
 {
     gapiCopyUnionLabel labelVal;
 
+    TRACE (char llstr[36];)
+
     switch (lit->value.kind) {
         case V_UNDEFINED:
         case V_OCTET:
@@ -694,6 +697,7 @@ gapi_cacheUnionLabel (
             assert(FALSE);
             break;
     }
+
     TRACE (llstr[35] = '\0'; printf ("    labels value = %s\n", os_lltostr(labelVal.labelVal, &llstr[35])));
     gapi_copyCacheWrite (ctx->copyCache, &labelVal, sizeof(labelVal));
 }
@@ -1114,7 +1118,7 @@ collectionUserSizeCorrection (
 
     switch ( o->kind ) {
         case C_SEQUENCE:
-            size = 3 * sizeof(unsigned long);
+            size = GAPI_SEQUENCE_CORRECTION;
             break;
         case C_ARRAY:
             size = o->maxSize * userSizeCorrection(c_type(c_typeActualType(o->subType)));
@@ -1122,7 +1126,7 @@ collectionUserSizeCorrection (
         default:
             break;
     }
-   
+
     return size;
 }
 
@@ -1134,7 +1138,7 @@ userSizeCorrection (
     c_type actual;
 
     actual = c_typeActualType(o);
-    
+
     switch ( c_baseObject(actual)->kind ) {
         case M_STRUCTURE:
             size = structureUserSizeCorrection(c_structure(actual));
@@ -1162,6 +1166,8 @@ gapi_cacheObjectUserSize (
     actual = c_typeActualType(o);
 
     size = actual->size + userSizeCorrection(actual);
+
+    TRACE (printf("gapi_cacheObjectUserSize actual->size = %d, total = %d\n", actual->size, size));
 
     return size;
 }

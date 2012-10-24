@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef NW_CONFIGURATION_H
@@ -53,11 +53,16 @@ c_bool nw_configurationUseLoopback();
 c_bool nw_configurationUseComplementPartitions();
 #endif
 
-#ifdef NW_DEBUGGING
 c_bool nw_configurationLoseSentMessage();
 c_bool nw_configurationLoseReceivedMessage();
+
+#ifdef NW_DEBUGGING
 c_bool nw_configurationNoPacking();
 #endif
+
+c_bool nw_configurationGetIsIPv6(void);
+
+void nw_configurationSetIsIPv6(c_bool isIPv6);
 
 v_qos nw_configurationGetQos(void);
 c_bool nw_configurationIsDiscoveryChannel(u_cfElement channel);
@@ -77,6 +82,11 @@ c_ulong nw_configurationGetULongParameter(
            const c_char *parameterPath,
            const c_char *parameterName,
            c_ulong defaultValue);
+
+c_size nw_configurationGetSizeParameter(
+           const c_char *parameterPath,
+           const c_char *parameterName,
+           c_size defaultValue);
 
 c_float nw_configurationGetFloatParameter(
            const c_char *parameterPath,
@@ -102,6 +112,12 @@ c_ulong nw_configurationGetULongAttribute(
            const c_char *attribyteName,
            c_ulong defaultValueNoElmt,
            c_ulong defaultValueNoAttrib);
+
+c_size nw_configurationGetSizeAttribute(
+           const c_char *parameterPath,
+           const c_char *attribyteName,
+           c_size defaultValueNoElmt,
+           c_size defaultValueNoAttrib);
 
 c_float nw_configurationGetFloatAttribute(
            const c_char *parameterPath,

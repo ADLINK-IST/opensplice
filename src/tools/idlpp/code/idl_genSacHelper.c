@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,8 +13,8 @@
 #include "idl_genCHelper.h"
 #include "idl_tmplExp.h"
 
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 
 static c_char *idl_scopedSacSequenceTypeIdent (const idl_typeSpec typeSpec);
 
@@ -35,7 +35,7 @@ static c_char *idl_scopedSacSequenceTypeIdent (const idl_typeSpec typeSpec);
 	}
     IDL enumerations are identified by: enum <scoped-enum-name>
     IDL typedefs are formed by the scoped type name
-    IDL sequences are mapped on: c_array
+    IDL sequences are mapped on: c_sequence
 */
 c_char *
 idl_scopedSacTypeIdent (
@@ -83,7 +83,7 @@ idl_scopedSacTypeIdent (
 	}
     IDL enumerations are identified by: enum <scoped-enum-name>
     IDL typedefs are formed by the scoped type name
-    IDL sequences are mapped on: c_array
+    IDL sequences are mapped on: c_sequence
 */
 static c_char *
 idl_scopedSacSequenceElementTypeIdent (
@@ -131,7 +131,7 @@ idl_scopedSacSequenceElementTypeIdent (
 	    snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "DDS_octet");
 	    break;
 	default:
-	    strncpy (scopedTypeIdent, "", (size_t)sizeof(scopedTypeIdent));
+	   os_strncpy (scopedTypeIdent, "", (size_t)sizeof(scopedTypeIdent));
 	}
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct ||
 	idl_typeSpecType(typeSpec) == idl_tunion ||
@@ -184,7 +184,7 @@ idl_scopedSacSequenceElementTypeIdent (
 	}
     IDL enumerations are identified by: enum <scoped-enum-name>
     IDL typedefs are formed by the scoped type name
-    IDL sequences are mapped on: c_array
+    IDL sequences are mapped on: c_sequence
 */
 static c_char *
 idl_scopedSacSequenceSubElementTypeIdent (
@@ -232,7 +232,7 @@ idl_scopedSacSequenceSubElementTypeIdent (
 	    snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "octet");
 	    break;
 	default:
-	    strncpy (scopedTypeIdent, "", (size_t)sizeof(scopedTypeIdent));
+	   os_strncpy (scopedTypeIdent, "", (size_t)sizeof(scopedTypeIdent));
 	}
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct ||
 	idl_typeSpecType(typeSpec) == idl_tunion ||
@@ -285,7 +285,7 @@ idl_scopedSacSequenceSubElementTypeIdent (
 	}
     IDL enumerations are identified by: enum <scoped-enum-name>
     IDL typedefs are formed by the scoped type name
-    IDL sequences are mapped on: c_array
+    IDL sequences are mapped on: c_sequence
 */
 static c_char *
 idl_scopedSacSequenceTypeIdent (
@@ -333,7 +333,7 @@ idl_scopedSacSequenceTypeIdent (
 	    snprintf (scopedTypeIdent, (size_t)sizeof(scopedTypeIdent), "octet");
 	    break;
 	default:
-	    strncpy (scopedTypeIdent, "", (size_t)sizeof(scopedTypeIdent));
+	   os_strncpy (scopedTypeIdent, "", (size_t)sizeof(scopedTypeIdent));
 	}
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct ||
 	idl_typeSpecType(typeSpec) == idl_tunion ||

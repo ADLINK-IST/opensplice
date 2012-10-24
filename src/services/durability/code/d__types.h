@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -14,6 +14,7 @@
 #define D__TYPES_H
 
 #include "c_typebase.h"
+#include "kernelModule.h"
 #include "durabilityModule2.h"
 #include "d_object.h"
 
@@ -22,7 +23,7 @@ extern "C" {
 #endif
 
 typedef enum d_storeType{
-    D_STORE_TYPE_UNKNOWN, D_STORE_TYPE_XML, D_STORE_TYPE_BIG_ENDIAN
+    D_STORE_TYPE_UNKNOWN, D_STORE_TYPE_XML, D_STORE_TYPE_BIG_ENDIAN, D_STORE_TYPE_MEM_MAPPED_FILE
 } d_storeType;
 
 typedef enum d_storeResult{
@@ -71,6 +72,7 @@ C_CLASS(d_eventListener);
 C_CLASS(d_groupList);
 C_CLASS(d_store);
 C_CLASS(d_storeXML);
+C_CLASS(d_storeMMF);
 C_CLASS(d_action);
 C_CLASS(d_actionQueue);
 C_CLASS(d_groupCreationQueue);
@@ -78,6 +80,7 @@ C_CLASS(d_chain);
 C_CLASS(d_chainBead);
 C_CLASS(d_chainLink);
 C_CLASS(d_readerRequest);
+C_CLASS(d_mergeAction);
 
 /**
  * These definitions make "classes" of the odl-structs.
@@ -94,6 +97,7 @@ C_CLASS(d_networkAddress);
 C_CLASS(d_nameSpaces);
 C_CLASS(d_nameSpacesRequest);
 C_CLASS(d_deleteData);
+C_CLASS(d_mergeState);
 
 #define D_ARG_NAME                   "-name"
 #define D_ARG_STRLEN_NAME            ((size_t)(5))

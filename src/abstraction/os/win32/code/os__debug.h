@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,7 +13,7 @@
 #define __OS__DEBUG_H__
 
 #ifndef NDEBUG
-#include <os_report.h>
+#include "os_report.h"
 
 #define OS_DEBUG(op, msg)                   OS_REPORT  (OS_INFO, op, 1, msg)
 #define OS_DEBUG_1(op, msg, a1)             OS_REPORT_1(OS_INFO, op, 1, "OS_DEBUG : " msg, a1)

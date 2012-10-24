@@ -73,8 +73,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * of every AST class.
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Constructors

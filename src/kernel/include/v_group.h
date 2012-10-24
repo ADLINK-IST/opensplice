@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -192,12 +192,6 @@ v_groupWalkEntries (
     c_voidp arg);
 
 OS_API c_bool
-v_groupWalkWriters (
-    v_group _this,
-    v_groupWriterAction action,
-    c_voidp arg);
-
-OS_API c_bool
 v_groupWaitForComplete (
     v_group _this,
     c_time waitTime);
@@ -211,6 +205,11 @@ OS_API void
 v_groupGetHistoricalData (
     v_group _this,
     v_entry e);
+
+OS_API void
+v_groupStreamHistoricalData(
+    v_group g,
+    v_groupStream stream);
 
 OS_API c_bool
 v_groupGetHistoricalDataWithCondition(

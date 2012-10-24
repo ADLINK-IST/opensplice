@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,7 +12,7 @@
 #ifndef _XBE_CPPNAME_H
 #define _XBE_CPPNAME_H
 
-#include <xps_string.h>
+#include "xps_string.h"
 
 // A be_CppName is a name (an identifier) in C++.
 //

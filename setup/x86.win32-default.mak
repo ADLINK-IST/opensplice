@@ -7,30 +7,33 @@ WINCSC = sh $(OSPL_HOME)/bin/ospl_wincsc
 CC  = $(WINCMD) cl
 CXX = $(WINCMD) cl
 CSC = $(WINCSC) Csc
-        
+
 # Binary used for filtering: in the future must be empty
-FILTER = 
-        
+FILTER =
+
 # Binary used for linking
 LD_SO            = $(WINCMD) link
 	# Binary used for linking executables
 LD_EXE           = $(WINCMD) link
+LD_CXX           = $(WINCMD) link
 	# GNU yacc
 YACC		 = bison
 	# GNU lex
 LEX		 = flex
 	# GNU make
 MAKE		 = make
-	# Solaris native touch
+	# Cygwin's touch
 TOUCH		 = touch
+	# Tool used for creating soft/hard links.
+LN               = ospl_wincmd ospl_winln
 	# Archiving
 AR               = sh $(OSPL_HOME)/bin/ospl_winlib
-AR_CMDS          = 
-	# preprocessor: 
-MAKEDEPFLAGS     = -M
+AR_CMDS          =
+	# preprocessor:
+MAKEDEPFLAGS     = -E
         #    keep using GNU cpp, since MS stuff unable to generate gmake deps
-CPP		 = cpp
-GCPP  	 = ospl_wincpp
+CPP		 = $(CC)
+GCPP  	 = $(CXX)
 
 	# gcov
 GCOV		 = gcov
@@ -40,6 +43,10 @@ JCC              = javac
 
 	#JAR
 JAR		 = jar
+
+#JAVAH
+JAVAH            = javah
+JAVAH_FLAGS      = -force
 
 	#Java
 JAVA		 = java
@@ -60,55 +67,56 @@ CFLAGS_DEBUG     = -Z7 -Od -D_TYPECHECK_
 CFLAGS_STRICT	 = -W3
 
 ifeq ("$(VS_VER)","14")
-   VS_INCLUDE =  -I"$(VS_HOME)/VC/INCLUDE" 
-   VS_INCLUDE += -I"$(VS_HOME)/VC/PlatformSDK/include" 
+   VS_INCLUDE =  -I"$(VS_HOME)/VC/INCLUDE"
+   VS_INCLUDE += -I"$(VS_HOME)/VC/PlatformSDK/include"
    VS_INCLUDE += -I"$(VS_HOME)/VC/atlmfc/include"
 
-   VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib" 
+   VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib"
    VS_LIB_FLAGS += -L"$(VS_HOME)/VC/PlatformSDK/lib"
 endif
 
 ifeq ("$(VS_VER)","15")
-   VS_INCLUDE =  -I"$(VS_HOME)/VC/include" 
-   VS_INCLUDE += -I"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/Include" 
+   VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
+   VS_INCLUDE += -I"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/Include"  -I"$(WINDOWSSDKDIR)/Include"
 
-   VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib" 
-   VS_LIB_FLAGS += -L"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/lib"
+   VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib"
+   VS_LIB_FLAGS += -L"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/lib" -L"$(WINDOWSSDKDIR)/lib"
 endif
 
 # Set compiler options for single threaded process
 #    The definition _CRT_SECURE_NO_DEPRECATE is to suppress warnings, remove when not using deprecated functions
-CFLAGS	= -nologo -TC $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	= -EHsc -nologo -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CFLAGS	= -TC $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
+CXXFLAGS	= -EHsc -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 CSFLAGS	= -noconfig -nowarn:1701,1702 -errorreport:prompt -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # Set CPP flags
-CPPFLAGS	 = -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_USE_32BIT_TIME_T -DVERSION="\"$(PACKAGE_VERSION)\""
+CPPFLAGS	 = -nologo -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_USE_32BIT_TIME_T -DVERSION="\"$(PACKAGE_VERSION)\"" $(VS_INCLUDE)
 
 # Set compiler options for multi threaded process
 # notify usage of posix threads
 MTCFLAGS	=
 
 # Set linker options
-LDFLAGS = -incremental:no -machine:IX86 -subsystem:console -L$(SPLICE_LIBRARY_PATH) $(VS_LIB_FLAGS)
+LDFLAGS = -nologo -incremental:no -machine:IX86 -subsystem:console -L$(SPLICE_LIBRARY_PATH) $(VS_LIB_FLAGS)
 
 # Identify linker options for building shared libraries
 SHLDFLAGS = -dll -machine:IX86 -incremental:no
 
 # Identify linker options for building shared C# libraries and or executables.
 CSTARGET_LIB = -t:library
-CSTARGET_EXEC = -target:exe
+CSTARGET_MOD = -t:module
+CSTARGET_EXEC = -t:exe
 
 # Set library context
 LDLIBS		 =
 
 # Set library context for building shared libraries
-SHLDLIBS	 = 
+SHLDLIBS	 =
 
 # Set component specific libraries that are platform dependent
 LDLIBS_CXX =
 LDLIBS_NW = -lws2_32
-LDLIBS_OS = -lkernel32
+LDLIBS_OS = -lkernel32 -lAdvapi32
 LDLIBS_CMS = -lws2_32
 LDLIBS_JAVA = -ljvm
 LDLIBS_ODBC= -lodbc32
@@ -129,5 +137,12 @@ EXEC_POSTFIX = .exe
 INLINESRC_POSTFIX = .i
 CSLIB_PREFIX =
 CSLIB_POSTFIX = .dll
+CSMOD_PREFIX =
+CSMOD_POSTFIX = .netmodule
 CSEXEC_PREFIX =
 CSEXEC_POSTFIX = .exe
+CSDBG_PREFIX =
+CSEXEC_DBG_POSTFIX = .pdb
+CSMOD_DBG_POSTFIX = .pdb
+CSLIB_DBG_POSTFIX = .pdb
+CS_LIBPATH_SEP = ;

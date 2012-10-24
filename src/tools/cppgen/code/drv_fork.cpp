@@ -67,10 +67,10 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  *   status from the child process
  */
 
-#include <idl.h>
-#include <idl_extern.h>
-#include <drv_private.h>
-#include <os_process.h>
+#include "idl.h"
+#include "idl_extern.h"
+#include "drv_private.h"
+#include "os_process.h"
 
 /*
  * Fork off a process, wait for it to die

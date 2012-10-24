@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -77,6 +77,11 @@ c_ulong in_configurationGetULongParameter(
            const c_char *parameterName,
            c_ulong defaultValue);
 
+c_ulong in_configurationGetSizeParameter(
+           const c_char *parameterPath,
+           const c_char *parameterName,
+           c_ulong defaultValue);
+
 c_float in_configurationGetFloatParameter(
            const c_char *parameterPath,
            const c_char *parameterName,
@@ -97,6 +102,12 @@ c_bool in_configurationGetBoolAttribute(
            c_bool defaultValueNoAttr);
 
 c_ulong in_configurationGetULongAttribute(
+           const c_char *parameterPath,
+           const c_char *attribyteName,
+           c_ulong defaultValueNoElmt,
+           c_ulong defaultValueNoAttrib);
+
+c_ulong in_configurationGetSizeAttribute(
            const c_char *parameterPath,
            const c_char *attribyteName,
            c_ulong defaultValueNoElmt,

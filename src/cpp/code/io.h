@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -63,10 +63,6 @@ extern "C"
    extern void mark_got (char);
    extern void mark_get_line (void);
    extern int read_char (void);
-
-#ifdef __cplusplus
-}
-#endif
 
 #ifdef __cplusplus
 }

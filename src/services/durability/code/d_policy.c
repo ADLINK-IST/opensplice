@@ -8,6 +8,19 @@ d_policyDeinit (
         d_object object)
 {
     d_policy policy = d_policy(object);
+    d_policyMergeRule* mergeRule;
+
+    if (policy->mergePolicyRules) {
+
+        mergeRule = (d_policyMergeRule*)c_iterTakeFirst (policy->mergePolicyRules);
+        while (mergeRule) {
+            os_free (mergeRule->scope);
+            d_free (mergeRule);
+            mergeRule = c_iterTakeFirst (policy->mergePolicyRules);
+        }
+        c_iterFree (policy->mergePolicyRules);
+    }
+
     d_free (policy->nameSpace);
 }
 
@@ -34,6 +47,7 @@ d_policyNew (
         policy->aligner = aligner;
         policy->alignmentKind = alignmentKind;
         policy->durabilityKind = durabilityKind;
+        policy->mergePolicyRules = NULL;
     }
     return policy;
 }
@@ -106,34 +120,75 @@ d_policyFree(
     }
 }
 
-/*typedef struct policyFindData
+void
+d_policyAddMergeRule(
+    d_policy policy,
+    d_mergePolicy mergeType,
+    const char* scope)
 {
-    d_policy lookUp;
-    d_policy* policy_out;
-}policyFindData;
+    d_policyMergeRule* rule;
+
+    rule = os_malloc (sizeof(d_policyMergeRule));
+    assert (rule);
+
+    rule->mergeType = mergeType;
+    rule->scope = os_strdup(scope);
+
+    if (!policy->mergePolicyRules){
+        policy->mergePolicyRules = c_iterNew (rule);
+    }else {
+        c_iterAppend (policy->mergePolicyRules, rule);
+    }
+}
+
+struct matchMergePolicyHelper
+{
+    const char* role;
+    d_mergePolicy mergeType;
+    c_bool found;
+};
 
 static void
-policyFindWalk (
-    void* obj,
-    c_iterActionArg userData)
+matchMergePolicyWalk (
+    void* o,
+    c_iterActionArg arg)
 {
-    d_policy policy = d_policy(obj);
-    policyFindData* walkData = (policyFindData)userData;
+    d_policyMergeRule* rule;
+    struct matchMergePolicyHelper* helper;
 
-    if (!walkData->policy_out) {
-        if (<<match-pattern>>(policy->name, lookup->name)) {
+    rule = (d_policyMergeRule*)o;
+    helper = (struct matchMergePolicyHelper*)arg;
 
+    if (!helper->found) {
+        if (d_patternMatch (helper->role, rule->scope)) {
+            helper->mergeType = rule->mergeType;
+            helper->found = TRUE;
         }
     }
 }
 
-d_policy
-d_policyFind (
-    c_iter policies,
-    const char* nameSpace,
-    c_bool aligner,
-    d_alignmentKind alignmentKind,
-    d_durabilityKind durabilityKind)
+/* Get merge rule from policy */
+/* TODO: scope matching should use same algorithm as networking! */
+d_mergePolicy
+d_policyGetMergePolicy(
+    d_policy policy,
+    const char* role)
 {
+    struct matchMergePolicyHelper helper;
+    d_mergePolicy result;
 
-}*/
+    helper.role = role;
+    helper.found = FALSE;
+
+    /* Find rule for role */
+    c_iterWalk (policy->mergePolicyRules, matchMergePolicyWalk, &helper);
+
+    /* If no rule is found, do not merge */
+    if (helper.found) {
+        result = helper.mergeType;
+    }else {
+        result = D_MERGE_IGNORE;
+    }
+
+    return result;
+}

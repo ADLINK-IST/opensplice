@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "cmx_readerSnapshot.h"
@@ -24,9 +24,9 @@
 #include "c_typebase.h"
 #include "c_iterator.h"
 #include "os_heap.h"
-#include <os_mutex.h>
-#include <os_report.h>
-#include <os_stdlib.h>
+#include "os_mutex.h"
+#include "os_report.h"
+#include "os_stdlib.h"
 #include "sd_serializerXML.h"
 #include "os_abstract.h"
 
@@ -40,22 +40,22 @@ cmx_readerSnapshotNew(
     c_char* result;
     struct cmx_readerSnapshotArg arg;
     os_mutex m;
-    
+
     arg.success = FALSE;
     result = NULL;
     e = cmx_entityUserEntity(reader);
-    
-    if(e != NULL){    
+
+    if(e != NULL){
         u_entityAction(e, cmx_readerSnapshotNewAction, &arg);
-        
+
         if(arg.success == TRUE){
             m = cmx_getReaderSnapshotMutex();
             os_mutexLock(&m);
             readerSnapshots = c_iterInsert(readerSnapshots, arg.snapshot);
             os_mutexUnlock(&m);
-            
+
             result = (c_char*)(os_malloc(60));
-            sprintf(result, "<readerSnapshot><id>"PA_ADDRFMT"</id></readerSnapshot>", (c_address)(arg.snapshot));
+            os_sprintf(result, "<readerSnapshot><id>"PA_ADDRFMT"</id></readerSnapshot>", (c_address)(arg.snapshot));
         }
     }
     return result;
@@ -63,32 +63,32 @@ cmx_readerSnapshotNew(
 
 void
 cmx_readerSnapshotNewAction(
-    v_entity e, 
+    v_entity e,
     c_voidp args)
 {
     v_dataReader reader;
     c_iter instances;
     v_dataReaderInstance instance;
-    v_dataReaderSample sample, prev;
+    v_dataReaderSample sample, newer;
     v_query query;
     c_bool release;
     sd_serializer ser;
     sd_serializedData data;
     struct cmx_readerSnapshotArg* arg;
-    
+
     release = FALSE;
     arg = (struct cmx_readerSnapshotArg*)args;
     reader = NULL;
     instances = NULL;
     ser = NULL;
-    
+
     switch(v_object(e)->kind){
     case K_DATAREADER:
         reader = v_dataReader(e);
         arg->success = TRUE;
         arg->snapshot = cmx_readerSnapshot(os_malloc(C_SIZEOF(cmx_readerSnapshot)));
         v_observerLock(v_observer(reader));
-        
+
         if(reader->index->objects){
             instances = c_select(reader->index->notEmptyList, 0);
         }
@@ -97,13 +97,13 @@ cmx_readerSnapshotNewAction(
     case K_DATAREADERQUERY:
         query = v_query(e);
         reader = v_dataReader(v_querySource(query));
-        
+
         if(reader != NULL){
             release = TRUE;
             arg->success = TRUE;
             arg->snapshot = cmx_readerSnapshot(os_malloc(C_SIZEOF(cmx_readerSnapshot)));
             v_observerLock(v_observer(reader));
-            
+
             switch(v_object(query)->kind){
             case K_DATAREADERQUERY:
                 if(v_dataReaderQuery(query)->instanceQ){
@@ -111,7 +111,7 @@ cmx_readerSnapshotNewAction(
                 }
             break;
             default:
-                OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0, 
+                OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0,
                     "cmx_readerSnapshotNewAction unknown kind (%d).",
                     v_object(query)->kind);
             break;
@@ -126,22 +126,22 @@ cmx_readerSnapshotNewAction(
     }
     if(instances != NULL){
         instance = v_dataReaderInstance(c_iterTakeFirst(instances));
-        
+
         while(instance != NULL){
-            sample = c_keep(v_dataReaderInstanceHead(instance));
-            
+            sample = c_keep(v_dataReaderInstanceOldest(instance));
+
             if(sample != NULL){
-                prev = sample->prev;
-                sample->prev = NULL;
-                
+                newer = sample->newer;
+                sample->newer = NULL;
+
                 if(ser == NULL){
                     ser = sd_serializerXMLNewTyped(c_getType(c_object(sample)));
                 }
                 data = sd_serializerSerialize(ser, c_object(sample));
-                arg->snapshot->samples = c_iterInsert(arg->snapshot->samples, 
+                arg->snapshot->samples = c_iterInsert(arg->snapshot->samples,
                                                 sd_serializerToString(ser, data));
                 sd_serializedDataFree(data);
-                sample->prev = prev;
+                sample->newer = newer;
                 c_free(sample);
             }
             c_free(instance);
@@ -151,7 +151,7 @@ cmx_readerSnapshotNewAction(
     }
     if(reader != NULL){
         v_observerUnlock(v_observer(reader));
-        
+
         if(release == TRUE){
             c_free(reader);
         }
@@ -168,18 +168,18 @@ cmx_readerSnapshotFree(
     cmx_readerSnapshot s;
     c_char* sample;
     os_mutex m;
-    
+
     s = cmx_readerSnapshotLookup(snapshot);
-    
-    if(s != NULL){   
+
+    if(s != NULL){
         m = cmx_getReaderSnapshotMutex();
         os_mutexLock(&m);
         c_iterTake(readerSnapshots, s);
         os_mutexUnlock(&m);
-            
+
         if(s->samples != NULL){
             sample = (c_char*)(c_iterTakeFirst(s->samples));
-            
+
             while(sample != NULL){
                 os_free(sample);
                 sample = (c_char*)(c_iterTakeFirst(s->samples));
@@ -197,15 +197,15 @@ cmx_readerSnapshotFreeAll()
     cmx_readerSnapshot s;
     c_char* sample;
     os_mutex m;
-    
+
     m = cmx_getReaderSnapshotMutex();
     os_mutexLock(&m);
     s = cmx_readerSnapshot(c_iterTakeFirst(readerSnapshots));
-    
+
     while(s != NULL){
         if(s->samples != NULL){
             sample = (c_char*)(c_iterTakeFirst(s->samples));
-            
+
             while(sample != NULL){
                 os_free(sample);
                 sample = (c_char*)(c_iterTakeFirst(s->samples));
@@ -227,10 +227,10 @@ cmx_readerSnapshotRead(
     c_char* temp;
     s = cmx_readerSnapshotLookup(snapshot);
     result = NULL;
-       
+
     if(s != NULL){
         temp = (c_char*)(c_iterObject(s->samples, 0));
-        
+
         if(temp != NULL){
             result = (c_char*)(os_strdup(temp));
         }
@@ -246,7 +246,7 @@ cmx_readerSnapshotTake(
     c_char* result;
     s = cmx_readerSnapshotLookup(snapshot);
     result = NULL;
-    
+
     if(s != NULL){
         result = (c_char*)(c_iterTakeFirst(s->samples));
     }
@@ -261,22 +261,22 @@ cmx_readerSnapshotLookup(
     c_char* temp;
     cmx_readerSnapshot s;
     os_mutex m;
-    
+
     s = NULL;
-    
+
     if(snapshot != NULL){
         copy = (c_char*)(os_malloc(strlen(snapshot) + 1));
-        strcpy(copy, snapshot);
+        os_strcpy(copy, snapshot);
         temp = strtok((c_char*)copy, "</>");    /*<readerSnapshot>*/
         temp = strtok(NULL, "</>");             /*<id>*/
         temp = strtok(NULL, "</>");             /*... the pointer*/
-         
+
         if(temp != NULL){
             sscanf(temp, PA_ADDRFMT, (c_address *)(&s));
-            
+
             m = cmx_getReaderSnapshotMutex();
             os_mutexLock(&m);
-            
+
             if(c_iterContains(readerSnapshots, s) == FALSE){
                 s = NULL;
             }

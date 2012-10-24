@@ -22,7 +22,7 @@ namespace test.sacs
 			DDS.InstanceHandle[] handles = null;
 			DDS.PublicationBuiltinTopicData data = null;
             DDS.ReturnCode rc;
-            string expResult = "Functions not supported yet.";
+            string expResult = "All Functions supported.";
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
             reader = (DDS.IDataReader)this.ResolveObject("datareader");
@@ -47,18 +47,20 @@ namespace test.sacs
                 return result;
             }
             rc = reader.GetMatchedPublications(ref handles);
-            if (rc != DDS.ReturnCode.Unsupported)
+            if (rc != DDS.ReturnCode.Ok || handles.Length != 1)
             {
-                result.Result = "get_matched_publications has been implemented.";
+                result.Result = "get_matched_publications failed.";
                 return result;
-            }
-
-            rc = reader.GetMatchedPublicationData(ref data, -10);
-            if (rc != DDS.ReturnCode.Unsupported)
+            } 
+            else 
             {
-                result.Result = "get_matched_publication_data has been implemented.";
-                return result;
-            }
+	            rc = reader.GetMatchedPublicationData(ref data, handles[0]);
+	            if (rc != DDS.ReturnCode.Ok)
+	            {
+	                result.Result = "get_matched_publication_data failed.";
+	                return result;
+	            }
+	        }
             result.Result = expResult;
             result.Verdict = Test.Framework.TestVerdict.Pass;
             return result;

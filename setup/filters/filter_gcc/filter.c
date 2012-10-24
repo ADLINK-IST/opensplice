@@ -89,6 +89,9 @@ filter (
     } else if (strstr (line_base[li], "In function")) {
 	origin_line = li;
 	end_origin = li;
+    } else if (strstr (line_base[li], "At top level")) {
+	origin_line = li;
+	end_origin = li;
     } else {
 	if (origin_line >= 0) {
 	    if (!skip_line (line_base[li])) {

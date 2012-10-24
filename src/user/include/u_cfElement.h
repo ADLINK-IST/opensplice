@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef U_CFELEMENT_H
@@ -34,7 +34,7 @@ C_CLASS(u_cfElement);
 /**
  * \brief The <code>u_cfElement</code> cast method.
  *
- * This method casts an object to a <code>u_cfElement</code> object. Since user 
+ * This method casts an object to a <code>u_cfElement</code> object. Since user
  * layer objects are allocated on heap, no type checking is performed.
  */
 #define u_cfElement(o) ((u_cfElement)(o))
@@ -53,7 +53,7 @@ u_cfElementFree(
 /**
  * \brief Returns a collection of all children of this element.
  *
- * The children of a configuration element can be of type: 
+ * The children of a configuration element can be of type:
  * <code>V_CFELEMENT</code> and <code>V_CFDATA</code>. When the element is an
  * empty element an empty collection is returned.
  *
@@ -164,6 +164,28 @@ u_cfElementAttributeLongValue(
     c_long *l);
 
 /**
+ * \brief Retrieves the specified attribute value as unsigned long with as input
+ * a numeric value with at the end a friendly name character (K,M,G).
+ * For example 10M result in 10485760.
+ *
+ * The specified attribute value is only stored in the last parameter,
+ * when the attribute exists and the value could be succesfully retrieved.
+ *
+ * \param element the proxy to the kernel configuration element
+ * \param attributeName the name of the attribute to retrieve the value from
+ * \param size the storage location of the attribute value
+ *
+ * \return TRUE, when the attribute exists and the value is correctly retrieved
+ *               as unsigned long
+ *         FALSE, otherwise
+ */
+OS_API c_bool
+u_cfElementAttributeSizeValue(
+    u_cfElement element,
+    const c_char *attributeName,
+    c_size *size);
+
+/**
  * \brief Retrieves the specified attribute value as unsigned long.
  *
  * The specified attribute value is only stored in the last parameter,
@@ -213,12 +235,12 @@ u_cfElementAttributeFloatValue(
  *
  * Examples:
  * - <code>"Foo"</code>: all child elements of the given element with the name
- *                       'Foo' are returned. 
+ *                       'Foo' are returned.
  * - <code>"Foo/Bar"</code>: all 'Foo' child elements containing 'Bar'
  *                           children of the given element are returned.
  * - <code>"#text"</code>: all data nodes of the given element.
  *
- * When no children of the element comply to the given XPATH expression, an 
+ * When no children of the element comply to the given XPATH expression, an
  * empty collection is returned.
  *
  * \param element the proxy to the kernel configuration element
@@ -232,7 +254,7 @@ u_cfElementXPath(
     u_cfElement element,
     const c_char *xpathExpr);
 
-#undef OS_API 
+#undef OS_API
 
 #if defined (__cplusplus)
 }

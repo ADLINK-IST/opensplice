@@ -21,7 +21,7 @@ namespace OSPLTestLib
         // API methods
 
         /**
-        * @brief You should overload this method with appropriate reactions 
+        * @brief You should overload this method with appropriate reactions
         * if your test uses it.
         * @see ProcessControlImpl::poke_process_with()
         */
@@ -33,7 +33,7 @@ namespace OSPLTestLib
             const char * /* process_source */) {}
 
         /**
-        * @brief You should overload this method with appropriate reactions 
+        * @brief You should overload this method with appropriate reactions
         * if your test uses it.
         * @see ProcessControlImpl::call_process_with()
         */
@@ -54,7 +54,7 @@ namespace OSPLTestLib
         * @return Is ignored (@todo Am I happy with this ?)
         */
         virtual ::CORBA::Long get_process_status (
-            const char * /* process_target */) 
+            const char * /* process_target */)
         {
             return 0;
         };
@@ -67,7 +67,7 @@ namespace OSPLTestLib
         * @return Should always be true.
         */
         virtual CORBA::Boolean set_process_status (
-            ::CORBA::Long process_status,
+            ::CORBA::Long /* process_status */,
             const char * /* process_target */)
         {
             return true;
@@ -79,11 +79,11 @@ namespace OSPLTestLib
         * @see ProcessControlImpl::shutdown()
         */
         virtual void shutdown (
-            const char * /* process_target */) {};      
+            const char * /* process_target */) {};
     };
 
 } /* End of namespace */
 
-#endif /* APPLICATION_PROCESS_BASE_H */a
+#endif /* APPLICATION_PROCESS_BASE_H */
 
 

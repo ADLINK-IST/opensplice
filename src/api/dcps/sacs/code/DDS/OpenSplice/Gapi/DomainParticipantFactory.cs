@@ -1,6 +1,6 @@
 ﻿// The OpenSplice DDS Community Edition project.
 //
-// Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
+// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
 // 
 //  This library is free software; you can redistribute it and/or
@@ -63,13 +63,6 @@ namespace DDS.OpenSplice.Gapi
         public static extern ReturnCode delete_participant(
             IntPtr _this,
             IntPtr a_participant);
-
-        [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactory_delete_participant_w_action")]
-        public static extern ReturnCode delete_participant_w_action(
-            IntPtr _this,
-            IntPtr a_participant,
-            gapi_deleteEntityAction delete_action,
-            IntPtr action_arg);
 
         /*     DomainParticipant
          *     lookup_participant(

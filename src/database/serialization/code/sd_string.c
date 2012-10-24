@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,6 +11,7 @@
  */
 #include "os_heap.h"
 #include "os_report.h"
+#include "os_stdlib.h"
 
 #include "sd_string.h"
 
@@ -103,7 +104,7 @@ sd_stringAddImpl (
     c_bool  ready = FALSE;
 
     while ( !ready ) {
-        l = vsnprintf(SD_POINTER(str), SD_FREE(str), format, args);
+        l = os_vsnprintf(SD_POINTER(str), SD_FREE(str), format, args);
         if ( l < SD_FREE(str) ) {
             str->index += l;
             ready = TRUE;

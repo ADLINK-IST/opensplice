@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -44,9 +44,9 @@ v_partitionPolicyAdd(
         size = strlen(p) + 1 + strlen(expr) + 1;
         str = os_malloc(size);
         if (str != NULL) {
-            strncpy(str, p, size);
-            str = strcat(str, ",");
-            str = strcat(str, expr);
+            os_strncpy(str, p, size);
+            str = os_strcat(str, ",");
+            str = os_strcat(str, expr);
             newPolicy = c_stringNew(base, str);
             os_free(str);
         }
@@ -77,10 +77,10 @@ v_partitionPolicyRemove(
                 start = strstr(p, expr);
                 assert(start != NULL);
                 assert((c_address)start >= (c_address)p);
-                strncpy(str, p, (c_address)start - (c_address)p); /* includes ',' */
+                os_strncpy(str, p, (c_address)start - (c_address)p); /* includes ',' */
                 str[(c_address)start - (c_address)p] = 0; /* make '\0' terminated */
                 if (strcmp(start, expr) != 0) { /* not at the end */
-                    strcat(str, (c_char *)((c_address)start + strlen(expr) + 1 /* , */));
+                    os_strcat(str, (c_char *)((c_address)start + strlen(expr) + 1 /* , */));
                 }
                 newPolicy = c_stringNew(base, str);
                 os_free(str);
@@ -110,7 +110,7 @@ v_partitionPolicySplit(
         if (length != 0) {
             length++;
             nibble = (c_string)os_malloc(length);
-            strncpy(nibble, head, length);
+            os_strncpy(nibble, head, length);
             nibble[length-1]=0;
             iter = c_iterAppend(iter, nibble);
         } else {

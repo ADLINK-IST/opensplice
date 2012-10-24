@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -62,6 +62,7 @@ _v_writerSampleNew(
         OS_REPORT(OS_ERROR,
                   "v_writerSampleNew",0,
                   "Failed to allocate sample.");
+        assert(FALSE);
     }
 
     assert(C_TYPECHECK(sample,v_writerSample));

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -12,8 +12,11 @@
 #include "os.h"
 #include "d_groupLocalListener.h"
 #include "d_nameSpacesRequestListener.h"
+#include "d_nameSpacesRequest.h"
+#include "d__durability.h"
 #include "d__groupLocalListener.h"
 #include "d__sampleChainListener.h"
+#include "d__group.h"
 #include "d_listener.h"
 #include "d_admin.h"
 #include "d_eventListener.h"
@@ -52,6 +55,8 @@
 #include "os_heap.h"
 #include "os_report.h"
 #include "d_durability.h"
+#include "d__mergeAction.h"
+#include "d__mergeState.h"
 
 struct createPersistentSnapshotHelper {
     c_char* partExpr;
@@ -65,23 +70,55 @@ struct createPersistentSnapshotHelper {
  * lazy alignment where injection of data fails.
  */
 
+
+struct checkNameSpacesHelper {
+    d_nameSpacesRequest request;
+    d_publisher publisher;
+    c_iter retryFellows;
+    os_time retryTime;
+    os_time retryDelay;
+};
+
 static c_bool
 checkNameSpaces(
     d_fellow fellow,
     c_voidp args)
 {
-    c_bool* ready;
+    struct checkNameSpacesHelper *helper;
     d_communicationState state;
+    d_networkAddress fellowAddress;
+    os_time retryTime;
 
-    ready = (c_bool*)args;
+    helper = (struct checkNameSpacesHelper*)args;
     state = d_fellowGetCommunicationState (fellow);
 
-    if(state == D_COMMUNICATION_STATE_UNKNOWN){
-        *ready = FALSE;
+    /* If an incomplete fellow is found, send a namespaces request to that fellow, and reset the retryTime.
+     * The fellow is added to the retryFellows list and removed from the administration (by the caller function),
+     * when retryTime eventually exceeds and the fellow is still in the list.
+     * */
+    if (state == D_COMMUNICATION_STATE_APPROVED) {
+        c_iterTake(helper->retryFellows, fellow);
     } else {
-        *ready = TRUE;
+        if (!c_iterContains(helper->retryFellows, fellow)) {
+            fellowAddress = d_fellowGetAddress(fellow);
+            d_messageSetAddressee(d_message(helper->request), fellowAddress);
+            d_publisherNameSpacesRequestWrite(helper->publisher, helper->request, fellowAddress);
+            /* Increase retrytime, in case this is a new fellow give it a fair chance to respond */
+            retryTime = os_timeGet();
+            helper->retryDelay = os_timeAdd(retryTime, helper->retryDelay);
+            c_iterAppend(helper->retryFellows, fellow);
+            d_networkAddressFree(fellowAddress);
+        }
     }
-    return *ready;
+
+    return TRUE;
+}
+
+static void
+checkNameSpacesRemoveFellowAction(
+   void* o, void* userData)
+{
+    d_adminRemoveFellow((d_admin)userData, (d_fellow)o);
 }
 
 d_groupLocalListener
@@ -178,6 +215,7 @@ struct groupInfo {
     d_durability durability;
 };
 
+
 static c_bool
 requestGroups(
     d_fellow fellow,
@@ -189,6 +227,9 @@ requestGroups(
     c_long i;
     d_nameSpace ns;
     c_bool notInitial;
+    d_admin admin;
+    d_subscriber subscriber;
+    d_sampleChainListener sampleChainListener;
 
     info = (struct groupInfo*)args;
 
@@ -226,6 +267,13 @@ requestGroups(
                           D_THREAD_GROUP_LOCAL_LISTENER,
                           "I am very lazy and will not request groups from master '%d'.\n",
                           addr->systemId);
+
+                    /* Request groups that are still being aligned */
+                    admin = info->durability->admin;
+                    subscriber = d_adminGetSubscriber(admin);
+                    sampleChainListener = d_subscriberGetSampleChainListener(subscriber);
+                    d_sampleChainListenerCheckUnfulfilled(sampleChainListener, ns, master);
+
                     toRequest = FALSE;
                 } else {
                     toRequest = TRUE;
@@ -552,8 +600,11 @@ removeMajorityMaster(
             os_free(list);
             found = TRUE;
         }
-        prev = list;
-        list = list->next;
+
+        if (!found) {
+            prev = list;
+            list = list->next;
+        }
     }
     return;
 }
@@ -629,55 +680,67 @@ determineExistingMaster(
     d_nameSpace fellowNameSpace;
     d_networkAddress fellowMaster, fellowAddress;
     c_bool result;
+    char *role, *fellowRole;
 
     m = (struct masterInfo*)userData;
     fellowNameSpace = d_fellowGetNameSpace(fellow, m->nameSpace);
+    role = d_nameSpaceGetRole(m->nameSpace);
 
-    /*Check if fellow has compatible nameSpace. If not go to the next one */
+        /*Check if fellow has compatible nameSpace. If not go to the next one */
     if(fellowNameSpace){
         fellowMaster = d_nameSpaceGetMaster(fellowNameSpace);
+        fellowRole = d_nameSpaceGetRole(fellowNameSpace);
 
-        /* If I haven't found a potential master so far, check whether the
-         * fellow determined a (potential) master already. If so, conform
-         * to the selected master.
-         */
-        if(d_networkAddressIsUnaddressed(m->master)){
-            if(!d_networkAddressIsUnaddressed(fellowMaster)){
-                d_networkAddressFree(m->master);
-                m->master = d_networkAddressNew(
+        if (!strcmp(fellowRole, role)) {
+            /* If I haven't found a potential master so far, check whether the
+             * fellow determined a (potential) master already. If so, conform
+             * to the selected master.
+             */
+            if(d_networkAddressIsUnaddressed(m->master)){
+                if(!d_networkAddressIsUnaddressed(fellowMaster)){
+                    d_networkAddressFree(m->master);
+                    m->master = d_networkAddressNew(
+                            fellowMaster->systemId,
+                            fellowMaster->localId,
+                            fellowMaster->lifecycleId);
+                    addMajorityMaster(m, fellowMaster);
+                }
+            } else if(!d_networkAddressIsUnaddressed(fellowMaster)){
+                /* If the fellow has determined a (potential) master
+                 * that doesn't match my current one, there's a conflict and
+                 * I need to drop out of this function.
+                 */
+                if(!d_networkAddressEquals(m->master, fellowMaster)){
+                    m->conflicts = TRUE;
+
+                    fellowAddress = d_fellowGetAddress(fellow);
+                    d_printTimedEvent(m->durability, D_LEVEL_INFO,
+                        D_THREAD_GROUP_LOCAL_LISTENER,
+                        "Fellow '%d' reports master '%d' for nameSpace '%s'. " \
+                        "while I found master '%d'.\n",
+                        fellowAddress->systemId,
                         fellowMaster->systemId,
-                        fellowMaster->localId,
-                        fellowMaster->lifecycleId);
+                        d_nameSpaceGetName(m->nameSpace),
+                        m->master->systemId);
+                    d_networkAddressFree(fellowAddress);
+                }
                 addMajorityMaster(m, fellowMaster);
             }
-        } else if(!d_networkAddressIsUnaddressed(fellowMaster)){
-            /* If the fellow has determined a (potential) master
-             * that doesn't match my current one, there's a conflict and
-             * I need to drop out of this function.
-             */
-            if(!d_networkAddressEquals(m->master, fellowMaster)){
-                m->conflicts = TRUE;
-
-                fellowAddress = d_fellowGetAddress(fellow);
-                d_printTimedEvent(m->durability, D_LEVEL_INFO,
-                    D_THREAD_GROUP_LOCAL_LISTENER,
-                    "Fellow '%d' reports master '%d' for nameSpace '%s'. " \
-                    "while I found master '%d'.\n",
-                    fellowAddress->systemId,
-                    fellowMaster->systemId,
-                    d_nameSpaceGetName(m->nameSpace),
-                    m->master->systemId);
-                d_networkAddressFree(fellowAddress);
-            }
-            addMajorityMaster(m, fellowMaster);
         }
+        if(m->conflictsAllowed){
+            result = TRUE;
+        } else {
+            result = !(m->conflicts);
+        }
+
         d_networkAddressFree(fellowMaster);
-    }
-    if(m->conflictsAllowed){
+        os_free (fellowRole);
+    /* If fellow namespace is from other role, it can't be master for this node */
+    }else {
         result = TRUE;
-    } else {
-        result = !(m->conflicts);
     }
+
+    os_free (role);
 
     return result;
 }
@@ -693,38 +756,48 @@ determineNewMaster(
     c_bool isAligner, replace;
     d_quality quality;
     d_serviceState fellowState;
+    char *role, *fellowRole;
 
     m = (struct masterInfo*)userData;
     replace = FALSE;
     fellowNameSpace = d_fellowGetNameSpace(fellow, m->nameSpace);
 
+
     if(fellowNameSpace){
-        isAligner = d_nameSpaceIsAligner(fellowNameSpace);
-        quality = d_nameSpaceGetInitialQuality(fellowNameSpace);
-        fellowState = d_fellowGetState(fellow);
 
-        if(isAligner){
-            if(d_networkAddressIsUnaddressed(m->master)){
-                replace = TRUE;
-            } else if((m->masterState <= D_STATE_DISCOVER_PERSISTENT_SOURCE) && (fellowState > D_STATE_DISCOVER_PERSISTENT_SOURCE)) {
-                replace = TRUE;
-            } else if((m->masterState > D_STATE_DISCOVER_PERSISTENT_SOURCE) && (fellowState <= D_STATE_DISCOVER_PERSISTENT_SOURCE)) {
-                replace = FALSE;
-            } else if(quality.seconds > m->masterQuality.seconds){
-                replace = TRUE;
-            } else if(quality.seconds == m->masterQuality.seconds){
-                if(quality.nanoseconds > m->masterQuality.nanoseconds){
+        role = d_nameSpaceGetRole (m->nameSpace);
+        fellowRole = d_nameSpaceGetRole (fellowNameSpace);
+
+        if (!strcmp (role, fellowRole)) {
+            isAligner = d_nameSpaceIsAligner(fellowNameSpace);
+            quality = d_nameSpaceGetInitialQuality(fellowNameSpace);
+            fellowState = d_fellowGetState(fellow);
+
+            if(isAligner){
+                if(d_networkAddressIsUnaddressed(m->master)){
                     replace = TRUE;
-                } else if(quality.nanoseconds == m->masterQuality.nanoseconds){
-                    fellowAddress = d_fellowGetAddress(fellow);
-
-                    if(d_networkAddressCompare(fellowAddress, m->master) > 0){
+                } else if((m->masterState <= D_STATE_DISCOVER_PERSISTENT_SOURCE) && (fellowState > D_STATE_DISCOVER_PERSISTENT_SOURCE)) {
+                    replace = TRUE;
+                } else if((m->masterState > D_STATE_DISCOVER_PERSISTENT_SOURCE) && (fellowState <= D_STATE_DISCOVER_PERSISTENT_SOURCE)) {
+                    replace = FALSE;
+                } else if(quality.seconds > m->masterQuality.seconds){
+                    replace = TRUE;
+                } else if(quality.seconds == m->masterQuality.seconds){
+                    if(quality.nanoseconds > m->masterQuality.nanoseconds){
                         replace = TRUE;
+                    } else if(quality.nanoseconds == m->masterQuality.nanoseconds){
+                        fellowAddress = d_fellowGetAddress(fellow);
+
+                        if(d_networkAddressCompare(fellowAddress, m->master) > 0){
+                            replace = TRUE;
+                        }
+                        d_networkAddressFree(fellowAddress);
                     }
-                    d_networkAddressFree(fellowAddress);
                 }
             }
         }
+        os_free (role);
+        os_free (fellowRole);
     }
 
     if(replace){
@@ -755,22 +828,26 @@ d_groupLocalListenerDetermineMasters(
     c_long length, i;
     d_nameSpace nameSpace;
     d_subscriber subscriber;
+    d_publisher publisher;
     d_nameSpacesRequestListener nsrListener;
     d_networkAddress unaddressed, myAddress, master, lastMaster;
+    struct checkNameSpacesHelper checkNsHelper;
     struct masterInfo mastership;
     os_time sleepTime, endTime;
-    c_bool nsComplete, proceed, conflicts, firstTime, cont;
+    c_bool conflicts, firstTime, cont, proceed;
     d_quality myQuality;
     c_bool iAmAMaster;
     d_serviceState myState, fellowState;
     d_fellow fellow;
     c_ulong tries, maxTries;
+    c_bool initialUnaddressed;
 
     admin = d_listenerGetAdmin(d_listener(listener));
     durability = d_adminGetDurability(admin);
     configuration = d_durabilityGetConfiguration(durability);
     length = c_iterLength(nameSpaces);
     subscriber = d_adminGetSubscriber(admin);
+    publisher = d_adminGetPublisher(admin);
     nsrListener = d_subscriberGetNameSpacesRequestListener(subscriber);
     unaddressed = d_networkAddressUnaddressed();
     myAddress = d_adminGetMyAddress(admin);
@@ -784,6 +861,11 @@ d_groupLocalListenerDetermineMasters(
     sleepTime.tv_nsec = 100000000;
     mastership.durability = durability;
 
+    checkNsHelper.request = d_nameSpacesRequestNew(admin);
+    checkNsHelper.retryFellows = c_iterNew(NULL);
+    checkNsHelper.publisher = publisher;
+    checkNsHelper.retryDelay = os_timeAdd(configuration->heartbeatUpdateInterval, configuration->heartbeatUpdateInterval);
+
     do {
         conflicts = FALSE;
         tries++;
@@ -796,10 +878,24 @@ d_groupLocalListenerDetermineMasters(
              * one I find now is different, I need to do this whole loop again.
              */
             if(firstTime){
-                lastMaster = d_networkAddressUnaddressed();
+                lastMaster = d_nameSpaceGetMaster(nameSpace);
+
+                if (d_networkAddressIsUnaddressed(lastMaster)) {
+                    initialUnaddressed = TRUE;
+                }else {
+                    d_networkAddressFree(lastMaster);
+                    lastMaster = d_networkAddressUnaddressed();
+                    initialUnaddressed = FALSE;
+                }
             } else {
                 lastMaster = d_nameSpaceGetMaster(nameSpace);
+                if (d_networkAddressIsUnaddressed(lastMaster)) {
+                    initialUnaddressed = TRUE;
+                }else {
+                    initialUnaddressed = FALSE;
+                }
             }
+
             /*
              * Always use un-addressed as my master when looking for an
              * existing master.
@@ -818,8 +914,10 @@ d_groupLocalListenerDetermineMasters(
                 mastership.conflictsAllowed = FALSE;
             }
 
-            /*Walk over all fellows that are approved*/
-            d_adminFellowWalk(admin, determineExistingMaster, &mastership);
+            if (initialUnaddressed || !firstTime) {
+                /*Walk over all fellows that are approved*/
+                d_adminFellowWalk(admin, determineExistingMaster, &mastership);
+            }
 
             if((!mastership.conflicts) && (!d_networkAddressIsUnaddressed(mastership.master))){
                 /*Check whether the found fellow is still alive and kicking.*/
@@ -980,28 +1078,41 @@ d_groupLocalListenerDetermineMasters(
                 /*To make sure the do-while is done at least once more: */
                 conflicts = TRUE;
             }
+
             /*Wait twice the heartbeat period*/
             endTime = os_timeGet();
-            endTime = os_timeAdd(endTime, configuration->heartbeatUpdateInterval);
-            endTime = os_timeAdd(endTime, configuration->heartbeatUpdateInterval);
+            endTime = os_timeAdd(endTime, checkNsHelper.retryDelay);
 
             d_printTimedEvent(durability, D_LEVEL_INFO,
                        D_THREAD_GROUP_LOCAL_LISTENER,
                        "Waiting twice the heartbeat period: 2*%f seconds.\n",
                        os_timeToReal(configuration->heartbeatUpdateInterval));
 
-            nsComplete = TRUE;
-            proceed = TRUE;
+            proceed = FALSE;
 
-            while(d_durabilityMustTerminate(durability) == FALSE && proceed ){
+            while((d_durabilityMustTerminate(durability) == FALSE) && (proceed == FALSE)) {
                 os_nanoSleep(sleepTime);
 
-                if(os_timeCompare(os_timeGet(), endTime) > 0){
-                    proceed = FALSE;
-                    d_adminFellowWalk(admin, checkNameSpaces, &nsComplete);
-                    proceed = !nsComplete;
+                if(os_timeCompare(os_timeGet(), endTime) > 0) {
+                    d_adminFellowWalk(admin, checkNameSpaces, &checkNsHelper);
+
+                    if (c_iterLength(checkNsHelper.retryFellows) > 0) {
+                        d_printTimedEvent(durability, D_LEVEL_INFO, D_THREAD_GROUP_LOCAL_LISTENER,
+                            "Found %d incomplete fellow(s)\n", c_iterLength(checkNsHelper.retryFellows));
+                        proceed = FALSE;
+                        if(os_timeCompare(os_timeGet(), checkNsHelper.retryTime) > 0) {
+                            /* There hasn't been a new incomplete fellow for the last 2*heartbeat period, remove any remaining incomplete fellows */
+                            c_iterWalk(checkNsHelper.retryFellows, checkNameSpacesRemoveFellowAction, (void*)admin);
+                            proceed = TRUE;
+                        }
+                    } else {
+                        d_printTimedEvent(durability, D_LEVEL_INFO, D_THREAD_GROUP_LOCAL_LISTENER,
+                            "All fellows' namespaces complete\n");
+                        proceed = TRUE;
+                    }
                 }
             }
+
         } else if(d_durabilityMustTerminate(durability) == FALSE){
             assert(conflicts == FALSE);
             /*No more conflicts; all masters have been confirmed*/
@@ -1024,14 +1135,21 @@ d_groupLocalListenerDetermineMasters(
                 }
                 d_networkAddressFree(master);
                 d_nameSpaceMasterConfirmed (nameSpace);
+
             }
         }
     } while ((conflicts == TRUE) && (d_durabilityMustTerminate(durability) == FALSE));
+
+    d_nameSpacesRequestFree(checkNsHelper.request);
+    c_iterFree(checkNsHelper.retryFellows);
 
     os_mutexUnlock(&listener->masterLock);
 
     d_durabilityUpdateStatistics(durability, d_statisticsUpdateConfiguration, admin);
     myState = d_durabilityGetState(durability);
+
+    /* Re-report namespaces with correct confirmed status */
+    d_nameSpacesRequestListenerReportNameSpaces(nsrListener);
 
     /* Request groups */
     doGroupsRequest(listener, nameSpaces, iAmAMaster);
@@ -1043,6 +1161,19 @@ d_groupLocalListenerDetermineMasters(
 }
 
 /*****************************************************************************/
+
+static c_bool
+collectNameSpaces(
+    d_nameSpace ns, void* userData)
+{
+    c_iter nameSpaces = (c_iter)userData;
+    if (ns)
+    {
+        d_objectKeep(d_object(ns));
+        c_iterInsert (nameSpaces, ns);
+    }
+    return TRUE;
+}
 
 static void
 collectNsWalk(
@@ -1083,6 +1214,8 @@ initPersistentData(
     c_bool attached;
     v_group vgroup;
     c_bool nsComplete;
+    os_time waitTime;
+    c_ulong count;
 
     admin         = d_listenerGetAdmin(d_listener(listener));
     durability    = d_adminGetDurability(admin);
@@ -1157,6 +1290,17 @@ initPersistentData(
 
                                     vgroup = d_groupGetKernelGroup(group);
                                     attached = d_durabilityWaitForAttachToGroup(durability, vgroup);
+
+
+                                    waitTime.tv_sec  = 0;
+                                    waitTime.tv_nsec = 100000000; /*100ms*/
+                                    count = 0;
+
+                                    while(  (c_count(vgroup->streams) == 0) &&
+                                            (count < 30)){
+                                        os_nanoSleep(waitTime);
+                                        count++;
+                                    }
                                     c_free(vgroup);
 
                                     result = d_storeMessagesInject(store, group);
@@ -1269,6 +1413,7 @@ initMasters(
 struct fellowState {
 	d_networkAddress address;
 	d_serviceState state;
+	d_table nameSpaces; /* Namespace states */
 };
 
 struct masterHelper {
@@ -1277,9 +1422,27 @@ struct masterHelper {
     c_iter fellowStates;
 };
 
+static c_bool
+fellowStateCopyNsWalk  (
+    d_nameSpace nameSpace,
+    c_voidp userData)
+{
+    d_table nameSpaces;
+
+    nameSpaces = d_table(userData);
+
+    assert (nameSpaces);
+
+    d_tableInsert (nameSpaces, d_nameSpaceCopy(nameSpace));
+
+    return TRUE;
+}
+
 /* Walk fellows, insert fellow state in iterator list */
 static c_bool
-fellowStateWalk (d_fellow fellow, c_voidp userData)
+fellowStateWalk (
+    d_fellow fellow,
+    c_voidp userData)
 {
 	/* Create new fellow object */
 	struct fellowState* fellowStateObject;
@@ -1290,9 +1453,13 @@ fellowStateWalk (d_fellow fellow, c_voidp userData)
 		return FALSE;
 	}
 
-	/* Set object */
+	/* Set address and state of fellowstate object */
 	fellowStateObject->address = d_fellowGetAddress (fellow);
 	fellowStateObject->state = d_fellowGetState (fellow);
+
+	/* Copy namespace states */
+	fellowStateObject->nameSpaces = d_tableNew(d_nameSpaceCompare, d_nameSpaceFree);
+	d_fellowNameSpaceWalk (fellow, fellowStateCopyNsWalk, fellowStateObject->nameSpaces);
 
 	/* Insert fellow state */
 	c_iterInsert (userData, fellowStateObject);
@@ -1300,17 +1467,26 @@ fellowStateWalk (d_fellow fellow, c_voidp userData)
 	return TRUE;
 }
 
+/* Clean fellowstate object */
 static void
-fellowStateCleanWalk (void* o, c_iterActionArg arg)
+fellowStateCleanWalk (
+    void* o,
+    c_iterActionArg arg)
 {
-    struct fellowState* fellowStateObject = (struct fellowState*)o;
+    struct fellowState* fellowStateObject;
+
+    fellowStateObject = (struct fellowState*)o;
+
 	d_networkAddressFree(fellowStateObject->address);
+	d_tableFree (fellowStateObject->nameSpaces);
+
 	os_free (fellowStateObject);
 }
 
 /* Clean fellowstates & iterator */
 static void
-freeFellowStates (c_iter fellowStates)
+freeFellowStates (
+    c_iter fellowStates)
 {
 	c_iterWalk (fellowStates, fellowStateCleanWalk, NULL);
 	c_iterFree (fellowStates);
@@ -1342,6 +1518,7 @@ fetchFellowStates(d_groupLocalListener listener)
 	{
 		fellowStateObject->address = d_adminGetMyAddress(admin);
 		fellowStateObject->state = d_durabilityGetState (durability);
+	    fellowStateObject->nameSpaces = NULL;
 
         /* Insert own address & state to list */
         c_iterInsert (fellowStates, fellowStateObject);
@@ -1358,24 +1535,38 @@ markNameSpace (
 		d_admin admin)
 {
 	d_durability durability;
+	d_configuration config;
 	d_networkAddress master;
+	d_nameSpace fellowNameSpace, dummy;
 	struct fellowState* fellowStateObject;
 	c_long i;
 
-	durability 	  = d_adminGetDurability(admin);
+	durability = d_adminGetDurability(admin);
+	config = d_durabilityGetConfiguration (durability);
 	master = d_nameSpaceGetMaster(nameSpace);
     i = 0;
 
 	/* Walk fellow states */
 	while ((fellowStateObject = (struct fellowState*)c_iterObject(fellowStates, i++)))
 	{
-		if (d_networkAddressEquals(fellowStateObject->address, master))
-		{
+		if (d_networkAddressEquals(fellowStateObject->address, master)) {
 			/* Only D_STATE_COMPLETE states can be overwritten */
-			if (d_nameSpaceGetMasterState(nameSpace) == D_STATE_COMPLETE)
-			{
+			if (d_nameSpaceGetMasterState(nameSpace) == D_STATE_COMPLETE) {
 				d_nameSpaceSetMasterState (nameSpace, fellowStateObject->state);
 			}
+
+			dummy = d_nameSpaceNew (config, d_nameSpaceGetName (nameSpace));
+
+			if (fellowStateObject->nameSpaces) {
+			    fellowNameSpace = d_tableFind (fellowStateObject->nameSpaces, dummy);
+
+                /* If nameSpace would not exist, fellow could not have been master for this namespace */
+                assert (fellowNameSpace);
+
+                /* Copy mergestate of namespace */
+                d_nameSpaceSetMergeState(nameSpace, d_nameSpaceGetMergeState(fellowNameSpace, NULL));
+			}
+
 			break;
 		}
 	}
@@ -1415,14 +1606,16 @@ determineNewMasters(
         if(c_iterLength(nameSpaces) > 0){
             tryChains = d_groupLocalListenerDetermineMasters(listener, nameSpaces);
 
-            helper.listener = listener;
-            helper.fellowStates = fellowStates;
-            helper.nameSpaces = NULL; /* Not used in this walk */
+            if (fellowStates){
+                helper.listener = listener;
+                helper.fellowStates = fellowStates;
+                helper.nameSpaces = NULL; /* Not used in this walk */
 
-            c_iterWalk (nameSpaces, nameSpaceMarkWalk, &helper);
+                c_iterWalk (nameSpaces, nameSpaceMarkWalk, &helper);
 
-            /* Cleanup fellow states */
-            freeFellowStates (fellowStates);
+                /* Cleanup fellow states */
+                freeFellowStates (fellowStates);
+            }
         }
 
         os_mutexUnlock(&listener->masterLock);
@@ -1514,24 +1707,461 @@ handleGroupAlignmentWalk (
 }
 
 static c_bool
-notifyNameSpaceNew(
+collectGroups(
+    d_group group,
+    c_voidp args)
+{
+    c_iter groups;
+
+    groups = c_iterInsert((c_iter)args, d_objectKeep(d_object(group)));
+
+    return TRUE;
+}
+
+static void
+handleMergeAlignment(
+    d_groupLocalListener listener,
+    d_nameSpace fellowNameSpace,
+    d_fellow fellow,
+    d_mergeState newState)
+{
+    d_mergeAction mergeAction;
+    d_admin admin;
+    d_durability durability;
+    d_configuration config;
+    c_iter groups;
+    d_group group;
+    d_partition partition;
+    d_topic topic;
+    d_durabilityKind dkind;
+    d_networkAddress fellowAddress;
+    c_bool inNameSpace;
+    d_chain chain;
+    c_time stamp, networkAttachTime, zeroTime;
+    d_sampleRequest request;
+    os_uint32 groupCount;
+
+    admin = d_listenerGetAdmin(d_listener(listener));
+    durability = d_adminGetDurability(admin);
+    config = d_durabilityGetConfiguration(durability);
+    groups = c_iterNew(NULL);
+    groupCount = 0;
+    fellowAddress = d_fellowGetAddress(fellow);
+
+    d_adminGroupWalk(admin, collectGroups, groups);
+
+    mergeAction = d_mergeActionNew(fellowNameSpace, fellow, newState);
+    d_nameSpaceFree (fellowNameSpace);
+    d_mergeStateFree (newState);
+
+    group = d_group(c_iterTakeFirst(groups));
+
+    /* Create sample requests for all groups that are part of the nameSpace */
+    while(group){
+        partition = d_groupGetPartition(group);
+        topic = d_groupGetTopic(group);
+        dkind = d_groupGetKind(group);
+        inNameSpace = d_nameSpaceIsIn(fellowNameSpace, partition, topic);
+
+        if(inNameSpace){
+            stamp = v_timeGet();
+
+            if(config->timeAlignment){
+                networkAttachTime = stamp;
+            } else {
+                networkAttachTime = C_TIME_INFINITE;
+            }
+            zeroTime.seconds     = 0;
+            zeroTime.nanoseconds = 0;
+
+            request = d_sampleRequestNew(
+                            admin, partition, topic,
+                            dkind, stamp, FALSE,
+                            zeroTime, networkAttachTime);
+            chain = d_chainNew(admin, request);
+
+            d_mergeActionAddChain(mergeAction, chain);
+            groupCount++;
+        }
+        os_free(partition);
+        os_free(topic);
+        d_groupFree(group);
+        group = d_group(c_iterTakeFirst(groups));
+    }
+    c_iterFree(groups);
+
+    d_printTimedEvent(durability, D_LEVEL_INFO,
+        D_THREAD_GROUP_LOCAL_LISTENER,
+        "Inserting merge request to merge '%d' groups with fellow '%d' for "\
+        "nameSpace '%s'\n",
+        groupCount,
+        fellowAddress->systemId,
+        d_nameSpaceGetName(fellowNameSpace));
+    d_networkAddressFree(fellowAddress);
+
+    d_sampleChainListenerInsertMergeAction(listener->sampleChainListener,
+            mergeAction);
+
+    return;
+}
+
+struct applyMergePolicyHelper {
+    d_groupLocalListener listener;
+    d_fellow fellow;
+    d_nameSpace nameSpace; /* If set, applyMergePolicy will only check this namespace, otherwise all namespaces are evaluated */
+    d_table fellowStates; /* Fellow states at the time of the namespace event */
+    c_iter conflictStates; /* Result of mergeState compare between own namespace and fellow namespace */
+};
+
+/* This function determines whether a merge action is needed or not and
+ * if so, it forwards the request. */
+static c_bool
+applyMergePolicy(
+    d_action action,
+    c_bool terminate)
+{
+    struct applyMergePolicyHelper* helper;
+    d_admin admin;
+    d_durability durability;
+    d_networkAddress fellowMaster, fellowAddress, myMaster;
+    c_iter fellowNameSpaces;
+    d_nameSpace fellowNameSpace, nameSpace;
+    c_bool nameSpacesKnown;
+    c_bool amIMaster;
+    d_alignmentKind aKind;
+    c_bool callAgain = TRUE;
+    d_mergePolicy merge;
+    d_name role, fellowRole;
+    d_mergeState ownState, fellowState, newState, conflictState;
+
+    helper = (struct applyMergePolicyHelper*)(d_actionGetArgs(action));
+    admin = d_listenerGetAdmin(d_listener(helper->listener));
+    durability = d_adminGetDurability(admin);
+    fellowNameSpaces = NULL;
+
+    assert (helper->fellow);
+
+    fellowAddress = d_fellowGetAddress(helper->fellow);
+
+    /* Wait until service and fellow reach COMPLETE state (action will be rescheduled) */
+    if (!terminate && (d_durabilityGetState(durability) != D_STATE_COMPLETE)) {
+        d_printTimedEvent(durability, D_LEVEL_INFO,
+            D_THREAD_GROUP_LOCAL_LISTENER,
+            "I am not complete. Not yet investigating merge with fellow %u.\n",
+            fellowAddress->systemId);
+
+    }else if (!terminate && (d_fellowGetState(helper->fellow) != D_STATE_COMPLETE)) {
+        d_printTimedEvent(durability, D_LEVEL_INFO,
+            D_THREAD_GROUP_LOCAL_LISTENER,
+            "Fellow %u is not complete. Not yet investigating merge.\n",
+            fellowAddress->systemId);
+
+    } else if(!terminate){
+        nameSpacesKnown = d_fellowAreNameSpacesComplete(helper->fellow);
+        fellowAddress = d_fellowGetAddress(helper->fellow);
+
+        /* Make sure all nameSpaces of the fellow are known before proceeding*/
+        if(nameSpacesKnown){
+
+            /* If a namespace is set in the helper, only check if durability should merge for that namespace */
+            if (helper->nameSpace) {
+                fellowNameSpaces = c_iterNew (helper->nameSpace);
+                fellowNameSpace = d_nameSpace(c_iterTakeFirst(fellowNameSpaces));
+
+            /* Otherwise, check for all namespaces in that fellow */
+            }else {
+                fellowNameSpaces = c_iterNew(NULL);
+                d_fellowNameSpaceWalk(helper->fellow, collectNameSpaces, fellowNameSpaces);
+                fellowNameSpace = d_nameSpace(c_iterTakeFirst(fellowNameSpaces));
+            }
+
+            /* Walk over all nameSpaces of the fellow to determine what
+             * merge activity needs to be performed.
+             */
+            while(fellowNameSpace){
+                fellowMaster = d_nameSpaceGetMaster(fellowNameSpace);
+
+                /* If and only if the fellow is a 'master', a merge action
+                 * is necessary. The assumption is that the configuration of
+                 * the networking service makes sure, that nodes are only
+                 * removed from the reliability protocol after the
+                 * durability service has determined the new master already.
+                 *
+                 * This means the detection time of a disconnection plus the
+                 * time to determine a new master needs to be <= the time
+                 * after which networking kicks out a node from the reliability
+                 * protocol.
+                 *
+                 */
+
+                d_printTimedEvent(durability, D_LEVEL_INFO,
+                        D_THREAD_GROUP_LOCAL_LISTENER,
+                        "Fellow '%d' was master for nameSpace "\
+                        "%s; investigating merge.\n",
+                        fellowAddress->systemId,
+                        d_nameSpaceGetName(fellowNameSpace));
+
+                nameSpace = d_adminGetNameSpace(admin,
+                        d_nameSpaceGetName(fellowNameSpace));
+
+                /* Check if the fellow nameSpace is locally known. */
+                if(nameSpace){
+
+                    /* Get own role */
+                    role = d_nameSpaceGetRole(nameSpace);
+                    /* Get the role of the fellow */
+                    fellowRole = d_nameSpaceGetRole(fellowNameSpace);
+                    /* Get the merge policy for the fellow role */
+                    merge = d_nameSpaceGetMergePolicy(nameSpace, fellowRole);
+                    /* Get the master for the namespace */
+                    myMaster = d_nameSpaceGetMaster (nameSpace);
+
+                    /* Only merge if merge policy is not ignore or if there are conflict states */
+                    if(helper->conflictStates || ((merge != D_MERGE_IGNORE) &&
+                       (merge != D_MERGE_DELETE))){
+
+                        /* Only perform merge if the alignment policy
+                         * is initial or lazy. */
+                        aKind = d_nameSpaceGetAlignmentKind(nameSpace);
+
+                        if((aKind == D_ALIGNEE_INITIAL)||
+                           (aKind == D_ALIGNEE_LAZY)){
+                            /* Check if I am master for the local administrated namespace */
+                            amIMaster = d_nameSpaceMasterIsMe (nameSpace, admin);
+
+                           /* There are four conditions when a merge should occur:
+                            * 1. I am master and I encounter another (confirmed) master
+                            * 2. I am master and I encounter a node without confirmed master
+                            * 3. I am not a master and I encounter a new namespace state from my master
+                            * 4. I am master and I encounter a master from another role with an previously unseen state
+                            */
+                            ownState = d_nameSpaceGetMergeState (nameSpace, fellowRole);
+                            fellowState = d_nameSpaceGetMergeState (fellowNameSpace, fellowRole);
+
+                            /* I am a master */
+                            if (amIMaster) {
+                                if (!strcmp (fellowRole, role)) {
+                                    if ((d_networkAddressEquals(fellowMaster, fellowAddress) && d_nameSpaceIsMasterConfirmed(fellowNameSpace)) ||
+                                           !d_nameSpaceIsMasterConfirmed(fellowNameSpace)) {
+                                            d_printTimedEvent(durability, D_LEVEL_INFO,
+                                                D_THREAD_GROUP_LOCAL_LISTENER,
+                                                "Applying merge with fellow '%d' for "\
+                                                "nameSpace '%s'.\n",
+                                                fellowAddress->systemId,
+                                                d_nameSpaceGetName(nameSpace));
+
+                                            /* Increase state counter by one when I am master */
+                                            newState = d_mergeStateNew (ownState->role, ownState->value + 1);
+
+                                            /* A merge is needed for this nameSpace;
+                                             * taking further action */
+                                            handleMergeAlignment(helper->listener,
+                                                    d_nameSpaceCopy(fellowNameSpace), helper->fellow, newState);
+
+                                    }else { /* If other fellow never was master, I shouldn't have to do anything */
+                                        d_printTimedEvent(durability, D_LEVEL_INFO,
+                                            D_THREAD_GROUP_LOCAL_LISTENER,
+                                            "No need to merge with fellow '%d'.\n",
+                                            fellowAddress->systemId,
+                                            d_nameSpaceGetName(nameSpace));
+                                    }
+                                }else
+                                {
+                                    /* If I am master, fellow is (confirmed) master for other role and native state is different, apply merge */
+                                    if ((ownState != fellowState) && (d_networkAddressEquals(fellowMaster, fellowAddress)) && d_nameSpaceIsMasterConfirmed(fellowNameSpace)) {
+                                        d_printTimedEvent(durability, D_LEVEL_INFO,
+                                            D_THREAD_GROUP_LOCAL_LISTENER,
+                                            "Applying merge between roles with fellow '%d' for "\
+                                            "nameSpace '%s' from role '%s'.\n",
+                                            fellowAddress->systemId,
+                                            d_nameSpaceGetName(nameSpace),
+                                            fellowRole);
+
+                                        /* When I am not master, copy state from master fellow */
+                                        newState = d_mergeStateNew(fellowState->role, fellowState->value);
+
+                                        /* A merge is needed for this nameSpace;
+                                         * taking further action */
+                                        handleMergeAlignment(helper->listener,
+                                                d_nameSpaceCopy(fellowNameSpace), helper->fellow, newState);
+                                    }else {
+                                        d_printTimedEvent(durability, D_LEVEL_INFO,
+                                            D_THREAD_GROUP_LOCAL_LISTENER,
+                                            "No need to merge with fellow '%d' from role '%s'.\n",
+                                            fellowAddress->systemId,
+                                            d_nameSpaceGetName(nameSpace),
+                                            fellowRole);
+                                    }
+                                }
+
+                            /* I am not a master */
+                            }else {
+                                if ((!ownState || (ownState->value != fellowState->value)) &&
+                                    (d_networkAddressEquals(fellowAddress, myMaster) && d_nameSpaceIsMasterConfirmed(fellowNameSpace))) {
+
+                                    d_printTimedEvent(durability, D_LEVEL_INFO,
+                                        D_THREAD_GROUP_LOCAL_LISTENER,
+                                        "Own namespace state '%d' for role '%s'"\
+                                        "differs from state '%d' from my master '%d'"\
+                                        "for nameSpace '%s'.\n",
+                                        ownState->value,
+                                        ownState->role,
+                                        fellowState->value,
+                                        fellowAddress->systemId,
+                                        d_nameSpaceGetName(nameSpace));
+
+                                    d_printTimedEvent(durability, D_LEVEL_INFO,
+                                        D_THREAD_GROUP_LOCAL_LISTENER,
+                                        "Applying merge with fellow '%d' for "\
+                                        "nameSpace '%s'.\n",
+                                        fellowAddress->systemId,
+                                        d_nameSpaceGetName(nameSpace));
+
+                                    /* When I am not master, copy state from master fellow */
+                                    newState = d_mergeStateNew(fellowState->role, fellowState->value);
+
+                                    /* A merge is needed for this nameSpace;
+                                     * taking further action */
+                                    handleMergeAlignment(helper->listener,
+                                            d_nameSpaceCopy(fellowNameSpace), helper->fellow, newState);
+
+                                /* A master with conflicting states for other roles is detected */
+                                }else if (helper->conflictStates) {
+                                    if (c_iterLength(helper->conflictStates) > 1) {
+                                        d_printTimedEvent(durability, D_LEVEL_INFO,
+                                            D_THREAD_GROUP_LOCAL_LISTENER,
+                                            "Multiple role state changes detected for "\
+                                            "nameSpace '%s' while own state has not changed. "\
+                                            "Not applying merge for now (wait for master update).\n",
+                                            fellowAddress->systemId,
+                                            d_nameSpaceGetName(nameSpace));
+                                    }else {
+
+                                        conflictState = c_iterTakeFirst (helper->conflictStates);
+
+                                        /* Determine merge policy for conflicting role */
+                                        merge = d_nameSpaceGetMergePolicy (nameSpace, conflictState->role);
+                                        if (merge != D_MERGE_IGNORE) {
+                                            d_printTimedEvent(durability, D_LEVEL_INFO,
+                                                D_THREAD_GROUP_LOCAL_LISTENER,
+                                                "Applying merge for conflicting state from role '%s' with fellow '%d' for "\
+                                                "nameSpace '%s'.\n",
+                                                conflictState->role,
+                                                fellowAddress->systemId,
+                                                d_nameSpaceGetName(nameSpace));
+
+                                            handleMergeAlignment (helper->listener,
+                                                    d_nameSpaceCopy(fellowNameSpace), helper->fellow, conflictState);
+                                        }
+                                    }
+                                }else {
+                                    d_printTimedEvent(durability, D_LEVEL_INFO,
+                                        D_THREAD_GROUP_LOCAL_LISTENER,
+                                        "No need to merge with fellow '%d' for now.\n",
+                                        fellowAddress->systemId,
+                                        d_nameSpaceGetName(nameSpace));
+                                }
+                            }
+                            d_mergeStateFree (ownState);
+                            d_mergeStateFree (fellowState);
+
+                        } else {
+                            d_printTimedEvent(durability, D_LEVEL_INFO,
+                                D_THREAD_GROUP_LOCAL_LISTENER,
+                                "Ignoring merge with fellow '%d' for "\
+                                "nameSpace '%s' because alignee policy " \
+                                "does not ask for it.\n",
+                                fellowAddress->systemId,
+                                d_nameSpaceGetName(nameSpace));
+                        }
+                    } else {
+                        d_printTimedEvent(durability, D_LEVEL_INFO,
+                                D_THREAD_GROUP_LOCAL_LISTENER,
+                                "Ignoring merge with fellow '%d' for "\
+                                "nameSpace '%s' because merge policy is ignore.\n",
+                                fellowAddress->systemId,
+                                d_nameSpaceGetName(nameSpace));
+                    }
+                    d_nameSpaceFree(nameSpace);
+                    d_networkAddressFree(myMaster);
+                    os_free (fellowRole);
+                    os_free (role);
+
+                } /* if (namespace) */
+
+                if (!helper->nameSpace) {
+                    d_nameSpaceFree(fellowNameSpace);
+                }
+                d_networkAddressFree(fellowMaster);
+
+                fellowNameSpace = d_nameSpace(c_iterTakeFirst(fellowNameSpaces));
+            }
+            callAgain = FALSE;
+        } else {
+            d_printTimedEvent(durability, D_LEVEL_INFO,
+                D_THREAD_GROUP_LOCAL_LISTENER,
+                "Waiting for nameSpaces of fellow '%d' to become available "\
+                "before taking merge action.\n",
+                fellowAddress->systemId);
+        }
+    }
+
+    if (fellowAddress) {
+        d_free (fellowAddress);
+    }
+
+    if (fellowNameSpaces) {
+        c_iterFree (fellowNameSpaces);
+    }
+
+    if(terminate || !callAgain){
+
+        if (helper->nameSpace) {
+            d_nameSpaceFree (helper->nameSpace);
+        }
+
+        if (helper->conflictStates) {
+            conflictState = c_iterTakeFirst (helper->conflictStates);
+             while (conflictState) {
+                 d_mergeStateFree (conflictState);
+                 conflictState = c_iterTakeFirst (helper->conflictStates);
+             }
+             c_iterFree (helper->conflictStates);
+        }
+
+        d_fellowFree(helper->fellow);
+        os_free(helper);
+    }
+
+    return callAgain;
+}
+
+static c_bool
+notifyNameSpaceEvent(
     c_ulong event,
     d_fellow fellow,
     d_nameSpace ns,
     d_group group,
+    c_voidp eventUserData,
     c_voidp userData)
 {
     struct masterHelper *helper;
     struct nsGroupAlignWalkData walkData;
+    struct applyMergePolicyHelper *mergeHelper;
     d_durability durability;
     d_admin admin;
     d_groupLocalListener listener;
+    d_fellow masterFellow;
+    d_action action;
+    d_networkAddress master;
     u_dispatcher dispatcher;
     os_time sleepTime;
+    d_nameSpace adminNs;
+    char* nameSpaceName;
     c_iter fellowStates;
     c_iter nameSpaces;
 
-    if(event == D_NAMESPACE_NEW)
+    if (event == D_NAMESPACE_NEW)
     {
         listener = d_groupLocalListener(userData);
         durability  = d_adminGetDurability(d_listenerGetAdmin(d_listener(listener)));
@@ -1568,37 +2198,111 @@ notifyNameSpaceNew(
 
         c_iterFree (nameSpaces);
         os_free (helper);
+
+    /* Detected a conflicting (confirmed) master for a namespace */
+    }else if (event & (D_NAMESPACE_MASTER_CONFLICT | D_NAMESPACE_STATE_CONFLICT)) {
+        listener = d_groupLocalListener(userData);
+        durability  = d_adminGetDurability(d_listenerGetAdmin(d_listener(listener)));
+        admin = d_listenerGetAdmin(d_listener(listener));
+
+        /* When a conflicting master is detected, insert merge action */
+        sleepTime.tv_sec = 1;
+        sleepTime.tv_nsec = 0;
+        master = d_nameSpaceGetMaster (ns);
+        masterFellow = d_adminGetFellow (admin, master);
+
+        /* If a master conflict is encountered, re-determine masters */
+        if (event == D_NAMESPACE_MASTER_CONFLICT) {
+            nameSpaceName = d_nameSpaceGetName (ns);
+            adminNs = d_adminGetNameSpace (admin, nameSpaceName);
+            nameSpaces = c_iterNew(adminNs);
+            /* (no need to re-evaluate fellow states (NULL)) */
+            determineNewMasters (listener, NULL, nameSpaces);
+
+            d_nameSpaceFree (adminNs);
+            c_iterFree (nameSpaces);
+        }
+
+        if (masterFellow) {
+            mergeHelper = (struct applyMergePolicyHelper*)(os_malloc(sizeof(struct applyMergePolicyHelper)));
+            mergeHelper->listener = listener;
+            mergeHelper->fellow = d_fellow(d_objectKeep(d_object(masterFellow)));
+            mergeHelper->nameSpace = ns; /* Only check this namespace if it needs merging */
+            mergeHelper->conflictStates = (c_iter)eventUserData;
+            action = d_actionNew(os_timeGet(), sleepTime, applyMergePolicy, mergeHelper);
+            d_actionQueueAdd(listener->actionQueue, action);
+
+        }else {
+            d_printTimedEvent(durability, D_LEVEL_INFO,
+                        D_THREAD_GROUP_LOCAL_LISTENER,
+                        "Fellow '%d' lost before inserting merge action\n",
+                        master->systemId);
+
+            /* Free namespace event object */
+            d_nameSpaceFree (ns);
+        }
+
+        d_free (master);
     }
 
     return TRUE;
 }
 
+
 static c_bool
-notifyFellowRemoved(
+notifyFellowEvent(
     c_ulong event,
     d_fellow fellow,
     d_nameSpace ns,
     d_group group,
+    c_voidp eventUserData,
     c_voidp userData)
 {
     d_groupLocalListener listener;
     d_admin admin;
     d_durability durability;
+    d_subscriber subscriber;
     d_configuration configuration;
     c_long length, i;
     d_nameSpace nameSpace;
     d_action masterAction;
     os_time sleepTime;
     d_networkAddress masterAddress, fellowAddress;
+    d_nameSpacesRequestListener nsrListener;
+    d_serviceState fellowState, myState;
     c_iter nameSpaces, nsCollect;
     struct masterHelper *helper;
 
-    if(event == D_FELLOW_REMOVED){
-        listener      = d_groupLocalListener(userData);
-        admin         = d_listenerGetAdmin(d_listener(listener));
-        durability    = d_adminGetDurability(admin);
-        configuration = d_durabilityGetConfiguration(durability);
-        fellowAddress = d_fellowGetAddress(fellow);
+    listener      = d_groupLocalListener(userData);
+    admin         = d_listenerGetAdmin(d_listener(listener));
+    durability    = d_adminGetDurability(admin);
+    configuration = d_durabilityGetConfiguration(durability);
+    fellowAddress = d_fellowGetAddress(fellow);
+
+    if (event == D_FELLOW_NEW){
+        fellowState   = d_fellowGetState(fellow);
+        myState = d_durabilityGetState(durability);
+        subscriber = d_adminGetSubscriber(admin);
+        nsrListener = d_subscriberGetNameSpacesRequestListener(subscriber);
+
+        d_printTimedEvent(durability, D_LEVEL_INFO,
+                    D_THREAD_GROUP_LOCAL_LISTENER,
+                    "New fellow '%d' with state %s\n",
+                    fellowAddress->systemId,
+                    d_fellowStateText(fellowState));
+
+        if(fellowState >= D_STATE_INJECT_PERSISTENT && myState >= D_STATE_INJECT_PERSISTENT){
+            /* Detecting a fellow when it already in this state might be a
+             * reason to perform a merge.
+             */
+            d_printTimedEvent(durability, D_LEVEL_INFO,
+                                D_THREAD_GROUP_LOCAL_LISTENER,
+                                "Potentially I need merging with fellow '%d' with state %s\n",
+                                fellowAddress->systemId,
+                                d_fellowStateText(fellowState));
+        }
+
+    } else if(event == D_FELLOW_REMOVED){
         nameSpaces    = c_iterNew(NULL);
 
         d_printTimedEvent(durability, D_LEVEL_INFO,
@@ -1633,12 +2337,17 @@ notifyFellowRemoved(
         }
         length = c_iterLength(nameSpaces);
 
+        /* TODO
+         *
+         * Remove merge action from sampleChainListener if it exists
+         */
+
         if(length > 0){
             helper = (struct masterHelper*)(os_malloc(sizeof(struct masterHelper)));
             helper->listener = listener;
             helper->nameSpaces = nameSpaces;
-            /* Fetch fellow states to be able to determine namespace completeness later */
-            helper->fellowStates = fetchFellowStates (listener);
+            /* Don't fetch fellowstates (only neccesary during initial alignment) */
+            helper->fellowStates = NULL;
 
             sleepTime.tv_sec = 0;
             sleepTime.tv_nsec = 100000000;
@@ -1647,12 +2356,13 @@ notifyFellowRemoved(
         } else {
             c_iterFree(nameSpaces);
         }
-        d_networkAddressFree(fellowAddress);
 
         /* Free namespace list */
         c_iterWalk (nsCollect, deleteNsWalk, NULL);
         c_iterFree(nsCollect);
     }
+
+    d_networkAddressFree(fellowAddress);
 
     return TRUE;
 
@@ -1689,13 +2399,13 @@ d_groupLocalListenerInit(
     os_mutexInit(&(listener->masterLock), &attr);
 
     listener->fellowListener = d_eventListenerNew(
-                                        D_FELLOW_REMOVED,
-                                        notifyFellowRemoved,
+                                        D_FELLOW_NEW | D_FELLOW_REMOVED,
+                                        notifyFellowEvent,
                                         listener);
 
     listener->nameSpaceListener = d_eventListenerNew(
-                                        D_NAMESPACE_NEW,
-                                        notifyNameSpaceNew,
+                                        D_NAMESPACE_NEW | D_NAMESPACE_MASTER_CONFLICT | D_NAMESPACE_STATE_CONFLICT,
+                                        notifyNameSpaceEvent,
                                         listener);
 }
 
@@ -2083,7 +2793,7 @@ d_groupLocalListenerStart(
                         if(store != NULL){
                             initPersistentData(listener);
                         } else {
-                            OS_REPORT(OS_WARNING, D_CONTEXT, 0, "Persistence not enabled!");
+                            OS_REPORT(OS_INFO, D_CONTEXT, 0, "Persistence not enabled!");
                         }
                         os_mutexUnlock(&listener->masterLock);
                         d_durabilitySetState(durability, D_STATE_DISCOVER_LOCAL_GROUPS);

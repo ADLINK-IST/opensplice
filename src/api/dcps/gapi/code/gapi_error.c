@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -252,7 +252,37 @@ static const char *errorMessage[] = {
     "inconsistent topic"
 };
 
+#define GAPI_RETCODE_COUNT (13)
 
+static const char *retcode_image[GAPI_RETCODE_COUNT] = {
+    "RETCODE_OK",
+    "RETCODE_ERROR",
+    "RETCODE_UNSUPPORTED",
+    "RETCODE_BAD_PARAMETER",
+    "RETCODE_PRECONDITION_NOT_MET",
+    "RETCODE_OUT_OF_RESOURCES",
+    "RETCODE_NOT_ENABLED",
+    "RETCODE_IMMUTABLE_POLICY",
+    "RETCODE_INCONSISTENT_POLICY",
+    "RETCODE_ALREADY_DELETED",
+    "RETCODE_TIMEOUT",
+    "RETCODE_NO_DATA",
+    "RETCODE_ILLEGAL_OPERATION"
+};
+
+const char *
+gapi_retcode_image (
+    gapi_returnCode_t retcode)
+{
+    const char *image;
+
+    if ((retcode >= 0) || (retcode < GAPI_RETCODE_COUNT)) {
+        image = retcode_image[retcode];
+    } else {
+        image = "<UNDEFINED RETCODE>";
+    }
+    return image;
+}
 
 static const char *
 getEntityName (

@@ -1,0 +1,274 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "
+http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" lang="fr">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>OpenSplice DDS examples - Lifecycle</title>
+<link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
+</head>
+
+<body>
+<h1> EXAMPLES </h1>
+<ul>
+  <li><a href ="../README.html">Summary</a></li>
+
+  <li><a href ="../HelloWorld/README.html">HelloWorld </a></li>
+  <li><a href ="../WaitSet/README.html">WaitSet </a></li>
+  <li><a href ="../Listener/README.html">Listener </a></li>
+  <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>  
+  <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
+  <li>Lifecycle</li>
+  <li><a href ="../Durability/README.html">Durability </a></li>
+  <li> <a href ="../Ownership/README.html">Ownership</a></li>
+  <li> <a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
+</ul>
+<h2> Lifecycle </h2>
+
+<ul>
+  <li><a href ="#STANDALONE">Building/Running of examples in Standalone Mode</a></li>
+  <li><a href ="#CORBA">Building/Running of examples in CORBA Cohabitation Mode</a></li>
+</ul>
+
+<h3>1) Description</h3>
+<p>The Lifecycle example is used to illustrate the different lifecycle states of the sample
+and the instance.</p>
+  <ul><li>The SampleState applies to an individual sample and is either READ or NOT_READ,
+    depending on whether the sample has been accessed from this reader before.
+  </li><li>The ViewState applies to an individual instance (possibly containing of 1 or
+more samples)
+    and is either NEW or NOT_NEW, depending on whether a sample belonging to the same
+instance
+    has been accessed from this reader before.
+  </li><li>The InstanceState applies to an individual instance (possibly containing of 1 or
+more samples) and is either <ul><li>ALIVE</li><li> NOT_ALIVE_DISPOSED </li><li> NOT_ALIVE_NO_WRITERS</li></ul> depending on whether the
+    LifecyclePublisher has still registered the instance, has disposed it or has
+unregistered it.</li></ul>
+
+<p>The autodispose_unregistered_instances flag of the LifecyclePublisher determines whether an
+invocation of unregister_instance on this publisher will cause the instance to become disposed.</p>
+
+<h3>2) Design</h3>
+<p>It consists of 4 units:</p>
+	<ul><li> CheckStatus: provides return status checking
+	</li><li> DDSEntitiesManager: implements a class providing operations to setup DCPS
+entities
+	                     (creation, deletion)
+	</li><li> LifecyclePublisher: implements the publisher's main (uses DDSEntitiesManager)
+	</li><li> LifecycleSubscriber: implements the subscriber's main (uses DDSEntitiesManager)
+
+</li></ul><h3>3) Scenario</h3>
+
+<p>The Publisher and the Subscriber processes communicate using the following topic:</p>
+ <pre>
+   struct Msg
+   {
+      long userID;         // User ID
+      string message;      // content;
+      string writerStates; // the different state of the writer
+    };
+	</pre>
+	<p> The writerStates field contains the different states of the writer :</p>
+    <ul><li>"SAMPLE_SENT -> INSTANCE_DISPOSED -> DATAWRITER_DELETED"</li>
+	<li>"SAMPLE_SENT -> INSTANCE_UNREGISTERED -> DATAWRITER_DELETED"</li>
+	<li>"SAMPLE_SENT -> DATAWRITER_DELETED"</li></ul>
+
+  <pre>
+  usage : startPublisher.sh autodispose_flag writer_action
+          . autodispose_flag = false | true 
+          . writer_action = dispose | unregister | stoppub 
+  </pre>
+<table WIDTH="100%"><tr><td WIDTH="50%">
+<p> The LifecyclePublisher : <br/>Depending on the user's choice as the second parameter passed on command line (dispose | unregister | stoppub), 
+it will either:</p>
+<ul><li>Case 1 : second parameter passed on command line "dispose"
+			<ul>
+			<li>publish the Msg Sample.</li>
+			<li>Dispose the instance.</li>
+			<li>Delete the DataWriter.
+			</li><li>Stop the Subscriber.</li>
+			</ul></li>
+<li>Case 1 : second parameter passed on command line "unregister"
+			<ul>
+			<li>publish the Msg Sample.</li>
+            <li>Unregister the instance.
+			</li><li>Delete the DataWriter.
+			</li><li>Stop the Subscriber.
+			</li></ul></li>
+<li>Case 1 : second parameter passed on command line "stoppub
+			<ul>
+			<li>publish the Msg Sample.</li>
+            <li>Delete the DataWriter.
+			</li><li>Stop the Subscriber.</li></ul>
+		</li>
+</ul>
+		
+<p> For any of those actions, it will output on its console:</p>
+			<ul><li>"SAMPLE SENT"
+			</li><li>"INSTANCE DISPOSED"
+			</li><li>"INSTANCE UNREGISTERED"
+			</li><li>"DATAWRITER DELETED"
+			</li><li>"STOPPING SUBSCRIBER"</li></ul>
+	   </li>
+	</ul>
+</td><td WIDTH="50%">	   
+<p>The LifecycleSubscriber :</p>
+	<ul>
+		<li> Reads the (same unique) Msg Topic Sample.</li>
+		<li> Display the Sample's information:
+			<ul><li> The 2 fields of Msg Topic : message and writerStates</li>
+				<li> The States :
+					<ul><li> The "sample_state", possible values are:
+						<ul><li>"NOT_READ_SAMPLE_STATE"</li>
+						<li>"READ_SAMPLE_STATE"</li></ul>
+						</li>
+						<li> The "view_state", possible values are:
+						<ul><li>"NEW_VIEW_STATE"</li>
+						<li>"NOT_NEW_VIEW_STATE"</li></ul>
+						</li>
+						<li> The "instance_state", possible values are
+						<ul><li>"ALIVE_INSTANCE_STATE"</li>
+						<li>"NOT_ALIVE_DISPOSED_INSTANCE_STATE"</li>
+						<li>"NOT_ALIVE_NO_WRITERS"</li></ul>
+						</li>
+					</ul>
+				</li>
+			</ul>
+		</li>
+	</ul>  
+</td></tr></table>   
+
+
+<h2><balise id="STANDALONE">Building/Running of examples in Standalone Mode</balise></h2>
+<ul>
+  <li><a href ="#Posix">Building/Running examples in Posix </a></li>
+  <li><a href ="#VS">Building/Running examples in Visual Studio 2005/2008</a></li>
+</ul>
+<h3><balise id="Posix">Building the examples in a Posix environment</balise></h3>
+
+<h4>Environment Setup</h4>
+<p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
+<p>The OpenSpliceDDS environment variables must be set in order for the examples to build/run correctly.
+To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.com</i>" script supplied with the distribution.</p>
+
+<ul>
+  <li><a href ="#C_C++">C/C++ examples </a></li>
+  <li><a href ="#Java">Java example</a></li>
+</ul>
+<h4><balise id="C_C++">Building the C/C++ Examples</balise></h4>
+<ul><li>Open a terminal.
+</li><li>Navigate to the C or C++ <b>Posix</b> directory on the example folder that you wish to build the example for, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Lifecycle/C++/Standalone/Posix</b>.
+</li><li>type <i>make</i>.
+</li></ul>
+<p>Two executables are generated in the <b>exec</b> folder when the example 
+is built:</p>
+
+		<ul><li>LifecycleDataPublisher </li>
+			<li>LifecycleDataSubscriber </li>
+		</ul>
+
+<h4><balise id = "Java">Building the Java examples</balise></h4>
+<ul><li>Open a terminal and make sure the OpenSpliceDDS environment is setup.
+</li><li>Navigate to the Java <b>Posix</b> directory for the example for, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Lifecycle/Java/Standalone/Posix</b>.
+</li><li>Execute the script <i>BUILD</i>.
+</li></ul>
+<p>Two jars are generated in the <b>exec</b> folder when the example 
+is built:</p>
+
+		<ul><li>LifecycleDataPublisher.jar </li>
+			<li>LifecycleDataSubscriber.jar </li>
+		</ul>
+<h4>Running the C/C++/Java examples</h4>
+ <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new terminal used.</p>
+ <p>The following steps describe how to run the examples you have just built:
+   <ul><li> Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+
+	<li> Navigate to the <b>sh</b> directory for the C/C++/Java example you have just built, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Lifecycle/C++/Standalone/Posix/sh</b></li>
+	<li> It is recommended that you run the startSubscriber and startPublisher scripts in seperate terminals to avoid mixing the output</li>
+	<li> Open a terminal. Setup the environment and go to directory <b>sh</b> as described above and type: <i>startSubscriber.sh</i>.</li>
+	<li> Open a terminal. Setup the environment and go to directory <b>sh</b> as described above and type: <i>startPublisher.sh</i>.</li>
+	</ul>
+	 <pre>
+  usage : startPublisher.sh autodispose_flag writer_action
+          . autodispose_flag = false | true 
+          . writer_action = dispose | unregister | stoppub 
+  </pre>
+
+<h3><balise id="VS">Building/Running C/C++/C#/Java examples in Visual Studio 2005/2008</balise></h3>
+
+<h4>Environment Setup</h4>
+<p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
+<p>The OpenSpliceDDS environment variables must be set in order for the examples to build/run correctly.
+To do this, open a terminal and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution</p>
+<ul>
+  <li><a href ="#C_C++_CS_Win">C/C++/C# Examples </a></li>
+  <li><a href ="#Java_Win">Java examples</a></li>
+</ul>
+<h4><balise id="C_C++_CS_Win">Building the C/C++/C# Examples</balise></h4>
+	<ul><li>Visual Studio Solution Files are provided for each of the examples:<br/>
+	The OSPL environment variables need to be set before you can build your application. If these variables have been set by the installer, you can start VS directly 
+to open the solution <i>Lifecycle.sln</i> This can be found in <b><i>OpenSplice_install_dir</i>/examples/dcps/Lifecycle/C++/Standalone/VS2005<br/></b>
+Otherwise you need to run the batch file <i>OpenSplice_install_dir\release.bat</i> before opening the VS solution <i>Lifecycle.sln</i>. <br/>
+
+		</li>
+		<li> Build the example using the "Build Solution" option<br/>	Two executables are generated when the example is built: 
+		<ul><li>LifecycleDataPublisher.exe </li>
+			<li>LifecycleDataSubscriber.exe </li>
+		</ul>
+	</ul>
+
+<h4><balise id="Java_Win">Building the Java Examples</balise></h4>
+<ul><li>Open a terminal and make sure the OpenSpliceDDS environment is setup.
+</li><li>Navigate to the <b>Windows</b> directory for the Java example for, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Lifecycle/Java/Standalone/Windows</b>.
+</li><li>Execute the batch file <i>BUILD.bat</i>.
+</li></ul>
+<p>Two jars are generated in the <b>exec</b> folder when the example 
+is built:</p>
+
+		<ul><li>LifecycleDataPublisher.jar </li>
+			<li>LifecycleDataSubscriber.jar </li>
+		</ul>
+<h4>Running the C/C++/C#/Java examples</h4>
+ <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new terminal used.</p>
+ <p>The following steps describe how to run the examples you have just built:
+   <ul><li> Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+
+	<li> Navigate to the <b>Bat</b> directory for the C/C++/C#/Java example you have just built, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Lifecycle/C++/Standalone/Windows/Bat</b></li>
+	<li> It is recommended that you run the startSubscriber and startPublisher scripts in seperate terminals to avoid mixing the output</li>
+	<li> Open a terminal. Setup the environment and go to directory <b>Bat</b> as described above and type: <i>startSubscriber.bat</i>.</li>
+	<li> Open a terminal. Setup the environment and go to directory <b>Bat</b> as described above and type: <i>startPublisher.bat</i>.</li>
+	</ul>
+	 <pre>
+  usage : startPublisher.bat autodispose_flag writer_action
+          . autodispose_flag = false | true 
+          . writer_action = dispose | unregister | stoppub 
+  </pre>
+
+<h2><balise id="CORBA">Building/Running in CORBA Cohabitation Mode</balise></h2>
+<p>Doing the substitution and additionnal setups described below, everything previously said for Standalone Mode can be applied to CORBA Cohabitation Mode.</p>
+<h4>Environment Setup</h4>
+ <p>Besides OpenSplice environment variables, we need to set</p>
+ <ul><li>C/C++</li>
+        <ul><li>The TAO environment variable TAO_ROOT to point to the Tao installation directory.</li></ul>
+     <li>Java</li>
+        <ul><li>The JacORB environment variable JACORB_HOME to point to the JacORB installation directory.</li></ul>
+ </ul>
+ <h4>Substitution</h4>
+	<ul><li>Posix platform</li> 
+		<ul>
+			<li>C/C++ Standalone is replaced by Corba/OpenFusion</li>
+			<li>Java  Standalone is replaced by Corba/JacORB</li>
+		</ul>
+		<li>Windows platform</li>
+        <ul>
+			<li>C/C++ Standalone is replaced by Corba\OpenFusion</li>
+			<li>Java  Standalone is replaced by Corba\JacORB</li>
+		</ul>
+	</ul>  
+</body>
+</html>
+
+
+
+
+

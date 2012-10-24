@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -10,9 +10,9 @@
  *
  */
 
-#include <dds_dcps.h>
-#include <sac_fooDataReader.h>
-#include <gapi.h>
+#include "dds_dcps.h"
+#include "sac_fooDataReader.h"
+#include "gapi.h"
 
 #include <string.h>
 #include <assert.h>
@@ -32,72 +32,100 @@ sac_builtinTopicRegisterTypeSupport (
 {
     DDS_TypeSupport t;
     DDS_ReturnCode_t result;
+
+    t = (DDS_TypeSupport)
+        gapi_fooTypeSupport__alloc(
+            (const gapi_char *)participantBuiltinTopicTypeName,
+            (const gapi_char *)NULL,
+            (const gapi_char *)NULL,
+            (gapi_typeSupportLoad)NULL,
+            (gapi_copyIn)gapi_participantBuiltinTopicData__copyIn,
+            (gapi_copyOut)gapi_participantBuiltinTopicData__copyOut,
+            (gapi_unsigned_long)(sizeof(DDS_ParticipantBuiltinTopicData)),
+            (gapi_topicAllocBuffer)DDS_sequence_DDS_ParticipantBuiltinTopicData_allocbuf,
+            (gapi_writerCopy)NULL,
+            (gapi_readerCopy)NULL);
     
-    t = DDS__FooTypeSupport__alloc (
-	        participantBuiltinTopicTypeName,
-            NULL,
-            NULL,
-            (DDS_typeSupportLoad)NULL,
-            (DDS_copyIn)gapi_participantBuiltinTopicData__copyIn,
-            (DDS_copyOut)gapi_participantBuiltinTopicData__copyOut,
-            (DDS_unsigned_long)(sizeof(DDS_ParticipantBuiltinTopicData)),
-            (DDS_typeSupportAllocBuffer)DDS_sequence_DDS_ParticipantBuiltinTopicData_allocbuf);
     if ( t ) {
-        result = DDS__FooTypeSupport_register_type(t, participant, (gapi_char *)participantBuiltinTopicTypeName);
-        DDS_free(t);
+        result = (DDS_ReturnCode_t)
+            gapi_fooTypeSupport_register_type(
+                (gapi_typeSupport)t,
+                (gapi_domainParticipant)participant,
+                (gapi_string)participantBuiltinTopicTypeName);
     } else {
         result = DDS_RETCODE_OUT_OF_RESOURCES;
     }
 
     if ( result == DDS_RETCODE_OK ) {
-        t = DDS__FooTypeSupport__alloc (
-                topicBuiltinTopicTypeName,
-                NULL,
-                NULL,
-                (DDS_typeSupportLoad)NULL,
-                (DDS_copyIn)gapi_topicBuiltinTopicData__copyIn,
-                (DDS_copyOut)gapi_topicBuiltinTopicData__copyOut,
-                (DDS_unsigned_long)(sizeof(DDS_TopicBuiltinTopicData)),
-                (DDS_typeSupportAllocBuffer)DDS_sequence_DDS_TopicBuiltinTopicData_allocbuf);
+        t = (DDS_TypeSupport)
+            gapi_fooTypeSupport__alloc(
+                (const gapi_char *)topicBuiltinTopicTypeName,
+                (const gapi_char *)NULL,
+                (const gapi_char *)NULL,
+                (gapi_typeSupportLoad)NULL,
+                (gapi_copyIn)gapi_topicBuiltinTopicData__copyIn,
+                (gapi_copyOut)gapi_topicBuiltinTopicData__copyOut,
+                (gapi_unsigned_long)(sizeof(DDS_TopicBuiltinTopicData)),
+                (gapi_topicAllocBuffer)DDS_sequence_DDS_TopicBuiltinTopicData_allocbuf,
+                (gapi_writerCopy)NULL,
+                (gapi_readerCopy)NULL);
+    
         if ( t ) {
-            result = DDS__FooTypeSupport_register_type(t, participant, (gapi_char *)topicBuiltinTopicTypeName);
-            DDS_free(t);
+            result = (DDS_ReturnCode_t)
+                gapi_fooTypeSupport_register_type(
+                    (gapi_typeSupport)t,
+                    (gapi_domainParticipant)participant,
+                    (gapi_string)topicBuiltinTopicTypeName);
         } else {
             result = DDS_RETCODE_OUT_OF_RESOURCES;
         }
     }
         
     if ( result == DDS_RETCODE_OK ) {
-        t = DDS__FooTypeSupport__alloc (
-                publicationBuiltinTopicTypeName,
-                NULL,
-                NULL,
-                (DDS_typeSupportLoad)NULL,
-                (DDS_copyIn)gapi_publicationBuiltinTopicData__copyIn,
-                (DDS_copyOut)gapi_publicationBuiltinTopicData__copyOut,
-                (DDS_unsigned_long)(sizeof(DDS_PublicationBuiltinTopicData)),
-                (DDS_typeSupportAllocBuffer)DDS_sequence_DDS_PublicationBuiltinTopicData_allocbuf);
+        t = (DDS_TypeSupport)
+            gapi_fooTypeSupport__alloc(
+                (const gapi_char *)publicationBuiltinTopicTypeName,
+                (const gapi_char *)NULL,
+                (const gapi_char *)NULL,
+                (gapi_typeSupportLoad)NULL,
+                (gapi_copyIn)gapi_publicationBuiltinTopicData__copyIn,
+                (gapi_copyOut)gapi_publicationBuiltinTopicData__copyOut,
+                (gapi_unsigned_long)(sizeof(DDS_PublicationBuiltinTopicData)),
+                (gapi_topicAllocBuffer)DDS_sequence_DDS_PublicationBuiltinTopicData_allocbuf,
+                (gapi_writerCopy)NULL,
+                (gapi_readerCopy)NULL);
+    
         if ( t ) {
-            result = DDS__FooTypeSupport_register_type(t, participant, (gapi_char *)publicationBuiltinTopicTypeName);
-            DDS_free(t);
+            result = (DDS_ReturnCode_t)
+                gapi_fooTypeSupport_register_type(
+                    (gapi_typeSupport)t,
+                    (gapi_domainParticipant)participant,
+                    (gapi_string)publicationBuiltinTopicTypeName);
         } else {
             result = DDS_RETCODE_OUT_OF_RESOURCES;
         }
     }
 
     if ( result == DDS_RETCODE_OK ) {
-        t = DDS__FooTypeSupport__alloc (
-                subscriptionBuiltinTopicTypeName,
-                NULL,
-                NULL,
-                (DDS_typeSupportLoad)NULL,
-                (DDS_copyIn)gapi_subscriptionBuiltinTopicData__copyIn,
-                (DDS_copyOut)gapi_subscriptionBuiltinTopicData__copyOut,
-                (DDS_unsigned_long)(sizeof(DDS_SubscriptionBuiltinTopicData)),
-                (DDS_typeSupportAllocBuffer)DDS_sequence_DDS_SubscriptionBuiltinTopicData_allocbuf);
+        t = (DDS_TypeSupport)
+            gapi_fooTypeSupport__alloc(
+                (const gapi_char *)subscriptionBuiltinTopicTypeName,
+                (const gapi_char *)NULL,
+                (const gapi_char *)NULL,
+                (gapi_typeSupportLoad)NULL,
+                (gapi_copyIn)gapi_subscriptionBuiltinTopicData__copyIn,
+                (gapi_copyOut)gapi_subscriptionBuiltinTopicData__copyOut,
+                (gapi_unsigned_long)(sizeof(DDS_SubscriptionBuiltinTopicData)),
+                (gapi_topicAllocBuffer)DDS_sequence_DDS_SubscriptionBuiltinTopicData_allocbuf,
+                (gapi_writerCopy)NULL,
+                (gapi_readerCopy)NULL);
+    
         if ( t ) {
-            result = DDS__FooTypeSupport_register_type(t, participant, (gapi_char *)subscriptionBuiltinTopicTypeName);
-            DDS_free(t);
+            result = (DDS_ReturnCode_t)
+                gapi_fooTypeSupport_register_type(
+                    (gapi_typeSupport)t,
+                    (gapi_domainParticipant)participant,
+                    (gapi_string)subscriptionBuiltinTopicTypeName);
         } else {
             result = DDS_RETCODE_OUT_OF_RESOURCES;
         }

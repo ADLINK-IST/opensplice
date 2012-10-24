@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -64,7 +64,8 @@ v_dataViewSampleNew(
     } else {
         OS_REPORT(OS_ERROR,
                   "v_dataViewSampleNew",0,
-                  "Failed to allocate v_dataViewSample.");
+                  "Failed to allocate v_dataViewSample object.");
+        assert(FALSE);
     }
     return sample;
 }

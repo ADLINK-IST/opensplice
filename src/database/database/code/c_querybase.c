@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,7 +19,7 @@
 #include "c_misc.h"
 #include "c_field.h"
 #include "c_filter.h"
-#include "c_querybase.h"
+#include "c__querybase.h"
 #include "c_collection.h"
 
 #include <errno.h>
@@ -68,6 +68,23 @@
          (b->baseCache.queryCache.c_qExpr_t != NULL ? \
          c_keep(b->baseCache.queryCache.c_qExpr_t) : \
          c_keep(b->baseCache.queryCache.c_qExpr_t = c_resolve((b),"c_querybase::c_qExpr")))
+
+/* returns the head of the iterator as a c_qRange object (non-destructive, i.e. a read, not a take) */
+#define c_qRangeIterHead(l) (c_qRange(c_iterObject(l, 0)))
+
+/* a nilRange is a range which contains no elements: e.g. <4..4> */
+#define isNilRange(r) \
+        (r && \
+        (c_valueCompare(r->start, r->end) == C_EQ) && \
+        r->startKind == B_EXCLUDE && \
+        r->endKind == B_EXCLUDE)
+
+/*
+ * Optimizes the predicate and returns the optimized predicate.
+ */
+static c_qPred
+c_qPredOptimize(
+        c_qPred _this);
 
 c_filter
 c_filterNew(
@@ -704,8 +721,23 @@ c_qRangeListAnd(
         eq = c_qRangeCompare(r1,r2);
         switch (eq) {
         case C_LT:
-            c_free(r1);
-            r1 = c_iterTakeFirst(list1);
+            /* in this case the range is such that no value could ever satisfy it
+               e.g. [*..5] AND [10..*] ~~> no value satisfies both ranges
+               so the result is <x>, i.e. a list which no variable can satisfy */
+            c_setRange(r1,r1->start,r1->startExpr,B_EXCLUDE,
+						  r1->start,r2->startExpr,B_EXCLUDE);
+			result = c_iterAppend(result,c_keep(r1));
+			while (r1 != NULL) {
+				c_free(r1);
+				r1 = c_iterTakeFirst(list1);
+			}
+			c_iterFree(list1);
+			while (r2 != NULL) {
+				c_free(r2);
+				r2 = c_iterTakeFirst(list2);
+			}
+			c_iterFree(list2);
+			return result;
         break;
         case C_LE:
             c_setRange(r1,r2->start,r2->startExpr,r2->startKind,
@@ -786,9 +818,6 @@ makeRange(
             valueExpr = _RIGHT_PARAM_(e);
             inverse = FALSE;
         } else if (_RIGHT_PARAM_(e)->kind == CQ_FIELD) {
-            if (_LEFT_PARAM_(e)->kind == CQ_FIELD) {
-                return NULL;
-            }
             field = c_qField(_RIGHT_PARAM_(e));
             valueExpr = _LEFT_PARAM_(e);
             inverse = TRUE;
@@ -809,21 +838,29 @@ makeRange(
         switch (e->kind) {
         case CQ_NE:
             range = c_new(c_qRangeType(c__getBase(e)));
-            range->startKind = B_UNDEFINED;
-            range->endKind   = B_EXCLUDE;
-            range->startExpr = c_keep(valueExpr);
-            range->endExpr = c_keep(valueExpr);
-            range->end   = v;
-            range->start = v;
-            rangeList = c_iterNew(range);
+            if (range) {
+                range->startKind = B_UNDEFINED;
+                range->endKind   = B_EXCLUDE;
+                range->startExpr = c_keep(valueExpr);
+                range->endExpr = c_keep(valueExpr);
+                range->end   = v;
+                range->start = v;
+                rangeList = c_iterNew(range);
+            } else {
+                assert(FALSE);
+            }
             range = c_new(c_qRangeType(c__getBase(e)));
-            range->startKind = B_EXCLUDE;
-            range->endKind   = B_UNDEFINED;
-            range->startExpr = c_keep(valueExpr);
-            range->endExpr = c_keep(valueExpr);
-            range->end   = v;
-            range->start = v;
-            rangeList = c_iterAppend(rangeList,range);
+            if (range) {
+                range->startKind = B_EXCLUDE;
+                range->endKind   = B_UNDEFINED;
+                range->startExpr = c_keep(valueExpr);
+                range->endExpr = c_keep(valueExpr);
+                range->end   = v;
+                range->start = v;
+                rangeList = c_iterAppend(rangeList,range);
+            } else {
+                assert(FALSE);
+            }
 
             /* In case v is a value of a reference type (string or object)
              * it should have been c_keeped when assigned to the 'start' and
@@ -849,26 +886,29 @@ makeRange(
             return NULL;
         }
         range = c_new(c_qRangeType(c__getBase(e)));
-        if (inverse) {
-            range->startKind = endKind;
-            range->endKind   = startKind;
+        if (range) {
+            if (inverse) {
+                range->startKind = endKind;
+                range->endKind   = startKind;
+            } else {
+                range->startKind = startKind;
+                range->endKind   = endKind;
+            }
+
+            range->startExpr = c_keep(valueExpr);
+            range->endExpr = c_keep(valueExpr);
+            range->end   = v;
+            range->start = v;
+
+            if (v.kind == V_STRING) {
+                c_keep(c_keep(v.is.String));
+            }
+            if (v.kind == V_OBJECT) {
+                c_keep(c_keep(v.is.Object));
+            }
         } else {
-            range->startKind = startKind;
-            range->endKind   = endKind;
+            assert(FALSE);
         }
-
-        range->startExpr = c_keep(valueExpr);
-        range->endExpr = c_keep(valueExpr);
-        range->end   = v;
-        range->start = v;
-
-        if (v.kind == V_STRING) {
-            c_keep(c_keep(v.is.String));
-        }
-        if (v.kind == V_OBJECT) {
-            c_keep(c_keep(v.is.Object));
-        }
-
         return c_iterNew(range);
     default:
     break;
@@ -882,7 +922,7 @@ static c_iter
 makeRangeQuery(
     c_qExpr *expr)
 {
-    c_qExpr *leftPar,*rightPar;
+	c_qExpr *leftPar,*rightPar;
     c_iter leftList,rightList;
     c_qExpr e;
     c_iter rangeList;
@@ -900,6 +940,10 @@ makeRangeQuery(
         rightPar = (c_qExpr *)(&c_qFunc(e)->params[1]);
         leftList  = makeRangeQuery(leftPar);
         rightList = makeRangeQuery(rightPar);
+        if((leftList && isNilRange(c_qRangeIterHead(leftList))) ||
+           (rightList && isNilRange(c_qRangeIterHead(rightList)))){
+            return (leftList && isNilRange(c_qRangeIterHead(leftList))) ? leftList : rightList;
+        }
         if (leftList == NULL) {
             if (rightList != NULL) {
                 *expr = c_keep(*leftPar);
@@ -1109,10 +1153,12 @@ makeExprQuery(
 #define _CASE_(eq) \
         case Q_EXPR_##eq: \
             r = c_qExpr(c_new(c_qFuncType(base))); \
-            r->kind=CQ_##eq; \
-            c_qFunc(r)->params = c_arrayNew(c_object_t(base),2); \
-            c_qFunc(r)->params[0] = makeExprQuery(q_leftPar(e),t,varList,fixed); \
-            c_qFunc(r)->params[1] = makeExprQuery(q_rightPar(e),t,varList,fixed)
+            if (r) { \
+                r->kind=CQ_##eq; \
+                c_qFunc(r)->params = c_arrayNew(c_object_t(base),2); \
+                c_qFunc(r)->params[0] = makeExprQuery(q_leftPar(e),t,varList,fixed); \
+                c_qFunc(r)->params[1] = makeExprQuery(q_rightPar(e),t,varList,fixed); \
+            }
 
     base = c__getBase(t);
     switch (q_getKind(e)) {
@@ -1134,35 +1180,51 @@ makeExprQuery(
         case Q_EXPR_PROPERTY:
             i=0; qn[0]=0;
             while ((p = q_getPar(e,i)) != NULL) {
-                if (i!=0) strcat(qn,".");
-                strcat(qn,q_getId(p));
+                if (i!=0) os_strcat(qn,".");
+                os_strcat(qn,q_getId(p));
                 i++;
             }
             f = c_fieldNew(t,qn);
             if (f == NULL) {
                 r = c_qExpr(c_new(c_qConstType(base)));
-                r->kind = CQ_CONST;
-                c_qConst(r)->value = c_stringValue(c_stringNew(base,qn));
+                if (r) {
+                    r->kind = CQ_CONST;
+                    c_qConst(r)->value = c_stringValue(c_stringNew(base,qn));
+                } else {
+                    assert(FALSE);
+                }
             } else {
                 r = c_qExpr(c_new(c_qFieldType(base)));
-                r->kind = CQ_FIELD;
-                c_qField(r)->field = f;
+                if (r) {
+                    r->kind = CQ_FIELD;
+                    c_qField(r)->field = f;
+                } else {
+                    assert(FALSE);
+                }
             }
         break;
         case Q_EXPR_CALLBACK:
             r = c_qExpr(c_new(c_qFuncType(base)));
-            r->kind = CQ_CALLBACK;
-            c_qFunc(r)->params = c_arrayNew(c_object_t(base),3);
+            if (r) {
+                r->kind = CQ_CALLBACK;
+                c_qFunc(r)->params = c_arrayNew(c_object_t(base),3);
                 c = c_qExpr(c_new(c_qTypeType(base)));
-                c->kind = CQ_TYPE;
-                c_qType(c)->type = c_keep(c_type(q_getPar(e,0)));
-            c_qFunc(r)->params[0] = c;
+                if (c) {
+                    c->kind = CQ_TYPE;
+                    c_qType(c)->type = c_keep(q_getTyp(q_getPar(e,0)));
+                }
+                c_qFunc(r)->params[0] = c;
                 c = c_qExpr(c_new(c_qConstType(base)));
-                c->kind = CQ_CONST;
-                c_qConst(c)->value.kind = V_ADDRESS;
-                c_qConst(c)->value.is.Address = (c_address)q_getPar(e,1);
-            c_qFunc(r)->params[1] = c;
-            c_qFunc(r)->params[2] = makeExprQuery(q_getPar(e,2),t,varList,fixed);
+                if (c) {
+                    c->kind = CQ_CONST;
+                    c_qConst(c)->value.kind = V_ADDRESS;
+                    c_qConst(c)->value.is.Address = (c_address)q_getPar(e,1);
+                }
+                c_qFunc(r)->params[1] = c;
+                c_qFunc(r)->params[2] = makeExprQuery(q_getPar(e,2),t,varList,fixed);
+            } else {
+                assert(FALSE);
+            }
         break;
         default:
             OS_REPORT_1(OS_API_INFO,
@@ -1176,34 +1238,54 @@ makeExprQuery(
     break;
     case T_INT:
         r = c_qExpr(c_new(c_qConstType(base)));
-        r->kind = CQ_CONST;
-        c_qConst(r)->value.kind = V_LONGLONG;
-        c_qConst(r)->value.is.LongLong = q_getInt(e);
+        if (r) {
+            r->kind = CQ_CONST;
+            c_qConst(r)->value.kind = V_LONGLONG;
+            c_qConst(r)->value.is.LongLong = q_getInt(e);
+        } else {
+            assert(FALSE);
+        }
     break;
     case T_DBL:
         r = c_qExpr(c_new(c_qConstType(base)));
-        r->kind = CQ_CONST;
-        c_qConst(r)->value.kind = V_DOUBLE;
-        c_qConst(r)->value.is.Double = q_getDbl(e);
+        if (r) {
+            r->kind = CQ_CONST;
+            c_qConst(r)->value.kind = V_DOUBLE;
+            c_qConst(r)->value.is.Double = q_getDbl(e);
+        } else {
+            assert(FALSE);
+        }
     break;
     case T_CHR:
         r = c_qExpr(c_new(c_qConstType(base)));
-        r->kind = CQ_CONST;
-        c_qConst(r)->value.kind = V_CHAR;
-        c_qConst(r)->value.is.Char = q_getChr(e);
+        if (r) {
+            r->kind = CQ_CONST;
+            c_qConst(r)->value.kind = V_CHAR;
+            c_qConst(r)->value.is.Char = q_getChr(e);
+        } else {
+            assert(FALSE);
+        }
     break;
     case T_STR:
         r = c_qExpr(c_new(c_qConstType(base)));
-        r->kind = CQ_CONST;
-        c_qConst(r)->value.kind = V_STRING;
-        c_qConst(r)->value.is.String = c_stringNew(base,q_getStr(e));
+        if (r) {
+            r->kind = CQ_CONST;
+            c_qConst(r)->value.kind = V_STRING;
+            c_qConst(r)->value.is.String = c_stringNew(base,q_getStr(e));
+        } else {
+            assert(FALSE);
+        }
     break;
     case T_ID:
         f = c_fieldNew(t,q_getId(e));
         if (f != NULL) {
             r = c_qExpr(c_new(c_qFieldType(base)));
-            r->kind = CQ_FIELD;
-            c_qField(r)->field = f;
+            if (r) {
+                r->kind = CQ_FIELD;
+                c_qField(r)->field = f;
+            } else {
+                assert(FALSE);
+            }
         } else {
             r = NULL;
         }
@@ -1213,24 +1295,32 @@ makeExprQuery(
         var = c_iterResolve(*varList,c_qVarCompare,&id);
         if (var == NULL) {
             r = c_qExpr(c_new(c_qConstType(base)));
-            r->kind = CQ_CONST;
-            c_qConst(r)->value = c_undefinedValue();
-            var = c_qVar(c_new(c_qVarType(base)));
+            if (r) {
+                r->kind = CQ_CONST;
+                c_qConst(r)->value = c_undefinedValue();
+                var = c_qVar(c_new(c_qVarType(base)));
 #if 1
-            var->type = NULL;
+                var->type = NULL;
 #endif
-            var->id = id;
-            var->keys = c_setNew(c_qKeyType(base));
-            var->variable = c_qConst(c_keep(r));
-            *varList = c_iterAppend(*varList,var);
+                var->id = id;
+                var->keys = c_setNew(c_qKeyType(base));
+                var->variable = c_qConst(c_keep(r));
+                *varList = c_iterAppend(*varList,var);
+            } else {
+                assert(FALSE);
+            }
         } else {
             r = c_keep(c_qExpr(var->variable));
         }
         return r;
     case T_TYP:
         r = c_qExpr(c_new(c_qTypeType(base)));
-        r->kind = CQ_TYPE;
-        c_qType(r)->type = q_getTyp(e);
+        if (r) {
+            r->kind = CQ_TYPE;
+            c_qType(r)->type = q_getTyp(e);
+        } else {
+            assert(FALSE);
+        }
     break;
     default:
         OS_REPORT_1(OS_API_INFO,
@@ -1320,41 +1410,45 @@ makeKeyQuery (
     keyExpr = q_takeField(term,c_fieldName(field));
     base = c__getBase(field);
     key = c_new(c_qKeyType(base));
-    key->field = c_keep(field);
-    key->expr = makeExprQuery(keyExpr,type,&KeyVarList,fixed);
-    while ((var = c_iterTakeFirst(KeyVarList)) != NULL) {
-        foundVar = c_iterResolve(*varList,c_qVarCompare,&var->id);
-        if (foundVar != NULL) {
-            foundKey = c_insert(foundVar->keys,key);
-            assert(foundKey == key);
-            c_free(var);
-        } else {
+    if (key) {
+        key->field = c_keep(field);
+        key->expr = makeExprQuery(keyExpr,type,&KeyVarList,fixed);
+        while ((var = c_iterTakeFirst(KeyVarList)) != NULL) {
+            foundVar = c_iterResolve(*varList,c_qVarCompare,&var->id);
+            if (foundVar != NULL) {
+                foundKey = c_insert(foundVar->keys,key);
+                assert(foundKey == key);
+                c_free(var);
+            } else {
 #if 1
-            c_type t;
-            t = c_typeActualType(c_fieldType(field));
-            assert(var->type == NULL);
-            var->type = NULL;
-            switch (c_baseObject(t)->kind) {
-            case M_ENUMERATION:
-                var->type = c_keep(t);
-            break;
-            case M_PRIMITIVE:
-                if (c_primitive(t)->kind == P_BOOLEAN) {
+                c_type t;
+                t = c_typeActualType(c_fieldType(field));
+                assert(var->type == NULL);
+                var->type = NULL;
+                switch (c_baseObject(t)->kind) {
+                case M_ENUMERATION:
                     var->type = c_keep(t);
+                break;
+                case M_PRIMITIVE:
+                    if (c_primitive(t)->kind == P_BOOLEAN) {
+                        var->type = c_keep(t);
+                    }
+                break;
+                default:
+                break;
                 }
-            break;
-            default:
-            break;
-            }
 #endif
-            c_qConst(var->variable)->value.kind = valueKind;
-            *varList = c_iterAppend(*varList,var);
-            foundKey = c_insert(var->keys,key);
-            assert(foundKey == key);
+                c_qConst(var->variable)->value.kind = valueKind;
+                *varList = c_iterAppend(*varList,var);
+                foundKey = c_insert(var->keys,key);
+                assert(foundKey == key);
+            }
         }
+        c_iterFree(KeyVarList);
+    } else {
+        assert(FALSE);
     }
     q_dispose(keyExpr);
-    c_iterFree(KeyVarList);
     return key;
 }
 
@@ -1471,14 +1565,12 @@ c_qVarInit(
             }
         break;
         case V_LONGLONG:
-	    errno = 0;
 	    parValue.is.LongLong = os_atoll (v.is.String);
 	    if (errno) {
 		parValue.kind = V_UNDEFINED;
 	    }
         break;
         case V_ULONGLONG:
-	    errno = 0;
 	    parValue.is.LongLong = os_atoll (v.is.String);
 	    if (errno) {
 		parValue.kind = V_UNDEFINED;
@@ -1694,17 +1786,6 @@ c_qPredInitVars (
     return TRUE;
 }
 
-#define SHOW_EXPR (0)
-#if SHOW_EXPR
-#define PRINT_EXPR(msg,expr) \
-    printf(msg); q_print(expr,0); printf("\n")
-#define PRINT_PRED(msg,pred) \
-    printf(msg); c_qPredPrint(pred); printf("\n")
-#else
-#define PRINT_EXPR(msg,expr)
-#define PRINT_PRED(msg,pred)
-#endif
-
 c_qResult
 c_qPredNew(
     c_type type,
@@ -1740,6 +1821,11 @@ c_qPredNew(
     }
     PRINT_EXPR("Par:\n",e);
 
+    if (e == NULL) {
+        /* empty condition => always TRUE (equals qPred == NULL) */
+        *qPred = NULL;
+        return CQ_RESULT_OK;
+    }
     if (keyList == NULL) {
         nrOfKeys = 0;
     } else {
@@ -1748,10 +1834,14 @@ c_qPredNew(
     fixed = FALSE;
     if (nrOfKeys == 0) {
         p = c_new(c_qPredType(base));
-        p->keyField = NULL;
-        p->expr = makeExprQuery(e,type,&varList,&fixed);
-        p->next = NULL;
-        q_dispose(e);
+        if (p) {
+            p->keyField = NULL;
+            p->expr = makeExprQuery(e,type,&varList,&fixed);
+            p->next = NULL;
+            q_dispose(e);
+        } else {
+            assert(FALSE);
+        }
     } else {
         q_disjunctify(e);
         PRINT_EXPR("Par (disjunctified):\n",e);
@@ -1760,19 +1850,23 @@ c_qPredNew(
         p = NULL;
         while ((term = q_takeTerm(&e)) != NULL) {
             *ptr = c_new(c_qPredType(base));
-            (*ptr)->keyField = c_arrayNew(c_qKeyType(base),nrOfKeys);
-            for (k=0;k<nrOfKeys;k++) {
-                (*ptr)->keyField[k] = makeKeyQuery(&term,
-                                                   type,
-                                                   keyList[k],
-                                                   &varList,
-                                                   &fixed);
+            if (*ptr) {
+                (*ptr)->keyField = c_arrayNew(c_qKeyType(base),nrOfKeys);
+                for (k=0;k<nrOfKeys;k++) {
+                    (*ptr)->keyField[k] = makeKeyQuery(&term,
+                                                       type,
+                                                       keyList[k],
+                                                       &varList,
+                                                       &fixed);
+                }
+                (*ptr)->expr = makeExprQuery(term,type,&varList,
+                                                       &fixed);
+                (*ptr)->next = NULL;
+                ptr = &(*ptr)->next;
+                q_dispose(term);
+            } else {
+                assert(FALSE);
             }
-            (*ptr)->expr = makeExprQuery(term,type,&varList,
-                                                   &fixed);
-            (*ptr)->next = NULL;
-            ptr = &(*ptr)->next;
-            q_dispose(term);
         }
         assert(e == NULL);
         PRINT_PRED("Predicate:\n",p);
@@ -1795,28 +1889,96 @@ c_qPredNew(
         assert(c_refCount(p->keyField) == 1);
     }
     p->fixed = fixed;
-    *qPred = p;
+    *qPred = c_qPredOptimize(p);
     return CQ_RESULT_OK;
 }
 
-void
+static c_qPred
 c_qPredOptimize(
-    c_qPred p)
+        c_qPred _this)
 {
+#define nextPred(p) (p ? p->next : NULL)
     c_long k,nrOfKeys;
-    c_qPred pred = p;
+    c_qPred pred;
+    c_qPred next;
+    c_qPred predPrev = NULL;
+    c_qPred resultPred;
+    c_bool delete;
 
-    PRINT_PRED("Predicate (before optimize):\n",p);
-    while (pred != NULL) {
-        nrOfKeys = c_arraySize(pred->keyField);
-        for (k=0;k<nrOfKeys;k++) {
-            p->fixed = optimizeKey(pred->keyField[k]) || p->fixed;
-        }
-        PRINT_PRED("Predicate (during optimize):\n",p);
-        pred = pred->next;
+    /*
+     * Note: predicate _this is the first in a list of predicates which together
+     * are AND'ed (i.e. _this AND _this->next AND _this->next->next AND ... etc.
+     */
+
+    if(_this == NULL)
+    {
+        return NULL;
     }
-    PRINT_PRED("Predicate (after optimize):\n",p);
+
+    pred = _this;
+    next = nextPred(pred);
+    resultPred = _this;
+
+    PRINT_PRED("Predicate (before optimize):\n",pred);
+    while (pred != NULL) {
+        next = nextPred(pred);
+        delete = FALSE;
+        nrOfKeys = c_arraySize(pred->keyField);
+        for (k=0;!delete && k<nrOfKeys;k++) {
+            pred->fixed = optimizeKey(pred->keyField[k]) || pred->fixed;
+
+            /* if the 1st field of the pred's range is a nilRange, i.e. a range
+             * not containing any values (e.g. <4..4>), then delete it from the
+             * list, as it will always result to FALSE. This means that in an or
+             * statement it does not contribute.
+             */
+            if(c_qKey(pred->keyField[k])->range &&
+                    (c_arraySize(c_qKey(pred->keyField[k])->range) > 0) &&
+                    isNilRange(c_qRange(c_qKey(pred->keyField[k])->range[0]))){
+                delete = TRUE;
+            }
+        }
+
+
+        if(delete){
+            PRINT_PRED("Going to delete predicate (during optimize):\n",pred);
+            /* delete pred from the predicate list of queries */
+            if(!predPrev){
+                /* if predPrev == null then pred is the first pred in the list.
+                 * Instead of deleting it, we transform it to a FALSE const predicate.
+                 * This way, when all predicates are FALSE, there is at least one
+                 * predicate left to indicate that this list of predicates evaluates to
+                 * false.
+                 */
+                c_free(resultPred->expr);
+                resultPred->expr = c_qExpr(c_new(c_qConstType(c__getBase(_this))));
+                if (resultPred->expr) {
+                    resultPred->expr->kind = CQ_CONST;
+                    c_qConst(resultPred->expr)->value = c_boolValue(FALSE);
+                    predPrev = pred;
+                } else {
+                    assert(FALSE);
+                }
+            } else {
+                predPrev->next = c_keep(pred->next);
+                c_free(pred);
+            }
+        } else {
+            PRINT_PRED("Predicate (during optimize):\n",pred);
+            predPrev = pred;
+        }
+
+        pred = next;
+
+    }
+
+    PRINT_PRED("Predicate (after optimize):\n",resultPred);
+
+    return resultPred;
+
+#undef nextPred
 }
+
 
 static c_bool
 setArg (
@@ -1910,14 +2072,12 @@ setArg (
         }
     break;
     case V_LONGLONG:
-        errno = 0;
         v->is.LongLong = os_atoll (par);
         if (errno) {
 	    v->kind = V_UNDEFINED;
         }
     break;
     case V_ULONGLONG:
-        errno = 0;
         v->is.LongLong = os_atoll (par);
         if (errno) {
             v->kind = V_UNDEFINED;

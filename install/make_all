@@ -1,4 +1,5 @@
 #!/bin/bash
+
 . $OSPL_HOME/install/make_functions
 
 set_envs $*
@@ -7,5 +8,5 @@ make_hde_mirror_and_builder
 
 if [ "${SOURCE_TARGET_SHORT}" != "int" ]
 then
-    make_rts_mirror_and_builder "${SOURCE_TARGET}" "${BUILDER_TARGET}" "${PACKAGE_VERSION}" "${PACKAGE_DATE}" "${SCRIPT_NAME}" "${TXTFILE_CONVERTER}" "${ENV}" "${GETLIC_INFO_NAME}" "${NOINSTALLER}" "${PLATFORM_EXT}"
+    make_rts_mirror_and_builder
 fi

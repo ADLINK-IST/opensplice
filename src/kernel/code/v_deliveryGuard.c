@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,6 +15,7 @@
 #include "v__kernel.h"
 #include "v__deliveryGuard.h"
 #include "v__deliveryWaitList.h"
+#include "v__partition.h"
 
 #include "v_writer.h"
 #include "v_entity.h"
@@ -72,9 +73,17 @@ getMatchingPublications (
                         } else {
                             type = c_subType(guard->publications);
                             p = c_new(type);
-                            p->count = 1;
-                            p->readerGID = sInfo->userData.key;
-                            found = c_insert(guard->publications,p);
+                            if (p) {
+                                p->count = 1;
+                                p->readerGID = sInfo->userData.key;
+                                found = c_insert(guard->publications,p);
+                            } else {
+                                OS_REPORT(OS_ERROR,
+                                          "getMatchingPublications",0,
+                                          "Failed to allocate v_deliveryPublisher object.");
+                                assert(FALSE);
+                                result = FALSE;
+                            }
                         }
                     }
                 }
@@ -144,7 +153,10 @@ v_deliveryGuardNew(
                  */
                 type = c_resolve(c_getBase(_this),
                                  "kernelModule::v_deliveryPublisher");
-                guard->publications = c_tableNew(type, "readerGID.systemId,readerGID.localId,readerGID.serial");
+                guard->publications = c_tableNew(type,
+                                                 "readerGID.systemId,"
+                                                 "readerGID.localId,"
+                                                 "readerGID.serial");
                 c_free(type);
 
                 found = c_tableInsert(_this->guards, guard);
@@ -160,6 +172,12 @@ v_deliveryGuardNew(
                 /* Now update publication list from delivery service subscriptions.
                  */
                 c_walk(_this->subscriptions, getMatchingPublications, guard);
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_deliveryGuardNew",0,
+                          "Failed to allocate v_deliveryGuard object.");
+                assert(FALSE);
+                found = NULL;
             }
         }
     } else {

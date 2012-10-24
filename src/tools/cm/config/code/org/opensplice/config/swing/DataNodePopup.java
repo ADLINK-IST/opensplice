@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -232,6 +232,9 @@ public class DataNodePopup implements MouseListener, ActionListener {
             
         }
         if(addMenu != null){
+        	if (addMenu.getItemCount() == 0){
+        		addMenu.setEnabled(false);
+        	}
             result.add(addMenu);
             
         }

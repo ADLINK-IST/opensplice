@@ -1,6 +1,0 @@
-#ServiceInfo-START
-ServicePath:"@@INSTALLDIR@@\@@INSTTYPE@@\@@PLATFORM@@\bin\spliced.exe"
-ServiceDisplayName:Spliced
-ServiceName:Spliced
-#ServiceInfo-END
-

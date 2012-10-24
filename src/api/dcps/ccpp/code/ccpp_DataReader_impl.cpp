@@ -1,17 +1,18 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-#include <gapi.h>
+#include "gapi.h"
 #include "ccpp_DataReader_impl.h"
 #include "ccpp_Utils.h"
+#include "ccpp_QosUtils.h"
 #include "ccpp_ReadCondition_impl.h"
 #include "ccpp_QueryCondition_impl.h"
 #include "ccpp_Subscriber_impl.h"
@@ -55,7 +56,8 @@ DDS::ReadCondition_ptr DDS::DataReader_impl::create_readcondition (
       myUD = new ccpp_UserData(readCondition);
       if (myUD)
       {
-        gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
+        gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
+                                  DDS::ccpp_CallBack_DeleteUserData, NULL);
       }
       else
       {
@@ -105,7 +107,8 @@ DDS::QueryCondition_ptr DDS::DataReader_impl::create_querycondition (
         myUD = new DDS::ccpp_UserData(queryCondition);
         if (myUD)
         {
-	       gapi_object_set_user_data(handle, (CORBA::Object *)myUD);
+	       gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
+                                         DDS::ccpp_CallBack_DeleteUserData, NULL);
         }
         else
         {
@@ -134,7 +137,6 @@ DDS::ReturnCode_t DDS::DataReader_impl::delete_readcondition (
   DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
   DDS::ReadCondition_impl_ptr readCondition;
   gapi_readCondition handle;
-  DDS::ccpp_UserData_ptr myUD = NULL;
 
   readCondition = dynamic_cast<DDS::ReadCondition_impl_ptr>(a_condition);
   if (readCondition)
@@ -142,18 +144,10 @@ DDS::ReturnCode_t DDS::DataReader_impl::delete_readcondition (
     handle = readCondition->_gapi_self;
     if (os_mutexLock(&(readCondition->rc_mutex)) == os_resultSuccess)
     {
-      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
       result =  gapi_dataReader_delete_readcondition(_gapi_self, handle);
-      if (result == DDS::RETCODE_OK)
+      if (result != DDS::RETCODE_OK)
       {
-        if (myUD)
-        {
-          delete myUD;
-        }
-        else
-        {
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
-        }
+        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to delete readcondition");
       }
       if (os_mutexUnlock(&(readCondition->rc_mutex)) != os_resultSuccess)
       {
@@ -171,7 +165,7 @@ DDS::ReturnCode_t DDS::DataReader_impl::delete_readcondition (
 DDS::ReturnCode_t DDS::DataReader_impl::delete_contained_entities (
 ) THROW_ORB_EXCEPTIONS
 {
-  return gapi_dataReader_delete_contained_entities(_gapi_self, DDS::ccpp_CallBack_DeleteUserData, NULL);
+  return gapi_dataReader_delete_contained_entities(_gapi_self);
 }
 
 DDS::ReturnCode_t DDS::DataReader_impl::set_qos (
@@ -543,13 +537,18 @@ DDS::ReturnCode_t DDS::DataReader_impl::get_matched_publication_data (
   DDS::InstanceHandle_t publication_handle
 ) THROW_ORB_EXCEPTIONS
 {
-  DDS::ReturnCode_t result;
-  gapi_publicationBuiltinTopicData gapi_data;
+  DDS::ReturnCode_t result = DDS::RETCODE_OUT_OF_RESOURCES;
+  gapi_publicationBuiltinTopicData * gapi_data = gapi_publicationBuiltinTopicData__alloc();
 
-  result = gapi_dataReader_get_matched_publication_data(_gapi_self, &gapi_data, publication_handle);
-  if (result == DDS::RETCODE_OK)
-  {
-    ccpp_PublicationBuiltinTopicData_copyOut(gapi_data, publication_data);
+  if (gapi_data) {
+      result = gapi_dataReader_get_matched_publication_data(_gapi_self, gapi_data, publication_handle);
+      if (result == DDS::RETCODE_OK)
+      {
+        ccpp_PublicationBuiltinTopicData_copyOut(*gapi_data, publication_data);
+      }
+      gapi_free(gapi_data);
+  } else {
+    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
   }
   return result;
 }
@@ -601,7 +600,8 @@ DDS::DataReaderView_ptr DDS::DataReader_impl::create_view (
                   myUD = new DDS::ccpp_UserData(drvp,  NULL);
                   if (myUD)
                   {
-                    gapi_object_set_user_data(view_handle, (CORBA::Object *)myUD);
+                    gapi_object_set_user_data(view_handle, (CORBA::Object *)myUD,
+                                              DDS::ccpp_CallBack_DeleteUserData, NULL);
                   }
                   else
                   {
@@ -630,7 +630,6 @@ DDS::ReturnCode_t DDS::DataReader_impl::delete_view (
   ::DDS::DataReaderView_ptr a_view
 ) THROW_ORB_EXCEPTIONS
 {
-    DDS::ccpp_UserData_ptr myUD;
     DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
     DDS::DataReaderView_impl_ptr dataReaderView;
 
@@ -639,20 +638,15 @@ DDS::ReturnCode_t DDS::DataReader_impl::delete_view (
     {
       if (os_mutexLock(&(dataReaderView->drv_mutex)) == os_resultSuccess)
       {
-        myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(dataReaderView->_gapi_self));
         result = gapi_dataReader_delete_view(_gapi_self, dataReaderView->_gapi_self);
         if (result == DDS::RETCODE_OK)
         {
           dataReaderView->_gapi_self = NULL;
-          if (myUD)
-          {
-            delete myUD;
-          }
-          else
-          {
-            result = DDS::RETCODE_ERROR;
-            OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
-          }
+        }
+        else
+        {
+          result = DDS::RETCODE_ERROR;
+          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to delete view");
         }
         if (os_mutexUnlock(&(dataReaderView->drv_mutex)) != os_resultSuccess)
         {

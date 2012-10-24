@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,8 +13,8 @@
 #define XBE_CPPFWD_H_INCLUDED 
 
 #include "xbe_string.h"
-#include <idl.h>
-#include <tlist.h>
+#include "idl.h"
+#include "tlist.h"
 #include "xbe_source.h"
 #include "xbe_utils.h"
 #include "xbe_cppscope.h"

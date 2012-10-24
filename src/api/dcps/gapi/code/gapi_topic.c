@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -17,7 +17,6 @@
 #include "gapi_topic.h"
 #include "gapi_qos.h"
 #include "gapi_typeSupport.h"
-#include "gapi_topicStatus.h"
 #include "gapi_dataReader.h"
 #include "gapi_error.h"
 
@@ -25,9 +24,9 @@
 #include "os_heap.h"
 #include "u_user.h"
 #include "u_entity.h"
+#include "u_topic.h"
 #include "v_kernel.h"
 
-#define U_TOPIC_GET(t)       u_topic(U_ENTITY_GET(t))
 #define U_TOPIC_SET(t,e)     _EntitySetUserEntity(_Entity(t), u_entity(e))
 
 C_STRUCT(_Topic) {
@@ -103,7 +102,7 @@ _TopicNew (
         if ( a_listener ) {
             newTopic->_Listener = *a_listener;
         }
-        newTopic->_refCount = 0;
+        newTopic->_refCount = 1;
         topicQos = u_topicQosNew(NULL);
         if ( topicQos != NULL ) {
             copyTopicQosIn(qos, topicQos);
@@ -129,14 +128,16 @@ _TopicNew (
         }
     }
     if ( newTopic != NULL ) {
-        _EntityStatus(newTopic) = _Status(_TopicStatusNew(newTopic,a_listener,mask));
-        if ( _EntityStatus(newTopic) == NULL ) {
+        _EntityStatus(newTopic) = _StatusNew(_Entity(newTopic),
+                                             STATUS_KIND_TOPIC,
+                                             (const struct gapi_listener *) a_listener,
+                                             mask);
+        if (_EntityStatus(newTopic) == NULL ) {
             u_topicFree(U_TOPIC_GET(newTopic));
             _TopicDescriptionDispose(_TopicDescription(newTopic));
             newTopic = NULL;
         }
     }
-
     return newTopic;
 }
 
@@ -145,7 +146,6 @@ _TopicFromKernelTopic (
     u_topic uTopic,
     const gapi_char *topicName,
     const gapi_char *typeName,
-    const _TypeSupport typesupport,
     const _DomainParticipant participant,
     const gapi_context *context)
 {
@@ -155,7 +155,6 @@ _TopicFromKernelTopic (
     assert(uTopic);
     assert(topicName);
     assert(typeName);
-    assert(typesupport);
     assert(participant);
 
     uParticipant = _DomainParticipantUparticipant(participant);
@@ -178,6 +177,7 @@ _TopicFromKernelTopic (
                                        stmt,
                                        participant) == GAPI_RETCODE_OK ) {
                 U_TOPIC_SET(newTopic, uTopic);
+                newTopic->_refCount = 1;
             } else {
                 _EntityDelete(newTopic);
                 newTopic = NULL;
@@ -189,13 +189,14 @@ _TopicFromKernelTopic (
         }
     }
     if ( newTopic ) {
-        _EntityStatus(newTopic) = _Status(_TopicStatusNew(newTopic, NULL,0));
+        _EntityStatus(newTopic) = _StatusNew(_Entity(newTopic),
+                                             STATUS_KIND_TOPIC,
+                                             NULL,0);
         if (_EntityStatus(newTopic) == NULL ) {
             _TopicDescriptionDispose(_TopicDescription(newTopic));
             newTopic = NULL;
         }
     }
-
     return newTopic;
 }
 
@@ -243,7 +244,10 @@ _TopicFromTopic (
                                        topicName,
                                        typeName,
                                        stmt,
-                                       participant) != GAPI_RETCODE_OK ) {
+                                       participant) == GAPI_RETCODE_OK )
+            {
+                newTopic->_refCount = 1;
+            } else {
                 _EntityDelete(newTopic);
                 newTopic = NULL;
             }
@@ -255,16 +259,15 @@ _TopicFromTopic (
     }
 
     if ( newTopic != NULL ) {
-        newTopic->_refCount = 0;
         /* obtain the v_qos of the existing topic */
 
         if ( u_entityQoS(u_entity(U_TOPIC_GET(topic)),
-                         (v_qos*)&topicQos) != U_RESULT_OK ) {
+                         (v_qos*)&topicQos) != U_RESULT_OK )
+        {
             _TopicDescriptionDispose(_TopicDescription(newTopic));
             newTopic = NULL;
         }
     }
-
     if ( newTopic != NULL ) {
         uTopic = u_topicNew(uParticipant,
                             topicName,
@@ -281,32 +284,126 @@ _TopicFromTopic (
         }
     }
     if ( newTopic ) {
-        _EntityStatus(newTopic) = _Status(_TopicStatusNew(newTopic, NULL,0));
+        _EntityStatus(newTopic) = _StatusNew(_Entity(newTopic),
+                                             STATUS_KIND_TOPIC,
+                                             NULL,0);
         if ( _EntityStatus(newTopic) == NULL ) {
             u_topicFree(U_TOPIC_GET(newTopic));
             _TopicDescriptionDispose(_TopicDescription(newTopic));
             newTopic = NULL;
         }
     }
-
     return newTopic;
 }
 
+
+_Topic
+_TopicFromUserTopic (
+    u_topic uTopic,
+    const _DomainParticipant participant,
+    const gapi_context *context)
+{
+    _Topic newTopic = NULL;
+    u_participant uParticipant;
+    _TypeSupport typeSupport;
+    gapi_char *topicName;
+    gapi_char *typeName;
+
+    assert(uTopic);
+    assert(participant);
+
+    uParticipant = _DomainParticipantUparticipant(participant);
+
+    topicName = u_topicName(uTopic);
+    typeName  = u_topicTypeName(uTopic);
+
+    typeSupport = _DomainParticipantFindType(participant, typeName);
+
+    if ( typeSupport ) {
+        newTopic = _TopicAlloc();
+    }
+
+    if ( newTopic != NULL ) {
+        const char      *prefix = "select * from ";
+        unsigned long    len;
+        char            *stmt;
+
+        len = strlen(prefix) + strlen(topicName) + 1;
+        stmt = (char *) os_malloc(len);
+
+        if ( stmt ) {
+            snprintf(stmt, len, "%s%s", prefix, topicName);
+            if ( _TopicDescriptionInit(_TopicDescription(newTopic),
+                                       topicName,
+                                       typeName,
+                                       stmt,
+                                       participant) == GAPI_RETCODE_OK )
+            {
+                newTopic->_refCount = 1;
+            } else {
+                _EntityDelete(newTopic);
+                newTopic = NULL;
+            }
+            os_free(stmt);
+        } else {
+            _EntityDelete(newTopic);
+            newTopic = NULL;
+        }
+    }
+
+    if ( newTopic != NULL ) {
+        U_TOPIC_SET(newTopic, uTopic);
+#if 1 /* existing user layer topic so we should not try to set user data as
+       * it should heve been set already or is going to be set soon.
+       */
+        if (u_entityGetUserData(u_entity(uTopic)) == NULL) {
+            c_voidp prev;
+            prev = u_entitySetUserData(u_entity(uTopic),newTopic);
+            assert(prev == NULL);
+        } else {
+            OS_REPORT_1(OS_ERROR,
+                        "_TopicFromUserTopic", 0,
+                        "Set user layer topic handle rejected, handle 0x%x already assigned.",
+                        u_entityGetUserData(u_entity(uTopic)));
+        }
+#endif
+    }
+    if ( newTopic ) {
+        _EntityStatus(newTopic) = _StatusNew(_Entity(newTopic),
+                                             STATUS_KIND_TOPIC,
+                                             NULL,0);
+        if ( _EntityStatus(newTopic) == NULL ) {
+            _TopicDescriptionDispose(_TopicDescription(newTopic));
+            newTopic = NULL;
+        }
+    }
+    return newTopic;
+}
 
 gapi_returnCode_t
 _TopicFree (
     _Topic topic)
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
+    _Status status;
+    u_topic t;
+    c_long count;
 
     assert (topic);
 
-   _TopicStatusSetListener(_TopicStatus(_Entity(topic)->status),NULL,0);
-   _TopicStatusFree(_TopicStatus(_Entity(topic)->status));
-   _EntityFreeStatusCondition(_Entity(topic));
-    u_topicFree(U_TOPIC_GET(topic));
-    _TopicDescriptionDispose (_TopicDescription(topic));
-
+    count = _TopicDecRef(topic);
+    if (count == 0) {
+        status = _EntityStatus(topic);
+        _StatusSetListener(status,NULL,0);
+        _EntityClaim(status);
+        _StatusDeinit(status);
+        t = U_TOPIC_GET(topic);
+        _TopicDescriptionDispose (_TopicDescription(topic));
+        u_entitySetUserData(u_entity(t),NULL);
+        u_topicFree(t);
+    } else if (count < 0) {
+        result = GAPI_RETCODE_BAD_PARAMETER;
+    }
     return result;
 }
 
@@ -315,6 +412,7 @@ _TopicIncRef (
     _Topic topic)
 {
     assert(topic);
+    assert(topic->_refCount > 0);
     topic->_refCount++;
     return topic->_refCount;
 }
@@ -324,8 +422,21 @@ _TopicDecRef (
     _Topic topic)
 {
     assert(topic);
+    assert(topic->_refCount > 0);
     topic->_refCount--;
     return topic->_refCount;
+}
+
+gapi_long
+_TopicRefCount (
+    _Topic topic)
+{
+    assert(topic);
+    if (topic) {
+        return topic->_refCount;
+    } else {
+        return 0;
+    }
 }
 
 gapi_topicQos *
@@ -344,8 +455,7 @@ _TopicGetQos (
     if (result == U_RESULT_OK) {
         copyTopicQosOut(topicQos,  qos);
         u_topicQosFree(topicQos);
-    } else
-    {
+    } else {
         OS_REPORT_1(OS_ERROR,
                     "Failure during topic QoS get", 0,
                     "u_entityQoS return with result %d", result);
@@ -358,6 +468,7 @@ _TopicUtopic (
     _Topic topic)
 {
     assert(topic);
+    assert(topic->_refCount > 0);
 
     return U_TOPIC_GET(topic);
 }
@@ -383,7 +494,7 @@ gapi_topic_set_qos (
         result = GAPI_RETCODE_BAD_PARAMETER;
     }
 
-    if ((result == GAPI_RETCODE_OK ) && (_Entity(topic)->enabled)) {
+    if ((result == GAPI_RETCODE_OK ) && (_EntityEnabled(topic))) {
         gapi_topicQos *existing_qos = gapi_topicQos__alloc();
 
         result = gapi_topicQosCheckMutability(qos,
@@ -437,13 +548,16 @@ gapi_topic_dispose_all_data (
     gapi_returnCode_t result;
     _Topic topic;
     u_topic uTopic;
-   
+
     topic = gapi_topicClaim(_this, &result);
     if ( topic )
     {
-       uTopic = U_TOPIC_GET(topic);
-       u_topicDisposeAllData( uTopic );
-       
+        u_result uResult;
+
+        uTopic = U_TOPIC_GET(topic);
+        uResult = u_topicDisposeAllData( uTopic );
+        result = kernelResultToApiResult(uResult);
+
     }
 
    _EntityRelease(topic);
@@ -484,31 +598,43 @@ copyAllDataDisposedTopicStatus (
     return V_RESULT_OK;
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
 _TopicGetInconsistentTopicStatus (
     _Topic _this,
-    c_bool reset,
     gapi_inconsistentTopicStatus *status)
 {
     u_result uResult;
     uResult = u_topicGetInconsistentTopicStatus(
                   U_TOPIC_GET(_this),
-                  reset,
+                  TRUE,
                   copyInconsistentTopicStatus,
                   status);
     return kernelResultToApiResult(uResult);
 }
 
-gapi_returnCode_t
+static gapi_returnCode_t
+_TopicPeekInconsistentTopicStatus (
+    _Topic _this,
+    gapi_inconsistentTopicStatus *status)
+{
+    u_result uResult;
+    uResult = u_topicGetInconsistentTopicStatus(
+                  U_TOPIC_GET(_this),
+                  FALSE,
+                  copyInconsistentTopicStatus,
+                  status);
+    return kernelResultToApiResult(uResult);
+}
+
+static gapi_returnCode_t
 _TopicGetAllDataDisposedTopicStatus (
     _Topic _this,
-    c_bool reset,
     gapi_allDataDisposedTopicStatus *status)
 {
     u_result uResult;
     uResult = u_topicGetAllDataDisposedStatus(
                   U_TOPIC_GET(_this),
-                  reset,
+                  TRUE,
                   copyAllDataDisposedTopicStatus,
                   status);
     return kernelResultToApiResult(uResult);
@@ -525,9 +651,9 @@ gapi_topic_get_inconsistent_topic_status (
     topic = gapi_topicClaim(_this, &result);
 
     if (topic != NULL) {
-        if (_Entity(topic)->enabled ) {
+        if (_EntityEnabled(topic) ) {
             result = _TopicGetInconsistentTopicStatus (
-                         topic, TRUE, status);
+                         topic, status);
         } else {
             result=GAPI_RETCODE_NOT_ENABLED;
         }
@@ -545,20 +671,20 @@ gapi_topic_get_all_data_disposed_topic_status (
 {
     _Topic topic;
     gapi_returnCode_t result;
-    
+
     topic = gapi_topicClaim(_this, &result);
-    
+
     if (topic != NULL) {
-        if (_Entity(topic)->enabled ) {
+        if (_EntityEnabled(topic) ) {
             result = _TopicGetAllDataDisposedTopicStatus (
-                         topic, TRUE, status);
+                         topic, status);
         } else {
             result=GAPI_RETCODE_NOT_ENABLED;
         }
     }
 
     _EntityRelease(topic);
-    
+
     return result;
 }
 
@@ -574,8 +700,8 @@ gapi_topic_set_listener (
     topic = gapi_topicClaim(_this, &result);
 
     if ( topic != NULL ) {
-        if ( _Entity(topic)->enabled ) {
-            _TopicStatus status;
+        if ( _EntityEnabled(topic) ) {
+            _Status status;
 
             if ( a_listener ) {
                 topic->_Listener = *a_listener;
@@ -583,8 +709,11 @@ gapi_topic_set_listener (
                 memset(&topic->_Listener, 0, sizeof(topic->_Listener));
             }
 
-            status = _TopicStatus(_EntityStatus(topic));
-            if ( _TopicStatusSetListener(status, a_listener, mask) ) {
+            status = _EntityStatus(topic);
+            if ( _StatusSetListener(status,
+                                    (struct gapi_listener *)a_listener,
+                                    mask) )
+            {
                 result = GAPI_RETCODE_OK;
             }
         } else {
@@ -791,130 +920,29 @@ copyTopicQosOut (
     return TRUE;
 }
 
-
-/*     void
- *     on_inconsistent_topic(
- *         in Topic the_topic,
- *         in InconsistentTopicStatus status);
- * };
- */
-static void
-onInconsistentTopic (
-    gapi_object target,
-    gapi_object source)
-{
-    gapi_inconsistentTopicStatus info;
-    gapi_listener_InconsistentTopicListener callback;
-    gapi_returnCode_t result;
-    _Entity topic;
-    _Status status;
-    _Entity entity;
-    c_voidp listenerData;
-
-    entity = gapi_entityClaim(target, NULL);
-
-    if ( entity ) {
-        if ( target != source ) {
-            topic = gapi_entityClaim(source, NULL);
-        } else {
-            topic = entity;
-        }
-
-        if ( topic ) {
-            status = entity->status;
-            result = _TopicGetInconsistentTopicStatus (
-                         _Topic(topic), FALSE, &info);
-
-            callback     = status->callbackInfo.on_inconsistent_topic;
-            listenerData = status->callbackInfo.listenerData;
-
-            if ( target != source ) {
-                _EntitySetBusy(topic);
-                _EntityRelease(topic); 
-           }
-            _EntitySetBusy(entity);
-            _EntityRelease(entity);
-            callback(listenerData, source, &info); 
-            if ( target != source ) {
-                gapi_objectClearBusy(source);
-            }
-            gapi_objectClearBusy(target);            
-        } else {
-            _EntityRelease(entity);
-        }
-    }
-}
-
-static void
-onAllDataDisposed (
-    gapi_object target,
-    gapi_object source)
-{
-    gapi_listener_AllDataDisposedListener callback;
-    gapi_allDataDisposedTopicStatus info;
-    gapi_returnCode_t result;
-    _Entity topic;
-    _Status status;
-    _Entity entity;
-    c_voidp listenerData;
-   
-    entity = gapi_entityClaim(target, NULL);
-
-    if ( entity ) {
-        if ( target != source ) {
-            topic = gapi_entityClaim(source, NULL);
-        } else {
-            topic = entity;
-        }
-
-        if ( topic ) {
-            result = _TopicGetAllDataDisposedTopicStatus(_Topic(topic),
-                                                         TRUE,
-                                                         &info); 
-
-            status = entity->status;
-            callback     = status->callbackInfo.on_all_data_disposed; 
-            listenerData = status->callbackInfo.listenerData;
-
-            if ( target != source ) {
-                _EntitySetBusy(topic);
-                _EntityRelease(topic);
-            }
-            _EntitySetBusy(entity);
-            _EntityRelease(entity);
-            callback(listenerData, source); 
-            if ( target != source ) {
-                gapi_objectClearBusy(source);
-            }
-            gapi_objectClearBusy(target);
-        } else {
-            _EntityRelease(entity);
-        }
-    }
-}
-
 void
 _TopicNotifyListener(
     _Topic _this,
     gapi_statusMask triggerMask)
 {
-    gapi_object handle = _EntityHandle(_this);
-    gapi_object target;
-    _Status status = _Entity(_this)->status;
-
+    gapi_object source = _EntityHandle(_this);
+    _Status status = _EntityStatus(_this);
+    gapi_returnCode_t result;
     if ( triggerMask & GAPI_INCONSISTENT_TOPIC_STATUS ) {
-        target = _StatusFindTarget(status, GAPI_INCONSISTENT_TOPIC_STATUS);
-        if ( target != NULL ) {
-            onInconsistentTopic(target, _EntityRelease(_this));
-            gapi_entityClaim(handle, NULL);
+        gapi_inconsistentTopicStatus info;
+
+        result = _TopicPeekInconsistentTopicStatus (_this, &info);
+        if (result == GAPI_RETCODE_OK) {
+            _StatusNotifyInconsistentTopic(status, source, &info);
         }
     }
 
     if ( triggerMask & GAPI_ALL_DATA_DISPOSED_STATUS ) {
-        target = _StatusFindTarget(status, GAPI_ALL_DATA_DISPOSED_STATUS);
-        if ( target != NULL ) {
-            onAllDataDisposed(target, _EntityRelease(_this));
-            gapi_entityClaim(handle, NULL);
+        gapi_allDataDisposedTopicStatus info;
+
+        result = _TopicGetAllDataDisposedTopicStatus(_this, &info);
+        if (result == GAPI_RETCODE_OK) {
+            _StatusNotifyAllDataDisposed(status, source);
         }
     }
 }

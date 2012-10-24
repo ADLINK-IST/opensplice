@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -295,7 +295,7 @@ v_cfElementXPath(
             }
             arg.children = c_iterNew(NULL);
             arg.tagName = (c_char *)os_malloc(length + 1U);
-            strncpy(arg.tagName, posInExpr, length);
+            os_strncpy(arg.tagName, posInExpr, length);
             arg.tagName[length] = 0;
             
             /* Look for selection criteria based on attribute value

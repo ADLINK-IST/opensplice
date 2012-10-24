@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,6 +13,7 @@
 
 
 #include "os_heap.h"
+#include "os_stdlib.h"
 #include "sd_misc.h"
 #include "sd__confidence.h"
 
@@ -108,7 +109,7 @@ sd_strGetChars(
 
     count = strspn(*str, chars);
     result = (c_char *)os_malloc(count+1U);
-    strncpy(result, *str, count);
+    os_strncpy(result, *str, count);
     result[count] = 0;
     *str = SD_DISPLACE(*str, count);
 
@@ -126,7 +127,7 @@ sd_strGetUptoChars(
 
     count = strcspn(*str, chars);
     result = (c_char *)os_malloc(count+1U);
-    strncpy(result, *str, count);
+    os_strncpy(result, *str, count);
     result[count] = 0;
     *str = SD_DISPLACE(*str, count);
 

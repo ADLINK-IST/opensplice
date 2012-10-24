@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -37,7 +37,7 @@ static void CallBackWrapper_DataWriterListener_OfferedDeadlineMissed(
     const gapi_offeredDeadlineMissedStatus *gapi_status
 )
 {
-  DDS::DataWriterListener_ptr listener; 
+  DDS::DataWriterListener_ptr listener;
   DDS::OfferedDeadlineMissedStatus status;
   DDS::DataWriter_ptr dataWriter = NULL;
 
@@ -64,7 +64,7 @@ static void CallBackWrapper_DataWriterListener_OfferedIncompatibleQos(
     const gapi_offeredIncompatibleQosStatus *gapi_status
     )
 {
-  DDS::DataWriterListener_ptr listener; 
+  DDS::DataWriterListener_ptr listener;
   DDS::OfferedIncompatibleQosStatus status;
   DDS::DataWriter_ptr dataWriter;
 
@@ -89,7 +89,7 @@ static void CallBackWrapper_DataWriterListener_LivelinessLost(
     const gapi_livelinessLostStatus *gapi_status
     )
 {
-  DDS::DataWriterListener_ptr listener; 
+  DDS::DataWriterListener_ptr listener;
   DDS::LivelinessLostStatus status;
   DDS::DataWriter * dataWriter;
 
@@ -115,7 +115,7 @@ static void CallBackWrapper_DataWriterListener_PublicationMatched(
     const gapi_publicationMatchedStatus *gapi_status
     )
 {
-  DDS::DataWriterListener_ptr listener; 
+  DDS::DataWriterListener_ptr listener;
   DDS::PublicationMatchedStatus status;
   DDS::DataWriter * dataWriter;
 
@@ -123,8 +123,10 @@ static void CallBackWrapper_DataWriterListener_PublicationMatched(
 
   status.total_count = gapi_status->total_count;
   status.total_count_change = gapi_status->total_count_change;
+  status.current_count = gapi_status->current_count;
+  status.current_count_change = gapi_status->current_count_change;
   status.last_subscription_handle = (DDS::InstanceHandle_t)gapi_status->last_subscription_handle;
-  
+
   listener = reinterpret_cast<DDS::DataWriterListener_ptr>(listener_data);
   if (listener)
   {
@@ -137,7 +139,7 @@ static void CallBackWrapper_DataWriterListener_PublicationMatched(
 }
 
 
-void DDS::ccpp_DataWriterListener_copyIn(const DDS::DataWriterListener_ptr & from, 
+void DDS::ccpp_DataWriterListener_copyIn(const DDS::DataWriterListener_ptr & from,
         gapi_dataWriterListener & to)
 {
   to.listener_data = from;
@@ -185,7 +187,7 @@ static void CallBackWrapper_DataReaderListener_RequestedDeadlineMissed
   dataReader = DataReader_Lookup(reader);
 
   ccpp_RequestedDeadlineMissedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::DataReaderListener_ptr>(listener_data);
   if (listener)
   {
@@ -197,7 +199,7 @@ static void CallBackWrapper_DataReaderListener_RequestedDeadlineMissed
   }
 }
 
- 
+
 static void CallBackWrapper_DataReaderListener_RequestedIncompatibleQos
 (
     void *listener_data,
@@ -212,7 +214,7 @@ static void CallBackWrapper_DataReaderListener_RequestedIncompatibleQos
   dataReader = DataReader_Lookup(reader);
 
   ccpp_RequestedIncompatibleQosStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::DataReaderListener_ptr>(listener_data);
   if (listener)
   {
@@ -238,7 +240,7 @@ static void CallBackWrapper_DataReaderListener_SampleRejected
   dataReader = DataReader_Lookup(reader);
 
   ccpp_SampleRejectedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::DataReaderListener_ptr>(listener_data);
   if (listener)
   {
@@ -264,7 +266,7 @@ static void CallBackWrapper_DataReaderListener_LivelinessChanged
   dataReader = DataReader_Lookup(reader);
 
   ccpp_LivelinessChangedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::DataReaderListener_ptr>(listener_data);
   if (listener)
   {
@@ -312,7 +314,7 @@ static void CallBackWrapper_DataReaderListener_SubscriptionMatched
   dataReader = DataReader_Lookup(reader);
 
   ccpp_SubscriptionMatchedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::DataReaderListener_ptr>(listener_data);
   if (listener)
   {
@@ -338,7 +340,7 @@ static void CallBackWrapper_DataReaderListener_SampleLost
   dataReader = DataReader_Lookup(reader);
 
   ccpp_SampleLostStatus_copyOut(*gapi_status, status);
-  
+
   listener = reinterpret_cast<DDS::DataReaderListener_ptr>(listener_data);
   if (listener)
   {
@@ -356,7 +358,7 @@ void DDS::ccpp_DataReaderListener_copyIn(
 {
     to.listener_data = from;
 
-    to.on_requested_deadline_missed  = CallBackWrapper_DataReaderListener_RequestedDeadlineMissed; 
+    to.on_requested_deadline_missed  = CallBackWrapper_DataReaderListener_RequestedDeadlineMissed;
     to.on_requested_incompatible_qos = CallBackWrapper_DataReaderListener_RequestedIncompatibleQos;
     to.on_sample_rejected            = CallBackWrapper_DataReaderListener_SampleRejected;
     to.on_liveliness_changed         = CallBackWrapper_DataReaderListener_LivelinessChanged;
@@ -382,7 +384,7 @@ static void CallBackWrapper_Publisher_OfferedDeadlineMissedListener(
   status.total_count = gapi_status->total_count;
   status.total_count_change = gapi_status->total_count_change;
   status.last_instance_handle = gapi_status->last_instance_handle;
-  
+
   listener = reinterpret_cast<DDS::PublisherListener_ptr>(listener_data);
   if (listener)
   {
@@ -460,7 +462,7 @@ static void CallBackWrapper_Publisher_PublicationMatchedListener(
   status.total_count = gapi_status->total_count;
   status.total_count_change = gapi_status->total_count_change;
   status.last_subscription_handle = (DDS::InstanceHandle_t)gapi_status->last_subscription_handle;
-  
+
   listener = reinterpret_cast<DDS::PublisherListener_ptr>(listener_data);
   if (listener)
   {
@@ -519,7 +521,7 @@ static void CallBackWrapper_SubscriberListener_RequestedDeadlineMissed
   dataReader = DataReader_Lookup(reader);
 
   ccpp_RequestedDeadlineMissedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::SubscriberListener_ptr>(listener_data);
   if (listener)
   {
@@ -531,7 +533,7 @@ static void CallBackWrapper_SubscriberListener_RequestedDeadlineMissed
   }
 }
 
- 
+
 static void CallBackWrapper_SubscriberListener_RequestedIncompatibleQos
 (
     void *listener_data,
@@ -546,7 +548,7 @@ static void CallBackWrapper_SubscriberListener_RequestedIncompatibleQos
   dataReader = DataReader_Lookup(reader);
 
   ccpp_RequestedIncompatibleQosStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::SubscriberListener_ptr>(listener_data);
   if (listener)
   {
@@ -572,7 +574,7 @@ static void CallBackWrapper_SubscriberListener_SampleRejected
   dataReader = DataReader_Lookup(reader);
 
   ccpp_SampleRejectedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::SubscriberListener_ptr>(listener_data);
   if (listener)
   {
@@ -598,7 +600,7 @@ static void CallBackWrapper_SubscriberListener_LivelinessChanged
   dataReader = DataReader_Lookup(reader);
 
   ccpp_LivelinessChangedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::SubscriberListener_ptr>(listener_data);
   if (listener)
   {
@@ -646,7 +648,7 @@ static void CallBackWrapper_SubscriberListener_SubscriptionMatched
   dataReader = DataReader_Lookup(reader);
 
   ccpp_SubscriptionMatchedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::SubscriberListener_ptr>(listener_data);
   if (listener)
   {
@@ -673,7 +675,7 @@ static void CallBackWrapper_SubscriberListener_SampleLost
   dataReader = DataReader_Lookup(reader);
 
   ccpp_SampleLostStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::SubscriberListener_ptr>(listener_data);
   if (listener)
   {
@@ -714,7 +716,7 @@ void DDS::ccpp_SubscriberListener_copyIn(
 {
     to.listener_data = from;
 
-    to.on_requested_deadline_missed  = CallBackWrapper_SubscriberListener_RequestedDeadlineMissed; 
+    to.on_requested_deadline_missed  = CallBackWrapper_SubscriberListener_RequestedDeadlineMissed;
     to.on_requested_incompatible_qos = CallBackWrapper_SubscriberListener_RequestedIncompatibleQos;
     to.on_sample_rejected            = CallBackWrapper_SubscriberListener_SampleRejected;
     to.on_liveliness_changed         = CallBackWrapper_SubscriberListener_LivelinessChanged;
@@ -979,7 +981,7 @@ static void CallBackWrapper_DomainParticipantListener_RequestedDeadlineMissed
   dataReader = DataReader_Lookup(reader);
 
   ccpp_RequestedDeadlineMissedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::DomainParticipantListener_ptr>(listener_data);
   if (listener)
   {
@@ -991,7 +993,7 @@ static void CallBackWrapper_DomainParticipantListener_RequestedDeadlineMissed
   }
 }
 
- 
+
 static void CallBackWrapper_DomainParticipantListener_RequestedIncompatibleQos
 (
     void *listener_data,
@@ -1006,7 +1008,7 @@ static void CallBackWrapper_DomainParticipantListener_RequestedIncompatibleQos
   dataReader = DataReader_Lookup(reader);
 
   ccpp_RequestedIncompatibleQosStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::DomainParticipantListener_ptr>(listener_data);
   if (listener)
   {
@@ -1032,7 +1034,7 @@ static void CallBackWrapper_DomainParticipantListener_SampleRejected
   dataReader = DataReader_Lookup(reader);
 
   ccpp_SampleRejectedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::DomainParticipantListener_ptr>(listener_data);
   if (listener)
   {
@@ -1058,7 +1060,7 @@ static void CallBackWrapper_DomainParticipantListener_LivelinessChanged
   dataReader = DataReader_Lookup(reader);
 
   ccpp_LivelinessChangedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::DomainParticipantListener_ptr>(listener_data);
   if (listener)
   {
@@ -1106,7 +1108,7 @@ static void CallBackWrapper_DomainParticipantListener_SubscriptionMatched
   dataReader = DataReader_Lookup(reader);
 
   ccpp_SubscriptionMatchedStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::DomainParticipantListener_ptr>(listener_data);
   if (listener)
   {
@@ -1132,7 +1134,7 @@ static void CallBackWrapper_DomainParticipantListener_SampleLost
   dataReader = DataReader_Lookup(reader);
 
   ccpp_SampleLostStatus_copyOut(*gapi_status, status);
- 
+
   listener = reinterpret_cast<DDS::DomainParticipantListener_ptr>(listener_data);
   if (listener)
   {
@@ -1171,7 +1173,7 @@ void DDS::ccpp_DomainParticipantListener_copyIn(
         gapi_domainParticipantListener & to)
 {
     to.listener_data = from;
- 
+
     to.on_inconsistent_topic         = CallBackWrapper_DomainParticipantListener_InconsistentTopic;
     to.on_offered_deadline_missed    = CallBackWrapper_DomainParticipantListener_OfferedDeadlineMissed;
     to.on_offered_incompatible_qos   = CallBackWrapper_DomainParticipantListener_OfferedIncompatibleQos;

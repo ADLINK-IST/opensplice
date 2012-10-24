@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "
+http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" lang="fr">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+<title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V5</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<link rel="stylesheet" href="../../docs/css/prismstyle.css" type="text/css">
+
+</head>
+<body>
+<h1> EXAMPLES </h1>
+<ul>
+  <li>Summary</li>
+  
+  <li><a href ="HelloWorld/README.html">HelloWorld </a></li>
+  <li><a href ="WaitSet/README.html">WaitSet </a></li>
+  <li><a href ="Listener/README.html">Listener </a></li>
+  <li><a href ="ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>  
+  <li><a href ="QueryCondition/README.html">QueryCondition </a></li>
+  <li> <a href ="Lifecycle/README.html">Lifecycle</a></li>
+  <li><a href ="Durability/README.html">Durability </a></li>
+  <li> <a href ="Ownership/README.html">Ownership</a></li>
+  <li> <a href ="BuiltInTopics/README.html">BuiltInTopics</a></li>
+</ul><h2> SUMMARY </h2>
+<ul>
+  <li><a href ="HelloWorld/README.html">HelloWorld </a>
+    <p>The basic HelloWorld example is used to illustrate the necessary
+steps to setup DCPS entities</p>
+  </li>
+  
+  <li><a href ="WaitSet/README.html">WaitSet </a>
+  <p>The basic HelloWorld_Waitset example is used to illustrate the use of waitset and
+conditions :</p>
+	<ul><li>ReadCondition</li>
+	<li> StatusCondition</li>
+	<li> QueryCondition</li>
+	<li> GuardCondition</li></ul>
+  </li>
+<br/>
+  <li><a href ="Listener/README.html">Listener </a>
+  <p>The HelloWorld_Listener example is used to illustrate use of listeners</p></li>
+
+  <li><a href ="ContentFilteredTopic/README.html">ContentFilteredTopic </a>
+  <p>The StockQuote example is used to illustrate message filtering based upon  Content-Based subscription.</p>
+   </li>
+
+  <li><a href ="QueryCondition/README.html">QueryCondition </a>
+  <p>The StockQuote example is used to illustrate message filtering through use of Queries.</p>
+   </li>
+  <li><a href ="Lifecycle/README.html">Lifecycle </a>
+  <p>The Lifecycle example is used to illustrate the different lifecycle states of the sample
+   and the instance.</p>
+   </li>
+  <li><a href ="Durability/README.html">Durability </a>
+  <p>The durability example illustrates the ability of late joining readers to obtain
+data that has already been published before these readers were created.</p>
+  </li>
+
+  <li> <a href ="Ownership/README.html">Ownership</a>
+  <p>The ownership example is used to illustrate the concept of Shared Ownership, controlled
+through QoS, in DDS.</p>
+
+  <li> <a href ="BuiltInTopics/README.html">BuiltInTopics</a>
+  <p>The BuiltInTopics example is used to illustrate the use of built-in topics to obtain and print all nodes running in the domain.</p>
+</li>
+</ul>
+<h3>Important Note! (Applies to Windows only)</h3>
+<p> We have provided a number of start<Publisher|Subscriber>.bat batch files to run the publisher/subscriber of each example. (This is described in the Building/Running examples in Visual Studio 2005/2008 section of each of the examples). We have assumed that the examples are build in a Release configuration. If you build the examples in a Debug configuration, then you will have to ammend the batch files to point to the Debug output directory so they can locate the executable correctly!</p>
+</body>
+</html>

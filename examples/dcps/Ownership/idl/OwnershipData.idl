@@ -1,0 +1,13 @@
+
+module OwnershipData
+{
+  struct Stock
+  {
+    string ticker;
+    float price;
+    string publisher; // name of the publisher
+    long strength; // publisher's ownership strength
+  };
+  #pragma keylist Stock ticker
+
+};

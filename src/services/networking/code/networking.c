@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <assert.h>
@@ -19,7 +19,7 @@
 #include "nw__confidence.h"
 
 #ifdef INTEGRITY
-#include <include/os_getRSObjects.h>
+#include "include/os_getRSObjects.h"
 #endif
 
 #include "os.h"
@@ -29,19 +29,28 @@ static nw_controller controller = NULL;
 static u_service service = NULL;
 c_bool f_exit = FALSE;
 
+typedef struct {
+  os_mutex mtx;
+  os_cond cv;
+  c_bool terminate;
+} nw_termination;
 
 static void
 nw_splicedaemonListener(
     v_serviceStateKind spliceDaemonState,
     c_voidp usrData)
 {
-    c_bool *terminate = (c_bool *)usrData;
+    nw_termination *terminate = (nw_termination *)usrData;
 
     switch (spliceDaemonState) {
     case STATE_TERMINATING:
     case STATE_TERMINATED:
     case STATE_DIED:
-        *terminate = TRUE;
+        os_mutexLock( &terminate->mtx );
+        terminate->terminate = TRUE;
+	os_condBroadcast( &terminate->cv );
+	os_mutexUnlock( &terminate->mtx );
+
     break;
     default:
         NW_CONFIDENCE(FALSE);
@@ -65,15 +74,15 @@ on_exit_handler(void)
     v_duration leasePeriod;
 	if (controller) {
 		NW_REPORT_ERROR("controller_termination", "Terminated due to a signal");
-		
+
 		NW_TRACE(Mainloop, 1, "Networking exit handler");
 		nw_controllerStop(controller);
 		leasePeriod.seconds = -1;
 		leasePeriod.nanoseconds = 0;
-		u_participantRenewLease(u_participant(service), leasePeriod);
+		u_serviceRenewLease(service, leasePeriod);
 		f_exit = TRUE;
 	}
-	
+
 }
 
 
@@ -99,7 +108,6 @@ nw_retrieveLeaseSettings(
 #undef NW_DEFAULT_SLEEPSEC
 #undef NW_MIN_SLEEPSEC
 
-
 static void
 nw_serviceMain(
     const char *serviceName,
@@ -107,9 +115,20 @@ nw_serviceMain(
 {
     u_serviceManager serviceManager;
     os_time sleepTime;
-    c_bool terminate = FALSE;
+    os_result waitResult;
+    nw_termination terminate;
+    os_mutexAttr termMtxAttr;
+    os_condAttr termCvAttr;
 	c_bool fatal = FALSE;
     v_duration leasePeriod;
+    terminate.terminate = FALSE;
+
+    os_mutexAttrInit( & termMtxAttr );
+    os_condAttrInit( & termCvAttr );
+    termMtxAttr.scopeAttr = OS_SCOPE_PRIVATE;
+    termCvAttr.scopeAttr = OS_SCOPE_PRIVATE;
+    os_mutexInit( &terminate.mtx, &termMtxAttr );
+    os_condInit( &terminate.cv, &terminate.mtx, &termCvAttr );
 
      /* Create networking service with kernel */
    service = u_serviceNew(URI, NW_ATTACH_TIMEOUT, serviceName, NULL,
@@ -129,7 +148,7 @@ nw_serviceMain(
         /* Start the actual engine */
         NW_REPORT_INFO(1, "Networking started");
         NW_TRACE(Mainloop, 1, "Networking started");
-		
+
         nw_controllerStart(controller);
         /* Change state for spliced */
         u_serviceChangeState(service, STATE_INITIALISING);
@@ -141,22 +160,30 @@ nw_serviceMain(
         /* Loop until termination is requested */
         u_serviceWatchSpliceDaemon(service, nw_splicedaemonListener,
                                    &terminate);
-        while ((!(int)terminate) && (!(int)fatal) && (!(int)f_exit)) {
+	os_mutexLock( &terminate.mtx );
+        while ((!(int)terminate.terminate) && (!(int)fatal) && (!(int)f_exit)) {
             /* Assert my liveliness and the Splicedaemon's liveliness*/
-            u_participantRenewLease(u_participant(service), leasePeriod);
+            u_serviceRenewLease(service, leasePeriod);
             /* Check if anybody is still remotely interested */
             nw_controllerUpdateHeartbeats(controller);
             /* Wait before renewing again */
-            os_nanoSleep(sleepTime);
+	        waitResult = os_condTimedWait( &terminate.cv, &terminate.mtx, &sleepTime );
+	        if (waitResult == os_resultFail)
+            {
+                OS_REPORT(OS_CRITICAL, "nw_serviceMain", 0,
+                          "os_condTimedWait failed - thread will terminate");
+                fatal = TRUE;
+            }
 /* QAC EXPECT 2467; Control variable, terminate, not modified inside loop. That is correct, it is modified by another thread */
         }
+	os_mutexUnlock( &terminate.mtx );
 		/* keep process here waiting for the exit processing */
 		while ((int)f_exit){os_nanoSleep(sleepTime);}
-		
+
 		if (!(int)fatal ) {
 			leasePeriod.seconds = 20;
 			leasePeriod.nanoseconds = 0;
-			u_participantRenewLease(u_participant(service), leasePeriod);
+			u_serviceRenewLease(service, leasePeriod);
 	        u_serviceChangeState(service, STATE_TERMINATING);
 
 	        nw_controllerStop(controller);
@@ -172,14 +199,14 @@ nw_serviceMain(
 	    /* Clean up */
 	    u_serviceChangeState(service, STATE_TERMINATED);
 		u_serviceManagerFree(serviceManager);
-			
+
 		u_serviceFree(service);
 	}
 }
 
 #undef NW_SERVICE_NAME
 #define NW_ATTACH_TIMEOUT (30)
- 
+
 int
 ospl_main(
     int argc,
@@ -288,10 +315,7 @@ nw_networkingUpdateStatistics(
 
 
 #if ( !(defined(OSPL_ENV_SHMT)  || defined(NW_SECURITY)))
-int
-main(
-    int argc,
-    char *argv[])
+OPENSPLICE_MAIN (ospl_networking)
 {
     return ospl_main(argc, argv);
 }

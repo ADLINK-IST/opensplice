@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -28,7 +28,8 @@
 extern "C" {
 #endif
 
-#define     u_dataView(o)        ((u_dataView)(o))
+#define u_dataView(o) \
+        ((u_dataView)u_entityCheckType(u_entity(o),U_DATAVIEW))
 
 /* DataReaderView creation/deletion */
 
@@ -82,7 +83,7 @@ u_dataViewTakeNextInstance(
     u_readerAction action,
     c_voidp actionArg);
 
-OS_API u_reader    
+OS_API u_dataReader    
 u_dataViewSource(
     u_dataView _this);
     

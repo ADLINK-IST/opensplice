@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -257,44 +257,50 @@ c_fieldConcat (
 
     field = c_new(c_field_t(base));
 
-    field->type = c_keep(tail->type);
-    field->kind = tail->kind;
-    field->path = c_newArray(c_fieldPath_t(base),len1 + len2);
-    for (i=0;i<len1;i++) {
-        field->path[i] = c_keep(head->path[i]);
-    }
-    for (i=0;i<len2;i++) {
-        field->path[i+len1] = c_keep(tail->path[i]);
-    }
-
-    len1 = c_arraySize(head->refs);
-    len2 = c_arraySize(tail->refs);
-
-    totlen = len1 + len2;
-    if (totlen > 0) {
-        field->offset = 0;
-        field->refs = c_newArray(c_fieldRefs_t(base),totlen);
-        if (len1) {
-            for (i=0;i<len1;i++) {
-                field->refs[i] = head->refs[i];
-            }
-        } else {
-            tail->refs[0] = (c_voidp)head->offset;
-            len1 = 1;
+    if (field) {
+        field->type = c_keep(tail->type);
+        field->kind = tail->kind;
+        field->path = c_newArray(c_fieldPath_t(base),len1 + len2);
+        for (i=0;i<len1;i++) {
+            field->path[i] = c_keep(head->path[i]);
         }
         for (i=0;i<len2;i++) {
-            field->refs[i+len1] = tail->refs[i];
+            field->path[i+len1] = c_keep(tail->path[i]);
         }
+
+        len1 = c_arraySize(head->refs);
+        len2 = c_arraySize(tail->refs);
+
+        totlen = len1 + len2;
+        if (totlen > 0) {
+            field->offset = 0;
+            field->refs = c_newArray(c_fieldRefs_t(base),totlen);
+            if (len1) {
+                for (i=0;i<len1;i++) {
+                    field->refs[i] = head->refs[i];
+                }
+            } else {
+                tail->refs[0] = (c_voidp)head->offset;
+                len1 = 1;
+            }
+            for (i=0;i<len2;i++) {
+                field->refs[i+len1] = tail->refs[i];
+            }
+        } else {
+            field->offset = head->offset + tail->offset;
+            field->refs = NULL;
+        }
+
+        len1 = strlen(head->name);
+        len2 = strlen(tail->name);
+
+        field->name = c_stringMalloc(base,len1+len2+2);
+        os_sprintf(field->name,"%s.%s",head->name,tail->name);
     } else {
-        field->offset = head->offset + tail->offset;
-        field->refs = NULL;
+        OS_REPORT(OS_ERROR,
+                  "database::c_fieldConcat",0,
+                  "Failed to allocate c_field object.");
     }
-
-    len1 = strlen(head->name);
-    len2 = strlen(tail->name);
-
-    field->name = c_stringMalloc(base,len1+len2+2);
-    sprintf(field->name,"%s.%s",head->name,tail->name);
 
     return field;
 }
@@ -568,6 +574,48 @@ c_fieldCopy(
     }
 }
 
+void
+c_fieldClone(
+    c_field srcfield,
+    c_object src,
+    c_field dstfield,
+    c_object dst)
+{
+    c_long i,n;
+    c_array refs;
+    c_voidp srcp = src;
+    c_voidp dstp = dst;
+
+    if (srcfield->refs) {
+        refs = srcfield->refs;
+        n = c_arraySize(refs)-1;
+        for(i=0;i<n;i++) {
+            srcp = *(c_voidp *)C_DISPLACE(srcp,refs[i]);
+        }
+        srcp = C_DISPLACE(srcp,refs[n]);
+    } else {
+        srcp = C_DISPLACE(srcp,srcfield->offset);
+    }
+
+    if (dstfield->refs) {
+        refs = dstfield->refs;
+        n = c_arraySize(refs)-1;
+        for(i=0;i<n;i++) {
+            dstp = *(c_voidp *)C_DISPLACE(dstp,refs[i]);
+        }
+        dstp = C_DISPLACE(dstp,refs[n]);
+    } else {
+        dstp = C_DISPLACE(dstp,dstfield->offset);
+    }
+    if ((dstfield->kind == V_STRING) ||
+        (dstfield->kind == V_WSTRING) ||
+        (dstfield->kind == V_FIXED)) {
+    	dstp = c_stringNew(c_getBase(dstfield), srcp);
+    } else {
+        memcpy(dstp,srcp,dstfield->type->size);
+    }
+}
+
 c_equality
 c_fieldCompare (
     c_field field1,
@@ -654,4 +702,3 @@ c_fieldCompare (
     return result;
 #undef _CMP_
 }
-

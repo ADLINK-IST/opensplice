@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <os.h>
+#include "os.h"
 
 
 enum destination {
@@ -38,7 +38,8 @@ getArguments(
 {
     int i;
     int result;
-    int r;
+    int count;
+    int tmp;
 
     if (argc < 7) {
         printf("Usage: %s -size size -shm name [-o file] [-i file]\n", argv[0]);
@@ -52,10 +53,13 @@ getArguments(
     args->size = 0;
     for (i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-size") == 0) {
-            r = sscanf(argv[i + 1], "%u", &args->size);
-            if (r != 1) {
-                printf("ERROR: Failed to read size argument %s\n", argv[i + 1]);
+            count = sscanf(argv[i+1], "%d", &tmp);
+            if ((count == 1) && tmp >= 0) {
+                args->size = tmp;
+            } else {
+                printf("ERROR: Invalid size argument %s\n", argv[i + 1]);
                 result = -1;
+                args->size = -1;
             }
             i++;
         }
@@ -88,10 +92,9 @@ getArguments(
         result = -1;
     }
     if (args->size == 0) {
-        printf("ERROR: invalid size\n");
+        printf("ERROR: Invalid size\n");
         result = -1;
     }
-
     return result;
 }
 
@@ -106,7 +109,6 @@ fileFromShm(
     FILE *outFile;
     void *address;
     size_t written;
-
     r = 0;
     os_sharedAttrInit(&shmAttr);
     shm = os_sharedCreateHandle(args->shmName, &shmAttr);
@@ -128,7 +130,7 @@ fileFromShm(
             }
             os_sharedMemoryDetach(shm);
         } else {
-            printf("ERROR: Failed to attach to shared memory\n");
+            printf("ERROR: Failed to attach to shared memory.\n");
             r = -1;
         }
         os_sharedDestroyHandle(shm);
@@ -205,14 +207,12 @@ shmFromFile(
     return r;
 }
 
-int
 #ifdef INTEGRITY
-shmdump_main (
+int shmdump_main (int argc,
+	      char * argv[])
 #else
-main (
+OPENSPLICE_MAIN(ospl_shmdump)
 #endif
-    int argc,
-    char *argv[])
 {
     struct arguments args;
     int result;
@@ -220,29 +220,27 @@ main (
     /**
      * Usage: shmdump -shmsize size -shm name [-o file] [-i file]
      */
-
     result = getArguments(argc, argv, &args);
-    if (result) {
-        return result;
-    }
 
-    switch (args.dest) {
-    case DEST_FILE:
-        result = fileFromShm(&args);
-    break;
-    case DEST_SHM:
-        result = shmFromFile(&args);
-    break;
-    default:
-        printf("Error: unknown destination %d\n", args.dest);
-    break;
-    }
+    if (result == 0) {
+        switch (args.dest) {
+            case DEST_FILE:
+                result = fileFromShm(&args);
+                break;
+            case DEST_SHM:
+                result = shmFromFile(&args);
+                break;
+            default:
+                printf("Error: unknown destination %d\n", args.dest);
+                break;
+        }
 
-    if (args.fileName != NULL) {
-        free(args.fileName);
-    }
-    if (args.shmName != NULL) {
-        free(args.shmName);
+        if (args.fileName != NULL) {
+            free(args.fileName);
+        }
+        if (args.shmName != NULL) {
+            free(args.shmName);
+        }
     }
 
     return result;

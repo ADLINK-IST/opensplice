@@ -1013,7 +1013,7 @@ in_socketSendDataTo(
     if(sendRes == -1)
     {
         /* TODO REMOVE THIS!!! not os independant!! needed now for debugging*/
-        IN_TRACE_3(Send,6,"in_socketSendDataTo ---  result: %d --- errno: %d , %s",sendRes, errno, strerror( errno));
+        IN_TRACE_2(Send,6,"in_socketSendDataTo ---  result: %d --- errno: %d",sendRes, errno/*, os_strerror( errno)*/);
     } else
     {
         IN_TRACE_1(Send,6,"in_socketSendDataTo ---  result: %d ",sendRes);

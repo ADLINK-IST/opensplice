@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,8 +14,8 @@
 
 #include "idl_program.h"
 #include "idl_scope.h"
-#include <c_typebase.h>
-#include <c_metabase.h>
+#include "c_typebase.h"
+#include "c_metabase.h"
 
 typedef enum {
     idl_explore,
@@ -430,8 +430,8 @@ idl_labelValueVal (
  * idl_labelValue
  ***********************************************************/
 
-c_long
-idl_contiguousSize(
-    idl_typeSpec typeSpec);
+c_bool
+idl_isContiguous(
+    c_type type);
 
 #endif /* IDL_TYPESPECIFIER_H */

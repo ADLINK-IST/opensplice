@@ -475,7 +475,9 @@ in_ddsiStreamReaderImplProcessAppdefDataPayload(
 
                 m->sequenceNumber = (submessage->writerSN.low);
 
+#ifndef _NAT_
                 m->allocTime = _this->receiver.haveTimestamp ? _this->receiver.timestamp : C_TIME_ZERO;
+#endif
                 m->writeTime = _this->receiver.haveTimestamp ? _this->receiver.timestamp : C_TIME_ZERO;
                 m->writerGID = in_connectivityPeerWriterGetGid(peerWriter);
                 /* WriterInstanceGID unused in kernel, so not necessary to fill it*/

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,22 +13,26 @@
 #define U__USER_H
 
 #include "u_user.h"
-#include "u__kernel.h"
+#include "u__domain.h"
 
 #define OSRPT_CNTXT_USER "user layer"
 
-typedef c_voidp u_kernelActionArg;
-typedef void (*u_kernelAction)(u_kernel kernel, u_kernelActionArg arg);
+typedef c_voidp u_domainActionArg;
+typedef void (*u_domainAction)(u_domain domain, u_domainActionArg arg);
 
 #define u_resultFromKernel(r) ((u_result)r)
 
-u_kernel
-u_userKernelNew (
+u_result
+u_userAddDomain(
+    u_domain domain);
+
+u_domain
+u_userLookupDomain(
     const c_char *uri);
 
 u_result
-u_userKernelFree (
-    u_kernel kernel);
+u_userRemoveDomain(
+    u_domain domain);
 
 c_address
 u_userServer (

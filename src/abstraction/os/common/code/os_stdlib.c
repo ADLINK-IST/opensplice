@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,8 +9,8 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include <os_stdlib.h>
-#include <os_heap.h>
+#include "os_stdlib.h"
+#include "os_heap.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -18,6 +18,7 @@
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
+
 
 #include "os_stdlib_locate.c"
 
@@ -95,10 +96,81 @@ os_strdup(
     len = strlen (s1) + 1;
     dup = os_malloc (len);
     if (dup) {
-        strcpy (dup, s1);
+        os_strcpy (dup, s1);
     }
 
     return dup;
+}
+
+char *
+os_strcat(
+    char *s1,
+    const char *s2)
+{
+   return strcat(s1, s2);
+}
+
+char *
+os_strncat(
+    char *s1,
+    const char *s2,
+    size_t n)
+{
+   return strncat(s1, s2, n);
+}
+
+char *
+os_strcpy(
+    char *s1,
+    const char *s2)
+{
+   return strcpy(s1, s2);
+}
+
+char *
+os_strncpy(
+    char *s1,
+    const char *s2,
+    size_t num)
+{
+   return strncpy(s1, s2, num);
+}
+
+size_t os_strnlen(char *ptr, size_t maxlen)
+{
+   size_t len;
+   for ( len = 0; len < maxlen && ptr[len] != '\0'; len++ )
+   {
+   }
+   return(len);
+}
+
+int
+os_sprintf(
+    char *s,
+    const char *format,
+    ...)
+{
+   int result;
+   va_list args;
+   
+   va_start(args, format);
+   
+   result = vsprintf(s, format, args);
+
+   va_end(args);
+   
+   return result;
+}
+
+int
+os_vsnprintf(
+   char *str,
+   size_t size,
+   const char *format,
+   va_list args)
+{
+   return vsnprintf(str, size, format, args);
 }
 
 static long long
@@ -143,6 +215,8 @@ os_strtoll(
     long long sign = 1LL;
     long long radix;
     long long dvalue;
+
+    errno = 0;
 
     if (endptr) {
         *endptr = (char *)str;
@@ -402,12 +476,22 @@ os_readdir(
     if (dp && direntp) {
         d_entry = readdir(dp);
         if (d_entry) {
-            strcpy(direntp->d_name, d_entry->d_name);
+            os_strcpy(direntp->d_name, d_entry->d_name);
             result = os_resultSuccess;
         }
     }
 
     return result;
+}
+
+os_result os_remove (const char *pathname)
+{
+    return (remove (pathname) == 0) ? os_resultSuccess : os_resultFail;
+}
+
+os_result os_rename (const char *oldpath, const char *newpath)
+{
+    return (rename (oldpath, newpath) == 0) ? os_resultSuccess : os_resultFail;
 }
 
 /* The result of os_fileNormalize should be freed with os_free */
@@ -473,3 +557,13 @@ os_getTempDir()
     return dir_name;
 }
 
+char * os_strerror(int errnum, char *buf, size_t n)
+{
+    strerror_r(errnum, buf, n);
+    return buf;
+}
+
+ssize_t os_write(int fd, const void *buf, size_t count)
+{
+  return write(fd, buf, count);
+}

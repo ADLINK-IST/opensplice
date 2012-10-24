@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -1136,7 +1136,7 @@ c_bigEDeserCollection(
                 /* Deserialize into new array if necessary */
                 assert(c_typeIsRef(c_type(collectionType)));
                 C_DESERIALIZE_N(context, (c_octet *)(&colSize), sizeof(c_ulong));
-                *((c_array *)(*objectPtr)) = c_newArray(collectionType, colSize);
+                *((c_array *)(*objectPtr)) = c_newBaseArrayObject(collectionType, colSize);
                 if (isBunchOfBytes) {
                     assert(colSize > 0);
                     c_copyDataBunchOfBytesDeser(colSize, *((c_octet **)(*objectPtr)), context);

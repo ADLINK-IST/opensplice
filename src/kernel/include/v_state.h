@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -55,7 +55,7 @@ extern "C" {
 #define L_STATECHANGED     (0x0001U << 13) /* 8192 */
 #define L_VALIDDATA        (0x0001U << 14) /* 16384 */
 #define L_SYNCHRONOUS      (0x0001U << 15) /* 32768 */
-#define L_TRANSACTION      (0x0001U << 16) /* 32768*2 */
+#define L_TRANSACTION      (0x0001U << 16) /* 65536 */
 
 /*
  * Sets all bits in state that are set in mask.

@@ -1,6 +1,6 @@
 // -*- MPC -*-
 // $Id$
 
-project : ospl_ddsosnet, ospl_ddsos, ospl_ddsuser, ospl_ddsutil, ospl_ddsdatabase, ospl_ddsserialization, ospl_ddskernel, ospl_dcpsgapi {
+project {
 
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,7 +17,7 @@
  * memory handle functions
  */
 
-#include <os_heap.h>
+#include "os_heap.h"
 
 #include <assert.h>
 
@@ -47,7 +47,7 @@ os_sharedCreateHandle (
     if (sh != NULL) {
 	sh->name = os_malloc (strlen(name) + 1);
 	if (sh->name != NULL) {
-	    strcpy (sh->name, name);
+	    os_strcpy (sh->name, name);
 	    sh->attr = *sharedAttr;
 	    sh->mapped_address = (void *)0;
 	} else {

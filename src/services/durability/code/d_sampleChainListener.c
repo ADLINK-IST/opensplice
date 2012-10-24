@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,9 +14,12 @@
 #include "d_sampleChainListener.h"
 #include "d_readerListener.h"
 #include "d__readerListener.h"
+#include "d__mergeAction.h"
+#include "d__group.h"
 #include "d_groupLocalListener.h"
 #include "d_actionQueue.h"
 #include "d_sampleRequest.h"
+#include "d_nameSpacesRequestListener.h"
 #include "d_eventListener.h"
 #include "d_durability.h"
 #include "d_configuration.h"
@@ -35,6 +38,7 @@
 #include "d_networkAddress.h"
 #include "d_message.h"
 #include "v_group.h"
+#include "v_writer.h"
 #include "v_topic.h"
 #include "v_partition.h"
 #include "v_time.h"
@@ -286,10 +290,11 @@ d_resendRejected(
                               v_topicName(v_groupTopic(group)));
         } else {
             d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_RESEND_QUEUE,
-                              "Resending data for group '%s.%s' failed. "
+                              "Resending data for group '%s.%s' failed with code %s. "
                               "Trying again later.\n",
                               v_partitionName(v_groupPartition(group)),
-                              v_topicName(v_groupTopic(group)));
+                              v_topicName(v_groupTopic(group)),
+                              v_writeResultString(writeResult));
         }
            c_free(group);
     } else {
@@ -305,6 +310,40 @@ d_resendRejected(
                     v_topicName(v_groupTopic(group)));
     }
     return callAgain;
+}
+
+struct findMergeHelper {
+    d_chain chain;
+    d_mergeAction action;
+};
+
+static c_bool
+findMergeAction(
+    d_mergeAction action,
+    struct findMergeHelper* helper)
+{
+    d_chain found;
+
+    found = d_mergeActionGetChain(action, helper->chain);
+
+    if(found){
+        helper->action = action;
+    }
+    return !found;
+}
+
+static d_mergeAction
+d_sampleChainListenerGetMergeAction(
+    d_sampleChainListener listener,
+    d_chain chain)
+{
+    struct findMergeHelper helper;
+
+    helper.chain = chain;
+    helper.action = NULL;
+    d_tableWalk(listener->mergeActions, findMergeAction, &helper);
+
+    return helper.action;
 }
 
 d_sampleChainListener
@@ -354,6 +393,9 @@ d_sampleChainListenerInit(
     listener->chains = d_tableNew(d_chainCompare, d_chainFree);
     assert(listener->chains);
 
+    listener->chainsWaiting = c_iterNew(NULL);
+    assert (listener->chainsWaiting);
+
     listener->id = 0;
     listener->fellowListener = NULL;
 
@@ -363,6 +405,9 @@ d_sampleChainListenerInit(
     assert(listener->resendQueue);
     listener->unfulfilledChains = c_iterNew(NULL);
     assert(listener->unfulfilledChains);
+
+    listener->mergeActions = d_tableNew(d_mergeActionCompare, d_mergeActionFree);
+    assert(listener->mergeActions);
 }
 
 void
@@ -400,6 +445,15 @@ d_sampleChainListenerDeinit(
             d_tableFree(listener->chains);
             listener->chains = NULL;
         }
+        if (listener->chainsWaiting) {
+            chain = d_chain(c_iterTakeFirst(listener->chainsWaiting));
+
+            while(chain){
+                d_chainFree(chain);
+                chain = d_chain(c_iterTakeFirst(listener->chainsWaiting));
+            }
+            c_iterFree(listener->chainsWaiting);
+        }
         if(listener->unfulfilledChains){
             chain = d_chain(c_iterTakeFirst(listener->unfulfilledChains));
 
@@ -412,6 +466,10 @@ d_sampleChainListenerDeinit(
         if(listener->resendQueue){
             d_actionQueueFree(listener->resendQueue);
             listener->resendQueue = NULL;
+        }
+        if(listener->mergeActions){
+            d_tableFree(listener->mergeActions);
+            listener->mergeActions = NULL;
         }
     }
 }
@@ -457,6 +515,123 @@ d_sampleChainListenerStop(
             result = d_readerListenerStop(d_readerListener(listener));
         }
     }
+    return result;
+}
+
+static void
+d_sampleChainListenerAddChain(
+    d_sampleChainListener listener,
+    d_chain chain,
+    d_networkAddress addressee)
+{
+    d_chain activeChain;
+    d_admin admin;
+    d_durability durability;
+    d_publisher publisher;
+
+    admin      = d_listenerGetAdmin(d_listener(listener));
+    durability = d_adminGetDurability (admin);
+    publisher  = d_adminGetPublisher(admin);
+
+    assert (listener);
+    assert (listener->chains);
+
+    /* Set addressee */
+    d_messageSetAddressee(d_message(chain->request), addressee);
+
+    /* Check if there are chains active for group */
+    activeChain = d_tableFind(listener->chains, chain);
+    if (!activeChain) {
+        /* If no active chain is found, insert chain */
+        d_tableInsert (listener->chains, chain);
+        d_publisherSampleRequestWrite(publisher, chain->request, addressee);
+
+        d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_SAMPLE_CHAIN_LISTENER,
+                         "Write samplerequest for group %s.%s to fellow %u\n",
+                         chain->request->partition,
+                         chain->request->topic,
+                         addressee->systemId);
+    }else {
+        /* If active chain is found, insert chain in waitlist */
+        c_iterAppend (listener->chainsWaiting, chain);
+
+        d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_SAMPLE_CHAIN_LISTENER,
+                         "Samplerequest for group %s.%s is queued because request for the same group is active.\n",
+                         chain->request->partition,
+                         chain->request->topic,
+                         addressee->systemId);
+    }
+}
+
+struct takeWaitingChainHelper
+{
+    d_chain search;
+    d_chain result;
+};
+
+static void
+d_takeWaitingChainWalk (
+    void* o,
+    c_iterActionArg userData)
+{
+    d_chain chain;
+    struct takeWaitingChainHelper* helper;
+
+    chain = d_chain(o);
+    helper = (struct takeWaitingChainHelper*)userData;
+
+    if (!helper->result) {
+        if (!d_chainCompare (chain, helper->search)) {
+            helper->result = chain;
+        }
+    }
+}
+
+static d_chain
+d_sampleChainListenerRemoveChain(
+    d_sampleChainListener listener,
+    d_chain chain)
+{
+    d_durability durability;
+    d_admin admin;
+    d_publisher publisher;
+    d_networkAddress addressee;
+    d_chain result;
+    struct takeWaitingChainHelper walkData;
+
+    assert (listener);
+    assert (listener->chains);
+    assert (chain);
+
+    admin = d_listenerGetAdmin (d_listener(listener));
+    durability = d_adminGetDurability (admin);
+    publisher = d_adminGetPublisher(admin);
+
+    /* Remove (complete) chain from listener */
+    result = d_tableRemove (listener->chains, chain);
+
+    /* Look for other chain containing same group in chainsWaiting list */
+    walkData.search = chain;
+    walkData.result = NULL;
+    c_iterWalk (listener->chainsWaiting, d_takeWaitingChainWalk, &walkData);
+
+    if (walkData.result) {
+        c_iterTake (listener->chainsWaiting, walkData.result);
+
+        /* Insert chain in chains list */
+        d_tableInsert (listener->chains, walkData.result);
+
+        /* Publish request */
+        addressee = d_messageGetAddressee (d_message(chain->request));
+        d_publisherSampleRequestWrite(publisher, chain->request, addressee);
+
+        d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_SAMPLE_CHAIN_LISTENER,
+                         "Write delayed samplerequest for group %s.%s to fellow %u\n",
+                         chain->request->partition,
+                         chain->request->topic,
+                         addressee->systemId);
+    }
+
     return result;
 }
 
@@ -601,6 +776,7 @@ d_sampleChainListenerNotifyFellowRemoved(
     d_fellow fellow,
     d_nameSpace ns,
     d_group group,
+    c_voidp eventUserData,
     c_voidp userData)
 {
     d_durability durability;
@@ -614,6 +790,8 @@ d_sampleChainListenerNotifyFellowRemoved(
     d_sampleRequest sampleRequest;
     d_readerRequest readerRequest;
     d_networkAddress source;
+    d_mergeAction mergeAction;
+    c_ulong chainCount;
 
     listener = d_sampleChainListener(userData);
     assert(d_listenerIsValid(d_listener(listener), D_SAMPLE_CHAIN_LISTENER));
@@ -638,35 +816,61 @@ d_sampleChainListenerNotifyFellowRemoved(
         requests = c_iterNew(NULL);
 
         while(chain){
-            /**
-             * Chain might be freed. This is a valid situation, because the
-             * fellow that was assumed dead by this service might still send
-             * some data after all. The sending of data can lead to the
-             * completeness of a chain. The chain will freed after the
-             * injection of its data.
-             *
-             * The chain is freed between the d_sampleChainListenerCleanupRequests
-             * and this point. Because this function has the listener lock, it
-             * is safe to check whether the chain has been freed.
-             */
-            if(d_objectIsValid(d_object(chain), D_CHAIN) == TRUE){
-                chain = d_tableRemove(listener->chains, chain);
-            }
-            d_printTimedEvent(durability, D_LEVEL_INFO,
-                            D_THREAD_SAMPLE_CHAIN_LISTENER,
-                            "Finding new aligner for group %s.%s\n",
-                            chain->request->partition, chain->request->topic);
+            /* Chain might be part of a mergeAction, if so; skip it*/
+            mergeAction = d_sampleChainListenerGetMergeAction(listener, chain);
 
-            requests = c_iterInsert(requests, chain->request);
+            if(mergeAction){
+                d_printTimedEvent(durability, D_LEVEL_INFO,
+                        D_THREAD_SAMPLE_CHAIN_LISTENER,
+                        "Removing chain from merge request for group %s.%s\n",
+                        chain->request->partition, chain->request->topic);
+                d_mergeActionRemoveChain(mergeAction, chain);
+                chainCount = d_mergeActionGetChainCount(mergeAction);
 
-            if(d_sampleRequestHasCondition(chain->request)){
-                source = d_networkAddressNew(chain->request->source.systemId,
-                                             chain->request->source.localId,
-                                             chain->request->source.lifecycleId);
-                readerRequest = d_adminGetReaderRequest(data.admin, source);
-                d_networkAddressFree(source);
-                d_readerRequestRemoveChain(readerRequest, chain);
-                d_readerRequestFree(readerRequest);
+                if(chainCount == 0){
+                    d_printTimedEvent(durability, D_LEVEL_INFO,
+                                D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                "Merge action removed.\n");
+                    d_tableRemove(listener->mergeActions, mergeAction);
+                    d_mergeActionFree(mergeAction);
+                }
+
+                /* Remove chain from chains list */
+                if(d_objectIsValid(d_object(chain), D_CHAIN) == TRUE){
+                    chain = d_sampleChainListenerRemoveChain(listener, chain);
+                }
+
+            } else {
+                /**
+                 * Chain might be freed. This is a valid situation, because the
+                 * fellow that was assumed dead by this service might still send
+                 * some data after all. The sending of data can lead to the
+                 * completeness of a chain. The chain will freed after the
+                 * injection of its data.
+                 *
+                 * The chain is freed between the d_sampleChainListenerCleanupRequests
+                 * and this point. Because this function has the listener lock, it
+                 * is safe to check whether the chain has been freed.
+                 */
+                if(d_objectIsValid(d_object(chain), D_CHAIN) == TRUE){
+                    chain = d_sampleChainListenerRemoveChain(listener, chain);
+                }
+                d_printTimedEvent(durability, D_LEVEL_INFO,
+                                D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                "Finding new aligner for group %s.%s\n",
+                                chain->request->partition, chain->request->topic);
+
+                requests = c_iterInsert(requests, chain->request);
+
+                if(d_sampleRequestHasCondition(chain->request)){
+                    source = d_networkAddressNew(chain->request->source.systemId,
+                                                 chain->request->source.localId,
+                                                 chain->request->source.lifecycleId);
+                    readerRequest = d_adminGetReaderRequest(data.admin, source);
+                    d_networkAddressFree(source);
+                    d_readerRequestRemoveChain(readerRequest, chain);
+                    d_readerRequestFree(readerRequest);
+                }
             }
 
             chain->request = NULL;
@@ -976,9 +1180,9 @@ d_sampleChainListenerInsertRequest(
 
             if(data.fellow){
                 addressee = d_fellowGetAddress(data.fellow);
-                d_messageSetAddressee(d_message(chain->request), addressee);
-                d_tableInsert(listener->chains, data.chain);
-                d_publisherSampleRequestWrite(publisher, chain->request, addressee);
+
+                /* Add chain to listener, send samplerequest when chain becomes active */
+                d_sampleChainListenerAddChain (listener, chain, addressee);
 
                 d_printTimedEvent(durability, D_LEVEL_FINE,
                     D_THREAD_SAMPLE_CHAIN_LISTENER,
@@ -991,9 +1195,9 @@ d_sampleChainListenerInsertRequest(
                 d_networkAddressFree(addressee);
             } else if(d_nameSpaceMasterIsMe(nameSpace, admin)){
                 addressee = d_networkAddressUnaddressed();
-                d_messageSetAddressee(d_message(chain->request), addressee);
-                d_tableInsert(listener->chains, data.chain);
-                d_publisherSampleRequestWrite(publisher, chain->request, addressee);
+
+                /* Add chain to listener, send samplerequest when chain becomes active */
+                d_sampleChainListenerAddChain (listener, chain, addressee);
 
                 d_printTimedEvent(durability, D_LEVEL_FINE,
                     D_THREAD_SAMPLE_CHAIN_LISTENER,
@@ -1141,11 +1345,11 @@ d_sampleChainListenerAction(
                 assert(FALSE);
                 break;
         }
+
         complete = d_sampleChainListenerCheckChainComplete(sampleChainListener, chain);
 
-
         if(complete == TRUE) {
-            chain = d_tableRemove(sampleChainListener->chains, chain);
+            chain = d_sampleChainListenerRemoveChain (sampleChainListener, chain);
             assert(d_objectIsValid(d_object(chain), D_CHAIN) == TRUE);
             d_chainFree(chain);
         }
@@ -1206,6 +1410,16 @@ d_sampleChainListenerCheckChainComplete(
     struct findEntryHelper entryHelper;
     v_handleResult handleResult;
     v_reader vreader;
+    d_nameSpace nameSpace, myNameSpace;
+    d_mergeAction mergeAction;
+    d_mergeState newState;
+    d_mergePolicy mergePolicy;
+    c_bool success;
+    c_ulong chainCount;
+    d_subscriber subscriber;
+    d_nameSpacesRequestListener nsrListener;
+
+    myNameSpace = NULL;
 
     assert(d_objectIsValid(d_object(chain), D_CHAIN) == TRUE);
 
@@ -1313,6 +1527,38 @@ d_sampleChainListenerCheckChainComplete(
                     as->aligneeSamplesUnregisterDif     = beadHelper.unregisterCount;
                     as->aligneeTotalSizeDif             = chain->receivedSize;
                 } else {
+                    /** Need to find out whether this chain is part of a
+                     *  mergeAction.
+                     */
+                    mergeAction = d_sampleChainListenerGetMergeAction(listener, chain);
+
+                    if(mergeAction){
+                        nameSpace = d_mergeActionGetNameSpace(mergeAction);
+                        myNameSpace = d_adminGetNameSpace(admin, d_nameSpaceGetName(nameSpace));
+                        newState = d_mergeActionGetNewState(mergeAction);
+                        mergePolicy = d_nameSpaceGetMergePolicy(myNameSpace, newState->role);
+
+                        switch(mergePolicy){
+                        case D_MERGE_DELETE:
+                            /*TODO: remove all historical data */
+                            break;
+                        case D_MERGE_REPLACE:
+                            /*TODO: remove all historical data */
+                            break;
+                        case D_MERGE_MERGE:
+                            /*Do nothing.*/
+                            break;
+                        case D_MERGE_IGNORE:
+                            /*I shouldn't get here!*/
+                            assert(FALSE);
+                            break;
+                        default:
+                            /* A new merge policy? How exciting...*/
+                            assert(FALSE);
+                            break;
+                        }
+                    }
+
                     d_tableWalk(chain->beads, d_chainBeadInject, &beadHelper);
 
                     /** Messages have been rejected. A resend must be scheduled.
@@ -1357,6 +1603,47 @@ d_sampleChainListenerCheckChainComplete(
                             admin,
                             d_sampleChainListenerRemoveGroupWithFellows,
                             dgroup);
+
+                    if(mergeAction){
+                        success = d_mergeActionRemoveChain(mergeAction, chain);
+                        assert(success);
+
+                        chainCount = d_mergeActionGetChainCount(mergeAction);
+
+                        if(chainCount == 0){
+                            subscriber = d_adminGetSubscriber(admin);
+                            nsrListener = d_subscriberGetNameSpacesRequestListener(subscriber);
+
+                            d_tableRemove(listener->mergeActions, mergeAction);
+                            nameSpace = d_mergeActionGetNameSpace(mergeAction);
+
+                            assert (myNameSpace);
+
+                            /* If I am client (and the node from which I'm merging is my master) I need to copy the merge states from the master fellow */
+                            if (!d_nameSpaceMasterIsMe (myNameSpace, admin)) {
+                                d_nameSpaceReplaceMergeStates (myNameSpace, nameSpace);
+                            }
+
+                            /* Update native role state */
+                            d_nameSpaceSetMergeState(myNameSpace, d_mergeActionGetNewState(mergeAction));
+
+                            d_printTimedEvent(durability, D_LEVEL_FINE,
+                                    D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                    "Updating state of namespace '%s' to '%d' for role '%s'\n",
+                                    d_nameSpaceGetName(nameSpace),
+                                    d_mergeActionGetNewState(mergeAction)->value,
+                                    d_mergeActionGetNewState(mergeAction)->role);
+
+                            /* Publish new namespace states */
+                            d_nameSpacesRequestListenerReportNameSpaces(nsrListener);
+
+                            d_mergeActionFree(mergeAction);
+                        }
+                    }
+
+                    if (myNameSpace) {
+                        d_nameSpaceFree (myNameSpace);
+                    }
                 }
                 c_free(vgroup);
 
@@ -1402,6 +1689,24 @@ d_sampleChainListenerRemoveGroupWithFellows(
     return TRUE;
 }
 
+/*struct mergeActionChain {
+    d_chain dummy;
+    d_chain found;
+};
+
+static c_bool
+findMergeActionChain(
+    d_mergeAction action,
+    c_voidp args)
+{
+    struct mergeActionChain* mac;
+
+    mac = (struct mergeActionChain*)args;
+    mac->found = d_mergeActionGetChain(action, dummy);
+
+    return !(mac->found);
+}*/
+
 d_chain
 d_sampleChainListenerFindChain(
     d_sampleChainListener listener,
@@ -1430,6 +1735,7 @@ d_sampleChainListenerFindChain(
         d_sampleRequestSetSource(request, &sampleChain->source);
 
         dummy = d_chainNew(NULL, request);
+
         chain = d_tableFind(listener->chains, dummy);
 
         if(!chain){
@@ -1437,8 +1743,8 @@ d_sampleChainListenerFindChain(
 
            d_printTimedEvent(
                    durability, D_LEVEL_FINER, D_THREAD_SAMPLE_CHAIN_LISTENER,
-                   "Could not find chain for message where group is: %s.%s and kind is %u.\n",
-                   sampleChain->partition, sampleChain->topic, sampleChain->durabilityKind);
+                   "Could not find chain for message where group is: %s.%s, kind is %u and source is %u\n",
+                   sampleChain->partition, sampleChain->topic, sampleChain->durabilityKind, sampleChain->source.systemId);
         }
         /*request is also freed by d_chainFree */
         d_chainFree(dummy);
@@ -1490,6 +1796,123 @@ d_sampleChainListenerReportStatus(
         d_listenerUnlock(d_listener(listener));
     }
     return;
+}
+
+struct processChainsHelper {
+    d_sampleChainListener listener;
+    d_publisher publisher;
+    d_networkAddress addressee;
+    d_durability durability;
+    d_fellow fellow;
+    d_aligneeStatistics as;
+};
+
+static c_bool
+processChains(
+    d_chain chain,
+    c_voidp args)
+{
+    struct processChainsHelper* helper;
+
+    helper = (struct processChainsHelper*)args;
+
+    helper->as->aligneeRequestsSentDif += 1;
+    helper->as->aligneeRequestsOpenDif += 1;
+
+    d_tableFree (chain->fellows);
+    chain->fellows = d_tableNew(d_fellowCompare, d_chainFellowFree);
+    d_objectKeep(d_object(helper->fellow));
+    d_tableInsert(chain->fellows, helper->fellow);
+    d_fellowRequestAdd(helper->fellow);
+
+    d_sampleChainListenerAddChain (helper->listener, chain, helper->addressee);
+
+    d_printTimedEvent(helper->durability, D_LEVEL_FINE,
+                D_THREAD_SAMPLE_CHAIN_LISTENER,
+                "Inserted new sampleRequest to merge for group %s.%s for " \
+                "fellow %u.\n",
+                chain->request->partition,
+                chain->request->topic,
+                d_message(chain->request)->addressee.systemId);
+
+    return TRUE;
+}
+
+void
+d_sampleChainListenerInsertMergeAction(
+    d_sampleChainListener listener,
+    d_mergeAction action)
+{
+    d_admin admin;
+    struct processChainsHelper helper;
+
+    assert(d_listenerIsValid(d_listener(listener), D_SAMPLE_CHAIN_LISTENER));
+    assert(action);
+
+    if(listener && action){
+        admin = d_listenerGetAdmin(d_listener(listener));
+
+        helper.fellow = d_mergeActionGetFellow(action);
+        helper.addressee = d_fellowGetAddress(helper.fellow);
+        helper.as = d_aligneeStatisticsNew();
+        helper.durability = d_adminGetDurability(admin);
+        helper.publisher = d_adminGetPublisher(admin);
+        helper.listener = listener;
+
+        d_listenerLock(d_listener(listener));
+
+        d_tableInsert(listener->mergeActions, action);
+
+        /* Walk over all chains in the mergeAction to send out sample requests*/
+        d_mergeActionChainWalk(action, processChains, &helper);
+
+        d_durabilityUpdateStatistics(helper.durability,
+                d_statisticsUpdateAlignee, helper.as);
+
+
+        d_listenerUnlock(d_listener(listener));
+
+        d_aligneeStatisticsFree(helper.as);
+        d_networkAddressFree(helper.addressee);
+    }
+    return;
+}
+
+void
+d_sampleChainListenerCheckUnfulfilled(
+    d_sampleChainListener listener,
+    d_nameSpace nameSpace,
+    d_networkAddress fellowAddress) {
+
+    d_admin admin;
+    d_chain chain;
+    d_groupsRequest request;
+    d_publisher publisher;
+    int i;
+
+    if (listener) {
+        admin = d_listenerGetAdmin(d_listener(listener));
+        publisher = d_adminGetPublisher(admin);
+
+        d_listenerLock(d_listener(listener));
+
+        for(i=0; i<c_iterLength(listener->unfulfilledChains); i++){
+            chain = c_iterObject(listener->unfulfilledChains, i);
+
+            if (d_nameSpaceIsIn(nameSpace, chain->request->partition, chain->request->topic)) {
+                /* Re-request group from (master) fellow so we're sure to have the latest group completeness */
+                request = d_groupsRequestNew(admin, chain->request->partition, chain->request->topic);
+
+                /* Write request */
+                d_publisherGroupsRequestWrite(publisher, request, fellowAddress);
+
+                /* Free request */
+                d_groupsRequestFree(request);
+            }
+        }
+
+        d_listenerUnlock(d_listener(listener));
+    }
 }
 
 void
@@ -1632,6 +2055,9 @@ d_chainBeadNew(
 
     chainBead = d_chainBead(os_malloc(C_SIZEOF(d_chainBead)));
     chainBead->message = message;
+#ifndef _NAT_
+    chainBead->message->allocTime = v_timeGet();
+#endif
     chainBead->sender = d_networkAddressNew(
                                     sender->systemId,
                                     sender->localId,

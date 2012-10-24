@@ -22,7 +22,7 @@ namespace test.sacs
 			DDS.SubscriptionBuiltinTopicData data = null;
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
-            string expResult = "Functions not supported yet.";
+            string expResult = "All Functions supported.";
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict
                 .Pass, Test.Framework.TestVerdict.Fail);
             writer = (DDS.IDataWriter)this.ResolveObject("datawriter");
@@ -41,20 +41,24 @@ namespace test.sacs
                 return result;
             }
             writer.AssertLiveliness();
+            System.Threading.Thread.Sleep(1000); // Give writer some time to discover reader.
             handles = new DDS.InstanceHandle[0];
             rc = writer.GetMatchedSubscriptions(ref handles);
-            if (rc != DDS.ReturnCode.Unsupported)
+            if (rc != DDS.ReturnCode.Ok || handles.Length != 1)
             {
-                result.Result = "get_matched_subscriptions has been implemented.";
+                result.Result = "get_matched_subscriptions failed.";
                 return result;
-            }
-
-            rc = writer.GetMatchedSubscriptionData(ref data, -1);
-            if (rc != DDS.ReturnCode.Unsupported)
-            {
-                result.Result = "get_matched_subscription_data has been implemented.";
-                return result;
-            }
+            } 
+            else
+            { 
+	
+	            rc = writer.GetMatchedSubscriptionData(ref data, handles[0]);
+	            if (rc != DDS.ReturnCode.Ok)
+	            {
+	                result.Result = "get_matched_subscription_data failed.";
+	                return result;
+	            }
+	        }
             result.Result = expResult;
             result.Verdict = Test.Framework.TestVerdict.Pass;
             return result;

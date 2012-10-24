@@ -4,7 +4,7 @@ IDL_FILES   ?= $(notdir $(wildcard $(IDL_DIR)/*.idl))
 vpath %.idl     $(IDL_DIR)
 
 # idl preprocessor
-IDLPP		:= idlpp
+IDLPP		?= idlpp
 
 # variables that can be used to extend/overrule the defaults for IDL_H and IDL_C
 IDL_CTYPE_FILES = $(IDL_FILES:%.idl=%CorbaType.h)

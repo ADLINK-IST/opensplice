@@ -1,16 +1,16 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
-#include <gapi.h>
+#include "gapi.h"
 
 #include "dds_dcps.h"
 #include "sac_structured.h"
@@ -64,12 +64,12 @@ DDS_DataWriter_set_listener (
 {
     struct gapi_dataWriterListener gListener;
     struct gapi_dataWriterListener *pListener = NULL;
-    
-    if ( a_listener ) {  
+
+    if ( a_listener ) {
         sac_copySacDataWriterListener(a_listener, &gListener);
         pListener = &gListener;
     }
-    
+
     return (DDS_ReturnCode_t)
 	gapi_dataWriter_set_listener (
 	    (gapi_dataWriter)this,
@@ -123,7 +123,7 @@ DDS_DataWriter_get_publisher (
 	);
 }
 
-/* ReturnCode_t 
+/* ReturnCode_t
  *   wait_for_acknowledgments(
  *      in Duration_t max_wait);
  */
@@ -135,12 +135,12 @@ DDS_DataWriter_wait_for_acknowledgments (
 {
     return (DDS_ReturnCode_t)
     gapi_dataWriter_wait_for_acknowledgments(
-         (gapi_publisher) _this, 
+         (gapi_publisher) _this,
          (const gapi_duration_t *) max_wait);
 }
 
 /*     // Access the status
- * ReturnCode_t 
+ * ReturnCode_t
  * get_liveliness_lost_status(
  *       inout LivelinessLostStatus a_status);
  */
@@ -160,7 +160,7 @@ DDS_DataWriter_get_liveliness_lost_status (
 }
 
 /*     // Access the status
- * ReturnCode_t 
+ * ReturnCode_t
  * get_offered_deadline_missed_status(
  *       inout OfferedDeadlineMissedStatus a_status);
  */
@@ -180,7 +180,7 @@ DDS_DataWriter_get_offered_deadline_missed_status (
 }
 
 /*     // Access the status
- * ReturnCode_t 
+ * ReturnCode_t
  * get_offered_incompatible_qos_status(
  *       inout OfferedIncompatibleQosStatus a_status);
  */
@@ -192,7 +192,7 @@ DDS_DataWriter_get_offered_incompatible_qos_status (
 {
     DDS_ReturnCode_t result;
     gapi_offeredIncompatibleQosStatus* s;
-    
+
     s = gapi_offeredIncompatibleQosStatus_alloc();
     result = gapi_dataWriter_get_offered_incompatible_qos_status ((gapi_dataWriter)this,s);
     DDS_OfferedIncompatibleQosStatusCopyin (s, status);
@@ -202,7 +202,7 @@ DDS_DataWriter_get_offered_incompatible_qos_status (
 }
 
 /*     // Access the status
- * ReturnCode_t 
+ * ReturnCode_t
  * get_publication_matched_status(
  *       inout PublicationMatchedStatus a_status);
  */
@@ -216,7 +216,7 @@ DDS_DataWriter_get_publication_matched_status (
     gapi_publicationMatchedStatus s;
 
     result = gapi_dataWriter_get_publication_matched_status ((gapi_dataWriter)this,&s);
-    DDS_OfferedIncompatibleQosStatusCopyin (&s, status);
+    DDS_PublicationMatchedStatusCopyin(&s, status);
 
     return result;
 }

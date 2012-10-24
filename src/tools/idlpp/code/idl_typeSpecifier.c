@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -17,8 +17,8 @@
 #include "c_base.h"
 #include "idl_program.h"
 
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 
 /***********************************************************
  * idl_typeSpec
@@ -1136,10 +1136,15 @@ idl_labelValueVal (
 }
 
 /***********************************************************
- * idl_contiguousSize
+ * Identifies contiguous types.
+ * Indentifies if a type can be copied straight in or out
+ * of the internal database rep with a vanilla memcpy on account
+ * of being laid out exactly the same.
+ * @param type The definition of the type.
+ * @return TRUE if it is a contiguous / copyable type, FALSE otherwise.
  ***********************************************************/
-static c_bool
-isContiguous(
+c_bool
+idl_isContiguous(
     c_type type)
 {
     c_long i;
@@ -1152,7 +1157,7 @@ isContiguous(
             if (c_collectionType(type)->maxSize == 0) {
                 return FALSE;
             } else {
-                return isContiguous(c_collectionType(type)->subType);
+                return idl_isContiguous(c_collectionType(type)->subType);
             }
         break;
         default:
@@ -1163,7 +1168,7 @@ isContiguous(
     case M_EXCEPTION:
     case M_STRUCTURE:
         for (i=0; i<c_arraySize(c_structure(type)->members); i++) {
-            if (!isContiguous(c_specifier(c_structure(type)->members[i])->type)) {
+            if (!idl_isContiguous(c_specifier(c_structure(type)->members[i])->type)) {
                 return FALSE;
             }
         }
@@ -1174,23 +1179,11 @@ isContiguous(
         return TRUE;
     break;
     case M_TYPEDEF:
-        return isContiguous(c_typeDef(type)->alias);
+        return idl_isContiguous(c_typeDef(type)->alias);
     break;
     default:
         return FALSE;
     break;
     }
 }
-
-c_long
-idl_contiguousSize (
-    idl_typeSpec typeSpec)
-{
-    if (isContiguous(typeSpec->def)) {
-        return typeSpec->def->size;
-    } else {
-        return 0;
-    }
-}
-
 

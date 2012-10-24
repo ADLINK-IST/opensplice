@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* Interface */
@@ -39,7 +39,9 @@ nw_socketRetrieveBCInterface(
     char *addressDefault;
     os_int found = SK_FALSE;
     struct sockaddr_in *testAddr;
+    nw_bool forced = SK_FALSE;
 
+    forced = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Interface),forced);
     success = sk_interfaceInfoRetrieveAllBC(&interfaceList, &nofInterfaces,
                                           sockfd);
 
@@ -59,7 +61,7 @@ nw_socketRetrieveBCInterface(
 	      break;
 	    }
 	  }
-	    
+
         } else {
              i = 0;
              while ((i < nofInterfaces) && !found) {
@@ -84,7 +86,7 @@ nw_socketRetrieveBCInterface(
                     i++;
                 }
             }
-            if (!found) {
+            if (!found && !forced) {
                 NW_REPORT_WARNING_2("retrieving broadcast interface",
                     "Requested interface %s not found or not broadcast enabled, "
                     "using %s instead",
@@ -92,14 +94,23 @@ nw_socketRetrieveBCInterface(
                 usedInterface = 0;
             }
         }
-        /* Store addresses found for later use */
-        *sockAddrPrimaryFound =
-            *(struct sockaddr_in *)sk_interfaceInfoGetPrimaryAddress(
-                                             interfaceList[usedInterface]);
-        *sockAddrBroadcastFound =
-            *(struct sockaddr_in *)sk_interfaceInfoGetBroadcastAddress(
-                                             interfaceList[usedInterface]);
-        result = SK_TRUE;
+        /* if the Ethernet adapter that is configured is not available and forced is true report false */
+        if (!found && forced) {
+            result = SK_FALSE;
+            NW_REPORT_WARNING_1("retrieving broadcast interface",
+                               "Requested interface %s not found or not broadcast enabled",
+                               addressLookingFor);
+        } else {
+            /* Store addresses found for later use */
+            *sockAddrPrimaryFound =
+                *(struct sockaddr_in *)sk_interfaceInfoGetPrimaryAddress(
+                                                 interfaceList[usedInterface]);
+            *sockAddrBroadcastFound =
+                *(struct sockaddr_in *)sk_interfaceInfoGetBroadcastAddress(
+                                                 interfaceList[usedInterface]);
+
+            result = SK_TRUE;
+        }
 
         /* Diagnostics */
         NW_TRACE_1(Configuration, 2, "Identified broadcast enabled interface %s ",
@@ -125,22 +136,32 @@ nw_socketRetrieveBCInterface(
 
 #undef NW_FULL_IP_ADDRESS
 
-
+/**
+* Calls nw_socketRetrieveBCInterface and caches the result unless this service
+* is configured as an IPv6 service when it just returns SK_FALSE.
+* @see nw_socketRetrieveBCInterface()
+* @memberof nw_socket_s
+*/
 os_int
 nw_socketGetDefaultBroadcastInterface(
     const char *addressLookingFor,
     os_int sockfd,
-    struct sockaddr_in *sockAddrPrimary,
-    struct sockaddr_in *sockAddrBroadcast)
+    os_sockaddr_storage *sockAddrPrimary,
+    os_sockaddr_storage *sockAddrBroadcast)
 {
     /* Evaluate the interfaces only once, after this use previous result */
     static os_int hadSuccessBefore = SK_FALSE;
-    static struct sockaddr_in sockAddrPrimaryFound;
-    static struct sockaddr_in sockAddrBroadcastFound;
+    static os_sockaddr_storage sockAddrPrimaryFound;
+    static os_sockaddr_storage sockAddrBroadcastFound;
 
-    if (!hadSuccessBefore) {
+    if (nw_configurationGetIsIPv6())
+    {
+        /* No broadcast only interfaces in IPv6 */
+        return SK_FALSE;
+    }
+    else if (!hadSuccessBefore) {
         hadSuccessBefore = nw_socketRetrieveBCInterface(addressLookingFor, sockfd,
-            &sockAddrPrimaryFound, &sockAddrBroadcastFound);
+            (struct sockaddr_in*) &sockAddrPrimaryFound, (struct sockaddr_in*) &sockAddrBroadcastFound);
     }
 
     if (hadSuccessBefore) {
@@ -162,7 +183,7 @@ nw_socketBroadcastInitialize(
        // Set option for avoiding routing to other interfaces
        nw_socketSetDontRouteOption(socket, SK_TRUE);
 #endif
-       
+
     }
     */
     nw_socketSetBroadcastOption(socket, SK_TRUE);

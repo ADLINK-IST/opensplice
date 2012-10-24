@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,6 +15,7 @@
 #include "c_metabase.h"
 #include "c_iterator.h"
 
+#include "idl_program.h"
 #include "idl_scope.h"
 
 C_CLASS(idl_catsDef);
@@ -51,11 +52,11 @@ void idl_catsDefAdd (
     const char *typeName,
     const char *catsList);
 
-c_char*
-idl_catsResolve (
-    idl_catsDef catsDef,
-    idl_scope scope,
-    const char *typeName);
+c_bool
+idl_isCatsDefFor(
+    c_metaObject scope,
+    c_char *typeName,
+    c_char *key);
 
 void idl_catsDefDefSet (
     idl_catsDef catsDef);
@@ -65,11 +66,10 @@ idl_catsDefDefGet (
     void);
 
 os_boolean
-idl_catsListItemIsDefined (
-    idl_catsDef catsDef,
+idl_catsDef_isCatsDefined(
     idl_scope scope,
-    const char* typeName,
-    const char* itemName);
+    const char *name,
+    idl_typeSpec typeSpec);
 
 void
 idl_catsDefRestoreAll(

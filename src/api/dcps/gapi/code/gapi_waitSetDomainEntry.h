@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -18,6 +18,7 @@
 #define _WaitSetDomainEntry(o) ((_WaitSetDomainEntry)(o))
 
 C_STRUCT(_WaitSetDomainEntry) {
+    gapi_domainId_t domainId;
     gapi_boolean  busy;
     gapi_boolean  running;
     gapi_boolean  multimode;

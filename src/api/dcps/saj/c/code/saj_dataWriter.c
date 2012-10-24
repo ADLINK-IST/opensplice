@@ -1,15 +1,15 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-#include "saj_dataWriter.h"
+#include "saj_DataWriter.h"
 #include "saj_dataWriterListener.h"
 #include "saj_utilities.h"
 #include "saj_qosUtils.h"
@@ -32,17 +32,17 @@ SAJ_FUNCTION(jniSetQos)(
     gapi_dataWriter dataWriter;
     saj_returnCode rc;
     jint result;
-    
+
     qos = gapi_dataWriterQos__alloc();
     dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);
     rc = saj_DataWriterQosCopyIn(env, jqos, qos);
     result = (jint)GAPI_RETCODE_ERROR;
-    
+
     if(rc == SAJ_RETCODE_OK){
-        result = (jint)gapi_dataWriter_set_qos(dataWriter, qos); 
+        result = (jint)gapi_dataWriter_set_qos(dataWriter, qos);
     }
     gapi_free(qos);
-    
+
     return result;
 }
 
@@ -62,21 +62,21 @@ SAJ_FUNCTION(jniGetQos)(
     gapi_returnCode_t result;
     jobject jqos;
     gapi_dataWriter dataWriter;
-    
-    
+
+
     if(jqosHolder != NULL){
         dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);
         jqos = NULL;
-        
+
         qos = gapi_dataWriterQos__alloc();
         result = gapi_dataWriter_get_qos(dataWriter, qos);
-        
+
         if(result == GAPI_RETCODE_OK){
             rc = saj_DataWriterQosCopyOut(env, qos, &jqos);
             gapi_free(qos);
-            
-            if(rc == SAJ_RETCODE_OK){        
-                (*env)->SetObjectField(env, jqosHolder, 
+
+            if(rc == SAJ_RETCODE_OK){
+                (*env)->SetObjectField(env, jqosHolder,
                         GET_CACHED(dataWriterQosHolder_value_fid), jqos);
                 (*env)->DeleteLocalRef(env, jqos);
             } else {
@@ -104,20 +104,20 @@ SAJ_FUNCTION(jniSetListener)(
     struct gapi_dataWriterListener *listener;
     gapi_dataWriter dataWriter;
     gapi_returnCode_t grc;
-    
+
     dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);
     listener = saj_dataWriterListenerNew(env, jlistener);
-    
+
     if(listener != NULL){
         saj_write_java_listener_address(env, dataWriter, listener->listener_data);
     }
-    grc = gapi_dataWriter_set_listener(dataWriter, listener, 
+    grc = gapi_dataWriter_set_listener(dataWriter, listener,
                                                     (unsigned long int)jmask);
-    
+
     if((grc != GAPI_RETCODE_OK) && (listener != NULL)){
         saj_listenerDataFree(env, saj_listenerData(listener->listener_data));
-    } 
-    return (jint)grc; 
+    }
+    return (jint)grc;
 }
 
 /**
@@ -133,11 +133,11 @@ SAJ_FUNCTION(jniGetListener)(
     jobject jlistener;
     struct gapi_dataWriterListener listener;
     gapi_dataWriter dataWriter;
-    
+
     jlistener = NULL;
     dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);
     listener = gapi_dataWriter_get_listener(dataWriter);
-    
+
     jlistener = saj_read_java_listener_address(dataWriter);
 
     return jlistener;
@@ -156,12 +156,12 @@ SAJ_FUNCTION(jniGetTopic)(
     jobject jtopic;
     gapi_topic topic;
     gapi_dataWriter dataWriter;
-    
+
     jtopic = NULL;
-    
-    dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);    
+
+    dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);
     topic = gapi_dataWriter_get_topic(dataWriter);
-    
+
     if (topic != GAPI_OBJECT_NIL){
         jtopic = saj_read_java_address(topic);
     }
@@ -181,12 +181,12 @@ SAJ_FUNCTION(jniGetPublisher)(
     jobject jpublisher;
     gapi_publisher publisher;
     gapi_dataWriter dataWriter;
-    
+
     jpublisher = NULL;
-        
-    dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);    
+
+    dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);
     publisher = gapi_dataWriter_get_publisher(dataWriter);
-    
+
     if (publisher != GAPI_OBJECT_NIL){
         jpublisher = saj_read_java_address(publisher);
     }
@@ -209,16 +209,16 @@ SAJ_FUNCTION(jniGetLivelinessLostStatus)(
     gapi_livelinessLostStatus status;
     saj_returnCode rc;
     gapi_returnCode_t result;
-    
+
     if(jstatusHolder){
         dataWriter = (gapi_dataWriter) saj_read_gapi_address(env, jdataWriter);
         result = gapi_dataWriter_get_liveliness_lost_status(dataWriter, &status);
-        
+
         if(result == GAPI_RETCODE_OK){
             rc = saj_statusCopyOutLivelinessLostStatus(env, &status, &jstatus);
-            
+
             if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder, 
+                (*env)->SetObjectField(env, jstatusHolder,
                             GET_CACHED(livelinessLostStatusHolder_value_fid), jstatus);
                 (*env)->DeleteLocalRef(env, jstatus);
             } else {
@@ -247,16 +247,16 @@ SAJ_FUNCTION(jniGetOfferedDeadlineMissedStatus)(
     gapi_offeredDeadlineMissedStatus status;
     saj_returnCode rc;
     gapi_returnCode_t result;
-    
+
     if(jstatusHolder){
         dataWriter = (gapi_dataWriter) saj_read_gapi_address(env, jdataWriter);
         result = gapi_dataWriter_get_offered_deadline_missed_status(dataWriter, &status);
-        
+
         if(result == GAPI_RETCODE_OK){
             rc = saj_statusCopyOutOfferedDeadlineMissedStatus(env, &status, &jstatus);
-            
+
             if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder, 
+                (*env)->SetObjectField(env, jstatusHolder,
                             GET_CACHED(offeredDeadlineMissedStatusHolder_value_fid), jstatus);
                 (*env)->DeleteLocalRef(env, jstatus);
             } else {
@@ -285,17 +285,17 @@ SAJ_FUNCTION(jniGetOfferedIncompatibleQosStatus)(
     gapi_offeredIncompatibleQosStatus* status;
     saj_returnCode rc;
     gapi_returnCode_t result;
-    
+
     if(jstatusHolder){
         dataWriter = (gapi_dataWriter) saj_read_gapi_address(env, jdataWriter);
         status = gapi_offeredIncompatibleQosStatus_alloc();
         result = gapi_dataWriter_get_offered_incompatible_qos_status(dataWriter, status);
-        
+
         if(result == GAPI_RETCODE_OK){
             rc = saj_statusCopyOutOfferedIncompatibleQosStatus(env, status, &jstatus);
-            
+
             if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder, 
+                (*env)->SetObjectField(env, jstatusHolder,
                             GET_CACHED(offeredIncompatibleQosStatusHolder_value_fid), jstatus);
                 (*env)->DeleteLocalRef(env, jstatus);
             } else {
@@ -325,16 +325,16 @@ SAJ_FUNCTION(jniGetPublicationMatchedStatus)(
     gapi_publicationMatchedStatus status;
     saj_returnCode rc;
     gapi_returnCode_t result;
-    
+
     if(jstatusHolder){
         dataWriter = (gapi_dataWriter) saj_read_gapi_address(env, jdataWriter);
         result = gapi_dataWriter_get_publication_matched_status(dataWriter, &status);
-        
+
         if(result == GAPI_RETCODE_OK){
             rc = saj_statusCopyOutPublicationMatchStatus(env, &status, &jstatus);
-            
+
             if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jstatusHolder, 
+                (*env)->SetObjectField(env, jstatusHolder,
                             GET_CACHED(publicationMatchedStatusHolder_value_fid), jstatus);
                 (*env)->DeleteLocalRef(env, jstatus);
             } else {
@@ -358,8 +358,8 @@ SAJ_FUNCTION(jniAssertLiveliness)(
     jobject jdataWriter)
 {
     gapi_dataWriter dataWriter;
- 
-    dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);    
+
+    dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);
     return (jint)gapi_dataWriter_assert_liveliness(dataWriter);
 }
 
@@ -378,21 +378,21 @@ SAJ_FUNCTION(jniGetMatchedSubscriptions)(
     gapi_instanceHandleSeq *subscription_handles;
     saj_returnCode rc;
     gapi_returnCode_t result;
-    jintArray jarray;
-    
+    jlongArray jarray;
+
     if(jseqHolder != NULL){
-        dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);    
+        dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);
         subscription_handles = gapi_instanceHandleSeq__alloc();
-        
+
         result = gapi_dataWriter_get_matched_subscriptions(
                                                 dataWriter, subscription_handles);
-        
+
         if(result == GAPI_RETCODE_OK){
             rc = saj_instanceHandleSequenceCopyOut(env, subscription_handles, &jarray);
             gapi_free(subscription_handles);
-            
+
             if(rc == SAJ_RETCODE_OK){
-                (*env)->SetObjectField(env, jseqHolder, 
+                (*env)->SetObjectField(env, jseqHolder,
                         GET_CACHED(instanceHandleSeqHolder_value_fid), jarray);
                 (*env)->DeleteLocalRef(env, jarray);
             } else {
@@ -419,30 +419,35 @@ SAJ_FUNCTION(jniGetMatchedSubscriptionData)(
 {
     gapi_dataWriter dataWriter;
     gapi_subscriptionBuiltinTopicData *subscription_data;
-    gapi_returnCode_t rc;
-    jint jresult;
-    jobjectArray jarray;
-    
+    saj_returnCode rc;
+    gapi_returnCode_t result;
+    jobject jdata;
+
     if(jdataHolder != NULL){
-        jarray = NULL;
-        dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);    
+        jdata = NULL;
+        dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jdataWriter);
         subscription_data = gapi_subscriptionBuiltinTopicData__alloc();
-        
-        rc = gapi_dataWriter_get_matched_subscription_data(
+
+        result = gapi_dataWriter_get_matched_subscription_data(
                                         dataWriter, subscription_data,
-                                        (const gapi_instanceHandle_t)jhandle);        
-        gapi_free(subscription_data);
-        
-        if(rc == GAPI_RETCODE_OK){
-            (*env)->SetObjectField(env, jdataHolder, 
-                    GET_CACHED(subscriptionBuiltinTopicDataHolder_value_fid), jarray);
-            (*env)->DeleteLocalRef(env, jarray);
+                                        (const gapi_instanceHandle_t)jhandle);
+
+        if(result == GAPI_RETCODE_OK){
+            rc = saj_subscriptionBuiltinTopicDataCopyOut(env, subscription_data, &jdata);
+            gapi_free(subscription_data);
+
+            if(rc == SAJ_RETCODE_OK){
+                (*env)->SetObjectField(env, jdataHolder,
+                        GET_CACHED(subscriptionBuiltinTopicDataHolder_value_fid), jdata);
+                (*env)->DeleteLocalRef(env, jdata);
+            } else {
+                result = GAPI_RETCODE_ERROR;
+            }
         }
-        jresult = (jint)rc;
     } else {
-        jresult = (jint)GAPI_RETCODE_BAD_PARAMETER;
+        result = GAPI_RETCODE_BAD_PARAMETER;
     }
-    return jresult;
+    return (jint)result;
 }
 
 /*
@@ -450,23 +455,23 @@ SAJ_FUNCTION(jniGetMatchedSubscriptionData)(
  * Method:    jniWaitForAcknowledgments
  * Signature: (LDDS/Duration_t;)I
  */
-JNIEXPORT jint JNICALL 
+JNIEXPORT jint JNICALL
 SAJ_FUNCTION(jniWaitForAcknowledgments)(
-    JNIEnv *env, 
-    jobject jwriter, 
+    JNIEnv *env,
+    jobject jwriter,
     jobject jduration)
 {
     gapi_dataWriter dataWriter;
     gapi_duration_t* duration;
     saj_returnCode rc;
     gapi_returnCode_t result;
-    
-    dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jwriter);    
-    
+
+    dataWriter = (gapi_dataWriter)saj_read_gapi_address(env, jwriter);
+
     if(jduration != NULL){
         duration = gapi_duration_t__alloc();
         rc = saj_durationCopyIn(env, jduration, duration);
-    
+
         if(rc == SAJ_RETCODE_OK){
             result = gapi_dataWriter_wait_for_acknowledgments(dataWriter, duration);
         } else {
@@ -475,7 +480,7 @@ SAJ_FUNCTION(jniWaitForAcknowledgments)(
         gapi_free(duration);
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
-    }    
+    }
     return (jint)result;
 }
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -24,12 +24,12 @@
 extern "C" {
 #endif
 
-#include <os_defs.h>
-#include <os_time.h> /* needed for os_stat */
+#include "os_defs.h"
+#include "os_time.h" /* needed for os_stat */
 
 /* include OS specific header file                              */
-#include <include/os_stdlib.h>
-#include <os_if.h>
+#include "include/os_stdlib.h"
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT
@@ -206,6 +206,149 @@ os_rindex(
 OS_API char *
 os_strdup(
     const char *s1);
+
+/** \brief strcat wrapper
+ *
+ * Microsoft generates deprected warnings for strcat,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return s1
+ * - append a copy of s2 onto end of s1
+ *   overwriting the null byte at end of s1.
+ */
+OS_API char *
+os_strcat(
+    char *s1,
+    const char *s2);
+
+/** \brief stnrcat wrapper
+ *
+ * Microsoft generates deprected warnings for strncat,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return s1
+ * - append n bytes of s2 onto end of s1,
+ *   overwriting the null byte at end of s1.
+ */
+OS_API char *
+os_strncat(
+    char *s1,
+    const char *s2,
+    size_t n);
+
+/** \brief strcpy wrapper
+ *
+ * Microsoft generates deprected warnings for strcpy,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return s1
+ * - copy string s2 to s1
+ */
+OS_API char *
+os_strcpy(
+    char *s1,
+    const char *s2);
+
+/** \brief strncpy wrapper
+ *
+ * Microsoft generates deprected warnings for strncpy,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return s1
+ * - copy num chars from string s2 to s1
+ */
+OS_API char *
+os_strncpy(
+    char *s1,
+    const char *s2,
+    size_t num);
+
+/** \brief os_strnlen wrapper
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return as strnlen
+ */
+OS_API size_t 
+os_strnlen(
+   char *ptr,
+   size_t maxlen);
+
+/** \brief sprintf wrapper
+ *
+ * Microsoft generates deprected warnings for sprintf,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - return
+ *   Upon successful completion will return the number of
+ *   bytes written to s, excluding the terminating null byte,
+ *   or a negative value if an error occured.
+ * - Writes formatted output to s.
+ */
+OS_API int
+os_sprintf(
+    char *s,
+    const char *format,
+    ...);
+
+/** \brief os_vsnprintf wrapper
+ *
+ * Microsoft generates deprected warnings for vsnprintf,
+ * wrapper removes warnings for win32
+ *
+ * Precondition:
+ *   None
+ * Postcondition:
+ *   None
+ *
+ * Possible results:
+ * - os_vsnprintf() does not write  more than size bytes (including the trailing '\0').
+ *   If the output was truncated due to this limit then the return value is the
+ *   number of  characters (not including the trailing '\0') which would have been
+ *   written to the final string if enough space had been  available.
+ *   Thus, a return value of size or more means that the output was truncated.
+ */
+
+OS_API int
+os_vsnprintf(
+   char *str,
+   size_t size,
+   const char *format,
+   va_list args);
 
 /** \brief strtoll wrapper
  *
@@ -389,6 +532,22 @@ os_readdir(
     os_dirHandle d,
     struct os_dirent *direntp);
 
+/** \brief Removes the file or directory given by name.
+  *
+  * This function is equivalent to POSIX remove(3)
+  *
+  */
+
+OS_API os_result os_remove (const char *name);
+
+/** \brief Renames a file or directory
+  *
+  * This function is equivalent to POSIX rename(3)
+  *
+  */
+
+OS_API os_result os_rename (const char *oldpath, const char *newpath);
+
 /** \brief Transforms the given filepath into a platform specific filepath.
  *
  * This translation function will replace any platform file seperator into
@@ -433,6 +592,35 @@ os_fsync(
  */
 OS_API char *
 os_getTempDir();
+
+/**
+ * \brief return string describing error number.
+ * 
+ *
+ * Precondition:
+ *   none
+ *
+ * Possible results:
+ * - char * of the string description of the errnum passed in
+ * if no string is associated then a string containing the errnum is returned
+ */
+OS_API char *
+os_strerror(int errnum, char *buf, size_t n);
+
+/**
+ * \brief writes up to count bytes from the buffer pointed buf to the file referred to by the file descriptor fd.
+ * 
+ *
+ * Precondition:
+ *   none
+ *
+ * Possible results:
+ * - On success, the number of bytes written is returned (zero indicates
+ * nothing was written). On error, -1 is returned
+ *
+ */
+OS_API ssize_t 
+os_write(int fd, const void *buf, size_t count);
 
 #undef OS_API
 

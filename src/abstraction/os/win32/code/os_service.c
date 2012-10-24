@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,15 +13,24 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
-#include <code/os__service.h>
+#include "code/os__service.h"
 #include <sys/timeb.h>
 #include <time.h>
-#include <os_heap.h>
+#include "os_heap.h"
+#include "os_mutex.h"
+#include "os_stdlib.h"
 
 #include <stdio.h>
 #include <assert.h>
+#include "os_time.h"
 
-#include "os__debug.h"
+#include "code/os__debug.h"
+#include "code/os__sharedmem.h"
+
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0500
+#endif
+#include <Sddl.h>
 
 #define _PIPE_STATE_CONNECTING 0
 #define _PIPE_STATE_READING    1
@@ -34,6 +43,10 @@
 #define OS_SERVICE_PIPE_PREFIX "\\\\.\\pipe\\"
 #define OS_SERVICE_DEFAULT_NAME "osplOSService"
 #define OS_SERVICE_DEFAULT_PIPE_NAME OS_SERVICE_PIPE_PREFIX OS_SERVICE_DEFAULT_NAME
+
+static os_time _ospl_clock_starttime = {0, 0};
+static LONGLONG _ospl_clock_freq = 0; /* frequency of high performance counter */
+static LONGLONG _ospl_clock_offset = 0;
 
 struct _pipe_instance
 {
@@ -72,10 +85,6 @@ struct eventService {
 static HANDLE _ospl_serviceThreadId = 0;
 static char *_ospl_servicePipeName = OS_SERVICE_DEFAULT_PIPE_NAME;
 static char *_ospl_serviceName = OS_SERVICE_DEFAULT_NAME;
-static os_time _ospl_clock_starttime = {0, 0};
-static LONGLONG _ospl_clock_freq = 0; /* frequency of high performance counter */
-static LONGLONG _ospl_clock_offset = 0;
-
 
 /* Generic pool functions */
 static void
@@ -114,9 +123,42 @@ createSem(
     long id,
     char *name)
 {
+    SECURITY_ATTRIBUTES security_attributes;
+    BOOL sec_descriptor_ok;
+    HANDLE namedSem;
+
+    /* Vista and on have tightened security WRT shared memory
+    we need to grant rights to interactive users et al via a discretionary
+    access control list. NULL atributes did not allow interactive
+    users other than process starter to access */
+
+    ZeroMemory(&security_attributes, sizeof(security_attributes));
+    security_attributes.nLength = sizeof(security_attributes);
+    sec_descriptor_ok = ConvertStringSecurityDescriptorToSecurityDescriptor
+                            ("D:P(A;OICI;GA;;;WD)", /* grant all acess to world (everyone) */
+                            SDDL_REVISION_1,
+                            &security_attributes.lpSecurityDescriptor,
+                            NULL);
+
     _snprintf(name, OS_SERVICE_ENTITY_NAME_MAX,
-              "%s%d", OS_SERVICE_SEM_NAME_PREFIX, id);
-    return CreateSemaphore(NULL, 0, 0x7fffffff, name);
+              "%s%s%d%d",
+              (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+              OS_SERVICE_SEM_NAME_PREFIX,
+              id,
+              os_getShmBaseAddressFromPointer(NULL));
+
+    /* Note that NULL sec attributes would be default access - believed != 'everyone' */
+    namedSem = CreateSemaphore((os_sharedMemIsGlobal() && sec_descriptor_ok ? &security_attributes : NULL),
+                                0,
+                                0x7fffffff,
+                                name);
+    if (sec_descriptor_ok)
+    {
+        /* Free the heap allocated descriptor */
+        LocalFree(security_attributes.lpSecurityDescriptor);
+    }
+
+    return namedSem;
 }
 
 static HANDLE
@@ -124,9 +166,42 @@ createEv(
     long id,
     char *name)
 {
+    SECURITY_ATTRIBUTES security_attributes;
+    BOOL sec_descriptor_ok;
+    HANDLE namedEv;
+
+    /* Vista and on have tightened security WRT shared memory
+    we need to grant rights to interactive users et al via a discretionary
+    access control list. NULL atributes did not allow interactive
+    users other than process starter to access */
+
+    ZeroMemory(&security_attributes, sizeof(security_attributes));
+    security_attributes.nLength = sizeof(security_attributes);
+    sec_descriptor_ok = ConvertStringSecurityDescriptorToSecurityDescriptor
+                            ("D:P(A;OICI;GA;;;WD)", /* grant all acess to 'world' (everyone) */
+                            SDDL_REVISION_1,
+                            &security_attributes.lpSecurityDescriptor,
+                            NULL);
+
     _snprintf(name, OS_SERVICE_ENTITY_NAME_MAX,
-              "%s%d", OS_SERVICE_EVENT_NAME_PREFIX, id);
-    return CreateEvent(NULL, FALSE, FALSE, name);
+              "%s%s%d%d",
+              (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+              OS_SERVICE_EVENT_NAME_PREFIX,
+              id,
+              os_getShmBaseAddressFromPointer(NULL));
+
+    /* Note that NULL sec attributes would be default access - believed != 'everyone' */
+    namedEv = CreateEvent((os_sharedMemIsGlobal() && sec_descriptor_ok ? &security_attributes : NULL),
+                           FALSE,
+                           FALSE,
+                           name);
+    if (sec_descriptor_ok)
+    {
+        /* Free the heap allocated descriptor */
+        LocalFree(security_attributes.lpSecurityDescriptor);
+    }
+
+    return namedEv;
 }
 
 static int
@@ -145,7 +220,7 @@ poolClaim(
     max = pool->blockCount*_POOL_BLOCKSIZE;
     if (max == pool->inuse) {
         /* first allocated new block */
-        newBlock = malloc(sizeof(struct pool_block));
+        newBlock = os_malloc(sizeof(struct pool_block));
         if (!newBlock) {
             return 1; /* failed to allocate new block */
         }
@@ -168,7 +243,7 @@ poolClaim(
             if (block->entity[i].id > 0) {
                 *id = block->entity[i].id;
                 block->entity[i].id = -block->entity[i].id;
-                i = _POOL_BLOCKSIZE;
+               i = _POOL_BLOCKSIZE;
                 block = NULL;
                 pool->inuse++;
                 result = 0; /* success */
@@ -193,20 +268,23 @@ poolRelease(
     long i;
     int result;
 
+    if (id == 0) { /* 0 is uninitialized mutex */
+       return 0;
+    }
+
     block = pool->tail;
     blockNr = (pool->blockCount - 1) - ((id - 1) / _POOL_BLOCKSIZE); /* reverse order */
     idxInBlock = (id - 1) % _POOL_BLOCKSIZE;
     for (i = 0; i < blockNr; i++) {
-        block = block->prev;
+       block = block->prev;
     }
     if (block->entity[idxInBlock].id < 0) {
-        OS_DEBUG_1("poolRelease", "Releasing event %d", id);
-        block->entity[idxInBlock].id = -block->entity[idxInBlock].id;
-        pool->inuse--;
-        result = 0; /* success */
+       block->entity[idxInBlock].id = -block->entity[idxInBlock].id;
+       pool->inuse--;
+       result = 0; /* success */
     } else {
-        OS_DEBUG_1("poolRelease", "Trying to destroy incorrect mutex %d", id);
-        result = 1;
+       OS_DEBUG_1("poolRelease", "Trying to destroy incorrect mutex %d", id);
+       result = 1;
     }
 
     return result;
@@ -301,9 +379,9 @@ handleRequest(
     case OS_SRVMSG_DESTROY_EVENT:
         pool = &es->eventPool;
         if (poolRelease(pool, pipe->request._u.id) == 0) {
-            pipe->reply.result = os_resultSuccess;
+           pipe->reply.result = os_resultSuccess;
         } else {
-            pipe->reply.result = os_resultFail;
+           pipe->reply.result = os_resultFail;
         }
     break;
     case OS_SRVMSG_CREATE_SEMAPHORE:
@@ -360,7 +438,6 @@ osServiceThread(
     terminate = 0;
     poolInit(&es.eventPool);
     poolInit(&es.semPool);
-
     for (i = 0; i < _PIPE_MAX_INSTANCES; i++) {
         hEvents[i] = CreateEvent(
                          NULL,    // default security attribute
@@ -539,29 +616,83 @@ osServiceThread(
     free(_ospl_servicePipeName); /* allocated by os_serviceStart! */
     _ospl_servicePipeName = OS_SERVICE_DEFAULT_PIPE_NAME;
 
+
     return NULL;
 }
 
 
-static char *
+os_char *
 createPipeName(void)
 {
-    char *n;
-    int i, len;
+    return os_constructPipeName(_ospl_serviceName);
+}
 
-    n = malloc(strlen(_ospl_serviceName) + strlen(OS_SERVICE_PIPE_PREFIX) + 1);
-    strcpy(n, OS_SERVICE_PIPE_PREFIX);
-    strcat(n, _ospl_serviceName);
-    /* replace all '\' occurrences with '#', since backslash is not
-     * allowed in the pipename
-     */
-    len = strlen(n);
-    for (i = strlen(OS_SERVICE_PIPE_PREFIX); i < len; i++) {
-        if (n[i] == '\\') {
-            n[i] = '#';
+os_char *
+os_createPipeNameFromMutex(
+    os_mutex *mutex)
+{
+    os_char *name;
+
+    assert(mutex);
+
+    name = os_getDomainNameforMutex(mutex);
+    if (name == NULL) {
+        name = _ospl_serviceName;
+    }
+    return os_constructPipeName(name);
+}
+
+os_char *
+os_createPipeNameFromCond(os_cond *cond)
+{
+    os_char *name;
+
+    assert(cond);
+
+    name = os_getDomainNameforCond(cond);
+    if (name == NULL) {
+        name = _ospl_serviceName;
+    }
+    return os_constructPipeName(name);
+}
+
+os_char *
+os_constructPipeName(
+    const os_char *name)
+{
+    os_char *n;
+    os_uint32 i, len;
+
+    assert(name);
+
+    n = os_malloc(strlen(name) + strlen(OS_SERVICE_PIPE_PREFIX) + 1);
+    if (n) {
+        strcpy(n, OS_SERVICE_PIPE_PREFIX);
+        strcat(n, name);
+        /* replace all ' ' occurrences with '/', since space is not
+         * allowed in the pipename
+         */
+        len = strlen(n);
+        for (i = strlen(OS_SERVICE_PIPE_PREFIX); i < len; i++) {
+            if (n[i] == ' ') {
+                n[i] = '/';
+            }
         }
     }
     return n;
+}
+
+void
+os_createPipeNameFromDomainName(
+    const os_char *name)
+{
+    assert(name);
+    if (name == NULL) {
+       name = _ospl_serviceName;
+    }
+
+    _ospl_servicePipeName = os_constructPipeName(name);
+
 }
 
 #define UNIQUE_PREFIX "ospl"
@@ -572,38 +703,119 @@ os_serviceStart(
     os_result r;
     DWORD threadIdent;
     LARGE_INTEGER frequency;
-    LARGE_INTEGER hpt;
-    struct __timeb64 timebuffer;
     HANDLE initializedEvent;
     DWORD result;
+    LARGE_INTEGER p0, p1, p_best;
+    LONGLONG limit, prev_diff, t_diff, limit_best, t_diff_best, t_diff_start;
+    struct __timeb64 t0, t1, t_best, t_start;
     char uniqueName[16 + sizeof(UNIQUE_PREFIX)];
 
     r = os_resultSuccess;
     initializedEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (QueryPerformanceFrequency(&frequency) != 0) {
-        _ospl_clock_freq = frequency.QuadPart;
-        _ftime64(&timebuffer);
-        QueryPerformanceCounter(&hpt);
-        _ospl_clock_offset = hpt.QuadPart;
-        _ospl_clock_starttime.tv_sec = (os_timeSec)timebuffer.time;
-        _ospl_clock_starttime.tv_nsec = timebuffer.millitm * 1000000;
-    } /*else {  no high performance timer available!
-                so we fall back to a millisecond clock.
 
-    }*/
+    if (QueryPerformanceFrequency(&frequency) != 0)
+    {
+        _ospl_clock_freq = frequency.QuadPart;
+        /* Synchronization of the clock:
+         * See: http://msdn.microsoft.com/en-us/magazine/cc163996.aspx
+         */
+        limit = 15 * 2; /* 15 usec accuracy requested. */
+        limit_best = -1;
+        t_diff_best = -1;
+        _ftime64_s(&t_start);
+
+        do
+        {
+            prev_diff = 0;
+            QueryPerformanceCounter(&p0);
+            _ftime64_s(&t0);
+
+            do
+            {
+                _ftime64_s(&t1);
+                QueryPerformanceCounter(&p1);
+
+                if((t0.time == t1.time) && (t0.millitm == t1.millitm))
+                {
+                    prev_diff = p1.QuadPart - p0.QuadPart;
+                    p0 = p1;
+                }
+            }
+            while((t0.time == t1.time) && (t0.millitm == t1.millitm));
+
+            if (t1.millitm >= t0.millitm)
+            {
+                t_diff = t1.millitm - t0.millitm;
+                t_diff += (t1.time - t0.time) * 1000;
+            }
+            else
+            {
+                t_diff = t1.millitm - t0.millitm + 1000;
+                t_diff += (t1.time * 1000) - (t0.time * 1000) - 1000;
+            }
+
+            if((t_diff_best == -1) || (t_diff <= t_diff_best))
+            {
+                if( (limit_best == -1) ||
+                    ((p1.QuadPart - p0.QuadPart + prev_diff) < limit_best))
+                {
+                    t_diff_best = t_diff;
+                    p_best = p1;
+                    t_best = t1;
+                    limit_best = p1.QuadPart - p0.QuadPart + prev_diff;
+                }
+            }
+            if (t1.millitm >= t_start.millitm)
+            {
+                t_diff_start = t1.millitm - t_start.millitm;
+                t_diff_start += (t1.time - t_start.time) * 1000;
+            }
+            else
+            {
+                t_diff_start = t1.millitm - t_start.millitm + 1000;
+                t_diff_start += (t1.time * 1000) - (t_start.time * 1000) - 1000;
+            }
+
+        }
+        while( ((t_diff > 15) ||
+               ((p1.QuadPart - p0.QuadPart + prev_diff) >= limit)) &&
+               (t_diff_start < 2000));
+
+        _ospl_clock_starttime.tv_sec = (os_timeSec)t_best.time;
+        _ospl_clock_starttime.tv_nsec = t_best.millitm * 1000000;
+        _ospl_clock_offset = p_best.QuadPart;
+
+        OS_REPORT_7(OS_INFO, "os_serviceStart", 0,
+            "Time sync took: %lld ms; resolution= %lld ms, accuracy=%lld us, "
+            "time=%d,%d, offset=%lld and frequency=%lld\n",
+            t_diff_start, t_diff_best, limit_best/2,
+            _ospl_clock_starttime.tv_sec, _ospl_clock_starttime.tv_nsec,
+            _ospl_clock_offset, _ospl_clock_freq);
+    }
+    else
+    {
+        /* no high performance timer available!
+         * so we fall back to a millisecond clock.
+         */
+        OS_REPORT_1(OS_WARNING, "os_serviceStart", 0,
+                "No high-resolution timer found (reason: %s), "\
+                "switching to millisecond resolution.", GetLastError());
+    }
 
     if (name == NULL) {
-        _snprintf(uniqueName, sizeof(uniqueName), "%s%d", UNIQUE_PREFIX, GetCurrentProcessId());
+        snprintf(uniqueName, sizeof(uniqueName), "%s%d",
+                 UNIQUE_PREFIX, GetCurrentProcessId());
         _ospl_serviceName = (char *)os_malloc(strlen(uniqueName) + 1);
-        strcpy(_ospl_serviceName, uniqueName);
+        os_strcpy(_ospl_serviceName, uniqueName);
     } else {
         _ospl_serviceName = os_malloc(strlen(name) + 1);
         if (_ospl_serviceName) {
-            strcpy(_ospl_serviceName, name);
+            os_strcpy(_ospl_serviceName, name);
         }
     }
     if (_ospl_serviceName) {
         _ospl_servicePipeName = createPipeName();
+
         _ospl_serviceThreadId = CreateThread(NULL,
             (SIZE_T)128*1024,
             (LPTHREAD_START_ROUTINE)osServiceThread,
@@ -612,6 +824,7 @@ os_serviceStart(
         if (_ospl_serviceThreadId == 0) {
             r = os_resultFail;
             free(_ospl_servicePipeName);
+
             _ospl_servicePipeName = OS_SERVICE_DEFAULT_PIPE_NAME;
         } else {
             /* Wait for thread to be done with intialisation */
@@ -672,7 +885,7 @@ os_serviceName(void)
     return _ospl_serviceName;
 }
 
-const char *
+os_char *
 os_servicePipeName(void)
 {
     return _ospl_servicePipeName;

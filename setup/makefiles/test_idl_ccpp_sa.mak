@@ -4,12 +4,14 @@ ifeq (,$(findstring win32,$(SPLICE_TARGET)))
     IDL_INC_FLAGS = -I$(IDL_DIR)
   endif
   IDL_INC_FLAGS += -I$(OSPL_HOME)/etc/idl
+  DELIM=:
 else
   ifdef IDL_DIR
     TMP_IDL_DIR_INC_FLAG  =-I'$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(IDL_DIR))'
   endif
   TMP_IDL_CCPP_INC_FLAG +=-I'$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)/etc/idl)'
   IDL_INC_FLAGS = $(TMP_IDL_DIR_INC_FLAG) $(TMP_IDL_CCPP_INC_FLAG)
+  DELIM=;
 endif
 
 ifdef OSPL_OUTER_HOME
@@ -34,9 +36,14 @@ IDLPP_OBJ   = $(IDLPP_CPP:%.cpp=%$(OBJ_POSTFIX))
 
 # ospldcg compiler settings.
 JAR_INC_DIR =$(OSPL_HOME)/jar/$(SPLICE_TARGET)
-JAR_DIR = `$(OSPL_HOME)/bin/ospl_normalizePath $(JAR_INC_DIR)`
 OUTER_HOME_PATH =`$(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_OUTER_HOME)`
-OSPLDCG	:=java -DOSPL_OUTER_HOME=$(OUTER_HOME_PATH) -jar $(JAR_DIR)/ospldcg.jar
+
+T1=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(JAR_INC_DIR)/ospldcg.jar)
+T2=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)/jar/flexlm.jar)
+T3=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)/jar/EccpressoAll.jar)
+JAR_DIR =$(T1)$(DELIM)$(T2)$(DELIM)$(T3)
+
+OSPLDCG =java "-DPTECH_LICENSE_FILE=$(LM_LICENSE_FILE)" "-DOSPL_OUTER_HOME=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_OUTER_HOME))" -classpath "$(JAR_DIR)" DCG.Control.DCGStarter
 OSPLDCGFLAGS +=  -l SACPP $(IDL_INC_FLAGS)
 
 # ospldcg output

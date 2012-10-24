@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_subscriber.h"
+#include "saj_Subscriber.h"
 #include "saj_subscriberListener.h"
 #include "saj_dataReaderListener.h"
 #include "saj_utilities.h"
@@ -129,17 +129,15 @@ SAJ_FUNCTION(jniDeleteDatareader)(
     gapi_subscriber subscriber;
     gapi_dataReader dataReader;
     gapi_returnCode_t grc;
-    saj_userData ud;
+    c_bool must_free;
 
     subscriber = (gapi_subscriber) saj_read_gapi_address(env, jsubscriber);
     dataReader = (gapi_dataReader) saj_read_gapi_address(env, jdataReader);
 
-    ud = saj_userData(gapi_object_get_user_data(dataReader));
+    must_free = saj_setThreadEnv(env);
     grc = gapi_subscriber_delete_datareader(subscriber, dataReader);
+    saj_delThreadEnv(must_free);
 
-    if(grc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
     return (jint)grc;
 }
 
@@ -154,11 +152,16 @@ SAJ_FUNCTION(jniDeleteContainedEntities)(
     jobject jsubscriber)
 {
     gapi_subscriber subscriber;
+    jint result;
+    c_bool must_free;
 
     subscriber = (gapi_subscriber)saj_read_gapi_address(env, jsubscriber);
 
-    return (jint)gapi_subscriber_delete_contained_entities(subscriber,
-                                        saj_destroy_user_data_callback, (void *)env);
+    must_free = saj_setThreadEnv(env);
+    result = (jint)gapi_subscriber_delete_contained_entities(subscriber);
+    saj_delThreadEnv(must_free);
+
+    return result;
 }
 
 /**

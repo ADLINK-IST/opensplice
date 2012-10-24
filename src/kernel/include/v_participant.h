@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -64,12 +64,12 @@ extern "C" {
  */
 OS_API v_participant
 v_participantNew(
-    v_kernel k, 
-    const c_char *name, 
+    v_kernel k,
+    const c_char *name,
     v_qos qos,
     v_statistics s,
     c_bool enable);
-                                                 
+
 /** \fn void v_participantInit (v_participant _this, const c_char *name, v_qos qos);
  *  \brief Initializes an existing participant object. This function will
  *  override all existing values therefore this function should only be performed
@@ -81,12 +81,12 @@ v_participantNew(
  */
 OS_API void
 v_participantInit(
-    v_participant _this, 
-    const c_char *name, 
+    v_participant _this,
+    const c_char *name,
     v_participantQos qos,
     v_statistics s,
     c_bool enable);
-                                             
+
 /** \fn void v_participantFree (v_participant _this)
  *  \brief This function will free all resources claimed by the participant or any
  *  of its contained entities.
@@ -117,9 +117,9 @@ v_participantDeinit(
  */
 OS_API void
 v_participantAdd(
-    v_participant _this, 
+    v_participant _this,
     v_entity e);
-                                                 
+
 /** \fn void v_participantRemove (v_participant _this, v_entity e);
  *  \brief This function will remove the given entity from the participant.
  *  If the given entity is not associated to the participant this function will
@@ -130,12 +130,12 @@ v_participantAdd(
  */
 OS_API void
 v_participantRemove(
-    v_participant _this, 
+    v_participant _this,
     v_entity e);
 
 OS_API void
 v_participantNotify(
-    v_participant _this, 
+    v_participant _this,
     v_event e,
     c_voidp userData);
 
@@ -159,19 +159,6 @@ v_participantDeleteHistoricalData(
     v_participant _this,
     const c_char* partitionExpr,
     const c_char* topicExpr);
-
-/**
- * \brief Renews the lease of the participant.
- *
- * This method renews the lease of the participant by adding the
- * lease period to the current time.
- *
- * \param service The participant to operate on.
- */
-OS_API void
-v_participantRenewLease(
-    v_participant _this,
-    v_duration leasePeriod);
 
 OS_API v_subscriber
 v_participantGetBuiltinSubscriber(

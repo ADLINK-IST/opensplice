@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#include <c_typebase.h>
+#include "c_typebase.h"
 
 /****************************************************************
  * Stream Exp Macro Attributes Class                            *

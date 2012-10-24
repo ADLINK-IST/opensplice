@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -10,8 +10,8 @@
  *
  */
 
-#include <../common/code/os_abstract.c>
-#include <../../pa/code/pa_abstract.c>
+#include "../common/code/os_abstract.c"
+#include "../../pa/code/pa_abstract.c"
 
 os_uint32
 pa_increment(

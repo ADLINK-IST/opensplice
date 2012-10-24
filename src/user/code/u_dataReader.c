@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -26,52 +26,11 @@
 #include "v_entity.h"
 #include "v_public.h"
 #include "v_statistics.h"
+#include "c_iterator.h"
 
 #include "os_report.h"
 
 #define U_DATAREADER_SIZE sizeof(C_STRUCT(u_dataReader))
-
-u_result
-u_dataReaderClaim(
-    u_dataReader _this,
-    v_dataReader *reader)
-{
-    u_result result = U_RESULT_OK;
-
-    if ((_this != NULL) && (reader != NULL)) {
-        *reader = v_dataReader(u_entityClaim(u_entity(_this)));
-        if (*reader == NULL) {
-            OS_REPORT_2(OS_WARNING, "u_dataReaderClaim", 0,
-                        "Claim DataReader failed. "
-                        "<_this = 0x%x, reader = 0x%x>.",
-                         _this, reader);
-            result = U_RESULT_INTERNAL_ERROR;
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,"u_dataReaderClaim",0,
-                    "Illegal parameter. "
-                    "<_this = 0x%x, reader = 0x%x>.",
-                    _this, reader);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_dataReaderRelease(
-    u_dataReader _this)
-{
-    u_result result = U_RESULT_OK;
-
-    if (_this != NULL) {
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_ERROR,"u_dataReaderRelease",0,
-                    "Illegal parameter. <_this = 0x%x>.", _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
 
 u_dataReader
 u_dataReaderNew(
@@ -92,19 +51,21 @@ u_dataReaderNew(
         name = "No name specified";
     }
     if (s != NULL) {
-        result = u_subscriberClaim(s,&ks);
-        if ((result == U_RESULT_OK) && (ks != NULL)) {
+        result = u_entityWriteClaim(u_entity(s), (v_entity*)(&ks));
+        if (result == U_RESULT_OK) {
+            assert(ks);
             reader = v_dataReaderNew(ks,name, OQLexpr,params,qos,enable);
             if (reader != NULL) {
                 p = u_entityParticipant(u_entity(s));
-                _this = u_entityAlloc(p,u_dataReader,reader,TRUE);
+                _this = (u_dataReader)u_entityNew(v_entity(reader),p,TRUE);
+
                 if (_this != NULL) {
-                    result = u_dataReaderInit(_this);
+                    result = u_dataReaderInit(_this,s);
                     if (result != U_RESULT_OK) {
                         OS_REPORT_1(OS_ERROR, "u_dataReaderNew", 0,
                                     "Initialisation failed. "
                                     "For DataReader: <%s>.", name);
-                        u_entityFree(u_entity(_this));
+                        u_dataReaderFree(_this);
                     }
                 } else {
                     OS_REPORT_1(OS_ERROR, "u_dataReaderNew", 0,
@@ -117,7 +78,7 @@ u_dataReaderNew(
                             "Create kernel entity failed. "
                             "For DataReader: <%s>.", name);
             }
-            result = u_subscriberRelease(s);
+            result = u_entityRelease(u_entity(s));
         } else {
             OS_REPORT_2(OS_WARNING, "u_dataReaderNew", 0,
                         "Claim Subscriber (0x%x) failed. "
@@ -133,15 +94,23 @@ u_dataReaderNew(
 
 u_result
 u_dataReaderInit(
-    u_dataReader _this)
+    u_dataReader _this,
+    u_subscriber s)
 {
     u_result result;
 
-    if (_this != NULL) {
+    if (_this && s) {
         result = u_readerInit(u_reader(_this));
-        u_entity(_this)->flags |= U_ECREATE_INITIALISED;
+        if (result == U_RESULT_OK) {
+            _this->subscriber = s;
+            _this->views = NULL;
+            result = u_subscriberAddReader(s,u_reader(_this));
+        }
     } else {
-        OS_REPORT(OS_ERROR,"u_dataReaderInit",0, "Illegal parameter.");
+        OS_REPORT_2(OS_ERROR,
+                    "u_dataReaderInit",0,
+                    "Illegal parameter: _this = 0x%x, subscriber = 0x%x.",
+                    _this,s);
         result = U_RESULT_ILL_PARAM;
     }
     return result;
@@ -152,20 +121,95 @@ u_dataReaderFree(
     u_dataReader _this)
 {
     u_result result;
+    c_bool destroy;
 
-    if (_this != NULL) {
-        if (u_entity(_this)->flags & U_ECREATE_INITIALISED) {
-            result = u_dataReaderDeinit(_this);
-            os_free(_this);
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        destroy = u_entityDereference(u_entity(_this));
+        /* if refCount becomes zero then this call
+         * returns true and destruction can take place
+         */
+        if (destroy) {
+            if (u_entityOwner(u_entity(_this))) {
+                result = u_dataReaderDeinit(_this);
+            } else {
+                /* This user entity is a proxy, meaning that it is not fully
+                 * initialized, therefore only the entity part of the object
+                 * can be deinitialized.
+                 * It would be better to either introduce a separate proxy
+                 * entity for clarity or fully initialize entities and make
+                 * them robust against missing information.
+                 */
+                result = u_entityDeinit(u_entity(_this));
+            }
+            if (result == U_RESULT_OK) {
+                /* free memory */
+                u_entityDealloc(u_entity(_this));
+            } else {
+                OS_REPORT_2(OS_WARNING,
+                            "u_dataReaderFree",0,
+                            "Operation u_dataReaderDeinit failed: "
+                            "DataReader = 0x%x, result = %s.",
+                            _this, u_resultImage(result));
+                u_entityUnlock(u_entity(_this));
+            }
         } else {
-            result = u_entityFree(u_entity(_this));
+            u_entityUnlock(u_entity(_this));
         }
     } else {
-        OS_REPORT(OS_WARNING,"u_dataReaderFree",0,
-                  "The specified DataReader = NIL.");
-        result = U_RESULT_OK;
+        OS_REPORT_2(OS_WARNING,
+                    "u_dataReaderFree",0,
+                    "Operation u_entityLock failed: "
+                    "DataReader = 0x%x, result = %s.",
+                    _this, u_resultImage(result));
     }
     return result;
+}
+
+u_result
+u_dataReaderDeleteContainedEntities (
+    u_dataReader _this)
+{
+    u_result result;
+    u_dataView view;
+    c_iter list;
+
+    if (_this != NULL) {
+        result = u_entityLock(u_entity(_this));
+        if (result == U_RESULT_OK) {
+            list = _this->views;
+            _this->views = NULL;
+            /* Unlock here because following code will take this lock. */
+            u_entityUnlock(u_entity(_this));
+            view = c_iterTakeFirst(list);
+            while (view) {
+                result = u_dataViewFree(view);
+                u_entityDereference(u_entity(_this));
+                view = c_iterTakeFirst(list);
+            }
+            c_iterFree(list);
+        } else {
+            OS_REPORT_3(OS_WARNING,
+                        "u_dataReaderDeleteContainedEntities",0,
+                        "Operation u_entityLock DataReader failed: "
+                        "Participant = 0x%x, DataReader = 0x%x, result = %s.",
+                        u_entityParticipant(u_entity(_this)),
+                        _this, u_resultImage(result));
+        }
+    } else {
+        OS_REPORT(OS_WARNING,
+                  "u_dataReaderDeleteContainedEntities",0,
+                  "Operations failed on invalid DataReader."
+                  "DataReader = NULL");
+    }
+    return result;
+}
+
+u_subscriber
+u_dataReaderSubscriber(
+    u_dataReader _this)
+{
+    return _this->subscriber;
 }
 
 u_result
@@ -173,11 +217,34 @@ u_dataReaderDeinit(
     u_dataReader _this)
 {
     u_result result;
+    u_dataView view;
+    c_iter list;
 
     if (_this != NULL) {
-        result = u_readerDeinit(u_reader(_this));
+        result = u_subscriberRemoveReader(_this->subscriber,u_reader(_this));
+        if (result == U_RESULT_OK) {
+            _this->subscriber = NULL;
+            if (_this->views) {
+                list = _this->views;
+                _this->views = NULL;
+                u_entityUnlock(u_entity(_this));
+                view = c_iterTakeFirst(list);
+                while (view) {
+                    result = u_dataViewFree(view);
+                    view = c_iterTakeFirst(list);
+                }
+                c_iterFree(list);
+                result = u_entityLock(u_entity(_this));
+            }
+            if (result == U_RESULT_OK) {
+                result = u_readerDeinit(u_reader(_this));
+            }
+        }
     } else {
-        OS_REPORT(OS_ERROR,"u_dataReaderDeinit",0, "Illegal parameter.");
+        OS_REPORT(OS_ERROR,
+                  "u_dataReaderDeinit",0,
+                  "Operation failed on invalid DataReader: "
+                  "Datareader = NULL");
         result = U_RESULT_ILL_PARAM;
     }
     return result;
@@ -209,7 +276,8 @@ u_dataReaderDefaultCopy(
     break;
     default:
         OS_REPORT_1(OS_WARNING,"u_dataReaderDefaultCopy",0,
-                    "Unsuitable collection kind (%d)",v_objectKind(c));
+                    "Unsuitable collection kind (%d)",
+                    v_objectKind(c));
         type = NULL;
     break;
     }
@@ -226,6 +294,46 @@ u_dataReaderDefaultCopy(
         c_free(type);
     }
     return FALSE;
+}
+
+c_bool
+u_dataReaderDataAvailableTest(
+    u_dataReader _this)
+{
+    u_result result;
+    v_dataReader reader;
+    c_bool avail = FALSE;
+
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
+    if (result == U_RESULT_OK) {
+        avail = (v_dataReaderNotReadCount(reader) > 0);
+        u_entityRelease(u_entity(_this));
+    } else {
+        OS_REPORT_2(OS_ERROR,
+                    "u_dataReaderDataAvailableTest", 0,
+                    "Claim of DataReader failed: "
+                    "DataReader = 0x%x, result = %s.",
+                    _this, u_resultImage(result));
+    }
+    return avail;
+}
+
+u_result
+u_dataReaderWalkInstances (
+    u_dataReader _this,
+    u_dataReaderInstanceAction action,
+    c_voidp arg)
+{
+    v_dataReader reader;
+    u_result result;
+
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
+
+        if (result == U_RESULT_OK) {
+            v_dataReaderWalkInstances(reader,action,arg);
+            u_entityRelease(u_entity(_this));
+        }
+   return result;
 }
 
 
@@ -264,14 +372,14 @@ u_dataReaderRead(
     v_dataReader reader;
     C_STRUCT(readActionArg) arg;
 
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
 
     if (result == U_RESULT_OK) {
         arg.action = action;
         arg.arg = actionArg;
         arg.proceed = TRUE;
         v_dataReaderRead(reader,readAction,&arg);
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
     }
     return result;
 }
@@ -279,35 +387,35 @@ u_dataReaderRead(
 /* Get instance user data */
 u_result
 u_dataReaderGetInstanceUserData (
-		u_dataReader _this,
-		u_instanceHandle handle,
-		c_voidp* userData_out)
+        u_dataReader _this,
+        u_instanceHandle handle,
+        c_voidp* userData_out)
 {
     v_dataReaderInstance instance;
     v_dataReader reader;
     u_result result;
 
     if (!userData_out) {
-    	result = U_RESULT_ILL_PARAM;
+        result = U_RESULT_ILL_PARAM;
     }else
     {
-		*userData_out = NULL;
+        *userData_out = NULL;
 
-		result = u_dataReaderClaim(_this,&reader);
-		if (result == U_RESULT_OK) {
-			handle = u_instanceHandleFix(handle,v_collection(reader));
-			result = u_instanceHandleClaim(handle, &instance);
-			if (result == U_RESULT_OK) {
-				if (v_dataReaderContainsInstance(reader,instance)) {
-					*userData_out =
-							v_dataReaderInstanceGetUserData (instance);
-				} else {
-					result = U_RESULT_PRECONDITION_NOT_MET;
-				}
-				u_instanceHandleRelease(handle);
-			}
-			u_dataReaderRelease(_this);
-		}
+        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
+        if (result == U_RESULT_OK) {
+            handle = u_instanceHandleFix(handle,v_collection(reader));
+            result = u_instanceHandleClaim(handle, &instance);
+            if (result == U_RESULT_OK) {
+                if (v_dataReaderContainsInstance(reader,instance)) {
+                    *userData_out =
+                            v_dataReaderInstanceGetUserData (instance);
+                } else {
+                    result = U_RESULT_PRECONDITION_NOT_MET;
+                }
+                u_instanceHandleRelease(handle);
+            }
+            u_entityRelease(u_entity(_this));
+        }
     }
 
     return result;
@@ -316,15 +424,15 @@ u_dataReaderGetInstanceUserData (
 /* Set instance user data */
 u_result
 u_dataReaderSetInstanceUserData (
-	    u_dataReader _this,
-	    u_instanceHandle handle,
-	    c_voidp userData)
+        u_dataReader _this,
+        u_instanceHandle handle,
+        c_voidp userData)
 {
     v_dataReaderInstance instance;
     v_dataReader reader;
     u_result result;
 
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
     if (result == U_RESULT_OK) {
         handle = u_instanceHandleFix(handle,v_collection(reader));
         result = u_instanceHandleClaim(handle, &instance);
@@ -336,7 +444,7 @@ u_dataReaderSetInstanceUserData (
             }
             u_instanceHandleRelease(handle);
         }
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
     }
     return result;
 }
@@ -351,14 +459,14 @@ u_dataReaderTake(
     v_dataReader reader;
     C_STRUCT(readActionArg) arg;
 
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
 
     if (result == U_RESULT_OK) {
         arg.action = action;
         arg.arg = actionArg;
         arg.proceed = TRUE;
         v_dataReaderTake(reader,readAction,&arg);
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
     }
     return result;
 }
@@ -417,7 +525,7 @@ u_dataReaderReadList(
     arg.copyArg = copyArg;
     arg.iter = NULL;
     arg.result = NULL;
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
     if (result == U_RESULT_OK) {
         if (max == 0U) {
             arg.spaceLeft = 0x7fffffffU;
@@ -432,7 +540,7 @@ u_dataReaderReadList(
             object = c_iterTakeFirst(list);
         }
         c_iterFree(list);
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
     }
     return arg.result;
 }
@@ -457,7 +565,7 @@ u_dataReaderTakeList(
     arg.copyArg = copyArg;
     arg.iter = NULL;
     arg.result = NULL;
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
     if (result == U_RESULT_OK) {
         if (max == 0U) {
             arg.spaceLeft = 0x7fffffffU;
@@ -472,7 +580,7 @@ u_dataReaderTakeList(
             object = c_iterTakeFirst(list);
         }
         c_iterFree(list);
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
     }
     return arg.result;
 }
@@ -490,7 +598,7 @@ u_dataReaderReadInstance(
     v_dataReader reader;
     u_result result;
 
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
     if (result == U_RESULT_OK) {
         handle = u_instanceHandleFix(handle,v_collection(reader));
         result = u_instanceHandleClaim(handle, &instance);
@@ -505,7 +613,7 @@ u_dataReaderReadInstance(
             }
             u_instanceHandleRelease(handle);
         }
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
     }
     return result;
 }
@@ -521,7 +629,7 @@ u_dataReaderTakeInstance(
     v_dataReader reader;
     u_result result;
 
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
     if (result == U_RESULT_OK) {
         handle = u_instanceHandleFix(handle,v_collection(reader));
         result = u_instanceHandleClaim(handle, &instance);
@@ -536,7 +644,7 @@ u_dataReaderTakeInstance(
             }
             u_instanceHandleRelease(handle);
         }
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
     }
     return result;
 }
@@ -552,7 +660,7 @@ u_dataReaderReadNextInstance(
     v_dataReader reader;
     u_result result;
 
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
     if (result == U_RESULT_OK) {
         if (u_instanceHandleIsNil(handle)) {
             v_dataReaderReadNextInstance(reader,
@@ -562,7 +670,23 @@ u_dataReaderReadNextInstance(
         } else {
             handle = u_instanceHandleFix(handle,v_collection(reader));
             result = u_instanceHandleClaim(handle, &instance);
-            if (result == U_RESULT_OK) {
+            if (result == U_RESULT_ALREADY_DELETED) {
+#if 0
+                /* The handle has become invalid and no instance including
+                 * the key value can be found. Therefore set the instance
+                 * to null and start reading from scratch.
+                 * Doing an automatic correction of already deleted handles
+                 * hides information for the user but can be a convenience
+                 * for iterating over all instances.
+                 * Conceptual this should be left out.
+                 */
+                v_dataReaderReadNextInstance(reader,
+                                             NULL,
+                                             (v_readerSampleAction)action,
+                                             actionArg);
+                result = U_RESULT_OK;
+#endif
+            } else if (result == U_RESULT_OK) {
                 assert(instance != NULL);
                 if (v_dataReaderContainsInstance(reader,instance)) {
                     v_dataReaderReadNextInstance(reader,
@@ -575,7 +699,7 @@ u_dataReaderReadNextInstance(
                 u_instanceHandleRelease(handle);
             }
         }
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
     }
     return result;
 }
@@ -591,7 +715,7 @@ u_dataReaderTakeNextInstance(
     v_dataReader reader;
     u_result result;
 
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
     if (result == U_RESULT_OK) {
         if (u_instanceHandleIsNil(handle)) {
             v_dataReaderTakeNextInstance(reader,
@@ -601,7 +725,23 @@ u_dataReaderTakeNextInstance(
         } else {
             handle = u_instanceHandleFix(handle,v_collection(reader));
             result = u_instanceHandleClaim(handle, &instance);
-            if (result == U_RESULT_OK) {
+            if (result == U_RESULT_ALREADY_DELETED) {
+#if 0
+                /* The handle has become invalid and no instance including
+                 * the key value can be found. Therefore set the instance
+                 * to null and start reading from scratch.
+                 * Doing an automatic correction of already deleted handles
+                 * hides information for the user but can be a convenience
+                 * for iterating over all instances.
+                 * Conceptual this should be left out.
+                 */
+                v_dataReaderTakeNextInstance(reader,
+                                             NULL,
+                                             (v_readerSampleAction)action,
+                                             actionArg);
+                result = U_RESULT_OK;
+#endif
+            } else if (result == U_RESULT_OK) {
                 assert(instance != NULL);
                 if (v_dataReaderContainsInstance(reader,instance)) {
                     v_dataReaderTakeNextInstance(reader,
@@ -614,7 +754,7 @@ u_dataReaderTakeNextInstance(
                 u_instanceHandleRelease(handle);
             }
         }
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
     }
     return result;
 }
@@ -628,7 +768,7 @@ u_dataReaderWaitForHistoricalData(
     v_dataReader reader;
     u_result     result;
 
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
 
     if (result == U_RESULT_OK) {
         if(v_readerWaitForHistoricalData(v_reader(reader), timeout) == TRUE) {
@@ -636,7 +776,7 @@ u_dataReaderWaitForHistoricalData(
         } else {
             result = U_RESULT_TIMEOUT;
         }
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
     }
     return result;
 }
@@ -656,7 +796,7 @@ u_dataReaderWaitForHistoricalDataWithCondition(
     u_result     result;
     v_historyResult hresult;
 
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
 
     if (result == U_RESULT_OK) {
         hresult = v_readerWaitForHistoricalDataWithCondition(
@@ -683,7 +823,7 @@ u_dataReaderWaitForHistoricalDataWithCondition(
             result = U_RESULT_PRECONDITION_NOT_MET;
             break;
         }
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
     }
     return result;
 }
@@ -709,19 +849,310 @@ u_dataReaderLookupInstance(
         return U_RESULT_ILL_PARAM;
     }
 
-    result = u_dataReaderClaim(_this,&reader);
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
 
     if (result == U_RESULT_OK) {
         topic = v_dataReaderGetTopic(reader);
         message = v_topicMessageNew(topic);
-        to = C_DISPLACE(message, v_topicDataOffset(topic));
-        copyIn(v_topicDataType(topic), keyTemplate, to);
-        instance = v_dataReaderLookupInstance(reader, message);
-        *handle = u_instanceHandleNew(v_public(instance));
-        c_free(instance);
+        if (message) {
+            to = C_DISPLACE(message, v_topicDataOffset(topic));
+            copyIn(v_topicDataType(topic), keyTemplate, to);
+            instance = v_dataReaderLookupInstance(reader, message);
+            *handle = u_instanceHandleNew(v_public(instance));
+            c_free(instance);
+            c_free(message);
+        } else {
+            c_char *name = v_topicName(topic);
+            if (name == NULL) {
+                name = "No Name";
+            }
+            OS_REPORT_2(OS_ERROR,
+                        "u_dataReaderLookupInstance", 0,
+                        "Out of memory: unable to create message for Topic: "
+                        "Participant = 0x%x, Topic = '%s'.",
+                        u_entityParticipant(u_entity(_this)),
+                        name);
+            result = U_RESULT_OUT_OF_MEMORY;
+        }
         c_free(topic);
-        c_free(message);
-        u_dataReaderRelease(_this);
+        u_entityRelease(u_entity(_this));
+    }
+    return result;
+}
+
+u_result
+u_dataReaderTopicName(
+    u_dataReader _this,
+    c_char **name)
+{
+    u_result result;
+    v_dataReader reader;
+    v_topic topic;
+    c_char*n;
+
+    *name = NULL;
+    if ((_this) && (name)) {
+        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
+
+        if (result == U_RESULT_OK) {
+            topic = v_dataReaderGetTopic(reader);
+            n = v_topicName(topic);
+            *name = os_strdup(n);
+            c_free(topic);
+            u_entityRelease(u_entity(_this));
+        }
+    } else {
+        result = U_RESULT_ILL_PARAM;
+    }
+    return result;
+}
+
+u_result
+u_dataReaderAddView(
+    u_dataReader _this,
+    u_dataView view)
+{
+    u_result result;
+
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        if (view) {
+            _this->views = c_iterInsert(_this->views, view);
+            u_entityKeep(u_entity(_this));
+            u_entityUnlock(u_entity(_this));
+        } else {
+            OS_REPORT_2(OS_WARNING,
+                        "u_dataReaderAddView",0,
+                        "Invalid DataReaderView: "
+                        "Participant = 0x%x, DataReader = 0x%x, DataReaderView = NULL.",
+                        u_entityParticipant(u_entity(_this)),
+                        _this);
+        }
+    } else {
+        OS_REPORT_2(OS_WARNING,
+                    "u_dataReaderAddView",0,
+                    "Failed to lock DataReader: "
+                    "DataReader = 0x%x, result = %s.",
+                    _this, u_resultImage(result));
+        result = U_RESULT_ILL_PARAM;
+    }
+    return result;
+}
+
+u_result
+u_dataReaderRemoveView(
+    u_dataReader _this,
+    u_dataView view)
+{
+    u_dataView found;
+    u_result result;
+
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        if (view) {
+            found = c_iterTake(_this->views,view);
+            if (found) {
+                u_entityDereference(u_entity(_this));
+            }
+            u_entityUnlock(u_entity(_this));
+        } else {
+            OS_REPORT_2(OS_WARNING,
+                        "u_dataReaderRemoveView",0,
+                        "Given DataReaderView is invalid: "
+                        "Participant = 0x%x, DataReader = 0x%x, DataReaderView = NULL",
+                        u_entityParticipant(u_entity(_this)),
+                        _this);
+        }
+    } else {
+        OS_REPORT_2(OS_WARNING,
+                    "u_dataReaderRemoveView",0,
+                    "Failed to lock DataReader: "
+                    "DataReader = 0x%x, result = %s",
+                    _this, u_resultImage(result));
+        result = U_RESULT_ILL_PARAM;
+    }
+    return result;
+}
+
+c_bool
+u_dataReaderContainsView(
+    u_dataReader _this,
+    u_dataView view)
+{
+    c_bool found = FALSE;
+    u_result result;
+
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        if (view) {
+            found = c_iterContains(_this->views,view);
+            u_entityUnlock(u_entity(_this));
+        } else {
+            OS_REPORT_2(OS_WARNING,
+                        "u_dataReaderContainsView",0,
+                        "Given DataReaderView is invalid: "
+                        "Participant = 0x%x, DataReader = 0x%x, DataReaderView = NULL",
+                        u_entityParticipant(u_entity(_this)),
+                        _this);
+        }
+    } else {
+        OS_REPORT_2(OS_WARNING,
+                    "u_dataReaderContainsView",0,
+                    "Failed to lock DataReader: "
+                    "DataReader = 0x%x, result = %s",
+                    _this, u_resultImage(result));
+    }
+    return found;
+}
+
+c_long
+u_dataReaderViewCount(
+    u_dataReader _this)
+{
+    c_long length = -1;
+    u_result result;
+
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        length = c_iterLength(_this->views);
+        u_entityUnlock(u_entity(_this));
+    } else {
+        OS_REPORT_2(OS_WARNING,
+                    "u_dataReaderViewCount",0,
+                    "Failed to lock DataReader: "
+                    "DataReader = 0x%x, result = %s",
+                    _this, u_resultImage(result));
+    }
+    return length;
+}
+
+static void
+collect_views(
+    c_voidp object,
+    c_voidp arg)
+{
+    c_iter *views;
+    u_dataView view;
+
+    view = u_dataView(object);
+    views = (c_iter *)arg;
+
+    *views = c_iterInsert(*views, view);
+}
+
+c_iter
+u_dataReaderLookupViews(
+    u_dataReader _this)
+{
+    c_iter views = NULL;
+    u_result result;
+
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        c_iterWalk(_this->views, collect_views, &views);
+        u_entityUnlock(u_entity(_this));
+    } else {
+        OS_REPORT_2(OS_WARNING,
+                    "u_dataReaderLookupViews",0,
+                    "Failed to lock DataReader: "
+                    "DataReader = 0x%x, result = %s",
+                    _this, u_resultImage(result));
+    }
+    return views;
+}
+
+u_result
+u_dataReaderWalkViews(
+    u_dataReader _this,
+    u_readerAction action,
+    c_voidp actionArg)
+{
+    c_bool result = FALSE;
+
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        c_iterWalkUntil(_this->views, (c_iterAction)action, actionArg);
+        u_entityUnlock(u_entity(_this));
+    } else {
+        OS_REPORT_2(OS_WARNING,
+                    "u_dataReaderWalkViews",0,
+                    "Failed to lock DataReader: "
+                    "DataReader = 0x%x, result = %s",
+                    _this, u_resultImage(result));
+    }
+    return result;
+}
+
+c_bool
+u_dataReaderDataAvailable(
+    u_dataReader _this)
+{
+    v_dataReader reader;
+    v_status status;
+    u_result result;
+    c_bool availability = FALSE;
+
+    if (_this) {
+        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
+        if (result == U_RESULT_OK) {
+            status = v_entityStatus(v_entity(reader));
+            availability = (v_statusGetMask(status) & V_EVENT_DATA_AVAILABLE);
+            u_entityRelease(u_entity(_this));
+        } else {
+            OS_REPORT_2(OS_WARNING,
+                        "u_dataReaderDataAvailable",0,
+                        "Failed to lock DataReader: "
+                        "DataReader = 0x%x, result = %s",
+                        _this, u_resultImage(result));
+        }
+    } else {
+        OS_REPORT(OS_WARNING,
+                  "u_dataReaderDataAvailable",0,
+                  "Given DataReader is invalid: "
+                  "DataReader = NULL");
+        result = U_RESULT_ILL_PARAM;
+    }
+    return availability;
+}
+
+u_result
+u_dataReaderCopyKeysFromInstanceHandle(
+    u_dataReader _this,
+    u_instanceHandle handle,
+    u_readerAction action,
+    void *copyArg)
+{
+    v_dataReaderInstance instance;
+    u_result result;
+    v_dataReader reader;
+    v_message message;
+    void *from;
+
+    result = u_instanceHandleClaim(handle, &instance);
+    if ((result == U_RESULT_OK) && (instance != NULL)) {
+        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&reader));
+        if (result == U_RESULT_OK) {
+            if (v_dataReaderContainsInstance(reader, instance)) {
+                message = v_dataReaderInstanceCreateMessage(instance);
+                if (message) {
+                    from = C_DISPLACE(message, v_topicDataOffset(v_dataReaderGetTopic(reader)));
+                    action(from, copyArg);
+                    c_free(message);
+                } else {
+                    OS_REPORT_1(OS_WARNING, "u_dataReaderCopyKeysFromInstanceHandle", 0,
+                        "Failed to create keytemplate message"
+                        "<dataReaderInstance = 0x%x>", instance);
+                    result = U_RESULT_ILL_PARAM;
+                }
+            } else {
+                OS_REPORT_2(OS_WARNING, "u_dataReaderCopyKeysFromInstanceHandle", 0,
+                    "Instance handle does not belong to reader"
+                    "<_this = 0x%x handle = %lld>", _this, handle);
+                result = U_RESULT_ILL_PARAM;
+            }
+            u_entityRelease(u_entity(_this));
+        }
+        u_instanceHandleRelease(handle);
     }
     return result;
 }

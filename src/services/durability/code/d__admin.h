@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -67,6 +67,7 @@ C_STRUCT(d_adminEvent){
     d_fellow fellow;
     d_nameSpace nameSpace;
     d_group  group;
+    c_voidp userData;
 };
 
 #define d_adminEvent(e) ((d_adminEvent)(e))
@@ -105,7 +106,8 @@ c_bool                  d_adminCleanupFellowsAction         (d_fellow fellow,
 d_adminEvent            d_adminEventNew                     (c_ulong event,
                                                              d_fellow fellow,
                                                              d_nameSpace nameSpace,
-                                                             d_group group);
+                                                             d_group group,
+                                                             c_voidp userData);
 
 void                    d_adminDeinit                       (d_object object);
 

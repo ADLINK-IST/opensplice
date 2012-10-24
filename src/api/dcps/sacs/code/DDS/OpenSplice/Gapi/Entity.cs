@@ -1,6 +1,6 @@
 ﻿// The OpenSplice DDS Community Edition project.
 //
-// Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
+// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
 // 
 //  This library is free software; you can redistribute it and/or
@@ -57,7 +57,7 @@ namespace DDS.OpenSplice.Gapi
         * // ----------------------------------------------------------------------
         */
         [DllImport("dcpsgapi", EntryPoint = "gapi_object_set_user_data")]
-        public static extern void set_user_data(IntPtr _this, IntPtr userData);
+        public static extern void set_user_data(IntPtr _this, IntPtr userData, Delegate deleteAction, IntPtr deleteActionArg);
 
         [DllImport("dcpsgapi", EntryPoint = "gapi_object_get_user_data")]
         public static extern IntPtr get_user_data(IntPtr _this);

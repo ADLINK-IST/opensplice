@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "d__types.h"
@@ -42,6 +42,7 @@ C_STRUCT(d_nameSpaceSearch) {
     c_bool       match;
 };
 
+
 C_STRUCT(d_nameSpace) {
     C_EXTENDS(d_lock);
     d_name           name;
@@ -51,6 +52,8 @@ C_STRUCT(d_nameSpace) {
     d_serviceState 	 masterState;
     c_bool			 masterConfirmed;
     d_table          elements;
+    d_mergeState     mergeState;
+    d_table          mergedRoleStates;
 };
 
 typedef enum d_nameSpaceHelperKind_s {

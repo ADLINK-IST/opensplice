@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -27,7 +27,7 @@ DDSString::IntToString(int i)
 {
    char buf[20];
 
-   sprintf(buf, "%d", i);
+   os_sprintf(buf, "%d", i);
    return new stringrep(buf);
 }
 
@@ -36,7 +36,7 @@ DDSString::ULongToString (DDS::ULong i)
 {
    char buf[20];
 
-   sprintf (buf, "%du", i);
+   os_sprintf (buf, "%du", i);
    return new stringrep(buf);
 }
 

@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="ccpp_alldatadisposedlistener_dds1619_idl"
-	ProjectGUID="{67A2C531-FECA-1BAD-BE19-FFFD8628F0FE}"
+	ProjectGUID="{67A2C531-FECA-1BAD-BE19-FFFD8328F0FE}"
 	RootNamespace="ccpp_alldatadisposedlistener_dds1619_idl"
 	Keyword="Win32Proj"
 	SignManifests="true"

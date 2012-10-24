@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -193,7 +193,7 @@ sd_concatScoped(
     } else {
         len = strlen(name) + 1;
         result = os_malloc(len);
-        strcpy(result, name);
+        os_strcpy(result, name);
     }
 
     return result;
@@ -693,6 +693,88 @@ sd_serializeStructure (
 }
 
 static void
+metaWalkAction_serializeMetaObject (
+        c_metaObject metaObject,
+        c_metaWalkActionArg arg)
+{
+    sd_serializeType((sd_context)arg, c_getType(metaObject), metaObject);
+}
+
+
+static void
+sd_serializeModule (
+    sd_context context,
+    c_type type,
+    c_object object)
+{
+    sd_contextItemStructure item;
+    sd_contextItem parent;
+    sd_contextItem typeRef;
+    c_property property;
+    c_object o;
+    c_metaObject scope;
+    c_char *name;
+
+    assert(type);
+    assert(object);
+
+    property = (c_property)c_metaResolve(c_object(type), "definedIn");
+    o = (c_object)C_DISPLACE(object, property->offset);
+    scope = (c_metaObject)*(c_object *)o;
+    c_free(property);
+
+    if ( sd_objectInScope(context, scope) ) {
+        sd_contextAddProcessed(context, object);
+
+        item = (sd_contextItemStructure)sd_contextItemNew(SD_CONTEXT_ITEM_MODULE);
+        if ( item ) {
+            property = (c_property)c_metaResolve(c_object(type), "name");
+            o = (c_object)C_DISPLACE(object, property->offset);
+            name = (c_char *)*(c_object *)o;
+            c_free(property);
+
+            sd_contextItem(item)->self = c_metaObject(object);
+            sd_contextItem(item)->name = name;
+            sd_contextItem(item)->scope = scope;
+
+            sd_contextItemAddChild(context->current, sd_contextItem(item));
+
+            sd_contextPushItem(context, sd_contextItem(item));
+
+            /* serialize all object contained in this module */
+            c_metaWalk(object, metaWalkAction_serializeMetaObject, (void*)context);
+
+            sd_contextPopItem(context);
+
+            sd_contextItemFree(sd_contextItem(item));
+        }
+        else
+        {
+            /* todo: OS_REPORT() */
+        }
+    } else {
+        if ( !sd_contextIsProcessed(context, object) ) {
+            parent = (sd_contextItem)sd_contextFindOrCreateScope(context, scope);
+            if ( parent ) {
+                sd_contextPushItem(context, parent);
+                sd_serializeModule(context, type, object);
+                sd_contextPopItem(context);
+            }
+        }
+        sd_addDependency(context, context->current, object);
+        typeRef = sd_contextItemNew(SD_CONTEXT_ITEM_TYPE);
+        if ( typeRef ) {
+            property = (c_property)c_metaResolve(c_object(type), "name");
+            o = (c_object)C_DISPLACE(object, property->offset);
+            typeRef->name = (c_char *)*(c_object *)o;
+            typeRef->scope = scope;
+            sd_contextItemAddChild(context->current, typeRef);
+            sd_contextItemFree(sd_contextItem(typeRef));
+        }
+    }
+}
+
+static void
 sd_serializeTyperef (
     sd_context context,
     c_type type,
@@ -1161,10 +1243,25 @@ sd_serializeType (
                     sd_serializeTypedef(context, type, object);
                     break;
                 case M_PRIMITIVE:
-                    sd_serializePrimitive(context, type, object);
+                    /*
+                     * when the container object is a module, then only
+                     * modules, typedefs, enums, unions and structures
+                     * can be serialized (see S142 spec).
+                     */
+                    if(context->current->kind != SD_CONTEXT_ITEM_MODULE)
+                    {
+                        sd_serializePrimitive(context, type, object);
+                    }
                     break;
                 case M_COLLECTION:
-                    sd_serializeCollection(context, type, object);
+                   /*
+                    * do not serialize if container object is a module (see explanation
+                    * above).
+                    */
+                    if(context->current->kind != SD_CONTEXT_ITEM_MODULE)
+                    {
+                        sd_serializeCollection(context, type, object);
+                    }
                     break;
                 case M_ENUMERATION:
                     sd_serializeEnumeration(context, type, object);
@@ -1172,7 +1269,24 @@ sd_serializeType (
                 case M_UNION:
                     sd_serializeUnion(context, type, object);
                     break;
+                case M_MODULE:
+                    sd_serializeModule(context, type, object);
+                    break;
+                case M_CONSTANT:
+                    /*
+                     * In IDL constants can only be declared in modules (toplevel module too) and
+                     * these are intrepreted as #define pre-processor definitions.
+                     * In the S142 XML definition constants cannot be declared. Therefore
+                     * any constants that are encountered are those of enumerations, and
+                     * these should be ignored, as they are serialized when
+                     * the enumeration is serialized.
+                     */
+                    break;
                 default:
+                    OS_REPORT_1(OS_ERROR,
+                            "sd_serializeType",
+                            0, "sd_serializeType does not support type %d",
+                            c_baseObject(type)->kind);
                     assert(0);
                     break;
                 }
@@ -1633,7 +1747,7 @@ sd_deserXmlString (
             c_metaObject(o)->definedIn   = scope;
             c_metaFinalize(o);
 
-            sprintf(name, "C_STRING<%d>", length);
+            os_sprintf(name, "C_STRING<%d>", length);
             type = c_type(c_metaBind(scope, name, o));
             if ( !type ) {
                 c_char *scopeName = c_metaScopedName(scope);
@@ -1706,11 +1820,11 @@ sd_deserXmlArray (
                     c_metaObject(o)->definedIn   = scope;
                     c_metaFinalize(o);
                     if ( child->name ) {
-                        sprintf(name, "C_ARRAY<%s,%d>", child->name, size);
+                        os_sprintf(name, "C_ARRAY<%s,%d>", child->name, size);
                     } else if ( c_metaObject(subType)->name ) {
-                        sprintf(name, "C_ARRAY<%s,%d>", c_metaObject(subType)->name, size);
+                        os_sprintf(name, "C_ARRAY<%s,%d>", c_metaObject(subType)->name, size);
                     } else {
-                        sprintf(name, "C_ARRAY<NULL,%d>", size);
+                        os_sprintf(name, "C_ARRAY<NULL,%d>", size);
                     }
 
                     element->object = c_metaBind(scope, name, o);
@@ -1782,19 +1896,19 @@ sd_deserXmlSequence (
 
                     if ( size > 0 ) {
                         if ( child->name ) {
-                            sprintf(name, "C_SEQUENCE<%s,%d>", child->name, size);
+                            os_sprintf(name, "C_SEQUENCE<%s,%d>", child->name, size);
                         } else if ( c_metaObject(subType)->name ) {
-                            sprintf(name, "C_SEQUENCE<%s,%d>", c_metaObject(subType)->name, size);
+                            os_sprintf(name, "C_SEQUENCE<%s,%d>", c_metaObject(subType)->name, size);
                         } else {
-                            sprintf(name, "C_SEQUENCE<NULL,%d>", size);
+                            os_sprintf(name, "C_SEQUENCE<NULL,%d>", size);
                         }
                     } else {
                         if ( child->name ) {
-                            sprintf(name, "C_SEQUENCE<%s>", child->name);
+                            os_sprintf(name, "C_SEQUENCE<%s>", child->name);
                         } else if ( c_metaObject(subType)->name ) {
-                            sprintf(name, "C_SEQUENCE<%s>", c_metaObject(subType)->name);
+                            os_sprintf(name, "C_SEQUENCE<%s>", c_metaObject(subType)->name);
                         } else {
-                            sprintf(name, "C_SEQUENCE<NULL>");
+                            os_sprintf(name, "C_SEQUENCE<NULL>");
                         }
                     }
 

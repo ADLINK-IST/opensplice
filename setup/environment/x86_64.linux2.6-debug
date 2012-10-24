@@ -1,0 +1,31 @@
+. $OSPL_HOME/bin/checkconf
+
+SPLICE_HOST=x86_64.linux2.6-debug
+SPLICE_TARGET=x86_64.linux2.6-debug
+export SPLICE_HOST SPLICE_TARGET
+echo
+
+ERRS=0
+gcc_check || ERRS=1
+make_check || ERRS=1
+gawk_check || ERRS=1
+bison_check || ERRS=1
+flex_check || ERRS=1
+javac_check || ERRS=1
+gmcs_check || ERRS=1
+tao_check || ERRS=1
+jacorb_check || ERRS=1
+
+if [ -z $REPORT ]
+then
+    if [ "$ERRS" = "0" ]
+    then
+        echo Configuration OK
+        CONFIGURATION=OK
+    else
+        echo Configuration Invalid
+        CONFIGURATION=INVALID
+    fi
+    export CONFIGURATION
+    cleanup_checks
+fi

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -121,6 +121,8 @@ v_statusInit(
         c_free(type);
         v_writerStatus(s)->publicationMatch.totalCount = 0;
         v_writerStatus(s)->publicationMatch.totalChanged = 0;
+        v_writerStatus(s)->publicationMatch.currentCount = 0;
+        v_writerStatus(s)->publicationMatch.currentChanged = 0;
         v_writerStatus(s)->publicationMatch.instanceHandle = v_publicGid(NULL);
     break;
     case K_READERSTATUS:
@@ -146,6 +148,8 @@ v_statusInit(
         c_free(type);
         v_readerStatus(s)->subscriptionMatch.totalCount = 0;
         v_readerStatus(s)->subscriptionMatch.totalChanged = 0;
+        v_readerStatus(s)->subscriptionMatch.currentCount = 0;
+        v_readerStatus(s)->subscriptionMatch.currentChanged = 0;
         v_readerStatus(s)->subscriptionMatch.instanceHandle = v_publicGid(NULL);
     break;
     case K_PARTICIPANTSTATUS:
@@ -352,6 +356,76 @@ v_statusNotifyIncompatibleQos(
     return changed;
 }
 
+c_bool
+v_statusNotifyPublicationMatched(
+    v_status s,
+    v_gid instanceHandle,
+    c_bool   dispose)
+{
+    c_bool changed;
+
+    assert(s != NULL);
+    assert(C_TYPECHECK(s,v_writerStatus));
+
+    if (s->state & V_EVENT_TOPIC_MATCHED) {
+        changed = FALSE;
+    } else {
+        s->state |= V_EVENT_TOPIC_MATCHED;
+        changed = TRUE;
+    }
+
+    if(dispose)
+    {
+        v_writerStatus(s)->publicationMatch.currentCount--;
+        v_writerStatus(s)->publicationMatch.currentChanged++; /* NB: negative changes also increase this variable */
+    }
+    else
+    {
+        v_writerStatus(s)->publicationMatch.totalCount++;
+        v_writerStatus(s)->publicationMatch.totalChanged++;
+        v_writerStatus(s)->publicationMatch.currentCount++;
+        v_writerStatus(s)->publicationMatch.currentChanged++;
+    }
+    v_writerStatus(s)->publicationMatch.instanceHandle = instanceHandle;
+
+    return changed;
+}
+
+
+c_bool
+v_statusNotifySubscriptionMatched(
+    v_status s,
+    v_gid    instanceHandle,
+    c_bool   dispose)
+{
+    c_bool changed;
+
+    assert(s != NULL);
+    assert(C_TYPECHECK(s,v_readerStatus));
+
+    if (s->state & V_EVENT_TOPIC_MATCHED) {
+        changed = FALSE;
+    } else {
+        s->state |= V_EVENT_TOPIC_MATCHED;
+        changed = TRUE;
+    }
+
+    if(dispose)
+    {
+        v_readerStatus(s)->subscriptionMatch.currentCount--;
+        v_readerStatus(s)->subscriptionMatch.currentChanged++; /* NB: negative changes also increase this variable */
+    }
+    else
+    {
+        v_readerStatus(s)->subscriptionMatch.currentCount++;
+        v_readerStatus(s)->subscriptionMatch.currentChanged++;
+        v_readerStatus(s)->subscriptionMatch.totalCount++;
+        v_readerStatus(s)->subscriptionMatch.totalChanged++;
+    }
+    v_readerStatus(s)->subscriptionMatch.instanceHandle = instanceHandle;
+
+    return changed;
+}
 c_bool
 v_statusNotifyLivelinessChanged(
     v_status s,

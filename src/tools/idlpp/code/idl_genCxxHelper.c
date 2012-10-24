@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -11,8 +11,8 @@
  */
 #include "idl_genCxxHelper.h"
 #include "idl_genLanguageHelper.h"
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 
 /* Specify a list of all C++ keywords */
 static const char *cxx_keywords[74] = {
@@ -87,7 +87,7 @@ idl_scopeStackCxx(
                          (int)strlen(scopeStack)+
                          (int)strlen(scopeSepp)+
                          (int)strlen(Id)+1));
-        strcat(scopeStack, Id);
+        os_strcat(scopeStack, Id);
         si++;
         while (si < sz) {
             /* Translate the scope name to a C++ identifier */
@@ -102,10 +102,10 @@ idl_scopeStackCxx(
                              (int)strlen(Id)+1));
            /* Concatenate the separator */
            /* QAC EXPECT 5007; will not use wrapper */
-           strcat(scopeStack, scopeSepp);
+           os_strcat(scopeStack, scopeSepp);
            /* Concatenate the scope name */
            /* QAC EXPECT 5007; will not use wrapper */
-           strcat(scopeStack, Id);
+           os_strcat(scopeStack, Id);
            si++;
         }
         if (name) {
@@ -122,10 +122,10 @@ idl_scopeStackCxx(
                              (int)strlen(Id)+1));
             /* Concatenate the separator */
             /* QAC EXPECT 5007; will not use wrapper */
-            strcat(scopeStack, scopeSepp);
+            os_strcat(scopeStack, scopeSepp);
             /* Concatenate the user identifier */
             /* QAC EXPECT 5007; will not use wrapper */
-            strcat(scopeStack, Id);
+            os_strcat(scopeStack, Id);
         }
     } else {
 	/* The stack is empty */

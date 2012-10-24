@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,10 +15,28 @@
 #include "d_nameSpace.h"
 #include "d_networkAddress.h"
 #include "d__nameSpace.h"
+#include "d__mergeState.h"
 #include "d_admin.h"
 #include "d_message.h"
 #include "d_table.h"
 #include "os.h"
+
+struct nsWalkHelper {
+    d_mergeState* states;
+    c_ulong index;
+};
+
+static c_bool
+addMergeState(
+    d_mergeState state,
+    struct nsWalkHelper* helper)
+{
+    ((helper->states)[helper->index])->role = os_strdup(state->role);
+    ((helper->states)[helper->index])->value = state->value;
+    helper->index++;
+
+    return TRUE;
+}
 
 d_nameSpaces
 d_nameSpacesNew(
@@ -30,6 +48,8 @@ d_nameSpacesNew(
     d_nameSpaces ns = NULL;
     d_durability durability;
     d_networkAddress master;
+    d_mergeState state;
+    struct nsWalkHelper helper;
 
     if(nameSpace){
         ns = d_nameSpaces(os_malloc(C_SIZEOF(d_nameSpaces)));
@@ -51,7 +71,25 @@ d_nameSpacesNew(
             ns->master.lifecycleId         = master->lifecycleId;
             ns->isComplete                 = TRUE;
             ns->name                       = os_strdup (d_nameSpaceGetName(nameSpace));
+            ns->masterConfirmed            = d_nameSpaceIsMasterConfirmed(nameSpace);
 
+            state = d_nameSpaceGetMergeState(nameSpace, NULL);
+            ns->state.role                 = os_strdup(state->role);
+            ns->state.value                = state->value;
+            d_mergeStateFree(state);
+
+            ns->mergedStatesCount          = d_tableSize(nameSpace->mergedRoleStates);
+
+            if(ns->mergedStatesCount > 0){
+                ns->mergedStates               = os_malloc(C_SIZEOF(d_mergeState)*ns->mergedStatesCount);
+
+                helper.states = (d_mergeState*)(&(ns->mergedStates));
+                helper.index = 0;
+
+                d_tableWalk(nameSpace->mergedRoleStates, addMergeState, &helper);
+            } else {
+                ns->mergedStates = NULL;
+            }
             d_networkAddressFree(master);
         }
     }
@@ -176,6 +214,7 @@ void
 d_nameSpacesFree(
     d_nameSpaces nameSpaces)
 {
+    c_ulong i;
 
     if(nameSpaces){
         if(nameSpaces->name){
@@ -184,6 +223,16 @@ d_nameSpacesFree(
         if(nameSpaces->partitions){
             os_free(nameSpaces->partitions);
             nameSpaces->partitions = NULL;
+        }
+        if(nameSpaces->state.role){
+            os_free(nameSpaces->state.role);
+            nameSpaces->state.role = NULL;
+        }
+        if(nameSpaces->mergedStatesCount > 0){
+            for(i=0; i<nameSpaces->mergedStatesCount; i++){
+                os_free(d_mergeState(&(nameSpaces->mergedStates[i]))->role);
+            }
+            os_free(nameSpaces->mergedStates);
         }
         d_messageDeinit(d_message(nameSpaces));
         os_free(nameSpaces);

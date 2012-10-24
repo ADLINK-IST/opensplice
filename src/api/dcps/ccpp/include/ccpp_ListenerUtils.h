@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,7 +12,7 @@
 #ifndef CCPP_LISTENERUTILS_H
 #define CCPP_LISTENERUTILS_H
 
-#include <gapi.h>
+#include "gapi.h"
 #include "ccpp.h"
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 

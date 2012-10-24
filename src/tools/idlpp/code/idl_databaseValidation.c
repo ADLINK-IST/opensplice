@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,6 +14,7 @@
 #include "idl_databaseValidation.h"
 #include "idl_keyDef.h"
 #include "idl_catsDef.h"
+#include "idl_stacDef.h"
 #include "os.h"
 
 
@@ -30,7 +31,8 @@
 typedef enum {
     idl_UndeclaredIdentifier,
     idl_IllegalKeyFields,
-    idl_NoCorrespondingCats
+    idl_NoCorrespondingCats,
+    idl_BStrKeyHasStacApplied
 } idl_errorIndex;
 
 
@@ -41,7 +43,8 @@ typedef enum {
 static char *errorText [] = {
     "Undeclared referenced identifier %s.",
     "Key fields are only supported for struct type.",
-    "No corresponding '#pragma cats' for '#pragma keylist %s %s' which is a char array."
+    "No corresponding '#pragma cats' for '#pragma keylist %s %s' which is a char array.",
+    "The field named %s in datatype %s is specified in the keylist of type %s, but also has a '#pragma stac' applied to it."
 };
 
 
@@ -55,6 +58,21 @@ idl_printError(
     char *text)
 {
     printf("*** DDS error in file %s: %s\n", filename, text);
+}
+
+static os_boolean
+idl_databaseValidationShouldOnlyWarnForStac(
+    )
+{
+    os_boolean onlyWarn = OS_FALSE;
+    os_char* onlyWarnVal;
+
+    onlyWarnVal = os_getenv ("OSPL_IDLPP_ONLY_WARN_FOR_STAC");
+    if (onlyWarnVal != NULL)
+    {
+        onlyWarn = OS_TRUE;
+    }
+    return onlyWarn;
 }
 
 
@@ -88,53 +106,13 @@ idl_getTypeOfKey(
     return c_typeActualType(scope);
 }
 
-/*
- *
- */
-static c_bool
-idl_isCatsDefFor(
-    c_metaObject scope,
-    c_char *typeName,
-    c_char *key)
-{
-    idl_catsDef catsDef = idl_catsDefDefGet();
-    idl_catsMap catsMap;
-    c_long catsMapIdx;
-    c_iter catsList;
-    os_uint32 catsListSize;
-    os_uint32 catsIdx;
-
-    if (catsDef != NULL) {
-        /* check all cats definition list elements */
-        for (catsMapIdx = 0; catsMapIdx < c_iterLength(catsDef->catsList); catsMapIdx++) {
-            catsMap = c_iterObject(catsDef->catsList, catsMapIdx);
-            if (c_metaCompare(scope, catsMap->scope) == E_EQUAL &&
-                strcmp(typeName, catsMap->typeName) == 0)
-            {
-                /* for each cats in catsList, check if it's equal to key */
-                catsList = c_splitString(catsMap->catsList, ",");
-                catsListSize = c_iterLength(catsList);
-                for(catsIdx = 0; catsIdx < catsListSize; catsIdx++)
-                {
-                    if (strcmp(c_iterTakeFirst(catsList), key) == 0) {
-                        return OS_TRUE;
-                    }
-                }
-            }
-        }
-    }
-
-    return OS_FALSE;
-}
-
-
 
 /*
  * Check if each usage of a char array as a key has a corresponding
  * "#pragma cats" declaration.
  */
 static c_bool
-idl_checkCatsUsage(
+idl_checkPragmaConsistency(
     c_base base,
     const char* filename)
 {
@@ -156,7 +134,9 @@ idl_checkCatsUsage(
     c_type subType;
     c_string typeName;
     c_type spType;
+    os_boolean onlyWarnForStac;
 
+    onlyWarnForStac = idl_databaseValidationShouldOnlyWarnForStac();
     if (keyDef != NULL) {
         /* check all key definition list elements */
         for (keyMapIdx = 0; keyMapIdx < c_iterLength(keyDef->keyList); keyMapIdx++) {
@@ -212,36 +192,74 @@ idl_checkCatsUsage(
                             {
                                 tmpStructure = c_structure(spType);
                             }
-                            /* If the member is a collection then we need to
-                             * ensure it is not a character array, but if it
-                             * is we need to ensure a corresponding CATS pragma
-                             * can be located
-                             */
-                            else if(c_baseObject(spType)->kind == M_COLLECTION && c_collectionType(spType)->kind == C_ARRAY)
+                            else if(c_baseObject(spType)->kind == M_COLLECTION)
                             {
-                                subType = c_typeActualType(c_collectionType(spType)->subType);
-                                if(c_baseObject(subType)->kind == M_PRIMITIVE &&
-                                   c_primitive(subType)->kind == P_CHAR)
+                                /* If the member is a collection then it might be
+                                 * a candidate for a #pragma cats or a #pragma stac,
+                                 * so don't discard or approve the member yet.
+                                 */
+                                if (c_collectionType(spType)->kind == C_ARRAY)
                                 {
-
-                                    typeName = c_metaName(c_metaObject(tmpStructure));
-                                    /* check if there is corresponding catsDef */
-                                    if (!idl_isCatsDefFor(c_metaObject(tmpStructure)->definedIn,
-                                                          typeName,
-                                                          keyName))
+                                    /*
+                                     * If the member is an array of chars AND it has
+                                     * a #pragma cats defined, then it is valid.
+                                     * Otherwise an array is not approved as a key.
+                                     */
+                                    subType = c_typeActualType(c_collectionType(spType)->subType);
+                                    if(c_baseObject(subType)->kind == M_PRIMITIVE &&
+                                       c_primitive(subType)->kind == P_CHAR)
                                     {
-                                        snprintf(
-                                            errorBuffer,
-                                            IDL_MAX_ERRORSIZE-1,
-                                            errorText[idl_NoCorrespondingCats],
-                                            c_metaObject(structure)->name,
-                                            keyName);
-                                        idl_printError(filename, errorBuffer);
-                                        return OS_FALSE;
-                                    }
-                                    c_free(typeName);
-                                }
 
+                                        typeName = c_metaName(c_metaObject(tmpStructure));
+                                        /* check if there is corresponding catsDef */
+                                        if (!idl_isCatsDefFor(c_metaObject(tmpStructure)->definedIn,
+                                                              typeName,
+                                                              keyName))
+                                        {
+                                            snprintf(
+                                                errorBuffer,
+                                                IDL_MAX_ERRORSIZE-1,
+                                                errorText[idl_NoCorrespondingCats],
+                                                c_metaObject(structure)->name,
+                                                keyName);
+                                            idl_printError(filename, errorBuffer);
+                                            return OS_FALSE;
+                                        }
+                                        c_free(typeName);
+                                    }
+                                }
+                                else
+                                {
+                                    /*
+                                     * If the member is a bounded string AND it has
+                                     * a #pragma stac applied to itself or to its
+                                     * structure, then this is illegal.
+                                     */
+                                    if( c_collectionType(spType)->kind == C_STRING &&
+                                        c_collectionType(spType)->maxSize > 0 )
+                                    {
+                                        typeName = c_metaName(c_metaObject(tmpStructure));
+                                        /* check if there is corresponding catsDef */
+                                        if (idl_isStacDefFor(c_metaObject(tmpStructure)->definedIn,
+                                                              typeName,
+                                                              keyName))
+                                        {
+                                            snprintf(
+                                                errorBuffer,
+                                                IDL_MAX_ERRORSIZE-1,
+                                                errorText[idl_BStrKeyHasStacApplied],
+                                                keyName,
+                                                c_metaObject(tmpStructure)->name,
+                                                c_metaObject(structure)->name);
+                                            idl_printError(filename, errorBuffer);
+                                            if(!onlyWarnForStac)
+                                            {
+                                                return OS_FALSE;
+                                            }
+                                        }
+                                        c_free(typeName);
+                                    }
+                                }
                             }
                         }
                     }
@@ -266,7 +284,7 @@ idl_validateDatabase (
     c_base base,
     const char* filename)
 {
-    return idl_checkCatsUsage(base, filename);
+    return idl_checkPragmaConsistency(base, filename);
 }
 
 

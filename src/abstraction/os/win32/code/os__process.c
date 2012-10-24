@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,15 +14,15 @@
  *
  * Implements process management for WIN32
  */
-#include <os_process.h>
-#include <code/os__process.h>
-#include <os_thread.h>
-#include <os_stdlib.h>
-#include <os_heap.h>
-#include <os_time.h>
-#include <os_report.h>
-#include <os_signal.h>
-#include <code/os__debug.h>
+#include "os_process.h"
+#include "code/os__process.h"
+#include "os_thread.h"
+#include "os_stdlib.h"
+#include "os_heap.h"
+#include "os_time.h"
+#include "os_report.h"
+#include "os_signal.h"
+#include "code/os__debug.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -64,6 +64,18 @@ CtrlHandler(
     DWORD fdwCtrlType)
 {
     os_int32 terminate;
+
+    switch (fdwCtrlType) {
+    case CTRL_LOGOFF_EVENT:
+        /* It is not correct to ever exit when this event is received. see dds#2732
+        From MSDN re CTRL_LOGOFF_EVENT:
+        "A signal that the system sends to all console processes when a user is
+        logging off. This signal does not indicate which user is logging off, so
+        no assumptions can be made. Note that this signal is received only by
+        services. Interactive applications are terminated at logoff, so they are
+        not present when the system sends this signal." */
+        return TRUE;
+    }
 /*
     BOOL result;
 
@@ -221,7 +233,7 @@ installSignalEmulator(void)
 
 /* First create the pipe */
 if (_ospl_signalEmulatorHandle == INVALID_HANDLE_VALUE) {
-    _snprintf(pname, 256, "\\\\.\\pipe\\osplpipe_%d", _getpid());
+    snprintf(pname, 256, "\\\\.\\pipe\\osplpipe_%d", _getpid());
     _ospl_signalEmulatorHandle = CreateNamedPipe(pname,
            PIPE_ACCESS_INBOUND,
            PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
@@ -369,41 +381,7 @@ os_procExit(
     exit((int)status);
 }
 
-struct readPipeHelper{
-    os_procId pid;
-    HANDLE hChildStdoutWr;
-    HANDLE hChildStdoutRd;
-};
-
-static void*
-readFromPipe(
-    void* args)
-{
-    DWORD dwRead, dwWritten;
-    CHAR chBuf[4096];
-    int proceed = 1;
-    HANDLE hStdout;
-    struct readPipeHelper* helper;
-
-    helper = (struct readPipeHelper*)args;
-    hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
-
-    WaitForSingleObject (helper->pid, 0);
-    CloseHandle(helper->hChildStdoutWr);
-    while (proceed) {
-        if((!ReadFile(helper->hChildStdoutRd, chBuf, 4096, &dwRead, NULL)) ||
-           (dwRead == 0)) {
-            proceed = 0;
-        }
-        if (!WriteFile(hStdout, chBuf, dwRead, &dwWritten, NULL)) {
-            proceed = 0;
-        }
-    }
-    CloseHandle(helper->hChildStdoutRd);
-    os_free(helper);
-
-    return NULL;
-}
+#define OS_STRLEN_SPLICE_PROCNAME (16) /* strlen("SPLICE_PROCNAME="); */
 
 /** \brief Create a process that is an instantiation of a program
  *
@@ -435,12 +413,10 @@ os_procCreate(
     PROCESS_INFORMATION process_info;
     STARTUPINFO si;
     char *inargs;
-    char environment[512];
+    LPTCH environment;
+    LPTCH environmentCopy;
 
     SECURITY_ATTRIBUTES saAttr;
-    struct readPipeHelper* helper;
-    os_threadId tid;
-    os_threadAttr tattr;
 
     os_schedClass effective_process_class;
     os_int32 effective_priority;
@@ -452,10 +428,10 @@ os_procCreate(
 
     inargs = (char*)os_malloc(strlen (name) + strlen (arguments) + 4);
 
-    strcpy(inargs, "\"");
-    strcat(inargs, name);
-    strcat(inargs, "\" ");
-    strcat(inargs, arguments);
+    os_strcpy(inargs, "\"");
+    os_strcat(inargs, name);
+    os_strcat(inargs, "\" ");
+    os_strcat(inargs, arguments);
 
     memset(&si, 0, sizeof(STARTUPINFO));
     si.cb = sizeof(STARTUPINFO);
@@ -464,22 +440,67 @@ os_procCreate(
         saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
         saAttr.bInheritHandle = TRUE;
         saAttr.lpSecurityDescriptor = NULL;
-        helper = (struct readPipeHelper*)os_malloc(sizeof(struct readPipeHelper));
-
-        if (!CreatePipe(&(helper->hChildStdoutRd), &(helper->hChildStdoutWr), &saAttr, 0)) {
-            OS_DEBUG_1("os_procCreate", "CreatePipe failed with %d", (int)GetLastError());
-        }
-        SetHandleInformation(helper->hChildStdoutRd, HANDLE_FLAG_INHERIT, 0);
-
-        si.hStdError = helper->hChildStdoutWr;
-        si.hStdOutput = helper->hChildStdoutWr;
+        si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+        si.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
         si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
         si.dwFlags |= STARTF_USESTDHANDLES;
     }
 
-    /* Set the process name via environment variable SPLICE_PROCNAME */
-    snprintf(environment, sizeof(environment), "SPLICE_PROCNAME=%s", name);
-    putenv(environment);
+    /* Duplicate the environment of the current process for the child-process
+     * and set the SPLICE_PROCNAME environment variable to name.
+     * CreateEnvironmentBlock cannot be used conveniently here, since the
+     * environment has to be modified and SPLICE_PROCNAME can be set in the
+     * current process too. */
+    environment = GetEnvironmentStrings();
+    if(environment){
+        size_t len = 0;
+        size_t newLen = 0;
+        size_t spliceVarLen = 0;
+        LPTSTR currentVar = (LPTSTR)environment;
+        LPTSTR spliceVar = currentVar; /* If all vars are larger, then insert has to happen at beginning */
+        int equals;
+
+        /* The environment block needs to be ordered */
+        while(*currentVar){
+            if(spliceVarLen == 0){ /* Only do strncmp if EXACT location not found */
+                equals = strncmp("SPLICE_PROCNAME=", currentVar, OS_STRLEN_SPLICE_PROCNAME);
+                if(equals == 0){
+                    spliceVar = currentVar; /* Mark address where replacement has to happen */
+                    spliceVarLen = lstrlen(spliceVar) + 1;
+                } else if (equals > 0){
+                    /* Mark address where insertion has to happen */
+                    spliceVar = currentVar + lstrlen(currentVar) + 1;
+                }
+            }
+            len += lstrlen(currentVar) + 1;
+            currentVar = environment + len;
+        }
+
+        newLen = len - spliceVarLen
+            + OS_STRLEN_SPLICE_PROCNAME + strlen(name) + 1;
+
+        environmentCopy = (LPTCH)os_malloc(newLen + 1 /* End of array */);
+        if(environmentCopy){
+            int until = spliceVar - environment;
+            int newSpliceVarLen;
+            /* First copy up until location of spliceVar */
+            memcpy(environmentCopy, environment, until);
+            /* Now write the new SPLICE_PROCNAME */
+            newSpliceVarLen = sprintf(environmentCopy + until, "SPLICE_PROCNAME=%s", name) + 1;
+            /* Now copy tail */
+            memcpy(environmentCopy + until + newSpliceVarLen, spliceVar + spliceVarLen, len - (until + spliceVarLen));
+            environmentCopy[newLen] = (TCHAR)0;
+        } else {
+            OS_REPORT(OS_ERROR,
+                        "os_procCreate", 1,
+                        "Out of (heap) memory.");
+        }
+        FreeEnvironmentStrings(environment);
+    } else {
+        OS_REPORT_1(OS_ERROR,
+                "os_procCreate", 1,
+                "GetEnvironmentStrings failed, environment will be inherited from parent-process without modifications.", (int)GetLastError());
+    }
 
     if (CreateProcess(executable_file,
                       inargs,
@@ -487,7 +508,7 @@ os_procCreate(
                       NULL,                     // ThreadAttributes
                       procAttr->activeRedirect, // InheritHandles
                       CREATE_NO_WINDOW,         // dwCreationFlags
-                      NULL,                     // Environment
+                      (LPVOID)environmentCopy,  // Environment
                       NULL,                     // CurrentDirectory
                       &si,
                       &process_info) == 0) {
@@ -500,14 +521,11 @@ os_procCreate(
                ? os_resultInvalid : os_resultFail;
     }
 
-    *procId = (os_procId)process_info.hProcess;
-
-    if (procAttr->activeRedirect) {
-        helper->pid = (os_procId)process_info.hProcess;
-        os_threadAttrInit(&tattr);
-        os_threadCreate(&tid, "readFromPipeThread", &tattr, readFromPipe, helper);
-        os_threadWaitExit(tid, NULL);
+    if(environmentCopy){
+        os_free(environmentCopy);
     }
+
+    *procId = (os_procId)process_info.hProcess;
 
     os_free(inargs);
 
@@ -549,6 +567,8 @@ os_procCreate(
 
     return os_resultSuccess;
 }
+
+#undef OS_STRLEN_SPLICE_PROCNAME
 
 /** \brief Check the child exit status of the identified process
  *
@@ -729,48 +749,18 @@ os_procFigureIdentity(
     os_int32 size = 0;
     char *process_name;
 
-    process_name = getenv("SPLICE_PROCNAME");
+    process_name = os_getenv("SPLICE_PROCNAME");
 
-    if (process_name != NULL) {
-        size = snprintf(procIdentity, procIdentitySize, "%s <%d>",
-                process_name, os_procIdToInteger(os_procIdSelf()));
+    if (process_name == NULL) {
+        process_name = GetCommandLine();
+    }
+
+    if(process_name){
+        size = snprintf(procIdentity, procIdentitySize, "PID <%d> %s",
+                    os_procIdToInteger(os_procIdSelf()), process_name);
     } else {
-        char *tmp;
-        DWORD nSize;
-        DWORD allocated = 0;
-
-        do {
-            /* While procIdentitySize could be used (since the caller cannot
-             * store more data anyway, it is not used. This way the amount that
-             * needs to be allocated to get the full-name can be determined. */
-            allocated++;
-            tmp = (char*) os_realloc(process_name, allocated * _OS_PROC_PROCES_NAME_LEN);
-            if(tmp){
-                process_name = tmp;
-
-                /* First parameter NULL retrieves module-name of executable */
-                nSize = GetModuleFileNameA (NULL, process_name, allocated * _OS_PROC_PROCES_NAME_LEN);
-            } else {
-                /* Memory-claim denied, revert to default */
-                size = 0;
-                if(process_name){
-                    os_free(process_name);
-                    process_name = NULL; /* Will break loop */
-                }
-            }
-
-        /* process_name will only be guaranteed to be NULL-terminated if nSize <
-         * (allocated * _OS_PROC_PROCES_NAME_LEN), so continue until that's true */
-        } while (process_name && nSize >= (allocated * _OS_PROC_PROCES_NAME_LEN));
-
-        if(process_name){
-            size = snprintf(procIdentity, procIdentitySize, "%s <%d>", process_name,
-                    os_procIdToInteger(os_procIdSelf()));
-            os_free(process_name);
-        } else {
-            /* Resolving failed, reverting to default */
-            size = 0;
-        }
+        /* Resolving failed, reverting to default */
+        size = 0;
     }
 
     if(size == 0){
@@ -827,7 +817,7 @@ os_procMLockAll(
 os_result
 os_procMLock(
     const void *addr,
-    os_uint length)
+    os_address length)
 {
     OS_REPORT(OS_ERROR, "os_procMLock", 0, "Page locking not support on WIN32");
     return os_resultFail;
@@ -836,7 +826,7 @@ os_procMLock(
 os_result
 os_procMUnlock(
     const void *addr,
-    os_uint length)
+    os_address length)
 {
     OS_REPORT(OS_ERROR, "os_procMUnlock", 0, "Page locking not support on WIN32");
     return os_resultFail;
@@ -855,4 +845,3 @@ os_procSetSignalHandlingEnabled(
 {
     return;
 }
-

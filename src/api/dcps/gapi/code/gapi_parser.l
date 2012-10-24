@@ -7,6 +7,13 @@
  **********************************************************************/
 
 #include "gapi_common.h"
+#include "os_stdlib.h"
+
+#ifdef WINCE
+#undef errno
+static int errno=0;
+#endif
+
 
 /**********************************************************************
  *
@@ -153,7 +160,7 @@ BETWEEN             { RETURN (BETWEEN); }
     
                         yylval.String = (char*)malloc((unsigned)strlen(yytext)+1);
                         gapi_parser_column+=strlen(yytext);
-                        strcpy(yylval.String,yytext);
+                        os_strcpy(yylval.String,yytext);
                         return (ENUMERATEDVALUE);
 #else
                         return (UNDEFINEDTOKEN);
@@ -166,13 +173,13 @@ BETWEEN             { RETURN (BETWEEN); }
                         */
                         yylval.String = (char*)malloc((unsigned)strlen(yytext)+1);
                         gapi_parser_column+=strlen(yytext);
-                        strcpy(yylval.String,yytext);
+                        os_strcpy(yylval.String,yytext);
                         return (IDENTIFIER);
                     }
 {FIELDNAME}         {
                         yylval.String = (char*)malloc((unsigned)strlen(yytext)+1);
                         gapi_parser_column+=strlen(yytext);
-                        strcpy(yylval.String,yytext);
+                        os_strcpy(yylval.String,yytext);
                         return (FIELDNAME);
                     }   
 {INTEGER}           {
@@ -181,7 +188,7 @@ BETWEEN             { RETURN (BETWEEN); }
                         } else {
                              yylval.String = (char*)malloc((unsigned)strlen(yytext)+1);
                              gapi_parser_column+=strlen(yytext);
-                             strcpy(yylval.String,yytext);
+                             os_strcpy(yylval.String,yytext);
                              return (IDENTIFIER);
                         }
 #if 0
@@ -207,7 +214,7 @@ BETWEEN             { RETURN (BETWEEN); }
                            must be freed by the parser calling this scanner.
                         */
                         yylval.String = (char*)malloc(length-1);
-                        strncpy(yylval.String, (char *)&yytext[1], length-2);
+                        os_strncpy(yylval.String, (char *)&yytext[1], length-2);
                         yylval.String[length-2]=0;
                         return (STRINGVALUE); 
                     }
@@ -218,7 +225,7 @@ BETWEEN             { RETURN (BETWEEN); }
                            must be freed by the parser calling this scanner.
                         */
                         yylval.String = (char*)malloc(length-1);
-                        strncpy(yylval.String, (char *)&yytext[1], length-2);
+                        os_strncpy(yylval.String, (char *)&yytext[1], length-2);
                         yylval.String[length-2]=0;
                         return (STRINGVALUE); 
                     }
@@ -248,3 +255,4 @@ getParameterValue (
     return value;
 }
     
+

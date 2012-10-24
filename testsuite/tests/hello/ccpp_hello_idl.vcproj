@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="ccpp_hello_idl"
-	ProjectGUID="{0ACB9A31-FECA-1BAD-3AAD-8A0DE59D8CE1}"
+	ProjectGUID="{0ACB9A31-FECA-1BAD-3AAD-8A0DE5988CE1}"
 	RootNamespace="ccpp_hello_idl"
 	Keyword="Win32Proj"
 	SignManifests="true"

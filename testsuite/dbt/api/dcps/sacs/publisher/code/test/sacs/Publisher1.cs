@@ -111,7 +111,7 @@ namespace test.sacs
             }
             qos.Presentation.AccessScope = DDS.PresentationQosPolicyAccessScopeKind.TopicPresentationQos;
             rc = publisher.SetQos(qos);
-            if (rc != DDS.ReturnCode.Unsupported)
+            if (rc != DDS.ReturnCode.ImmutablePolicy)
             {
                 result.Result = "Unexpected returncode " + rc + " when setting immutable QoS policy (7).";
                 return result;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -12,6 +12,7 @@
 #include "u__entity.h"
 #include "u_query.h"
 #include "u_reader.h"
+#include "u__dispatcher.h"
 #include "u_user.h"
 #include "v_query.h"
 #include "v_entity.h"
@@ -24,48 +25,6 @@
 #include "q_expr.h"
 
 #include "os_report.h"
-
-u_result
-u_queryClaim(
-    u_query _this,
-    v_query *query)
-{
-    u_result result = U_RESULT_OK;
-
-    if ((_this != NULL) && (query != NULL)) {
-        *query = v_query(u_entityClaim(u_entity(_this)));
-        if (*query == NULL) {
-            OS_REPORT_2(OS_WARNING, "u_queryClaim", 0,
-                        "Claim Query failed. "
-                        "<_this = 0x%x, query = 0x%x>.",
-                         _this, query);
-            result = U_RESULT_INTERNAL_ERROR;
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,"u_queryClaim",0,
-                    "Illegal parameter. "
-                    "<_this = 0x%x, query = 0x%x>.",
-                    _this, query);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_queryRelease(
-    u_query _this)
-{
-    u_result result = U_RESULT_OK;
-
-    if (_this != NULL) {
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_ERROR,"u_queryRelease",0,
-                    "Illegal parameter. <_this = 0x%x>.", _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
 
 u_query
 u_queryNew(
@@ -82,8 +41,10 @@ u_queryNew(
     q_expr copy;
 
     if (source != NULL) {
-        kc = v_collection(u_entityClaim(u_entity(source)));
-        if (kc != NULL) {
+        result = u_entityWriteClaim(u_entity(source), (v_entity*)(&kc));
+        if(result == U_RESULT_OK)
+        {
+            assert(kc);
             copy = q_exprCopy(predicate);
             if (copy != NULL) {
                 query = v_queryNew(kc,name,predicate,params);
@@ -100,10 +61,12 @@ u_queryNew(
                                 _this->name = NULL;
                             }
                             _this->predicate = copy;
+                            u_readerAddQuery(source,_this);
                         } else {
                             q_dispose(copy);
                             OS_REPORT(OS_ERROR, "u_queryNew", 0,
                                       "Initialisation failed.");
+                            u_queryFree(_this);
                         }
                     } else {
                         q_dispose(copy);
@@ -125,7 +88,6 @@ u_queryNew(
             OS_REPORT(OS_WARNING, "u_queryNew", 0,
                       "Claim Query source failed.");
         }
-
     } else {
         OS_REPORT(OS_ERROR,"u_queryNew",0,
                   "No Query source specified.");
@@ -140,11 +102,13 @@ u_queryInit(
     u_result result;
 
     if (_this != NULL) {
-        result = u_readerInit(u_reader(_this));
-        _this->source = NULL;
-        _this->name = NULL;
-        _this->predicate = NULL;
-        u_entity(_this)->flags |= U_ECREATE_INITIALISED;
+        result = u_dispatcherInit(u_dispatcher(_this));
+        if (result == U_RESULT_OK) {
+            _this->source = NULL;
+            _this->name = NULL;
+            _this->predicate = NULL;
+            u_entity(_this)->flags |= U_ECREATE_INITIALISED;
+        }
     } else {
         OS_REPORT(OS_ERROR,"u_queryInit",0, "Illegal parameter.");
         result = U_RESULT_ILL_PARAM;
@@ -157,18 +121,46 @@ u_queryFree(
     u_query _this)
 {
     u_result result;
+    c_bool destroy;
 
-    if (_this != NULL) {
-        if (u_entity(_this)->flags & U_ECREATE_INITIALISED) {
-            result = u_queryDeinit(_this);
-            os_free(_this);
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        destroy = u_entityDereference(u_entity(_this));
+        /* if refCount becomes zero then this call
+         * returns true and destruction can take place
+         */
+        if (destroy) {
+            if (u_entityOwner(u_entity(_this))) {
+                result = u_queryDeinit(_this);
+            } else {
+                /* This user entity is a proxy, meaning that it is not fully
+                 * initialized, therefore only the entity part of the object
+                 * can be deinitialized.
+                 * It would be better to either introduce a separate proxy
+                 * entity for clarity or fully initialize entities and make
+                 * them robust against missing information.
+                 */
+                result = u_entityDeinit(u_entity(_this));
+            }
+            if (result == U_RESULT_OK) {
+                u_entityDealloc(u_entity(_this));
+            } else {
+                OS_REPORT_2(OS_WARNING,
+                            "u_queryFree",0,
+                            "Operation u_queryDeinit failed: "
+                            "Query = 0x%x, result = %s.",
+                            _this, u_resultImage(result));
+                u_entityUnlock(u_entity(_this));
+            }
         } else {
-            result = u_entityFree(u_entity(_this));
+            u_entityUnlock(u_entity(_this));
         }
     } else {
-        OS_REPORT(OS_WARNING,"u_queryFree",0,
-                  "The specified Query = NIL.");
-        result = U_RESULT_OK;
+        OS_REPORT_2(OS_INFO,
+                    "u_queryFree",0,
+                    "Operation u_entityLock failed: "
+                    "Query = 0x%x, result = %s.",
+                    _this, u_resultImage(result));
     }
     return result;
 }
@@ -180,20 +172,20 @@ u_queryDeinit(
     u_result result;
 
     if (_this != NULL) {
-        _this->source = NULL;
-        if(u_entityClaim(u_entity(_this)))
-        {
-            q_dispose(_this->predicate);
-            u_entityRelease(u_entity(_this));
-        } else
-        {
-            OS_REPORT(OS_WARNING, "u_queryDeinit", 0,
-                      "Claim Query object failed.");
+        result = u_readerRemoveQuery(_this->source, _this);
+        if (result == U_RESULT_OK) {
+            result = u_dispatcherDeinit(u_dispatcher(_this));
+            if (result == U_RESULT_OK) {
+                _this->source = NULL;
+                q_dispose(_this->predicate);
+                os_free(_this->name);
+            }
         }
-        os_free(_this->name);
-        result = u_readerDeinit(u_reader(_this));
     } else {
-        OS_REPORT(OS_ERROR,"u_queryDeinit",0, "Illegal parameter.");
+        OS_REPORT_1(OS_ERROR,
+                   "u_queryDeinit",0,
+                   "Illegal parameter: 0x%x.",
+                   _this);
         result = U_RESULT_ILL_PARAM;
     }
     return result;
@@ -232,14 +224,13 @@ u_queryRead(
     v_query query;
     C_STRUCT(readActionArg) arg;
 
-    result = u_queryClaim(_this,&query);
-
+    result = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
     if (result == U_RESULT_OK) {
         arg.action = action;
         arg.arg = actionArg;
         arg.proceed = TRUE;
         v_queryRead(query,readAction,&arg);
-        u_queryRelease(_this);
+        u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_queryRead", 0,
                   "Could not claim query.");
@@ -257,14 +248,13 @@ u_queryTake(
     v_query query;
     C_STRUCT(readActionArg) arg;
 
-    result = u_queryClaim(_this,&query);
-
+    result = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
     if (result == U_RESULT_OK) {
         arg.action = action;
         arg.arg = actionArg;
         arg.proceed = TRUE;
         v_queryTake(query,readAction,&arg);
-        u_queryRelease(_this);
+        u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_queryTake", 0,
                   "Could not claim query.");
@@ -322,33 +312,37 @@ u_queryReadList(
     C_STRUCT(readListActionArg) arg;
     c_object object;
 
-    if (copy == NULL) {
-        return NULL;
+    if (copy) {
+        r = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
+        if (r == U_RESULT_OK) {
+            arg.iter = NULL;
+            if (max == 0) {
+                arg.spaceLeft = 0x7fffffff;
+            } else {
+                arg.spaceLeft = max;
+            }
+            arg.copyAction = copy;
+            arg.copyArg = copyArg;
+            arg.result = NULL;
+            v_queryRead(query,readListAction,&arg);
+            list = arg.iter;
+            result = arg.result;
+            object = c_iterTakeFirst(list);
+            while (object != NULL) {
+                c_free(object);
+                object = c_iterTakeFirst(list);
+            }
+            c_iterFree(list);
+            u_entityRelease(u_entity(_this));
+        } else
+        {
+            OS_REPORT(OS_WARNING, "u_queryReadList", 0,"Could not claim query.");
+            result = NULL;
+        }
+    } else
+    {
+        result = NULL;
     }
-    r = u_queryClaim(_this,&query);
-    if (r != U_RESULT_OK) {
-        OS_REPORT(OS_WARNING, "u_queryReadList", 0,"Could not claim query.");
-        return NULL;
-    }
-    arg.iter = NULL;
-    if (max == 0) {
-        arg.spaceLeft = 0x7fffffff;
-    } else {
-        arg.spaceLeft = max;
-    }
-    arg.copyAction = copy;
-    arg.copyArg = copyArg;
-    arg.result = NULL;
-    v_queryRead(query,readListAction,&arg);
-    list = arg.iter;
-    result = arg.result;
-    object = c_iterTakeFirst(list);
-    while (object != NULL) {
-        c_free(object);
-        object = c_iterTakeFirst(list);
-    }
-    c_iterFree(list);
-    u_queryRelease(_this);
     return result;
 }
 
@@ -361,38 +355,43 @@ u_queryTakeList(
 {
     v_query query;
     c_iter list;
-    void *result;
+    void *result = NULL;
     u_result r;
     C_STRUCT(readListActionArg) arg;
     c_object object;
 
-    if (copy == NULL) {
-        return NULL;
+    if (copy){
+        r = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
+        if (r == U_RESULT_OK){
+            assert(query);
+            arg.iter = NULL;
+            if (max == 0) {
+                arg.spaceLeft = 0x7fffffff;
+            } else {
+                arg.spaceLeft = max;
+            }
+            arg.copyAction = copy;
+            arg.copyArg = copyArg;
+            arg.result = NULL;
+            v_queryTake(query,readListAction,&arg);
+            list = arg.iter;
+            result = arg.result;
+            object = c_iterTakeFirst(list);
+            while (object != NULL) {
+                c_free(object);
+                object = c_iterTakeFirst(list);
+            }
+            c_iterFree(list);
+            u_entityRelease(u_entity(_this));
+        } else
+        {
+            OS_REPORT(OS_WARNING, "u_queryTakeList", 0,"Could not claim query.");
+            result = NULL;
+        }
+    } else
+    {
+        result = NULL;
     }
-    r = u_queryClaim(_this,&query);
-    if (r != U_RESULT_OK) {
-        OS_REPORT(OS_WARNING, "u_queryTakeList", 0,"Could not claim query.");
-        return NULL;
-    }
-    arg.iter = NULL;
-    if (max == 0) {
-        arg.spaceLeft = 0x7fffffff;
-    } else {
-        arg.spaceLeft = max;
-    }
-    arg.copyAction = copy;
-    arg.copyArg = copyArg;
-    arg.result = NULL;
-    v_queryTake(query,readListAction,&arg);
-    list = arg.iter;
-    result = arg.result;
-    object = c_iterTakeFirst(list);
-    while (object != NULL) {
-        c_free(object);
-        object = c_iterTakeFirst(list);
-    }
-    c_iterFree(list);
-    u_queryRelease(_this);
     return result;
 }
 
@@ -404,10 +403,11 @@ u_queryTest(
     c_bool result;
     u_result r;
 
-    r = u_queryClaim(_this,&query);
-    if ((r == U_RESULT_OK) && (query != NULL)) {
+    r = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
+    if (r == U_RESULT_OK) {
+        assert(query);
         result = v_queryTest(query);
-        u_queryRelease(_this);
+        u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_queryTest", 0,"Could not claim query.");
         result = FALSE;
@@ -423,10 +423,11 @@ u_queryTriggerTest(
     c_bool result;
     u_result r;
 
-    r = u_queryClaim(_this,&query);
-    if ((r == U_RESULT_OK) && (query != NULL)) {
+    r = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
+    if (r == U_RESULT_OK) {
+        assert(query);
         result = v_queryTriggerTest(query);
-        u_queryRelease(_this);
+        u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_queryTriggerTest", 0,"Could not claim query.");
         result = FALSE;
@@ -444,15 +445,16 @@ u_querySet(
     u_result r;
 
     if (_this != NULL) {
-        r = u_queryClaim(_this,&query);
-        if ((r == U_RESULT_OK) && (query != NULL)) {
+        r = u_entityWriteClaim(u_entity(_this),(v_entity*)(&query));
+        if (r == U_RESULT_OK) {
+            assert(query);
             kr = v_querySetParams(query, _this->predicate, params);
             if (!kr) {
                 OS_REPORT(OS_ERROR, "u_querySet", 0,
                           "Could not set kernel query parameters.");
                 r = U_RESULT_INTERNAL_ERROR;
             }
-            u_queryRelease(_this);
+            u_entityRelease(u_entity(_this));
         } else {
             OS_REPORT(OS_WARNING, "u_querySet", 0,
                       "Claim query failed.");
@@ -509,8 +511,9 @@ u_queryReadInstance(
     u_result result;
     v_dataReaderInstance instance;
 
-    result = u_queryClaim(_this,&query);
-    if ((result == U_RESULT_OK) && (query != NULL)) {
+    result = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
+    if (result == U_RESULT_OK) {
+        assert(query);
         handle = u_instanceHandleFix(handle,v_collection(query));
         result = u_instanceHandleClaim(handle, &instance);
         if (result == U_RESULT_OK) {
@@ -522,7 +525,7 @@ u_queryReadInstance(
             }
             u_instanceHandleRelease(handle);
         }
-        u_queryRelease(_this);
+        u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_queryReadInstance", 0,
                   "Could not claim query.");
@@ -541,8 +544,9 @@ u_queryTakeInstance(
     u_result result;
     v_dataReaderInstance instance;
 
-    result = u_queryClaim(_this,&query);
-    if ((result == U_RESULT_OK) && (query != NULL)) {
+    result = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
+    if (result == U_RESULT_OK) {
+        assert(query);
         handle = u_instanceHandleFix(handle,v_collection(query));
         result = u_instanceHandleClaim(handle, &instance);
         if (result == U_RESULT_OK) {
@@ -555,7 +559,7 @@ u_queryTakeInstance(
             u_instanceHandleRelease(handle);
         }
 
-        u_queryRelease(_this);
+        u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_queryTakeInstance", 0,
                   "Could not claim query.");
@@ -575,14 +579,22 @@ u_queryReadNextInstance(
     u_result result;
     v_dataReaderInstance instance;
 
-    result = u_queryClaim(_this,&query);
-    if ((result == U_RESULT_OK) && (query != NULL)) {
+    result = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
+    if (result == U_RESULT_OK) {
+        assert(query);
         if ( u_instanceHandleIsNil(handle) ) {
             v_queryReadNextInstance(query, NULL, action, actionArg);
         } else {
             handle = u_instanceHandleFix(handle,v_collection(query));
             result = u_instanceHandleClaim(handle, &instance);
-            if (result == U_RESULT_OK) {
+            if (result == U_RESULT_ALREADY_DELETED) {
+                /* The handle has become invalid and no instance including
+                 * the key value can be found. Therefore set the instance
+                 * to null and start reading from scratch.
+                 */
+                v_queryReadNextInstance(query, NULL, action, actionArg);
+                result = U_RESULT_OK;
+            } else if (result == U_RESULT_OK) {
                 if (queryContainsInstance(query,instance)) {
                     v_queryReadNextInstance(query, instance, action, actionArg);
                     result = U_RESULT_OK;
@@ -592,7 +604,7 @@ u_queryReadNextInstance(
                 u_instanceHandleRelease(handle);
             }
         }
-        u_queryRelease(_this);
+        u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_queryReadNextInstance", 0,
                   "Could not claim query.");
@@ -612,14 +624,22 @@ u_queryTakeNextInstance(
     u_result result;
     v_dataReaderInstance instance;
 
-    result = u_queryClaim(_this,&query);
-    if ((result == U_RESULT_OK) && (query != NULL)) {
+    result = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
+    if (result == U_RESULT_OK) {
+        assert(query);
         if ( u_instanceHandleIsNil(handle) ) {
             v_queryTakeNextInstance(query, NULL, action, actionArg);
         } else {
             handle = u_instanceHandleFix(handle,v_collection(query));
             result = u_instanceHandleClaim(handle, &instance);
-            if (result == U_RESULT_OK) {
+            if (result == U_RESULT_ALREADY_DELETED) {
+                /* The handle has become invalid and no instance including
+                 * the key value can be found. Therefore set the instance
+                 * to null and start reading from scratch.
+                 */
+                v_queryTakeNextInstance(query, NULL, action, actionArg);
+                result = U_RESULT_OK;
+            } else if (result == U_RESULT_OK) {
                 if (queryContainsInstance(query,instance)) {
                     v_queryTakeNextInstance(query, instance, action, actionArg);
                     result = U_RESULT_OK;
@@ -629,7 +649,7 @@ u_queryTakeNextInstance(
                 u_instanceHandleRelease(handle);
             }
         }
-        u_queryRelease(_this);
+        u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_queryTakeNextInstance", 0,
                   "Could not claim query.");

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -183,7 +183,7 @@ sd_printPrim(
     int spRes;
 
     valueImage = sd_primValue(primKind, object);
-    spRes = sprintf(dataPtr, valueImage);
+    spRes = os_sprintf(dataPtr, valueImage);
     if (spRes >= 0) {
         result = (c_ulong)spRes;
     } else {
@@ -208,7 +208,7 @@ sd_printTaggedPrim(
     int spRes;
 
     valueImage = sd_primValue(primKind, object);
-    spRes = sprintf(dataPtr, "<%s>%s</%s>", tagName, valueImage, tagName);
+    spRes = os_sprintf(dataPtr, "<%s>%s</%s>", tagName, valueImage, tagName);
     if (spRes >= 0) {
         result = (c_ulong)spRes;
     } else {
@@ -268,7 +268,7 @@ sd_printName(
     if (src == NULL) {
         spRes = 0;
     } else {
-        spRes = sprintf(dst, src);
+        spRes = os_sprintf(dst, src);
     }
 
     if (spRes >= 0) {
@@ -300,7 +300,7 @@ sd_printCData(
 
     SD_CONFIDENCE(src);
 
-    spRes = sprintf(dst, SD_STRING_OPENER "%s" SD_STRING_CLOSER, src);
+    spRes = os_sprintf(dst, SD_STRING_OPENER "%s" SD_STRING_CLOSER, src);
 
     if (spRes >= 0) {
         result = (c_ulong)spRes;
@@ -406,7 +406,7 @@ sd_printCharData(
         getFirstIllegalToken(from, &toEscape, &pair);
         len = C_ADDRESS(toEscape) - C_ADDRESS(from);
         if (len > 0) {
-            strncpy(to, from, len);
+            os_strncpy(to, from, len);
             from = &(from[len]);
             to = &(to[len]);
             spRes += len;
@@ -414,7 +414,7 @@ sd_printCharData(
 
         if (pair.escapeString != NULL) {
            len = strlen(pair.escapeString);
-           strncpy(to, pair.escapeString, len);
+           os_strncpy(to, pair.escapeString, len);
            from = &(from[1]);
            to = &(to[len]);
            spRes += len;
@@ -624,7 +624,7 @@ sd_XMLSerCallbackPre(
 
     /* Opening tag */
     tagName = sd_getTagName(name, type);
-    spRes = sprintf(*dataPtrPtr, "<%s>", tagName);
+    spRes = os_sprintf(*dataPtrPtr, "<%s>", tagName);
     if (spRes > 0) {
         *dataPtrPtr = SD_DISPLACE(*dataPtrPtr, C_ADDRESS(spRes));
     }
@@ -656,7 +656,7 @@ sd_XMLSerCallbackPost(
 
     /* Closing tag */
     tagName = sd_getTagName(name, type);
-    len = sprintf(*dataPtrPtr, "</%s>", tagName);
+    len = os_sprintf(*dataPtrPtr, "</%s>", tagName);
     if (len > 0) {
         *dataPtrPtr = SD_DISPLACE(*dataPtrPtr, C_ADDRESS(len));
     }
@@ -1201,7 +1201,7 @@ sd_scanCharData(
     len = (C_ADDRESS(strEnd) - C_ADDRESS(strStart));
     *dst = os_malloc(len + 1);
     if (*dst) {
-        strncpy(*dst, strStart, len);
+        os_strncpy(*dst, strStart, len);
         (*dst)[len] = 0;
     }
     /* Skip to end of string */
@@ -1238,7 +1238,7 @@ sd_peekTaggedCharData(
                 foundClosingTag = sd_strGetClosingTag(&strStart);
                 if (strncmp(foundClosingTag, tagName, strlen(tagName)) == 0) {
                     result = os_malloc(len + 1);
-                    strncpy(result, strFound, len);
+                    os_strncpy(result, strFound, len);
                     result[len] = 0;
                 }
                 os_free(foundClosingTag);
@@ -1253,7 +1253,7 @@ sd_peekTaggedCharData(
 #else
 
 static void
-sd_strncpyWithLenCheck(
+sd_os_strncpyWithLenCheck(
     char **to,
     const char *from,
     int len,
@@ -1280,7 +1280,7 @@ sd_strncpyWithLenCheck(
         newString = os_malloc(curLen);
         *remainingLen = curLen - oldLen;
         if (*base) {
-            strncpy(newString, *base, oldLen);
+            os_strncpy(newString, *base, oldLen);
             os_free(*base);
         }
         *base = newString;
@@ -1288,7 +1288,7 @@ sd_strncpyWithLenCheck(
     }
     if (len > 0) {
         SD_CONFIDENCE(len < *remainingLen);
-        strncpy(*to, from, len);
+        os_strncpy(*to, from, len);
         *remainingLen -= len;
     }
 #undef SD_STEPSIZE
@@ -1394,7 +1394,7 @@ sd_scanCharData(
         case TOK_ESCAPE:
             len = C_ADDRESS(firstSpecial) - C_ADDRESS(from);
             if (len > 0) {
-                sd_strncpyWithLenCheck(&to, from, len, &base, &remaining);
+                sd_os_strncpyWithLenCheck(&to, from, len, &base, &remaining);
                 to = &(to[len]);
                 from = &(from[len]);
             }
@@ -1429,13 +1429,13 @@ sd_scanCharData(
             SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
             from = &(from[sizeof(SD_STRING_OPENER)-1]);
             len = C_ADDRESS(firstCDataCloser) - C_ADDRESS(from);
-            sd_strncpyWithLenCheck(&to, from, len, &base, &remaining);
+            sd_os_strncpyWithLenCheck(&to, from, len, &base, &remaining);
             from = &(from[len + sizeof(SD_STRING_CLOSER) - 1]);
             to = &(to[len]);
         break;
         case TOK_ESCAPE:
             SD_CONFIDENCE(pair.escapeString != NULL);
-            sd_strncpyWithLenCheck(&to, &pair.token, 1, &base, &remaining);
+            sd_os_strncpyWithLenCheck(&to, &pair.token, 1, &base, &remaining);
             from = &(from[strlen(pair.escapeString)]);
             to = &(to[1]);
         break;
@@ -1443,7 +1443,7 @@ sd_scanCharData(
             SD_CONFIDENCE(0);
         }
     }
-    sd_strncpyWithLenCheck(&to, &zeroChar, 1, &base, &remaining);
+    sd_os_strncpyWithLenCheck(&to, &zeroChar, 1, &base, &remaining);
     *dst = base;
     *src = (c_char*)from;
 }
@@ -1481,7 +1481,7 @@ sd_peekTaggedCharData(
                 foundClosingTag = sd_strGetClosingTag(&strStart);
                 if (strncmp(foundClosingTag, tagName, strlen(tagName)) == 0) {
                     result = os_malloc(len + 1);
-                    strncpy(result, strFound, len);
+                    os_strncpy(result, strFound, len);
                     result[len] = 0;
                 }
                 os_free(foundClosingTag);
@@ -1495,7 +1495,7 @@ sd_peekTaggedCharData(
                 if (foundClosingTag != NULL) {
                     if (strncmp(foundClosingTag, tagName, strlen(tagName)) == 0) {
                         result = os_malloc(len + 1);
-                        strncpy(result, strFound, len);
+                        os_strncpy(result, strFound, len);
                         result[len] = 0;
                     }
                     os_free(foundClosingTag);
@@ -1995,7 +1995,7 @@ sd_serializerXMLFromString(
     SD_CONFIDENCE(serializer != NULL);
     size = strlen(str) + 1U /* '\0' */;
     result = sd_serializedDataNew(SD_FORMAT_ID, SD_FORMAT_VERSION, size);
-    strncpy((char *)result->data, str, size);
+    os_strncpy((char *)result->data, str, size);
 
     return result;
 }

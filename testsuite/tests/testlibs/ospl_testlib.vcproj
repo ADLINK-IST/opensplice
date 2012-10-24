@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="ospl_testlib"
-	ProjectGUID="{91265E73-FECA-1BAD-2AF0-F8471926410B}"
+	ProjectGUID="{91265E73-FECA-1BAD-2AF0-F8474926410B}"
 	RootNamespace="ospl_testlib"
 	Keyword="Win32Proj"
 	SignManifests="true"

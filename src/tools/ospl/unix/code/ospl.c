@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -23,10 +23,10 @@
 #include <sys/wait.h>
 #endif
 
-#include <os.h>
-#include <os_report.h>
-#include <cfg_parser.h>
-#include <cf_config.h>
+#include "os.h"
+#include "os_report.h"
+#include "cfg_parser.h"
+#include "cf_config.h"
 
 #include "ospl_proc.h"
 
@@ -63,7 +63,7 @@ print_usage(
             "               started.\n");
     printf ("               Upon exit an exit code will be provided to indicated the cause of\n"
             "               termination. The following exit codes are supported:\n"
-            "               * 0 : normal termination as result of ‘OSPL stop’.\n"
+            "               * 0 : normal termination as result of 'ospl stop'.\n"
             "               * -1: a recoverable error occurred.\n"
             "                     The system has encountered a runtime error and has terminated.\n"
             "                     A restart of the system is possible. E.g., the system ran out\n"
@@ -88,7 +88,7 @@ print_usage(
             "               running splice systems started by the current user.\n");
     printf ("               Upon exit an exit code will be provided to indicated the cause\n"
             "               of termination. The following exit codes are supported:\n"
-            "               * 0 : normal termination as result of  ‘OSPL stop’.\n"
+            "               * 0 : normal termination as result of 'ospl stop'.\n"
             "               * -1: Not Applicable\n");
     printf ("               * -2: an unrecoverable error occurred.\n"
             "                     The system has encountered an error that cannot be\n"
@@ -103,17 +103,19 @@ static const char key_file_format[] = "spddskey_XXXXXX";
 static void
 removeProcesses(
     int pid,
+    int pgrp,
     os_time serviceTerminatePeriod)
 {
     os_time stopTime;
+    int killResult;
 
 #ifndef NDEBUG
     printf("\nWait %d.%d seconds for all processes to terminate\n",
            serviceTerminatePeriod.tv_sec,serviceTerminatePeriod.tv_nsec);
 #endif
     stopTime = os_timeAdd(os_timeGet(), serviceTerminatePeriod);
+    killResult = kill (pid, SIGTERM);
 
-    kill (pid, SIGTERM);
     while ((kill (pid, 0) != -1) && (os_timeCompare(os_timeGet(), stopTime) == OS_LESS) )
     {
         printf ("."); fflush (stdout);
@@ -124,7 +126,8 @@ removeProcesses(
     {
         printf ("Process %d would not terminate.\n", pid);
         printf ("Using force now on ");
-        kill_descendents (pid, SIGKILL);
+        /*kill_descendents (pid, SIGKILL);*/
+        killpg (pgrp, SIGKILL);
         kill (pid, SIGKILL);
         stopTime = os_timeAdd(os_timeGet(), serviceTerminatePeriod);
         while ((kill (pid, 0) != -1) && (os_timeCompare(os_timeGet(), stopTime) == OS_LESS))
@@ -136,6 +139,10 @@ removeProcesses(
         {
             printf ("\nProcess %d would not terminate, bailing out\n", pid);
         }
+    }
+    if(killResult == -1)
+    {
+        killpg (pgrp, SIGKILL);
     }
 }
 
@@ -190,7 +197,8 @@ shutdownDDS(
     char size[64];
     char implementation[64];
     char creator_pid[64];
-    int pid;
+    char group_id[64];
+    int pid, grp;
     FILE *kf;
     int retCode = OSPL_EXIT_CODE_OK;
 
@@ -203,14 +211,17 @@ shutdownDDS(
         fgets (size, sizeof(size), kf);
         fgets (implementation, sizeof(implementation), kf);
         fgets (creator_pid, sizeof(creator_pid), kf);
+        fgets (group_id, sizeof(group_id), kf);
         fclose (kf);
         sscanf (creator_pid, "%d", &pid);
+        sscanf (group_id, "%d", &grp);
+
         if (strcmp (implementation, "SVR4-IPCSHM\n") == 0)
         {
             key = ftok (key_file_name, 'S');
             if (key != -1)
             {
-                removeProcesses (pid, serviceTerminatePeriod);
+                removeProcesses (pid, grp, serviceTerminatePeriod);
                 retCode = removeSegment (key);
                 if(retCode == OSPL_EXIT_CODE_OK)
                 {
@@ -221,7 +232,7 @@ shutdownDDS(
         {
             printf ("Removal of POSIX shared memory object not yet supported\n");
             /** @todo support POSIX shared memory objects */
-            removeProcesses (pid, serviceTerminatePeriod);
+            removeProcesses (pid, grp, serviceTerminatePeriod);
             retCode = removeKeyfile (key_file_name);
         }
     } else
@@ -337,7 +348,7 @@ findSpliceSystemAndRemove(
 }
 
 static int
-findSpliceSystemAndShow(void)
+findSpliceSystemAndShow(const char* specific_domain_name)
 {
     DIR *key_dir;
     struct dirent *entry;
@@ -357,8 +368,12 @@ findSpliceSystemAndShow(void)
                 key_file_name = os_malloc (key_file_name_size);
                 snprintf (key_file_name, key_file_name_size, "%s/%s", dir_name, entry->d_name);
                 if ((shmName = matchUid (key_file_name, geteuid()))) {
-                                    printf ("Splice System with domain name \"%s\" is found running\n", shmName);
-                                    ++found_count;
+                    if (specific_domain_name == NULL
+                        || (strcmp(specific_domain_name, shmName) == 0))
+                    {
+                        printf("Splice System with domain name \"%s\" is found running\n", shmName);
+                        ++found_count;
+                    }
                     os_free (shmName);
                 }
                 os_free(key_file_name);
@@ -475,7 +490,17 @@ findServiceTerminatePeriod(
             data = cf_data(cf_elementChild(elem, "#text"));
             if (data) {
                 value = cf_dataValue(data);
-                *serviceTerminatePeriod = os_realToTime(offset + atof(value.is.String));
+                /* dds2164: if '0' is defined, override any wait times, including
+                 * the 4 second offset defined above.
+                 */
+                if(0 == atof(value.is.String))
+                {
+                    (*serviceTerminatePeriod).tv_sec = 0;
+                    (*serviceTerminatePeriod).tv_nsec = 0;
+                } else
+                {
+                    *serviceTerminatePeriod = os_realToTime(offset + atof(value.is.String));
+                }
             }
         }
     }
@@ -652,6 +677,7 @@ main(
     char *argv[])
 {
     int opt;
+    int startRes;
     int retCode = OSPL_EXIT_CODE_OK;
     char *uri = NULL;
     char *command = NULL;
@@ -806,7 +832,8 @@ main(
             /* Display locations of info and error files */
             os_reportDisplayLogLocations();
 
-            retCode = WEXITSTATUS(system (start_command));
+            startRes = system (start_command);
+            retCode = WEXITSTATUS(startRes);
             if(!blocking)
             {
                 sleep (2); /* take time to first show the license message from spliced */
@@ -818,7 +845,7 @@ main(
         }
     } else if (strcmp (command, "list") == 0)
     {
-        findSpliceSystemAndShow ();
+        retCode = findSpliceSystemAndShow (domain_name);
     } else
     {
         print_usage (argv[0]);

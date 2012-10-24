@@ -1,17 +1,19 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
+
 #ifndef NW_COMMONTYPES_H
 #define NW_COMMONTYPES_H
 
+#include "os_socket.h"
 #include "c_metabase.h"    /* For c_type */
 
 #define NW_STRUCT(name)  struct name##_s
@@ -19,18 +21,18 @@
 #define NW_CLASS(name)   typedef NW_STRUCT(name) *name
 
 typedef os_uint32     nw_seqNr;
-typedef os_uint32     nw_address;
 typedef os_char      *nw_name;
 typedef os_boolean    nw_bool;
+typedef os_address    nw_size;
 
 /*
- * SenderInfo contains all information about a message sender. 
- * This may be used for for authentication (subject lookup) but used for 
+ * SenderInfo contains all information about a message sender.
+ * This may be used for for authentication (subject lookup) but used for
  * other things too
  */
 NW_CLASS(nw_senderInfo);
 NW_STRUCT(nw_senderInfo) {
-    nw_address ipAddress;
+    os_sockaddr_storage ipAddress;
     const char* dn; /* reference, does not take ownership*/
 };
 
@@ -38,7 +40,7 @@ NW_STRUCT(nw_senderInfo) {
 
 typedef void (*nw_onFatalCallBack)(c_voidp usrData);
 
-#ifndef FALSE 
+#ifndef FALSE
 #define FALSE              (0)
 #endif
 

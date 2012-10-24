@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,6 +14,7 @@
 #include "gapi_common.h"
 
 #include "os_heap.h"
+#include "os_stdlib.h"
 
 gapi_equality
 gapi_stringCompare (
@@ -59,7 +60,7 @@ gapi_strdup (
 
         dup = os_malloc(len);
         if ( dup ) {
-            strncpy(dup, src, len);
+            os_strncpy(dup, src, len);
         }
     }
 

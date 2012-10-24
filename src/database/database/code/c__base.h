@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -45,7 +45,6 @@ extern "C" {
             } \
             return c_keep(_this->baseCache.typeCache._type##_t); \
         }
-
 
 C_STRUCT(c_queryCache) {
     c_type c_qConst_t;
@@ -120,7 +119,6 @@ C_STRUCT(c_base) {
 #endif
 };
 
-
 /** @fn c_getMetaType (c_base base, c_metaKind kind)
     @brief Lookup the database meta data description of the specified meta type kind.
 */
@@ -135,6 +133,12 @@ OS_API void     c__free(c_object object);
 OS_API c_long   c_memsize(c_type type);
 OS_API c_object c_mem2object(c_voidp mem, c_type type);
 OS_API c_voidp  c_object2mem(c_object o);
+#ifndef NDEBUG
+OS_API void     c__assertValidDatabaseObject(c_voidp o);
+#define c_assertValidDatabaseObject(o) c__assertValidDatabaseObject(o)
+#else
+#define c_assertValidDatabaseObject(o)
+#endif
 
 #undef OS_API
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -10,10 +10,10 @@
  *
  */
 
-#include <idl.h>
-#include <idl_extern.h>
-#include <drv_private.h>
-#include <drv_link.h>
+#include "idl.h"
+#include "idl_extern.h"
+#include "drv_private.h"
+#include "drv_link.h"
 #include <stdio.h>
 
 char * DRV_param_copy (long arc, char **av)
@@ -24,7 +24,7 @@ char * DRV_param_copy (long arc, char **av)
 
    if (arc > 0)
    {
-      sprintf (tmpstr, "%s", av[0]);
+      os_sprintf (tmpstr, "%s", av[0]);
 
       // all drv args are -<string> with no params
 
@@ -32,12 +32,12 @@ char * DRV_param_copy (long arc, char **av)
       {
          if (strcmp("-store", av[i]) != 0 && (av[i][0] == '-'))
          {
-            sprintf(tmpstr, "%s %s", tmpstr, av[i]);
+            os_sprintf(tmpstr, "%s %s", tmpstr, av[i]);
          }
       }
    }
 
    ret = new char[strlen(tmpstr) + 1];
-   strcpy(ret, tmpstr);
+   os_strcpy(ret, tmpstr);
    return (ret);
 }

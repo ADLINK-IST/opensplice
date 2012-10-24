@@ -23,7 +23,7 @@ LD_FLAGS=
 #OpenSplice idl preprocessor
 OSPLICE_COMP=$(OSPL_HOME)/bin/idlpp -C -l cpp -d bld
 
-OSPLICE_LIBS=-lddsdatabase -ldcpsgapi -ldcpsccpp
+OSPLICE_LIBS=-lddsdatabase -ldcpsgapi -ldcpsccpp -lddsos
 
 DCPS_SRC_FILES = bld/pingpongC.cpp bld/pingpongDcpsC.cpp bld/pingpongDcps_impl.cpp bld/pingpongSplDcps.cpp
 DCPS_OBJ_FILES = $(patsubst %.cpp, %.o, $(DCPS_SRC_FILES))

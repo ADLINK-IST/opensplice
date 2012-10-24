@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 . buildsys/functions
 
@@ -42,5 +42,7 @@ cd install ||
     exit 2; 
 }
 
-make
+#Make a full distro and an eval that does not contain the source
+make all_no_src
+
 exit 0

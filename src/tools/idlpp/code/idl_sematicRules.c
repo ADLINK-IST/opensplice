@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /*
@@ -179,14 +179,14 @@
 //  *        function: checkUnsupportedTypeUsage (called from idl_checkKeyListTypeName)
 //
 */
-#include <c_iterator.h>
-#include <c_metabase.h>
-#include <c_misc.h>
-#include <c_base.h>
-#include <c_typebase.h>
-#include <c_stringSupport.h>
+#include "c_iterator.h"
+#include "c_metabase.h"
+#include "c_misc.h"
+#include "c_base.h"
+#include "c_typebase.h"
+#include "c_stringSupport.h"
 
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 
 #include "idl_sematicRules.h"
 #include "idl_program.h"
@@ -240,7 +240,8 @@ typedef enum {
     idl_InvalidKind,
     idl_IllegalKeyType,
     idl_UnsupportedType,
-    idl_UnsupportedKeyType
+    idl_UnsupportedKeyType,
+    idl_IllegalFieldName
 } idl_errorIndex;
 
 struct unsupportedArg {
@@ -278,7 +279,8 @@ static char *errorText [] = {
     "The referenced identifier %s is of invalid type in it's context",
     "Key can only be specified for struct and union types",
     "Type '%s' (defined in %s) unsupported",
-    "Type '%s' of '%s' member is not supported for a key"
+    "Type '%s' of '%s' member is not supported for a key",
+    "Illegal declarator reference. Declarator %s can not contain any '.' characters within this pragma scope."
 };
 
 /*************************************************************************************************
@@ -1862,6 +1864,65 @@ idl_checkKeyListTypeName(
 }
 
 int
+idl_checkSimpleFieldName(
+    c_metaObject scope,
+    char *name,
+    idl_errorFunction rf)
+{
+    char errorBuffer[IDL_MAX_ERRORSIZE];
+    c_iter fields = NULL;
+    c_specifier sp;
+    c_metaObject keyMetaObj;
+    char *fieldName;
+    int result = 0;
+
+    /* simple field name consists of <field>, not [<field>.]*<field> like for keylist. */
+
+    if (c_baseObject(c_typeActualType(c_type(scope)))->kind != M_STRUCTURE) {
+        rf(errorText[idl_IllegalKeyFields]);
+        result++;
+    } else {
+        fields = c_splitString(name, ".");
+        if(c_iterLength(fields) > 1)
+        {
+            result++;
+            snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_IllegalFieldName], fieldName);
+            rf(errorBuffer);
+        } else
+        {
+            fieldName = c_iterTakeFirst(fields);
+            if(strlen(fieldName) > 1 && fieldName[0] == '!')
+            {
+                fieldName = &(fieldName[1]);
+            }
+            /* find specificer (sp) corresponding to keylist field name */
+            keyMetaObj = scope;
+            while (fieldName != NULL) {
+                if (keyMetaObj) {
+                    sp = c_specifier(c_metaFindByName(keyMetaObj, fieldName, CQ_FIXEDSCOPE | CQ_MEMBER | CQ_CASEINSENSITIVE));
+                    if (sp) {
+                        if (strcmp(sp->name, fieldName) != 0) {
+                            result++;
+                            snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_Spelling], fieldName);
+                            rf(errorBuffer);
+                        }
+                        keyMetaObj = c_metaObject(sp->type);
+                    } else {
+                        result++;
+                        snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_UndeclaredDeclarator], fieldName);
+                        rf(errorBuffer);
+                        keyMetaObj = NULL;
+                    }
+                }
+                fieldName = c_iterTakeFirst(fields);
+            }
+            c_iterFree(fields);
+        }
+    }
+    return result;
+}
+
+int
 idl_checkKeyListFieldName(
     c_metaObject scope,
     char *name,
@@ -1906,13 +1967,13 @@ idl_checkKeyListFieldName(
             }
             fieldName = c_iterTakeFirst(fields);
         }
-        
+
         if (keyMetaObj != NULL) {
             /* Now keyMetaObj contains the type of key. But it can be a typedef.
              * So first determine the actual type.
              */
             type = c_typeActualType(c_type(keyMetaObj));
-            /* Check if type is acceptable for a key. 
+            /* Check if type is acceptable for a key.
              * Enum and primitive are acceptable
              */
             if (!CQ_KIND_IN_MASK(type, CQ_ENUMERATION | CQ_PRIMITIVE)) {
@@ -1933,7 +1994,7 @@ idl_checkKeyListFieldName(
                                 result++;
                                 snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_UnsupportedKeyType], keyMetaObj->name, name);
                                 rf(errorBuffer);
-                            } 
+                            }
                             else if (primitiveType->kind == P_LONG) {
                                 /* check that type is 1 of the 4 builtin topics:
                                  *   DDS.ParticipantBuiltinTopicData
@@ -1941,16 +2002,16 @@ idl_checkKeyListFieldName(
                                  *   DDS.PublicationBuiltinTopicData
                                  *   DDS.SubscriptionBuiltinTopicData
                                  */
-                                if (!scope->definedIn                                            // if topic has no parent 
-                                    || scope->definedIn->name == 0                               // if topic parent has no name
-                                    || c_baseObject(scope->definedIn)->kind != M_MODULE          // if topic parent is not a module
-                                    || strcmp(scope->definedIn->name, "DDS") != 0                // if topic parent is not DDS module
-                                    || !scope->definedIn->definedIn                              // if DDS module has no parent (DDS module should have root element as parent)
-                                    || scope->definedIn->definedIn->definedIn                    // if DDS module has a grand-parent (meaning that DDS module is not in root element)
-                                    || (  strcmp(scope->name, "ParticipantBuiltinTopicData") != 0   // if topic is not DDS.ParticipantBuiltinTopicData
-                                       && strcmp(scope->name, "TopicBuiltinTopicData") != 0         // if topic is not DDS.TopicBuiltinTopicData
-                                       && strcmp(scope->name, "PublicationBuiltinTopicData") != 0   // if topic is not DDS.PublicationBuiltinTopicData
-                                       && strcmp(scope->name, "SubscriptionBuiltinTopicData") != 0  // if topic is not DDS.SubscriptionBuiltinTopicData
+                                if (!scope->definedIn                                            /* if topic has no parent */
+                                    || scope->definedIn->name == 0                               /* if topic parent has no name */
+                                    || c_baseObject(scope->definedIn)->kind != M_MODULE          /* if topic parent is not a module */
+                                    || strcmp(scope->definedIn->name, "DDS") != 0                /* if topic parent is not DDS module */
+                                    || !scope->definedIn->definedIn                              /* if DDS module has no parent (DDS module should have root element as parent) */
+                                    || scope->definedIn->definedIn->definedIn                    /* if DDS module has a grand-parent (meaning that DDS module is not in root element) */
+                                    || (  strcmp(scope->name, "ParticipantBuiltinTopicData") != 0   /* if topic is not DDS.ParticipantBuiltinTopicData */
+                                       && strcmp(scope->name, "TopicBuiltinTopicData") != 0         /* if topic is not DDS.TopicBuiltinTopicData */
+                                       && strcmp(scope->name, "PublicationBuiltinTopicData") != 0   /* if topic is not DDS.PublicationBuiltinTopicData */
+                                       && strcmp(scope->name, "SubscriptionBuiltinTopicData") != 0  /* if topic is not DDS.SubscriptionBuiltinTopicData */
                                        )
                                     )
                                 {

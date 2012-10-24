@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -16,6 +16,7 @@
 #include "v__partition.h"
 #include "v__partitionAdmin.h"
 #include "v__writer.h"
+#include "v__kernel.h"
 #include "v_group.h"
 #include "v_observable.h"
 #include "v__observer.h"
@@ -171,7 +172,7 @@ v_publisherFree(
     assert(C_TYPECHECK(p,v_publisher));
 
     kernel = v_objectKernel(p);
-    v_observableRemoveObserver(v_observable(kernel->groupSet),v_observer(p));
+    v_observableRemoveObserver(v_observable(kernel->groupSet),v_observer(p), NULL);
 
     while ((o = c_take(p->writers)) != NULL) {
         /* remove writer from all partitions */
@@ -596,7 +597,7 @@ v_publisherCoherentBegin (
 
     assert(p != NULL);
     assert(C_TYPECHECK(p,v_publisher));
-    
+
     c_lockWrite(&p->lock);
     if (p->transactionId == 0) {
         kernel = v_objectKernel(p);

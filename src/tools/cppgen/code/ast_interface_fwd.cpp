@@ -73,8 +73,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * encountered.
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Constructor(s) and destructor

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,8 +19,8 @@
  * the POSIX os_nanoSleep implementation
  */
 
-#include <../common/code/os_time.c>
-#include <../posix/code/os_time.c>
+#include "../common/code/os_time.c"
+#include "../posix/code/os_time.c"
 
 /** \brief Translate calendar time into readable string representation
  *

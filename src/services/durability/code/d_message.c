@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -49,6 +49,21 @@ d_messageSetAddressee(
         message->addressee.localId     = addressee->localId;
         message->addressee.lifecycleId = addressee->lifecycleId;
     }
+}
+
+d_networkAddress
+d_messageGetAddressee(
+    d_message message)
+{
+    d_networkAddress result;
+
+    result = NULL;
+
+    if (message) {
+        result = &(message->addressee);
+    }
+
+    return result;
 }
 
 void

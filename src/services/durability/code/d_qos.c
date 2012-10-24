@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,6 +11,7 @@
  */
 
 #include "d_qos.h"
+#include "os_stdlib.h"
 
 v_publisherQos
 d_publisherQosNew(
@@ -30,7 +31,7 @@ d_publisherQosNew(
             qos = NULL;
         } else {
             /* QAC EXPECT 5007; use of strcpy */
-            strcpy(qos->partition, partition);
+            os_strcpy(qos->partition, partition);
         }
     }
     return qos;
@@ -62,7 +63,7 @@ d_subscriberQosNew(
                 qos = NULL;
             } else {
                 /* QAC EXPECT 5007; use of strcpy */
-                strcpy(qos->partition, partition);
+                os_strcpy(qos->partition, partition);
             }
         } else {
             qos->partition = NULL;

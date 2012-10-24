@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -39,7 +39,7 @@ v_groupQueueNew(
 
     kernel = v_objectKernel(subscriber);
     q = v_readerQosNew(kernel,qos);
-    
+
     if (q != NULL) {
         queue = v_groupQueue(v_objectNew(kernel,K_GROUPQUEUE));
         v_groupQueueInit(queue, subscriber, name, maxSize, q);
@@ -64,12 +64,14 @@ v_groupQueueInit(
 {
     assert(C_TYPECHECK(queue, v_groupQueue));
     assert(C_TYPECHECK(subscriber, v_subscriber));
-    
+
     queue->head    = NULL;
     queue->tail    = NULL;
+    queue->marker  = NULL;
     queue->maxSize = maxSize;
     queue->size    = 0;
-    
+    queue->markerReached = FALSE;
+
     v_groupStreamInit(v_groupStream(queue), name, subscriber, qos);
 }
 
@@ -78,13 +80,13 @@ v_groupQueueDeinit(
     v_groupQueue queue)
 {
     v_groupAction action;
-    
+
     assert(C_TYPECHECK(queue, v_groupQueue));
-    
+
     v_groupStreamDeinit(v_groupStream(queue));
-    
+
     action = v_groupQueueTake(queue);
-    
+
     while(action){
         c_free(action);
         action = v_groupQueueTake(queue);
@@ -102,6 +104,35 @@ v_groupQueueFree(
     v_groupStreamFree(v_groupStream(queue));
 }
 
+/* v_groupQueueTake takes until it encounters the marker */
+void
+v_groupQueueSetMarker(
+    v_groupQueue queue)
+{
+    assert(C_TYPECHECK(queue,v_groupQueue));
+
+    v_observerLock(v_observer(queue));
+
+    queue->marker = queue->tail;
+    queue->markerReached = FALSE;
+
+    v_observerUnlock(v_observer(queue));
+}
+
+void
+v_groupQueueResetMarker(
+    v_groupQueue queue)
+{
+    assert(C_TYPECHECK(queue,v_groupQueue));
+
+    v_observerLock(v_observer(queue));
+
+    queue->marker = NULL;
+    queue->markerReached = FALSE;
+
+    v_observerUnlock(v_observer(queue));
+}
+
 v_groupAction
 v_groupQueueRead(
     v_groupQueue queue)
@@ -111,7 +142,7 @@ v_groupQueueRead(
     assert(C_TYPECHECK(queue,v_groupQueue));
 
     v_observerLock(v_observer(queue));
-    
+
     if (queue->head) {
         action = c_keep(queue->head->action);
     } else {
@@ -130,24 +161,32 @@ v_groupQueueTake(
     v_groupAction action;
 
     assert(C_TYPECHECK(queue,v_groupQueue));
-    
+
+    action = NULL;
+
     v_observerLock(v_observer(queue));
-    
+
     if(queue->head){
-        sample = queue->head;
-        action = c_keep(sample->action);
-        queue->head = sample->next;
-        sample->next = NULL;
-        queue->size--;
-        c_free(sample);
-        
-        if(queue->size == 0){
-            queue->tail = NULL;
-            v_statusReset(v_entity(queue)->status,V_EVENT_DATA_AVAILABLE);
-        }
-    } else {
-        action = NULL;
+    	if (!queue->markerReached) {
+			sample = queue->head;
+			action = c_keep(sample->action);
+
+			if (queue->marker && (queue->marker == sample)) {
+				queue->markerReached = TRUE;
+			}
+
+			queue->head = sample->next;
+			sample->next = NULL;
+			queue->size--;
+			c_free(sample);
+
+			if(queue->size == 0){
+				queue->tail = NULL;
+				v_statusReset(v_entity(queue)->status,V_EVENT_DATA_AVAILABLE);
+			}
+    	}
     }
+
     v_observerUnlock(v_observer(queue));
 
     return action;
@@ -161,18 +200,19 @@ v_groupQueueWrite(
     v_writeResult result;
     v_kernel kernel;
     v_groupQueueSample sample;
-    
+
     assert(C_TYPECHECK(queue,v_groupQueue));
     assert(C_TYPECHECK(action,v_groupAction));
 
     v_observerLock(v_observer(queue));
 
-    result = V_WRITE_SUCCESS; 
-        
+    result = V_WRITE_SUCCESS;
+
     switch(action->kind){
     case V_GROUP_ACTION_REGISTER:             /*fallthrough on purpose.*/
-    case V_GROUP_ACTION_UNREGISTER:
-    	/*Do not handle register & unregister messages*/
+    case V_GROUP_ACTION_UNREGISTER:           /*fallthrough on purpose.*/
+    case V_GROUP_ACTION_DISPOSE_ALL:
+    	/*Do not handle register & unregister * dispose_all messages*/
     	break;
     case V_GROUP_ACTION_WRITE:                /*fallthrough on purpose.*/
     case V_GROUP_ACTION_DISPOSE:              /*fallthrough on purpose.*/
@@ -185,12 +225,12 @@ v_groupQueueWrite(
                       "v_groupQueue", 0,
                       "The v_groupQueue is full, message rejected.");
         } else {
-            kernel         = v_objectKernel(queue);
-            sample         = c_new(v_kernelType(kernel, K_GROUPQUEUESAMPLE));
+            kernel = v_objectKernel(queue);
+            sample = c_new(v_kernelType(kernel, K_GROUPQUEUESAMPLE));
             if (sample) {
                 sample->action = c_keep(action);
                 sample->next   = NULL;
-            
+
                 if(queue->tail){
                     queue->tail->next = sample;
                     queue->tail = sample;
@@ -198,12 +238,19 @@ v_groupQueueWrite(
                     queue->head = sample;
                     queue->tail = sample;
                 }
+
+                /* Floating marker, only set if marker is enabled. */
+                if (queue->marker) {
+                    queue->marker = sample;
+                }
+
                 queue->size++;
                 v_groupStreamNotifyDataAvailable(v_groupStream(queue));
             } else {
                 OS_REPORT(OS_ERROR,
                           "v_groupQueueWrite",0,
-                          "Failed to allocate sample.");
+                          "Failed to allocate v_groupQueueSample object.");
+                assert(FALSE);
             }
         }
     break;
@@ -218,4 +265,22 @@ v_groupQueueWrite(
     v_observerUnlock(v_observer(queue));
 
     return result;
+}
+
+c_ulong
+v_groupQueueSize(
+    v_groupQueue _this)
+{
+    c_ulong size;
+
+    assert(C_TYPECHECK(_this,v_groupQueue));
+
+    if(_this){
+        v_observerLock(v_observer(_this));
+        size = _this->size;
+        v_observerUnlock(v_observer(_this));
+    } else {
+        size = 0;
+    }
+    return size;
 }

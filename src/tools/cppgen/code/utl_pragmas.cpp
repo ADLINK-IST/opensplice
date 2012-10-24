@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,8 +9,9 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include <utl_pragmas.h>
+#include "utl_pragmas.h"
 #include <memory.h>
+#include "os_stdlib.h"
 
 // Constructors:
 UTL_Pragmas::UTL_Pragmas()
@@ -68,21 +69,21 @@ UTL_String *UTL_Pragmas::get_repositoryID()
    if (pd_pragma_ID)
    {
       // got an id already, don't need to build one.
-      strcat(repID, pd_pragma_ID->get_string());
+      os_strcat(repID, pd_pragma_ID->get_string());
    }
    else
    {
       // build id from version and prefix info.
 
       // standard id's have IDL:
-      strcat(repID, "IDL:");
+      os_strcat(repID, "IDL:");
 
       // add a prefix if one exists
 
       if (pd_pragma_prefix)
       {
-         strcat(repID, pd_pragma_prefix->get_string());
-         strcat(repID, "/");
+         os_strcat(repID, pd_pragma_prefix->get_string());
+         os_strcat(repID, "/");
       }
 
       // add the scope with '/' separators
@@ -99,26 +100,26 @@ UTL_String *UTL_Pragmas::get_repositoryID()
          }
          else
          {
-            strcat(repID, "/");
+            os_strcat(repID, "/");
          }
 
-         strcat(repID, i->item()->get_string());
+         os_strcat(repID, i->item()->get_string());
       }
 
       delete i;
 
       // add ':' separator before version
-      strcat(repID, ":");
+      os_strcat(repID, ":");
 
       // add version, default is '1.0'
 
       if (pd_pragma_version)
       {
-         strcat(repID, pd_pragma_version->get_string());
+         os_strcat(repID, pd_pragma_version->get_string());
       }
       else
       {
-         strcat(repID, "1.0");
+         os_strcat(repID, "1.0");
       }
    }
 

@@ -46,9 +46,17 @@ public class $(type-name)TypeSupport extends org.opensplice.dds.dcps.TypeSupport
         }
     }
 
-    protected void finalize()
+    protected void finalize() throws Throwable
     {
-        org.opensplice.dds.dcps.FooTypeSupportImpl.Free(this);
+    	try {
+    		org.opensplice.dds.dcps.FooTypeSupportImpl.Free(this);
+    	}
+        catch(Throwable t){
+    	}
+    	finally{
+    	    super.finalize();
+    	}
+		
     }
 
     public long get_copyCache()

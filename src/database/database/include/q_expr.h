@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -391,6 +391,11 @@ OS_API q_kind
 q_getKind(
     q_expr expr);
 
+OS_API q_list
+q_getLst(
+    q_expr expr,
+    c_long index);
+
 OS_API c_bool
 q_isInt(
     q_expr expr);
@@ -505,6 +510,11 @@ q_swapPar(
     
 OS_API void
 q_insertPar(
+    q_expr expr,
+    q_expr par);
+
+OS_API void
+q_addPar(
     q_expr expr,
     q_expr par);
 

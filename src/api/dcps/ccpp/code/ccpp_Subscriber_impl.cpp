@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms.
  *
  */
-#include <gapi.h>
+#include "gapi.h"
 #include "ccpp_dds_dcps.h"
 #include "ccpp_Subscriber_impl.h"
 #include "ccpp_Topic_impl.h"
@@ -138,7 +138,8 @@ DDS::DataReader_ptr DDS::Subscriber_impl::create_datareader (
                   if (myUD)
                   {
                       gapi_subscriberQos *sqos = gapi_subscriberQos__alloc();
-                      gapi_object_set_user_data(reader_handle, (CORBA::Object *)myUD);
+                      gapi_object_set_user_data(reader_handle, (CORBA::Object *)myUD,
+                                                DDS::ccpp_CallBack_DeleteUserData,NULL);
                       if(sqos){
                           if(gapi_subscriber_get_qos(_gapi_self, sqos) == GAPI_RETCODE_OK){
                               if(sqos->entity_factory.autoenable_created_entities) {
@@ -193,7 +194,6 @@ DDS::ReturnCode_t DDS::Subscriber_impl::delete_datareader (
   DDS::DataReader_ptr a_datareader
 ) THROW_ORB_EXCEPTIONS
 {
-  DDS::ccpp_UserData_ptr myUD;
   DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
   DDS::DataReader_impl_ptr dataReader;
 
@@ -202,19 +202,14 @@ DDS::ReturnCode_t DDS::Subscriber_impl::delete_datareader (
   {
     if (os_mutexLock(&(dataReader->dr_mutex)) == os_resultSuccess)
     {
-      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(dataReader->_gapi_self));
       result = gapi_subscriber_delete_datareader(_gapi_self, dataReader->_gapi_self);
       if (result == DDS::RETCODE_OK)
       {
         dataReader->_gapi_self = NULL;
-        if (myUD)
-        {
-          delete myUD;
-        }
-        else
-        {
-          OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
-        }
+      }
+      else
+      {
+        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to delete datareader");
       }
       if (os_mutexUnlock(&(dataReader->dr_mutex)) != os_resultSuccess)
       {
@@ -232,7 +227,7 @@ DDS::ReturnCode_t DDS::Subscriber_impl::delete_datareader (
 DDS::ReturnCode_t DDS::Subscriber_impl::delete_contained_entities (
 ) THROW_ORB_EXCEPTIONS
 {
-  return gapi_subscriber_delete_contained_entities(_gapi_self, DDS::ccpp_CallBack_DeleteUserData, NULL);
+  return gapi_subscriber_delete_contained_entities(_gapi_self);
 }
 
 DDS::DataReader_ptr DDS::Subscriber_impl::lookup_datareader (

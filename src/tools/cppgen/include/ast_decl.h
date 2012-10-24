@@ -79,13 +79,13 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 ** USE: Included from ast.hh
 */
 
-#include <cppgen_iostream.h>
-#include <idl_fwd.h>
-#include <idl_narrow.h>
-#include <idl_bool.h>
-#include <utl_scoped_name.h>
-#include <utl_string.h>
-#include <utl_pragmas.h>
+#include "cppgen_iostream.h"
+#include "idl_fwd.h"
+#include "idl_narrow.h"
+#include "idl_bool.h"
+#include "utl_scoped_name.h"
+#include "utl_string.h"
+#include "utl_pragmas.h"
 
 // This class is needed (only for g++) to get around a bug in g++ which
 // causes virtual operations to not be looked up correctly if an operation

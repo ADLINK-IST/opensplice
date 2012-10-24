@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -48,3 +48,34 @@ nw_plugControlBufferGetNextMessage(
     *more = ((lastMessageNr+1) < totalNrOfMessages);
     return result;
 }
+
+nw_plugControlAltMessage
+nw_plugControlBufferGetNextAltMessage(
+    nw_plugControlBuffer buffer,
+    nw_plugControlAltMessage prevMessage,
+    nw_bool *more)
+{
+    nw_plugControlAltMessage result;
+    nw_seqNr totalNrOfMessages;
+    nw_seqNr lastMessageNr;
+    
+    totalNrOfMessages = nw_plugControlBufferGetNrOfMessages(buffer);
+    NW_CONFIDENCE(totalNrOfMessages > 0);
+    if (prevMessage == NULL) {
+        lastMessageNr = 0;
+        result = NW_PLUGCONTROLBUFFER_FIRSTALTMESSAGE(buffer);
+    } else {
+        NW_CONFIDENCE(((UI(prevMessage) - UI(NW_PLUGCONTROLBUFFER_FIRSTALTMESSAGE(buffer))) % NW_CONTROL_ALTMESSAGE_SIZE) == 0);
+        lastMessageNr = (UI(prevMessage) - UI(NW_PLUGCONTROLBUFFER_FIRSTALTMESSAGE(buffer)))/
+            NW_CONTROL_MESSAGE_SIZE + 1;
+        if (lastMessageNr < totalNrOfMessages) {
+            result = (nw_plugControlAltMessage)(UI(prevMessage) + NW_CONTROL_ALTMESSAGE_SIZE);
+        } else {
+            result = NULL;
+        }
+    }
+    
+    *more = ((lastMessageNr+1) < totalNrOfMessages);
+    return result;
+}
+

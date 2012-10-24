@@ -1,0 +1,50 @@
+This file describes how to generate the dcps CJ (CORBA Java) interface with an ORB of 
+choice. 
+
+REQUIREMENTS
+------------
+
+It is assumed that the user will make sure the following preconditions are met:
+
+- A Java compiler and VM compatible with Java 1.5 or greater is available
+- ORB idl processor is available
+- The path is setup to include the preceding items 
+- Library paths are set (as required by the compiler, the ORB, etc)
+- ORB specific environment variables are set 
+- The OpenSplice release.com script has been run
+
+GENERATING THE CJ FOR THE SUPPORTED ORBs - JacORB/RTOrb
+-------------------------------------------------------
+
+The "BUILD" script in the java directory is setup to work with JacORB and RTOrb.
+The dcpscj.jar in the distribution is built against JacORB. If you wish to build it
+against RTOrb then all you have to do is type
+
+sh BUILD
+
+GENERATING FOR ANOTHER ORB
+--------------------------
+
+If you wish to compile the dcps CJ interface with another ORB, you will have to ammend the "orbdeps" file accordingly:
+
+- Amend the value of JAVA_ORB_IDL_COMPILER with the name of the executable of the Java ORB IDL compiler you wish to use.
+
+- Amend the value of GEN_OUT_DIR_FLAG with the flag your IDL compiler provides for redirecting the generated output
+
+- Amend the value of EXTRA_FLAGS with any extra flags your compiler requires
+
+NOTE: The script will create a dcpscj.jar in the directory from where you run the script. You will need to copy the generated jar file in the 
+$OSPL_HOME/jar directory. MAKE A COPY of the existing $OSPL_HOME/jar/dcpscj.jar before replacing it with the new jar file.
+
+
+GENERATING WITH THE PERC COMPILER
+---------------------------------
+
+If required, the CJ interface may be built using the Aonix PERC compiler. To
+do so, set SPLICE_JDK=perc and run the percenv.sh script in the PERC
+distribution -before- running the OpenSplice release.com script.
+
+Note that the build process requires the 'jar' executable to create dcpscj.jar,
+and as this is not provided in PERC you will need to have the Sun JDK or a
+compatible jar implementation on your PATH.
+

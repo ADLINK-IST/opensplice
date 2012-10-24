@@ -43,7 +43,7 @@
 #ifdef __TURBOC__
  #pragma warn -rch
  #pragma warn -use
-#include <io.h>
+#include "io.h"
 #include <stdlib.h>
 #define YY_USE_CONST
 #define YY_USE_PROTOS
@@ -744,22 +744,22 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * idl.ll - Lexical scanner for IDL 1.1
  */
 
-#include <os_stdlib.h>
-#include <os_heap.h>
-#include <idl.h>
-#include <idl_extern.h>
-#include <utl_incl.h>
+#include "os_stdlib.h"
+#include "os_heap.h"
+#include "idl.h"
+#include "idl_extern.h"
+#include "utl_incl.h"
 
-#include <fe_private.h>
+#include "fe_private.h"
 
 #ifdef VERSION
 #undef VERSION
 #endif
 
-#include <y_tab.h>
+#include "y_tab.h"
 #include <string.h>
 
-#include <preprocess.h>
+#include "preprocess.h"
 
 #undef input
 #define input() ((yytchar=yysptr>yysbuf?U(*--yysptr):preprocess_getc())==10?(yylineno++,yytchar):yytchar)
@@ -1284,7 +1284,7 @@ YY_RULE_SETUP
 #line 183 "idl.ll"
 {
     char *z = (char *) os_malloc(strlen(DDS_YYTEXT) + 1);
-    strcpy(z, DDS_YYTEXT);
+    os_strcpy(z, DDS_YYTEXT);
     yylval.strval = z;
     return IDENTIFIER;
 }
@@ -1294,7 +1294,7 @@ YY_RULE_SETUP
 #line 190 "idl.ll"
 {
                                                         char *z = (char *) os_malloc(strlen(DDS_YYTEXT) + 1);
-                                                        strcpy(z, DDS_YYTEXT);
+                                                        os_strcpy(z, DDS_YYTEXT);
                                                         yylval.strval = z;
                                                         BEGIN NORMAL_STATE;
                                                         return VERSION;

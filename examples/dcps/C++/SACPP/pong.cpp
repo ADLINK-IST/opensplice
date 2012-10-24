@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -313,7 +313,7 @@ main (
                 jmax = PP_min_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; (int)j < jmax; j++) {
-                        if (infoList[j].valid_data == TRUE) {
+                        if (infoList[j].valid_data) {
                             result = PP_min_writer->write (PP_min_dataList[j], HANDLE_NIL);
                         }
                     }
@@ -327,7 +327,7 @@ main (
                 jmax = PP_seq_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; (int)j < jmax; j++) {
-                        if (infoList[j].valid_data == TRUE) {
+                        if (infoList[j].valid_data) {
                             result = PP_seq_writer->write (PP_seq_dataList[j], HANDLE_NIL);
                         }
                     }
@@ -341,7 +341,7 @@ main (
                 jmax = PP_string_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; (int)j < jmax; j++) {
-                        if (infoList[j].valid_data == TRUE) {
+                        if (infoList[j].valid_data) {
                             result = PP_string_writer->write (PP_string_dataList[j], HANDLE_NIL);
                         }
                     }
@@ -356,7 +356,7 @@ main (
                 jmax = PP_fixed_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; (int)j < jmax; j++) {
-                        if (infoList[j].valid_data == TRUE) {
+                        if (infoList[j].valid_data) {
                             result = PP_fixed_writer->write (PP_fixed_dataList[j], HANDLE_NIL);
                         }
                     }
@@ -370,7 +370,7 @@ main (
                 jmax = PP_array_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; (int)j < jmax; j++) {
-                        if (infoList[j].valid_data == TRUE) {
+                        if (infoList[j].valid_data) {
                             result = PP_array_writer->write (PP_array_dataList[j], HANDLE_NIL);
                         }
                     }
@@ -384,7 +384,7 @@ main (
                 jmax = PP_bseq_dataList->length ();
                 if (jmax != 0) {
                     for (j = 0; (int)j < jmax; j++) {
-                        if (infoList[j].valid_data == TRUE) {
+                        if (infoList[j].valid_data) {
                             result = PP_bseq_writer->write (PP_bseq_dataList[j], HANDLE_NIL);
                         }
                     }

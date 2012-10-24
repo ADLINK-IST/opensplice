@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -101,6 +101,12 @@ void
 v_writerNotifyIncompatibleQos (
     v_writer _this,
     v_policyId id);
+
+void
+v_writerNotifyPublicationMatched (
+    v_writer _this,
+    v_gid    readerGID,
+    c_bool   dispose);
 
 void
 v_writerNotifyChangedQos (

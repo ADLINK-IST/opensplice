@@ -11,16 +11,16 @@ namespace OSPLTestLib
 
 ::OSPLTestLib::ProcessControlImpl*
 TestLib::get_process_controller (const ProcessName process_self,
-                                 int argc, 
+                                 int argc,
                                  char *argv[])
 {
-    ::OSPLTestLib::ProcessControlImpl* the_process 
+    ::OSPLTestLib::ProcessControlImpl* the_process
         = new ProcessControlImpl (process_self);
     ::OSPLTestLib::ProcessControl_var safe_process (the_process);
-    
+
     if (! the_process->init (argc, argv))
     {
-        // Init failed - release 
+        // Init failed - release
         safe_process = ::OSPLTestLib::ProcessControl::_nil ();
     }
 

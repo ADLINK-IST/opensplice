@@ -1,6 +1,6 @@
 // The OpenSplice DDS Community Edition project.
 //
-// Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
+// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
 // 
 //  This library is free software; you can redistribute it and/or
@@ -919,6 +919,7 @@ namespace DDS.OpenSplice.Gapi
         gapi_livelinessQosPolicy liveliness;
         gapi_reliabilityQosPolicy reliability;
         gapi_lifespanQosPolicy lifespan;
+        gapi_destinationOrderQosPolicy destination_order;
         gapi_userDataQosPolicy user_data;
         gapi_ownershipQosPolicy ownership;
         gapi_ownershipStrengthQosPolicy ownership_strength;

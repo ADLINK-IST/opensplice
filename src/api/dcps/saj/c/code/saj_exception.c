@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,6 +12,7 @@
 
 #include "saj_utilities.h"
 #include "saj__exception.h"
+#include "os_stdlib.h"
 
 void
 saj_exceptionThrow (
@@ -26,7 +27,7 @@ saj_exceptionThrow (
     jthrowable jexception;
 
     va_start (valist, format);
-    vsnprintf (memo, sizeof(memo), format, valist);
+    os_vsnprintf (memo, sizeof(memo), format, valist);
     va_end (valist);
     jmemo = (*env)->NewStringUTF (env, memo);
     if (jmemo) {

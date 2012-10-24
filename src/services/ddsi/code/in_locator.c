@@ -2,7 +2,7 @@
 #include "os_heap.h"
 
 /* DDSi includes */
-#include "assert.h"
+#include <assert.h>
 #include "in_ddsiElements.h"
 #include "in__locator.h"
 #include "in_address.h"

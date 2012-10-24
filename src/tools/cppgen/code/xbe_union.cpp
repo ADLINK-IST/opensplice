@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -492,7 +492,7 @@ be_union::GenerateCopyMF(be_ClientHeader& source)
    }
 
    os << tab << "m__d = that._d();" << nl; //don't forget the discriminant
-   os << tab << "m__d_set = TRUE;" << nl;
+   os << tab << "m__d_set = that.m__d_set;" << nl;
    source.Outdent();
 
    os << tab << "}" << nl;

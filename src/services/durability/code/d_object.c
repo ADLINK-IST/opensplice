@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "d_object.h"
@@ -21,6 +21,7 @@ static char* d_kindString[] = {
     "D_ADMIN               ",
     "D_GROUP               ",
     "D_LISTENER            ",
+    "D_POLICY              ",
     "D_NAMESPACE           ",
     "D_PUBLISHER           ",
     "D_SUBSCRIBER          ",
@@ -36,6 +37,7 @@ static char* d_kindString[] = {
     "D_DISPOSE_HELPER      ",
     "D_GROUP_CREATION_QUEUE",
     "D_READER_REQUEST      ",
+    "D_MERGE_ACTION        ",
     "D_KINDCOUNT           " };
 
 static c_ulong allocationCount = 0;

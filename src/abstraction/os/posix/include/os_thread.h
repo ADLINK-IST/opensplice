@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -18,6 +18,8 @@ extern "C" {
 #endif
 
 #include <pthread.h>
+
+#define OS_THREAD_ID_NONE (0U)
 
 typedef pthread_t os_os_threadId;
 

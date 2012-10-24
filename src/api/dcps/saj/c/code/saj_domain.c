@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_domain.h"
+#include "saj_Domain.h"
 #include "saj_utilities.h"
 
 #define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_DomainImpl_##name

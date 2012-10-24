@@ -1,16 +1,18 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
 #include "u__cfValue.h"
+#include "u_cfData.h"
+#include "os_stdlib.h"
 
 #define CF_SPACES  " \t\n"
 
@@ -127,7 +129,7 @@ u_cfValueScan(
 
              length = (c_ulong)strlen(value.is.String);
              str = os_malloc(length + 1U);
-             strncpy(str, value.is.String, length);
+             os_strncpy(str, value.is.String, length);
              str[length] = 0;
              *valuePtr = c_stringValue(str);
              result = TRUE;

@@ -4,29 +4,23 @@ namespace test.sacs
     public class MyDataReaderListener : DDS.IDataReaderListener
     {
         public bool onRequestedDeadlineMissedCalled = false;
-
         public DDS.RequestedDeadlineMissedStatus rdmStatus;
 
         public bool onRequestedIncompatibleQosCalled = false;
-
         public DDS.RequestedIncompatibleQosStatus riqStatus;
 
         public bool onSampleRejectedCalled = false;
-
         public DDS.SampleRejectedStatus srStatus;
 
         public bool onLivelinessChangedCalled = false;
-
         public DDS.LivelinessChangedStatus lcStatus;
 
         public bool onDataAvailableCalled = false;
 
         public bool onSubscriptionMatchCalled = false;
-
         public DDS.SubscriptionMatchedStatus smStatus;
 
         public bool onSampleLostCalled = false;
-
         public DDS.SampleLostStatus slStatus;
 
         public virtual void OnRequestedDeadlineMissed(DDS.IDataReader reader, DDS.RequestedDeadlineMissedStatus

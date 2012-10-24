@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -87,8 +87,7 @@ v_entryWrite(
     case K_DATAREADER:
         writeResult = v_dataReaderEntryWrite(v_dataReaderEntry(e),
                                              o,
-                                             instance,
-                                             C_TIME_MIN_INFINITE);
+                                             instance);
     break;
     case K_NETWORKREADER:
         writeResult = v_networkReaderEntryWrite(v_networkReaderEntry(e),

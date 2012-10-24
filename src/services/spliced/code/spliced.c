@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -19,6 +19,7 @@
 #include "c_stringSupport.h"
 
 #include "spliced.h"
+#include "s_misc.h"
 #include "s_configuration.h"
 #include "report.h"
 #include "serviceMonitor.h"
@@ -100,6 +101,20 @@ argumentsCheck(
         exit(SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR);
     }
 }
+static void *
+leaseRenewThread(
+    void *arg)
+{
+    spliced this = (spliced)arg;
+    os_time delay;
+    delay.tv_sec = this->config->leaseRenewalPeriod.seconds;
+    delay.tv_nsec = this->config->leaseRenewalPeriod.nanoseconds;
+    while (!this->terminate && (this->systemHaltCode == SPLICED_EXIT_CODE_OK)) {
+        u_serviceRenewLease(this->service, this->config->leasePeriod);
+        os_nanoSleep(delay);
+    }
+    return NULL;
+}
 
 void
 splicedExit(
@@ -139,7 +154,8 @@ waitForServices(
     c_iter names;
     c_char *name;
 
-    os_time pollDelay = {1, 0};
+    /* dds2164: decrease the poll delay to 100ms to allow for faster detection */
+    os_time pollDelay = {0, 100000000};
     os_time curTime;
     os_time stopTime;
 
@@ -236,8 +252,8 @@ serviceCommandIsValid(
         /* Try the same thing with the exe suffix attached */
         if (strstr(*command, OS_EXESUFFIX) == NULL) {
             suffixedCommand = os_malloc(strlen(*command) + sizeof(OS_EXESUFFIX));
-            strcpy(suffixedCommand, *command);
-            strcat(suffixedCommand, OS_EXESUFFIX);
+            os_strcpy(suffixedCommand, *command);
+            os_strcat(suffixedCommand, OS_EXESUFFIX);
             fullCommand = os_locate(suffixedCommand, OS_ROK|OS_XOK);
             if (fullCommand) {
                 os_free(*command);
@@ -316,10 +332,6 @@ startServices(
            else if (!strcmp(info->name,"durability"))
            {
               vg_cmd = os_getenv("VG_DURABILITY");
-           }
-           else if (!strcmp(info->name,"ddsi"))
-           {
-              vg_cmd = os_getenv("VG_DDSI");
            }
            else if (!strcmp(info->name,"snetworking"))
            {
@@ -673,10 +685,12 @@ static void
 splicedFree(void)
 {
     spliced this = spl_daemon;
+    os_time sleep = {1,0}; /* 1s */
     v_duration lease = {300, 0}; /* 5 minutes */
+
     if (this != NULL) {
         if (this->service != NULL) {
-            u_participantRenewLease(u_participant(this->service), lease);
+            u_serviceRenewLease(this->service, lease);
 
             if (!u_serviceChangeState(u_service(this->service),STATE_TERMINATING)) {
                 OS_REPORT(OS_ERROR,OSRPT_CNTXT_SPLICED,0,
@@ -692,10 +706,13 @@ splicedFree(void)
         /* signal internal threads to stop.
          */
         u_splicedPrepareTermination(this->service);
+        /* Only perform the delay if the service terminate period has not been
+         * configured as '0'.
+         */
+        if(this->config->serviceTerminatePeriod.tv_sec != 0)
         {
             /* Give internal threads some time to stop.
              */
-            os_time sleep = {1,0}; /* 1s */
             os_nanoSleep(sleep);
         }
         /* At this point no rock solid guarantee all threads are stopped.
@@ -806,22 +823,15 @@ splicedGetServiceInfo(
 /**************************************************************
  * Main
  **************************************************************/
-int
-main(
-    int argc,
-    char *argv[])
+OPENSPLICE_MAIN (ospl_spliced)
 {
     spliced this;
     u_result r;
     os_time delay;
     os_result osr;
     int retCode = SPLICED_EXIT_CODE_OK;
+    os_threadId lrt;
 
-    osr = os_serviceStart(os_serviceName()); /* should become this->uri in the future */
-    if (osr != os_resultSuccess) {
-        printf("Failed to initialize.\n");
-        return SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR;
-    }
     u_userInitialise();
 
     this = splicedNew();
@@ -894,10 +904,15 @@ main(
         delay.tv_sec = this->config->leaseRenewalPeriod.seconds;
         delay.tv_nsec = this->config->leaseRenewalPeriod.nanoseconds;
 
+        osr = os_threadCreate(&lrt, S_THREAD_LEASE_RENEW_THREAD, &this->config->leaseRenewScheduling, leaseRenewThread, this);
+        if (osr != os_resultSuccess) {
+            splicedExit("Failed to start lease renew thread.", SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
+        }
+
         while (!this->terminate && (this->systemHaltCode == SPLICED_EXIT_CODE_OK)) {
-            u_participantRenewLease(u_participant(this->service), this->config->leasePeriod);
             os_nanoSleep(delay);
         }
+        os_threadWaitExit(lrt, NULL);
     }
     if(this->systemHaltCode != SPLICED_EXIT_CODE_OK && retCode == SPLICED_EXIT_CODE_OK)
     {
@@ -907,3 +922,5 @@ main(
     splicedFree();
     return retCode;
 }
+
+

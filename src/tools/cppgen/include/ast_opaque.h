@@ -18,8 +18,8 @@
 *
 */
 
-#include<ast_concrete_type.h>
-#include<idl.h>
+#include "ast_concrete_type.h"
+#include "idl.h"
 
 class
          AST_Opaque : virtual public AST_Type

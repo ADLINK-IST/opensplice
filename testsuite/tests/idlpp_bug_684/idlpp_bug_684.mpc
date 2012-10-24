@@ -1,0 +1,17 @@
+// -*- MPC -*-
+// $Id$
+
+project(sacpp*): sacpp_typesupport {
+  exename = *
+  exeout = .
+
+  requires += dummy_label
+
+  TypeSupport_Files {
+    TestTopics.idl
+  }
+
+  Source_Files {
+    test.cpp
+  }
+}

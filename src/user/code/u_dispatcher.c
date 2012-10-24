@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -22,48 +22,6 @@
 #include "v_event.h"
 
 #include "os_report.h"
-
-u_result
-u_dispatcherClaim(
-    u_dispatcher _this,
-    v_observer *observer)
-{
-    u_result result = U_RESULT_OK;
-
-    if ((_this != NULL) && (observer != NULL)) {
-        *observer = v_observer(u_entityClaim(u_entity(_this)));
-        if (*observer == NULL) {
-            OS_REPORT_2(OS_WARNING, "u_dispatcherClaim", 0,
-                        "Claim Dispatcher failed. "
-                        "<_this = 0x%x, observer = 0x%x>.",
-                         _this, observer);
-            result = U_RESULT_INTERNAL_ERROR;
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,"u_dispatcherClaim",0,
-                    "Illegal parameter. "
-                    "<_this = 0x%x, observer = 0x%x>.",
-                    _this, observer);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_dispatcherRelease(
-    u_dispatcher _this)
-{
-    u_result result = U_RESULT_OK;
-
-    if (_this != NULL) {
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_ERROR,"u_dispatcherRelease",0,
-                    "Illegal parameter. <_this = 0x%x>.", _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
 
 struct listenerExecArg {
     c_ulong mask;
@@ -95,16 +53,17 @@ dispatch(
             _this->startAction(_this, _this->actionData);
         }
         os_mutexLock(&_this->mutex);
-        result = u_dispatcherClaim(_this,&claim);
-        if ((result == U_RESULT_OK) && (claim != NULL)) {
+        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&claim));
+        if(result == U_RESULT_OK) {
+            assert(claim);
             while ((!(_this->event & V_EVENT_OBJECT_DESTROYED)) &&
-                   (_this->listeners != NULL) && 
+                   (_this->listeners != NULL) &&
                    (c_iterLength(_this->listeners) > 0)) {
 
                 os_mutexUnlock(&_this->mutex);
                 _this->event = v_observerWait(claim);
                 os_mutexLock(&_this->mutex);
-                if (!(_this->event & V_EVENT_OBJECT_DESTROYED)) { 
+                if (!(_this->event & V_EVENT_OBJECT_DESTROYED)) {
                     /* do not call listeners when  object is destroyed! */
                     arg.mask = 0;
                     arg.o = _this;
@@ -113,8 +72,8 @@ dispatch(
                                &arg);
                 }
             }
-            _this->threadId = 0;
-            result = u_dispatcherRelease(_this);
+            _this->threadId = OS_THREAD_ID_NONE;
+            result = u_entityRelease(u_entity(_this));
             if (result != U_RESULT_OK) {
                 OS_REPORT(OS_ERROR, "u_dispatcher::dispatch", 0,
                           "Release observer failed.");
@@ -143,19 +102,20 @@ u_dispatcherInit(
     u_result result = U_RESULT_OK;
 
     if (_this != NULL) {
-        result = u_dispatcherClaim(_this,&ko);
-        if ((result == U_RESULT_OK) && (ko != NULL)) {
+        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&ko));
+        if(result == U_RESULT_OK) {
+            assert(ko);
             os_mutexAttrInit(&mutexAttr);
             mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
             os_mutexInit(&_this->mutex,&mutexAttr);
             _this->listeners = NULL;
-            _this->threadId = 0;
+            _this->threadId = OS_THREAD_ID_NONE;
             _this->startAction = NULL;
             _this->stopAction = NULL;
             _this->actionData = NULL;
             _this->event = 0;
             u_entity(_this)->flags |= U_ECREATE_INITIALISED;
-            result = u_dispatcherRelease(_this);
+            result = u_entityRelease(u_entity(_this));
             if (result != U_RESULT_OK) {
                 OS_REPORT(OS_ERROR, "u_dispatcherInit", 0,
                           "Release observer failed.");
@@ -190,10 +150,10 @@ u_dispatcherDeinit(
         }
         c_iterFree(_this->listeners);
         _this->listeners = NULL; /* Flags the dispatch thread to stop */
-        if (_this->threadId != 0U) {
+        if (os_threadIdToInteger(_this->threadId) != 0U) {
             tid = _this->threadId;
-            result = u_dispatcherClaim(_this,&ko);
-            if ((result != U_RESULT_OK) && (ko == NULL)) {
+            result = u_entityReadClaim(u_entity(_this), (v_entity*)(&ko));
+            if(result != U_RESULT_OK) {
                 /* This is a valid situation when a participant has been
                  * freed prior to the freeing of a dispatcher within the
                  * participant.
@@ -207,7 +167,7 @@ u_dispatcherDeinit(
                 v_observerLock(ko);
                 v_observerNotify(ko, NULL, NULL);
                 v_observerUnlock(ko);
-                u_dispatcherRelease(_this);
+                u_entityRelease(u_entity(_this));
                 os_mutexUnlock(&_this->mutex);
                 os_threadWaitExit(tid, NULL);
                 os_mutexDestroy(&_this->mutex);
@@ -241,10 +201,11 @@ u_dispatcherInsertListener(
         os_mutexLock(&_this->mutex);
         ul = u_listenerNew(listener,userData);
         _this->listeners = c_iterInsert(_this->listeners,ul);
-        
-        if (_this->threadId == 0U) {
-            result = u_dispatcherClaim(_this,&ke);
-            if ((result == U_RESULT_OK) && (ke != NULL)) {
+
+        if (os_threadIdToInteger(_this->threadId) == 0U) {
+            result = u_entityReadClaim(u_entity(_this), (v_entity*)(&ke));
+            if(result == U_RESULT_OK) {
+                assert(ke);
                 name = v_entityName(ke);
                 if (name == NULL) {
                     name = "NoName";
@@ -254,7 +215,7 @@ u_dispatcherInsertListener(
                                 name,
                                 &attr,dispatch,
                                 (void *)_this);
-                result = u_dispatcherRelease(_this);
+                result = u_entityRelease(u_entity(_this));
                 if (result != U_RESULT_OK) {
                     OS_REPORT(OS_ERROR, "u_dispatcherInsertListener", 0,
                               "Release observer failed.");
@@ -271,7 +232,7 @@ u_dispatcherInsertListener(
                   "Illegal parameter.");
         result = U_RESULT_ILL_PARAM;
     }
-    
+
     return result;
 }
 
@@ -290,16 +251,17 @@ u_dispatcherAppendListener(
         os_mutexLock(&_this->mutex);
         ul = u_listenerNew(listener,userData);
         _this->listeners = c_iterAppend(_this->listeners,ul);
-        if (_this->threadId == 0U) {
-            result = u_dispatcherClaim(_this,&ko);
-            if((result == U_RESULT_OK) && (ko != NULL)) {
+        if (os_threadIdToInteger(_this->threadId) == 0U) {
+            result = u_entityReadClaim(u_entity(_this), (v_entity*)(&ko));
+            if(result == U_RESULT_OK) {
+                assert(ko);
                 os_threadAttrInit(&attr);
                 os_threadCreate(&_this->threadId,
                                 v_entityName(ko),
                                 &attr,
                                 dispatch,
                                 (void *)_this);
-                result = u_dispatcherRelease(_this);
+                result = u_entityRelease(u_entity(_this));
                 if (result != U_RESULT_OK) {
                     OS_REPORT(OS_ERROR, "u_dispatcherAppendListener", 0,
                               "Release observer failed.");
@@ -340,7 +302,7 @@ u_dispatcherRemoveListener(
     v_observer ko;
     os_threadId tid;
     u_result result = U_RESULT_OK;
-    
+
     if ((_this != NULL) && (listener != NULL)) {
         os_mutexLock(&_this->mutex);
         ul = c_iterResolve(_this->listeners,compare,(void *)listener);
@@ -348,13 +310,14 @@ u_dispatcherRemoveListener(
         if (ul != NULL) {
             c_iterTake(_this->listeners, ul);
             if (c_iterLength(_this->listeners) == 0) {
-                result = u_dispatcherClaim(_this,&ko);
-                if((result == U_RESULT_OK) && (ko != NULL)) {
+                result = u_entityReadClaim(u_entity(_this), (v_entity*)(&ko));
+                if(result == U_RESULT_OK) {
+                    assert(ko);
                     /* Wakeup the dispatch thread */
                     v_observerLock(ko);
                     v_observerNotify(ko, NULL, NULL);
                     v_observerUnlock(ko);
-                    result = u_dispatcherRelease(_this);
+                    result = u_entityRelease(u_entity(_this));
                     if (result != U_RESULT_OK) {
                         OS_REPORT(OS_ERROR, "u_dispatcherRemoveListener", 0,
                                   "Release observer failed.");
@@ -367,7 +330,8 @@ u_dispatcherRemoveListener(
             u_listenerFree(ul);
         }
         os_mutexUnlock(&_this->mutex);
-        if ((c_iterLength(_this->listeners) == 0) && (tid != 0U)) {
+        if ((c_iterLength(_this->listeners) == 0)
+            && (os_threadIdToInteger(tid) != 0U)) {
             os_threadWaitExit(tid, NULL);
         }
     } else {
@@ -386,13 +350,14 @@ u_dispatcherNotify(
     u_result result = U_RESULT_OK;
 
     if (_this != NULL) {
-        result = u_dispatcherClaim(_this,&ko);
-        if ((result == U_RESULT_OK) && (ko != NULL)) {
+         result = u_entityReadClaim(u_entity(_this), (v_entity*)(&ko));
+        if (result == U_RESULT_OK) {
+            assert(ko);
             /* Wakeup the dispatch thread */
             v_observerLock(ko);
             v_observerNotify(ko, NULL, NULL);
             v_observerUnlock(ko);
-            result = u_dispatcherRelease(_this);
+            result = u_entityRelease(u_entity(_this));
             if (result != U_RESULT_OK) {
                 OS_REPORT(OS_ERROR, "u_dispatcherNotify", 0,
                           "Release observer failed.");
@@ -418,10 +383,11 @@ u_dispatcherSetEventMask(
     u_result result = U_RESULT_OK;
 
     if (_this != NULL) {
-        result = u_dispatcherClaim(_this,&ko);
-        if ((result == U_RESULT_OK) && (ko != NULL)) {
+         result = u_entityReadClaim(u_entity(_this), (v_entity*)(&ko));
+        if (result == U_RESULT_OK) {
+            assert(ko);
             v_observerSetEventMask(ko,eventMask);
-            result = u_dispatcherRelease(_this);
+            result = u_entityRelease(u_entity(_this));
             if (result != U_RESULT_OK) {
                 OS_REPORT(OS_ERROR, "u_dispatcherSetEventMask", 0,
                           "Release observer failed.");
@@ -447,10 +413,11 @@ u_dispatcherGetEventMask(
     u_result result = U_RESULT_OK;
 
     if ((_this != NULL) && (eventMask != NULL)) {
-        result = u_dispatcherClaim(_this,&ko);
-        if ((result == U_RESULT_OK) && (ko != NULL)) {
+        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&ko));
+        if (result == U_RESULT_OK) {
+            assert(ko);
             *eventMask = v_observerGetEventMask(ko);
-            result = u_dispatcherRelease(_this);
+            result = u_entityRelease(u_entity(_this));
             if (result != U_RESULT_OK) {
                 OS_REPORT(OS_ERROR, "u_dispatcherGetEventMask", 0,
                           "Release observer failed.");

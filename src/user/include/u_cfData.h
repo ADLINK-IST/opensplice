@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef U_CFDATA_H
@@ -31,7 +31,7 @@ C_CLASS(u_cfData);
 /**
  * \brief The <code>u_cfData</code> cast method.
  *
- * This method casts an object to a <code>u_cfData</code> object. Since user 
+ * This method casts an object to a <code>u_cfData</code> object. Since user
  * layer objects are allocated on heap, no type checking is performed.
  */
 #define u_cfData(o) ((u_cfData)(o))
@@ -50,7 +50,7 @@ u_cfDataFree(
 /**
  * \brief Retrieves the data as a string.
  *
- * The data is only stored in the last parameter, when it is 
+ * The data is only stored in the last parameter, when it is
  * succesfully retrieved.
  *
  * \param data the proxy to the kernel configuration data
@@ -86,7 +86,7 @@ u_cfDataBoolValue(
 /**
  * \brief Retrieves the data as a long value.
  *
- * The data is only stored in the last parameter, when it is 
+ * The data is only stored in the last parameter, when it is
  * succesfully retrieved.
  *
  * \param data the proxy to the kernel configuration data
@@ -103,7 +103,7 @@ u_cfDataLongValue(
 /**
  * \brief Retrieves the data as a unsigned long value.
  *
- * The data is only stored in the last parameter, when it is 
+ * The data is only stored in the last parameter, when it is
  * succesfully retrieved.
  *
  * \param data the proxy to the kernel configuration data
@@ -118,9 +118,45 @@ u_cfDataULongValue(
     c_ulong *ul);
 
 /**
+ * \brief Retrieves the data as a unsigned long value.
+ *
+ * The data is only stored in the last parameter, when it is
+ * succesfully retrieved.
+ *
+ * \param data the proxy to the kernel configuration data
+ * \param size the storage location of the data
+ *
+ * \return TRUE, when the data is correctly retrieved as unsigned long value
+ *         FALSE, otherwise
+ */
+OS_API c_bool
+u_cfDataSizeValue(
+    u_cfData data,
+    c_size *size);
+
+/**
+ * \brief Retrieves a string which contains a friendly name (K,M,G) as a unsigned long value.
+ *
+ * The data is only stored in the last parameter, when it is
+ * succesfully retrieved.
+ *
+ * \param str the string representation of the configuration data
+ * \param size the storage location of the data
+ *
+ * \return TRUE, when the data is correctly retrieved as unsigned long value
+ *         FALSE, otherwise
+ */
+OS_API c_bool
+u_cfDataSizeValueFromString(
+    c_char *str,
+    c_size *size);
+
+
+
+/**
  * \brief Retrieves the data as a floating point value.
  *
- * The data is only stored in the last parameter, when it is 
+ * The data is only stored in the last parameter, when it is
  * succesfully retrieved.
  *
  * \param data the proxy to the kernel configuration data

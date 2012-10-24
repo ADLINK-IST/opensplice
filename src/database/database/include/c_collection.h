@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef C_COLLECTION_H
@@ -26,7 +26,7 @@
  * relations.
  * Bi-directional relationships as specified in the ODMG specification are
  * currently not supported, they are hard to implement against the performance
- * requirements and no use cases are defined to justify the effort. 
+ * requirements and no use cases are defined to justify the effort.
  *
  * The following sub-types are provided:
  *
@@ -89,7 +89,7 @@
  *     c_bool   c_queryEval    (c_query query, c_object o);
  *
  * The following table specific methods are provided:
- * 
+ *
  *     c_iter   c_keyValues    (c_table table, c_object o);
  *
  */
@@ -98,6 +98,7 @@
 #include "c_metabase.h"
 #include "c_iterator.h"
 #include "q_expr.h"
+#include "c_querybase.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -115,13 +116,13 @@ C_CLASS(c_collection);
 
 #define C_UNLIMITED (0)
 
-typedef c_bool (*c_action) 
+typedef c_bool (*c_action)
                (c_object o, c_voidp arg);
 
-typedef c_bool (*c_removeCondition) 
+typedef c_bool (*c_removeCondition)
                (c_object found, c_object requested, c_voidp arg);
 
-typedef c_bool (*c_replaceCondition) 
+typedef c_bool (*c_replaceCondition)
                (c_object original, c_object replacement, c_voidp arg);
 
 typedef c_collection c_list;
@@ -170,7 +171,7 @@ c_setNew (
  *
  * Bag objects are unordered collections of elements, in which elements may
  * have more than one occurrence. The c_bag class is a subtype of c_collection
- * and implements the operations specified by the collection class. 
+ * and implements the operations specified by the collection class.
  *
  * \param subType The type of the elements the bag can contain.
  *
@@ -212,7 +213,7 @@ c_tableNew (
  *
  * A Query object is a collections of elements specified by a predicate and
  * source collection. The elements associated to the query are the elements
- * from the source collection that fulfill the query specific predicate. 
+ * from the source collection that fulfill the query specific predicate.
  *
  * \param source The source collection on which the query collection is defined.
  * \param predicate The predicate for which all query elements evaluate to true.
@@ -339,7 +340,7 @@ c_exists (
 /**
  * \brief This operation will lookup the member of the specified collection
  *        by the given template.
- * 
+ *
  * Note that when the uniqueness of a member is determined by the pointer of
  * the object and the object can be found, the operation returns the template
  * object with the reference count increased.
@@ -429,7 +430,7 @@ c_select (
 /**
  * \brief
  *
- * 
+ *
  *
  * \param
  *
@@ -444,7 +445,7 @@ c_readAction (
 /**
  * \brief
  *
- * 
+ *
  *
  * \param
  *
@@ -715,7 +716,7 @@ c_tableNext (
  */
 OS_API c_bool
 c_querySetParams (
-    c_query query,
+    c_query _this,
     c_value params[]);
 
 /**
@@ -732,8 +733,29 @@ c_querySetParams (
  */
 OS_API c_bool
 c_queryEval (
-    c_query query,
+    c_query _this,
     c_object o);
+
+/**
+ * \brief This operation returns the predicate that belongs to the given query.
+ *
+ * \param q the query of which the predicate must be returned
+ * \return the predicate of the given query
+ */
+OS_API c_qPred
+c_queryGetPred(
+		c_query _this);
+
+/**
+ * \brief This operation sets the predicate of the given query to the given predicate.
+ *
+ * \param q the query who's predicate must be set
+ * \param p the predicate to which the query's predicate must be set
+ */
+OS_API void
+c_querySetPred(
+		c_query _this,
+		c_qPred p);
 
 /**
  * \brief This table operation inspects the specified object and fills a
@@ -750,19 +772,19 @@ c_queryEval (
  *
  * \return The number of keys returned in the array
  */
-OS_API int
+OS_API c_long
 c_tableGetKeyValues (
     c_table _this,
     c_object object,
     c_value *values);
 
-OS_API int
+OS_API c_long
 c_tableSetKeyValues (
     c_table _this,
     c_object object,
     c_value *values);
 
-OS_API int
+OS_API c_long
 c_tableNofKeys (
     c_table _this);
 
@@ -861,6 +883,20 @@ c_listTemplateRemove (
     c_list _this,
     c_action condition,
     c_voidp arg);
+
+OS_API c_array
+c_arrayNew(
+    c_type subType,
+    c_long length);
+
+OS_API c_sequence
+c_sequenceNew(
+    c_type subType,
+    c_long maxsize,
+    c_long length);
+
+#define c_array(c) ((c_array)(c))
+#define c_sequence(c) ((c_sequence)(c))
 
 #undef OS_API
 

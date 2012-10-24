@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -46,6 +46,14 @@ d_durabilityKind    d_policyGetDurabilityKind   (d_policy policy);
 /* Get namespace pattern from policy */
 c_string            d_policyGetNameSpace        (d_policy policy);
 
+/* Add merge policy rule to policy */
+void                d_policyAddMergeRule        (d_policy policy,
+                                                 d_mergePolicy mergeType,
+                                                 const char* scope);
+
+/* Get merge policy for role */
+d_mergePolicy       d_policyGetMergePolicy      (d_policy policy,
+                                                 const char* role);
 
 #if defined (__cplusplus)
 }

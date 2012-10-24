@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -64,10 +64,6 @@ C_STRUCT(d_topicMetadata) {
 
 #define d_topicMetadata(t) ((d_topicMetadata)(t))
 
-struct baseFind {
-    c_base base;
-};
-
 C_CLASS(persistentInstance);
 
 C_STRUCT(persistentInstance) {
@@ -121,162 +117,6 @@ d_storeNsMarkCompleteXMLBasedOnPath(
     const d_nameSpace nameSpace,
     c_bool isComplete);
 
-static c_char*
-d_storeXMLDirNew(
-    d_store store,
-    const c_char *name)
-{
-    c_bool result;
-    os_result status;
-    c_char dirName[OS_PATH_MAX];
-    struct os_stat statBuf;
-    c_ulong i;
-    c_char* pdir = NULL;
-
-    memset(dirName, 0, OS_PATH_MAX);
-
-    if(name){
-        result = TRUE;
-
-        for(i=0; i<strlen(name) && result; i++){
-            if((name[i] == OS_FILESEPCHAR) && (i != 0)){
-                status = os_stat(dirName, &statBuf);
-
-                if (status != os_resultSuccess) {
-                    os_mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
-                    status = os_stat(dirName, &statBuf);
-                }
-                if (!OS_ISDIR (statBuf.stat_mode)) {
-#ifdef WIN32
-                    if((strlen(dirName) == 2) && (dirName[1] == ':')){
-                        /*This is a device like for instance: 'C:'*/
-                    } else {
-                        d_storeReport(store, D_LEVEL_SEVERE,
-                            "Directory '%s' is not a directory.\n",
-                            dirName);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
-                                "Directory '%s' is not a directory.",
-                                dirName);
-                        result = FALSE;
-                        pdir = NULL;
-                    }
-#else
-                    d_storeReport(store, D_LEVEL_SEVERE,
-                        "Directory '%s' is not a directory.\n",
-                        dirName);
-                    OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
-                        "Directory '%s' is not a directory.",
-                        dirName);
-
-                    result = FALSE;
-                    pdir = NULL;
-#endif
-                }
-            }
-            dirName[i] = name[i];
-        }
-        if(result){
-            if(dirName[i-1] != OS_FILESEPCHAR){
-                status = os_stat(dirName, &statBuf);
-
-                if (status != os_resultSuccess) {
-                    os_mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
-                    status = os_stat(dirName, &statBuf);
-                }
-                pdir = os_strdup(name);
-
-                if (!OS_ISDIR (statBuf.stat_mode)) {
-#ifdef WIN32
-                    if((strlen(dirName) == 2) && (dirName[1] == ':')){
-                        /*This is a device like for instance: 'C:'. Check if it exists...*/
-                        dirName[2] = OS_FILESEPCHAR;
-                        status = os_stat(dirName, &statBuf);
-
-                        if(status == os_resultFail){
-                            d_storeReport(store, D_LEVEL_SEVERE,
-                                "Directory '%s' is not available.\n",
-                                dirName);
-                            OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
-                                    "Directory '%s' is not available.",
-                                    dirName);
-                            result = FALSE;
-                            pdir = NULL;
-                        }
-                    } else {
-                        d_storeReport(store, D_LEVEL_SEVERE,
-                                    "'%s' is not a directory.\n",
-                                    pdir);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
-                                    "Directory '%s' is not a directory.",
-                                    pdir);
-                        result = FALSE;
-                        pdir = NULL;
-                    }
-#else
-                    d_storeReport(store, D_LEVEL_SEVERE,
-                                            "'%s' is not a directory.\n",
-                                            dirName);
-                    OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
-                                    "'%s' is not a directory.",
-                                    dirName);
-                    result = FALSE;
-                    pdir = NULL;
-#endif
-                }
-            } else {
-                pdir = (char*)os_malloc(strlen(name)+1);
-                snprintf(pdir, strlen(name), "%s", name);
-            }
-        }
-    } else {
-        result = FALSE;
-        pdir = NULL;
-    }
-
-    if(result){
-        status = os_access(pdir, 2); /*Check whether dir is writable*/
-
-        if(status != os_resultSuccess){
-#ifdef WIN32
-            if((strlen(dirName) == 2) && (dirName[1] == ':')){
-                /*This is a device like for instance: 'C:'. Check if it exists...*/
-                dirName[2] = OS_FILESEPCHAR;
-                status = os_stat(dirName, &statBuf);
-
-                if(status == os_resultFail){
-                    d_storeReport(store, D_LEVEL_SEVERE,
-                                    "'%s' cannot be found.\n",
-                                    dirName);
-                    OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
-                                "'%s' cannot be found.",
-                                dirName);
-                    result = FALSE;
-                    pdir = NULL;
-                }
-            } else {
-                d_storeReport(store, D_LEVEL_SEVERE,
-                        "Specified directory '%s' is not writable.\n",
-                        pdir);
-                OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
-                        "Specified directory '%s' is not writable.",
-                        pdir);
-                result = FALSE;
-                pdir = NULL;
-            }
-#else
-            d_storeReport(store, D_LEVEL_SEVERE,
-                            "Specified directory '%s' is not writable.\n",
-                            pdir);
-            OS_REPORT_1(OS_ERROR, D_CONTEXT, 0,
-                            "Specified directory '%s' is not writable.",
-                            pdir);
-            result = FALSE;
-            pdir = NULL;
-#endif
-        }
-    }
-    return pdir;
-}
 
 static d_storeFile
 d_storeFileNew(
@@ -566,7 +406,7 @@ stringToURI(
         }
         tmp[index++] = '\0';
         uri = (c_char*)(os_malloc(strlen(tmp) + 1));
-        sprintf(uri, "%s", tmp);
+        os_sprintf(uri, "%s", tmp);
     }
     return uri;
 }
@@ -689,7 +529,7 @@ URIToString(
         }
         tmp[index++] = '\0';
         str = (c_char*)(os_malloc(strlen(tmp) + 1));
-        sprintf(str, "%s", tmp);
+        os_sprintf(str, "%s", tmp);
         os_free(tmp);
     }
     return str;
@@ -771,7 +611,7 @@ getSubString(
                 result = os_malloc(endIndex - startIndex + 1);
                 tmp = (c_char*)(str + startIndex);
 
-                strncpy(result, tmp, (endIndex-startIndex));
+               os_strncpy(result, tmp, (endIndex-startIndex));
                 result[(endIndex-startIndex)] = '\0';
             }
         }
@@ -795,13 +635,13 @@ getDirectoryNameForStoreDir(
     if(strlen(partition) == 0)
     {
         fileName = (c_char*)(os_malloc(strlen(storeDir) + 1));
-        sprintf(fileName, "%s", storeDir);
+        os_sprintf(fileName, "%s", storeDir);
     } else
     {
         filesep = os_fileSep();
         partitionURI = stringToURI(partition);
         fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(partitionURI) + 1));
-        sprintf(fileName, "%s%s%s", storeDir, filesep, partitionURI);
+        os_sprintf(fileName, "%s%s%s", storeDir, filesep, partitionURI);
         os_free(partitionURI);
     }
     return fileName;
@@ -900,7 +740,7 @@ getDataFileNameBasedOnPath(
         fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(topic) + 5));
         if(fileName)
         {
-            sprintf(fileName, "%s%s%s.xml", storeDir, filesep, topic);
+            os_sprintf(fileName, "%s%s%s.xml", storeDir, filesep, topic);
         }
     } else
     {
@@ -910,7 +750,7 @@ getDataFileNameBasedOnPath(
             fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(partitionURI) + 1 + strlen(topic) + 5));
             if(fileName)
             {
-                sprintf(fileName, "%s%s%s%s%s.xml", storeDir, filesep, partitionURI, filesep, topic);
+                os_sprintf(fileName, "%s%s%s%s%s.xml", storeDir, filesep, partitionURI, filesep, topic);
             }
             os_free(partitionURI);
         }
@@ -943,7 +783,7 @@ getOptimizeFileName(
             fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(topic) + 14));
 
             if(fileName){
-                sprintf(fileName, "%s%s%s_optimize.txt", storeDir, filesep, topic);
+                os_sprintf(fileName, "%s%s%s_optimize.txt", storeDir, filesep, topic);
             }
         } else {
             partitionURI = stringToURI(partition);
@@ -952,7 +792,7 @@ getOptimizeFileName(
                 fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(partitionURI) + 1 + strlen(topic) + 14));
 
                 if(fileName){
-                    sprintf(fileName, "%s%s%s%s%s_optimize.txt", storeDir, filesep, partitionURI, filesep, topic);
+                    os_sprintf(fileName, "%s%s%s%s%s_optimize.txt", storeDir, filesep, partitionURI, filesep, topic);
                 }
                 os_free(partitionURI);
             }
@@ -984,11 +824,11 @@ getTmpFileName(
 
         if(strlen(partition) == 0){
             fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(topic) + 5));
-            sprintf(fileName, "%s%s%s.tmp", storeDir, filesep, topic);
+            os_sprintf(fileName, "%s%s%s.tmp", storeDir, filesep, topic);
         } else {
             partitionURI = stringToURI(partition);
             fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(partitionURI) + 1 + strlen(topic) + 5));
-            sprintf(fileName, "%s%s%s%s%s.tmp", storeDir, filesep, partitionURI, filesep, topic);
+            os_sprintf(fileName, "%s%s%s%s%s.tmp", storeDir, filesep, partitionURI, filesep, topic);
             os_free(partitionURI);
         }
 
@@ -1040,11 +880,11 @@ getBakFileNameBasedOnPath(
 
         if(strlen(partition) == 0){
             fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(topic) + 5));
-            sprintf(fileName, "%s%s%s.bak", storeDir, filesep, topic);
+            os_sprintf(fileName, "%s%s%s.bak", storeDir, filesep, topic);
         } else {
             partitionURI = stringToURI(partition);
             fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(partitionURI) + 1 + strlen(topic) + 5));
-            sprintf(fileName, "%s%s%s%s%s.bak", storeDir, filesep, partitionURI, filesep, topic);
+            os_sprintf(fileName, "%s%s%s%s%s.bak", storeDir, filesep, partitionURI, filesep, topic);
             os_free(partitionURI);
         }
 
@@ -1095,11 +935,11 @@ getMetaFileNameBasedOnPath(
 
         if(strlen(partition) == 0){
             fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(topic) + 10));
-            sprintf(fileName, "%s%s%s_meta.xml", storeDir, filesep, topic);
+            os_sprintf(fileName, "%s%s%s_meta.xml", storeDir, filesep, topic);
         } else {
             partitionURI = stringToURI(partition);
             fileName = (c_char*)(os_malloc(strlen(storeDir) + 1 + strlen(partitionURI) + 1 + strlen(topic) + 10));
-            sprintf(fileName, "%s%s%s%s%s_meta.xml", storeDir, filesep, partitionURI, filesep, topic);
+            os_sprintf(fileName, "%s%s%s%s%s_meta.xml", storeDir, filesep, partitionURI, filesep, topic);
             os_free(partitionURI);
         }
 
@@ -1107,19 +947,6 @@ getMetaFileNameBasedOnPath(
     return fileName;
 }
 
-static void
-getBase(
-    v_entity entity,
-    c_voidp args)
-{
-    struct baseFind* f;
-
-    assert(entity);
-
-    f = (struct baseFind*)args;
-
-    f->base = c_getBase(entity);
-}
 
 static c_char *
 getMessageMetadata(
@@ -1201,7 +1028,7 @@ readTopicMetadata(
                             if(strncmp(data, "<qos>", 5) == 0){
                                 tmp = getSubString(data, 5, strlen(data)-6);
 
-                                u_entityAction(u_entity(participant), getBase, &f);
+                                u_entityAction(u_entity(participant), d_storeGetBase, &f);
                                 qosType = c_resolve(f.base, "kernelModule::v_topicQos");
 
                                 serializer = sd_serializerXMLNewTyped(qosType);
@@ -1568,12 +1395,12 @@ forAllDirectoryEntries (
     if (r == os_resultSuccess) { /* accessable */
         r = os_readdir(d_descr, &d_entry);
         while (r == os_resultSuccess) {
-            /* QAC EXPECT 5007; use of strcpy */
-            strcpy(path, workingDir);
-            /* QAC EXPECT 5007; use of strcat */
-            strcat(path, os_fileSep());
-            /* QAC EXPECT 5007; use of strcat */
-            strcat(path, d_entry.d_name);
+            /* QAC EXPECT 5007; use of strcpy*/
+            os_strcpy(path, workingDir);
+            /* QAC EXPECT 5007; use of os_strcat */
+            os_strcat(path, os_fileSep());
+            /* QAC EXPECT 5007; use of os_strcat */
+            os_strcat(path, d_entry.d_name);
 
             if (os_stat (path, &status) == os_resultSuccess) { /* accessable */
                 /* QAC EXPECT 5007; use of strcmp */
@@ -1646,7 +1473,7 @@ fileNameIsOK(
         /* QAC EXPECT 2100; */
         if (result == 0) {
             nameIsOK = TRUE;
-            strncpy(topicName, topic, length);
+           os_strncpy(topicName, topic, length);
             /* QAC EXPECT 1259; */
             topicName[length - STRLEN_DOT_XML] = '\0';
         }
@@ -1865,11 +1692,11 @@ determineInstance(
                     valueImage = c_valueImage(value);
 
                     if(valueImage){
-                        strncat(keyValues, valueImage, (c_ulong)(totalSize + 1));
+                        os_strncat(keyValues, valueImage, (c_ulong)(totalSize + 1));
                         os_free(valueImage);
 
                         if (i<(nrOfKeys-1)) {
-                            strncat(keyValues, ",", (c_ulong)(totalSize + 1));
+                            os_strncat(keyValues, ",", (c_ulong)(totalSize + 1));
                         }
                     }
                     c_valueFreeRef(value);
@@ -2463,7 +2290,6 @@ renameTempToActual(
     c_char* tmpStorePath;
     struct os_stat statBuf;
     os_result osResult;
-    c_long status;
     c_bool result;
     d_storeFile storeFile, found;
 
@@ -2494,12 +2320,11 @@ renameTempToActual(
         }
         d_storeFileFree(storeFile);
 
-        status = remove(fileStorePath);
+        osResult = os_remove(fileStorePath);
+        if(osResult == os_resultSuccess){
+            osResult = os_rename(tmpStorePath, fileStorePath);
 
-        if(status == 0){
-            status = rename(tmpStorePath, fileStorePath);
-
-            if(status == 0){
+            if(osResult == os_resultSuccess){
                 result = TRUE;
             }
         }
@@ -2793,18 +2618,18 @@ persistentInstanceRead(
                                 sd_serializedDataFree(serData);
 
                                 if(v_stateTest(v_nodeState(perData), L_WRITE)){
-                                	pInstance->writeCount++;
+                                    pInstance->writeCount++;
                                 } else if(v_stateTest(v_nodeState(perData), L_DISPOSED)){
-                                	pInstance->disposeCount++;
+                                    pInstance->disposeCount++;
                                 } else if(v_stateTest(v_nodeState(perData), L_REGISTER)){
-                                	pInstance->registerCount++;
+                                    pInstance->registerCount++;
                                 } else if(v_stateTest(v_nodeState(perData), L_UNREGISTER)){
-                                	pInstance->unregisterCount++;
+                                    pInstance->unregisterCount++;
                                 } else {
-                                	OS_REPORT_1(OS_ERROR, "durability", 0,
-                                			"Found message with state %d.",
-                                			v_nodeState(perData));
-    							 	assert(FALSE);
+                                    OS_REPORT_1(OS_ERROR, "durability", 0,
+                                            "Found message with state %d.",
+                                            v_nodeState(perData));
+                                     assert(FALSE);
                                 }
                             } else {
                                 fprintf(tmpfdes, "%s\n", data); /*write keys*/
@@ -2930,8 +2755,8 @@ appendMessage(
     topic     = v_topicName(v_groupTopic(msg->group));
     fdes      = openPersistentFile(persistentStore, partition, topic, "r+");
 
-	if(!fdes){
-		d_storeReport(d_store(persistentStore), D_LEVEL_FINE, "No data exists yet on disk for group '%s.%s' (2)\n", partition, topic);
+    if(!fdes){
+        d_storeReport(d_store(persistentStore), D_LEVEL_FINE, "No data exists yet on disk for group '%s.%s' (2)\n", partition, topic);
         success = createDirectoryIfNecessary(persistentStore, partition);
 
         if(success){
@@ -2983,19 +2808,19 @@ appendMessage(
                         partition, topic);
                     result = D_STORE_RESULT_IO_ERROR;
                 }
-    	    } else {
+            } else {
                 result = D_STORE_RESULT_IO_ERROR;
             }
         } else {
             result = D_STORE_RESULT_IO_ERROR;
         }
-	} else {
-		res = fseek(fdes, D_SEEK_LENGTH, SEEK_END);
+    } else {
+        res = fseek(fdes, D_SEEK_LENGTH, SEEK_END);
         assert(res == 0);
 
-		serializer = sd_serializerXMLNewTyped(c_getType(msg->message));
+        serializer = sd_serializerXMLNewTyped(c_getType(msg->message));
 
-		if(serializer){
+        if(serializer){
             serData = sd_serializerSerialize(serializer, (c_object)msg->message);
 
             if(serData){
@@ -3009,7 +2834,7 @@ appendMessage(
                         fprintf(fdes, "</TOPIC>\n");
                         os_free(keys);
                         closeFile(persistentStore, fdes);
-                		result = D_STORE_RESULT_OK;
+                        result = D_STORE_RESULT_OK;
                     } else {
                         result = D_STORE_RESULT_OUT_OF_RESOURCES;
                     }
@@ -3022,11 +2847,11 @@ appendMessage(
                 result = D_STORE_RESULT_OUT_OF_RESOURCES;
             }
             sd_serializerFree(serializer);
-		} else {
-		    result = D_STORE_RESULT_OUT_OF_RESOURCES;
-		}
-	}
-	return result;
+        } else {
+            result = D_STORE_RESULT_OUT_OF_RESOURCES;
+        }
+    }
+    return result;
 }
 
 static d_storeResult
@@ -3272,75 +3097,75 @@ processGroupExpungeActions(
 /* Helper struct for unregister walk function */
 typedef struct unregisterFindData
 {
-	v_message writeMsg;
-	v_message unregisterMsg;
+    v_message writeMsg;
+    v_message unregisterMsg;
 } unregisterFindData;
 
 /* Search for a writer in registration list */
 static void
 unregisterLookupWalk (
-		void* o,
-		c_iterActionArg userData)
+        void* o,
+        c_iterActionArg userData)
 {
-	c_bool messageFound;
-	unregisterFindData* walkData;
-	v_message message;
+    c_bool messageFound;
+    unregisterFindData* walkData;
+    v_message message;
 
-	message = v_message(o);
-	messageFound = FALSE;
-	walkData = (unregisterFindData*)userData;
+    message = v_message(o);
+    messageFound = FALSE;
+    walkData = (unregisterFindData*)userData;
 
-	/* Only search if no unregister message has is found */
-	if (!(walkData->unregisterMsg))
-	{
-		/* If message is a unregister message and has equal GID,
-		 * this is a valid unregister message for writeMessage */
-		if (message &&
-			(v_stateTest(v_nodeState(message), L_UNREGISTER)) &&
-			(v_gidEqual(walkData->writeMsg->writerGID, message->writerGID))) {
+    /* Only search if no unregister message has is found */
+    if (!(walkData->unregisterMsg))
+    {
+        /* If message is a unregister message and has equal GID,
+         * this is a valid unregister message for writeMessage */
+        if (message &&
+            (v_stateTest(v_nodeState(message), L_UNREGISTER)) &&
+            (v_gidEqual(walkData->writeMsg->writerGID, message->writerGID))) {
 
-			walkData->unregisterMsg = message;
-		}
-	}
+            walkData->unregisterMsg = message;
+        }
+    }
 }
 
 /* Create unregister message from write message */
 static v_message
 createUnregisterMessage(
-		v_group group,
-		v_message message)
+        v_group group,
+        v_message message)
 {
-    c_array 		   messageKeyList;
-    c_long	 		   i, nrOfKeys;
-    v_message 		   unregisterMessage;
+    c_array            messageKeyList;
+    c_long                i, nrOfKeys;
+    v_message            unregisterMessage;
 
     assert(!v_stateTest(v_nodeState(message), L_UNREGISTER));
 
-	/* Create new message objec */
-	unregisterMessage = v_topicMessageNew
-								(group->topic);
+    /* Create new message objec */
+    unregisterMessage = v_topicMessageNew
+                                (group->topic);
 
-	/* Copy keyvalues to unregistermessage */
+    /* Copy keyvalues to unregistermessage */
     messageKeyList = v_topicMessageKeyList(v_groupTopic(group));
     nrOfKeys = c_arraySize(messageKeyList);
     for (i=0;i<nrOfKeys;i++) {
         c_fieldAssign (messageKeyList[i],
-        		unregisterMessage,
-        		c_fieldValue(messageKeyList[i],message));
+                unregisterMessage,
+                c_fieldValue(messageKeyList[i],message));
     }
 
-	/* Set instance & writer GID */
+    /* Set instance & writer GID */
     unregisterMessage->writerGID =
-    		message->writerGID;
+            message->writerGID;
     unregisterMessage->writerInstanceGID =
-    		message->writerInstanceGID;
+            message->writerInstanceGID;
 
     /* Copy messageQos */
     c_keep (message->qos);
     unregisterMessage->qos = message->qos;
 
-	/* Set nodestate to unregister */
-	v_nodeState(unregisterMessage) = L_UNREGISTER;
+    /* Set nodestate to unregister */
+    v_nodeState(unregisterMessage) = L_UNREGISTER;
 
     return unregisterMessage;
 }
@@ -3353,7 +3178,7 @@ d_storeXMLOptimizeGroup(
     d_partition       partition,
     d_topic           topic,
     c_bool            inject,
-    c_bool			  optimize)
+    c_bool              optimize)
 {
     FILE *             fdes, *tmpfdes;
     c_char *           data, *data2;
@@ -3381,7 +3206,7 @@ d_storeXMLOptimizeGroup(
 
     /* Do not create temporary file for optimizing when no optimization is required */
     if (optimize) {
-    	tmpfdes = openPersistentTempFile(persistentStore, partition, topic, "w");
+        tmpfdes = openPersistentTempFile(persistentStore, partition, topic, "w");
     }
 
     /* Store file exists and is not empty, if store needs optimization tmp file must exist */
@@ -3487,7 +3312,7 @@ d_storeXMLOptimizeGroup(
                     perData = NULL;
 
                     if (optimize) {
-                    	fprintf(tmpfdes, "<TOPIC><message>Do_not_edit_this_file</message>\n");
+                        fprintf(tmpfdes, "<TOPIC><message>Do_not_edit_this_file</message>\n");
                     }
 
                     if(serializer){
@@ -3498,7 +3323,7 @@ d_storeXMLOptimizeGroup(
 
                             while(message){
 
-                            	/* Inject data */
+                                /* Inject data */
                                 if(inject == TRUE){
                                     wr = v_groupWriteNoStream(group, message, NULL, V_NETWORKID_LOCAL);
                                     oneSec.tv_sec  = 1;
@@ -3520,51 +3345,53 @@ d_storeXMLOptimizeGroup(
                                     {
                                         /* If a sample is written or registered, add unregister action */
                                         if (!v_stateTest(v_nodeState(message), L_UNREGISTER)) {
-                                        	/* Prepare walkdata */
-                                        	walkData.writeMsg = message;
-                                        	walkData.unregisterMsg = NULL;
+                                            /* Prepare walkdata */
+                                            walkData.writeMsg = message;
+                                            walkData.unregisterMsg = NULL;
 
-                                        	/* Lookup unregister message */
-                                        	c_iterWalk (
-                                        			instance->messages,
-                                        			unregisterLookupWalk,
-                                        			&walkData);
+                                            /* Lookup unregister message */
+                                            c_iterWalk (
+                                                    instance->messages,
+                                                    unregisterLookupWalk,
+                                                    &walkData);
 
-                                        	/* Create unregister message if none found */
-                                        	if (!(walkData.unregisterMsg)) {
-                                        		walkData.unregisterMsg =
-                                        				createUnregisterMessage (group, message);
-                                        		c_iterAppend (instance->messages, walkData.unregisterMsg);
-                                        	}
+                                            /* Create unregister message if none found */
+                                            if (!(walkData.unregisterMsg)) {
+                                                walkData.unregisterMsg =
+                                                        createUnregisterMessage (group, message);
+                                                c_iterAppend (instance->messages, walkData.unregisterMsg);
+                                            }
 
-                                        	/* Set valid sequence number */
-                                        	if (message->sequenceNumber >=
-													walkData.unregisterMsg->sequenceNumber) {
-                                        		walkData.unregisterMsg->sequenceNumber =
-                                        				message->sequenceNumber + 1;
-                                        	}
+                                            /* Set valid sequence number */
+                                            if (message->sequenceNumber >=
+                                                    walkData.unregisterMsg->sequenceNumber) {
+                                                walkData.unregisterMsg->sequenceNumber =
+                                                        message->sequenceNumber + 1;
+                                            }
 
-                                        	/* Set sample time (always) after write\register time */
-                                            walkData.unregisterMsg->allocTime = v_timeGet();
-                                            walkData.unregisterMsg->writeTime = walkData.unregisterMsg->allocTime;
+                                            /* Set sample time (always) after write\register time */
+                                            walkData.unregisterMsg->writeTime = v_timeGet();
+#ifndef _NAT_
+                                            walkData.unregisterMsg->allocTime = walkData.unregisterMsg->writeTime;
+#endif
                                         }
                                     }
                                 }
 
                                 /* Write optimized data */
                                 if (optimize) {
-									serData = sd_serializerSerialize(serializer, (c_object)message);
+                                    serData = sd_serializerSerialize(serializer, (c_object)message);
 
-									if(serData){
-										data2 = sd_serializerToString(serializer, serData);
+                                    if(serData){
+                                        data2 = sd_serializerToString(serializer, serData);
 
-										if(data2){
-											fprintf(tmpfdes, "%s\n%s\n", instance->keyValue, data2);
-											os_free(data2);
-										}
-										sd_serializedDataFree(serData);
-										c_free(message);
-									}
+                                        if(data2){
+                                            fprintf(tmpfdes, "%s\n%s\n", instance->keyValue, data2);
+                                            os_free(data2);
+                                        }
+                                        sd_serializedDataFree(serData);
+                                        c_free(message);
+                                    }
                                 }
                                 message = (v_message)c_iterTakeFirst(instance->messages);
                             }
@@ -3580,16 +3407,16 @@ d_storeXMLOptimizeGroup(
 
                     if (optimize)
                     {
-						fprintf(tmpfdes, "</TOPIC>\n");
-						closeFile(persistentStore, tmpfdes);
-						renameSuccess = renameTempToActual(persistentStore, partition, topic);
+                        fprintf(tmpfdes, "</TOPIC>\n");
+                        closeFile(persistentStore, tmpfdes);
+                        renameSuccess = renameTempToActual(persistentStore, partition, topic);
 
-						if(renameSuccess == TRUE && optimize){
-							optimizeTime = os_timeGet();
-							result = setOptimizeTime(persistentStore, partition, topic, optimizeTime);
-						} else {
-							result = D_STORE_RESULT_IO_ERROR;
-						}
+                        if(renameSuccess == TRUE && optimize){
+                            optimizeTime = os_timeGet();
+                            result = setOptimizeTime(persistentStore, partition, topic, optimizeTime);
+                        } else {
+                            result = D_STORE_RESULT_IO_ERROR;
+                        }
                     }
                 }
             } else {
@@ -3621,25 +3448,25 @@ d_storeXMLInjectTopicXML(
     optimized = isOptimized(persistentStore, partition, topic);
 
     /*if(optimized == FALSE){*/
-	type = v_topicMessageType(group->topic);
-	keys = v_topicKeyExpr(group->topic);
+    type = v_topicMessageType(group->topic);
+    keys = v_topicKeyExpr(group->topic);
 
-	if(!keys){
-		check = metaDataIsCorrect(type, persistentStore, topic, partition,
-			"", v_topicQosRef(group->topic));
-	} else {
-		check = metaDataIsCorrect(type, persistentStore, topic, partition,
-			keys, v_topicQosRef(group->topic));
-	}
-	if (check == FALSE) {
-		d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE, RR_META_DATA_MISMATCH, topic);
-		OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0, RR_META_DATA_MISMATCH, topic);
-		result = D_STORE_RESULT_METADATA_MISMATCH;
-		/* metaData is not OK: should the maintainer remove topic and meta data ?? */
-	} else {
-		/* Inject XML and optimize if necessary */
-		result = d_storeXMLOptimizeGroup(persistentStore, group, partition, topic, TRUE, !optimized);
-	}
+    if(!keys){
+        check = metaDataIsCorrect(type, persistentStore, topic, partition,
+            "", v_topicQosRef(group->topic));
+    } else {
+        check = metaDataIsCorrect(type, persistentStore, topic, partition,
+            keys, v_topicQosRef(group->topic));
+    }
+    if (check == FALSE) {
+        d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE, RR_META_DATA_MISMATCH, topic);
+        OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0, RR_META_DATA_MISMATCH, topic);
+        result = D_STORE_RESULT_METADATA_MISMATCH;
+        /* metaData is not OK: should the maintainer remove topic and meta data ?? */
+    } else {
+        /* Inject XML and optimize if necessary */
+        result = d_storeXMLOptimizeGroup(persistentStore, group, partition, topic, TRUE, !optimized);
+    }
 
     return result;
 /* QAC EXPECT 5102; too many local variables */
@@ -3731,10 +3558,10 @@ d_storeNewXML()
     store = d_store(storeXML);
     d_storeInit(store, d_storeDeinitXML);
 
-    storeXML->diskStorePath     	= NULL;
-    storeXML->maxPathLen        	= 0;
-    storeXML->groups            	= NULL;
-    storeXML->opened            	= FALSE;
+    storeXML->diskStorePath         = NULL;
+    storeXML->maxPathLen            = 0;
+    storeXML->groups                = NULL;
+    storeXML->opened                = FALSE;
     storeXML->sessionAlive          = FALSE;
     storeXML->openedFiles           = NULL;
     storeXML->dummyFile             = d_storeFileNew("", NULL, NULL);
@@ -3757,28 +3584,28 @@ d_storeNewXML()
     {
         OS_REPORT(OS_ERROR, "durability", 0, "Failed to init mutex attributes for XML store.");
     }
-    store->openFunc             	= d_storeOpenXML;
-    store->closeFunc            	= d_storeCloseXML;
-    store->groupsReadFunc       	= d_storeGroupsReadXML;
-    store->groupInjectFunc      	= d_storeGroupInjectXML;
-    store->groupStoreFunc       	= d_storeGroupStoreXML;
-    store->getQualityFunc       	= d_storeGetQualityXML;
-    store->backupFunc           	= d_storeBackupXML;
-    store->restoreBackupFunc		= d_storeRestoreBackupXML;
+    store->openFunc                 = d_storeOpenXML;
+    store->closeFunc                = d_storeCloseXML;
+    store->groupsReadFunc           = d_storeGroupsReadXML;
+    store->groupInjectFunc          = d_storeGroupInjectXML;
+    store->groupStoreFunc           = d_storeGroupStoreXML;
+    store->getQualityFunc           = d_storeGetQualityXML;
+    store->backupFunc               = d_storeBackupXML;
+    store->restoreBackupFunc        = d_storeRestoreBackupXML;
     store->actionStartFunc          = d_storeActionStartXML;
     store->actionStopFunc           = d_storeActionStopXML;
-    store->messageStoreFunc     	= d_storeMessageStoreXML;
-    store->instanceDisposeFunc   	= d_storeInstanceDisposeXML;
+    store->messageStoreFunc         = d_storeMessageStoreXML;
+    store->instanceDisposeFunc       = d_storeInstanceDisposeXML;
     store->instanceExpungeFunc      = d_storeInstanceExpungeXML;
-    store->messageExpungeFunc   	= d_storeMessageExpungeXML;
+    store->messageExpungeFunc       = d_storeMessageExpungeXML;
     store->deleteHistoricalDataFunc = d_storeDeleteHistoricalDataXML;
-    store->messagesInjectFunc   	= d_storeMessagesInjectXML;
-    store->instanceRegisterFunc		= d_storeInstanceRegisterXML;
+    store->messagesInjectFunc       = d_storeMessagesInjectXML;
+    store->instanceRegisterFunc        = d_storeInstanceRegisterXML;
     store->createPersistentSnapshotFunc   = d_storeCreatePersistentSnapshotXML;
     store->instanceUnregisterFunc   = d_storeInstanceUnregisterXML;
     store->optimizeGroupFunc        = d_storeOptimizeGroupXML;
-    store->nsIsCompleteFunc			= d_storeNsIsCompleteXML;
-    store->nsMarkCompleteFunc		= d_storeNsMarkCompleteXML;
+    store->nsIsCompleteFunc            = d_storeNsIsCompleteXML;
+    store->nsMarkCompleteFunc        = d_storeNsMarkCompleteXML;
 
     return storeXML;
 }
@@ -3848,7 +3675,7 @@ d_storeOpenXML(
         } else if(store->config->persistentStoreDirectory == NULL ){
             result = D_STORE_RESULT_ILL_PARAM;
         } else {
-            resultDir = d_storeXMLDirNew(store, store->config->persistentStoreDirectory);
+            resultDir = d_storeDirNew(store, store->config->persistentStoreDirectory);
 
             if(resultDir){
                 os_free(store->config->persistentStoreDirectory);
@@ -3871,7 +3698,7 @@ d_storeOpenXML(
 
             storeXML->diskStorePath = (c_char *)os_malloc((os_uint32)
                                         ((c_long)strlen(store->config->persistentStoreDirectory) + 1));
-            strncpy(storeXML->diskStorePath, store->config->persistentStoreDirectory,
+           os_strncpy(storeXML->diskStorePath, store->config->persistentStoreDirectory,
                         (os_uint32)((c_long)strlen(store->config->persistentStoreDirectory)+1));
             d_storeXMLInitGroups(storeXML);
 
@@ -4263,9 +4090,9 @@ d_storeBackupXML(
                     fileStorePath = getDataFileName(persistentStore, groupList->partition, groupList->topic);
                     backupStorePath = getBakFileName(persistentStore, groupList->partition, groupList->topic);
 
-                    if (rename(fileStorePath, backupStorePath) != 0)
+                    if (os_rename(fileStorePath, backupStorePath) == os_resultFail)
                     {
-                    	result = D_STORE_RESULT_IO_ERROR;
+                        result = D_STORE_RESULT_IO_ERROR;
                     }
 
                     os_free(fileStorePath);
@@ -4285,8 +4112,8 @@ d_storeBackupXML(
 /* Restore backed up files */
 d_storeResult
 d_storeRestoreBackupXML (
-		const d_store store,
-		const d_nameSpace nameSpace)
+        const d_store store,
+        const d_nameSpace nameSpace)
 {
     d_storeResult result;
     d_storeXML    persistentStore;
@@ -4315,9 +4142,9 @@ d_storeRestoreBackupXML (
                     fileStorePath = getDataFileName(persistentStore, groupList->partition, groupList->topic);
                     backupStorePath = getBakFileName(persistentStore, groupList->partition, groupList->topic);
 
-                    if (rename(backupStorePath, fileStorePath) != 0)
+                    if (os_rename(backupStorePath, fileStorePath) == os_resultFail)
                     {
-                    	result = D_STORE_RESULT_IO_ERROR;
+                        result = D_STORE_RESULT_IO_ERROR;
                     }
 
                     os_free(fileStorePath);
@@ -4555,14 +4382,14 @@ d_storeCreatePersistentSnapshotXML(
             result = groupsReadXMLUnsafe(store, &listIter);
             while(result == D_STORE_RESULT_OK && listIter)
             {
-                match = d_nameSpaceStringMatches(listIter->partition, (c_string)partitionExpr);
+                match = d_patternMatch(listIter->partition, (c_string)partitionExpr);
                 if(match)
                 {
-                    match = d_nameSpaceStringMatches(listIter->topic, (c_string)topicExpr);
+                    match = d_patternMatch(listIter->topic, (c_string)topicExpr);
                     if(match)
                     {
                         c_char* tmp;
-                        tmp = d_storeXMLDirNew(store, uri);
+                        tmp = d_storeDirNew(store, uri);
                         if(tmp)
                         {
                             os_free(tmp);
@@ -4697,7 +4524,7 @@ d_storeMessagesInjectXML(
                             "Unable to insert persistent data from disk for group '%s.%s'. Reason: '%d'. Removing data for this group...",
                           partition, topic, result);
                     fileStorePath = getDataFileName(persistentStore, partition, topic);
-                    remove(fileStorePath);
+                    os_remove(fileStorePath);
                     os_free(fileStorePath);
                 }
 
@@ -4774,31 +4601,31 @@ d_storeNsCompleteFileName(
     const d_nameSpace nameSpace,
     char nameBuff[])
 {
-	d_storeResult result;
+    d_storeResult result;
 
-	if (storeDir && nameSpace)
-	{
-		nameBuff[0] = '\0';
+    if (storeDir && nameSpace)
+    {
+        nameBuff[0] = '\0';
 
-		/* Copy path of persistent store to buffer */
-		strcat (nameBuff, storeDir);
+        /* Copy path of persistent store to buffer */
+        strcat (nameBuff, storeDir);
 
-		/* Copy '/' character */
-		strcat (nameBuff, os_fileSep());
+        /* Copy '/' character */
+        strcat (nameBuff, os_fileSep());
 
-		/* Copy namespace name */
-		strcat (nameBuff, d_nameSpaceGetName(nameSpace));
+        /* Copy namespace name */
+        strcat (nameBuff, d_nameSpaceGetName(nameSpace));
 
-		/* Copy postfix for completefile */
-		strcat (nameBuff, "_complete");
+        /* Copy postfix for completefile */
+        strcat (nameBuff, "_complete");
 
-		result = D_STORE_RESULT_OK;
-	}else
-	{
-		result = D_STORE_RESULT_ILL_PARAM;
-	}
+        result = D_STORE_RESULT_OK;
+    }else
+    {
+        result = D_STORE_RESULT_ILL_PARAM;
+    }
 
-	return result;
+    return result;
 }
 
 /* Check if namespace complete indicator file exists */
@@ -4807,19 +4634,19 @@ c_bool
 d_storeNsCompleteFileExists (
     const char completeFile[])
 {
-	c_bool result;
-	os_result osResult;
+    c_bool result;
+    os_result osResult;
     struct os_stat buf;
 
-	result = FALSE;
+    result = FALSE;
 
-	osResult = os_stat (completeFile, &buf);
-	if (osResult == os_resultSuccess)
-	{
-		result = TRUE;
-	}
+    osResult = os_stat (completeFile, &buf);
+    if (osResult == os_resultSuccess)
+    {
+        result = TRUE;
+    }
 
-	return result;
+    return result;
 }
 
 /* Create or remove namespace completefile */
@@ -4829,37 +4656,37 @@ d_storeNsMarkComplete_w_name (
     const char completeFile[],
     c_bool isComplete)
 {
-	d_storeResult result;
-	c_bool completeFileExists;
-	FILE* hFile;
+    d_storeResult result;
+    c_bool completeFileExists;
+    FILE* hFile;
 
-	result = D_STORE_RESULT_OK;
+    result = D_STORE_RESULT_OK;
 
-	completeFileExists = d_storeNsCompleteFileExists (completeFile);
+    completeFileExists = d_storeNsCompleteFileExists (completeFile);
 
-	/* Remove existing complete file if namespace is incomplete, otherwise create it */
-	if (isComplete)
-	{
-		if (!completeFileExists)
-		{
-			hFile = fopen (completeFile, "w");
-			if (!hFile)
-			{
-				result = D_STORE_RESULT_IO_ERROR;
-			}else
-			{
-				fclose (hFile);
-			}
-		}
-	}else
-	{
-		if (completeFileExists && (remove (completeFile) != 0))
-		{
-			result = D_STORE_RESULT_IO_ERROR;
-		}
-	}
+    /* Remove existing complete file if namespace is incomplete, otherwise create it */
+    if (isComplete)
+    {
+        if (!completeFileExists)
+        {
+            hFile = fopen (completeFile, "w");
+            if (!hFile)
+            {
+                result = D_STORE_RESULT_IO_ERROR;
+            }else
+            {
+                fclose (hFile);
+            }
+        }
+    }else
+    {
+        if (completeFileExists && (os_remove (completeFile) == os_resultFail))
+        {
+            result = D_STORE_RESULT_IO_ERROR;
+        }
+    }
 
-	return result;
+    return result;
 }
 
 /* Check if namespace is complete */
@@ -4869,8 +4696,8 @@ d_storeNsIsCompleteXML (
     const d_nameSpace nameSpace,
     c_bool* isComplete)
 {
-	char completeFile[OS_PATH_MAX];
-	d_storeResult result;
+    char completeFile[OS_PATH_MAX];
+    d_storeResult result;
 
     if(store)
     {
@@ -4899,7 +4726,7 @@ d_storeNsIsCompleteXML (
         result = D_STORE_RESULT_ILL_PARAM;
     }
 
-	return result;
+    return result;
 }
 
 d_storeResult
@@ -4909,14 +4736,14 @@ d_storeNsMarkCompleteXMLBasedOnPath(
     c_bool isComplete)
 {
     d_storeResult result;
-	char completeFile[OS_PATH_MAX];
+    char completeFile[OS_PATH_MAX];
 
-	/* Get completeFile name */
-	result = d_storeNsCompleteFileName (storeDir, nameSpace, completeFile);
-	if (result == D_STORE_RESULT_OK)
-	{
-		result = d_storeNsMarkComplete_w_name (completeFile, isComplete);
-	}
+    /* Get completeFile name */
+    result = d_storeNsCompleteFileName (storeDir, nameSpace, completeFile);
+    if (result == D_STORE_RESULT_OK)
+    {
+        result = d_storeNsMarkComplete_w_name (completeFile, isComplete);
+    }
     return result;
 }
 
@@ -4927,7 +4754,7 @@ d_storeNsMarkCompleteXML (
     const d_nameSpace nameSpace,
     c_bool isComplete)
 {
-	d_storeResult result;
+    d_storeResult result;
 
     if(store)
     {
@@ -4942,6 +4769,7 @@ d_storeNsMarkCompleteXML (
         result = D_STORE_RESULT_ILL_PARAM;
     }
 
-	return result;
+    return result;
 }
+
 

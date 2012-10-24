@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -189,7 +189,7 @@ struct updatePartitionsArg {
     c_iter *addPartitions;
     c_iter *removePartitions;
 };
-#include <v_entity.h>
+#include "v_entity.h"
 static c_bool
 updatePartitions(
     c_object o,

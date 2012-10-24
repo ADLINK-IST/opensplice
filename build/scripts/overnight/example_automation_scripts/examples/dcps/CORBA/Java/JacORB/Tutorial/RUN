@@ -1,3 +1,15 @@
+if [ -z "$JAVA_HOME" ]; then
+    echo "WARNING: JAVA_HOME not defined. Cannot find libjsig.so and set LD_PRELOAD"
+    echo "         This could prevent cleanup of Java application at exit"
+else
+   LD_PRELOAD=`find $JAVA_HOME -follow -name libjsig.so | grep -v server/libjsig.so | grep -v client/libjsig.so`
+   export LD_PRELOAD
+   if [ -z "$LD_PRELOAD" ]; then
+      echo "WARNING: libjsig.so not found in JAVA_HOME: $JAVA_HOME"
+      echo "         This could prevent cleanup of Java application at exit"
+   fi
+fi
+
 echo start OpenSplice
 
 $VG_OSPL_START ospl start
@@ -6,6 +18,11 @@ sleep 10
 
 echo start MessageBoard
 $VG_MESSAGEBOARD java -classpath $OSPL_HOME/jar/dcpscj.jar:bld chatroom.MessageBoard &
+
+sleep 2
+
+echo start UserLoad
+$VG_USERLOAD java -classpath $OSPL_HOME/jar/dcpssaj.jar:bld chatroom.UserLoad &
 
 sleep 2
 

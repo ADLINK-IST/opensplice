@@ -72,8 +72,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * saw a full definition of that interface.
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Static storage for remembering nodes

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -16,7 +16,8 @@
 /* define the default max_blocking_time to 100 ms */
 #define DEFAULT_MAX_BLOCKING_TIME  {0, 100000000}
 
-gapi_domainParticipantQos gapi_domainParticipantQosDefault = {
+gapi_domainParticipantQos
+gapi_domainParticipantQosDefault = {
         /* gapi_userDataQosPolicy user_data */
         {
             /* gapi_octetSeq value */
@@ -65,7 +66,8 @@ gapi_domainParticipantQos gapi_domainParticipantQosDefault = {
 
     };
 
-gapi_topicQos                    gapi_topicQosDefault = {
+gapi_topicQos
+gapi_topicQosDefault = {
         /* gapi_topicDataQosPolicy topic_data */
         {
             /* gapi_octetSeq value */
@@ -137,7 +139,8 @@ gapi_topicQos                    gapi_topicQosDefault = {
         }
     };
 
-gapi_publisherQos                gapi_publisherQosDefault = {
+gapi_publisherQos
+gapi_publisherQosDefault = {
         /* gapi_presentationQosPolicy presentation */
         {
             /* gapi_presentationQosPolicyAccessScopeKind access_scope */
@@ -171,7 +174,8 @@ gapi_publisherQos                gapi_publisherQosDefault = {
         }
     };
 
-gapi_subscriberQos               gapi_subscriberQosDefault = {
+gapi_subscriberQos
+gapi_subscriberQosDefault = {
         /* gapi_presentationQosPolicy presentation */
         {
             /* gapi_presentationQosPolicyAccessScopeKind access_scope */
@@ -210,7 +214,8 @@ gapi_subscriberQos               gapi_subscriberQosDefault = {
         }
     };
 
-gapi_dataReaderQos               gapi_dataReaderQosDefault = {
+gapi_dataReaderQos
+gapi_dataReaderQosDefault = {
         /* gapi_durabilityQosPolicy durability */
         {
             GAPI_VOLATILE_DURABILITY_QOS  /* gapi_durabilityQosPolicyKind kind */
@@ -296,7 +301,8 @@ gapi_dataReaderQos               gapi_dataReaderQosDefault = {
         }
     };
 
-gapi_dataReaderViewQos               gapi_dataReaderViewQosDefault = {
+gapi_dataReaderViewQos
+gapi_dataReaderViewQosDefault = {
         /* gapi_subscriptionKeyQosPolicy partition */
         {
             /* gapi_boolean use_key_list */
@@ -311,7 +317,8 @@ gapi_dataReaderViewQos               gapi_dataReaderViewQosDefault = {
         }
     };
 
-gapi_dataWriterQos               gapi_dataWriterQosDefault = {
+gapi_dataWriterQos
+gapi_dataWriterQosDefault = {
         /* gapi_durabilityQosPolicy durability */
         {
             GAPI_VOLATILE_DURABILITY_QOS  /* gapi_durabilityQosPolicyKind kind */
@@ -1102,11 +1109,19 @@ gapi_domainParticipantFactoryQosIsConsistent (
     const gapi_context              *context
     )
 {
-    if ( !validEntityFactoryQosPolicy(&qos->entity_factory, context, GAPI_QOS_DOMAINPARTICIPANT_ID) ) {
-        return GAPI_RETCODE_BAD_PARAMETER;
-    }
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
 
-    return GAPI_RETCODE_OK;
+    if (qos) {
+        if ( !validEntityFactoryQosPolicy(&qos->entity_factory,
+                                          context,
+                                          GAPI_QOS_DOMAINPARTICIPANT_ID) )
+        {
+            result = GAPI_RETCODE_BAD_PARAMETER;
+        }
+    } else {
+        result = GAPI_RETCODE_BAD_PARAMETER;
+    }
+    return result;
 }
 
 
@@ -1116,6 +1131,9 @@ gapi_domainParticipantQosIsConsistent (
     const gapi_context              *context
     )
 {
+    if (qos == NULL) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !validUserDataQosPolicy(&qos->user_data, context, GAPI_QOS_DOMAINPARTICIPANT_ID) ) {
         return GAPI_RETCODE_BAD_PARAMETER;
     }
@@ -1141,6 +1159,9 @@ gapi_topicQosIsConsistent (
     const gapi_context  *context
     )
 {
+    if (qos == NULL) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !validTopicDataQosPolicy(&qos->topic_data, context, GAPI_QOS_TOPIC_ID)                 ||
          !validDurabilityQosPolicy(&qos->durability, context, GAPI_QOS_TOPIC_ID)                ||
          !validDurabilityServiceQosPolicy(&qos->durability_service, context, GAPI_QOS_TOPIC_ID) ||
@@ -1280,6 +1301,9 @@ gapi_publisherQosIsConsistent (
 {
     gapi_returnCode_t retcode;
 
+    if (qos == NULL) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !validPresentationQosPolicy(&qos->presentation, context, GAPI_QOS_PUBLISHER_ID)    ||
          !validPartitionQosPolicy(&qos->partition, context, GAPI_QOS_PUBLISHER_ID)          ||
          !validGroupDataQosPolicy(&qos->group_data, context, GAPI_QOS_PUBLISHER_ID)         ||
@@ -1314,6 +1338,9 @@ gapi_subscriberQosIsConsistent (
 {
     gapi_returnCode_t retcode;
 
+    if (qos == NULL) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !validPresentationQosPolicy(&qos->presentation, context, GAPI_QOS_SUBSCRIBER_ID)    ||
          !validPartitionQosPolicy(&qos->partition, context, GAPI_QOS_SUBSCRIBER_ID)          ||
          !validGroupDataQosPolicy(&qos->group_data, context, GAPI_QOS_SUBSCRIBER_ID)         ||
@@ -1347,6 +1374,9 @@ gapi_dataReaderQosIsConsistent (
     const gapi_context       *context
     )
 {
+    if (qos == NULL) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !validDurabilityQosPolicy(&qos->durability, context, GAPI_QOS_DATAREADER_ID)                     ||
          !validDeadlineQosPolicy(&qos->deadline, context, GAPI_QOS_DATAREADER_ID)                         ||
          !validLatencyBudgetQosPolicy(&qos->latency_budget, context, GAPI_QOS_DATAREADER_ID)              ||
@@ -1399,6 +1429,9 @@ gapi_dataReaderViewQosIsConsistent (
     const gapi_context           *context
     )
 {
+    if (qos == NULL) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !validViewKeyQosPolicy(&qos->view_keys, context, GAPI_QOS_DATAREADERVIEW_ID) ) {
         return GAPI_RETCODE_BAD_PARAMETER;
     }
@@ -1413,6 +1446,9 @@ gapi_dataWriterQosIsConsistent (
     const gapi_context       *context
     )
 {
+    if (qos == NULL) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !validDurabilityQosPolicy(&qos->durability, context, GAPI_QOS_DATAWRITER_ID)                ||
          !validDeadlineQosPolicy(&qos->deadline, context, GAPI_QOS_DATAWRITER_ID)                    ||
          !validLatencyBudgetQosPolicy(&qos->latency_budget, context, GAPI_QOS_DATAWRITER_ID)         ||
@@ -1680,6 +1716,9 @@ gapi_domainParticipantQosCheckMutability (
     const gapi_context              *context
     )
 {
+    if ((new_qos == NULL) || (old_qos == NULL)) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !immutableSchedulingQosPolicy(&new_qos->listener_scheduling, &old_qos->listener_scheduling, context, GAPI_QOS_TOPIC_ID) ||
          !immutableSchedulingQosPolicy(&new_qos->watchdog_scheduling, &old_qos->watchdog_scheduling, context, GAPI_QOS_TOPIC_ID)) {
         return GAPI_RETCODE_IMMUTABLE_POLICY;
@@ -1696,6 +1735,9 @@ gapi_topicQosCheckMutability (
     const gapi_context  *context
     )
 {
+    if ((new_qos == NULL) || (old_qos == NULL)) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !immutableDurabilityQosPolicy(&new_qos->durability, &old_qos->durability, context, GAPI_QOS_TOPIC_ID) ||
          !immutableDurabilityServiceQosPolicy(&new_qos->durability_service, &old_qos->durability_service, context, GAPI_QOS_TOPIC_ID) ||
          !immutableOwnershipQosPolicy(&new_qos->ownership, &old_qos->ownership, context, GAPI_QOS_TOPIC_ID) ||
@@ -1718,6 +1760,9 @@ gapi_publisherQosCheckMutability (
     const gapi_context      *context
     )
 {
+    if ((new_qos == NULL) || (old_qos == NULL)) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !immutablePresentationQosPolicy(&new_qos->presentation, &old_qos->presentation, context, GAPI_QOS_PUBLISHER_ID) ) {
         return GAPI_RETCODE_IMMUTABLE_POLICY;
     }
@@ -1732,6 +1777,9 @@ gapi_subscriberQosCheckMutability (
     const gapi_context       *context
     )
 {
+    if ((new_qos == NULL) || (old_qos == NULL)) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !immutablePresentationQosPolicy(&new_qos->presentation, &old_qos->presentation, context, GAPI_QOS_SUBSCRIBER_ID) ) {
         return GAPI_RETCODE_IMMUTABLE_POLICY;
     }
@@ -1746,6 +1794,9 @@ gapi_dataReaderQosCheckMutability (
     const gapi_context       *context
     )
 {
+    if ((new_qos == NULL) || (old_qos == NULL)) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !immutableDurabilityQosPolicy(&new_qos->durability, &old_qos->durability, context, GAPI_QOS_DATAREADER_ID) ||
          !immutableLivelinessQosPolicy(&new_qos->liveliness, &old_qos->liveliness, context, GAPI_QOS_DATAREADER_ID) ||
          !immutableReliabilityQosPolicy(&new_qos->reliability, &old_qos->reliability, context, GAPI_QOS_DATAREADER_ID) ||
@@ -1777,6 +1828,9 @@ gapi_dataWriterQosCheckMutability (
     const gapi_context       *context
     )
 {
+    if ((new_qos == NULL) || (old_qos == NULL)) {
+        return GAPI_RETCODE_BAD_PARAMETER;
+    }
     if ( !immutableDurabilityQosPolicy(&new_qos->durability, &old_qos->durability, context, GAPI_QOS_DATAWRITER_ID) ||
          !immutableLivelinessQosPolicy(&new_qos->liveliness, &old_qos->liveliness, context, GAPI_QOS_DATAWRITER_ID) ||
          !immutableReliabilityQosPolicy(&new_qos->reliability, &old_qos->reliability, context, GAPI_QOS_DATAWRITER_ID) ||

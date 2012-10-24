@@ -1,9 +1,0 @@
-
-module DDS {
-
-    struct DCPS_builtin_types {
-        Duration_t              duration;
-        Time_t                  time;
-    };
-
-};

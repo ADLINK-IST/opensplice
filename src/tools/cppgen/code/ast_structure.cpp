@@ -72,8 +72,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * structure's fields are managed in a scope).
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Constructor(s) and destructor

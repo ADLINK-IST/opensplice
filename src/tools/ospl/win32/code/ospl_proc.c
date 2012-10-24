@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,37 +9,36 @@
  *   for full copyright notice and license terms. 
  *
  */
-#if 0
-#include <os.h>
-#include <os_classbase.h>
-#include <assert.h>
-
 #include "ospl_proc.h"
+
+#include "os.h"
+#include "os_iterator.h"
+
+#include <tlhelp32.h>
+
+#define MAX_STATUSCHECKS (30)
 
 #define procInfo(o) ((procInfo)(o))
 OS_CLASS(procInfo);
 
 OS_STRUCT(procInfo) {
-    char *name;
-    char *cmdLine;
-    pid_t pid;
-    pid_t ppid;
+    char *exename;
+    DWORD pid;
+    DWORD ppid;
     os_iter children;
     int inserted;
 };
 
 procInfo
 procInfoNew(
-    const char *name,
-    pid_t pid,
-    pid_t ppid,
-    const char *cmdline)
+    const char *exename,
+    DWORD pid,
+    DWORD ppid)
 {
     procInfo newProc = os_malloc(OS_SIZEOF(procInfo));
 
     if (newProc) {
-        newProc->name = os_strdup(name);
-        newProc->cmdLine = os_strdup(cmdline);
+        newProc->exename = os_strdup(exename);
         newProc->pid = pid;
         newProc->ppid = ppid;
         newProc->inserted = 0;
@@ -105,7 +104,7 @@ show_procInfo(
     for (i = 0; i < *depth; i++) {
         printf ("\t");
     }
-    printf ("%d-%d\t%s\t%s\n", (int)proc->pid, (int)proc->ppid, proc->name, proc->cmdLine);
+    printf ("%d-%d\t%s\n", (int)proc->pid, (int)proc->ppid, proc->exename);
     if (os_iterLength(proc->children) > 0) {
         (*depth)++;
         show_procs(proc->children, depth);
@@ -123,79 +122,68 @@ show_procs(
 
 static int
 read_proc_tree(
-    int uid,
+    DWORD uid,
     os_iter processes)
 {
- /*   DIR *dir;
-    struct dirent *de;
-    char stat_line[100];
-    char cmd_line[100];
-    char fname[100];
-    char path[PATH_MAX + 1];
-    pid_t pid;
-    pid_t ppid;
-    uid_t puid;
-    FILE* fdd;
     procInfo proc;
+    HANDLE snapshot;
+    PROCESSENTRY32* processInfo;
 
+    snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
-    if ((dir = opendir (PROCFS)) != NULL) {
-        while ((de = readdir (dir)) != NULL) {
-            if ((pid = atoi (de->d_name)) != 0) {
-                sprintf (path, "%s/%d/status", PROCFS, pid);
-                if ((fdd = fopen (path, "r")) != NULL) {
-                    while (fgets (stat_line, sizeof(stat_line)-1, fdd) != NULL)
-{
-                        if (strncmp (stat_line, "PPid:", 5) == 0) {
-                            sscanf (&stat_line[5], "%d", &ppid);
-                        } else if (strncmp (stat_line, "Uid:", 4) == 0) {
-                            sscanf (&stat_line[4], "%d", (int *)&puid);
-                        } else if (strncmp (stat_line, "Name:", 5) == 0) {
-                            sscanf (&stat_line[5], "%s", fname);
-                        }
-                    }
-                    (void) fclose (fdd);
-                    sprintf (path, "%s/%d/cmdline", PROCFS, pid);
-                    if ((fdd = fopen (path, "r")) != NULL) {
-                        fgets (cmd_line, sizeof(cmd_line), fdd);
-                    }
-                    (void) fclose (fdd);
-                    if (uid == puid) {
-                        proc = procInfoNew (fname, pid, ppid, cmd_line);
-                        procInsert (processes, proc);
-                    }
-                }
-            }
-        }
-        (void) closedir (dir);
+    if (snapshot != INVALID_HANDLE_VALUE)
+    {
+       processInfo = malloc(sizeof(PROCESSENTRY32));
+       processInfo->dwSize = sizeof(PROCESSENTRY32);
+
+       while(Process32Next(snapshot, processInfo) != FALSE)
+       {
+          if (processInfo->th32ParentProcessID == uid)
+          {
+             proc = procInfoNew (processInfo->szExeFile,
+                                 processInfo->th32ProcessID,
+                                 processInfo->th32ParentProcessID);
+             procInsert (processes, proc);
+          }
+       }
     }
-*/
+
+    CloseHandle(snapshot);
+    free(processInfo);
+    
     return(1);
 }
 
 void
 signal_related_processes(
     os_iter processes,
-    pid_t pid,
+    DWORD pid,
     int signal,
     int related)
 {
-/*    int i;
-    procInfo proc;
+   int i;
+   procInfo proc;
+   
+   for (i = 0; i < os_iterLength (processes); i++) {
+       proc = os_iterObject (processes, i);
+       
+       if (related) {
+          os_result r;
+          os_int32 procResult;
+          int i = MAX_STATUSCHECKS;
+          HANDLE handle = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, proc->pid);
 
-    for (i = 0; i < os_iterLength (processes); i++) {
-	proc = os_iterObject (processes, i);
-	if (proc->pid == pid) {
-	    signal_related_processes (proc->children, pid, signal, 1);
-	} else if (proc->children) {
-	    signal_related_processes (proc->children, pid, signal, 0);
-	}
-	if (related) {
-	    printf (" %d\n", (int)proc->pid); fflush (stdout);
-	    os_procDestroy (proc->pid, signal);
-	}
-    }
-*/
+          os_procDestroy ((os_procId)handle, signal);
+          r = os_procCheckStatus((os_procId)handle, &procResult);
+          while ((r == os_resultBusy) && (i > 0)) {
+             i--;
+             printf (".");
+             fflush(stdout);
+             Sleep(1000);
+             r = os_procCheckStatus((os_procId)handle, &procResult);
+          }          
+       }
+   }
 }
 
 void
@@ -209,32 +197,26 @@ remove_proc_tree(
             remove_proc_tree(proc->children);
             os_iterFree(proc->children);
         }
-        os_free(proc->name);
-        os_free(proc->cmdLine);
+        os_free(proc->exename);
         os_free(proc);
     }
 }
 
 void
 kill_descendents(
-    pid_t pid,
+    DWORD pid,
     int signal)
 {
     os_iter processes;
 
     processes = os_iterNew(NULL);
-/*    read_proc_tree (0, processes);*/
 
-    printf("(%d", (int)pid); 
-    fflush (stdout);
-    
-    os_procDestroy(pid, signal);
-    signal_related_processes(processes, pid, signal, 0);
-    
-    printf(")"); 
-    fflush(stdout);
+    /* collect all processes that uid is parent of */
+    read_proc_tree (pid, processes);
+
+    /* kill these processes */
+    signal_related_processes(processes, pid, signal, 1);
     
     remove_proc_tree(processes);
     os_iterFree(processes);
 }
-#endif

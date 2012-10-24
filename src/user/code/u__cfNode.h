@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -37,22 +37,23 @@ u_cfNodeInit (
     u_cfNode _this,
     u_participant participant,
     v_cfNode kNode);
-    
-void
-u_cfNodeDeinit (
-    u_cfNode _this);
-    
-v_cfNode
-u_cfNodeClaim (
-    u_cfNode _this);
 
 void
-u_cfNodeRelease (
+u_cfNodeDeinit (
     u_cfNode _this);
 
 u_participant
 u_cfNodeParticipant (
     u_cfNode _this);
+
+u_result
+u_cfNodeRelease(
+    u_cfNode node);
+
+u_result
+u_cfNodeReadClaim(
+    u_cfNode node,
+    v_cfNode* kernelNode);
 
 #if defined (__cplusplus)
 }

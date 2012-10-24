@@ -81,12 +81,12 @@ csharp_check ()
         fi
     fi
 
+    MAIN_DRIVE=`echo $SYSTEMDRIVE | awk -F ':' '{ print $1 }'`
     if [ $CSC_NOT_FOUND != 0 ]
     then
-        MAIN_DRIVE=`echo $SYSTEMDRIVE | awk -F ':' '{ print $1 }'`
         if [ ! -d "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework" ]
         then
-            echo "Error - no valid Microsoft.NET Framwork compiler found. Please *PREFIX* its location to your PATH"
+            echo "Error - no valid Microsoft.NET Framwork. Please *PREFIX* its location to your PATH"
             return 1
         fi
         VERSIONS=`ls /cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework | grep -E ^v`
@@ -121,7 +121,7 @@ csharp_check ()
                 then
                     continue
                 fi
-
+                FOUND_VERSION=$i
                 PATH="/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$i:$PATH"
                 break
             fi
@@ -133,11 +133,37 @@ csharp_check ()
         fi
     fi
 
+    pathcheck al.exe
+    AL_NOT_FOUND=$?
+    if [ $AL_NOT_FOUND != 0 ]
+    then
+        if [ ! -f "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/$FOUND_VERSION/al.exe" ]
+        then
+            if [ ! -f "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/v2.0.50727/al.exe" ]
+            then
+                if [ ! -f "/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v6.0A/bin/al.exe" ]
+                then
+                    if [ ! -f "/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v5.0A/bin/al.exe" ]
+                    then
+                        echo "Error - no Assembly Linker found (al.exe). Please *PREFIX* its location to your PATH"
+                        return 1
+                    else
+                        PATH="$PATH:/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v5.0A/bin/"
+                    fi
+                else
+                    PATH="$PATH:/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v6.0A/bin/"
+                fi
+            else
+                PATH="$PATH:/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/v2.0.50727/"
+            fi
+        fi
+    fi
+
     echo "OK - using version `csc -help | grep \"Framework version\" | awk '{ print $NF }'`"
     return 0
 }
 
-# test if CL.exe is at least vs8
+# test if CL.exe is at least vs7
 msvs_check ()
 {
     echo -n "VS: "
@@ -172,7 +198,12 @@ msvs_check ()
         return 1
     fi
 
-    PATH="$UNIX_CONV_PATH/VC/bin:$PATH"
+    if [ -d "$UNIX_CONV_PATH/Vc7" ]
+    then
+        PATH="$UNIX_CONV_PATH/Vc7/bin:$PATH"
+    else
+        PATH="$UNIX_CONV_PATH/VC/bin:$PATH"
+    fi
     PATH="$UNIX_CONV_PATH/Common7/IDE:$PATH"
     PATH="$OSPL_OUTER_HOME/testsuite/lib/$SPLICE_HOST:$PATH"
     set_var PATH "$PATH"
@@ -184,15 +215,29 @@ msvs_check ()
         return 1
     fi
     CL_MAJOR=`echo $COMPILER_VER | cut -f 1 -d .`
-    if [ $CL_MAJOR -lt 14 ]
+    if [ $CL_MAJOR -lt 13 ]
     then
         echo "ERROR - Only .NET 2005 and above supported"
+        echo "  got cl version [$COMPILER_VER]"
         return 1
+    fi
+
+    if [ $CL_MAJOR = 13 ]
+    then
+        COMPILER_VER="VS .NET 2003 (Visual Studio 7)"
+
+        LIBPATH="$DOS_CONV_PATH\Vc7\atlmfc\lib"
+        LIB="$DOS_CONV_PATH\Vc7\lib;$DOS_CONV_PATH\Vc7\atlmfc\lib"
+        FrameworkSDKDir="$UNIX_CONV_PATH/SDK/v1.1"
+        set_var FrameworkSDKDir "$FrameworkSDKDir"
+        set_var LIBPATH "$LIBPATH"
+        set_var LIB "$LIB"
+
     fi
 
     if [ $CL_MAJOR = 14 ]
     then
-        COMPILER_VER="VS .NET 2005"
+        COMPILER_VER="VS .NET 2005 (Visual Studio 8)"
 
         LIBPATH="$DOS_CONV_PATH\VC\ATLMFC\LIB"
         LIB="$DOS_CONV_PATH\VC\LIB;$DOS_CONV_PATH\VC\ATLMFC\LIB"
@@ -205,12 +250,12 @@ msvs_check ()
 
     if [ $CL_MAJOR = 15 ]
     then
-        COMPILER_VER="VS .NET 2008"
+        COMPILER_VER="VS .NET 2008 (Visual Studio 9)"
 
         LIB="$DOS_CONV_PATH\VC\LIB;"
         SDK_DIR="$UNIX_CONV_PATH/../Microsoft SDKs/Windows/v6.0A"
-	FrameworkSDKDir=`cygpath -u "$SDK_DIR"`
-		PATH="$FrameworkSDKDir/bin:$PATH"
+        FrameworkSDKDir=`cygpath -u "$SDK_DIR"`
+        PATH="$FrameworkSDKDir/bin:$PATH"
         set_var FrameworkSDKDir "$FrameworkSDKDir"
         set_var LIBPATH "$LIBPATH"
         set_var LIB "$LIB"
@@ -468,17 +513,20 @@ javac_check ()
             JAVA_HOME=`echo "$JAVAC_EXE" | sed 's@/bin/javac$@@' `
             set_var JAVA_HOME "$JAVA_HOME"
         else
-            echo "ERROR - Only JAVA 1.6 and above is supported"
-            return 1
+            echo "ERROR - Only ORACLE JAVA 1.6 and above is supported"
+            no_javac
+            return $?
         fi
         if [ ! -z "$OSPL_OUTER_HOME"  -a "$JAVAC_VERSION" -ne "$REQUIRED_VERSION" ]
         then
-            echo "ERROR - Only JAVA 1.6 is supported"
-            return 1
+            echo "ERROR - Only ORACLE JAVA 1.6 is supported"
+            no_javac
+            return $?
         fi
     else
-        echo "ERROR - Only JAVA 1.6 and above is supported"
-        return 1
+        echo "ERROR - Only ORACLE JAVA 1.6 and above is supported"
+        no_javac
+        return $?
     fi
 
     LD_LIBRARY_PATH="$JAVA_HOME/lib:$LD_LIBRARY_PATH"
@@ -497,6 +545,9 @@ javac_check ()
             ;;
         SunOS)
             JAVA_PATH_EXT=sparc
+            ;;
+        AIX)
+            JAVA_PATH_EXT=ppc
             ;;
         CYGWIN_NT*)
             JAVA_PATH_EXT=i386
@@ -630,30 +681,25 @@ tao_check()
 tao_check_fn ()
 {
     echo -n "TAO: "
-    pathcheck tao_idl
-    if [ $? != 0 ]
+    if [ -z "$TAO_ROOT" ]
     then
-        if [ -z "$TAO_ROOT" ]
+        pathcheck tao_idl
+        TAOIDL_EXE="$PATHCHECK_FOUND"
+        if [ "$?" != "0" ]
         then
             echo "$1 - No TAO found"
             return 1
         fi
+        TAO_ROOT1=`dirname "$TAOIDL_EXE"`
+        TAO_ROOT=`dirname "$TAO_ROOT1"`
+        set_var TAO_ROOT "$TAO_ROOT"
+    else
         if [ ! -d "$TAO_ROOT" ]
         then
             echo "$1 - $TAO_ROOT is not set to a directory"
             return 1
         fi
-    else
-        TAOIDL_EXE="$PATHCHECK_FOUND"
-        if [ "$?" != "0" ]
-        then
-            echo "$1 - Not TAO found"
-            return 1
-        fi
-        TAO_ROOT1=`dirname "$TAOIDL_EXE"`
-  	    TAO_ROOT=`dirname "$TAO_ROOT1"`
-        set_var TAO_ROOT "$TAO_ROOT"
-  	fi
+    fi
     LD_LIBRARY_PATH="$TAO_ROOT/lib:$LD_LIBRARY_PATH"
     set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
     export LD_LIBRARY_PATH
@@ -777,11 +823,11 @@ convert_native_classpath_to_unix_classpath ()
             fi
         }
 
-        PATHS=`echo $CLASSPATH | tr ' ' '%' | tr ';' ' ' | tr '\\\' '/' \
+        LIST_CLASSPATHS=`echo $CLASSPATH | tr ' ' '%' | tr ';' ' ' | tr '\\\' '/' \
                                | sed 's@\(.\):@/cygdrive/\1@g'`
         CLASSPATH=`echo $CLASSPATH | sed 's@\([^;]\):@/cygdrive/\1@g' | tr ';' ':' | tr '\\\' '/'`
     else
-        PATHS=`echo $CLASSPATH | tr ' ' '%' | tr ':' ' '`
+        LIST_CLASSPATHS=`echo $CLASSPATH | tr ' ' '%' | tr ':' ' '`
     fi
 }
 
@@ -813,14 +859,13 @@ jacorb_check_fn ()
 
     convert_native_classpath_to_unix_classpath
     FOUND_IN_CLASSPATH=false
-    for i in PATHS
+    for i in $LIST_CLASSPATHS
     do
         i=`echo $i | tr '%' ' '`
-        if [ `basename $i` = "jacorb.jar" -o `basename $i` = "avalon-framework.jar" -o `basename $i` = "logkit.jar" ]
+        if [ `basename '$i'` = "jacorb.jar" -o `basename '$i'` = "avalon-framework.jar" -o `basename '$i'` = "logkit.jar" ]
         then
             FOUND_IN_CLASSPATH=true
-            JACORB_HOME=`dirname $i`
-            JACORB_HOME=`dirname $JACORB_HOME`
+            JACORB_HOME=`dirname '$i'`
             JACORB_HOME=`dirname $JACORB_HOME`
             set_var JACORB_HOME "$JACORB_HOME"
             break

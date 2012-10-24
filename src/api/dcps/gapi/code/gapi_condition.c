@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "u_participant.h"
@@ -15,7 +15,6 @@
 #include "u_waitset.h"
 
 #include "gapi_condition.h"
-#include "gapi_domainEntity.h"
 #include "gapi_dataReader.h"
 #include "gapi_dataReaderView.h"
 #include "gapi_subscriber.h"
@@ -26,7 +25,7 @@
 #define GAPI_STATUS_KIND_FULL 0x1fffU
 #define GAPI_STATUS_KIND_NULL 0x0U
 
-static void
+static gapi_boolean
 _GuardConditionFree(
     void * _guardcondition);
 
@@ -37,7 +36,7 @@ _ConditionInit(
     GetTriggerValue getTriggerValue)
 {
     _this->entity = entity;
-    _this->waitsets = gapi_setNew (gapi_objectRefCompare);
+    _this->waitsets = NULL;
     _this->uEntity = NULL;
     _this->getTriggerValue = getTriggerValue;
 }
@@ -46,33 +45,18 @@ void
 _ConditionDispose(
     _Condition _this)
 {
-    gapi_boolean ready = FALSE;
+    gapi_waitSet waitset;
 
-    while (!ready) {
-        gapi_setIter iter    = gapi_setFirst(_this->waitsets);
-        gapi_waitSet waitset = gapi_setIterObject(iter);
-
-        gapi_setIterFree(iter);
-
-        if (waitset != NULL) {
-            gapi_condition handle = _EntityRelease(_this);
-            gapi_waitSet_detach_condition(waitset, handle);
-            _this = gapi_conditionClaim(handle, NULL);
-            if (_this) {
-                gapi_setRemove(_this->waitsets, waitset);
-            } else {
-                ready = TRUE;
-            }
-        } else {
-            ready = TRUE;
-        }
+    waitset = c_iterTakeFirst(_this->waitsets);
+    while (waitset) {
+        gapi_condition handle = _EntityRelease(_this);
+        gapi_waitSet_detach_condition(waitset, handle);
+        _this = gapi_conditionClaim(handle, NULL);
+        waitset = c_iterTakeFirst(_this->waitsets);
     }
-
-    if (_this) {
-        gapi_setFree(_this->waitsets);
-        if (_ObjectGetKind(_Object(_this)) != OBJECT_KIND_GUARDCONDITION) {
-            _EntityDelete(_this);
-        }
+    c_iterFree(_this->waitsets);
+    if (_ObjectGetKind(_Object(_this)) != OBJECT_KIND_GUARDCONDITION) {
+        _EntityDelete(_this);
     }
 }
 
@@ -119,21 +103,18 @@ _ConditionAddWaitset(
     gapi_waitSet waitset,
     u_waitset    uWaitset)
 {
-    gapi_returnCode_t result;
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
     u_result uResult;
 
-    result = gapi_setAdd(_this->waitsets, (gapi_object)waitset);
-    if (result == GAPI_RETCODE_OK) {
-        if ((uWaitset != NULL) && (_this->uEntity != NULL)) {
-            uResult = u_waitsetAttach(uWaitset,
-                                      _this->uEntity,
-                                      (c_voidp)_this->uEntity);
-            if (uResult != U_RESULT_OK) {
-                result = GAPI_RETCODE_ERROR;
-            }
+    _this->waitsets = c_iterInsert(_this->waitsets,waitset);
+    if ((uWaitset != NULL) && (_this->uEntity != NULL)) {
+        uResult = u_waitsetAttach(uWaitset,
+                                  _this->uEntity,
+                                  (c_voidp)_this);
+        if (uResult != U_RESULT_OK) {
+            result = GAPI_RETCODE_ERROR;
         }
     }
-
     return result;
 }
 
@@ -146,14 +127,13 @@ _ConditionRemoveWaitset(
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     u_result uResult;
 
-    gapi_setRemove(_this->waitsets, (gapi_object)waitset);
+    c_iterTake(_this->waitsets, waitset);
     if ((_this->uEntity != NULL) && (uWaitset != NULL)) {
         uResult = u_waitsetDetach(uWaitset, _this->uEntity);
         if (uResult != U_RESULT_OK) {
             result = GAPI_RETCODE_ERROR;
         }
     }
-
     return result;
 }
 
@@ -192,13 +172,14 @@ _GuardConditionGetTriggerValue(
 /*
  * deallocator, called by gapi_free
  */
-static void
+static gapi_boolean
 _GuardConditionFree(
     void *_guardcondition)
 {
     _GuardCondition guardcondition = (_GuardCondition) _guardcondition;
 
     _ConditionDispose(_Condition(guardcondition));
+    return TRUE;
 }
 
 gapi_guardCondition
@@ -221,7 +202,7 @@ gapi_guardCondition__alloc(void)
 /*     void
  *     set_trigger_value(
  *         in boolean value);
- * 
+ *
  */
 
 gapi_returnCode_t
@@ -230,7 +211,6 @@ gapi_guardCondition_set_trigger_value(
     const gapi_boolean value)
 {
     _GuardCondition guardcondition = (_GuardCondition)_this;
-    gapi_setIter iter;
     _WaitSet waitset;
     gapi_waitSet wsh;
     gapi_returnCode_t result;
@@ -242,28 +222,23 @@ gapi_guardCondition_set_trigger_value(
     if (guardcondition != NULL) {
         if (value) {
             guardcondition->triggerValue = TRUE;
-            iter = gapi_setFirst(_Condition(guardcondition)->waitsets);
-            while ( gapi_setIterObject(iter) != NULL ) {
-                wsHandles = c_iterInsert(wsHandles, gapi_setIterObject(iter));
-                gapi_setIterNext(iter);
-            }
-            gapi_setIterFree(iter);
+            wsHandles = c_iterCopy(_Condition(guardcondition)->waitsets);
             _EntityRelease(guardcondition);
-            wsh = (gapi_waitSet)c_iterTakeFirst(wsHandles); 
+            wsh = (gapi_waitSet)c_iterTakeFirst(wsHandles);
             while (wsh != NULL) {
                 waitset = gapi_waitSetClaim(wsh, &result);
                 if (waitset) {
                     _WaitSetNotify(waitset, (_Condition)guardcondition);
                     _EntityRelease(waitset);
                 }
-                wsh = (gapi_waitSet)c_iterTakeFirst(wsHandles); 
+                wsh = (gapi_waitSet)c_iterTakeFirst(wsHandles);
             }
             c_iterFree(wsHandles);
         } else {
             guardcondition->triggerValue = FALSE;
             _EntityRelease(guardcondition);
         }
-    } 
+    }
     return GAPI_RETCODE_OK;
 }
 
@@ -332,14 +307,8 @@ _ReadConditionInit(
         }
     }
     if (_this->uQuery) {
+        u_entitySetUserData(u_entity(_this->uQuery),_this);
         _Condition(_this)->uEntity = u_entity(_this->uQuery);
-
-        /* Set the UserData of the u_entity with the gapi object
-         * of the condition.
-         * The kernel waitset can return this handle so the gapi
-         * waitset can pass this without further processing.
-         */
-        u_entitySetUserData(_Condition(_this)->uEntity,_this);
     } else {
         result = GAPI_RETCODE_ERROR;
     }
@@ -433,13 +402,8 @@ _ReadConditionNew(
             }
         }
         if (_this->uQuery != NULL) {
+            u_entitySetUserData(u_entity(_this->uQuery),_this);
             _Condition(_this)->uEntity = u_entity(_this->uQuery);
-            /* Set the UserData of the u_entity with the gapi object of
-             * the condition.
-             * The kernel waitset can return this handle so the gapi waitset
-             * can pass this without further processing.
-             */
-            u_entitySetUserData(_Condition(_this)->uEntity,(_this));
         } else {
             _ConditionDispose(_Condition(_this));
             _this = NULL;
@@ -647,12 +611,8 @@ _QueryConditionNew(
 
             if (_this->_parent.uQuery) {
                 /* Success: fill UserData and mark as valid */
+                u_entitySetUserData(u_entity(_this->_parent.uQuery),_this);
                 _Condition(_this)->uEntity = u_entity(_this->_parent.uQuery);
-/* Set the UserData of the u_entity with the gapi object of the condition.
- * The kernel waitset can return this handle so the gapi waitset can pass
- * this without further processing.
- */
-                u_entitySetUserData(_Condition(_this)->uEntity,(_this));
             } else {
                 gapi_free(_this->query_expression);
                 gapi_free(_this->query_parameters);
@@ -802,11 +762,11 @@ _StatusConditionNew(
         _ConditionInit(_Condition(_this), entity,
                        _StatusConditionGetTriggerValue);
         _this->enabledStatusMask = GAPI_STATUS_KIND_FULL;
+        /* The _Condition has no uEntity counter part,
+         * The uEntity is set to the user part of the entity
+         * that is the holder of this status condition.
+         */
         _Condition(_this)->uEntity = userEntity;
-/* Set the UserData of the u_entity with the gapi object of the condition.
- * The kernel waitset can return this handle so the gapi waitset can pass
- * this without further processing. */
-        u_entitySetUserData(_Condition(_this)->uEntity,(_this));
     }
 
     return _this;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -293,6 +293,7 @@ d_nameSpacesRequestListenerReportNameSpaces(
             ns = d_nameSpaces(c_iterObject(nameSpaces, i));
             d_messageInit(d_message(ns), admin);
             d_messageSetAddressee(d_message(ns), addr);
+
             d_publisherNameSpacesWrite(publisher, ns, addr);
         }
         d_networkAddressFree(addr);

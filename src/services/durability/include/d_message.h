@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -22,16 +22,18 @@ extern "C" {
 
 #define d_message(d)                    ((d_message)(d))
 
-void        d_messageInit               (d_message message,
-                                         d_admin admin);
+void                d_messageInit               (d_message message,
+                                                 d_admin admin);
 
-void        d_messageDeinit             (d_message message);
+void                d_messageDeinit             (d_message message);
 
-void        d_messageSetAddressee       (d_message message,
-                                         d_networkAddress addressee);
+void                d_messageSetAddressee       (d_message message,
+                                                 d_networkAddress addressee);
 
-void        d_messageSetSenderAddress   (d_message message,
-                                         d_networkAddress address);
+d_networkAddress    d_messageGetAddressee       (d_message message);
+
+void                d_messageSetSenderAddress   (d_message message,
+                                                 d_networkAddress address);
 
 #if defined (__cplusplus)
 }

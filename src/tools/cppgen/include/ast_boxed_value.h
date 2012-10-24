@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,11 +13,11 @@
 #define _AST_BOXEDVALUE_HH
 
 
-#include <idl_fwd.h>
-#include <idl_narrow.h>
-#include <ast_type.h>
-#include <utl_scope.h>
-#include <ast_decl.h>
+#include "idl_fwd.h"
+#include "idl_narrow.h"
+#include "ast_type.h"
+#include "utl_scope.h"
+#include "ast_decl.h"
 
 
 class AST_BoxedValue : public virtual AST_Type

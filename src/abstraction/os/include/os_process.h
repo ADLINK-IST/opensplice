@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -24,11 +24,11 @@
 extern "C" {
 #endif
 
-#include <os_defs.h>
+#include "os_defs.h"
 
 /* include OS specific header file				*/
-#include <include/os_process.h>
-#include <os_if.h>
+#include "include/os_process.h"
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT
@@ -282,14 +282,14 @@ os_procMLockAll(
 OS_API os_result
 os_procMLock(
     const void *addr,
-    os_uint length);
+    os_address length);
 
 /** \brief enable paging for a range of pages
  */
 OS_API os_result
 os_procMUnlock(
     const void *addr,
-    os_uint length);
+    os_address length);
 
 /** \brief  reenable paging for calling process.
  *

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -244,124 +244,8 @@ v_partitionInterestNew(
         OS_REPORT(OS_ERROR,
                   "v_partitionInterestNew",0,
                   "Failed to allocate partition interest.");
+        assert(FALSE);
     }
 
     return result;
-}
-
-/*
- * ES, dds1576: This method consults the configuration info stored in the kernel
- * to determine the access policy for this partition
- */
-v_accessMode
-v_kernelPartitionAccessMode(
-    v_kernel _this,
-    v_partitionPolicy partition)
-{
-    v_configuration config;
-    v_cfElement root;
-    v_cfElement element;
-    c_iter iter;
-    v_accessMode retVal = V_ACCESS_MODE_UNDEFINED;
-    c_value expression;
-    c_value accessMode;
-    c_iter partitionsSplit;
-    c_char* partitionName;
-
-    config = v_getConfiguration(_this);
-    if(config)
-    {
-        root = v_configurationGetRoot(config);
-        /* Iterate over all partitionAccess elements */
-        iter = v_cfElementXPath(root, "Domain/PartitionAccess");
-        while(c_iterLength(iter) > 0)
-        {
-            element = v_cfElement(c_iterTakeFirst(iter));
-            /* Get the partition expression value, it should be a string */
-            expression = v_cfElementAttributeValue(element, "partition_expression");
-            if(expression.kind == V_STRING)
-            {
-                /* iterate over partitions, if one matches, exit and return */
-                partitionsSplit = v_partitionPolicySplit(partition);
-                while(c_iterLength(partitionsSplit) > 0)
-                {
-                    partitionName = (c_char*)c_iterTakeFirst(partitionsSplit);
-                    if(v_partitionStringMatchesExpression(partitionName, expression.is.String))
-                    {
-                        /* The partition matches the expression.*/
-                        accessMode = v_cfElementAttributeValue(element, "access_mode");
-                        if(accessMode.kind == V_STRING)
-                        {
-                            /* A correct solution space can be realized between multiple
-                             * expressions having an AND relationship by specifying the
-                             * following rules R&W=RW, R&N=N, W&N=N, RW&N=N.
-                             */
-                            switch(retVal)
-                            {
-                                case V_ACCESS_MODE_UNDEFINED: /* start state */
-                                    if(strcmp(accessMode.is.String, "none") == 0)
-                                    {
-                                        retVal = V_ACCESS_MODE_NONE;
-                                    } else if(strcmp(accessMode.is.String, "write") == 0)
-                                    {
-                                        retVal = V_ACCESS_MODE_WRITE;
-                                    } else if(strcmp(accessMode.is.String, "read") == 0)
-                                    {
-                                        retVal = V_ACCESS_MODE_READ;
-                                    } else if(strcmp(accessMode.is.String, "readwrite") == 0)
-                                    {
-                                        retVal = V_ACCESS_MODE_READ_WRITE;
-                                    }
-                                    break;
-                                case V_ACCESS_MODE_WRITE:
-                                    if(strcmp(accessMode.is.String, "read") == 0 ||
-                                       strcmp(accessMode.is.String, "readwrite") == 0)
-                                    {
-                                        retVal = V_ACCESS_MODE_READ_WRITE;
-                                    } else if(strcmp(accessMode.is.String, "none") == 0)
-                                    {
-                                        retVal = V_ACCESS_MODE_NONE;
-                                    }
-                                    break;
-                                case V_ACCESS_MODE_READ:
-                                    if(strcmp(accessMode.is.String, "write") == 0 ||
-                                       strcmp(accessMode.is.String, "readwrite") == 0)
-                                    {
-                                        retVal = V_ACCESS_MODE_READ_WRITE;
-                                    } else if(strcmp(accessMode.is.String, "none") == 0)
-                                    {
-                                        retVal = V_ACCESS_MODE_NONE;
-                                    }
-                                    break;
-                                case V_ACCESS_MODE_READ_WRITE:
-                                    if(strcmp(accessMode.is.String, "none") == 0)
-                                    {
-                                        retVal = V_ACCESS_MODE_NONE;
-                                    }
-                                    break;
-                                default: /* case V_ACCESS_MODE_NONE > none always remains none */
-                                    break;
-                            }
-                        }
-                    }
-                    os_free(partitionName);
-                }
-                c_iterFree(partitionsSplit);
-            }
-        }
-        if(iter)
-        {
-            c_iterFree(iter);
-        }
-        if(root)
-        {
-            c_free(root);
-        }
-    }
-    if(retVal == V_ACCESS_MODE_UNDEFINED)
-    {
-        /* No specific rights defined, fall back to default */
-        retVal = V_ACCESS_MODE_READ_WRITE;
-    }
-    return retVal;
 }

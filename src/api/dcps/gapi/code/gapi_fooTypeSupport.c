@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -29,10 +29,7 @@ gapi_fooTypeSupport__alloc (
     gapi_unsigned_long alloc_size,
     gapi_topicAllocBuffer alloc_buffer,
     gapi_writerCopy writer_copy,
-    gapi_readerCopy reader_copy,
-    gapi_createDataWriter create_datawriter,
-    gapi_createDataReader create_datareader
-    )
+    gapi_readerCopy reader_copy )
 {
     _TypeSupport typesupport;
 
@@ -40,9 +37,7 @@ gapi_fooTypeSupport__alloc (
                                   type_def, type_load,
 	                          copy_in, copy_out,
                                   alloc_size, alloc_buffer,
-	                          reader_copy, writer_copy,
-                                  create_datareader,
-                                  create_datawriter);
+	                          reader_copy, writer_copy);
     return (gapi_fooTypeSupport)_EntityRelease(typesupport);
 }
 
@@ -50,8 +45,7 @@ gapi_returnCode_t
 gapi_fooTypeSupport_register_type (
     gapi_typeSupport _this,
     gapi_domainParticipant dp,
-    gapi_string name
-    )
+    gapi_string name)
 {
     return gapi_typeSupport_register_type (_this, dp, name);
 }

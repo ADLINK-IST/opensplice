@@ -11,6 +11,11 @@
  *
  **********************************************************************/
 
+#ifdef WINCE
+#undef errno
+static int errno=0;
+#endif
+
 #define pc(x) q_parser_column+=x
 
 #define RETURN(t) q_parser_column+=strlen(yytext);return t
@@ -150,7 +155,7 @@ BETWEEN	        { RETURN (BETWEEN); }
                     */
                     yylval.String = (char*)malloc((unsigned)strlen(yytext)+1);
                     q_parser_column+=strlen(yytext);
-                    strcpy(yylval.String,yytext);
+                    os_strcpy(yylval.String,yytext);
                     return (identifier);
 		}
 {INTEGER}       {
@@ -175,7 +180,7 @@ BETWEEN	        { RETURN (BETWEEN); }
                        must be freed by the parser calling this scanner.
                     */
                     yylval.String = (char*)malloc(length-1);
-                    strncpy(yylval.String, (char *)&yytext[1], length-2);
+                    os_strncpy(yylval.String, (char *)&yytext[1], length-2);
                     yylval.String[length-2]=0;
                     return (stringLiteral); 
 		}

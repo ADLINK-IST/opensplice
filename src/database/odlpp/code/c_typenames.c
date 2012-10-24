@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -63,15 +63,15 @@ c_getCollAnonName(
     result = (c_char *)malloc(strlen(kind) + strlen(subTypeName) + 32);
     if (c->kind == C_STRING) {
         if (c->maxSize > 0) {
-            sprintf(result,"%s<%d>", kind, c->maxSize);
+            os_sprintf(result,"%s<%d>", kind, c->maxSize);
         } else {
-            sprintf(result,"%s", kind);
+            os_sprintf(result,"%s", kind);
         }
     } else {
         if (c->maxSize > 0) {
-            sprintf(result,"%s<%s,%d>", kind, subTypeName, c->maxSize);
+            os_sprintf(result,"%s<%s,%d>", kind, subTypeName, c->maxSize);
         } else {
-            sprintf(result,"%s<%s>", kind, subTypeName);
+            os_sprintf(result,"%s<%s>", kind, subTypeName);
         }
     }
 
@@ -104,7 +104,7 @@ c_getScopedTypeName(
                                   strlen(typeName)+
                                   strlen(separator)+
                                   1 /* '0' */);
-        sprintf(result,"%s%s%s",moduleName,separator,typeName);
+        os_sprintf(result,"%s%s%s",moduleName,separator,typeName);
     } else {
         result = os_strdup(typeName);
     }
@@ -135,7 +135,7 @@ c_getScopedConstName(
                                       strlen(name)+
                                       strlen(separator)+
                                       1 /* '0' */);
-            sprintf(result,"%s%s%s",moduleName,separator,name);
+            os_sprintf(result,"%s%s%s",moduleName,separator,name);
         } else {
             result = os_strdup(name);
         }

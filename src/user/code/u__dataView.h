@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,7 +15,13 @@
 
 #include "u_dataView.h"
 
-u_result         u_dataViewInit  (u_dataView view, u_reader reader);
-u_result         u_dataViewDeinit(u_dataView view);
+u_result
+u_dataViewInit (
+    u_dataView view,
+    u_dataReader reader);
+
+u_result
+u_dataViewDeinit (
+    u_dataView view);
 
 #endif

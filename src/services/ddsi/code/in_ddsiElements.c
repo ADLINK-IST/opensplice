@@ -6,7 +6,7 @@
  */
 
 #include "in_ddsiElements.h"
-#include "assert.h"
+#include <assert.h>
 #include "in_address.h"
 #include "in_ddsiDefinitions.h"
 #include <string.h> /* memcmp */
