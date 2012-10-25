@@ -3,7 +3,7 @@
 # Set name context of used tooling
 CC              = arm-angstrom-linux-gnueabi-gcc
 CXX             = arm-angstrom-linux-gnueabi-g++
-CSC             = csc
+CSC             = echo
 FILTER          = filter_gcc
 LD_SO           = $(CC)
 LD_EXE           = $(CC)
