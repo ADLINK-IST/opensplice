@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,11 +15,12 @@
  * Implements thread management for POSIX
  */
 
-#include <os_thread.h>
-#include <os_heap.h>
-#include <os_report.h>
-#include <os_process.h>
-#include <os_abstract.h>
+#include "os_thread.h"
+#include "os_heap.h"
+#include "os_report.h"
+#include "os_process.h"
+#include "os_abstract.h"
+#include "os_stdlib.h"
 
 #include <sys/types.h>
 #include <pthread.h>
@@ -382,7 +383,7 @@ os_threadCreate (
 	/* Take over the thread context: name, start routine and argument */
 	threadContext = os_malloc (sizeof (os_threadContext));
 	threadContext->threadName = os_malloc (strlen (name)+1);
-	strncpy (threadContext->threadName, name, strlen (name)+1);
+	os_strncpy (threadContext->threadName, name, strlen (name)+1);
 	threadContext->startRoutine = start_routine;
 	threadContext->arguments = arg;
 	/* start the thread */
@@ -403,6 +404,17 @@ os_threadCreate (
     }
     pthread_attr_destroy (&attr);
     return rv;
+}
+
+/** \brief Return the integer representation of the given thread ID
+ *
+ * Possible Results:
+ * - returns the integer representation of the given thread ID
+ */
+os_ulong_int
+os_threadIdToInteger(os_threadId id)
+{
+   return (os_ulong_int) id;
 }
 
 /** \brief Return the thread ID of the calling thread

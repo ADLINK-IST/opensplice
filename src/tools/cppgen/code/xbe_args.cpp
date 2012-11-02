@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl.h"
@@ -43,7 +43,7 @@ void BE_usage()
    cerr << GTDEVEL(" -version\t\tdisplay version information\n");
    //cerr << GTDEVEL(" -client_only\t\tgenerate client implementation only\n");
    cerr << GTDEVEL(" -output=<dir>\t\tgenerate files into directory <dir>\n");
-   cerr << GTDEVEL(" -import_export=<macro> defines dll macro name\n");
+   cerr << GTDEVEL(" -import_export=<macro>[,<header_file>] defines dll macro name and optionally a header file which contains the macro\n");
    cerr << GTDEVEL(" -cext=<ext>\t\tuse <ext> for implementation files\n");
    cerr << GTDEVEL(" -hext=<ext>\t\tuse <ext> for header files\n");
    cerr << GTDEVEL(" -ch=<filename>\t\tset client header filename to <filename>\n");
@@ -81,9 +81,41 @@ DDS_BE_parse_args(int &argc, char **argv)
       else if (strncmp(argv[i], "-import_export",
                         sizeof ("-import_export") - 1) == 0)
       {
-         BE_Globals::UserDLL = strchr(argv[i], '=') + 1;
-         DDSStripArg(argc, argv, i);
-         i = 0;
+        char* macroName = "";
+        char* macroHeader = "";
+
+        /* Locate the macro name by searching for the '=' character. */
+        macroName = strchr(argv[i], '=');
+        /* Only continue if we found the '=' character */
+        if(macroName)
+        {
+            /* The macro name starts after the '=' character, so move the
+             * pointer. Do not do it before, because if the '=' character is not
+             * found it would lead to a crash
+             */
+            macroName = macroName + 1;
+            /* Now search for the ',' character. If found it means a header file
+             * containing the macro was also defined.
+             */
+            macroHeader = strchr(macroName, ',');
+            if(macroHeader)
+            {
+                /*If we found the ',' character, then change the character to a
+                 * string terminator so that the macro name is cut off at the
+                 * ',' character, and then move the pointer by 1 to find the start
+                 * of the header file
+                 */
+                *macroHeader = '\0';
+                macroHeader = macroHeader + 1;
+            } else
+            {
+                macroHeader = "";
+            }
+        }
+        BE_Globals::UserDLL = macroName;
+        BE_Globals::UserDLLHeader = macroHeader;
+        DDSStripArg(argc, argv, i);
+        i = 0;
       }
       else if (strcmp(argv[i], "-ignore_interfaces") == 0)
       {

@@ -1,6 +1,6 @@
 ﻿// The OpenSplice DDS Community Edition project.
 //
-// Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
+// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
 // 
 //  This library is free software; you can redistribute it and/or
@@ -25,9 +25,22 @@ namespace DDS
     public static class ErrorInfo
     {
         private readonly static SacsSuperClass super;
+        
         static ErrorInfo()
         {
-            super = new SacsSuperClass(OpenSplice.Gapi.ErrorInfo.alloc());
+            IntPtr ptr = OpenSplice.Gapi.ErrorInfo.alloc();
+            super = new SacsSuperClass();
+            if (ptr != IntPtr.Zero)
+            {
+                super.SetPeer(ptr, true);
+            }
+            else
+            {
+                // Gapi already logged that the ErrorInfo has not been created 
+                // successfully. Now create a deliberate null pointer exception
+                // to let the current constructor fail.
+                throw new System.NullReferenceException("gapi_errorInfo__alloc returned a NULL pointer.");
+            }
         }
 
         public static ReturnCode Update()

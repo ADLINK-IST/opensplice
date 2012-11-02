@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v_durability.h"
@@ -15,6 +15,8 @@
 #include "v_statistics.h"
 #include "v_durabilityStatistics.h"
 #include "v_service.h"
+#include "v_groupInstance.h"
+#include "v_group.h"
 #include "v__kernel.h"
 #include "v_participant.h"
 #include "os_report.h"
@@ -37,15 +39,15 @@ v_durabilityNew(
     assert(name != NULL);
 
     k = v_objectKernel(manager);
- 
-    q = v_participantQosNew(k, qos); 
+
+    q = v_participantQosNew(k, qos);
     if (q == NULL) {
         OS_REPORT(OS_ERROR, "v_durabilityNew", 0,
                   "Durability service not created: inconsistent qos");
         s = NULL;
     } else {
     	s = v_durability(v_objectNew(k, K_DURABILITY));
-    	
+
     	if (v_isEnabledStatistics(k, V_STATCAT_DURABILITY)) {
             dStat = v_durabilityStatisticsNew(k);
         } else {
@@ -72,3 +74,32 @@ v_durabilityFree(
     v_serviceFree(v_service(du));
 }
 
+v_groupSample
+v_durabilityGroupInstanceHead(
+    v_groupInstance instance)
+{
+    return v_groupInstanceHead(instance);
+}
+
+void
+v_durabilityGroupInstanceSetHead(
+    v_groupInstance instance,
+    v_groupSample sample)
+{
+	v_groupInstanceSetHead(instance, sample);
+}
+
+v_groupSample
+v_durabilityGroupInstanceTail(
+    v_groupInstance instance)
+{
+	return v_groupInstanceTail(instance);
+}
+
+void
+v_durabilityGroupInstanceSetTail(
+    v_groupInstance instance,
+    v_groupSample sample)
+{
+	v_groupInstanceSetTail(instance, sample);
+}

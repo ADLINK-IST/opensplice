@@ -1,13 +1,13 @@
 
 # line 72 "idl.yy"
-#include <os_stdlib.h>
-#include <os_heap.h>
-#include <idl.h>
-#include <idl_extern.h>
+#include "os_stdlib.h"
+#include "os_heap.h"
+#include "idl.h"
+#include "idl_extern.h"
 
-#include <fe_private.h>
-#include <utl_incl.h>
-#include <xbe_scopestack.h>
+#include "fe_private.h"
+#include "utl_incl.h"
+#include "xbe_scopestack.h"
 
 #include <stdio.h>
 
@@ -2782,8 +2782,8 @@ case 155:
            len += strlen(yypvt[-0].sval->get_string());
            char *combined = new char[len+1];
            combined[0] = '\0';
-           strcat(combined, yypvt[-1].exval->ev()->u.strval->get_string());
-           strcat(combined, yypvt[-0].sval->get_string());
+           os_strcat(combined, yypvt[-1].exval->ev()->u.strval->get_string());
+           os_strcat(combined, yypvt[-0].sval->get_string());
            UTL_String *str = new UTL_String(combined);
            delete yypvt[-1].exval->ev()->u.strval;
            yypvt[-1].exval->ev()->u.strval = str;

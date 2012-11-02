@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef NW__PLUGDATABUFFER_H
@@ -84,6 +84,9 @@ NW_STRUCT(nw_messageHolder) {
  *                 supported platforms. endianness may differ but alignment
  *                 needs to match */
 NW_CLASS(nw_plugDataBuffer);
+/**
+* @extends nw_plugBuffer_s
+*/
 NW_STRUCT(nw_plugDataBuffer) {
     NW_EXTENDS(nw_plugBuffer);
     /* The partition this message is meant to be sent to */

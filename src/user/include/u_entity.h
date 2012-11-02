@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -60,6 +60,15 @@ extern "C" {
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 typedef c_voidp (*u_entityCopy)(v_entity e, c_voidp copyArg);
+
+#ifdef NDEBUG
+#define u_entityCheckType(_this, kind) _this
+#else
+OS_API u_entity
+u_entityCheckType (
+    u_entity _this,
+    u_kind kind);
+#endif
                                     
 #define u_entity(e) ((u_entity)(e))
 
@@ -85,6 +94,10 @@ u_entityNew (
     u_participant p,
     c_bool owner);
 
+OS_API u_entity
+u_entityKeep (
+    u_entity _this);
+
 /**
  * \brief The Entity Destructor.
  *
@@ -98,6 +111,10 @@ u_entityNew (
  */
 OS_API u_result
 u_entityFree (
+    u_entity _this);
+
+OS_API c_bool
+u_entityDereference (
     u_entity _this);
 
 /**
@@ -280,6 +297,15 @@ u_entityGid (
 
 OS_API c_long
 u_entitySystemId(
+    u_entity _this);
+
+/* This method returns a copy of the kernel entity name that must
+ * be freed using os_free when no longer needed.
+ * If the name is not defined then 'No Name' is returned.
+ * If an invalid entity is passed 'Invalid Entity' is returned.
+ */
+OS_API c_char *
+u_entityName(
     u_entity _this);
 
 #undef OS_API

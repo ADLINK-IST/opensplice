@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -11,10 +11,11 @@
  */
 #include <string.h>
 
-#include <os.h>
+#include "os.h"
 #include <errno.h>
-#include <sd_serializerXMLTypeinfo.h>
-#include <sd_serializerXMLMetadata.h>
+#include "sd_serializerXMLTypeinfo.h"
+#include "sd_serializerXMLMetadata.h"
+#include <ctype.h>
 #include "c_stringSupport.h"
 
 #include "idl_parser.h"
@@ -81,11 +82,11 @@
 #ifdef WIN32
     const char* DEFAULT_ORB = "DDS_OpenFusion_1_5_1";
     const char* QUOTE = "\"";
-    const char* IDLPP_CMD_OPTIONS = "P:d:o:b:m:t:c:hECSD:I:l:j:";
+    const char* IDLPP_CMD_OPTIONS = "P:d:o:b:m:t:c:hECSD:I:l:j:n:";
 #else
     const char* DEFAULT_ORB = "DDS_OpenFusion_1_4_1";
     const char* QUOTE = "";
-    const char* IDLPP_CMD_OPTIONS = "d:o:b:m:t:c:hECSD:I:l:j:";
+    const char* IDLPP_CMD_OPTIONS = "d:o:b:m:t:c:hECSD:I:l:j:n:";
 #endif
 
 int runCppGen(
@@ -99,7 +100,7 @@ print_usage(
     char *name)
 {
     printf("Usage: %s [-c preprocessor-path] [-b ORB-template-path]\n"
-           "       [-I path] [-D macro[=definition]] [-S | -C] \n"
+           "       [-n <include-suffix>] [-I path] [-D macro[=definition]] [-S | -C] \n"
            "       [-l (c | c++ | cpp | cs | java)] [-j [old]:<new>] [-d directory] \n"
 #ifdef WIN32
            "       [-P dll_macro_name[,<h-file>]] [-o (dds-types | custom-psm)] <filename>\n", name);
@@ -129,6 +130,20 @@ print_help(
         "       For C++, OSPL_ORB_PATH will by default be set to CCPP%s%s.\n"
         "       For Java, OSPL_ORB_PATH will by default be set to SAJ.\n",
         os_fileSep(), DEFAULT_ORB);
+    printf(
+        "    -n <include-suffix>\n"
+        "       Overrides the suffix that is used to identify the ORB dependent\n"
+        "       header file (specifying the data model) that needs to be included.\n"
+        "       Normally the name of this include file is derived from the IDL\n"
+        "       file name and followed by an ORB dependent suffix (e.g. 'C.h'\n");
+    printf(
+        "       for ACE-TAO based ORBs).\n"
+        "       This option is only supported in Corba cohabitation mode for C++.\n"
+        "       In all other cases it is simply ignored.\n"
+        "       Example usage: -e .stub.hpp\n");
+    printf(
+        "       (For a file named 'foo.idl' this will include 'foo.stub.hpp'\n"
+        "       instead of 'fooC.h', which is the default expectation for ACE-TAO.)\n");
     printf(
         "    -I path\n"
         "    -Ipath\n"
@@ -175,7 +190,8 @@ print_help(
         "       'dds-types' enables support for standard DDS-DCPS definitions.\n"
         "       The OpenSplice preprocessor provides definitions for constants\n"
         "       and types as defined in the OMG-DDS-DCPS PSM. This implies that\n"
-        "       these definitions can be used within application IDL.\n"
+        "       these definitions can be used within application IDL.\n");
+    printf(
         "       'custom-psm' enables support for alternative IDL language mappings.\n"
         "       Currently C-Sharp offers an alternative language mapping where\n"
         "       IDL names are translated to their PascalCase representation and\n"
@@ -269,8 +285,9 @@ preLoadSpliceDdsDefinitions(
         printf ("Variable OSPL_TMPL_PATH not defined\n");
         exit (1);
     }
-    // preload DDS definitions. Hopefully this loads #includes too.
-    // @todo Sort this out
+    /* preload DDS definitions. Hopefully this loads #includes too.
+     * @todo Sort this out
+     */
     snprintf(fname, sizeof(fname), "%s%c..%cidl%c%s", templ_path, OS_FILESEPCHAR,
                                                                    OS_FILESEPCHAR,
                                                                    OS_FILESEPCHAR,
@@ -336,65 +353,16 @@ getDefaultCcppOrbPath()
     {
         /* Not defined - fall back on the hard code default. */
         ccppOrbPath = (char*)(os_malloc(strlen(api) + strlen(filesep) + strlen(DEFAULT_ORB) + 1));
-        sprintf(ccppOrbPath, "%s%s%s", api, filesep, DEFAULT_ORB);
+        os_sprintf(ccppOrbPath, "%s%s%s", api, filesep, DEFAULT_ORB);
     }
     else
     {
         /* Defined - use as default */
         ccppOrbPath = (char*)(os_malloc(strlen(api) + strlen(filesep) + strlen(splice_orb) + 1));
-        sprintf(ccppOrbPath, "%s%s%s", api, filesep, splice_orb);
+        os_sprintf(ccppOrbPath, "%s%s%s", api, filesep, splice_orb);
     }
 
     return ccppOrbPath;
-}
-
-static void
-addIncludeToEorbGeneratedFile(
-    char *fileName)
-{
-    c_char *fileContent, *insertionPoint;
-    const char *includeStatement;
-    const char *insertionTarget = "#include";
-    struct os_stat fileStat;
-    int fileHandle, nrBytes;
-    unsigned int nRead;
-
-    /* Only proceed when the file is accessible and an include statement needs to be inserted. */
-    includeStatement = idl_dllGetHeader();
-    if ((includeStatement != NULL) &&
-        (os_stat(fileName, &fileStat) == os_resultSuccess) &&
-        (os_access(fileName, OS_ROK) == os_resultSuccess)) {
-        /* Open the file and read it contents into a buffer. */
-        fileContent = os_malloc((size_t)((int)fileStat.stat_size+1));
-        fileHandle = open(fileName, O_RDONLY);
-        nRead = (unsigned int)read(fileHandle, fileContent, (size_t)fileStat.stat_size);
-        close(fileHandle);
-
-        /* Adjust end of buffer to compensate for reduction caused by alternative line-endings. */
-        memset(&fileContent[nRead], 0, (size_t)((int)fileStat.stat_size+1-nRead));
-
-        /* Determine the first include statement as the insertion point. */
-        insertionPoint = fileContent;
-        while (strncmp(insertionPoint, insertionTarget, strlen(insertionTarget)) != 0) {
-            insertionPoint = strchr(insertionPoint, '\n');
-            if (insertionPoint == NULL) return;
-            insertionPoint++;
-        }
-
-        /* Overwrite the file with the part preceding the insertion point. */
-        fileHandle = open(fileName, O_WRONLY);
-        nrBytes = (int) (insertionPoint - fileContent);
-        write(fileHandle, fileContent, nrBytes);
-
-        /* Insert the specified include statement. */
-        write(fileHandle, includeStatement, strlen(includeStatement));
-        write(fileHandle, "\n", 1);
-
-        /* Write the remainder of the original file. */
-        write(fileHandle, insertionPoint, nRead - nrBytes);
-        close(fileHandle);
-        os_free(fileContent);
-    }
 }
 
 int
@@ -408,13 +376,13 @@ main (
     char *extension;
     char *filename;
     char *basename;
+    os_char* clientHeader = NULL;
     char *databaseName;
     char *moduleName;
     char *cpp_arg = NULL;
     char *typeName = NULL;
     char orb[256];
     char* outputDir = NULL;
-    char *cppgenOutputFile;
     c_bool outputDirSetSuccess = FALSE;
     c_bool traceWalk = FALSE;
     c_bool traceInput = FALSE;
@@ -472,6 +440,18 @@ main (
         case 'h':
             print_help(argv[0]);
             idl_exit(0);
+        break;
+        case 'n':
+            if(!clientHeader)
+            {
+                clientHeader = os_strdup(optarg);
+            } else
+            {
+                printf("Option '-n' can only be used once.\n");
+                print_usage(argv[0]);
+                idl_exit(-1);
+            }
+
         break;
         case 'l':
             if (strcmp(optarg, "c") == 0) {
@@ -735,6 +715,7 @@ main (
             idl_exit(-1);
         }
     }
+    idl_genCorbaCxxCcpp_setClientHeader(clientHeader);
 
     fpathNorm = os_fileNormalize(argv[optind]);
     /* Determine the start of the IDL input filename, removing all path related stuff.
@@ -756,7 +737,7 @@ main (
         len = strlen(ptr);
     }
     basename = os_malloc(len + 1);
-    strncpy(basename, (const char *)ptr, len);
+   os_strncpy(basename, (const char *)ptr, len);
     basename[len] = '\0';
 
     /* reset extension, since it used again */
@@ -963,11 +944,11 @@ main (
                     for (i = 0; i < c_iterLength(includeDefinitions); i++)
                     {
                         /* Extend command line with all include path options */
-                        strncat (cpp_command, " -I", (size_t)3);
-                        strncat (cpp_command, QUOTE, strlen(QUOTE));
-                        strncat (cpp_command, c_iterObject(includeDefinitions, i),
+                        os_strncat (cpp_command, " -I", (size_t)3);
+                        os_strncat (cpp_command, QUOTE, strlen(QUOTE));
+                        os_strncat (cpp_command, c_iterObject(includeDefinitions, i),
                                  (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
-                        strncat (cpp_command, QUOTE, strlen(QUOTE));
+                        os_strncat (cpp_command, QUOTE, strlen(QUOTE));
                     }
                     /* Put the path to the dds_dcps.idl in the -I's for cppgen at the end */
                     templ_path = os_getenv ("OSPL_TMPL_PATH");
@@ -977,19 +958,19 @@ main (
                        exit (1);
                     }
                     snprintf(fnameA, sizeof(fnameA), "%s", templ_path);
-                    strncat (cpp_command, " -I", (size_t)3);
-                    strncat (cpp_command, QUOTE, strlen(QUOTE));
-                    strncat (cpp_command, fnameA, strlen(fnameA));
-                    strncat (cpp_command, QUOTE, strlen(QUOTE));
+                    os_strncat (cpp_command, " -I", (size_t)3);
+                    os_strncat (cpp_command, QUOTE, strlen(QUOTE));
+                    os_strncat (cpp_command, fnameA, strlen(fnameA));
+                    os_strncat (cpp_command, QUOTE, strlen(QUOTE));
 
                     for (i = 0; i < c_iterLength(macroDefinitions); i++)
                     {
                         /* Extend command line with all macro definitions options */
-                        strncat (cpp_command, " -D", (size_t)3);
-                        strncat (cpp_command, QUOTE, strlen(QUOTE));
-                        strncat (cpp_command, c_iterObject(macroDefinitions, i),
+                        os_strncat (cpp_command, " -D", (size_t)3);
+                        os_strncat (cpp_command, QUOTE, strlen(QUOTE));
+                        os_strncat (cpp_command, c_iterObject(macroDefinitions, i),
                                  (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
-                        strncat (cpp_command, QUOTE, strlen(QUOTE));
+                        os_strncat (cpp_command, QUOTE, strlen(QUOTE));
                     }
 
                     /* First on the orignal idl file */
@@ -998,26 +979,11 @@ main (
                        unlink(fname);
                        reportErrorAndExit("running cppgen.");
                     }
-
-                    if (idl_dirOutCur() == NULL)
-                    {
-                        cppgenOutputFile = os_malloc(strlen(basename) + 2 /* ".h" */ + 1);
-                        sprintf(cppgenOutputFile, "%s.h", basename);
-                    }
-                    else
-                    {
-                        cppgenOutputFile = os_malloc(strlen(idl_dirOutCur()) + 1 /* file separator */ +
-                                                   strlen(basename) + 2 /* ".h" */ + 1);
-                        sprintf(cppgenOutputFile, "%s%c%s.h", idl_dirOutCur(), OS_FILESEPCHAR, basename);
-                    }
-                    addIncludeToEorbGeneratedFile(cppgenOutputFile);
-                    os_free(cppgenOutputFile);
-
                     /* Now on the idl file that is generated by idlpp */
                     if (outputDir)
                     {
                        dcpsIdlFileName = os_malloc(strlen(idl_dirOutCur()) + strlen(os_fileSep()) + strlen(fname) + 1);
-                       sprintf(dcpsIdlFileName, "%s%s%s", idl_dirOutCur(), os_fileSep(), fname);
+                       os_sprintf(dcpsIdlFileName, "%s%s%s", idl_dirOutCur(), os_fileSep(), fname);
                     }
                     else
                     {
@@ -1031,20 +997,6 @@ main (
                     }
                     unlink(dcpsIdlFileName);
                     os_free(dcpsIdlFileName);
-
-                    if (idl_dirOutCur() == NULL)
-                    {
-                       cppgenOutputFile = os_malloc(strlen(basename) + 6 /* "Dcps.h" */ + 1);
-                       sprintf(cppgenOutputFile, "%sDcps.h", basename);
-                    }
-                    else
-                    {
-                       cppgenOutputFile = os_malloc(strlen(idl_dirOutCur()) + 1 /* file separator */ +
-                                                    strlen(basename) + 6 /* "Dcps.h" */ + 1);
-                       sprintf(cppgenOutputFile, "%s%c%sDcps.h", idl_dirOutCur(), OS_FILESEPCHAR, basename);
-                    }
-                    addIncludeToEorbGeneratedFile(cppgenOutputFile);
-                    os_free(cppgenOutputFile);
                 }
             } else if (idl_getLanguage() == IDL_LANG_C) {
                 os_char* tmp;
@@ -1489,10 +1441,13 @@ main (
     {
         os_free(tarPackage);
     }
+    if(clientHeader)
+    {
+        os_free(clientHeader);
+    }
     os_serviceStop();
 
     idl_dllExit();
-
     return returnCode;
 }
 
@@ -1524,65 +1479,97 @@ int runCppGen (
       return -1;
    }
    cppgenProcAttr.activeRedirect = TRUE;
-
-   if (outputDir)
-   {
-      if (strcmp(idl_dllGetMacro(), "") != 0)
-      {
-         cppgenArgs = os_malloc(strlen(cpp_command) +
+    if (outputDir)
+    {
+        if (strcmp(idl_dllGetMacro(), "") != 0)
+        {
+            int macroHeaderLength = 0;
+            if(idl_dllGetHeaderFile() && strlen(idl_dllGetHeaderFile()) != 0)
+            {
+                macroHeaderLength = strlen(idl_dllGetHeaderFile()) + 1;
+            }
+            cppgenArgs = os_malloc(strlen(cpp_command) +
                                 strlen(cppgenIgnoreInterfaces) + 2 /* spaces */ +
-                                16 + strlen(idl_dllGetMacro()) +
+                                16 + strlen(idl_dllGetMacro()) + macroHeaderLength +
                                 9 /* -output=*/+ strlen(QUOTE) +
                                 strlen(idl_dirOutCur()) +
                                 strlen(QUOTE) + 1 +
                                 strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
-         sprintf(cppgenArgs, "%s %s -import_export=%s -output=%s%s%s %s%s%s",
-                 cpp_command,
-                 cppgenIgnoreInterfaces,
-                 idl_dllGetMacro(),
-                 QUOTE, idl_dirOutCur(), QUOTE,
-                 QUOTE, filename, QUOTE);
-      }
-      else
-      {
-         cppgenArgs = os_malloc(strlen(cpp_command) +
+            if(idl_dllGetHeaderFile() && strlen(idl_dllGetHeaderFile()) != 0)
+            {
+                os_sprintf(cppgenArgs, "%s %s -import_export=%s,%s -output=%s%s%s %s%s%s",
+                     cpp_command,
+                     cppgenIgnoreInterfaces,
+                     idl_dllGetMacro(),
+                     idl_dllGetHeaderFile(),
+                     QUOTE, idl_dirOutCur(), QUOTE,
+                     QUOTE, filename, QUOTE);
+            } else
+            {
+                os_sprintf(cppgenArgs, "%s %s -import_export=%s -output=%s%s%s %s%s%s",
+                     cpp_command,
+                     cppgenIgnoreInterfaces,
+                     idl_dllGetMacro(),
+                     QUOTE, idl_dirOutCur(), QUOTE,
+                     QUOTE, filename, QUOTE);
+            }
+        }
+        else
+        {
+            cppgenArgs = os_malloc(strlen(cpp_command) +
                                 strlen(cppgenIgnoreInterfaces) + 2 /* spaces */ +
                                 8 /*-output=*/+ strlen(QUOTE) +
                                 strlen(idl_dirOutCur()) + strlen(QUOTE) + 1 +
                                 strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
-         sprintf(cppgenArgs, "%s %s -output=%s%s%s %s%s%s",
+            os_sprintf(cppgenArgs, "%s %s -output=%s%s%s %s%s%s",
                  cpp_command,
                  cppgenIgnoreInterfaces,
                  QUOTE, idl_dirOutCur(), QUOTE,
                  QUOTE, filename, QUOTE);
-      }
+        }
    }
    else
    {
       if (strcmp(idl_dllGetMacro(), "") != 0)
       {
+            int macroHeaderLength = 0;
+            if(idl_dllGetHeaderFile() && strlen(idl_dllGetHeaderFile()) != 0)
+            {
+                macroHeaderLength = strlen(idl_dllGetHeaderFile()) + 1;
+            }
+            cppgenArgs = os_malloc(strlen(cpp_command) +
+                                strlen(cppgenIgnoreInterfaces) + 2 /* spaces */ +
+                                16 + strlen(idl_dllGetMacro()) + macroHeaderLength +
+                                strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
+            if(idl_dllGetHeaderFile() && strlen(idl_dllGetHeaderFile()) != 0)
+            {
+                os_sprintf(cppgenArgs, "%s %s -import_export=%s,%s %s%s%s",
+                     cpp_command,
+                     cppgenIgnoreInterfaces,
+                     idl_dllGetMacro(),
+                     idl_dllGetHeaderFile(),
+                     QUOTE, filename, QUOTE);
+            } else
+            {
+                os_sprintf(cppgenArgs, "%s %s -import_export=%s %s%s%s",
+                     cpp_command,
+                     cppgenIgnoreInterfaces,
+                     idl_dllGetMacro(),
+                     QUOTE, filename, QUOTE);
+            }
+        }
+        else
+        {
          cppgenArgs = os_malloc(strlen(cpp_command) +
                                 strlen(cppgenIgnoreInterfaces) + 2 /* spaces */ +
-                                16 + strlen(idl_dllGetMacro()) +
                                 strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
-         sprintf(cppgenArgs, "%s %s -import_export=%s %s%s%s",
-                 cpp_command,
-                 cppgenIgnoreInterfaces,
-                 idl_dllGetMacro(),
-                 QUOTE, filename, QUOTE);
-      }
-      else
-      {
-         cppgenArgs = os_malloc(strlen(cpp_command) +
-                                strlen(cppgenIgnoreInterfaces) + 2 /* spaces */ +
-                                strlen(QUOTE) + strlen(filename) + strlen(QUOTE) + 1);
-         sprintf(cppgenArgs, "%s %s %s%s%s",
+         os_sprintf(cppgenArgs, "%s %s %s%s%s",
                  cpp_command,
                  cppgenIgnoreInterfaces,
                  QUOTE, filename, QUOTE);
       }
    }
-/*    printf("Running: %s%s\n", extIdlpp, cppgenArgs); */
+   /* printf("Running: %s%s\n", extIdlpp, cppgenArgs);*/
    osr = os_procCreate(extIdlpp, "cppgen",  cppgenArgs,
                        &cppgenProcAttr, &cppgenProcId);
    os_free(cppgenArgs);
@@ -1590,7 +1577,6 @@ int runCppGen (
    {
       return -1;
    }
-
    sleepTime.tv_sec  = 0;
    sleepTime.tv_nsec = 100000000; /*100 ms*/
    do

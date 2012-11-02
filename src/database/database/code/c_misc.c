@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -27,6 +27,7 @@ c_checkType (
     if (o == NULL) {
         return NULL;
     }
+    c_assertValidDatabaseObject(o);
     assert(c_refCount(o) > 0);
     assert(name != NULL);
     type = c__getType(o);
@@ -62,12 +63,11 @@ c_checkType (
 #ifndef NDEBUG
         if(o != NULL){
             str = c_metaObject(c__getType(o))->name;
-            OS_REPORT_2(OS_ERROR, "Database", 0, 
+            OS_REPORT_2(OS_ERROR, "Database", 0,
                     "Type mismatch: object type is %s but %s was expected\n",
                     str,name);
-            assert(FALSE);
         }
-#endif        
+#endif
 
         return NULL;
     }
@@ -188,8 +188,8 @@ c_copyIn (
     c_voidp data,
     c_voidp *dest)
 {
-    c_long size,i;
-    c_type t,subType;
+    c_long size, subSize, i;
+    c_type t, refType;
 
     if (data == NULL) {
         *dest = NULL;
@@ -210,21 +210,49 @@ c_copyIn (
                       "c_copyIn: ODL collections unsupported");
         break;
         case C_ARRAY:
+            refType = c_typeActualType(c_collectionType(type)->subType);
+            subSize = refType->size;
             size = c_collectionType(t)->maxSize;
-            if (size > 0) {
-                subType = c_collectionType(t)->subType;
-                for (i=0;i<size;i++) {
-                    c_copyIn(subType,
-                             ((c_voidp *)data)[i],
-                             &((c_voidp *)(*dest))[i]);
-                }
-            } else {
-                OS_REPORT(OS_WARNING,"Database misc",0,
-                          "c_copyIn: dynamic sized arrays unsupported");
+            if (size == 0) {
+                size = c_arraySize(data);
+                *dest = c_newArray(c_collectionType(t), size);
             }
+            if (size > 0) {
+                c_array ar = c_array(data);
+                c_array destar = c_array(*dest);
+                if (c_typeIsRef(refType)) {
+                    for (i = 0; i < size; i++) {
+                        copyReferences(refType, destar[i], ar[i]);
+                    }
+                } else {
+                    memcpy(*dest, data, size * subSize);
+                    /* Find indirections */
+                    for (i = 0; i < size; i++) {
+                        copyReferences(refType, C_DISPLACE(destar, (i*subSize)), C_DISPLACE(ar, (i*subSize)));
+                    }
+                }
+            }
+        break;
         case C_SEQUENCE:
-            OS_REPORT(OS_WARNING,"Database misc",0,
-                      "c_copyIn: sequence unsupported");
+            refType = c_typeActualType(c_collectionType(type)->subType);
+            subSize = refType->size;
+            size = c_sequenceSize(data);
+            if (size > 0) {
+                *dest = c_newSequence(c_collectionType(t), size);
+                if (c_typeIsRef(refType)) {
+                    c_sequence seq = c_sequence(data);
+                    c_sequence destseq = c_sequence(*dest);
+                    for (i = 0; i < size; i++) {
+                        copyReferences(refType, destseq[i], seq[i]);
+                    }
+                } else {
+                    memcpy(*dest, data, size * subSize);
+                    /* Find indirections */
+                    for (i = 0; i < size; i++) {
+                        copyReferences(refType, C_DISPLACE(*dest, (i*subSize)), C_DISPLACE(data, (i*subSize)));
+                    }
+                }
+            }
         break;
         default:
             OS_REPORT_1(OS_ERROR,"Database misc",0,
@@ -235,13 +263,321 @@ c_copyIn (
         }
     } else if (c_typeIsRef(t)) {
         *dest = c_new(t);
-        memcpy(*dest,data,t->size);
-        copyReferences(t,*dest,data);
+        memcpy(*dest, data, t->size);
+        copyReferences(t, *dest, data);
     } else {
-        memcpy(dest,data,t->size);
-        copyReferences(t,dest,data);
+        memcpy(*dest, data, t->size);
+        copyReferences(t, *dest, data);
     }
 }
+
+
+
+static c_bool c__cloneReferences (c_type type, c_voidp data, c_voidp dest);
+
+static c_bool
+_cloneReference (
+	c_type type,
+    c_voidp data,
+    c_voidp dest)
+{
+    c_type t = type;
+
+    assert(data);
+    assert(type);
+
+    while (c_baseObject(t)->kind == M_TYPEDEF) {
+        t = c_typeDef(t)->alias;
+    }
+    switch (c_baseObject(t)->kind) {
+    case M_CLASS:
+    case M_INTERFACE:
+        c_cloneIn(t, C_REFGET(data, 0), (c_voidp *) dest);
+    break;
+    case M_BASE:
+    case M_COLLECTION:
+        if ((c_collectionType(t)->kind == C_ARRAY) &&
+            (c_collectionType(t)->maxSize != 0)) {
+            c__cloneReferences(t, data, dest);
+        } else {
+            c_cloneIn(t, C_REFGET(data, 0), (c_voidp *) dest);
+        }
+    break;
+    case M_EXCEPTION:
+    case M_STRUCTURE:
+    case M_UNION:
+    	c__cloneReferences(t, data, dest);
+    break;
+    case M_EXTENT:
+    case M_EXTENTSYNC:
+        c_cloneIn(t, C_REFGET(data, 0), (c_voidp *) dest);
+    break;
+    default:
+        OS_REPORT(OS_ERROR,
+                  "cloneReference",0,
+                  "illegal object detected");
+        assert(FALSE);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+
+
+static c_bool
+c__cloneReferences (
+    c_type type,
+    c_voidp data,
+    c_voidp dest)
+{
+    c_type refType;
+    c_class cls;
+    c_array references, labels, ar, destar;
+    c_sequence seq, destseq;
+    c_property property;
+    c_member member;
+    c_long i,j,length,size;
+    c_long nrOfRefs,nrOfLabs;
+    c_value v;
+
+    switch (c_baseObject(type)->kind) {
+    case M_CLASS:
+		cls = c_class(type);
+		while (cls) {
+			length = c_arraySize(c_interface(cls)->references);
+			for (i=0;i<length;i++) {
+				property = c_property(c_interface(cls)->references[i]);
+				refType = property->type;
+				_cloneReference(refType,
+						C_DISPLACE(data, property->offset),
+						C_DISPLACE(dest, property->offset));
+			}
+			cls = cls->extends;
+		}
+    break;
+    case M_INTERFACE:
+        length = c_arraySize(c_interface(type)->references);
+        for (i=0;i<length;i++) {
+            property = c_property(c_interface(type)->references[i]);
+            refType = property->type;
+			_cloneReference(refType,
+					C_DISPLACE(data, property->offset),
+					C_DISPLACE(dest, property->offset));
+        }
+    break;
+    case M_EXCEPTION:
+    case M_STRUCTURE:
+        length = c_arraySize(c_structure(type)->references);
+        for (i=0;i<length;i++) {
+            member = c_member(c_structure(type)->references[i]);
+            refType = c_specifier(member)->type;
+			_cloneReference(refType,
+					C_DISPLACE(data, member->offset),
+					C_DISPLACE(dest, member->offset));
+        }
+    break;
+    case M_UNION:
+#define _CASE_(k,t) case k: v = t##Value(*((t *)data)); break
+        switch (c_metaValueKind(c_metaObject(c_union(type)->switchType))) {
+        _CASE_(V_BOOLEAN,   c_bool);
+        _CASE_(V_OCTET,     c_octet);
+        _CASE_(V_SHORT,     c_short);
+        _CASE_(V_LONG,      c_long);
+        _CASE_(V_LONGLONG,  c_longlong);
+        _CASE_(V_USHORT,    c_ushort);
+        _CASE_(V_ULONG,     c_ulong);
+        _CASE_(V_ULONGLONG, c_ulonglong);
+        _CASE_(V_CHAR,      c_char);
+        _CASE_(V_WCHAR,     c_wchar);
+        default:
+            OS_REPORT(OS_ERROR,
+                      "c__cloneReferences",0,
+                      "illegal union switch type detected");
+            assert(FALSE);
+            return FALSE;
+        break;
+        }
+#undef _CASE_
+        references = c_union(type)->references;
+        if (references != NULL) {
+            i=0; refType=NULL;
+            nrOfRefs = c_arraySize(references);
+            while ((i<nrOfRefs) && (refType == NULL)) {
+                labels = c_unionCase(references[i])->labels;
+                j=0;
+                nrOfLabs = c_arraySize(labels);
+                while ((j<nrOfLabs) && (refType == NULL)) {
+                    if (c_valueCompare(v,c_literal(labels[j])->value) == C_EQ) {
+                        c__cloneReferences(c_type(references[i]),
+                                           C_DISPLACE(data, c_type(type)->alignment),
+                                           C_DISPLACE(dest, c_type(type)->alignment));
+                        refType = c_specifier(references[i])->type;
+                    }
+                    j++;
+                }
+                i++;
+            }
+        }
+    break;
+    case M_COLLECTION:
+        refType = c_typeActualType(c_collectionType(type)->subType);
+        switch (c_collectionType(type)->kind) {
+        case C_ARRAY:
+            ar = c_array(data);
+            destar = c_array(dest);
+            length = c_collectionType(type)->maxSize;
+            if (length == 0) {
+                length = c_arraySize(ar);
+            }
+            if (c_typeIsRef(refType)) {
+                for (i=0;i<length;i++) {
+                    c_cloneIn(refType, ar[i], &destar[i]);
+                }
+            } else {
+                if (c_typeHasRef(refType)) {
+                    size = refType->size;
+                    for (i=0;i<length;i++) {
+                        _cloneReference(refType, C_DISPLACE(data, (i*size)), C_DISPLACE(dest, (i*size)));
+                    }
+                }
+            }
+        break;
+        case C_SEQUENCE:
+            seq = c_sequence(data);
+            destseq = c_sequence(dest);
+            length = c_sequenceSize(seq);
+            if (c_typeIsRef(refType)) {
+                for (i=0;i<length;i++) {
+                    c_cloneIn(refType, seq[i], &destseq[i]);
+                }
+            } else {
+                if (c_typeHasRef(refType)) {
+                    size = refType->size;
+                    for (i=0;i<length;i++) {
+                        _cloneReference(refType, C_DISPLACE(seq, (i*size)), C_DISPLACE(dest, (i*size)));
+                    }
+                }
+            }
+        break;
+        default:
+            OS_REPORT(OS_ERROR,
+                  "c__cloneReferences",0,
+                  "illegal collectionType found");
+        break;
+        }
+    break;
+    case M_BASE:
+    break;
+    case M_TYPEDEF:
+        c__cloneReferences(c_type(c_typeDef(type)->alias), data, dest);
+    break;
+    case M_ATTRIBUTE:
+    case M_RELATION:
+        refType = c_typeActualType(c_property(type)->type);
+        _cloneReference(refType,
+        		C_DISPLACE(data, c_property(type)->offset),
+        		C_DISPLACE(dest, c_property(type)->offset));
+    break;
+    case M_MEMBER:
+        refType = c_typeActualType(c_specifier(type)->type);
+        _cloneReference(refType,
+        		C_DISPLACE(data, c_member(type)->offset),
+        		C_DISPLACE(dest, c_member(type)->offset));
+    break;
+    case M_UNIONCASE:
+        refType = c_typeActualType(c_specifier(type)->type);
+        _cloneReference(refType, data, dest);
+    break;
+    case M_MODULE:
+        /* Do nothing */
+    break;
+    case M_PRIMITIVE:
+        /* Do nothing */
+    break;
+    case M_EXTENT:
+    case M_EXTENTSYNC:
+    default:
+        OS_REPORT(OS_ERROR,
+                  "c__cloneReferences",0,
+                  "illegal meta object specified");
+        assert(FALSE);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+
+void
+c_cloneIn (
+    c_type type,
+    c_voidp data,
+    c_voidp *dest)
+{
+    c_long size,subSize;
+    c_type t;
+
+    if (data == NULL) {
+        *dest = NULL;
+        return;
+    }
+
+    t = c_typeActualType(type);
+    if (c_baseObject(t)->kind == M_COLLECTION) {
+        switch(c_collectionType(t)->kind) {
+        case C_STRING:
+            *dest = c_stringNew(c_getBase(t), data);
+            break;
+        case C_LIST:
+        case C_BAG:
+        case C_SET:
+        case C_MAP:
+        case C_DICTIONARY:
+            OS_REPORT(OS_WARNING,"Database misc",0,
+                      "c_cloneIn: ODL collections unsupported");
+        break;
+        case C_ARRAY:
+            subSize = c_collectionType(t)->subType->size;
+            size = c_collectionType(t)->maxSize;
+            if (size == 0) {
+            	size = c_arraySize(data);
+                *dest = c_newArray(c_collectionType(t), size);
+            }
+            if (size > 0) {
+                memcpy(*dest, data, size * subSize);
+                /* Find indirections */
+                c__cloneReferences(t, data, dest);
+            }
+            break;
+        case C_SEQUENCE:
+            subSize = c_collectionType(t)->subType->size;
+            size = c_sequenceSize(data);
+            if (size > 0) {
+                *dest = c_newSequence(c_collectionType(t), size);
+                memcpy(*dest, data, size * subSize);
+                /* Find indirections */
+                c__cloneReferences(t, data, dest);
+            }
+            break;
+        break;
+        default:
+            OS_REPORT_1(OS_ERROR,"Database misc",0,
+                        "c_cloneIn: unknown collection kind (%d)",
+                        c_collectionType(t)->kind);
+            assert(FALSE);
+        break;
+        }
+    } else if (c_typeIsRef(t)) {
+        *dest = c_new(t);
+        memcpy(*dest, data, t->size);
+        /* Find indirections */
+        c__cloneReferences(t, data, *dest);
+    } else {
+        memcpy(*dest, data, t->size);
+        /* Find indirections */
+        c__cloneReferences(t, data, *dest);
+    }
+}
+
 
 static void
 extractReferences(
@@ -431,4 +767,3 @@ c_copyOut (
         extractReferences(t,o,*data);
     }
 }
-

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -17,7 +17,7 @@
  *  \brief Initialization / Deinitialization
  */
 
-#include <os_defs.h>
+#include "os_defs.h"
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -56,10 +56,8 @@ os_osInit(void)
         os_processModuleInit();
         os_sharedMemoryInit();
         os_threadModuleInit();
-    } else {
-        OS_REPORT_1(OS_INFO, "os_osInit", 1,
-                "OS-layer initialization called %d times", initCount);
-    }
+
+    } /* Else initialization is already done. */
     return;
 }
 

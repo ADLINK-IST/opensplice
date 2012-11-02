@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,11 +12,11 @@
 #ifndef OSPL_PROC_H
 #define OSPL_PROC_H
 
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 
 void
 kill_descendents (
-    pid_t pid,
+    DWORD pid,
     int signal
     );
 

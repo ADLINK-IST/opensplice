@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,6 +20,7 @@
 #include "v_instance.h"
 #include "v_topic.h"
 #include "v__statisticsInterface.h"
+#include "v__kernel.h"
 
 #include "c_extent.h"
 #include "os_report.h"
@@ -58,7 +59,8 @@ v_writerInstanceNew(
         } else {
             OS_REPORT(OS_ERROR,
                       "v_writerInstanceNew",0,
-                      "Failed to allocate instance.");
+                      "Failed to allocate v_writerInstance object.");
+            assert(FALSE);
         }
     }
     v_writerInstanceInit(instance,message);
@@ -222,6 +224,7 @@ v_writerInstanceInsert(
              * pushed out of the history
              */
             instance->messageCount++;
+            v_checkMaxSamplesPerInstanceWarningLevel(v_objectKernel(instance), instance->messageCount);
             result = NULL;
         }
     } else {

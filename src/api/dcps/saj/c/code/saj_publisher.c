@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -10,7 +10,7 @@
  *
  */
 
-#include "saj_publisher.h"
+#include "saj_Publisher.h"
 #include "saj_publisherListener.h"
 #include "saj_dataWriterListener.h"
 #include "saj_utilities.h"
@@ -132,17 +132,15 @@ SAJ_FUNCTION(jniDeleteDatawriter)(
     gapi_publisher publisher;
     gapi_dataWriter writer;
     gapi_returnCode_t grc;
-    saj_userData ud;
+    c_bool must_free;
 
     publisher = (gapi_publisher) saj_read_gapi_address(env, jpublisher);
     writer = (gapi_dataWriter) saj_read_gapi_address(env, jwriter);
-    
-    ud = saj_userData(gapi_object_get_user_data(writer));
+
+    must_free = saj_setThreadEnv(env);
     grc = gapi_publisher_delete_datawriter(publisher, writer);
+    saj_delThreadEnv(must_free);
     
-    if(grc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
     return (jint)grc;
 }
 
@@ -193,11 +191,16 @@ SAJ_FUNCTION(jniDeleteContainedEntities)(
     jobject jpublisher)
 {
     gapi_publisher publisher;
+    jint result;
+    c_bool must_free;
 
     publisher = (gapi_publisher)saj_read_gapi_address(env, jpublisher);
-    
-    return (jint)gapi_publisher_delete_contained_entities(publisher, 
-                                        saj_destroy_user_data_callback, (void *)env);
+   
+    must_free = saj_setThreadEnv(env);
+    result = (jint)gapi_publisher_delete_contained_entities(publisher);
+    saj_delThreadEnv(must_free);
+
+    return result;
 }
 
 /**

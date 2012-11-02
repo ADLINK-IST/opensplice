@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,6 +15,8 @@
 #include "saj_listener.h"
 #include "os_stdlib.h"
 #include "os_heap.h"
+#include "os_report.h"
+#include "saj_qosUtils.h"
 
 /* jni_cache jniCache; */
 jni_cache jniCache;
@@ -187,7 +189,10 @@ saj_write_java_address(
     saj_exceptionCheck(env);
     ud->listenerData = NULL;
     ud->statusConditionUserData = NULL;
-    gapi_object_set_user_data(gapi_obj, (void*)ud);
+    gapi_object_set_user_data(gapi_obj,
+                              (void*)ud,
+                              saj_destroy_user_data_callback,
+                              (void*)env);
 }
 
 void
@@ -207,7 +212,7 @@ saj_write_weak_java_address(
     saj_exceptionCheck(env);
     ud->listenerData = NULL;
     ud->statusConditionUserData = NULL;
-    gapi_object_set_user_data(gapi_obj, (void*)ud);
+    gapi_object_set_user_data(gapi_obj, (void*)ud,NULL,NULL);
 }
 
 void
@@ -230,7 +235,7 @@ saj_write_java_listener_address(
                 ud->listenerData = NULL;
             }
             ud->listenerData = listenerData;
-            gapi_object_set_user_data(gapi_obj, (void*)ud);
+            gapi_object_set_user_data(gapi_obj, (void*)ud,NULL,NULL);
         }
     }
 }
@@ -256,7 +261,7 @@ saj_write_java_statusCondition_address(
             }
             ud->statusConditionUserData = gapi_object_get_user_data(
                                                         (gapi_object)condition);
-            gapi_object_set_user_data(gapi_obj, (void*)ud);
+            gapi_object_set_user_data(gapi_obj, (void*)ud,NULL,NULL);
         }
     }
 }
@@ -268,10 +273,18 @@ saj_destroy_user_data_callback(
 {
     saj_userData ud;
     JNIEnv* env;
+    void* threadData;
 
     ud = saj_userData(entityUserData);
-    env = (JNIEnv*)userData;
-    saj_destroy_user_data(env, ud);
+    threadData = os_threadMemGet(OS_THREAD_JVM);
+    if (threadData) {
+        env = *(JNIEnv**)threadData;
+        saj_destroy_user_data(env, ud);
+    } else {
+        OS_REPORT(OS_WARNING,"saj_destroy_user_data_callback",0,
+                  "No JNIEnv reference found, "
+                  "possible leakage of a Java object");
+    }
     return;
 }
 
@@ -292,7 +305,6 @@ saj_destroy_user_data(
         }
         (*env)->DeleteGlobalRef(env, ud->saj_object);
         saj_exceptionCheck(env);
-        os_free(ud);
     }
 }
 
@@ -707,10 +719,10 @@ saj_returnCode saj_octetSequenceCopyOut(
     return rc;
 }
 
-saj_returnCode
-saj_instanceHandleSequenceCopyOut(
-    JNIEnv* env,
-    gapi_instanceHandleSeq *src,
+
+saj_returnCode saj_builtinTopicKeyCopyOut(
+    JNIEnv *env,
+    gapi_builtinTopicKey_t *src,
     jintArray *dst)
 {
     saj_returnCode rc;
@@ -719,16 +731,500 @@ saj_instanceHandleSequenceCopyOut(
 
     rc = SAJ_RETCODE_ERROR;
 
-    *dst = (*env)->NewIntArray(env, src->_length);
+    /* create a new java byte array */
+    *dst = (*env)->NewIntArray(env, 3);
+    saj_exceptionCheck(env);
+
+    if (*dst != NULL)
+    {
+        (*env)->SetIntArrayRegion(
+            env, *dst, 0, 3, (jint *)src);
+
+        if ((*env)->ExceptionCheck(env) == JNI_FALSE)
+        {
+            rc = SAJ_RETCODE_OK;
+        }
+    }
+
+    return rc;
+}
+
+saj_returnCode
+saj_instanceHandleSequenceCopyOut(
+    JNIEnv* env,
+    gapi_instanceHandleSeq *src,
+    jlongArray *dst)
+{
+    saj_returnCode rc;
+
+    assert(dst != NULL);
+
+    rc = SAJ_RETCODE_ERROR;
+
+    *dst = (*env)->NewLongArray(env, src->_length);
     saj_exceptionCheck(env);
 
     if (*dst != NULL){
-        (*env)->SetIntArrayRegion(env, *dst, 0, src->_length, (jint *)src->_buffer);
+        (*env)->SetLongArrayRegion(env, *dst, 0, src->_length, (jlong *)src->_buffer);
 
         if ((*env)->ExceptionCheck(env) == JNI_FALSE){
             rc = SAJ_RETCODE_OK;
         }
     }
+    return rc;
+}
+
+saj_returnCode
+saj_subscriptionBuiltinTopicDataCopyOut(
+    JNIEnv* env,
+    gapi_subscriptionBuiltinTopicData *src,
+    jobject *dst)
+{
+    jintArray javaKey;
+    jintArray javaParticipant_key;
+    jobject javaTopic_name;
+    jobject javaType_name;
+    jobject javaDurability;
+    jobject javaDeadline;
+    jobject javaLatency_budget;
+    jobject javaLiveliness;
+    jobject javaReliability;
+    jobject javaDestination_order;
+    jobject javaUser_data;
+    jobject javaOwnership;
+    jobject javaTime_based_filter;
+    jobject javaPresentation;
+    jobject javaPartition;
+    jobject javaTopic_data;
+    jobject javaGroup_data;
+    saj_returnCode rc;
+
+    assert(dst != NULL);
+
+    javaKey = NULL;
+    javaParticipant_key = NULL;
+    javaTopic_name = NULL;
+    javaType_name = NULL;
+    javaDurability = NULL;
+    javaLatency_budget = NULL;
+    javaLiveliness = NULL;
+    javaReliability = NULL;
+    javaOwnership = NULL;
+    javaDestination_order = NULL;
+    javaUser_data = NULL;
+    javaTime_based_filter = NULL;
+    javaDeadline = NULL;
+    javaPresentation = NULL;
+    javaPartition = NULL;
+    javaTopic_data = NULL;
+    javaGroup_data = NULL;
+
+    rc = SAJ_RETCODE_OK;
+
+    if (*dst == NULL)
+    {
+        rc = saj_create_new_java_object(env, "DDS/SubscriptionBuiltinTopicData", dst);
+    }
+
+    /* copy the attributes from the gapi object to the java object */
+
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_builtinTopicKeyCopyOut(
+            env, &src->key, &javaKey);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_builtinTopicKeyCopyOut(
+            env, &src->participant_key, &javaParticipant_key);
+    }
+    if (rc == SAJ_RETCODE_OK)
+    {
+        javaTopic_name = (*env)->NewStringUTF(env, src->topic_name);
+        saj_exceptionCheck(env);
+
+        if(javaTopic_name == NULL){ // src->topic_name was also NULL
+            javaTopic_name = (*env)->NewStringUTF(env, "");
+        }
+    }
+    if (rc == SAJ_RETCODE_OK)
+    {
+        javaType_name = (*env)->NewStringUTF(env, src->type_name);
+        saj_exceptionCheck(env);
+
+        if(javaType_name == NULL){ // src->type_name was also NULL
+            javaType_name = (*env)->NewStringUTF(env, "");
+        }
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_DurabilityQosPolicyCopyOut(
+            env, &src->durability, &javaDurability);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_LatencyBudgetQosPolicyCopyOut(
+            env, &src->latency_budget, &javaLatency_budget);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_LivelinessQosPolicyCopyOut(
+            env, &src->liveliness, &javaLiveliness);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_ReliabilityQosPolicyCopyOut(
+            env, &src->reliability, &javaReliability);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_OwnershipQosPolicyCopyOut(
+            env, &src->ownership, &javaOwnership);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_DestinationOrderQosPolicyCopyOut(
+            env, &src->destination_order, &javaDestination_order);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_UserDataQosPolicyCopyOut(
+            env, &src->user_data, &javaUser_data);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_TimeBasedFilterQosPolicyCopyOut(
+            env, &src->time_based_filter, &javaTime_based_filter);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_DeadlineQosPolicyCopyOut(
+            env, &src->deadline, &javaDeadline);
+    }
+    if (rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_PresentationQosPolicyCopyOut(
+                env, &src->presentation, &javaPresentation);
+    }
+    if( rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_PartitionQosPolicyCopyOut(
+            env, &src->partition, &javaPartition);
+    }
+    if (rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_TopicDataQosPolicyCopyOut(
+            env, &src->topic_data, &javaTopic_data);
+    }
+    if( rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_GroupDataQosPolicyCopyOut(
+            env, &src->group_data, &javaGroup_data);
+    }
+
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_key_fid), javaKey);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_participantKey_fid), javaParticipant_key);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_topicName_fid), javaTopic_name);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_typeName_fid), javaType_name);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_durability_fid), javaDurability);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_latencyBudget_fid), javaLatency_budget);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_liveliness_fid), javaLiveliness);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_reliability_fid), javaReliability);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_ownership_fid), javaOwnership);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_destinationOrder_fid), javaDestination_order);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_userData_fid), javaUser_data);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_timeBasedFilter_fid), javaTime_based_filter);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_deadline_fid), javaDeadline);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_presentation_fid), javaPresentation);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_partition_fid), javaPartition);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_topicData_fid), javaTopic_data);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(subscriptionBuiltinTopicData_groupData_fid), javaGroup_data);
+    saj_exceptionCheck(env);
+
+    (*env)->DeleteLocalRef (env, javaKey);
+    (*env)->DeleteLocalRef (env, javaParticipant_key);
+    (*env)->DeleteLocalRef (env, javaTopic_name);
+    (*env)->DeleteLocalRef (env, javaType_name);
+    (*env)->DeleteLocalRef (env, javaDurability);
+    (*env)->DeleteLocalRef (env, javaLatency_budget);
+    (*env)->DeleteLocalRef (env, javaLiveliness);
+    (*env)->DeleteLocalRef (env, javaReliability);
+    (*env)->DeleteLocalRef (env, javaOwnership);
+    (*env)->DeleteLocalRef (env, javaDestination_order);
+    (*env)->DeleteLocalRef (env, javaUser_data);
+    (*env)->DeleteLocalRef (env, javaTime_based_filter);
+    (*env)->DeleteLocalRef (env, javaDeadline);
+    (*env)->DeleteLocalRef (env, javaPresentation);
+    (*env)->DeleteLocalRef (env, javaPartition);
+    (*env)->DeleteLocalRef (env, javaTopic_data);
+    (*env)->DeleteLocalRef (env, javaGroup_data);
+
+    return rc;
+}
+
+
+saj_returnCode
+saj_publicationBuiltinTopicDataCopyOut(
+    JNIEnv* env,
+    gapi_publicationBuiltinTopicData *src,
+    jobject *dst)
+{
+    jintArray javaKey;
+    jintArray javaParticipant_key;
+    jobject javaTopic_name;
+    jobject javaType_name;
+    jobject javaDurability;
+    jobject javaDeadline;
+    jobject javaLatency_budget;
+    jobject javaLiveliness;
+    jobject javaReliability;
+    jobject javaDestination_order;
+    jobject javaUser_data;
+    jobject javaOwnership;
+    jobject javaOwnership_strength;
+    jobject javaLifespan;
+    jobject javaPresentation;
+    jobject javaPartition;
+    jobject javaTopic_data;
+    jobject javaGroup_data;
+    saj_returnCode rc;
+
+    assert(dst != NULL);
+
+    javaKey = NULL;
+    javaParticipant_key = NULL;
+    javaTopic_name = NULL;
+    javaType_name = NULL;
+    javaDurability = NULL;
+    javaLatency_budget = NULL;
+    javaLiveliness = NULL;
+    javaReliability = NULL;
+    javaOwnership = NULL;
+    javaOwnership_strength = NULL;
+    javaLifespan = NULL;
+    javaDestination_order = NULL;
+    javaUser_data = NULL;
+    javaDeadline = NULL;
+    javaPresentation = NULL;
+    javaPartition = NULL;
+    javaTopic_data = NULL;
+    javaGroup_data = NULL;
+
+    rc = SAJ_RETCODE_OK;
+
+    if (*dst == NULL)
+    {
+        rc = saj_create_new_java_object(env, "DDS/PublicationBuiltinTopicData", dst);
+    }
+
+    /* copy the attributes from the gapi object to the java object */
+
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_builtinTopicKeyCopyOut(
+            env, &src->key, &javaKey);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_builtinTopicKeyCopyOut(
+            env, &src->participant_key, &javaParticipant_key);
+    }
+    if (rc == SAJ_RETCODE_OK)
+    {
+        javaTopic_name = (*env)->NewStringUTF(env, src->topic_name);
+        saj_exceptionCheck(env);
+
+        if(javaTopic_name == NULL){ // src->topic_name was also NULL
+            javaTopic_name = (*env)->NewStringUTF(env, "");
+        }
+    }
+    if (rc == SAJ_RETCODE_OK)
+    {
+        javaType_name = (*env)->NewStringUTF(env, src->type_name);
+        saj_exceptionCheck(env);
+
+        if(javaType_name == NULL){ // src->type_name was also NULL
+            javaType_name = (*env)->NewStringUTF(env, "");
+        }
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_DurabilityQosPolicyCopyOut(
+            env, &src->durability, &javaDurability);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_LatencyBudgetQosPolicyCopyOut(
+            env, &src->latency_budget, &javaLatency_budget);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_LivelinessQosPolicyCopyOut(
+            env, &src->liveliness, &javaLiveliness);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_ReliabilityQosPolicyCopyOut(
+            env, &src->reliability, &javaReliability);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_OwnershipQosPolicyCopyOut(
+            env, &src->ownership, &javaOwnership);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_OwnershipStrengthQosPolicyCopyOut(
+            env, &src->ownership_strength, &javaOwnership_strength);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_LifespanQosPolicyCopyOut(
+            env, &src->lifespan, &javaLifespan);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_DestinationOrderQosPolicyCopyOut(
+            env, &src->destination_order, &javaDestination_order);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_UserDataQosPolicyCopyOut(
+            env, &src->user_data, &javaUser_data);
+    }
+    if(rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_DeadlineQosPolicyCopyOut(
+            env, &src->deadline, &javaDeadline);
+    }
+    if (rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_PresentationQosPolicyCopyOut(
+                env, &src->presentation, &javaPresentation);
+    }
+    if( rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_PartitionQosPolicyCopyOut(
+            env, &src->partition, &javaPartition);
+    }
+    if (rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_TopicDataQosPolicyCopyOut(
+            env, &src->topic_data, &javaTopic_data);
+    }
+    if( rc == SAJ_RETCODE_OK)
+    {
+        rc = saj_GroupDataQosPolicyCopyOut(
+            env, &src->group_data, &javaGroup_data);
+    }
+
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_key_fid), javaKey);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_participantKey_fid), javaParticipant_key);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_topicName_fid), javaTopic_name);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_typeName_fid), javaType_name);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_durability_fid), javaDurability);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_latencyBudget_fid), javaLatency_budget);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_liveliness_fid), javaLiveliness);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_reliability_fid), javaReliability);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_ownership_fid), javaOwnership);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_ownershipStrength_fid), javaOwnership_strength);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_lifespan_fid), javaLifespan);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_destinationOrder_fid), javaDestination_order);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_userData_fid), javaUser_data);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_deadline_fid), javaDeadline);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_presentation_fid), javaPresentation);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_partition_fid), javaPartition);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_topicData_fid), javaTopic_data);
+    saj_exceptionCheck(env);
+    (*env)->SetObjectField(env, *dst,
+        GET_CACHED(publicationBuiltinTopicData_groupData_fid), javaGroup_data);
+    saj_exceptionCheck(env);
+
+    (*env)->DeleteLocalRef (env, javaKey);
+    (*env)->DeleteLocalRef (env, javaParticipant_key);
+    (*env)->DeleteLocalRef (env, javaTopic_name);
+    (*env)->DeleteLocalRef (env, javaType_name);
+    (*env)->DeleteLocalRef (env, javaDurability);
+    (*env)->DeleteLocalRef (env, javaLatency_budget);
+    (*env)->DeleteLocalRef (env, javaLiveliness);
+    (*env)->DeleteLocalRef (env, javaReliability);
+    (*env)->DeleteLocalRef (env, javaOwnership);
+    (*env)->DeleteLocalRef (env, javaOwnership_strength);
+    (*env)->DeleteLocalRef (env, javaLifespan);
+    (*env)->DeleteLocalRef (env, javaDestination_order);
+    (*env)->DeleteLocalRef (env, javaUser_data);
+    (*env)->DeleteLocalRef (env, javaDeadline);
+    (*env)->DeleteLocalRef (env, javaPresentation);
+    (*env)->DeleteLocalRef (env, javaPartition);
+    (*env)->DeleteLocalRef (env, javaTopic_data);
+    (*env)->DeleteLocalRef (env, javaGroup_data);
+
     return rc;
 }
 
@@ -1205,3 +1701,43 @@ saj_LookupTypeSupportConstructorSignature(
     }
     return rc;
 }
+
+c_bool
+saj_setThreadEnv(
+    JNIEnv *env)
+{
+    void *threadData;
+    c_bool result;
+
+    threadData = os_threadMemGet(OS_THREAD_JVM);
+    if (threadData) {
+        *(JNIEnv**)threadData = env;
+        result = FALSE;
+    } else {
+        threadData = os_threadMemMalloc(OS_THREAD_JVM, sizeof(env));
+        if (threadData) {
+            *(JNIEnv**)threadData = env;
+            result = TRUE;
+        } else {
+            result = FALSE;
+            assert(0);
+        }
+    }
+    return result;
+}
+
+JNIEnv *
+saj_getThreadEnv()
+{
+    return (JNIEnv *)os_threadMemGet(OS_THREAD_JVM);
+}
+
+void
+saj_delThreadEnv(
+    c_bool value)
+{
+    if (value) {
+        os_threadMemFree(OS_THREAD_JVM);
+    }
+}
+

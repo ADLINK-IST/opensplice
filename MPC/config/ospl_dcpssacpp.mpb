@@ -1,6 +1,6 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_dcpssacpp_incl, ospl_base {
+project : ospl_dcpssacpp_incl, ospl_dcpsgapi, ospl_base {
   lit_libs += dcpssacpp
 }

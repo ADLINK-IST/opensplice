@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef CF_CONFIG_H
@@ -36,6 +36,7 @@ extern "C" {
 #define CFG_DATABASE      "Database"
 #define CFG_NAME          "Name"
 #define CFG_SIZE          "Size"
+#define CFG_THRESHOLD     "Threshold"
 #define CFG_ADDRESS       "Address"
 #define CFG_LOCKING       "Locking"
 #define CFG_HEAP          "Heap"

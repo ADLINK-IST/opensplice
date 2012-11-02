@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -41,14 +41,28 @@
 #include "v_public.h"
 #include "v_kernelStatistics.h"
 #include "v_kernelQos.h"
-
+#include "v_configuration.h"
 #include "v__spliced.h"
 #include "v__leaseManager.h"
 #include "v__crc.h"
 #include "os.h"
 #include "os_report.h"
+#include "v__policy.h"
+#include "v__partition.h"
 
 #define __ERROR(m) printf(m); printf("\n");
+
+#define V_KERNEL_MAX_SAMPLES_WARN_LEVEL_DEF 5000
+#define V_KERNEL_MAX_SAMPLES_WARN_LEVEL_MIN 1
+#define V_KERNEL_MAX_INSTANCES_WARN_LEVEL_DEF 5000
+#define V_KERNEL_MAX_INSTANCES_WARN_LEVEL_MIN 1
+#define V_KERNEL_MAX_SAMPLES_PER_INSTANCES_WARN_LEVEL_DEF 5000
+#define V_KERNEL_MAX_SAMPLES_PER_INSTANCES_WARN_LEVEL_MIN 1
+
+static void
+v_loadWarningLevels(
+    v_kernel kernel,
+    v_configuration config);
 
 v_object
 v_new(
@@ -87,6 +101,7 @@ v_new(
         OS_REPORT(OS_ERROR,
                   "v_new",0,
                   "Failed to create kernel object.");
+        assert(FALSE);
     }
     return o;
 }
@@ -109,6 +124,7 @@ v_objectNew(
         OS_REPORT(OS_ERROR,
                   "v_objectNew",0,
                   "Failed to create kernel object.");
+        assert(FALSE);
     }
     return o;
 }
@@ -118,25 +134,43 @@ v_kernelAttach(
     c_base base,
     const c_char *name)
 {
-    v_kernel kernel;
+    v_kernel kernel = NULL;
     os_uint32 attachCount;
 
-    kernel = c_lookup(base,name);
-    if (kernel == NULL) {
-        return NULL;
-    }
-    if (c_checkType(kernel,"v_kernel") != kernel) {
-        return NULL;
-    }
-
-    attachCount = pa_increment(&kernel->userCount);
-    if(attachCount == 1){
-        /* Result of the attach may NEVER be 1, as that would mean that an
-         * attach to an unreferenced kernel succeeded. If it happens, undo
-         * increment and free reference to returned kernel. */
-        pa_decrement(&kernel->userCount);
-        c_free(kernel);
-        kernel = NULL;
+    if (name == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "v_kernelAttach",0,
+                  "Failed to lookup kernel, specified kernel name = <NULL>");
+    } else {
+        kernel = c_lookup(base,name);
+        if (kernel == NULL) {
+            OS_REPORT_1(OS_ERROR,
+                        "v_kernelAttach",0,
+                        "Failed to lookup kernel '%s' in Database",
+                        name);
+        } else if (c_checkType(kernel,"v_kernel") != kernel) {
+            c_free(kernel);
+            kernel = NULL;
+            OS_REPORT_1(OS_ERROR,
+                        "v_kernelAttach",0,
+                        "Object '%s' is apparently not of type 'v_kernel'",
+                        name);
+        } else {
+            attachCount = pa_increment(&kernel->userCount);
+            if(attachCount == 1){
+                /* Result of the attach may NEVER be 1, as that would mean that an
+                 * attach to an unreferenced kernel succeeded. If it happens, undo
+                 * increment and free reference to returned kernel. */
+                pa_decrement(&kernel->userCount);
+                c_free(kernel);
+                kernel = NULL;
+                OS_REPORT_1(OS_ERROR,
+                            "v_kernelAttach",0,
+                            "Operation aborted: Object '%s' is apparently an "
+                            "unreferenced kernel object.",
+                            name);
+            }
+        }
     }
 
     return kernel;
@@ -250,6 +284,7 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_writerStatistics,   K_WRITERSTATISTICS);
     INITTYPE(kernel,kernelModule::v_queryStatistics,    K_QUERYSTATISTICS);
     INITTYPE(kernel,kernelModule::v_lease,              K_LEASE);
+    INITTYPE(kernel,kernelModule::v_leaseAction,        K_LEASEACTION);
     INITTYPE(kernel,kernelModule::v_serviceManager,     K_SERVICEMANAGER);
     INITTYPE(kernel,kernelModule::v_service,            K_SERVICE);
     INITTYPE(kernel,kernelModule::v_serviceState,       K_SERVICESTATE);
@@ -279,8 +314,14 @@ v_kernelNew(
 
     INITTYPE(kernel,kernelModule::v_historicalDataRequest,K_HISTORICALDATAREQUEST);
     INITTYPE(kernel,kernelModule::v_persistentSnapshotRequest,K_PERSISTENTSNAPSHOTREQUEST);
+    INITTYPE(kernel,kernelModule::v_pendingDisposeElement,K_PENDINGDISPOSEELEMENT);
+
 #undef INITTYPE
 
+
+    kernel->pendingDisposeList =
+       c_listNew(v_kernelType(kernel, K_PENDINGDISPOSEELEMENT ));
+    c_mutexInit(&kernel->pendingDisposeListMutex, SHARED_MUTEX);
 
     kernelStatistics = v_kernelStatisticsNew(kernel);
     v_observableInit(v_observable(kernel),
@@ -305,7 +346,13 @@ v_kernelNew(
     kernel->configuration = NULL;
     kernel->userCount = 1;
     kernel->transactionCount = 0;
-
+    kernel->splicedRunning = TRUE;
+    kernel->maxSamplesWarnLevel = V_KERNEL_MAX_SAMPLES_WARN_LEVEL_DEF;
+    kernel->maxSamplesWarnShown = FALSE;
+    kernel->maxSamplesPerInstanceWarnLevel = V_KERNEL_MAX_SAMPLES_PER_INSTANCES_WARN_LEVEL_DEF;
+    kernel->maxSamplesPerInstanceWarnShown = FALSE;
+    kernel->maxInstancesWarnLevel = V_KERNEL_MAX_INSTANCES_WARN_LEVEL_DEF;
+    kernel->maxInstancesWarnShown = FALSE;
     kernel->enabledStatisticsCategories =
         c_listNew(c_resolve(base, "kernelModule::v_statisticsCategory"));
 
@@ -390,7 +437,9 @@ v__addTopic(
     assert(topic != NULL);
     assert(C_TYPECHECK(topic,v_topic));
 
+    c_lockWrite(&kernel->lock);
     found = c_insert(kernel->topics,topic);
+    c_lockUnlock(&kernel->lock);
 
     if (found != topic) {
         if (v_objectKind(found) != K_TOPIC) {
@@ -639,11 +688,11 @@ v_lookupTopic(
     memset(&dummyTopic, 0, sizeof(dummyTopic));
     ((v_entity)(&dummyTopic))->name = c_stringNew(base,name);
     topicFound = NULL;
-/*    c_lockRead(&kernel->lock); */
+    c_lockRead(&kernel->lock);
     /* This does not remove anything because the alwaysFalse function always
      * returns false */
     c_remove(kernel->topics, &dummyTopic, alwaysFalse, &topicFound);
-/*    c_lockUnlock(&kernel->lock); */
+    c_lockUnlock(&kernel->lock);
     c_free(((v_entity)(&dummyTopic))->name);
 
     return topicFound;
@@ -684,6 +733,7 @@ v_setConfiguration(
     old = kernel->configuration;
     kernel->configuration = config;
     c_keep(kernel->configuration);
+    v_loadWarningLevels(kernel, config);
 
     if (old != NULL) {
         c_free(old);
@@ -692,6 +742,134 @@ v_setConfiguration(
     return old;
 }
 
+void
+v_loadWarningLevels(
+    v_kernel kernel,
+    v_configuration config)
+{
+    c_iter iter;
+    v_cfData elementData = NULL;
+    c_value value;
+    v_cfElement root;
+
+    assert(kernel != NULL);
+    assert(C_TYPECHECK(kernel,v_kernel));
+    assert(config != NULL);
+    assert(C_TYPECHECK(config,v_configuration));
+
+    root = v_configurationGetRoot(config);
+    /* load max samples warn level */
+    iter = v_cfElementXPath(root, "Domain/ResourceLimits/MaxSamples/WarnAt/#text");
+    while(c_iterLength(iter) > 0)
+    {
+        elementData = v_cfData(c_iterTakeFirst(iter));
+    }
+    if(iter)
+    {
+        c_iterFree(iter);
+    }
+    if(elementData)/* aka the last one from the previous while loop */
+    {
+        value = v_cfDataValue(elementData);
+        sscanf(value.is.String, "%u", &kernel->maxSamplesWarnLevel);
+        if(kernel->maxSamplesWarnLevel < V_KERNEL_MAX_SAMPLES_WARN_LEVEL_MIN)
+        {
+            kernel->maxSamplesWarnLevel = V_KERNEL_MAX_SAMPLES_WARN_LEVEL_MIN;
+        }
+    }
+    elementData = NULL;
+    /* load max instances warn level */
+    iter = v_cfElementXPath(root, "Domain/ResourceLimits/MaxInstances/WarnAt/#text");
+    while(c_iterLength(iter) > 0)
+    {
+        elementData = v_cfData(c_iterTakeFirst(iter));
+    }
+    if(iter)
+    {
+        c_iterFree(iter);
+    }
+    if(elementData)/* aka the last one from the previous while loop */
+    {
+        value = v_cfDataValue(elementData);
+        sscanf(value.is.String, "%u", &kernel->maxInstancesWarnLevel);
+        if(kernel->maxInstancesWarnLevel < V_KERNEL_MAX_INSTANCES_WARN_LEVEL_MIN)
+        {
+            kernel->maxInstancesWarnLevel = V_KERNEL_MAX_INSTANCES_WARN_LEVEL_MIN;
+        }
+    }
+    elementData = NULL;
+    /* load max samples per instances warn level */
+    iter = v_cfElementXPath(root, "Domain/ResourceLimits/MaxSamplesPerInstance/WarnAt/#text");
+    while(c_iterLength(iter) > 0)
+    {
+        elementData = v_cfData(c_iterTakeFirst(iter));
+    }
+    if(iter)
+    {
+        c_iterFree(iter);
+    }
+    if(elementData)/* aka the last one from the previous while loop */
+    {
+        value = v_cfDataValue(elementData);
+        sscanf(value.is.String, "%u", &kernel->maxSamplesPerInstanceWarnLevel);
+        if(kernel->maxSamplesPerInstanceWarnLevel < V_KERNEL_MAX_SAMPLES_PER_INSTANCES_WARN_LEVEL_MIN)
+        {
+            kernel->maxSamplesPerInstanceWarnLevel = V_KERNEL_MAX_SAMPLES_PER_INSTANCES_WARN_LEVEL_MIN;
+        }
+
+    }
+}
+
+void
+v_checkMaxInstancesWarningLevel(
+    v_kernel _this,
+    c_ulong count)
+{
+    if(count >= _this->maxInstancesWarnLevel && !_this->maxInstancesWarnShown)
+    {
+        OS_REPORT_2(OS_WARNING,
+            "v_checkMaxInstancesWarningLevel",0,
+            "The number of instances '%d' has surpassed the "
+            "warning level of '%d' instances.",
+            count,
+            _this->maxInstancesWarnLevel);
+        _this->maxInstancesWarnShown = TRUE;
+    }
+}
+
+void
+v_checkMaxSamplesWarningLevel(
+    v_kernel _this,
+    c_ulong count)
+{
+    if(count >= _this->maxSamplesWarnLevel && !_this->maxSamplesWarnShown)
+    {
+        OS_REPORT_2(OS_WARNING,
+            "v_checkMaxSamplesWarningLevel",0,
+            "The number of samples '%d' has surpassed the "
+            "warning level of '%d' samples.",
+            count,
+            _this->maxSamplesWarnLevel);
+        _this->maxSamplesWarnShown = TRUE;
+    }
+}
+
+void
+v_checkMaxSamplesPerInstanceWarningLevel(
+    v_kernel _this,
+    c_ulong count)
+{
+    if(count >= _this->maxSamplesPerInstanceWarnLevel && !_this->maxSamplesPerInstanceWarnShown)
+    {
+        OS_REPORT_2(OS_WARNING,
+            "v_checkMaxSamplesPerInstanceWarningLevel",0,
+            "The number of samples per instance '%d' has surpassed the "
+            "warning level of '%d' samples per instance.",
+            count,
+            _this->maxSamplesPerInstanceWarnLevel);
+        _this->maxSamplesPerInstanceWarnShown = TRUE;
+    }
+}
 
 /* --------------------------- Builtin topic methods ------------------------ */
 
@@ -882,6 +1060,11 @@ v_persistentSnapshotRequestNew(
         {
             request->uri = c_stringNew(base, uri);
         }
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_kernel::v_persistentSnapshotRequest",0,
+                  "Failed to create v_persistentSnapshotRequest object.");
+        assert(FALSE);
     }
 
     return request;
@@ -924,3 +1107,119 @@ v_kernelGetTransactionId (
     return id;
 }
 
+/*
+ * ES, dds1576: This method consults the configuration info stored in the kernel
+ * to determine the access policy for this partition
+ */
+v_accessMode
+v_kernelPartitionAccessMode(
+    v_kernel _this,
+    v_partitionPolicy partition)
+{
+    v_configuration config;
+    v_cfElement root;
+    v_cfElement element;
+    c_iter iter;
+    v_accessMode retVal = V_ACCESS_MODE_UNDEFINED;
+    c_value expression;
+    c_value accessMode;
+    c_iter partitionsSplit;
+    c_char* partitionName;
+
+    config = v_getConfiguration(_this);
+    if(config)
+    {
+        root = v_configurationGetRoot(config);
+        /* Iterate over all partitionAccess elements */
+        iter = v_cfElementXPath(root, "Domain/PartitionAccess");
+        while(c_iterLength(iter) > 0)
+        {
+            element = v_cfElement(c_iterTakeFirst(iter));
+            /* Get the partition expression value, it should be a string */
+            expression = v_cfElementAttributeValue(element, "partition_expression");
+            if(expression.kind == V_STRING)
+            {
+                /* iterate over partitions, if one matches, exit and return */
+                partitionsSplit = v_partitionPolicySplit(partition);
+                while(c_iterLength(partitionsSplit) > 0)
+                {
+                    partitionName = (c_char*)c_iterTakeFirst(partitionsSplit);
+                    if(v_partitionStringMatchesExpression(partitionName, expression.is.String))
+                    {
+                        /* The partition matches the expression.*/
+                        accessMode = v_cfElementAttributeValue(element, "access_mode");
+                        if(accessMode.kind == V_STRING)
+                        {
+                            /* A correct solution space can be realized between multiple
+                             * expressions having an AND relationship by specifying the
+                             * following rules R&W=RW, R&N=N, W&N=N, RW&N=N.
+                             */
+                            switch(retVal)
+                            {
+                                case V_ACCESS_MODE_UNDEFINED: /* start state */
+                                    if(strcmp(accessMode.is.String, "none") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_NONE;
+                                    } else if(strcmp(accessMode.is.String, "write") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_WRITE;
+                                    } else if(strcmp(accessMode.is.String, "read") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_READ;
+                                    } else if(strcmp(accessMode.is.String, "readwrite") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_READ_WRITE;
+                                    }
+                                    break;
+                                case V_ACCESS_MODE_WRITE:
+                                    if(strcmp(accessMode.is.String, "read") == 0 ||
+                                       strcmp(accessMode.is.String, "readwrite") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_READ_WRITE;
+                                    } else if(strcmp(accessMode.is.String, "none") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_NONE;
+                                    }
+                                    break;
+                                case V_ACCESS_MODE_READ:
+                                    if(strcmp(accessMode.is.String, "write") == 0 ||
+                                       strcmp(accessMode.is.String, "readwrite") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_READ_WRITE;
+                                    } else if(strcmp(accessMode.is.String, "none") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_NONE;
+                                    }
+                                    break;
+                                case V_ACCESS_MODE_READ_WRITE:
+                                    if(strcmp(accessMode.is.String, "none") == 0)
+                                    {
+                                        retVal = V_ACCESS_MODE_NONE;
+                                    }
+                                    break;
+                                default: /* case V_ACCESS_MODE_NONE > none always remains none */
+                                    break;
+                            }
+                        }
+                    }
+                    os_free(partitionName);
+                }
+                c_iterFree(partitionsSplit);
+            }
+        }
+        if(iter)
+        {
+            c_iterFree(iter);
+        }
+        if(root)
+        {
+            c_free(root);
+        }
+    }
+    if(retVal == V_ACCESS_MODE_UNDEFINED)
+    {
+        /* No specific rights defined, fall back to default */
+        retVal = V_ACCESS_MODE_READ_WRITE;
+    }
+    return retVal;
+}

@@ -75,10 +75,10 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  *     part
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
-#include <fe_private.h>
+#include "fe_private.h"
 
 /*
  * List of pragmas

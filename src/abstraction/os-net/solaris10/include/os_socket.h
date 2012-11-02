@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -23,7 +23,12 @@ extern "C" {
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include <../common/include/os_socket.h>
+/* @todo dds#2800 - Sort this out properly */
+#define OS_SOLARIS
+
+#define OS_NO_GETIFADDRS
+
+#include "../common/include/os_socket.h"
 
 #define OS_IFNAMESIZE        	IF_NAMESIZE
 #define OS_SOCKET_HAS_SA_LEN 	0

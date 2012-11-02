@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -12,8 +12,8 @@
 #ifndef SAJ_COPYCACHE_H
 #define SAJ_COPYCACHE_H
 
-#include <c_metabase.h>
-#include <os_abstract.h>
+#include "c_metabase.h"
+#include "os_abstract.h"
 
 #include <jni.h>
 
@@ -34,7 +34,7 @@ extern "C" {
 #if JNI_TRACE
 #define TRACE(function)     function
 #else
-#define TRACE(function)     /* function */
+#define TRACE(function)
 #endif
 
 typedef enum saj_copyResult {
@@ -81,6 +81,7 @@ typedef enum {
     /* String types */
     sajString,
     sajBString,
+    sajBStringToArrChar,
     /* Array of object type */
     sajArray,
     /* Sequence of object type */
@@ -102,7 +103,7 @@ typedef struct {
 } sajReaderCopyCache;
 
 typedef struct {
-    unsigned short	size;
+    os_uint32           size;
     unsigned short	copyType;
 } sajCopyHeader;
 
@@ -110,7 +111,7 @@ typedef struct {
     (sajCopyHeader *)((PA_ADDRCAST)copyHeader + copyHeader->size)
 
 typedef struct {
-    unsigned int	memberOffset;
+    os_uint32           memberOffset;
     jfieldID		javaFID;
     /* member description is added */
 } sajCopyStructMember;
@@ -172,7 +173,7 @@ typedef struct {
     jfieldID		discrID;
     jmethodID		getDiscrMethodID;
     c_type	        discrType;
-    unsigned int	casesOffset;
+    os_uint32       casesOffset;
     jclass	        discrClass;	/* used for enumeration discriminant */
     jmethodID		valueID;
     jmethodID		from_intID;

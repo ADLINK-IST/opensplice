@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -31,7 +31,8 @@ nw_plugPartitionsGetPartition(
     nw_networkSecurityPolicy *securityPolicy,
     nw_bool *connected,
     nw_bool *compression,
-    os_uint32* hash);
+    os_uint32 *hash,
+    c_ulong *mTTL);
 
 nw_partitionId
 nw_plugPartitionsGetPartitionIdByHash(

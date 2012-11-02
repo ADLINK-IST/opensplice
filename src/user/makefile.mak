@@ -1,4 +1,5 @@
 TARGET_DLIB		:= $(DDS_USER)
+EXTRACTED_LIB = libddscore
 
 include		$(OSPL_HOME)/setup/makefiles/target.mak
 

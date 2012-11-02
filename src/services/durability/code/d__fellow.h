@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -26,6 +26,7 @@ C_STRUCT(d_fellow){
     d_networkAddress address;
     d_serviceState state;
     d_communicationState communicationState;
+    d_name role;
     d_timestamp lastStatusReport;
     d_table groups;
     d_table nameSpaces;

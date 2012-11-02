@@ -427,7 +427,7 @@ yyerror (
 void
 dollar_warning()
 {
-    OS_REPORT(OS_WARNING,"SQL parser",0,"The use of '$' is depricated, use '%%' instead");
+    OS_REPORT(OS_WARNING,"SQL parser",0,"The use of '$' is deprecated, use '%%' instead");
 }
 
 int
@@ -467,6 +467,9 @@ q_parserInit()
 
         os_mutexAttrInit(&attr);
 	attr.scopeAttr = OS_SCOPE_PRIVATE;
-        os_mutexInit(&q_mtx, &attr);
+	if ( os_mutexInit(&q_mtx, &attr) != os_resultSuccess )
+	{
+           OS_REPORT(OS_ERROR, "SQL parser", 0, "mutex init failed");
+        }
     }
 }

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -25,7 +25,7 @@ C_STRUCT(d_chainBead){
     d_networkAddress sender;
     v_message message;
     c_ulong refCount;
-};    
+};
 
 C_STRUCT(d_chainLink){
     d_networkAddress sender;
@@ -61,51 +61,58 @@ void                    d_sampleChainListenerInsertRequest      (d_sampleChainLi
                                                                  d_chain chain,
                                                                  c_bool reportGroupWhenUnfullfilled);
 
+void                    d_sampleChainListenerInsertMergeAction  (d_sampleChainListener listener,
+                                                                 d_mergeAction action);
+
 void                    d_sampleChainListenerTryFulfillChains   (d_sampleChainListener listener,
                                                                  d_group group);
 
 void                    d_sampleChainListenerReportStatus       (d_sampleChainListener listener);
 
-void                d_chainFellowFree               (d_fellow fellow);
+void                    d_sampleChainListenerCheckUnfulfilled   (d_sampleChainListener listener,
+                                                                 d_nameSpace nameSpace,
+                                                                 d_networkAddress fellowAddress);
 
-int                 d_chainCompare                  (d_chain chain1,
-                                                     d_chain chain2);
+void                    d_chainFellowFree                       (d_fellow fellow);
 
-d_chain             d_chainNew                      (d_admin admin,
-                                                     d_sampleRequest request);
+int                     d_chainCompare                          (d_chain chain1,
+                                                                 d_chain chain2);
 
-c_bool              d_chainReportStatus             (d_chain chain,
-                                                     d_durability durability);
+d_chain                 d_chainNew                              (d_admin admin,
+                                                                 d_sampleRequest request);
 
-void                d_chainFree                     (d_chain chain);
+c_bool                  d_chainReportStatus                     (d_chain chain,
+                                                                 d_durability durability);
 
-d_chainBead         d_chainBeadNew                  (d_networkAddress sender,
-                                                     v_message message);
+void                    d_chainFree                             (d_chain chain);
 
-void                d_chainBeadFree                 (d_chainBead chainBead);
+d_chainBead             d_chainBeadNew                          (d_networkAddress sender,
+                                                                 v_message message);
 
-int                 d_chainBeadCompare              (d_chainBead bead1,
-                                                     d_chainBead bead2);
+void                    d_chainBeadFree                         (d_chainBead chainBead);
 
-int                 d_chainBeadContentCompare       (d_chainBead bead1,
-                                                     d_chainBead bead2);
+int                     d_chainBeadCompare                      (d_chainBead bead1,
+                                                                 d_chainBead bead2);
 
-c_bool              d_chainBeadCorrect              (d_chainBead bead,
-                                                     c_voidp args);
+int                     d_chainBeadContentCompare               (d_chainBead bead1,
+                                                                 d_chainBead bead2);
 
-c_bool              d_chainBeadInject               (d_chainBead bead,
-                                                     c_voidp args);
+c_bool                  d_chainBeadCorrect                      (d_chainBead bead,
+                                                                 c_voidp args);
 
-d_chainLink         d_chainLinkNew                  (d_networkAddress sender,
-                                                     c_ulong sampleCount,
-                                                     d_admin admin);
+c_bool                  d_chainBeadInject                       (d_chainBead bead,
+                                                                 c_voidp args);
 
-void                d_chainLinkFree                 (d_chainLink chainLink);
+d_chainLink             d_chainLinkNew                          (d_networkAddress sender,
+                                                                 c_ulong sampleCount,
+                                                                 d_admin admin);
 
-void                d_chainLinkDummyFree            (d_chainLink link);
+void                    d_chainLinkFree                         (d_chainLink chainLink);
 
-int                 d_chainLinkCompare              (d_chainLink link1,
-                                                     d_chainLink link2);
+void                    d_chainLinkDummyFree                    (d_chainLink link);
+
+int                     d_chainLinkCompare                      (d_chainLink link1,
+                                                                 d_chainLink link2);
 
 #if defined (__cplusplus)
 }

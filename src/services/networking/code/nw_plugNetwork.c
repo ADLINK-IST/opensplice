@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -103,12 +103,17 @@ nw_plugNetworkInitializePartitions(
     u_cfAttribute attrCompression;
     c_bool compression;
     u_cfAttribute attrAddress;
+    u_cfAttribute attrName;
     char *partitionAddress;
+    char *partitionName;
     sk_addressType addressType;
     
     u_cfAttribute attrSecurityPolicy;
     char *securityPolicy;
     
+    u_cfAttribute attrMulticastTimeToLive;
+    c_ulong multicastTimeToLive;
+
     partitionList = nw_configurationGetElements(NWCF_ROOT(NWPartition));
     nofPartitions = (nw_partitionId)c_iterLength(partitionList) + 1 /* Do not forget the default partition */;
     partitions = nw_plugPartitionsNew(nofPartitions);
@@ -122,6 +127,9 @@ nw_plugNetworkInitializePartitions(
     securityPolicy = NWCF_DEFAULTED_ATTRIB(String, NWCF_ROOT(GlobalPartition),
         NWSecurityPolicy, NWCF_DEF(NWSecurityPolicy), NWCF_DEF(NWSecurityPolicy));
 
+    multicastTimeToLive = NWCF_DEFAULTED_ATTRIB(ULong, NWCF_ROOT(GlobalPartition),
+            MulticastTimeToLive, NWCF_DEF(MulticastTimeToLive), NWCF_DEF(MulticastTimeToLive));
+
     addressType = sk_getAddressType(partitionAddress);
     if (addressType == SK_TYPE_UNKNOWN) {
         os_free(partitionAddress);
@@ -130,8 +138,8 @@ nw_plugNetworkInitializePartitions(
 
 
     nw_plugPartitionsSetDefaultPartition(partitions, partitionAddress,securityPolicy,
-    		ut_crcCalculate(plugNetwork->partitionCrc,"DefaultPartition",strlen("DefaultPartition"))
-           );
+    		ut_crcCalculate(plugNetwork->partitionCrc,"DefaultPartition",strlen("DefaultPartition")),
+    		multicastTimeToLive);
 
     os_free(partitionAddress);
     os_free(securityPolicy);
@@ -152,6 +160,14 @@ nw_plugNetworkInitializePartitions(
         } else {
             compression = NWCF_DEF_Compression;
         }
+        attrMulticastTimeToLive = u_cfElementAttribute(partitionElement, NWCF_ATTRIB(MulticastTimeToLive));
+        if (attrMulticastTimeToLive != NULL) {
+            u_cfAttributeULongValue(attrMulticastTimeToLive, &multicastTimeToLive);
+            u_cfAttributeFree(attrMulticastTimeToLive);
+        } else {
+            multicastTimeToLive = NWCF_DEF(MulticastTimeToLive);
+        }
+
 #ifdef OSPL_NO_ZLIB
         if (compression) {
             NW_REPORT_WARNING("Channel setup", "Compression configured but not enabled in this build");
@@ -171,6 +187,12 @@ nw_plugNetworkInitializePartitions(
 		u_cfAttributeFree(attrSecurityPolicy);
 	    }
 
+	    attrName = u_cfElementAttribute(partitionElement, NWCF_ATTRIB_NWPartitionName);
+        if (attrName != NULL) {
+            u_cfAttributeStringValue(attrName, &partitionName);
+        }
+        u_cfAttributeFree(attrName);
+
             nw_plugPartitionsSetPartition(
                 partitions,
                 partitionId,
@@ -178,20 +200,16 @@ nw_plugNetworkInitializePartitions(
                 securityPolicy,
                 ut_crcCalculate (
                     plugNetwork->partitionCrc,
-                    (void *)u_cfElementAttribute(
-                       partitionElement,
-                       NWCF_ATTRIB_NWPartitionName
-                    ),
+                    (void *)partitionName,
                     strlen(
-                       (char *)u_cfElementAttribute(
-                          partitionElement,
-                          NWCF_ATTRIB_NWPartitionName
-                       )
+                       (char *)partitionName
                     )
                 ),
                 connected,
-                compression
+                compression,
+                multicastTimeToLive
             );
+
 
         os_free(partitionAddress);
 	    os_free(securityPolicy);

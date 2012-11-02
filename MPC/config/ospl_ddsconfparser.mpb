@@ -1,6 +1,6 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_ddsconfparser_incl, ospl_base {
+project : ospl_ddsconfparser_incl, ospl_ddsconf, ospl_base {
   lit_libs += ddsconfparser
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,13 +11,13 @@
  */
 #include <assert.h>
 
-#include <c_typebase.h>
+#include "c_typebase.h"
 
 #include "idl_scope.h"
 #include "idl_genCxxHelper.h"
 
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 
 #define IDL_MAXSCOPE	(20)
 
@@ -317,9 +317,9 @@ idl_scopeStack (
 	        (int)strlen(scopeSepp)+
 		(int)strlen(elName)+1));
 	    /* concatinate the separator */
-	    strcat (scopeStack, scopeSepp);
+	    os_strcat (scopeStack, scopeSepp);
 	    /* concatinate scope name */
-	    strcat (scopeStack, elName);
+	    os_strcat (scopeStack, elName);
 	    si++;
         }
 	if (name) {
@@ -332,9 +332,9 @@ idl_scopeStack (
 	        (int)strlen(scopeSepp)+
 		(int)strlen(name)+1));
 	    /* concatinate the separator */
-	    strcat (scopeStack, scopeSepp);
+	    os_strcat (scopeStack, scopeSepp);
 	    /* concatinate user identifier */
-	    strcat (scopeStack, name);
+	    os_strcat (scopeStack, name);
 	}
     } else {
 	/* Empty scope stack */

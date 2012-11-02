@@ -1,6 +1,6 @@
 ﻿// The OpenSplice DDS Community Edition project.
 //
-// Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
+// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
 // 
 //  This library is free software; you can redistribute it and/or
@@ -249,10 +249,7 @@ namespace DDS.OpenSplice
         
         public ReturnCode DeleteContainedEntities()
         {
-            return Gapi.Publisher.delete_contained_entities(
-                    GapiPeer,
-                    null,
-                    IntPtr.Zero);
+            return Gapi.Publisher.delete_contained_entities(GapiPeer);
         }
         
         public ReturnCode SetQos(PublisherQos qos)

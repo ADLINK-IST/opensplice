@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -64,6 +64,9 @@ void                d_reportLocalGroup          (d_durability durability,
                                                  v_group group);
 
 c_base              d_findBase                  (d_durability durability);
+
+c_bool              d_patternMatch              (const char* str,
+                                                 const char* pattern);
 
 #if defined (__cplusplus)
 }

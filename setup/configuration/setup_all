@@ -1,3 +1,4 @@
+set_var DDS_CMJNI cmjni
 set_var DDS_CMXML cmxml
 set_var DDS_CMCOMMON cmcommon
 set_var DDS_COMMONSERV commonserv

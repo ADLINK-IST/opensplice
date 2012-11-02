@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include <symtbl.h>
+#include "symtbl.h"
 #include "cpp_malloc.h"
 #include "io.h"
 #include "if.h"
@@ -39,7 +39,7 @@ extern void do_set (void)
          Push(c);
          return ;
       }
-      sprintf(temp, "%d", eval_expr(0, 1));
+      os_sprintf(temp, "%d", eval_expr(0, 1));
       undef(mac);
       cp = copyofstr(temp);
       check_os_malloc(cp);

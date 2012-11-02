@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,9 +12,9 @@
 #ifndef _XBE_EXPR_VAL_HH
 #define _XBE_EXPR_VAL_HH
 
-#include <xbe_codegen.h>
-#include <xbe_type.h>
-#include <xbe_classgen.h>
+#include "xbe_codegen.h"
+#include "xbe_type.h"
+#include "xbe_classgen.h"
 
 class be_expr_val : public virtual AST_Expression
 {

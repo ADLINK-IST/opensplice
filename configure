@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASECMD=`basename -- $0`
+BASECMD=`basename $0 2> /dev/null`
 if [ "$BASECMD" = "configure" ]
 then
    cd `dirname $0`

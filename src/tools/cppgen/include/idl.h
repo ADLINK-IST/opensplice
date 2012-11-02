@@ -77,32 +77,32 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 // files defining the different units of the compiler
 
 #ifndef WIN32
-#include <os.h>
+#include "os.h"
 #endif
 
-#include <intlmacros.h>  // Define macros for intl'ion
+#include "intlmacros.h"  // Define macros for intl'ion
 
 #include <stdlib.h>  // POSIX standard defns
 #include <string.h>  // POSIX string funcs
 #include <ctype.h>  // External functions
 
-#include <cppgen_iostream.h>  // Standard IO library
+#include "cppgen_iostream.h"  // Standard IO library
 
 #include <sys/types.h>  // POSIX standard types
 
-#include <idl_narrow.h>  // IDL Narrowing mechanism
+#include "idl_narrow.h"  // IDL Narrowing mechanism
 
-#include <idl_defines.h> // Constants for IDL compiler
-#include <idl_fwd.h>  // Forward decls of classes
+#include "idl_defines.h" // Constants for IDL compiler
+#include "idl_fwd.h"  // Forward decls of classes
 
-#include <idl_bool.h>  // Defines boolean for IDL
+#include "idl_bool.h"  // Defines boolean for IDL
 
-#include <utl_string.h>  // Defines utility string class
-#include <utl_wstring.h>  // Defines utility wide string class
-#include <utl_identifier.h> // Defines utility identifier class
-#include <ast.h>  // AST classes
+#include "utl_string.h"  // Defines utility string class
+#include "utl_wstring.h"  // Defines utility wide string class
+#include "utl_identifier.h" // Defines utility identifier class
+#include "ast.h"  // AST classes
 #include <util.h>  // Utility classes
-#include <sacpp_DDS_DCPS.h>
+#include "sacpp_DDS_DCPS.h"
 
 
 #endif           // _IDL_IDL_HH

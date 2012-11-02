@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -23,12 +23,12 @@
 #define v_dataReaderInstanceDataReader(_this) \
         v_indexDataReader(v_dataReaderInstance(_this)->index)
 
-#define v_dataReaderInstanceSetHead(_this,_sample) \
-        (v_dataReaderInstanceTemplate(_this)->sample = \
+#define v_dataReaderInstanceSetOldest(_this,_sample) \
+        (v_dataReaderInstanceTemplate(_this)->oldest = \
         v_dataReaderSampleTemplate(_sample))
 
-#define v_dataReaderInstanceSetTail(_this,_sample) \
-        (v_dataReaderInstanceTemplate(_this)->tail = \
+#define v_dataReaderInstanceSetNewest(_this,_sample) \
+        (v_dataReaderInstanceTemplate(_this)->sample = \
         (c_voidp)_sample)
 
 #define v_dataReaderInstanceStateSet(instance, state)               \
@@ -89,8 +89,7 @@ v_dataReaderInstanceWrite (
 v_dataReaderResult
 v_dataReaderInstanceInsert(
     v_dataReaderInstance _this,
-    v_message message,
-    c_time lastDisposeAll);
+    v_message message);
 
 c_bool
 v_dataReaderInstanceReadSamples(
@@ -124,11 +123,6 @@ v_dataReaderInstanceTest(
     c_query query);
 
 void
-v_dataReaderInstanceUnregister (
-    v_dataReaderInstance _this,
-    c_long count);
-
-void
 v_dataReaderInstanceSetEpoch (
     v_dataReaderInstance _this,
     c_time time);
@@ -144,14 +138,15 @@ v_dataReaderInstanceAbortTransaction(
     c_ulong transactionId);
 
 void
-v_dataReaderInstanceDispose (
-    v_dataReaderInstance _this,
-    c_time timestamp);
-
-void
 v_dataReaderInstanceResetOwner(
     v_dataReaderInstance _this,
     v_gid wgid);
+
+v_dataReaderResult
+v_dataReaderInstanceUnregister (
+    v_dataReaderInstance _this,
+    v_registration unregistration,
+    c_time timestamp);
 
 #endif
 

@@ -7,8 +7,7 @@
 #include "in_report.h"
 #include "v_topic.h"
 #include "c_typebase.h"
-#include "u__participant.h"
-#include "u__kernel.h"
+
 OS_STRUCT(in_plugKernel)
 {
     OS_EXTENDS(in_object);

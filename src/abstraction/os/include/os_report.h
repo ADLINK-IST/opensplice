@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -16,9 +16,9 @@
 extern "C" {
 #endif
 
-#include <os_defs.h>
+#include "os_defs.h"
 #include <stdarg.h>
-#include <os_if.h>
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT
@@ -26,6 +26,11 @@ extern "C" {
 #define OS_API OS_API_IMPORT
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
+
+/* following new line macro can be used in report description to insert
+ * a new line and indent to align next line.
+ */
+#define OS_REPORT_NL "\n              "
 
 #define OS_REPORT(type,context,code,description) \
     os_report(type,context,__FILE__,__LINE__,code,description)
@@ -149,6 +154,7 @@ os_reportRegisterPlugin(
     const char *argument,
     const char *report_method_name,
     const char *finalize_method_name,
+    os_boolean suppressDefaultLogs,
     os_reportPlugin *plugin);
 
 OS_API os_int32

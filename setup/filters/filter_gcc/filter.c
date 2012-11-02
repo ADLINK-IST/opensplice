@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <limits.h>
 
-char line_base [1024][512];
+char line_base [4096][512];
 FILE *gcc_log;
 FILE *filter_log;
 
@@ -87,6 +87,9 @@ filter (
 	    end_origin = li;
 	}
     } else if (strstr (line_base[li], "In function")) {
+	origin_line = li;
+	end_origin = li;
+    } else if (strstr (line_base[li], "At top level")) {
 	origin_line = li;
 	end_origin = li;
     } else {

@@ -64,9 +64,9 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 // drv_global.cc - Global variables for IDL compiler driver program
 
-#include <idl.h>
-#include <idl_extern.h>
-#include <drv_private.h>
+#include "idl.h"
+#include "idl_extern.h"
+#include "drv_private.h"
 
 // Storage for file names
 

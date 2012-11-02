@@ -19,9 +19,6 @@ project(ccpp*idl): ccpp_typesupport {
 project(ccpp*pub): ccpp_dcps_application {
   after += ccpp*idl
 
-  // @ todo add project name * expansion to macros
-  macros += OTHER_PROCESS_NAME=ccpp_hello_sub
-
   Source_Files {
     publisher.cpp
   }
@@ -40,9 +37,6 @@ project(ccpp*pub): ccpp_dcps_application {
 
 project(ccpp*sub): ccpp_dcps_application {
   after += ccpp*idl
-
-  // @ todo add project name * expansion to macros
-  macros += OTHER_PROCESS_NAME=ccpp_hello_sub
 
   Source_Files {
     subscriber.cpp

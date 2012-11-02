@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -10,9 +10,10 @@
  *
  */
 #include <stdio.h>
+#include <ctype.h>
 #include "expr.h"
 #include "cpp_malloc.h"
-#include <symtbl.h>
+#include "symtbl.h"
 #include "is.h"
 #include "accum.h"
 #include "io.h"
@@ -514,7 +515,7 @@ extern void outputc (char c)
             char temp[1024];
             char *s;
 
-            sprintf(temp, "\n# %d \"%s\"\n", atline, atfile);
+            os_sprintf(temp, "\n# %d \"%s\"\n", atline, atfile);
             for (s = temp; *s; s++)
             {
                accum_char(output_accum, *s);
@@ -558,7 +559,7 @@ extern void outputd (int n)
 {
    char temp[64];
 
-   sprintf(temp, "%d", n);
+   os_sprintf(temp, "%d", n);
    outputs(temp);
 }
 

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__dataReaderSample.h"
@@ -46,8 +46,8 @@ v_dataReaderSampleNew(
  * #define _SL_
  */
 #ifdef _SL_
-        dataReader->cachedSample = sample->prev;
-        sample->prev = NULL;
+        dataReader->cachedSample = sample->newer;
+        sample->newer = NULL;
         dataReader->cachedSampleCount--;
 #else
         dataReader->cachedSample = NULL;
@@ -78,23 +78,28 @@ v_dataReaderSampleNew(
     sample->insertTime = v_timeGet();
 #endif
 #endif
-    if (readerQos->lifespan.used) { 
-        v_lifespanSample(sample)->expiryTime = 
+    if (readerQos->lifespan.used) {
+        v_lifespanSample(sample)->expiryTime =
             c_timeAdd(sample->insertTime, readerQos->lifespan.duration);
-    } else {
-        v_lifespanSample(sample)->expiryTime = 
+    } else if (message->qos != NULL){
+        v_lifespanSample(sample)->expiryTime =
             c_timeAdd(sample->insertTime,
                       v_messageQos_getLifespanPeriod(message->qos));
+    } else {
+        v_lifespanSample(sample)->expiryTime = c_timeAdd(sample->insertTime,
+                C_TIME_INFINITE);
     }
     sample->disposeCount = instance->disposeCount;
     sample->noWritersCount = instance->noWritersCount;
     sample->publicationHandle = message->writerGID;
     sample->readId = 0;
-    sample->prev = NULL;
+    sample->newer = NULL;
     assert(message);
     v_dataReaderSampleTemplate(sample)->message = c_keep(message);
     v_lifespanAdminInsert(v_dataReaderEntry(index->entry)->lifespanAdmin,
                           v_lifespanSample(sample));
+
+    dataReader->notReadCount++;
 
     return sample;
 }
@@ -116,17 +121,23 @@ v_dataReaderSampleFree(
             instance = v_readerSample(sample)->instance;
             index = v_index(instance->index);
             dataReader = v_dataReader(index->reader);
+            if (!v_readerSampleTestState(sample,L_READ)) {
+                dataReader->notReadCount--;
+            }
 #ifdef _SL_
             if (dataReader->cachedSampleCount < 1000) {
                 message = v_dataReaderSampleMessage(sample);
                 c_free(message);
                 v_dataReaderSampleTemplate(sample)->message = NULL;
-                sample->prev = dataReader->cachedSample;
+                sample->newer = dataReader->cachedSample;
                 dataReader->cachedSample = sample;
                 dataReader->cachedSampleCount++;
 #else
             if (dataReader->cachedSample == NULL) {
                 dataReader->cachedSample = sample;
+                v_dataReaderSampleFree(sample->older);
+                sample->older = NULL;
+                sample->newer = NULL;
                 message = v_dataReaderSampleMessage(sample);
                 c_free(message);
                 v_dataReaderSampleTemplate(sample)->message = NULL;
@@ -155,7 +166,7 @@ v_dataReaderSampleRemoveFromLifespanAdmin(
                               v_lifespanSample(sample));
     }
 }
-    
+
 
 void
 v_dataReaderSampleWipeViews(
@@ -182,10 +193,10 @@ v_dataReaderSampleEmptyViews(
     v_dataReaderSample sample)
 {
     v_dataViewSampleList viewSample;
- 
+
     assert(sample != NULL);
     assert(C_TYPECHECK(sample, v_dataReaderSample));
- 
+
     viewSample = v_readerSample(sample)->viewSamples;
     while (viewSample != NULL) {
         v_dataViewSampleListRemove(viewSample);

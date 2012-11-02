@@ -1,9 +1,9 @@
-#
+# 
 # Set subsystems to be processed
 #
-SUBSYSTEMS	:=
+SUBSYSTEMS  :=
 
 SUBSYSTEMS  += java
-SUBSYSTEMS	+= c
+SUBSYSTEMS  += c
 
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak

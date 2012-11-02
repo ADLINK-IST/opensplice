@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef S_CONFIGURATION_H
@@ -19,22 +19,10 @@
 extern "C" {
 #endif
 
-#define S_CFG_KERNELMANAGERSCHEDULING_PRIORITY_DEFAULT (0)
-#define S_CFG_KERNELMANAGERSCHEDULING_CLASS_DEFAULT     ""
-
-#define S_CFG_GCSCHEDULING_PRIORITY_DEFAULT (0)
-#define S_CFG_GCSCHEDULING_CLASS_DEFAULT    ""
-
-#define S_CFG_RESENDMANAGERSCHEDULING_PRIORITY_DEFAULT (0)
-#define S_CFG_RESENDMANAGERSCHEDULING_CLASS_DEFAULT     ""
-
-#define S_CFG_C_AND_M_COMMAND_SCHEDULING_PRIORITY_DEFAULT (0)
-#define S_CFG_C_AND_M_COMMANDSCHEDULING_CLASS_DEFAULT     ""
-   
-#define S_CFG_SERVICETERMINATEPERIOD_MINIMUM (1.0F)
+#define S_CFG_SERVICETERMINATEPERIOD_MINIMUM (0.0F)
 #define S_CFG_SERVICETERMINATEPERIOD_DEFAULT (10.0F)
 #define S_CFG_SERVICETERMINATEPERIOD_MAXIMUM (60.0F)
-    
+
 #define S_CFG_LEASEPERIOD_MINIMUM            (0.2F)
 #define S_CFG_LEASEPERIOD_DEFAULT            (60.0F)
 
@@ -59,6 +47,7 @@ C_STRUCT(s_configuration)
     os_threadAttr resendManagerScheduling;
     os_threadAttr cAndMCommandScheduling;
     c_bool        enableCandMCommandThread;
+    os_threadAttr leaseRenewScheduling;
 };
 
 #define s_configuration(config) ((s_configuration)(config))

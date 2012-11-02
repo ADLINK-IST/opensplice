@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 . buildsys/functions
 
@@ -43,8 +43,8 @@ mkdir $LOGDIR/RBT-Results ||
     exit 3; 
 }
 
-bash run_rbt 
-bash RBT_management_data
+sh ./run_rbt 
+sh ./RBT_management_data
 for i in `find ../rbt/Results/ -type f`
 do
     FILE=$i

@@ -11,7 +11,7 @@ BASE=`/bin/pwd`
 CURRENT_PL_LINUX=`uname | grep Linux`
 CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
 CURRENT_PL_AIX=`uname | grep AIX`
-CURRENT_PL_SUNOS=`uname | grep SunOS` 
+CURRENT_PL_SUNOS=`uname | grep SunOS`
 IS_WINDOWS_EXE="false"
 DO_DBMSCONNECT="false"
 AWK=""
@@ -26,6 +26,8 @@ IS_64_BIT="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "x86_64") }'`"
 
 IS_STUDIO12="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "studio12") }'`"
 
+IS_DEBUG="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "-dev") }'`"
+
 cd ../../..
 
 SetState BuildingExamples
@@ -39,7 +41,7 @@ check_platform()
     return 0
   elif [ "$CURRENT_PL_CYGWIN" != "" ];then
     return 1
-  else 
+  else
    echo UNKNOWN Platform:
    echo Current platform: `uname`
    exit
@@ -79,6 +81,7 @@ else
     if [ "$DEP" = "none" ]
     then
         INSTALLERDIR=$WORKDIR/build/install
+        TEST_SRC_DIR=$WORKDIR/build/testsuite/tests
         . $WORKDIR/build/release_info/RELEASE
         LICENSE_FILE=""
     else
@@ -87,6 +90,7 @@ else
         LICENSE_FILE=$OUTER_BASE/../../../etc/license.lic
         BASE=$DEPWORKDIR/build/scripts/overnight
         INSTALLERDIR=$DEPWORKDIR/install
+        TEST_SRC_DIR=$DEPWORKDIR/testsuite/tests
         . $DEPWORKDIR/release_info/RELEASE
     fi
 
@@ -139,14 +143,14 @@ else
 
                   echo "exe file exists installing to $WORKDIR/installed ...."
                   cmd.exe /C $XPATH_INSTALLDIR/VC/OpenSpliceDDS$PACKAGE_VERSION-$SHORTSETUP-HDE-installer.exe --mode unattended --prefix $XPATH_WORKDIR/installed/
-                fi                  
+                fi
             fi
         fi
     fi
-        
+
     echo "Copying (1) $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."
     cp -rp $BASE/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
-    
+
     if [ -n "$LICENSE_FILE" ]
     then
         echo "Copying License into $WORKDIR/installed/HDE/$SHORTSETUP/etc ...."
@@ -157,9 +161,9 @@ else
 
     if [ "$DEP" != "none" ]
     then
-        echo "Copying (2) $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."  
+        echo "Copying (2) $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/ ...."
         cp -rp $WORKDIR/build/build/scripts/overnight/example_automation_scripts/* $WORKDIR/installed/HDE/$SHORTSETUP/
-    fi                   
+    fi
 
     if [ $? = 0 ]
     then
@@ -169,11 +173,11 @@ else
         exit 1
     fi
 
-    cd $WORKDIR/installed/HDE/$SHORTSETUP/    
+    cd $WORKDIR/installed/HDE/$SHORTSETUP/
 
     if check_platform
     then
-        . ./release.com    
+        . ./release.com
     fi
 
     cd examples
@@ -186,17 +190,180 @@ else
     # Do not do CORBA C++ and standalone C++ examples with AIX for now as the build fails
     if [ "$CURRENT_PL_AIX" != "" ]
     then
-        EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
+        EXAMPLES=$EXAMPLES" dcps/CORBA/Java/JacORB/PingPong "
+        EXAMPLES=$EXAMPLES" dcps/CORBA/Java/JacORB/Tutorial "
+        EXAMPLES=$EXAMPLES" dcps/standalone/C/PingPong "
+        EXAMPLES=$EXAMPLES" dcps/standalone/C/Tutorial "
+        EXAMPLES=$EXAMPLES" dcps/standalone/C++OnC/PingPong "
+        EXAMPLES=$EXAMPLES" dcps/standalone/Java/PingPong "
+        EXAMPLES=$EXAMPLES" dcps/standalone/Java/Tutorial "
     else
-        EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/CORBA/C++/OpenFusion/PingPong dcps/CORBA/C++/OpenFusion/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++/PingPong dcps/standalone/C++/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
-  
+        EXAMPLES=$EXAMPLES" dcps/CORBA/Java/JacORB/PingPong "
+        EXAMPLES=$EXAMPLES" dcps/CORBA/Java/JacORB/Tutorial "
+        EXAMPLES=$EXAMPLES" dcps/CORBA/C++/OpenFusion/PingPong "
+        EXAMPLES=$EXAMPLES" dcps/CORBA/C++/OpenFusion/Tutorial "
+        EXAMPLES=$EXAMPLES" dcps/standalone/C/PingPong "
+        EXAMPLES=$EXAMPLES" dcps/standalone/C/Tutorial "
+        EXAMPLES=$EXAMPLES" dcps/standalone/C++/PingPong "
+        EXAMPLES=$EXAMPLES" dcps/standalone/C++/Tutorial "
+        EXAMPLES=$EXAMPLES" dcps/standalone/C++OnC/PingPong "
+        EXAMPLES=$EXAMPLES" dcps/standalone/Java/PingPong "
+        EXAMPLES=$EXAMPLES" dcps/standalone/Java/Tutorial "
+
+        if check_platform
+        then
+            #
+            # New examples - integrated since V5.4.0
+            #
+            # Posix
+            # 
+            # C Posix / Standalone
+            EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C/Standalone/Posix "
+            #Durability not run automated at present as it needs work done on synchronization
+            #EXAMPLES=$EXAMPLES" dcps/Durability/C/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/HelloWorld/C/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/C/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Listener/C/Standalone/Posix "    
+            EXAMPLES=$EXAMPLES" dcps/Ownership/C/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/QueryCondition/C/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/WaitSet/C/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C/Standalone/Posix "
+            # 
+            # 
+            # C++ Posix / Standalone
+            EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C++/Standalone/Posix "
+            #Durability not run automated at present as it needs work done on synchronization
+            #EXAMPLES=$EXAMPLES" dcps/Durability/C++/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/HelloWorld/C++/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Listener/C++/Standalone/Posix "    
+            EXAMPLES=$EXAMPLES" dcps/Ownership/C++/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/QueryCondition/C++/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/WaitSet/C++/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C++/Standalone/Posix "
+            # 
+            # C++ Posix / Corba/OpenFusion
+            EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C++/Corba/OpenFusion/Posix "
+            #Durability not run automated at present as it needs work done on synchronization
+            #EXAMPLES=$EXAMPLES" dcps/Durability/C++/Corba/OpenFusion/Posix "
+            EXAMPLES=$EXAMPLES" dcps/HelloWorld/C++/Corba/OpenFusion/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Corba/OpenFusion/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Listener/C++/Corba/OpenFusion/Posix "    
+            EXAMPLES=$EXAMPLES" dcps/Ownership/C++/Corba/OpenFusion/Posix "
+            EXAMPLES=$EXAMPLES" dcps/QueryCondition/C++/Corba/OpenFusion/Posix "
+            EXAMPLES=$EXAMPLES" dcps/WaitSet/C++/Corba/OpenFusion/Posix "
+            EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C++/Corba/OpenFusion/Posix "
+            #
+            # 
+            # Java Posix / Standalone
+            # Java examples use a "BUILD" file instead of a "Makefile", 
+            # so they are also added to the "SPECIAL_BUILD_FILES" list.
+            EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/Java/Standalone/Posix "
+            #Durability not run automated at present as it needs work done on synchronization
+            #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Listener/Java/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/WaitSet/Java/Standalone/Posix "
+            EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/Java/Standalone/Posix "
+            #
+            # Java Posix Corba/JacORB
+            EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/Java/Corba/JacORB/Posix "
+            #Durability not run automated at present as it needs work done on synchronization
+            #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Corba/JacORB/Posix "
+            EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Corba/JacORB/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Corba/JacORB/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Listener/Java/Corba/JacORB/Posix "
+            EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Corba/JacORB/Posix "
+            EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Corba/JacORB/Posix "
+            EXAMPLES=$EXAMPLES" dcps/WaitSet/Java/Corba/JacORB/Posix "
+            EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/Java/Corba/JacORB/Posix "
+            #
+            # END Posix
+            #
+        else
+            # Windows / VS2005 (VisualStudio 2005)
+            #
+            # C VS2005 / Standalonev
+            # Windows VS2005 examples use a "BUILD.bat" file instead of a "Makefile", 
+            # so they are also added to the "SPECIAL_BUILD_FILES" list.
+            EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C/Standalone/VS2005 "
+            #Durability not run automated at present as it needs work done on synchronization
+            #EXAMPLES=$EXAMPLES" dcps/Durability/C/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/HelloWorld/C/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/C/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/Listener/C/Standalone/VS2005 "    
+            EXAMPLES=$EXAMPLES" dcps/Ownership/C/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/QueryCondition/C/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/WaitSet/C/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C/Standalone/VS2005 "
+            # 
+            # C++ VS2005 / Standalone
+            EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C++/Standalone/VS2005 "
+            #Durability not run automated at present as it needs work done on synchronization
+            #EXAMPLES=$EXAMPLES" dcps/Durability/C++/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/HelloWorld/C++/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/Listener/C++/Standalone/VS2005 "    
+            EXAMPLES=$EXAMPLES" dcps/Ownership/C++/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/QueryCondition/C++/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/WaitSet/C++/Standalone/VS2005 "
+            EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C++/Standalone/VS2005 "
+            # 
+            # C++ VS2005 / Corba/OpenFusion
+            #EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C++/Corba/OpenFusion/VS2005 "
+            #EXAMPLES=$EXAMPLES" dcps/Durability/C++/Corba/OpenFusion/VS2005 "
+            #EXAMPLES=$EXAMPLES" dcps/HelloWorld/C++/Corba/OpenFusion/VS2005 "
+            #EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Corba/OpenFusion/VS2005 "
+            #EXAMPLES=$EXAMPLES" dcps/Listener/C++/Corba/OpenFusion/VS2005 "    
+            #EXAMPLES=$EXAMPLES" dcps/Ownership/C++/Corba/OpenFusion/VS2005 "
+            #EXAMPLES=$EXAMPLES" dcps/QueryCondition/C++/Corba/OpenFusion/VS2005 "
+            #EXAMPLES=$EXAMPLES" dcps/WaitSet/C++/Corba/OpenFusion/VS2005 "
+            #EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C++/Corba/OpenFusion/VS2005 "
+            #
+            #
+            # END Windows / VS2005 (VisualStudio 2005)
+            #
+            # Windows / Java
+            #
+            # Java Windows / Standalone
+            EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/Java/Standalone/Windows "
+            #Durability not run automated at present as it needs work done on synchronization
+            #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Standalone/Windows "
+            EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Standalone/Windows "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Standalone/Windows "
+            EXAMPLES=$EXAMPLES" dcps/Listener/Java/Standalone/Windows "
+            EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Standalone/Windows "
+            EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Standalone/Windows "
+            EXAMPLES=$EXAMPLES" dcps/WaitSet/Java/Standalone/Windows "
+            EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/Java/Standalone/Windows "
+            #
+            # Java Windows / Corba/JacORB
+            EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/Java/Corba/JacORB/Windows "
+            #Durability not run automated at present as it needs work done on synchronization
+            #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Corba/JacORB/Windows "
+            EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Corba/JacORB/Windows "
+            EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Corba/JacORB/Windows "
+            EXAMPLES=$EXAMPLES" dcps/Listener/Java/Corba/JacORB/Windows "
+            EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Corba/JacORB/Windows "
+            EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Corba/JacORB/Windows "
+            EXAMPLES=$EXAMPLES" dcps/WaitSet/Java/Corba/JacORB/Windows "
+            EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/Java/Corba/JacORB/Windows "
+            #
+            # END Windows / Java
+            #
+            # END New examples - integrated since V5.4.0
+        fi 
+
         # DLRL and dbmsconnect examples are not included in an inner only build so only add them if doing an outer build
         if [ "$DEP" != "none" ]
         then
             EXAMPLES=$EXAMPLES" dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
 
             # If it's windows don't build the dbmsconnect example and do not add for 64 bit linux either - see dds1869
-            # Do not do it if it's studio12 either because the ODBC for that is installed in the wrong place and the 
+            # Do not do it if it's studio12 either because the ODBC for that is installed in the wrong place and the
             # odbc.ini and odbc.inst files are not populated.
             if [ "$IS_WINDOWS_EXE" = "false" -a "$IS_64_BIT" = "0" -a "$IS_STUDIO12" = "0" ]
             then
@@ -204,12 +371,128 @@ else
             fi
         fi
     fi
- 
+
     export EXAMPLES
 
+    export TEST_SRC_DIR
+#  
     #These examples have special files for build: BUILD(or BUILD.bat for Windows)
-    SPECIAL_BUILD_FILES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
+    SPECIAL_BUILD_FILES="dcps/CORBA/Java/JacORB/PingPong "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/CORBA/Java/JacORB/Tutorial "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/standalone/Java/PingPong "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/standalone/Java/Tutorial "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dlrl/standalone/Java/Tutorial "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dlrl/standalone/C++/Tutorial "
+    #   
+    # New examples - integrated since V5.4.0 
+    # 
+    # Windows VS2005 examples use a "BUILD.bat" file instead of a "Makefile", 
+    # so they are added to this "SPECIAL_BUILD_FILES" list as well as to the "EXAMPLES" list.
+    #
+    # Standalone
+    #
+    # C VS2005
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/ContentFilteredTopic/C/Standalone/VS2005 "
+    #Durability not run automated at present as it needs work done on synchronization
+    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/C/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/C/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/C/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/C/Standalone/VS2005 "    
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/C/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/C/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/WaitSet/C/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/BuiltInTopics/C/Standalone/VS2005 "
+    # 
+    # C++ VS2005
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/ContentFilteredTopic/C++/Standalone/VS2005 "
+    #Durability not run automated at present as it needs work done on synchronization
+    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/C++/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/C++/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/C++/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/C++/Standalone/VS2005 "    
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/C++/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/C++/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/WaitSet/C++/Standalone/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/BuiltInTopics/C++/Standalone/VS2005 "
+    #
+    # Java examples use a "BUILD" file instead of a "Makefile", 
+    # so they are added to this "SPECIAL_BUILD_FILES" list as well as to the "EXAMPLES" list.
+    # 
+    # Java Posix
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/ContentFilteredTopic/Java/Standalone/Posix "
+    #Durability not run automated at present as it needs work done on synchronization
+    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/Java/Standalone/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/Java/Standalone/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Standalone/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/Java/Standalone/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/Java/Standalone/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/Java/Standalone/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/WaitSet/Java/Standalone/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/BuiltInTopics/Java/Standalone/Posix "
+    #
+    # Java examples under Windows use a "BUILD.bat" file instead of a "Makefile" or a BUILD script, 
+    # so they are added to this "SPECIAL_BUILD_FILES" list as well as to the "EXAMPLES" list.
+    # 
+    # Java Windows
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/ContentFilteredTopic/Java/Standalone/Windows "
+    #Durability not run automated at present as it needs work done on synchronization
+    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/Java/Standalone/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/Java/Standalone/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Standalone/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/Java/Standalone/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/Java/Standalone/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/Java/Standalone/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/WaitSet/Java/Standalone/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/BuiltInTopics/Java/Standalone/Windows "
+    #
+    #
+    # Corba
+    # OpenFusion
+    #
+    # C++ VS2005
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/ContentFilteredTopic/C++/Corba/OpenFusion/VS2005 "
+    #Durability not run automated at present as it needs work done on synchronization
+    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/C++/Corba/OpenFusion/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/C++/Corba/OpenFusion/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/C++/Corba/OpenFusion/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/C++/Corba/OpenFusion/VS2005 "    
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/C++/Corba/OpenFusion/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/C++/Corba/OpenFusion/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/WaitSet/C++/Corba/OpenFusion/VS2005 "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/BuiltInTopics/C++/Corba/OpenFusion/VS2005 "
+    #
+    # Java examples use a "BUILD" file instead of a "Makefile", 
+    # so they are added to this "SPECIAL_BUILD_FILES" list as well as to the "EXAMPLES" list.
+    # 
+    # JacORB
+    #
+    # Java Posix
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/ContentFilteredTopic/Java/Corba/JacORB/Posix "
+    #Durability not run automated at present as it needs work done on synchronization
+    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/Java/Corba/JacORB/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/Java/Corba/JacORB/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Corba/JacORB/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/Java/Corba/JacORB/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/Java/Corba/JacORB/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/Java/Corba/JacORB/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/WaitSet/Java/Corba/JacORB/Posix "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/BuiltInTopics/Java/Corba/JacORB/Posix "
+    #
+    # Java Windows
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/ContentFilteredTopic/Java/Corba/JacORB/Windows "
+    #Durability not run automated at present as it needs work done on synchronization
+    #SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Durability/Java/Corba/JacORB/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/HelloWorld/Java/Corba/JacORB/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Lifecycle/Java/Corba/JacORB/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Listener/Java/Corba/JacORB/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/Ownership/Java/Corba/JacORB/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/QueryCondition/Java/Corba/JacORB/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/WaitSet/Java/Corba/JacORB/Windows "
+    SPECIAL_BUILD_FILES=$SPECIAL_BUILD_FILES" dcps/BuiltInTopics/Java/Corba/JacORB/Windows "
+    #
+    # END New examples - integrated since V5.4.0
 
+    
     # services/dbmsconnect/SQL/C++/ODBC " - this should use a BUILD file but that doesn't work at the minute - see dds1869
     export SPECIAL_BUILD_FILES
 
@@ -227,30 +510,56 @@ else
         LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$TAO_ROOT/lib"
 
         SPLICE_ORB=DDS_OpenFusion_1_6_1
-         
-        CLASSPATH="$CLASSPATH:$JACORB_HOME/lib/endorsed/jacorb.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$JACORB_HOME/lib/idl.jar"
 
-        export PATH LD_LIBRARY_PATH SPLICE_ORB CLASSPATH
+        CLASSPATH="$CLASSPATH:$JACORB_HOME/lib/endorsed/jacorb.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$JACORB_HOME/lib/idl.jar"
+        ACE_ROOT=$TAO_ROOT
+
+        export PATH LD_LIBRARY_PATH SPLICE_ORB CLASSPATH ACE_ROOT
 
         ODBCINI="$ODBCHOME/etc/odbc.ini"
         ODBCINST="$ODBCHOME/etc/odbcinst.ini"
         ODBC_MSSQL_SERVER="10.1.0.189"
         ODBC_MYSQL_SERVER="10.1.0.191"
         ODBCSYSINI="$ODBCHOME/etc"
-          
+
         export  ODBCINI ODBCINST ODBC_MSSQL_SERVER ODBC_MYSQL_SERVER ODBCSYSINI
 
         sh $BASE/build_examples.sh
     else
         PATH="$PATH:/cygdrive/c/WINDOWS/system32"
         export PATH
-        
+
+        # Hey look it's a comment !
+        # If the version of VStudio is not VCpp 8 regenerate the test build files for VCpp 9
+        if [ "$VS_VER" != "14" ]
+        then
+            pushd $TEST_SRC_DIR
+            ACE_ROOT=$TAO_ROOT
+            export ACE_ROOT
+            MPC_ROOT=$TAO_ROOT/MPC
+            echo "Regenerating Visual Studio test buildfiles."
+            PATH="$PATH:$TAO_ROOT/bin"
+            mwc.pl -type vc9 -include ../../MPC/config -noreldefs
+            popd
+        fi
+
         XPATH=`cygpath -w "$WORKDIR/installed/HDE/$SHORTSETUP"`
 
         echo "set OSPL_HOME=$XPATH" > setenv.bat
-        
-        XPATH=`cygpath -w "$TAO_ROOT"`
+
+        XPATH=`cygpath -d "$TAO_ROOT"`
         echo "set TAO_ROOT=$XPATH" >> setenv.bat
+        echo "set ACE_ROOT=$XPATH" >> setenv.bat
+        echo "set VS_VER=$VS_VER" >> setenv.bat
+
+        BUILD_CONFIG="DEBUG"
+
+        if [ "$IS_DEBUG" = "0" ]
+        then
+            BUILD_CONFIG="RELEASE"
+        fi
+
+        echo "set BUILD_CONFIG=$BUILD_CONFIG" >> setenv.bat
 
         XPATH=`cygpath -w "$JACORB_HOME"`
         echo "set JACORB_HOME=$XPATH" >> setenv.bat
@@ -259,7 +568,7 @@ else
         echo "set LOGDIR=$XPATH" >> setenv.bat
 
         echo "set SPLICE_ORB=DDS_OpenFusion_1_6_1" >> setenv.bat
-        
+
         echo "set JAVA_HOME=$JAVA_HOME" >> setenv.bat
 
         echo "set PATH=%JAVA_HOME%\bin;%TAO_ROOT%\bin;%TAO_ROOT%\lib;%PATH%;%JACORB_HOME%\bin" >> setenv.bat
@@ -270,10 +579,16 @@ else
 
         XPATH=`cygpath -w "$BASE"`
 
+        echo "set OSPLI_BASE=$XPATH" >> setenv.bat
+
         # For some reason dds3-win2k3 likes uppercase C - this works on
         # the other windows machines too
         cmd.exe /C $XPATH/build_examples.bat
-
+                
+        if [ -n "`egrep -i '(fatal error|error MSB1003)' $LOGDIR/examples/build/build_results.txt `" ]
+        then
+           exit 1
+        fi
     fi
     exit $?
 fi

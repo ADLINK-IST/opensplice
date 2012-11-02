@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -22,6 +22,10 @@
 /* Important note: make sure that this message has the same memory layout on all
  *                 supported platforms. endianness may differ but alignment
  *                 needs to match */
+#define NW_STRUCT(name)  struct name##_s
+#define NW_EXTENDS(type) NW_STRUCT(type) _parent
+#define NW_CLASS(name)   typedef NW_STRUCT(name) *name
+
 NW_CLASS(nw_plugBuffer);
 NW_STRUCT(nw_plugBuffer) {
     os_char version[4];
@@ -36,7 +40,7 @@ NW_STRUCT(nw_plugBuffer) {
     /* crc over the remainder of the message */
     nw_seqNr crc;
 };
-#define NW_CURRENT_PROTOCOL_VERSION '2'
+#define NW_CURRENT_PROTOCOL_VERSION '3'
 
 
 #define nw_plugBufferGetSendingNodeId(buffer) \
@@ -77,7 +81,7 @@ NW_STRUCT(nw_plugBuffer) {
         *(unsigned char *)(&buffer->flags) =                                   \
             *(unsigned char *)(&buffer->flags) & (unsigned char)~(flagValue);  \
     }
-    
+
 #define NW_PLUGBUFFER_GET_FLAG(buffer, flagValue)                           \
     ((*(unsigned char *)&(buffer)->flags & (unsigned char)flagValue) != 0)
 
@@ -85,42 +89,42 @@ NW_STRUCT(nw_plugBuffer) {
     (buffer)->version[0] = 'S';                                             \
     (buffer)->version[1] = 'P';                                             \
     (buffer)->version[2] = 'L';                                             \
-    (buffer)->version[3] = version_id;  
+    (buffer)->version[3] = version_id;
 
 #define nw_plugBufferCheckVersion(buffer,version_id)                           \
     (((buffer)->version[0] == 'S') &&                                       \
      ((buffer)->version[1] == 'P') &&                                       \
      ((buffer)->version[2] == 'L') &&                                       \
-     ((buffer)->version[3] == version_id))  
-    
+     ((buffer)->version[3] == version_id))
+
 
 #define nw_plugBufferClearFlags(buffer) \
         (buffer)->flags = NW_FLAGS_CLEAR
-    
+
 #define nw_plugBufferSetControlFlag(buffer, control) \
     NW_PLUGBUFFER_SET_FLAG(buffer, NW_FLAG_CONTROL, control)
 
 #define nw_plugBufferGetControlFlag(buffer) \
     NW_PLUGBUFFER_GET_FLAG(buffer, NW_FLAG_CONTROL)
-    
+
 #define nw_plugBufferSetReliabilityFlag(buffer, reliability) \
     NW_PLUGBUFFER_SET_FLAG(buffer, NW_FLAG_RELIABLE, reliability)
 
 #define nw_plugBufferGetReliabilityFlag(buffer) \
     NW_PLUGBUFFER_GET_FLAG(buffer, NW_FLAG_RELIABLE)
-    
+
 #define nw_plugBufferSetFragmentedFlag(buffer, fragmented) \
     NW_PLUGBUFFER_SET_FLAG(buffer, NW_FLAG_FRAGMENTED, fragmented)
 
 #define nw_plugBufferGetFragmentedFlag(buffer) \
     NW_PLUGBUFFER_GET_FLAG(buffer, NW_FLAG_FRAGMENTED)
-    
+
 #define nw_plugBufferSetTerminatorFlag(buffer, terminator) \
     NW_PLUGBUFFER_SET_FLAG(buffer, NW_FLAG_TERMINATOR, terminator)
 
 #define nw_plugBufferGetTerminatorFlag(buffer) \
     NW_PLUGBUFFER_GET_FLAG(buffer, NW_FLAG_TERMINATOR)
-    
+
 #define nw_plugBufferSetP2PFlag(buffer, p2p) \
     NW_PLUGBUFFER_SET_FLAG(buffer, NW_FLAG_P2P, p2p)
 

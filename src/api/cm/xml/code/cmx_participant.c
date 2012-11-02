@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -88,7 +88,7 @@ cmx_participantInit(
     v_participant participant;
 
     participant = v_participant(entity);
-    sprintf(buf, "<kind>PARTICIPANT</kind>");
+    os_sprintf(buf, "<kind>PARTICIPANT</kind>");
 
     return (c_char*)(os_strdup(buf));
 }
@@ -299,7 +299,11 @@ cmx_participantRegisterType(
                 if (topicType == NULL) {
                     if (sd_serializerLastValidationResult(serializer) == SD_VAL_ERROR) {
                         msg = sd_serializerLastValidationMessage(serializer);
-                        OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0, "Data type could not be registered, because it is not valid: %s",  msg);
+                        OS_REPORT_1(OS_ERROR,
+                                    CM_XML_CONTEXT, 0,
+                                    "Data type could not be registered, "
+                                    "because it is not valid: %s",
+                                    msg);
                         result = CMX_RESULT_FAILED;
                     } else {
                         result = CMX_RESULT_OK;

@@ -1,0 +1,51 @@
+<OpenSplice>
+   <Domain>
+      <Name>OpenSpliceV5.5_with_DDSI2</Name>
+      <Database>
+         <Size>10485760</Size>
+      </Database>
+      <Service name="ddsi2">
+         <Command>ddsi2</Command>
+      </Service>
+      <Service name="durability">
+         <Command>durability</Command>
+      </Service>
+   </Domain>
+   <DDSI2Service name="ddsi2">
+      <General>
+         <NetworkInterfaceAddress>AUTO</NetworkInterfaceAddress>
+         <AllowMulticast>true</AllowMulticast>
+         <EnableMulticastLoopback>true</EnableMulticastLoopback>
+         <CoexistWithNativeNetworking>false</CoexistWithNativeNetworking>
+      </General>
+      <Compatibility>
+         <!-- see the release notes and ospl_ddsi2_interoperable.xml -->
+	 <StandardsConformance>strict</StandardsConformance>
+      </Compatibility>
+      <Discovery>
+         <DomainId>0</DomainId>
+      </Discovery>
+   </DDSI2Service>
+   <DurabilityService name="durability">
+      <Network>
+         <InitialDiscoveryPeriod>10.0</InitialDiscoveryPeriod>
+         <Alignment>
+            <TimeAlignment>false</TimeAlignment>
+            <RequestCombinePeriod>
+               <Initial>2.5</Initial>
+               <Operational>0.1</Operational>
+            </RequestCombinePeriod>
+         </Alignment>
+         <WaitForAttachment maxWaitCount="1000">
+            <ServiceName>ddsi2</ServiceName>
+         </WaitForAttachment>
+      </Network>
+      <NameSpaces>
+         <NameSpace name="defaultNamespace">
+            <Partition>*</Partition>
+         </NameSpace>
+         <Policy alignee="Initial" aligner="true" durability="Durable" nameSpace="defaultNamespace"/>
+      </NameSpaces>
+   </DurabilityService>
+</OpenSplice>
+

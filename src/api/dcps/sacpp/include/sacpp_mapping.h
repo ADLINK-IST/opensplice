@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -36,5 +36,6 @@
 #include "mapping/UVL.h"
 #include "mapping/BVL.h"
 #include "mapping/VALUE.h"
+#include "mapping/BSTR.h"
 
 #endif /* SACPP_MAPPING_H */

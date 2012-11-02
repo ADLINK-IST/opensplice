@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_OBSERVABLE_H
@@ -77,12 +77,14 @@ v_observableAddObserver(
  *
  * \param _this    the reference to an observable object.
  * \param observer the reference to the observer object to remove.
+ * \param userData the reference to the userdata belonging to the proxy of the observer object to remove.
  * \return         TRUE if the observer is removed, otherwise FALSE.
  */
 OS_API c_bool
 v_observableRemoveObserver (
     v_observable _this,
-    v_observer observer);
+    v_observer observer,
+    void** userData);
 
 #undef OS_API
 

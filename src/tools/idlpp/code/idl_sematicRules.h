@@ -1,15 +1,15 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-#include <c_metabase.h>
+#include "c_metabase.h"
 
 typedef int (*idl_errorFunction) (char *text);
 
@@ -17,7 +17,7 @@ typedef int (*idl_errorFunction) (char *text);
  * Check if a referenced identifier is visible in the identified scope.
  * It must be a metaObject and the scan is case insensitive.
  * It scans metaObjects and case insensitive.
- * 
+ *
  * returns 0 if referenced identifier is found.
  * returns >0 if referenced identifier is not found
  *   && problem is reported to error channel.
@@ -33,7 +33,7 @@ idl_checkReferencedIdentifier (
  * Check if the identifier of a constant definition is unique
  * in the identified scope (no scan in a higher level scope).
  * It scans metaObjects and case insensitive.
- * 
+ *
  * returns 0 if the identifier is unique.
  * returns >0 if the identifier is not unique
  *   && problem is reported to error channel.
@@ -94,7 +94,7 @@ idl_checkConstantDeclaration (
  * Check if the identifier of a type definition is unique
  * in the identified scope (no scan in a higher level scope).
  * It scans metaObjects and case insensitive.
- * 
+ *
  * returns 0 if the identifier is unique.
  * returns >0 if the identifier is not unique
  *   && problem is reported to error channel.
@@ -135,7 +135,7 @@ idl_checkTypeReference (
  * Check if the identifier of the enumeration element is unique
  * in the identified scope (no scan in a higher level scope).
  * It scans metaObjects and case insensitive.
- * 
+ *
  * returns 0 if the identifier is unique.
  * returns >0 if the identifier is not unique
  *   && problem is reported to error channel.
@@ -167,7 +167,7 @@ idl_checkEnumerationElementCount (
  * Check if the identifier of the interface is unique
  * in the identified scope (no scan in a higher level scope).
  * It scans metaObjects (ignoring interfaces) and case insensitive.
- * 
+ *
  * returns 0 if the identifier is unique.
  * returns >0 if the identifier is not unique
  *   && problem is reported to error channel.
@@ -183,7 +183,7 @@ idl_checkInterfaceDefinition (
  * Check if the identifier of the exception is unique
  * in the identified scope (no scan in a higher level scope).
  * It scans metaObjects and case insensitive.
- * 
+ *
  * returns 0 if the identifier is unique.
  * returns >0 if the identifier is not unique
  *   && problem is reported to error channel.
@@ -199,7 +199,7 @@ idl_checkExceptionDefinition (
  * Check if the identifier of the operation is unique
  * in the identified scope (no scan in a higher level scope).
  * It scans metaObjects and case insensitive.
- * 
+ *
  * returns 0 if the identifier is unique.
  * returns >0 if the identifier is not unique
  *   && problem is reported to error channel.
@@ -214,7 +214,7 @@ idl_checkOperationDefinition (
 /*
  * Check if the identifiers in the structure declarator list (iter) are unique.
  * It scans case insensitive.
- * 
+ *
  * returns 0 if all identifiers are unique.
  * returns >0 if not all identifiers are unique
  *   && problem is reported to error channel.
@@ -231,7 +231,7 @@ idl_checkStructDeclaratorDefinition (
  * It scans case insensitive.
  * If the switchType is an enumeration it also checks if an declarator identifier
  * does not conflict with the enumeration identification.
- * 
+ *
  * returns 0 if all identifiers are unique.
  * returns >0 if not all identifiers are unique
  *   && problem is reported to error channel.
@@ -247,7 +247,7 @@ idl_checkUnionDeclaratorDefinition (
 /*
  * Check if the union switch type is a legal in its context.
  * It also checks if there is an default case where it is not allowed.
- * 
+ *
  * returns 0 if switch is a legal type && not default case error.
  * returns >0 if (not switch is a legal type || default case error)
  *   && problem is reported to error channel.
@@ -290,6 +290,21 @@ idl_checkKeyListFieldName (
     char *name,
     idl_errorFunction rf
     );
+
+/*
+ * Check if the fieldName identified by name addresses a correct sequence
+ * of declarators within a struct identified by scope. name is a declarator,
+ * no nesting allowed.
+ *
+ * returns 0 if the declarator is found within the scope.
+ * returns >0 if the declarator is not found
+ *   && problem is reported to error channel.
+ */
+int
+idl_checkSimpleFieldName(
+    c_metaObject scope,
+    char *name,
+    idl_errorFunction rf);
 
 /*
  * Check is the operand is a positive integer value within the range

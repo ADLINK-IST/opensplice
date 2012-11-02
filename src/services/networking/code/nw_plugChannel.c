@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* interface */
@@ -35,7 +35,7 @@
 NW_CLASS(nw_messageBoxMessage);
 NW_STRUCT(nw_messageBoxMessage) {
     nw_networkId networkId;
-    nw_address address;
+    os_sockaddr_storage address;
     c_string list;
     nw_messageBoxMessageType messageType;
     nw_messageBoxMessage next;
@@ -53,7 +53,7 @@ nw_messageBoxNew(
     void)
 {
     nw_messageBox result;
-    
+
     result = (nw_messageBox)os_malloc(sizeof(*result));
     if (result != NULL) {
         c_mutexInit(&result->mutex, PRIVATE_MUTEX);
@@ -68,7 +68,7 @@ nw_messageBoxFree(
     nw_messageBox messageBox)
 {
     nw_messageBoxMessage toFree;
-    
+
     if (messageBox != NULL) {
         while (messageBox->firstMessage != NULL) {
             toFree = messageBox->firstMessage;
@@ -83,20 +83,20 @@ static void
 nw_messageBoxPushMessage(
     nw_messageBox messageBox,
     nw_networkId networkId,
-    nw_address address,
+    os_sockaddr_storage address,
     c_string list,
     nw_messageBoxMessageType messageType)
 {
     nw_messageBoxMessage newMessage;
     nw_messageBoxMessage *prevNextPtr;
-    
+
     c_mutexLock(&messageBox->mutex);
     newMessage = (nw_messageBoxMessage)os_malloc(sizeof(*newMessage));
     newMessage->networkId = networkId;
     newMessage->address = address;
     newMessage->list = list;
     newMessage->messageType = messageType;
-    
+
     if (messageBox->firstMessage == NULL) {
         prevNextPtr = &(messageBox->firstMessage);
     } else {
@@ -113,7 +113,7 @@ nw_messageBoxPopMessage(
     nw_messageBox messageBox)
 {
     nw_messageBoxMessage result = NULL;
-    
+
     c_mutexLock(&(messageBox->mutex));
     if (messageBox->firstMessage != NULL) {
         result = messageBox->firstMessage;
@@ -123,7 +123,7 @@ nw_messageBoxPopMessage(
         }
     }
     c_mutexUnlock(&(messageBox->mutex));
-    
+
     return result;
 }
 
@@ -146,7 +146,7 @@ nw_plugChannelInitialize(
     nw_onFatalCallBack onFatal,
     c_voidp onFatalUsrData)
 {
-    nw_length fragmentLength;
+    nw_size fragmentLength;
     nw_bool reliable;
     nw_bool controlNeeded;
     static sk_portNr sendingPortNr = NWCF_DEF(PortNr);
@@ -154,14 +154,14 @@ nw_plugChannelInitialize(
     sk_portNr newPortNr;
     nw_plugInterChannel *interChannelPtr = (nw_plugInterChannel *)userDataPtr;
     char *defaultPartitionAddress;
-    
+
     /* Simple attributes */
     channel->name = nw_stringDup(pathName);
     channel->Id = seqNr;
     channel->nodeId = nodeId;
     channel->communication = communication;
     channel->partitions = partitions;
-    
+
     /* Attributes to be read from config */
     /* QoS-es*/
     reliable = NWCF_SIMPLE_ATTRIB(Bool, pathName, reliable);
@@ -180,9 +180,9 @@ nw_plugChannelInitialize(
     /* Default, to be implemented */
     channel->priorityOffered = NW_PRIORITY_UNDEFINED;
     channel->latencyBudgetOffered = NW_LATENCYBUDGET_UNDEFINED;
-    
+
     /* Network fragment length */
-    fragmentLength = NWCF_SIMPLE_PARAM(ULong, pathName, FragmentSize);
+    fragmentLength = (nw_size)NWCF_SIMPLE_PARAM(Size, pathName, FragmentSize);
 
     /* CHECKME, NWCF_MIN(FragmentSize) must be larger dealing with encryption */
     if (fragmentLength < NWCF_MIN(FragmentSize)) {
@@ -192,16 +192,23 @@ nw_plugChannelInitialize(
             pathName, fragmentLength, NWCF_MIN(FragmentSize));
         fragmentLength = NWCF_MIN(FragmentSize);
     }
+    else if(fragmentLength > NWCF_MAX(FragmentSize)) {
+        NW_REPORT_WARNING_3("initializing network",
+            "Channel \"%s\": requested value " PA_SIZEFMT " for fragment size is too big, "
+            "using %u instead",
+            pathName, fragmentLength, NWCF_MAX(FragmentSize));
+        fragmentLength = NWCF_MAX(FragmentSize);
+    }
     /* FIXME, this rounds up to multiple of 4, but it should round down to
-     * meet network constraints (??) */ 
+     * meet network constraints (??) */
     /* round to lowest NW_FRAG_BOUNDARY multiplication higher than
      * fragmentLength */
-    channel->fragmentLength = 
-	NW_ALIGN(NW_PLUGDATABUFFER_ALIGNMENT, fragmentLength);
+    channel->fragmentLength =
+    NW_ALIGN(NW_PLUGDATABUFFER_ALIGNMENT, (nw_length)fragmentLength);
 
     /* What is the base adress of the socket wee need ? */
-    nw_plugPartitionsGetDefaultPartition(partitions, &defaultPartitionAddress, NULL /* SecurityProfile not of interest */ ); 
-    
+    nw_plugPartitionsGetDefaultPartition(partitions, &defaultPartitionAddress, NULL /* SecurityProfile not of interest */ );
+
     switch (communication) {
     case NW_COMM_SEND:
         newPortNr = NWCF_DEFAULTED_PARAM(ULong, pathName, PortNr, sendingPortNr);
@@ -224,13 +231,13 @@ nw_plugChannelInitialize(
         NW_CONFIDENCE(FALSE);
     break;
     }
-    
+
     channel->messageBox = nw_messageBoxNew();
     channel->onFatal = onFatal;
     channel->onFatalUsrData = onFatalUsrData;
 
-    
-    channel->reconnectAllowed = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Reconnection),allowed); 
+
+    channel->reconnectAllowed = NWCF_SIMPLE_ATTRIB(Bool,NWCF_ROOT(General) NWCF_SEP NWCF_NAME(Reconnection),allowed);
     channel->crc = ut_crcNew(UT_CRC_KEY);
 }
 
@@ -271,13 +278,13 @@ nw_bool
 nw_plugChannelProcessMessageBox(
     nw_plugChannel channel,
     nw_networkId *networkId /* out */,
-    nw_address *address,
+    os_sockaddr_storage *address,
     c_string *list,
     nw_messageBoxMessageType *messageType /* out */)
 {
     nw_bool result = FALSE;
     nw_messageBoxMessage message;
-    
+
     message = nw_messageBoxPopMessage(channel->messageBox);
     if (message != NULL) {
         result = TRUE;
@@ -298,13 +305,13 @@ nw_plugChannelGetId(
     nw_plugChannel channel)
 {
     nw_seqNr result = NW_ID_UNDEFINED;
-    
+
     NW_CONFIDENCE(channel);
-    
+
     if (channel) {
         result = channel->Id;
     }
-    
+
     return result;
 }
 
@@ -314,13 +321,13 @@ nw_plugChannelGetReliabilityOffered(
     nw_plugChannel channel)
 {
     nw_reliabilityKind result = NW_RELIABILITY_UNDEFINED;
-    
+
     NW_CONFIDENCE(channel);
-    
+
     if (channel) {
         result = channel->reliabilityOffered;
     }
-    
+
     return result;
 }
 
@@ -330,13 +337,13 @@ nw_plugChannelGetPriorityOffered(
     nw_plugChannel channel)
 {
     nw_priorityKind result = NW_PRIORITY_UNDEFINED;
-    
+
     NW_CONFIDENCE(channel);
-    
+
     if (channel) {
         result = channel->priorityOffered;
     }
-    
+
     return result;
 }
 
@@ -345,7 +352,7 @@ void
 nw_plugChannelNotifyNodeStarted(
     nw_plugChannel channel,
     nw_networkId networkId,
-    nw_address address)
+    os_sockaddr_storage address)
 {
     nw_messageBoxPushMessage(channel->messageBox, networkId, address, NULL, NW_MBOX_NODE_STARTED);
 }
@@ -354,7 +361,7 @@ void
 nw_plugChannelNotifyNodeStopped(
     nw_plugChannel channel,
     nw_networkId networkId,
-    nw_address address)
+    os_sockaddr_storage address)
 {
     nw_messageBoxPushMessage(channel->messageBox, networkId, address, NULL, NW_MBOX_NODE_STOPPED);
 }
@@ -363,7 +370,7 @@ void
 nw_plugChannelNotifyNodeDied(
     nw_plugChannel channel,
     nw_networkId networkId,
-    nw_address address)
+    os_sockaddr_storage address)
 {
     nw_messageBoxPushMessage(channel->messageBox, networkId, address, NULL, NW_MBOX_NODE_DIED);
 }
@@ -372,7 +379,7 @@ void
 nw_plugChannelNotifyGpAdd(
     nw_plugChannel channel,
     nw_networkId networkId,
-    nw_address address)
+    os_sockaddr_storage address)
 {
     nw_messageBoxPushMessage(channel->messageBox, networkId, address, NULL, NW_MBOX_GP_ADD);
 }
@@ -382,18 +389,19 @@ nw_plugChannelNotifyGpAddList(
     nw_plugChannel channel,
     c_string probelist)
 {
+    os_sockaddr_storage dummy;
+    memset(&dummy, 0, sizeof(dummy));
     NW_TRACE_1(
-        Discovery, 2, 
+        Discovery, 2,
         "Adding ProbeList %s",probelist);
-
-    nw_messageBoxPushMessage(channel->messageBox, 0, 0, probelist, NW_MBOX_GP_ADDLIST);
+    nw_messageBoxPushMessage(channel->messageBox, 0, dummy, probelist, NW_MBOX_GP_ADDLIST);
 }
 
 void
 nw_plugChannelNotifyGpRemove(
     nw_plugChannel channel,
     nw_networkId networkId,
-    nw_address address)
+    os_sockaddr_storage address)
 {
     nw_messageBoxPushMessage(channel->messageBox, networkId, address, NULL, NW_MBOX_GP_REMOVE);
 }
@@ -408,10 +416,11 @@ nw_plugChannelGetPartition(
     nw_networkSecurityPolicy *securityPolicy,
     nw_bool *connected,
     nw_bool *compression,
-    os_uint32 *hash)
+    os_uint32 *hash,
+    c_ulong *mTTL)
 {
     nw_plugPartitionsGetPartition(channel->partitions, partitionId, found,
-        partitionAddress, securityPolicy, connected, compression, hash);
+        partitionAddress, securityPolicy, connected, compression, hash, mTTL);
 
 }
 

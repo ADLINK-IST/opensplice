@@ -9,6 +9,11 @@ $VG_MESSAGEBOARD ./exec/MessageBoard&
 
 sleep 2
 
+echo start UserLoad
+$VG_USERLOAD ./exec/UserLoad&
+
+sleep 2
+
 echo start Chatter
 $VG_CHATTER ./exec/Chatter
 

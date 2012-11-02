@@ -69,8 +69,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * AST_Expression nodes denote IDL expressions used in the IDL input.
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 #include <limits.h>
 #include <float.h>

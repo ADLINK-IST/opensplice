@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -23,9 +23,11 @@
 #include "d_group.h"
 #include "d_newGroup.h"
 #include "d_nameSpace.h"
+#include "d__mergeState.h"
 #include "d_nameSpaces.h"
 #include "d_groupsRequest.h"
 #include "d_nameSpacesRequest.h"
+#include "d_nameSpacesRequestListener.h"
 #include "d_message.h"
 #include "d_configuration.h"
 #include "d_qos.h"
@@ -48,6 +50,7 @@
 #include "os_heap.h"
 #include "os_mutex.h"
 #include "os_defs.h"
+#include "os_report.h"
 #include "c_base.h"
 
 /**
@@ -346,7 +349,7 @@ d_adminAddLocalGroup(
             d_durabilityUpdateStatistics(admin->durability, d_statisticsUpdateAdmin, info);
             d_adminStatisticsInfoFree(info);
             admin->alignerGroupCount++;
-            d_adminNotifyListeners(admin, D_GROUP_LOCAL_NEW, NULL, NULL, group);
+            d_adminNotifyListeners(admin, D_GROUP_LOCAL_NEW, NULL, NULL, group, NULL);
             result = TRUE;
         }
     }
@@ -634,7 +637,7 @@ d_adminAddFellow(
                     D_THREAD_MAIN,
                     "New fellow '%u' added to admin.\n",
                     addr->systemId);
-            d_adminNotifyListeners(admin, D_FELLOW_NEW, fellow, NULL, NULL);
+            d_adminNotifyListeners(admin, D_FELLOW_NEW, fellow, NULL, NULL, NULL);
             d_networkAddressFree(addr);
             added = TRUE;
 
@@ -657,22 +660,89 @@ clearMaster(
 
     return TRUE;
 }
+
+struct fellowsExistForRoleHelper
+{
+    d_name role;
+    c_bool found;
+};
+
+c_bool
+d_adminFellowsExistForRoleWalk(
+    void* o,
+    void* userData)
+{
+    d_fellow fellow;
+    d_name role;
+    struct fellowsExistForRoleHelper* helper;
+
+    fellow = d_fellow(o);
+    role = d_fellowGetRole(fellow);
+    helper = (struct fellowsExistForRoleHelper*)userData;
+
+    if (!helper->found) {
+        if (role && !strcmp (helper->role, role)) {
+            helper->found = TRUE;
+        }
+    }
+
+    return TRUE;
+}
+
+static void
+d_adminClearRoleWalk (
+    void* o,
+    void* userData)
+{
+    d_nameSpace nameSpace;
+    d_name role;
+
+    nameSpace = d_nameSpace(o);
+    role = (c_string)userData;
+
+    d_nameSpaceClearMergeState (nameSpace, role);
+}
+
 d_fellow
 d_adminRemoveFellow(
     d_admin admin,
     d_fellow fellow)
 {
+    d_durability durability;
     d_fellow result;
     d_networkAddress fellowAddr;
     d_adminStatisticsInfo info;
+    struct fellowsExistForRoleHelper walkData;
+    d_name role, ownRole;
 
     assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
     result = NULL;
 
     if(admin && fellow){
+        durability = d_adminGetDurability(admin);
+        ownRole = d_durabilityGetConfiguration(durability)->role;
+
         d_lockLock(d_lock(admin));
+
         result = d_tableRemove(admin->fellows, fellow);
+
+        /* Check if this is the last fellow for its role */
+        role = d_fellowGetRole(fellow);
+        if (role && strcmp(ownRole, role)) {
+            walkData.role = role;
+            walkData.found = FALSE;
+            d_tableWalk (admin->fellows, d_adminFellowsExistForRoleWalk, &walkData);
+
+            /* If this fellow is the last for its role, clear role states on own namespaces */
+            if (!walkData.found) {
+                d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
+                        "No fellows left for role '%s'. Clearing namespace merge states for role.\n",
+                        role);
+
+                c_iterWalk (admin->nameSpaces, d_adminClearRoleWalk, role);
+            }
+        }
 
         if(result){
             info = d_adminStatisticsInfoNew();
@@ -700,11 +770,10 @@ d_adminRemoveFellow(
             d_adminStatisticsInfoFree(info);
         }
         d_lockUnlock(d_lock(admin));
-        d_adminNotifyListeners(admin, D_FELLOW_REMOVED, fellow, NULL, NULL);
+        d_adminNotifyListeners(admin, D_FELLOW_REMOVED, fellow, NULL, NULL, NULL);
     }
     return result;
 }
-
 
 struct findNsWalkData
 {
@@ -774,10 +843,7 @@ d_adminAddNameSpace(
                 d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Namespace '%s' added to administration, notifying listeners...\n", d_nameSpaceGetName(nameSpace));
 
                 /* New namespace event */
-                d_adminNotifyListeners(admin, D_NAMESPACE_NEW, NULL, nameSpace, NULL);
-            }else
-            {
-                d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Namespace '%s' already in administration\n", d_nameSpaceGetName(nameSpace));
+                d_adminNotifyListeners(admin, D_NAMESPACE_NEW, NULL, nameSpace, NULL, NULL);
             }
         }
 
@@ -1336,6 +1402,34 @@ d_adminGetNameSpacesCount(
     return result;
 }
 
+d_nameSpace
+d_adminGetNameSpace(
+    d_admin admin,
+    os_char* name)
+{
+    d_nameSpace nameSpace = NULL;
+    os_int32 i;
+
+    assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
+
+
+    if(admin && name){
+        d_lockLock(d_lock(admin));
+
+        for(i=0; i<c_iterLength(admin->nameSpaces) && !nameSpace; i++){
+            nameSpace = d_nameSpace(c_iterObject(admin->nameSpaces, i));
+
+            if(strcmp(d_nameSpaceGetName(nameSpace), name) == 0){
+                nameSpace = d_nameSpace(d_objectKeep(d_object(nameSpace)));
+            } else {
+                nameSpace = NULL;
+            }
+        }
+        d_lockUnlock(d_lock(admin));
+    }
+    return nameSpace;
+}
+
 
 c_bool
 d_adminFellowWalk(
@@ -1400,7 +1494,7 @@ d_adminCleanupFellows(
                                     "Removing fellow: %u\n", address->systemId);
         d_networkAddressFree(address);
         fellow = d_adminRemoveFellow(admin, fellow);
-        d_adminNotifyListeners(admin, D_FELLOW_LOST, fellow, NULL, NULL);
+        d_adminNotifyListeners(admin, D_FELLOW_LOST, fellow, NULL, NULL, NULL);
         d_fellowFree(fellow);
         fellow = c_iterTakeFirst(data.fellows);
     }
@@ -1472,20 +1566,23 @@ d_adminRemoveListener(
     }
 }
 
+
+/* TODO: redesign this to pass through only userdata */
 void
 d_adminNotifyListeners(
     d_admin admin,
     c_ulong mask,
     d_fellow fellow,
     d_nameSpace nameSpace,
-    d_group group)
+    d_group group,
+    c_voidp userData)
 {
     d_adminEvent event;
 
     assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
 
     if(admin){
-        event = d_adminEventNew(mask, fellow, nameSpace, group);
+        event = d_adminEventNew(mask, fellow, nameSpace, group, userData);
         os_mutexLock(&admin->eventMutex);
         admin->eventQueue = c_iterAppend(admin->eventQueue, event);
         os_condSignal(&admin->eventCondition);
@@ -1498,7 +1595,8 @@ d_adminEventNew(
     c_ulong event,
     d_fellow fellow,
     d_nameSpace nameSpace,
-    d_group group)
+    d_group group,
+    c_voidp userData)
 {
     d_adminEvent evt = NULL;
     d_networkAddress addr;
@@ -1508,6 +1606,7 @@ d_adminEventNew(
     evt = d_adminEvent(os_malloc(C_SIZEOF(d_adminEvent)));
     d_objectInit(d_object(evt), D_ADMIN_EVENT, d_adminEventDeinit);
     evt->event = event;
+    evt->userData = userData;
 
     if(fellow){
         assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
@@ -1535,12 +1634,10 @@ d_adminEventNew(
     } else {
         evt->group = NULL;
     }
-    if (nameSpace)
-    {
+    if (nameSpace) {
         assert(d_objectIsValid(d_object(nameSpace), D_NAMESPACE) == TRUE);
         evt->nameSpace = nameSpace;
-    }else
-    {
+    }else {
         evt->nameSpace = NULL;
     }
 
@@ -1587,6 +1684,7 @@ d_adminEventThreadStart(
     d_eventListener listener;
     int i;
     c_bool result;
+    os_result waitResult;
 
     admin = d_admin(arg);
 
@@ -1601,7 +1699,7 @@ d_adminEventThreadStart(
 
                 if((listener->interest & event->event) == event->event){
                     result = listener->func(event->event, event->fellow, event->nameSpace,
-                                                event->group, listener->args);
+                                                event->group, event->userData, listener->args);
                 }
             }
             d_adminEventFree(event);
@@ -1612,7 +1710,13 @@ d_adminEventThreadStart(
         os_mutexLock(&admin->eventMutex);
 
         if((c_iterLength(admin->eventQueue) == 0) && (admin->eventThreadTerminate == FALSE)){
-            os_condWait(&admin->eventCondition, &admin->eventMutex);
+            waitResult = os_condWait(&admin->eventCondition, &admin->eventMutex);
+            if (waitResult == os_resultFail)
+            {
+                OS_REPORT(OS_CRITICAL, "d_adminEventThreadStart", 0,
+                          "os_condWait failed - terminating thread");
+                admin->eventThreadTerminate = TRUE;
+            }
         }
         os_mutexUnlock(&admin->eventMutex);
     }
@@ -1840,4 +1944,254 @@ d_adminCheckReaderRequestFulfilled(
         result = FALSE;
     }
     return result;
+}
+
+struct masterCountForRoleHelper
+{
+    d_name role;
+    d_nameSpace nameSpace;
+    c_ulong masterCount;
+};
+
+static c_bool
+d_nameSpaceCountMastersForRoleWalk (
+    d_fellow fellow,
+    void* userData)
+{
+    d_nameSpace fellowNameSpace;
+    d_networkAddress fellowAddress, nsMaster;
+    struct masterCountForRoleHelper* helper;
+    d_name fellowRole;
+
+    helper = (struct masterCountForRoleHelper*)userData;
+    fellowRole = d_fellowGetRole(fellow);
+
+    /* Role for fellow should always be present at this point */
+    assert (helper->role);
+
+    if (fellowRole) {
+        if (!strcmp(fellowRole, helper->role)) {
+            fellowNameSpace = d_fellowGetNameSpace (fellow, helper->nameSpace);
+
+            if (fellowNameSpace) {
+                fellowAddress = d_fellowGetAddress (fellow);
+                nsMaster = d_nameSpaceGetMaster (fellowNameSpace);
+
+                if (d_networkAddressEquals (fellowAddress, nsMaster)) {
+                    helper->masterCount++;
+                }
+                d_networkAddressFree (fellowAddress);
+                d_networkAddressFree (nsMaster);
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+struct nameSpaceConflictHelper
+{
+    d_durability durability;
+    const char* name;
+    d_nameSpace fellowNameSpace;
+    d_nameSpace oldFellowNameSpace;
+    c_iter stateConflicts;
+    c_ulong conflict;
+};
+
+static void
+d_adminNameSpaceCheckConflicts(
+    d_admin admin,
+    d_nameSpace nameSpace,
+    struct nameSpaceConflictHelper* userData)
+{
+    struct nameSpaceConflictHelper* helper;
+    struct masterCountForRoleHelper walkData;
+    d_networkAddress fellowMaster, ownMaster;
+    d_mergeState fellowState, oldFellowState, ownState;
+    char *role, *fellowRole;
+    char *nameSpaceName;
+    c_iter stateConflicts;
+    c_bool fellowNativeStateChanged;
+    c_bool fellowOtherStatesChanged;
+    d_subscriber subscriber;
+    d_nameSpacesRequestListener nsrListener;
+
+    helper = (struct nameSpaceConflictHelper*)userData;
+    role = d_nameSpaceGetRole (nameSpace);
+    fellowRole = d_nameSpaceGetRole(helper->fellowNameSpace);
+    subscriber = d_adminGetSubscriber(admin);
+    nsrListener = d_subscriberGetNameSpacesRequestListener(subscriber);
+
+    /* Check if there is a master conflict on role, in which case no action should be taken */
+    walkData.masterCount = 0;
+    walkData.nameSpace = nameSpace;
+    walkData.role = fellowRole;
+    d_adminFellowWalk (admin, d_nameSpaceCountMastersForRoleWalk, &walkData);
+
+    /* Only take action when mastercount for role is exactly one */
+    if (walkData.masterCount == 1) {
+        nameSpaceName = d_nameSpaceGetName (nameSpace);
+        fellowMaster = d_nameSpaceGetMaster (helper->fellowNameSpace);
+        fellowState = d_nameSpaceGetMergeState (helper->fellowNameSpace, fellowRole);
+        ownState = d_nameSpaceGetMergeState (nameSpace, fellowRole);
+        fellowNativeStateChanged = FALSE;
+        fellowOtherStatesChanged = FALSE;
+        oldFellowState = NULL;
+        stateConflicts = NULL;
+
+        /* If old fellow namespace did not exist, this can mean a reconnection (fellow is new) or fellow was not yet aware of the namespace */
+        if (!helper->oldFellowNameSpace) {
+            fellowNativeStateChanged = TRUE;
+            fellowOtherStatesChanged = TRUE;
+        }else {
+            oldFellowState = d_nameSpaceGetMergeState(helper->oldFellowNameSpace, fellowRole);
+
+            if (fellowState->value != oldFellowState->value) {
+                fellowNativeStateChanged = TRUE;
+            }
+
+            stateConflicts = d_nameSpaceGetMergedStatesDiff (helper->fellowNameSpace, helper->oldFellowNameSpace);
+            if (stateConflicts) {
+                fellowOtherStatesChanged = TRUE;
+            }
+        }
+
+        d_printTimedEvent(
+                helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
+                "Check for conflicts in namespace %s (nativeStateChanged=%d, otherStatesChanged=%d)\n",
+                nameSpaceName,
+                fellowNativeStateChanged,
+                fellowOtherStatesChanged);
+
+        /* Fellow is in own role */
+        if (!strcmp (role, fellowRole)) {
+            /* Check if masters are different for namespace in admin and from fellow */
+            ownMaster = d_nameSpaceGetMaster(nameSpace);
+            if (d_networkAddressCompare (ownMaster, fellowMaster) && d_nameSpaceIsMasterConfirmed(nameSpace)){
+                d_printTimedEvent(
+                        helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
+                        "Conflicting master found for namespace %s\n",
+                        nameSpaceName);
+
+                helper->conflict = D_NAMESPACE_MASTER_CONFLICT;
+
+                /* Report namespaces to let other fellows know that there was a conflicting master */
+                d_nameSpacesRequestListenerReportNameSpaces(nsrListener);
+                /* Namespace master is pending */
+                d_nameSpaceMasterPending(nameSpace);
+
+            /* Conflict in own state */
+            }else if (fellowNativeStateChanged || (!ownState || (fellowState->value != ownState->value))) {
+                d_printTimedEvent(
+                        helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
+                        "Conflicting (or new) state %d found for namespace %s from own role '%s'\n",
+                        fellowState->value,
+                        nameSpaceName,
+                        fellowRole);
+
+                helper->conflict = D_NAMESPACE_STATE_CONFLICT;
+
+            /* Conflict in other state? */
+            }else if (fellowOtherStatesChanged && stateConflicts) {
+                d_printTimedEvent(
+                        helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
+                        "Conflicting state %d found for namespace %s from in one or more mergedStates\n",
+                        fellowState->value,
+                        nameSpaceName);
+
+                helper->stateConflicts = stateConflicts;
+                helper->conflict = D_NAMESPACE_STATE_CONFLICT;
+            }else {
+                d_printTimedEvent(
+                        helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
+                        "No conflicts found in own or other states for namespace %s\n",
+                        nameSpaceName);
+            }
+            d_free (ownMaster);
+
+        /* In other role */
+        }else {
+            if (fellowNativeStateChanged && (!ownState || (fellowState->value != ownState->value))) {
+                d_printTimedEvent(
+                        helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
+                        "Conflicting (or new) state %d found for namespace %s from role %s\n",
+                        fellowState->value,
+                        nameSpaceName,
+                        fellowRole);
+
+                helper->conflict = D_NAMESPACE_STATE_CONFLICT;
+            }else {
+                d_printTimedEvent(
+                        helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
+                        "No conflicts found in other role for namespace %s\n",
+                        nameSpaceName);
+            }
+        }
+
+        d_free (fellowMaster);
+        d_mergeStateFree (fellowState);
+
+        if (oldFellowState) {
+            d_mergeStateFree (oldFellowState);
+        }
+        if (ownState) {
+            d_mergeStateFree (ownState);
+        }
+    }else {
+        d_printTimedEvent(
+                helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
+                "Inconsistent number of masters (%d) found in role %s, no action required for now.\n",
+                walkData.masterCount,
+                fellowRole);
+    }
+
+    os_free (role);
+    os_free (fellowRole);
+
+}
+
+void
+d_adminReportMaster(
+    d_admin admin,
+    d_fellow fellow,
+    d_nameSpace fellowNameSpace,
+    d_nameSpace oldFellowNameSpace)
+{
+    char* nameSpaceName;
+    struct nameSpaceConflictHelper helper;
+    d_nameSpace nameSpace, nameSpaceCopy;
+    d_durability durability;
+    d_serviceState durabilityState;
+
+    durability = d_adminGetDurability(admin);
+    durabilityState = d_durabilityGetState (durability);
+
+    nameSpaceName = d_nameSpaceGetName (fellowNameSpace);
+    nameSpace = d_adminGetNameSpace(admin, nameSpaceName);
+
+    if (nameSpace) {
+        helper.durability = d_adminGetDurability(admin);
+        helper.name = nameSpaceName;
+        helper.fellowNameSpace = fellowNameSpace;
+        helper.oldFellowNameSpace = oldFellowNameSpace;
+        helper.conflict = 0;
+        helper.stateConflicts = 0;
+
+        /* Only check when I'm complete and fellow is past injecting persistent data */
+        if ((durabilityState >= D_STATE_DISCOVER_PERSISTENT_SOURCE) && (d_fellowGetState(fellow) >= D_STATE_INJECT_PERSISTENT)) {
+            d_adminNameSpaceCheckConflicts (admin, nameSpace, &helper);
+
+            /* If a conflict occured, create D_MASTER_CONFLICT event */
+            if (helper.conflict) {
+                /* Create copy from namespace (fellow namespace is likely to change) */
+                nameSpaceCopy = d_nameSpaceCopy (fellowNameSpace);
+
+                /* New conflict event */
+                d_adminNotifyListeners(admin, helper.conflict, NULL, nameSpaceCopy, NULL, helper.stateConflicts);
+            }
+        }
+
+        d_nameSpaceFree (nameSpace);
+    }
 }

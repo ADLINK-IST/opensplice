@@ -66,10 +66,10 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 // utl_global.cc - Implementation of class IDL_GlobalData
 //
 
-#include <os_stdlib.h>
-#include <os_heap.h>
-#include <idl.h>
-#include <idl_extern.h>
+#include "os_stdlib.h"
+#include "os_heap.h"
+#include "idl.h"
+#include "idl_extern.h"
 
 // Define an increment for the size of the array used to store names of
 // included files

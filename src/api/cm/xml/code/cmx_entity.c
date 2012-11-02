@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -47,8 +47,9 @@
 #include "v_public.h"
 #include "v_qos.h"
 #include "os.h"
+#include "os_stdlib.h"
 #include "sd_serializer.h"
-#include <os_abstract.h>
+#include "os_abstract.h"
 #include <stdio.h>
 
 /* Number of escape-characters. This determines the size of the arrays used for
@@ -131,7 +132,7 @@ getXMLEscapedString(
 
                     for(j = 0; !match && j < CMX_XML_NUM_ESCAPE_CHARS; j++){
                         if(string[i] == CMX_XML_ESCAPE_CHARS[j]){
-                            strncpy(&result[i + inserts], CMX_XML_REPLACE_CHARS[j], CMX_XML_REPLACE_CHARS_LEN[j]);
+                            os_strncpy(&result[i + inserts], CMX_XML_REPLACE_CHARS[j], CMX_XML_REPLACE_CHARS_LEN[j]);
                             /* Count extra length. The original character is counted
                              * by strLen, so count with original character excluded. */
                             inserts += CMX_XML_REPLACE_CHARS_LEN[j] - 1;
@@ -186,7 +187,6 @@ cmx_entityNewFromWalk(
         cmx_registerEntity(proxy);
     } else {
         proxy = arg->entity;
-        
     }
     if((proxy != NULL) || (arg->create == FALSE)){
         special = cmx_entityInit(entity, proxy, arg->create);
@@ -199,7 +199,7 @@ cmx_entityNewFromWalk(
             }
             if(entity->name != NULL){
                 c_char* escapedString = getXMLEscapedString(entity->name);
-                sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>%s</name><enabled>%s</enabled>%s</entity>",
+                os_sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>%s</name><enabled>%s</enabled>%s</entity>",
                             (c_address)proxy,
                             v_public(entity)->handle.index,
                             v_public(entity)->handle.serial,
@@ -209,7 +209,7 @@ cmx_entityNewFromWalk(
                 os_free(escapedString);
             }
             else{
-                sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>NULL</name><enabled>%s</enabled>%s</entity>",
+                os_sprintf(buf, "<entity><pointer>"PA_ADDRFMT"</pointer><handle_index>%d</handle_index><handle_serial>%d</handle_serial><name>NULL</name><enabled>%s</enabled>%s</entity>",
                         (c_address)proxy,
                         v_public(entity)->handle.index,
                         v_public(entity)->handle.serial,
@@ -235,7 +235,7 @@ cmx_entityInit(
     c_bool init)
 {
     c_char* result;
-    u_kernel uk;
+    u_domain domain;
     u_participant up;
     u_result ur;
     
@@ -248,9 +248,9 @@ cmx_entityInit(
         up = u_entityParticipant(proxy);
         
         if(up != NULL){
-            uk = u_participantKernel(up);
+            domain = u_participantDomain(up);
         
-            if(uk == NULL){
+            if(domain == NULL){
                 ur = U_RESULT_ILL_PARAM;
                 OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0, 
                           "cmx_entityInit proxy == NULL && init == TRUE "
@@ -847,7 +847,7 @@ cmx_entityUserEntity(
     if(xmlEntity != NULL){
         if(cmx_isInitialized() == TRUE){
             copy = (c_char*)(os_malloc(strlen(xmlEntity) + 1));
-            strcpy(copy, xmlEntity);
+            os_strcpy(copy, xmlEntity);
             temp = strtok((c_char*)copy, "</>");    /*<entity>*/
             temp = strtok(NULL, "</>");             /*<pointer>*/
             temp = strtok(NULL, "</>");             /*... the pointer*/

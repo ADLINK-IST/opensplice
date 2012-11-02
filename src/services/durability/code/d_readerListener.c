@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -51,7 +51,7 @@ d_readerListenerInit(
         d_listenerInit(d_listener(listener), subscriber, action, d_readerListenerDeinit);
         admin = d_listenerGetAdmin(d_listener(listener));
         readerName = (c_char*)(os_malloc(strlen(topicName) + 7));
-        sprintf(readerName, "%sReader", topicName);
+        os_sprintf(readerName, "%sReader", topicName);
 
         addr = d_adminGetMyAddress(admin);
         listener->myAddr = addr->systemId;
@@ -136,7 +136,8 @@ d_readerListenerAction(
         result = u_dataReaderTake(u_dataReader(o), d_readerListenerCopy, usrData);
 
         if(result != U_RESULT_OK){
-            OS_REPORT(OS_ERROR, D_CONTEXT_DURABILITY, 0, "Could not take data from reader.");
+            OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    "Could not take data from reader (result: %d)", result);
         } else if(listener->message != NULL){
             if(listener->processMessage == TRUE) {
                 d_readerListenerProcessAction(listener->message, usrData);
@@ -353,7 +354,7 @@ d_readerListenerInitDataReader(
 
         query = (c_char*)(os_malloc(strlen(listener->name) +
                                     strlen(FILTER_EXPRESSION) + 32));
-        sprintf(query, FILTER_EXPRESSION, listener->name,
+        os_sprintf(query, FILTER_EXPRESSION, listener->name,
                 myAddr->systemId, unaddressed->systemId, myAddr->systemId);
 
         expr = q_parse(query);

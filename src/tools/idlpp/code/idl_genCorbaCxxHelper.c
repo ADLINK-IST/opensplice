@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -20,7 +20,7 @@
 #include "idl_genCxxHelper.h"
 #include "idl_tmplExp.h"
 
-#include <c_typebase.h>
+#include "c_typebase.h"
 
 /* idl_null is an empty function, used to bypass QAC errors */
 static void
@@ -79,23 +79,23 @@ idl_structureOpen (
 {
     c_char *key_list;
 
-    idl_fileOutPrintf(idl_fileCur(), "char *\n");
+    idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(idl_fileCur(), "__%s__name(void)\n",
 	idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf(idl_fileCur(), "{\n");
-    idl_fileOutPrintf(idl_fileCur(), "    return CORBA::string_dup(\"%s\");\n",
+    idl_fileOutPrintf(idl_fileCur(), "    return (const char*)\"%s\";\n",
 	idl_scopeStack(scope, "::", name));
     idl_fileOutPrintf(idl_fileCur(), "}\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
     key_list = idl_keyResolve(idl_keyDefDefGet(), scope, name);
-    idl_fileOutPrintf(idl_fileCur(), "char *\n");
+    idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(idl_fileCur(), "__%s__keys(void)\n",
 	idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     if (key_list) {
-        idl_fileOutPrintf(idl_fileCur(), "    return CORBA::string_dup(\"%s\");\n", key_list);
+        idl_fileOutPrintf(idl_fileCur(), "    return (const char*)\"%s\";\n", key_list);
     } else {
-        idl_fileOutPrintf(idl_fileCur(), "    return CORBA::string_dup(\"\");\n");
+        idl_fileOutPrintf(idl_fileCur(), "    return (const char*)\"\";\n");
     }
     idl_fileOutPrintf(idl_fileCur(), "}\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
@@ -128,24 +128,24 @@ idl_unionOpen (
 {
     c_char *key_list;
 
-    idl_fileOutPrintf(idl_fileCur(), "char *\n");
+    idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(idl_fileCur(), "__%s__name(void)\n",
 	idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf(idl_fileCur(), "{\n");
-    idl_fileOutPrintf(idl_fileCur(), "    return CORBA::string_dup(\"%s\");\n",
+    idl_fileOutPrintf(idl_fileCur(), "    return (const char *)\"%s\";\n",
 	idl_scopeStack(scope, "::", name));
     idl_fileOutPrintf(idl_fileCur(), "}\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
     key_list = idl_keyResolve(idl_keyDefDefGet(), scope, name);
-    idl_fileOutPrintf(idl_fileCur(), "char *\n");
+    idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(idl_fileCur(), "__%s__keys(void)\n",
 	idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf(idl_fileCur(), "{\n");
     if (key_list) {
-        idl_fileOutPrintf(idl_fileCur(), "    return CORBA::string_dup(\"%s\");\n",
+        idl_fileOutPrintf(idl_fileCur(), "    return (const char *)\"%s\";\n",
 	    key_list);
     } else {
-        idl_fileOutPrintf(idl_fileCur(), "    return CORBA::string_dup(\"\");\n");
+        idl_fileOutPrintf(idl_fileCur(), "    return (const char *)\"\";\n");
     }
     idl_fileOutPrintf(idl_fileCur(), "}\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");

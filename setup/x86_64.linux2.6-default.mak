@@ -10,7 +10,8 @@ FILTER           =
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
-LD_EXE           = $(CXX)
+LD_EXE           = $(CC)
+LD_CXX           = $(CXX)
 	# GNU yacc
 YACC		 = bison
 	# GNU lex
@@ -19,6 +20,8 @@ LEX		 = flex
 MAKE		 = make
 	# Solaris native touch
 TOUCH		 = touch
+	# Tool used for creating soft/hard links.
+LN               = ln
 	# Archiving
 AR               = /usr/bin/ar
 AR_CMDS          = rv
@@ -34,6 +37,10 @@ JCC              = javac
 
 	#JAR
 JAR		 = jar
+
+#JAVAH
+JAVAH            = javah
+JAVAH_FLAGS      = -force
 
 	#Java
 JAVA		 = java
@@ -57,11 +64,11 @@ CFLAGS_DEBUG     = -g -D_TYPECHECK_
 CFLAGS_STRICT	 = -Wall -W -pedantic -Wno-long-long -Wno-variadic-macros
 
 # Set compiler options for single threaded process
-CFLAGS		 = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CFLAGS		 = -D_GNU_SOURCE -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
+CXXFLAGS	 = -D_GNU_SOURCE -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 
 # Set CPP flags
-CPPFLAGS	 = -m64 -DOSPL_ENV_$(SPECIAL) -D_XOPEN_SOURCE=500
+CPPFLAGS	 = -m64 -pipe -DOSPL_ENV_$(SPECIAL) -D_XOPEN_SOURCE=500
 
 # Set compiler options for multi threaded process
 	# notify usage of posix threads
@@ -102,11 +109,19 @@ DLIB_POSTFIX = .so
 EXEC_PREFIX = 
 EXEC_POSTFIX = 
 INLINESRC_POSTFIX = .i
+CSLIB_PREFIX =
+CSLIB_POSTFIX = .dll
+CSMOD_PREFIX =
+CSMOD_POSTFIX = .netmodule
+CSEXEC_PREFIX =
+CSEXEC_POSTFIX = .exe
+CSDBG_PREFIX =
+CSEXEC_DBG_POSTFIX = .exe.mdb
+CSMOD_DBG_POSTFIX = .netmodule.mdb
+CSLIB_DBG_POSTFIX = .dll.mdb
+CS_LIBPATH_SEP = ,
 
 # Identify linker options for building shared C# libraries and or executables.
 CSTARGET_LIB = -target:library
+CSTARGET_MOD = -t:module
 CSTARGET_EXEC = -target:exe
-CSLIB_PREFIX =
-CSLIB_POSTFIX = .dll
-CSEXEC_PREFIX =
-CSEXEC_POSTFIX = .exe

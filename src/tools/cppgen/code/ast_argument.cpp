@@ -73,8 +73,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * from the enum AST_Argument::Direction.
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Static functions

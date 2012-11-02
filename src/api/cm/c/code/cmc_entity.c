@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -28,7 +28,7 @@ cmc_entityNew(
     
     if(entity->name != NULL){
         ce->name = (c_char*)(os_malloc(strlen(entity->name) + 1));
-        strncpy(ce->name, entity->name, strlen(entity->name) + 1);
+       os_strncpy(ce->name, entity->name, strlen(entity->name) + 1);
     }
     else {
         ce->name = NULL;

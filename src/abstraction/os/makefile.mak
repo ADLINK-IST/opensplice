@@ -2,6 +2,7 @@ ifndef OSPL_OUTER_HOME
 # included by bld/$(SPLICE_TARGET)/makefile
 
 TARGET_DLIB	:= $(DDS_OS)
+EXTRACTED_LIB = libddscore
 
 include  $(OSPL_HOME)/setup/makefiles/target.mak
 
@@ -14,7 +15,8 @@ endif
 
 CPPFLAGS	+= -DOSPL_BUILD_OS
 CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
-# CINCS    += -I$(OSPL_HOME)/src/database/database/include
+CINCS    += -I$(OSPL_HOME)/src/abstraction/os/code
+#CINCS    += -I$(OSPL_HOME)/src/database/database/include
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS	+= $(SHLDLIBS) $(LDLIBS_OS) $(LDLIBS_NW)

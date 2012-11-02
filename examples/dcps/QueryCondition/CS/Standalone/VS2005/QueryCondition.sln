@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QueryConditionData", "QueryConditionData\QueryConditionData.csproj", "{CF904244-8B23-480A-B625-58A9BB5BBFA9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QueryConditionDataPublisher", "QueryConditionDataPublisher\QueryConditionDataPublisher.csproj", "{E340015D-7529-4307-8620-EE3622186141}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QueryConditionDataSubscriber", "QueryConditionDataSubscriber\QueryConditionDataSubscriber.csproj", "{22FBEE58-DEFE-4F2F-8E00-D3C0C761924C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CF904244-8B23-480A-B625-58A9BB5BBFA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF904244-8B23-480A-B625-58A9BB5BBFA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF904244-8B23-480A-B625-58A9BB5BBFA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF904244-8B23-480A-B625-58A9BB5BBFA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E340015D-7529-4307-8620-EE3622186141}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E340015D-7529-4307-8620-EE3622186141}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E340015D-7529-4307-8620-EE3622186141}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E340015D-7529-4307-8620-EE3622186141}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22FBEE58-DEFE-4F2F-8E00-D3C0C761924C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22FBEE58-DEFE-4F2F-8E00-D3C0C761924C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22FBEE58-DEFE-4F2F-8E00-D3C0C761924C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22FBEE58-DEFE-4F2F-8E00-D3C0C761924C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

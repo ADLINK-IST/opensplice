@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v_policy.h"
@@ -184,9 +184,33 @@ v_messageQos_new(
         OS_REPORT(OS_ERROR,
                   "v_messageQos_new",0,
                   "Failed to allocate messageQos.");
+        assert(FALSE);
     }
     return _this;
 }
+
+v_messageQos
+v_messageQos_copy (
+    v_messageQos src)
+{
+    v_messageQos _this;
+    c_long size;
+    c_type type = NULL;
+
+    size = c_arraySize(src);
+    type = c_getType(src);
+    _this = c_newArray((c_collectionType)type,size);
+    if (_this) {
+        memcpy(_this,src,size);
+    } else {
+        OS_REPORT(OS_ERROR,
+                  "v_messageQos_copy",0,
+                  "Failed to allocate messageQos.");
+    }
+
+    return _this;
+}
+
 
 /**
  * Endianess independent Getters.
@@ -395,7 +419,7 @@ v_messageQos_isReaderCompatible (
             }
         }
     }
-#else 
+#else
     if (!c_timeIsInfinite(qos->deadline.period)) {
         if (v_messageQos_isInfiniteDeadline(_this)) {
             return FALSE;

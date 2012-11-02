@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -16,15 +16,15 @@
  * MODULE:          Tutorial for the C++ programming language.
  * DATE             june 2007.
  ************************************************************************
- * 
+ *
  * This file contains the implementation for the error handling operations.
- * 
+ *
  ***/
 
 #include "CheckStatus.h"
 
 /* Array to hold the names for all ReturnCodes. */
-char *RetCodeName[13] = { 
+char *RetCodeName[13] = {
     "DDS_RETCODE_OK",
     "DDS_RETCODE_ERROR",
     "DDS_RETCODE_UNSUPPORTED",
@@ -54,7 +54,7 @@ void
 checkStatus(
     DDS::ReturnCode_t status,
     const char *info )
-{ 
+{
     if ((status == DDS::RETCODE_OK) || (status == DDS::RETCODE_NO_DATA)) {
         return; /* no problems */
     }
@@ -70,7 +70,7 @@ checkStatus(
      * This is needed on windows as calling exit() or ExitProcess()
      * will fail to cleanup resources properly.
      */
-    while (1) {
+    for (;;) {
         Sleep(300000); /* 5 minutes */
     }
 }
@@ -83,7 +83,7 @@ checkHandle(
     void *handle,
     char *info )
 {
-     
+
      if (!handle) {
         cerr << "Error in " << info << ": Creation failed: invalid handle" << endl;
         /* Generate Ctrl-C event to terminate process */
@@ -93,7 +93,7 @@ checkHandle(
          * This is needed on windows as calling exit() or ExitProcess()
          * will fail to cleanup resources properly.
          */
-        while (1) {
+        for (;;) {
             Sleep(300000); /* 5 minutes */
         }
      }

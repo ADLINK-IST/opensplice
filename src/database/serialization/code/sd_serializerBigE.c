@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -537,7 +537,7 @@ sd_bigEDeserCollection(
                 SD_COPY2BIG_4(&colSize,dataPtrHelper);
                 len += 4;
 #if 1
-                *((c_array *)(*objectPtr)) = c_newArray(collectionType, colSize);
+                *((c_array *)(*objectPtr)) = c_newBaseArrayObject(collectionType, colSize);
 #else
                 *((c_array *)(*objectPtr)) = c_arrayNew(collectionType->subType, colSize);
 #endif

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -27,6 +27,9 @@
 #include "os_report.h"
 #include "os_stdlib.h"
 #include "v_builtin.h"
+#include "u_domain.h"
+
+
 
 d_configuration
 d_configurationNew(
@@ -107,7 +110,12 @@ d_configurationNew(
 
             if(found){
                 u_cfElementFree(found);
+            }else {
+                OS_REPORT_1(OS_WARNING, D_CONTEXT, 0,
+                                "No DurabilityService configurations found for serviceName '%s'. Defaults applied.",
+                                serviceName);
             }
+
             if(domainElement){
                 u_cfElementFree(domainElement);
             }
@@ -143,6 +151,7 @@ d_configurationDeinit(
                 policy = d_policy(c_iterTakeFirst(configuration->policies));
             }
             c_iterFree(configuration->policies);
+            configuration->policies = NULL;
         }
         if(configuration->nameSpaces){
             ns = d_nameSpace(c_iterTakeFirst(configuration->nameSpaces));
@@ -152,9 +161,11 @@ d_configurationDeinit(
                 ns = d_nameSpace(c_iterTakeFirst(configuration->nameSpaces));
             }
             c_iterFree(configuration->nameSpaces);
+            configuration->nameSpaces = NULL;
         }
         if(configuration->networkServiceNames){
             d_tableFree(configuration->networkServiceNames);
+            configuration->networkServiceNames = NULL;
         }
         if(configuration->services){
             name = (c_char*)(c_iterTakeFirst(configuration->services));
@@ -190,6 +201,9 @@ d_configurationDeinit(
             os_free(configuration->tracingOutputFileName);
             configuration->tracingOutputFileName = NULL;
         }
+        if(configuration->role){
+            os_free (configuration->role);
+        }
     }
 }
 
@@ -216,13 +230,24 @@ d_configurationInit(
     c_long i;
     c_bool found;
 
+    u_domain domain = NULL;
+
     if(config != NULL){
         /** First apply all defaults. */
         d_printTimedEvent(durability, D_LEVEL_FINER,
                             D_THREAD_MAIN, "Initializing configuration...\n");
 
+        domain = u_participantDomain(u_participant(d_durabilityGetService(durability)));
+
         config->persistentStoreDirectory    = NULL;
         config->persistentStoreMode         = D_STORE_TYPE_XML;
+        config->persistentMMFStoreAddress   = 0;
+        config->persistentMMFStoreSize      = 10485760;
+        if(domain)
+        {
+            config->persistentMMFStoreAddress   = (c_address)u_domainMemoryAddress(domain) + u_domainMemorySize(domain);
+            config->persistentMMFStoreSize      = u_domainMemorySize(domain) * 2;
+        }
         config->partitionName               = NULL;
         config->publisherName               = NULL;
         config->subscriberName              = NULL;
@@ -233,11 +258,13 @@ d_configurationInit(
         config->services                    = c_iterNew(NULL);
         config->tracingVerbosityLevel       = D_LEVEL_INFO;
         config->nameSpaces                  = NULL;
+        config->policies                    = NULL;
         config->tracingTimestamps           = TRUE;
         config->tracingRelativeTimestamps   = FALSE;
         config->timeAlignment               = TRUE;
         config->startTime                   = os_timeGet();
         config->networkMaxWaitCount         = D_DEFAULT_NETWORK_MAX_WAITCOUNT;
+        config->role                        = NULL;
 
         d_configurationSetTime(&(config->heartbeatExpiryTime), D_DEFAULT_HEARTBEAT_EXPIRY_TIME);
         config->heartbeatExpiry = D_DEFAULT_HEARTBEAT_EXPIRY_TIME;
@@ -263,6 +290,7 @@ d_configurationInit(
         d_configurationSetPersistentStoreSleepTime              (config, D_DEFAULT_PERSISTENT_STORE_SLEEP_TIME);
         d_configurationSetPersistentStoreSessionTime            (config, D_DEFAULT_PERSISTENT_STORE_SESSION_TIME);
         d_configurationSetPersistentQueueSize                   (config, D_DEFAULT_PERSISTENT_QUEUE_SIZE);
+        d_configurationSetPersistentSMPCount                    (config, D_DEFAULT_PERSISTENT_SMP_COUNT);
         d_configurationSetOptimizeUpdateInterval                (config, D_DEFAULT_OPTIMIZE_INTERVAL);
 
         d_configurationSetInitialRequestCombinePeriod           (config, D_DEFAULT_INITIAL_REQUEST_COMBINE_PERIOD);
@@ -273,7 +301,7 @@ d_configurationInit(
         d_configurationSetTransportPriority                     (config, D_DEFAULT_TRANSPORT_PRIORITY);
         d_configurationSetHeartbeatTransportPriority            (config, D_DEFAULT_TRANSPORT_PRIORITY);
         d_configurationSetAlignmentTransportPriority            (config, D_DEFAULT_TRANSPORT_PRIORITY);
-
+        d_configurationSetRole                                  (config, D_DEFAULT_ROLE);
         durability->configuration = config;
 
         if(element){
@@ -283,9 +311,10 @@ d_configurationInit(
             if(domainElement){
                 d_configurationValueFloat  (config, domainElement, "Lease/ExpiryTime/#text", d_configurationSetLivelinessExpiryTime);
                 d_configurationSetLivelinessUpdateFactor(config, domainElement, "Lease/ExpiryTime", "update_factor");
+                d_configurationValueString(config, domainElement, "Role/#text", d_configurationSetRole);
             } else {
                 OS_REPORT(OS_WARNING, D_CONTEXT, 0,
-                    "No Domain configuration found. Applying default Lease...");
+                    "No Domain configuration found. Applying default Lease and Role...");
             }
             d_configurationValueString (config, element, "Watchdog/Scheduling/Class/#text", d_configurationSetLivelinessSchedulingClass);
             d_configurationValueLong   (config, element, "Watchdog/Scheduling/Priority/#text", d_configurationSetLivelinessSchedulingPriority);
@@ -298,6 +327,11 @@ d_configurationInit(
             d_configurationValueFloat  (config, element, "Persistent/StoreSleepTime/#text", d_configurationSetPersistentStoreSleepTime);
             d_configurationValueULong  (config, element, "Persistent/QueueSize/#text", d_configurationSetPersistentQueueSize);
             d_configurationValueString (config, element, "Persistent/StoreMode/#text", d_configurationSetPersistentStoreMode);
+
+            d_configurationValueULong  (config, element, "Persistent/SmpCount/#text", d_configurationSetPersistentSMPCount);
+            d_configurationValueSize (config, element, "Persistent/MemoryMappedFileStore/Size/#text", d_configurationSetPersistentMMFStoreSize);
+            d_configurationValueMemAddr (config, element, "Persistent/MemoryMappedFileStore/Address/#text", d_configurationSetPersistentMMFStoreAddress);
+
             d_configurationValueULong  (config, element, "Persistent/StoreOptimizeInterval/#text", d_configurationSetOptimizeUpdateInterval);
             d_configurationValueFloat  (config, element, "Persistent/StoreSessionTime/#text", d_configurationSetPersistentStoreSessionTime);
 
@@ -374,7 +408,7 @@ d_configurationInit(
 
             if(!found){
                 /* Create new namespace for builtin partition (will automatically select policy) */
-                ns = d_nameSpaceNew_w_policy("AutoBuiltinPartition", TRUE, D_ALIGNEE_INITIAL, D_DURABILITY_TRANSIENT);
+                ns = d_nameSpaceNew_w_policy(config, "AutoBuiltinPartition", TRUE, D_ALIGNEE_INITIAL, D_DURABILITY_TRANSIENT);
                 d_nameSpaceAddElement(ns, "NoName", V_BUILTIN_PARTITION, "*");
                 config->nameSpaces = c_iterInsert(config->nameSpaces, ns);
             }
@@ -496,6 +530,9 @@ d_configurationReport(
     const c_char* tracingSynchronous;
 
     d_printTimedEvent(durability, D_LEVEL_CONFIG, D_THREAD_MAIN, "Configuration:\n");
+    d_printEvent(durability, D_LEVEL_CONFIG,
+            "- Role                                        : %s\n",
+            config->role);
 
     switch(config->livelinessScheduling.schedClass){
         case OS_SCHED_DEFAULT:
@@ -530,12 +567,16 @@ d_configurationReport(
     } else {
         pstoreDir = config->persistentStoreDirectory;
     }
+
     switch(config->persistentStoreMode){
         case D_STORE_TYPE_XML:
             pstoreMode = "XML";
             break;
         case D_STORE_TYPE_BIG_ENDIAN:
             pstoreMode = "BIG ENDIAN";
+            break;
+        case D_STORE_TYPE_MEM_MAPPED_FILE:
+            pstoreMode = "MMF";
             break;
         case D_STORE_TYPE_UNKNOWN:
             pstoreMode = "UNKNOWN";
@@ -565,15 +606,23 @@ d_configurationReport(
     d_printEvent(durability, D_LEVEL_CONFIG,
             "- Persistent.StoreDirectory                   : %s\n" \
             "- Persistent.StoreMode                        : %s\n" \
-            "- Persistent.QueueSize                        : %u\n" \
+            "- Persistent.MemoryMappedFile.Size            : %u\n" \
+            "- Persistent.MemoryMappedFile.Address         : %#x\n" \
+            "- Persistent.SmpCount                         : %u\n" \
+            "- Persistent.QueueSize                        : %u\n"
+            , pstoreDir
+            , pstoreMode
+            , config->persistentMMFStoreSize
+            , config->persistentMMFStoreAddress
+            , config->persistentThreadCount
+            , config->persistentQueueSize);
+
+    d_printEvent(durability, D_LEVEL_CONFIG,
             "- Persistent.StoreSleepTime                   : %d.%9.9d\n" \
             "- Persistent.StoreSessionTime                 : %d.%9.9d\n" \
             "- Persistent.StoreOptimizeInterval            : %d\n" \
             "- Persistent.Scheduling.Class                 : %s\n" \
-            "- Persistent.Scheduling.Priority              : %d\n" \
-            , pstoreDir
-            , pstoreMode
-            , config->persistentQueueSize
+            "- Persistent.Scheduling.Priority              : %d\n"
             , config->persistentStoreSleepTime.tv_sec
             , config->persistentStoreSleepTime.tv_nsec
             , config->persistentStoreSessionTime.tv_sec
@@ -767,6 +816,18 @@ d_configurationReport(
             "- NameSpaces                                  :\n");
     c_iterWalk(config->nameSpaces, d_configurationNameSpacesCombine, durability);
 
+}
+
+void
+d_configurationSetRole(
+    d_configuration config,
+    const c_char* role)
+{
+    if(config->role){
+        os_free(config->role);
+        config->role = NULL;
+    }
+    config->role = os_strdup(role);
 }
 
 void
@@ -1448,11 +1509,40 @@ d_configurationSetPersistentStoreMode(
         if (storeModeName != NULL) {
             if(os_strcasecmp(storeModeName, "XML") == 0){
                 config->persistentStoreMode = D_STORE_TYPE_XML;
+            } else if(os_strcasecmp(storeModeName, "MMF") == 0){
+				config->persistentStoreMode = D_STORE_TYPE_MEM_MAPPED_FILE;
             } else {
                 config->persistentStoreMode = D_STORE_TYPE_XML;
             }
         }
     }
+}
+
+void
+d_configurationSetPersistentMMFStoreAddress(
+    d_configuration  config,
+    c_address address)
+{
+	if (config) {
+		config->persistentMMFStoreAddress = address;
+	}
+
+}
+
+void
+d_configurationSetPersistentMMFStoreSize(
+    d_configuration  config,
+    os_size_t size)
+{
+	os_size_t _size;
+	_size = size;
+
+	if (config) {
+		if(size < D_MINIMUM_PERSISTENT_MMF_STORE_SIZE){
+			_size = D_MINIMUM_PERSISTENT_MMF_STORE_SIZE;
+		}
+		config->persistentMMFStoreSize = _size;
+	}
 }
 
 void
@@ -1500,6 +1590,18 @@ d_configurationSetPersistentQueueSize(
 
     if (config->persistentQueueSize > D_MAXIMUM_PERSISTENT_QUEUE_SIZE) {
         config->persistentQueueSize = D_MAXIMUM_PERSISTENT_QUEUE_SIZE;
+    }
+}
+
+void
+d_configurationSetPersistentSMPCount(
+    d_configuration config,
+    c_ulong count)
+{
+    config->persistentThreadCount = count;
+
+    if (config->persistentThreadCount < D_MINIMUM_PERSISTENT_SMP_COUNT) {
+        config->persistentThreadCount = D_MINIMUM_PERSISTENT_SMP_COUNT;
     }
 }
 
@@ -1647,6 +1749,40 @@ d_configurationAttrValueLong(
 }
 
 void
+d_configurationAttrValueULong(
+    d_configuration configuration,
+    u_cfElement  element,
+    const char * tag,
+    const char * attr,
+    void         (* const setAction)(d_configuration config, c_ulong longValue) )
+{
+    c_iter   iter;
+    u_cfElement e;
+    u_cfAttribute a;
+    c_ulong  ulongValue;
+    c_bool   found;
+
+    iter = u_cfElementXPath(element, tag);
+    e = u_cfElement(c_iterTakeFirst(iter));
+
+    while (e != NULL) {
+        a = u_cfElementAttribute(e, attr);
+
+        if(a){
+            found = u_cfAttributeULongValue(a, &ulongValue);
+            /* QAC EXPECT 2100; */
+            if (found == TRUE) {
+                setAction(configuration, ulongValue);
+            }
+            u_cfAttributeFree(a);
+        }
+        u_cfElementFree(e);
+        e = u_cfElement(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+void
 d_configurationAttrValueFloat(
     d_configuration configuration,
     u_cfElement  element,
@@ -1773,6 +1909,66 @@ d_configurationValueULong(
         data = u_cfData(c_iterTakeFirst(iter));
     }
     c_iterFree(iter);
+}
+
+void
+d_configurationValueSize(
+    d_configuration configuration,
+    u_cfElement     element,
+    const char      *tag,
+    void            (* const setAction)(d_configuration config, c_size size))
+{
+    c_iter   iter;
+    u_cfData data;
+    c_size  size;
+    c_bool   found;
+
+    iter = u_cfElementXPath(element, tag);
+    data = u_cfData(c_iterTakeFirst(iter));
+    while (data != NULL) {
+        found = u_cfDataSizeValue(data, &size);
+        /* QAC EXPECT 2100; */
+        if (found == TRUE) {
+            setAction(configuration, size);
+        }
+        u_cfDataFree(data);
+        data = u_cfData(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
+void
+d_configurationValueMemAddr(
+	    d_configuration configuration,
+	    u_cfElement  element,
+	    const char * tag,
+	    void         (* const setAction)(d_configuration config, c_address addr) )
+{
+	    c_iter   iter;
+	    u_cfData data;
+	    c_bool   found;
+	    c_char *   str;
+	    c_address addr;
+
+	    iter = u_cfElementXPath(element, tag);
+	    data = u_cfData(c_iterTakeFirst(iter));
+
+	    while (data) {
+	        found = u_cfDataStringValue(data, &str);
+	        if (found == TRUE) {
+				if ( (strlen(str) > 2) &&
+					 (strncmp("0x", str, 2) == 0) ) {
+					sscanf(str, "0x" PA_ADDRFMT, &addr);
+				} else {
+					sscanf(str, PA_ADDRFMT, &addr);
+				}
+	            setAction(configuration, addr);
+	            os_free(str);
+	        }
+	        u_cfDataFree(data);
+	        data = u_cfData(c_iterTakeFirst(iter));
+	    }
+	    c_iterFree(iter);
 }
 
 void
@@ -1920,6 +2116,56 @@ d_configurationInNameSpace(
     return result;
 }
 
+void
+d_configurationResolveMergePolicies(
+    d_policy policy,
+    u_cfElement  elementParent,
+    const c_char * mergePolicyName)
+{
+    c_iter              iter;
+    u_cfElement         element;
+    c_bool              found;
+    c_string            mergeType_str, scope;
+    d_mergePolicy       mergeType;
+
+    mergeType = D_MERGE_IGNORE;
+    iter = u_cfElementXPath(elementParent, mergePolicyName);
+
+    element = (u_cfElement)c_iterTakeFirst(iter);
+
+    while (element)
+    {
+        found = u_cfElementAttributeStringValue (element, "type", &mergeType_str);
+        if (found){
+            if (os_strcasecmp (mergeType_str, "IGNORE") == 0){
+                mergeType = D_MERGE_IGNORE;
+            }else if (os_strcasecmp (mergeType_str, "MERGE") == 0){
+                mergeType = D_MERGE_MERGE;
+            }else if (os_strcasecmp (mergeType_str, "DELETE") == 0){
+                mergeType = D_MERGE_DELETE;
+            }else if (os_strcasecmp (mergeType_str, "REPLACE") == 0){
+                mergeType = D_MERGE_REPLACE;
+            }
+            os_free (mergeType_str);
+        }
+
+        found = u_cfElementAttributeStringValue (element, "scope", &scope);
+
+        /* Role should always be available */
+        assert (found);
+
+        /* Add merge policy to role */
+        d_policyAddMergeRule (policy, mergeType, scope);
+
+        os_free (scope);
+
+        u_cfElementFree(element);
+        element = (u_cfElement)c_iterTakeFirst(iter);
+    }
+
+    c_iterFree (iter);
+}
+
 c_iter
 d_configurationResolvePolicies(
     u_cfElement  elementParent,
@@ -2001,13 +2247,17 @@ d_configurationResolvePolicies(
              */
             length = c_iterLength(result);
             namespace = os_malloc(17);
-            sprintf(namespace, "NoName%d", length);
+            os_sprintf(namespace, "NoName%d", length);
         }
 
         /* Create new policy */
         policy = d_policyNew (namespace, isAligner, akind, dkind);
         os_free(namespace);
 
+        /* Resolve merge policies */
+        d_configurationResolveMergePolicies(policy, element, "Merge");
+
+        /* Insert policy in result */
         result = c_iterInsert(result, policy);
 
         u_cfElementFree(element);
@@ -2107,6 +2357,9 @@ d_configurationResolveNameSpaces(
     iter = u_cfElementXPath(elementParent, nameSpaceName);
     element = c_iterTakeFirst(iter);
     useDeprecated = FALSE;
+    akind = D_ALIGNEE_INITIAL;
+    dkind = D_DURABILITY_ALL;
+    isAligner = TRUE;
 
     while (element) {
         useDeprecated =
@@ -2122,7 +2375,7 @@ d_configurationResolveNameSpaces(
             length = c_iterLength(result);
             name = os_malloc(17);
 
-            sprintf(name, "NoName%d", length);
+            os_sprintf(name, "NoName%d", length);
 
             useDeprecated = TRUE;
         }
@@ -2139,7 +2392,7 @@ d_configurationResolveNameSpaces(
                     "Durability namespace configuration uses deprecated notation. See deployment manual.");
             }
 
-            ns = d_nameSpaceNew_w_policy (name, isAligner, akind, dkind);
+            ns = d_nameSpaceNew_w_policy (config, name, isAligner, akind, dkind);
         }else {
             ns = d_nameSpaceNew(config, name);
         }

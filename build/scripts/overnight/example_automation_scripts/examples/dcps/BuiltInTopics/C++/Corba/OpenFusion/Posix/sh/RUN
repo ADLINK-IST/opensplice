@@ -1,0 +1,27 @@
+if [ "$OSPL_HOME" = "" ];then
+echo "*** Please source release.com to set OpenSplice environment variables";
+echo "*** ERROR OpenSplice environment variables NOT SET"
+exit;
+fi
+echo "=== OSPL_HOME is "${OSPL_HOME}
+echo "=== OSPL_URI is "${OSPL_URI}
+
+$VG_OSPL_START ospl start
+$VG_START_SLEEP
+
+echo "=== Launching BuiltInTopics "
+sh ./startSubscriber.sh "./subResult.txt" 
+
+echo "=== Checking BuiltInTopics Subscriber results"
+NB_HOST=`grep "Hostname for node" subResult.txt | wc -l`;
+echo NB_HOST=$NB_HOST;
+if [ $NB_HOST -eq 0 ];then
+   echo NOK 
+   echo "*** ERROR : example BuiltInTopics failed ";
+   cat subResult.txt;
+else
+   echo OK
+fi
+
+$VG_OSPL_START ospl stop
+sleep 2

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include "saj_dataReaderView.h"
+#include "saj_DataReaderView.h"
 #include "saj_utilities.h"
 #include "saj_qosUtils.h"
 #include "saj_status.h"
@@ -125,17 +125,16 @@ SAJ_FUNCTION(jniDeleteReadcondition)(
     gapi_readCondition condition;
     gapi_dataReader dataReaderView;
     gapi_returnCode_t grc;
-    saj_userData ud;
+    c_bool must_free;
 
     condition = (gapi_readCondition) saj_read_gapi_address(env, jcondition);
-    dataReaderView = (gapi_dataReaderView) saj_read_gapi_address(env, jdataReaderView);
+    dataReaderView = (gapi_dataReaderView)saj_read_gapi_address(env, jdataReaderView);
 
-    ud = saj_userData(gapi_object_get_user_data(condition));
-    grc = gapi_dataReaderView_delete_readcondition(dataReaderView, condition);
+    must_free = saj_setThreadEnv(env);
+    grc = gapi_dataReaderView_delete_readcondition(dataReaderView,
+                                                   condition);
+    saj_delThreadEnv(must_free);
 
-    if(grc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
     return (jint)grc;
 }
 
@@ -150,11 +149,16 @@ SAJ_FUNCTION(jniDeleteContainedEntities)(
     jobject jdataReaderView)
 {
     gapi_dataReaderView dataReaderView;
+    jint result;
+    c_bool must_free;
 
     dataReaderView = (gapi_dataReaderView)saj_read_gapi_address(env, jdataReaderView);
 
-    return (jint)gapi_dataReaderView_delete_contained_entities(dataReaderView,
-                                        saj_destroy_user_data_callback, (void *)env);
+    must_free = saj_setThreadEnv(env);
+    result = (jint)gapi_dataReaderView_delete_contained_entities(dataReaderView);
+    saj_delThreadEnv(must_free);
+
+    return result;
 }
 
 /**

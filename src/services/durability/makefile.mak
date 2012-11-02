@@ -2,6 +2,10 @@ ifeq (,$(findstring shmt,$(SPLICE_TARGET)))
 TARGET_EXEC	:= durability
 ODL_MODULES	:= durabilityModule2
 
+ifneq (,$(findstring win,$(SPLICE_TARGET)))
+ODL_MODULES	+= kernelModule
+endif
+
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
 CINCS += -I$(OSPL_HOME)/src/database/serialization/include
@@ -18,10 +22,14 @@ LDLIBS += -l$(DDS_UTIL) -l$(DDS_OS)
 
 -include $(DEPENDENCIES)
 
-else
+else 
 
 TARGET_DLIB := durability
 ODL_MODULES := durabilityModule2
+
+ifneq (,$(findstring win,$(SPLICE_TARGET)))
+ODL_MODULES	+= kernelModule
+endif
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 

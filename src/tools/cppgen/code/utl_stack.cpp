@@ -68,8 +68,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * utl_stack.cc - Implementation of class UTL_ScopeStack
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 // Class UTL_ScopeStack
 

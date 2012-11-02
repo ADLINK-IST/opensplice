@@ -66,28 +66,28 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * DRV_pre_proc.cc - pass an IDL file through the C preprocessor
  */
 
-#include <os_stdlib.h>
-#include <os_heap.h>
-#include <idl.h>
-#include <idl_extern.h>
-#include <drv_private.h>
-#include <drv_link.h>
+#include "os_stdlib.h"
+#include "os_heap.h"
+#include "idl.h"
+#include "idl_extern.h"
+#include "drv_private.h"
+#include "drv_link.h"
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>    /// fpm 5/2/95: for error handling
 
-#include <symtbl.h>
-#include <include.h>
-#include <preprocess.h>
+#include "symtbl.h"
+#include "include.h"
+#include "preprocess.h"
 
-#include <os_process.h>
+#include "os_process.h"
 
 #if defined(_WIN32)
 # include <PROCESS.H>
 # include <fcntl.h>
 # include <sys/types.h>
 # include <sys/stat.h>
-# include <io.h>
+# include "io.h"
 # include <errno.h>
 
 // you must delete the returned char * !

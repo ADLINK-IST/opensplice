@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -35,8 +35,7 @@ typedef struct {
 static void
 register_type_action (
     v_entity e,
-    c_voidp argument
-    )
+    c_voidp argument)
 {
     register_typeActionArg *arg = (register_typeActionArg *)argument;
 
@@ -44,20 +43,25 @@ register_type_action (
     arg->typeSpec = arg->load_function(base);
 }
 
-static void
+static gapi_boolean
 _TypeSupport_free (
-    void *object
-    )
+    void *object)
 {
     _TypeSupport ts = (_TypeSupport) object;
+    gapi_boolean result;
 
-    gapi_free(ts->type_name);
-    gapi_free(ts->type_keys);
-    gapi_free(ts->type_def);
-    if (ts->copy_cache) {
-        gapi_copyCacheFree(ts->copy_cache);
+    if (--ts->refCount == 0) {
+        gapi_free(ts->type_name);
+        gapi_free(ts->type_keys);
+        gapi_free(ts->type_def);
+        if (ts->copy_cache) {
+            gapi_copyCacheFree(ts->copy_cache);
+        }
+        result = TRUE;
+    } else {
+        result = FALSE;
     }
-
+    return result;
 }
 
 
@@ -72,14 +76,12 @@ _TypeSupportNew (
     gapi_unsigned_long alloc_size,
     gapi_topicAllocBuffer alloc_buffer,
     gapi_readerCopy reader_copy,
-    gapi_writerCopy writer_copy,
-    gapi_createDataReader create_datareader,
-    gapi_createDataWriter create_datawriter
-    )
+    gapi_writerCopy writer_copy)
 {
     _TypeSupport newTypeSupport = _TypeSupportAlloc();
 
     if (newTypeSupport) {
+        newTypeSupport->refCount = 1;
         newTypeSupport->typeSpec = NULL;
         newTypeSupport->type_name = gapi_string_dup (type_name);
         newTypeSupport->type_keys = gapi_string_dup(type_keys);
@@ -92,35 +94,23 @@ _TypeSupportNew (
         newTypeSupport->alloc_buffer = alloc_buffer;
         newTypeSupport->reader_copy = reader_copy;
         newTypeSupport->writer_copy = writer_copy;
-        newTypeSupport->create_datareader = create_datareader;
-        newTypeSupport->create_datawriter = create_datawriter;
         newTypeSupport->useTypeinfo = TRUE;
     }
 
     return newTypeSupport;
 }
 
-void
-_TypeSupportFree (
-    _TypeSupport typesupport
-    )
-{
-    assert(typesupport);
-
-    gapi_free(typesupport);
-}
 
 gapi_typeSupport
 gapi_typeSupport__alloc (
     const gapi_char *type_name,
     const gapi_char *type_keys,
-    const gapi_char *type_desc
-    )
+    const gapi_char *type_desc)
 {
     _TypeSupport typesupport;
 
     typesupport = _TypeSupportNew(type_name, type_keys, type_desc,
-                                  NULL, NULL, NULL, 0L, NULL, NULL, NULL, NULL, NULL);
+                                  NULL, NULL, NULL, 0L, NULL, NULL, NULL);
     if ( typesupport ) {
         typesupport->useTypeinfo = TRUE;
     }
@@ -129,121 +119,72 @@ gapi_typeSupport__alloc (
 }
 
 
-_TypeSupport
+void
 _TypeSupportDup (
-    _TypeSupport typesupport
-    )
+    _TypeSupport typesupport)
 {
-    _TypeSupport newTypeSupport;
-
-    newTypeSupport = _TypeSupportAlloc();
-
-    if (newTypeSupport) {
-        newTypeSupport->type_name = gapi_string_dup (typesupport->type_name);
-        newTypeSupport->type_keys = gapi_string_dup (typesupport->type_keys);
-        newTypeSupport->type_def = gapi_string_dup (typesupport->type_def);
-        newTypeSupport->type_load = typesupport->type_load;
-        newTypeSupport->copy_in = typesupport->copy_in;
-        newTypeSupport->copy_out = typesupport->copy_out;
-        newTypeSupport->copy_cache = typesupport->copy_cache;
-        newTypeSupport->alloc_size = typesupport->alloc_size;
-        newTypeSupport->alloc_buffer = typesupport->alloc_buffer;
-        newTypeSupport->reader_copy = typesupport->reader_copy;
-        newTypeSupport->writer_copy = typesupport->writer_copy;
-        newTypeSupport->create_datareader = typesupport->create_datareader;
-        newTypeSupport->create_datawriter = typesupport->create_datawriter;
-        newTypeSupport->typeSpec = typesupport->typeSpec;
-        newTypeSupport->useTypeinfo = typesupport->useTypeinfo;
-        _ObjectSetUserData(_Object(newTypeSupport), _ObjectGetUserData(_Object(typesupport)));
-    }
-    _EntityRelease(newTypeSupport);
-    return newTypeSupport;
+    typesupport->refCount++;
 }
 
 gapi_typeSupportLoad
 _TypeSupportTypeLoad (
-    _TypeSupport typesupport
-    )
+    _TypeSupport typesupport)
 {
     return typesupport->type_load;
 }
 
 gapi_char *
 _TypeSupportTypeName (
-    _TypeSupport typesupport
-    )
+    _TypeSupport typesupport)
 {
     return typesupport->type_name;
 }
 
 gapi_char *
 _TypeSupportTypeKeys (
-    _TypeSupport typesupport
-    )
+    _TypeSupport typesupport)
 {
     return typesupport->type_keys;
 }
 
-gapi_writerCopy
-_TypeSupportGetWriterCopy (
-    _TypeSupport typesupport
-    )
-{
-    return typesupport->writer_copy;
-}
-
 gapi_readerCopy
 _TypeSupportGetReaderCopy (
-    _TypeSupport typesupport
-    )
+    _TypeSupport typesupport)
 {
     return typesupport->reader_copy;
 }
 
-gapi_createDataWriter
-_TypeSupportGetDataWriter (
-    _TypeSupport typesupport
-    )
+gapi_writerCopy
+_TypeSupportGetWriterCopy (
+    _TypeSupport typesupport)
 {
-    return typesupport->create_datawriter;
-}
-
-gapi_createDataReader
-_TypeSupportGetDataReader (
-    _TypeSupport typesupport
-    )
-{
-    return typesupport->create_datareader;
+    return typesupport->writer_copy;
 }
 
 gapi_copyIn
 _TypeSupportCopyIn (
-    _TypeSupport typesupport
-    )
+    _TypeSupport typesupport)
 {
     return typesupport->copy_in;
 }
 
 gapi_copyOut
 _TypeSupportCopyOut (
-    _TypeSupport typesupport
-    )
+    _TypeSupport typesupport)
 {
     return typesupport->copy_out;
 }
 
 gapi_copyCache
 _TypeSupportCopyCache (
-    _TypeSupport typesupport
-    )
+    _TypeSupport typesupport)
 {
     return typesupport->copy_cache;
 }
 
 gapi_unsigned_long
 _TypeSupportTopicAllocSize (
-    _TypeSupport typesupport
-    )
+    _TypeSupport typesupport)
 {
     return typesupport->alloc_size;
 }
@@ -251,8 +192,7 @@ _TypeSupportTopicAllocSize (
 
 gapi_topicAllocBuffer
 _TypeSupportTopicAllocBuffer (
-    _TypeSupport typesupport
-    )
+    _TypeSupport typesupport)
 {
     return typesupport->alloc_buffer;
 }
@@ -325,7 +265,6 @@ registerTypeUsingLoadFunction (
     return result;
 }
 
-
 static void
 setDefaultBuiltinSettings (
     _TypeSupport typeSupport,
@@ -349,13 +288,11 @@ gapi_returnCode_t
 gapi_typeSupport_register_type (
     gapi_typeSupport _this,
     gapi_domainParticipant dp,
-    gapi_string name
-    )
+    gapi_string name)
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _TypeSupport typeSupport       = NULL;
     _DomainParticipant participant = NULL;
-    _TypeSupport newTypeSupport    = NULL;
     _TypeSupport oldTypeSupport    = NULL;
     const BuiltinTopicTypeInfo *builtinInfo = NULL;
     gapi_boolean typeExists = FALSE;
@@ -365,6 +302,7 @@ gapi_typeSupport_register_type (
 
     if ( typeSupport ) {
         builtinInfo = _BuiltinTopicFindTypeInfoByType(typeSupport->type_name);
+#if 1
         if ( !typeSupport->type_def && !typeSupport->type_load ) {
             if ( !builtinInfo ) {
                 result = GAPI_RETCODE_PRECONDITION_NOT_MET;
@@ -372,6 +310,11 @@ gapi_typeSupport_register_type (
         } else if ( typeSupport->type_def && typeSupport->type_load ) {
             result = GAPI_RETCODE_PRECONDITION_NOT_MET;
         }
+#else
+        if ( !typeSupport->type_def && !builtinInfo ) {
+            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+        }
+#endif
     }
 
     if ( result == GAPI_RETCODE_OK ) {
@@ -408,10 +351,7 @@ gapi_typeSupport_register_type (
 
     if ( !typeExists ) {
         if ( result == GAPI_RETCODE_OK ) {
-             newTypeSupport = _TypeSupportDup(typeSupport);
-            if ( !newTypeSupport ) {
-                result = GAPI_RETCODE_OUT_OF_RESOURCES;
-            }
+             _TypeSupportDup(typeSupport);
         }
 
         if ( result == GAPI_RETCODE_OK ) {
@@ -428,21 +368,15 @@ gapi_typeSupport_register_type (
             if( (typeSupport->copy_in  == NULL) || (typeSupport->copy_out == NULL)) {
                 /* If either of the copy routines is NULL,
                    the generic copy routines will be used for both */
-                result = _TypeSupportGenericCopyInit(newTypeSupport, participant);
+                result = _TypeSupportGenericCopyInit(typeSupport, participant);
             }
         }
 
         if ( result == GAPI_RETCODE_OK ) {
             if ( builtinInfo ) {
-                setDefaultBuiltinSettings(newTypeSupport, builtinInfo);
+                setDefaultBuiltinSettings(typeSupport, builtinInfo);
             }
-            result = _DomainParticipantRegisterType(participant, newTypeSupport, regName);
-        }
-    }
-
-    if ( result != GAPI_RETCODE_OK ) {
-        if ( newTypeSupport ) {
-            gapi_free(_EntityHandle(newTypeSupport));
+            result = _DomainParticipantRegisterType(participant, typeSupport, regName);
         }
     }
 
@@ -457,8 +391,7 @@ gapi_typeSupport_register_type (
  */
 gapi_string
 gapi_typeSupport_get_type_name (
-    gapi_typeSupport _this
-    )
+    gapi_typeSupport _this)
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _TypeSupport typeSupport = NULL;
@@ -476,8 +409,7 @@ gapi_typeSupport_get_type_name (
  */
 gapi_string
 gapi_typeSupport_get_key_list (
-    gapi_typeSupport _this
-    )
+    gapi_typeSupport _this)
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _TypeSupport typeSupport = NULL;
@@ -495,8 +427,7 @@ gapi_typeSupport_get_key_list (
  */
 gapi_char *
 gapi_typeSupport_get_description (
-    gapi_typeSupport _this
-    )
+    gapi_typeSupport _this)
 {
     gapi_char *description = NULL;
     gapi_char *result = NULL;
@@ -511,34 +442,32 @@ gapi_typeSupport_get_description (
 
     if ( typeSupport ) {
         participant = _DomainParticipantFactoryFindParticipantFromType(typeSupport);
-    }
 
-    if ( participant ) {
-        u_participant uParticipant = _DomainParticipantUparticipant(participant);
-        base = kernelGetBase(u_entity(uParticipant));
-        if ( base ) {
-            type = c_resolve(base, typeSupport->type_name);
-        }
-    }
-
-    if ( type ) {
-        serializer = sd_serializerXMLTypeinfoNew(base, FALSE);
-        if ( serializer ) {
-            serData = sd_serializerSerialize(serializer, (c_object)type);
-            if ( serData ) {
-                description = sd_serializerToString(serializer, serData);
-                if ( description ) {
-                    result = gapi_string_dup(description);
-                    os_free(description);
-                }
-                sd_serializedDataFree(serData);
+        if ( participant ) {
+            u_participant uParticipant = _DomainParticipantUparticipant(participant);
+            base = kernelGetBase(u_entity(uParticipant));
+            if ( base ) {
+                type = c_resolve(base, typeSupport->type_name);
             }
-            sd_serializerFree(serializer);
         }
-        c_free(type);
+        if ( type ) {
+            serializer = sd_serializerXMLTypeinfoNew(base, FALSE);
+            if ( serializer ) {
+                serData = sd_serializerSerialize(serializer, (c_object)type);
+                if ( serData ) {
+                    description = sd_serializerToString(serializer, serData);
+                    if ( description ) {
+                        result = gapi_string_dup(description);
+                        os_free(description);
+                    }
+                    sd_serializedDataFree(serData);
+                }
+                sd_serializerFree(serializer);
+            }
+            c_free(type);
+        }
+        _EntityRelease(typeSupport);
     }
-
-    _EntityRelease(typeSupport);
 
     return result;
 }
@@ -587,8 +516,6 @@ _TypeSupportEquals (
              (t1->alloc_buffer      != t1->alloc_buffer)      ||
              (t1->reader_copy       != t1->reader_copy)       ||
              (t1->writer_copy       != t1->writer_copy)       ||
-             (t1->create_datareader != t1->create_datareader) ||
-             (t1->create_datawriter != t1->create_datawriter) ||
              (t1->useTypeinfo       != t1->useTypeinfo) ) {
             equal = FALSE;
         }
@@ -620,7 +547,6 @@ allocBufferFromRegistered (
             }
         }
     }
-
     return buffer;
 }
 
@@ -646,9 +572,8 @@ gapi_typeSupport_allocbuf (
                 buffer = allocBufferFromRegistered(typeSupport, len);
             }
         }
+        _EntityRelease(typeSupport);
     }
-
-    _EntityRelease(typeSupport);
 
     return buffer;
 }
@@ -696,21 +621,16 @@ gapi_parserCallback (
             }
         }
     }
-
     if ( info->callback ) {
         if ( info->callback(kind, name, &seq, handle, info->argument) ) {
             result = TRUE;
         }
     }
-
     if ( seq._length > 0 ) {
         os_free(seq._buffer);
     }
-
     return result;
 }
-
-
 
 gapi_returnCode_t
 gapi_typeSupport_parse_type_description (
@@ -731,7 +651,6 @@ gapi_typeSupport_parse_type_description (
         gapi_typeParseError(errorInfo);
         sd_errorReportFree(errorInfo);
     }
-
     return result;
 }
 
@@ -756,7 +675,6 @@ gapi_typeSupport_walk_type_description (
             result = GAPI_RETCODE_OK;
         }
     }
-
     return result;
 }
 
@@ -784,6 +702,5 @@ _TypeSupportGenericCopyInit (
     } else {
         result = GAPI_RETCODE_OUT_OF_RESOURCES;
     }
-
     return result;
 }

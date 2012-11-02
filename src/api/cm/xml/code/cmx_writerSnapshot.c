@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,8 +19,8 @@
 #include "v_kernel.h"
 #include "v_writer.h"
 #include "v_writerSample.h"
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 #include "os_abstract.h"
 
 static c_iter writerSnapshots = NULL;
@@ -50,7 +50,7 @@ cmx_writerSnapshotNew(
             os_mutexUnlock(&m);
             
             result = (c_char*)(os_malloc(60));
-            sprintf(result, "<writerSnapshot><id>"PA_ADDRFMT"</id></writerSnapshot>", (c_address)(arg.snapshot));
+            os_sprintf(result, "<writerSnapshot><id>"PA_ADDRFMT"</id></writerSnapshot>", (c_address)(arg.snapshot));
         }
     }
     return result;
@@ -210,7 +210,7 @@ cmx_writerSnapshotLookup(
     
     if(snapshot != NULL){
         copy = (c_char*)(os_malloc(strlen(snapshot) + 1));
-        strcpy(copy, snapshot);
+        os_strcpy(copy, snapshot);
         temp = strtok((c_char*)copy, "</>");    /*<writerSnapshot>*/
         temp = strtok(NULL, "</>");             /*<id>*/
         temp = strtok(NULL, "</>");             /*... the pointer*/

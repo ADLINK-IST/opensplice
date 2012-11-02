@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -31,10 +31,10 @@
 #include "idl_map.h"
 
 #include <ctype.h>
-#include <c_typebase.h>
-#include <os_iterator.h>
-#include <os_stdlib.h>
-#include <os_heap.h>
+#include "c_typebase.h"
+#include "os_iterator.h"
+#include "os_stdlib.h"
+#include "os_heap.h"
 
 static idl_map map = NULL;
 	/** indentation level */
@@ -75,7 +75,7 @@ idl_macroFromBasename(
         macro[i] = toupper(basename[i]);
         macro[i+1] = '\0';
     }
-    strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
+    os_strncat(macro, append, (size_t)((int)sizeof(macro)-(int)strlen(append)));
 
     return macro;
 }

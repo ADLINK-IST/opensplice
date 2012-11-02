@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -27,6 +27,7 @@ extern const c_long c_querySize;
 
 c_array c_keyList        (c_table c);
 void    c_collectionInit (c_base base);
+void    c_queryOptimize  (c_query _this);
 
 void    c_clear(c_collection c);
 

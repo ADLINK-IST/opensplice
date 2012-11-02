@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -46,8 +46,18 @@ typedef enum {
     V_DATAREADER_MAX_SAMPLES,
     V_DATAREADER_MAX_INSTANCES,
     V_DATAREADER_INSTANCE_FULL,
-    V_DATAREADER_INTERNAL_ERROR
+    V_DATAREADER_SAMPLE_LOST,
+    V_DATAREADER_DUPLICATE_SAMPLE,
+    V_DATAREADER_OUT_OF_MEMORY,
+    V_DATAREADER_INTERNAL_ERROR,
+    V_DATAREADER_UNDETERMINED,
+    V_DATAREADER_COUNT
 } v_dataReaderResult;
+
+typedef c_bool (*v_dataReaderInstanceAction)(v_dataReaderInstance instance, c_voidp arg);
+OS_API const char*
+v_dataReaderResultString(
+    v_dataReaderResult result);
 
 /**
  * \brief The <code>v_dataReader</code> cast method.
@@ -58,6 +68,13 @@ typedef enum {
  * one of its subclasses.
  */
 #define v_dataReader(o) (C_CAST(o,v_dataReader))
+
+
+OS_API c_bool
+v_dataReaderWalkInstances (
+    v_dataReader _this,
+    v_dataReaderInstanceAction action,
+    c_voidp arg);
 
 OS_API v_dataReader
 v_dataReaderNew(
@@ -137,6 +154,10 @@ v_dataReaderTakeNextInstance(
     v_dataReaderInstance instance,
     v_readerSampleAction action,
     c_voidp arg);
+
+OS_API c_long
+v_dataReaderNotReadCount(
+    v_dataReader _this);
 
 #undef OS_API
 

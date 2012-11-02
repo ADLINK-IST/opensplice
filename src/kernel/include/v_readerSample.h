@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_READERSAMPLE_H
@@ -42,6 +42,9 @@
 
 #define v_readerSampleTestState(_this,mask) \
         v_stateTest(v_readerSampleState(_this),mask)
+
+#define v_readerSampleTestStateOr(_this,mask) \
+        v_stateTestOr(v_readerSampleState(_this),mask)
 
 #define v_readerSampleClearState(_this,mask) \
         v_stateClear(v_readerSampleState(_this),mask)

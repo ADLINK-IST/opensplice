@@ -660,8 +660,8 @@
             ]]></comment>
             <element name="Scheduling" minOccurrences="1" maxOccurrences="1">
                 <comment><![CDATA[
-                    This element specifies the type of OS scheduling class will be
-                    used by the thread that does local resends for buildin participant.
+                    This element specifies the type of OS scheduling class used by
+                    the thread that does local resends for the builtin participant.
                 ]]></comment>
                 <leafInt name="Priority" minOccurrences="1" maxOccurrences="1">
                     <comment><![CDATA[
@@ -1486,13 +1486,13 @@
             </leafString>
         </element>
         <element name="Tracing" minOccurrences="0" maxOccurrences="1">
-            <attributeBoolean name="synchronous" required="false">
-                <comment><![CDATA[
+            <comment><![CDATA[
                     This element controls the amount and type of information that is
                     written into the tracing log by the Durability Service. This is
                     useful to track the Durability Service during application
                     development. In the runtime system it should be turned off.
-                ]]></comment>
+            ]]></comment>
+            <attributeBoolean name="synchronous" required="false">
                 <default>FALSE</default>
             </attributeBoolean>
             <leafString name="OutputFile" minOccurrences="0" maxOccurrences="1">
@@ -2632,7 +2632,7 @@
                     ]]></comment>
                     <minimum>0</minimum>
                     <maximum>65535</maximum>
-                    <default>53340</default>
+                    <default>53370</default>
                 </leafInt>
             </element>
         </element>

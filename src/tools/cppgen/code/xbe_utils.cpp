@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,8 +9,8 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include <os_stdlib.h>
-#include <os_heap.h>
+#include "os_stdlib.h"
+#include "os_heap.h"
 #include "xbe_utils.h"
 #include "xbe_string.h"
 
@@ -32,7 +32,7 @@ StripIDL(const DDS_StdString& idlname)
    DDS_StdString ret;
    char * p;
 
-   strcpy(buf, (const char *)idlname);
+   os_strcpy(buf, (const char *)idlname);
 
    p = strstr(buf, BE_Globals::IDLExtension);
    if (p)
@@ -52,7 +52,7 @@ StripExtension(const DDS_StdString& fname)
    DDS_StdString ret;
    char * p;
 
-   strcpy(buf, (const char *)fname);
+   os_strcpy(buf, (const char *)fname);
 
    p = strrchr (buf, '.');
    if (p)

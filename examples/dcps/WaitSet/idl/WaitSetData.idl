@@ -1,0 +1,9 @@
+module WaitSetData
+{
+   struct Msg
+   {
+      long userID;    // User ID
+      string message; // message
+   };
+   #pragma keylist Msg userID
+};

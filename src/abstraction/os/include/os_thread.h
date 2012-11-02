@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -24,11 +24,11 @@
 extern "C" {
 #endif
 
-#include <os_defs.h>
+#include "os_defs.h"
 
 /* include OS specific header file			*/
-#include <include/os_thread.h>
-#include <os_if.h>
+#include "include/os_thread.h"
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT
@@ -38,14 +38,16 @@ extern "C" {
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 /* Number of slots in Thread Private Memory */
-#define OS_THREAD_MEM_ARRAY_SIZE		(16)
+#define OS_THREAD_MEM_ARRAY_SIZE (6)
 
-/* Pre-allocated slots */
-#define OS_THREAD_CLOCK_OFFSET   (1)  /* Attached to clock offset on windows platform */
-#define OS_THREAD_UT_TRACE       (2)  /* Attached to tracing facility */
-#define OS_THREAD_JVM            (10) /* Attached Java virtual machine */
-#define OS_THREAD_PROTECT        (11) /* Attached to user-layer protect */
-#define OS_THREAD_API_INFO       (12) /* Attached to API reports */
+typedef enum os_threadMemoryIndex {
+    OS_THREAD_CLOCK_OFFSET,
+    OS_THREAD_UT_TRACE,
+    OS_THREAD_JVM,
+    OS_THREAD_PROTECT,
+    OS_THREAD_API_INFO,
+    OS_THREAD_WARNING 
+} os_threadMemoryIndex;
 
 /** \brief Platform dependent thread identification
  */
@@ -141,6 +143,15 @@ os_threadCreate(
     const os_threadAttr *threadAttr,
     os_threadRoutine start_routine,
     void *arg);
+
+/** \brief Return the integer representation of the given thread ID
+ *
+ * Possible Results:
+ * - returns the integer representation of the given thread ID
+ */
+OS_API os_ulong_int
+os_threadIdToInteger(
+    os_threadId id);
 
 /** \brief Return the thread ID of the calling thread
  *

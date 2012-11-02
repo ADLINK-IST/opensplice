@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 
 #define NMSIZE		(100)
 
@@ -524,7 +525,7 @@ ut_fileOutNew(
     stream = os_malloc((size_t)OS_SIZEOF(ut_fileOut));
     if (ut_outputdir) {
         fname = os_malloc(strlen(ut_outputdir) + strlen(os_fileSep()) + strlen(name) + 1);
-        sprintf(fname, "%s%s%s", ut_outputdir, os_fileSep(), name);
+        os_sprintf(fname, "%s%s%s", ut_outputdir, os_fileSep(), name);
     } else {
         fname = os_strdup(name);
     }
@@ -771,7 +772,7 @@ ut_tmplExpGetMacroSingleArg (
         }
     }
     ut_streamOutPut(argStream, '\0');
-    strcpy(arg, ut_streamGet(ut_stream(argStream)));
+    os_strcpy(arg, ut_streamGet(ut_stream(argStream)));
     ut_streamOutFree(argStream);
 
     if (ut_streamInCur(si) == si->macroAttrib->closeToken) {
@@ -803,7 +804,7 @@ ut_tmplExpGetMacroDoubleArg (
         }
     }
     ut_streamOutPut(arg1Stream, '\0');
-    strcpy(arg1, ut_streamGet(ut_stream(arg1Stream)));
+    os_strcpy(arg1, ut_streamGet(ut_stream(arg1Stream)));
     ut_streamOutFree(arg1Stream);
 
     if (ut_streamInCur(si) == ',') {
@@ -1023,10 +1024,10 @@ ut_tmplExpProcessMacro (
         case 2:
             substr = strstr(src, trim);
             if (substr == NULL) {
-                strcpy(res, src);
+                os_strcpy(res, src);
             } else {
                 substr += strlen(trim);
-                strcpy(res, substr);
+                os_strcpy(res, substr);
             }
             ut_tmplExpInsertText(so, res);
         break;
@@ -1068,7 +1069,7 @@ ut_tmplExpProcessMacro (
                     p_substr = substr;
                 }
             }
-            strcpy(res, src);
+            os_strcpy(res, src);
             if (p_substr != NULL) {
                 res[p_substr-src] = '\0';
             }

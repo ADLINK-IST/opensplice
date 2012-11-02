@@ -75,14 +75,14 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  */
 
 #include <stdio.h>
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
-#include <fe_private.h>
+#include "fe_private.h"
 
-#include  <utl_error.h>
-#include <utl_indenter.h>
-#include <utl_string.h>
+#include  "utl_error.h"
+#include "utl_indenter.h"
+#include "utl_string.h"
 
 /*
  * yacc parser interface

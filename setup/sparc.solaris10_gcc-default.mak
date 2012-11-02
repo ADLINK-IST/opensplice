@@ -11,7 +11,8 @@ FILTER           = filter_gcc
 # Binary used for linking
 LD_SO            = $(CC)
 # Binary used for linking executables
-LD_EXE           = $(CXX)
+LD_EXE           = $(CC)
+LD_CXX           = $(CXX)
 # GNU yacc
 YACC             = bison
 # GNU lex
@@ -20,6 +21,8 @@ LEX              = flex
 MAKE             = make
 # Solaris native touch
 TOUCH            = touch
+# Tool used for creating soft/hard links.
+LN               = ln
 # Archiving
 AR               = ar
 AR_CMDS          = rv
@@ -35,6 +38,10 @@ JCC              = javac
 
 #JAR
 JAR              = jar
+
+#JAVAH
+JAVAH            = javah
+JAVAH_FLAGS      = -force
 
 #Java
 JAVA             = java
@@ -62,7 +69,7 @@ CXXFLAGS         = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG
 CSFLAGS          = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # Set CPP flags
-CPPFLAGS         = -DOSPL_ENV_$(SPECIAL) -D__EXTENSIONS__
+CPPFLAGS         = -pipe -DOSPL_ENV_$(SPECIAL) -D__EXTENSIONS__
 
 # Set compiler options for multi threaded process
 # notify usage of posix threads
@@ -92,20 +99,28 @@ LDFLAGS_ZLIB     =
 CINCS_ZLIB       =
 
 #set platform specific pre- and postfixes for the names of libraries and executables
-OBJ_POSTFIX      = .o
-SLIB_PREFIX      = lib
-SLIB_POSTFIX     = .a
-DLIB_PREFIX      = lib
-DLIB_POSTFIX     = .so
-EXEC_PREFIX      = 
-EXEC_POSTFIX     =
-EXEC_LD_POSTFIX  =
-INLINESRC_POSTFIX = .i
+OBJ_POSTFIX         = .o
+SLIB_PREFIX         = lib
+SLIB_POSTFIX        = .a
+DLIB_PREFIX         = lib
+DLIB_POSTFIX        = .so
+EXEC_PREFIX         = 
+EXEC_POSTFIX        =
+EXEC_LD_POSTFIX     =
+INLINESRC_POSTFIX   = .i
+CSLIB_PREFIX        =
+CSLIB_POSTFIX       = .dll
+CSMOD_PREFIX        =
+CSMOD_POSTFIX       = .netmodule
+CSEXEC_PREFIX       =
+CSEXEC_POSTFIX      = .exe
+CSDBG_PREFIX        =
+CSEXEC_DBG_POSTFIX  = .exe.mdb
+CSMOD_DBG_POSTFIX   = .netmodule.mdb
+CSLIB_DBG_POSTFIX   = .dll.mdb
+CS_LIBPATH_SEP      = ,
 
 # Identify linker options for building shared C# libraries and or executables.
 CSTARGET_LIB     = -target:library
+CSTARGET_MOD     = -t:module
 CSTARGET_EXEC    = -target:exe
-CSLIB_PREFIX     =
-CSLIB_POSTFIX    = .dll
-CSEXEC_PREFIX    =
-CSEXEC_POSTFIX   = .exe

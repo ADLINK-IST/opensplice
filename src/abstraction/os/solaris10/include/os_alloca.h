@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -10,7 +10,7 @@
  *
  */
 
-#include "alloca.h"
+#include <alloca.h>
 
 #define os_alloca(size) os_malloc(size)
 #define os_freea(ptr) os_free(ptr)

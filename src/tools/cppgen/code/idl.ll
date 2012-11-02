@@ -184,7 +184,7 @@ opaque          return OPAQUE;
 
 _?[a-zA-Z][a-zA-Z0-9_]*	{
     char *z = (char *) os_malloc(strlen(CPPGEN_YYTEXT) + 1);
-    strcpy(z, CPPGEN_YYTEXT);
+    os_strcpy(z, CPPGEN_YYTEXT);
     yylval.strval = z;
     return IDENTIFIER;
 }

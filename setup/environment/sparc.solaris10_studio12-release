@@ -17,7 +17,7 @@ gmcs_check || ERRS=1
 tao_check || ERRS=1
 jacorb_check || ERRS=1
 
-if [ -z $REPORT ]
+if [ -z "$REPORT" ]
 then
     if [ "$ERRS" = "0" ]
     then

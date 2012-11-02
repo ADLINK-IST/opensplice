@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -9,18 +9,18 @@
  *   for full copyright notice and license terms. 
  *
  */
-#include <idl.h>
-#include <idl_extern.h>
-#include <xbe_globals.h>
-#include <xbe_literals.h>
-#include <xbe_operation.h>
-#include <xbe_argument.h>
-#include <xbe_predefined.h>
-#include <xbe_array.h>
-#include <xbe_interface.h>
-#include <xbe_utils.h>
-#include <xbe_type.h>
-#include <xbe_typedef.h>
+#include "idl.h"
+#include "idl_extern.h"
+#include "xbe_globals.h"
+#include "xbe_literals.h"
+#include "xbe_operation.h"
+#include "xbe_argument.h"
+#include "xbe_predefined.h"
+#include "xbe_array.h"
+#include "xbe_interface.h"
+#include "xbe_utils.h"
+#include "xbe_type.h"
+#include "xbe_typedef.h"
 #include "xbe_dispatchable.h"
 #include "xbe_dispatcher.h"
 

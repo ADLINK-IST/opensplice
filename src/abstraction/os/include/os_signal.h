@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,15 +12,15 @@
 #ifndef OS_SIGNAL_H
 #define OS_SIGNAL_H
 
-#include <os_defs.h>
+#include "os_defs.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
 /* Include OS specific header file              */
-#include <include/os_signal.h>
-#include <os_if.h>
+#include "include/os_signal.h"
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT

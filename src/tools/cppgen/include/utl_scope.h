@@ -88,14 +88,14 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 ** USE: Included from ast.hh
 */
 
-#include <idl_fwd.h>
-#include <idl_narrow.h>
-#include <ast_decl.h>
-#include <ast_expression.h>
-#include <utl_scoped_name.h>
-#include <utl_pragmas.h>
-#include <utl_hash.h>
-#include <utl_identifier.h>
+#include "idl_fwd.h"
+#include "idl_narrow.h"
+#include "ast_decl.h"
+#include "ast_expression.h"
+#include "utl_scoped_name.h"
+#include "utl_pragmas.h"
+#include "utl_hash.h"
+#include "utl_identifier.h"
 
 // Forward declaration of active iterator for UTL_Scope
 

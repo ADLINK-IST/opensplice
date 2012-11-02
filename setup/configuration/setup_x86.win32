@@ -4,4 +4,3 @@ unset_var INCLUDE_TESTENGINE
 
 # "Tests we don't build for this platform.
 unset_var INCLUDE_DBT_API_DLRL_SACPP
-unset_var INCLUDE_DBT_INSTALLER

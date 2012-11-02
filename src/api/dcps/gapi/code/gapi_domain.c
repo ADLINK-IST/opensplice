@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,14 +15,14 @@
 #include "os_stdlib.h"
 #include "os_heap.h"
 #include "u_user.h"
-#include "u_kernel.h"
+#include "u_domain.h"
 #include "gapi_object.h"
 #include "gapi_domain.h"
 #include "gapi_kernel.h"
 
 C_STRUCT(_Domain) {
     C_EXTENDS(_Object);
-    u_kernel kernel;
+    u_domain domain;
 };
 
 _Domain
@@ -36,8 +36,8 @@ _DomainNew(
       _this = _DomainAlloc();
       if (_this)
       {
-          _this->kernel = u_userKernelOpen((c_char *)domainId, 1);/* 1 = timeout */
-          if(!_this->kernel)
+          _this->domain = u_domainOpen((c_char *)domainId, 1);/* 1 = timeout */
+          if(!_this->domain)
           {
               _DomainFree(_this);
               _this = NULL;
@@ -53,24 +53,24 @@ _DomainFree(
 {
     if(_this)
     {
-        if(_this->kernel)
+        if(_this->domain)
         {
-            u_userKernelClose(_this->kernel);
-            _this->kernel = NULL;
+//            u_domainFree(_this->domain);
+            _this->domain = NULL;
         }
         _ObjectDelete((_Object)_this);
 
     }
 }
 
-u_kernel
+u_domain
 _DomainGetKernel(
      _Domain _this)
 {
-    u_kernel result = NULL;
+    u_domain result = NULL;
     if (_this)
     {
-        result =  _this->kernel;
+        result =  _this->domain;
     }
     return result;
 }
@@ -99,8 +99,8 @@ gapi_domain_create_persistent_snapshot (
         domain = gapi_domainClaim(_this, &result);
         if(result == GAPI_RETCODE_OK)
         {
-            uResult = u_kernelCreatePersistentSnapshot(
-                domain->kernel,
+            uResult = u_domainCreatePersistentSnapshot(
+                domain->domain,
                 partition_expression,
                 topic_expression,
                 uri);

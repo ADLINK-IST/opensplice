@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,7 +12,7 @@
 #include "cmx__networkReader.h"
 #include "v_networkReader.h"
 #include <stdio.h>
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 
 c_char*
 cmx_networkReaderInit(
@@ -22,7 +22,7 @@ cmx_networkReaderInit(
     v_networkReader reader;
     
     reader = v_networkReader(entity);
-    sprintf(buf, "<kind>NETWORKREADER</kind>");
+    os_sprintf(buf, "<kind>NETWORKREADER</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,10 +14,10 @@
 
 #include "gapi.h"
 #include "gapi_common.h"
-#include "gapi_set.h"
-#include "gapi_domainEntity.h"
+#include "gapi_entity.h"
 #include "gapi_status.h"
 #include "gapi_loanRegistry.h"
+#include "u_dataView.h"
 
 #define U_DATAREADERVIEW_GET(r) \
         u_dataView(U_ENTITY_GET(r))
@@ -39,9 +39,8 @@
                                       NULL)))
 
 C_STRUCT(_DataReaderView) {
-    C_EXTENDS(_DomainEntity);
+    C_EXTENDS(_Entity);
    _DataReader        datareader;
-    gapi_set          conditionSet;
     gapi_loanRegistry loanRegistry;
     u_query           uQuery;
     gapi_readerMask   reader_mask;
@@ -52,7 +51,7 @@ _DataReaderViewNew (
     const gapi_dataReaderViewQos * qos,
     const _DataReader datareader);
 
-void
+gapi_returnCode_t
 _DataReaderViewFree (
     _DataReaderView _this);
 

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /****************************************************************
@@ -25,8 +25,8 @@ extern "C" {
 #endif
 
 /* Include OS specific header file				*/
-#include <include/os_defs.h>
-#include <os_if.h>
+#include "include/os_defs.h"
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT
@@ -34,6 +34,12 @@ extern "C" {
 #define OS_API OS_API_IMPORT
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
+
+/* a somewhat complex, but efficient way to calculate the max size in
+ * a platform independent manner. For unsigned numerical types the first part  up to
+ * the XOR is enough. The second part is to make up for signed numerical types.
+ */
+#define OS_MAX_INTEGER(T) ((T)(((T)~0) ^ ((T)((T)~0 < 0) << (CHAR_BIT * sizeof(T) - 1))))
 
 /** \brief OS layer primitive type definitions
  */
@@ -53,8 +59,9 @@ typedef os_os_address   os_address;   /* integer with size of pointer on the pla
  * archs (LP64), but it could be also 64-bit wide (ILP64 &
  * SILP64). This type is required for systems calls relying on 'int'
  * parameters, such as setsockopt */
-typedef os_os_int      os_int;
-typedef os_os_uint     os_uint;
+typedef os_os_int       os_int;
+typedef os_os_uint      os_uint;
+typedef os_os_ulong_int os_ulong_int;
 
 /** \brief OS layer real definition to represent time
  */
@@ -168,6 +175,42 @@ typedef enum os_boolean {
     OS_FALSE = 0,
     OS_TRUE = 1
 } os_boolean;
+
+/** \brief Operation to convert the enum value to a string (no os_free required)
+ */
+OS_API os_char *
+os_scopeAttrImage(
+    os_scopeAttr _this);
+
+/** \brief Operation to convert the enum value to a string (no os_free required)
+ */
+OS_API os_char *
+os_lockPolicyImage(
+    os_lockPolicy _this);
+
+/** \brief Operation to convert the enum value to a string (no os_free required)
+ */
+OS_API os_char *
+os_schedClassImage(
+    os_schedClass _this);
+
+/** \brief Operation to convert the enum value to a string (no os_free required)
+ */
+OS_API os_char *
+os_compareImage(
+    os_compare _this);
+
+/** \brief Operation to convert the enum value to a string (no os_free required)
+ */
+OS_API os_char *
+os_resultImage(
+    os_result _this);
+
+/** \brief Operation to convert the enum value to a string (no os_free required)
+ */
+OS_API os_char *
+os_booleanImage(
+    os_boolean _this);
 
 #undef OS_API
 

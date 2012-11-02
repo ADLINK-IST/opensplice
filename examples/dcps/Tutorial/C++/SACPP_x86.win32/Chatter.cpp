@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -27,7 +27,7 @@
 #include "CheckStatus.h"
 #include "ccpp_Chat.h"
 
-#include "Windows.h"
+#include <Windows.h>
 
 #define MAX_MSG_LEN 256
 #define NUM_MSG 10

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -21,6 +21,7 @@
 #include "d_groupsRequest.h"
 #include "d_nameSpaces.h"
 #include "d_nameSpacesRequest.h"
+#include "d__mergeState.h"
 #include "d_deleteData.h"
 #include "d_configuration.h"
 #include "d_qos.h"
@@ -332,8 +333,10 @@ d_publisherStatusWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_status message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_status message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -394,8 +397,10 @@ d_publisherNewGroupWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_newGroup message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_newGroup message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -454,8 +459,10 @@ d_publisherGroupsRequestWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_groupsRequest message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_groupsRequest message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -514,8 +521,10 @@ d_publisherStatusRequestWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_statusRequest message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_statusRequest message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -574,8 +583,10 @@ d_publisherSampleRequestWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_sampleRequest message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_sampleRequest message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -634,8 +645,10 @@ d_publisherSampleChainWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_sampleChain message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_sampleChain message FAILED with result %d.\n", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -694,8 +707,10 @@ d_publisherNameSpacesRequestWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_nameSpaceRequest message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_nameSpaceRequest message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -754,8 +769,10 @@ d_publisherNameSpacesWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_nameSpaces message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_nameSpaces message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -814,8 +831,10 @@ d_publisherDeleteDataWrite(
                 } else {
                     d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
                             "Write of d_deleteData message FAILED with result %d.\n", ur);
-                        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_deleteData message FAILED with result %d.", ur);
+                    d_durabilityTerminate(durability);
+                    terminate = d_durabilityMustTerminate(durability);
                 }
             }
         }
@@ -1039,6 +1058,9 @@ d_publisherNameSpacesWriterCopy(
     void *to)
 {
     c_bool result;
+    c_ulong i;
+    static c_type mergeStateType = NULL;
+
     d_nameSpaces msgFrom = d_nameSpaces(data);
     d_nameSpaces msgTo   = d_nameSpaces(to);
     c_base base          = c_getBase(type);
@@ -1056,12 +1078,43 @@ d_publisherNameSpacesWriterCopy(
     msgTo->master.localId             = msgFrom->master.localId;
     msgTo->master.lifecycleId         = msgFrom->master.lifecycleId;
     msgTo->isComplete                 = msgFrom->isComplete;
+    msgTo->masterConfirmed            = msgFrom->masterConfirmed;
+    msgTo->state.role                 = c_stringNew(base, msgFrom->state.role);
+    msgTo->state.value                = msgFrom->state.value;
 
     if(msgFrom->partitions) {
         msgTo->partitions = c_stringNew(base, msgFrom->partitions);
     } else {
         msgTo->partitions = NULL;
     }
+    if(msgFrom->state.role) {
+        msgTo->state.role    = c_stringNew(base, msgFrom->state.role);
+    } else {
+        msgTo->state.role    = NULL;
+    }
+    msgTo->state.value       = msgFrom->state.value;
+    msgTo->mergedStatesCount = msgFrom->mergedStatesCount;
+
+    if (mergeStateType == NULL) {
+        mergeStateType = c_resolve(base, "durabilityModule2::d_mergeState_s");
+    }
+    assert(mergeStateType);
+
+    if(msgTo->mergedStatesCount > 0){
+        msgTo->mergedStates = c_arrayNew(mergeStateType, msgTo->mergedStatesCount);
+        assert(msgTo->mergedStates);
+    } else {
+        msgTo->mergedStates = NULL;
+    }
+
+    for(i=0; i<msgTo->mergedStatesCount; i++){
+        (((d_mergeState)(msgTo->mergedStates))[i]).value =
+            (((d_mergeState)msgFrom->mergedStates)[i]).value;
+        (((d_mergeState)msgTo->mergedStates)[i]).role  =
+            c_stringNew(base, (((d_mergeState)msgFrom->mergedStates)[i]).role);
+    }
+
+
     return result;
 }
 

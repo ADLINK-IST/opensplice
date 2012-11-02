@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,8 +13,8 @@
 #define GAPI_TOPICDESCRIPTION_H
 
 #include "gapi_common.h"
-#include "gapi_domainEntity.h"
 #include "gapi_expression.h"
+#include "gapi_entity.h"
 
 #include "u_user.h"
 
@@ -35,12 +35,11 @@
                                          NULL)))
 
 C_STRUCT(_TopicDescription) {
-    C_EXTENDS(_DomainEntity);
+    C_EXTENDS(_Entity);
     gapi_string             type_name;
     gapi_string             topic_name;
     gapi_long               useCount;
     q_expr                  expr;
-    gapi_set                viewSet;
     gapi_unsigned_long      messageOffset;
     gapi_unsigned_long      userdataOffset;
     gapi_unsigned_long      allocSize;
@@ -114,9 +113,11 @@ gapi_topicAllocBuffer
 _TopicDescriptionAllocBuffer (
     _TopicDescription _this);
 
+#if 0
 gapi_expression
 _TopicDescriptionCreateExpression (
     const char *topicName);
+#endif
 
 void
 _TopicDescriptionCopyContext (

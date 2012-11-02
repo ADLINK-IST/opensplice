@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -139,6 +139,37 @@ c_iterTakeFirst(
     if(iter->length == 0){
     	assert(n->next == NULL);
     	iter->tail = NULL;
+    }
+    os_free(n);
+
+    return o;
+}
+
+void *
+c_iterTakeLast(
+    c_iter iter)
+{
+    c_iterNode n, prev;
+    void *o;
+
+    if (iter == NULL) return NULL;
+    if (iter->tail == NULL) {
+        return NULL;
+    }
+    n = iter->tail;
+    o = n->object;
+    if (iter->head == iter->tail) {
+        prev = NULL;
+    } else {
+        prev = iter->head;
+        while (prev->next != iter->tail) prev = prev->next;
+    }
+    iter->tail = prev;
+    prev->next = NULL;
+    iter->length--;
+
+    if(iter->length == 0){
+    	iter->head = NULL;
     }
     os_free(n);
 
@@ -364,6 +395,25 @@ c_iterWalk(
     l = iter->head;
     while (l != NULL) {
         action(l->object,actionArg);
+        l = l->next;
+    }
+}
+
+void
+c_iterWalkUntil(
+    c_iter iter,
+    c_iterAction action,
+    c_iterActionArg actionArg)
+{
+    c_iterNode l;
+    c_bool proceed = TRUE;
+
+    if (iter == NULL) {
+        return;
+    }
+    l = iter->head;
+    while ((proceed) && (l != NULL)) {
+        proceed = action(l->object,actionArg);
         l = l->next;
     }
 }

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef NW_PLUGTYPES_H
@@ -16,7 +16,7 @@
 
 typedef os_uchar  *nw_userData;
 typedef os_uint32  nw_networkId;
-typedef os_uint32  nw_partitionId;
+typedef os_uint32   nw_partitionId;
 typedef os_char   *nw_partitionAddress;
 typedef os_uint32  nw_latencyBudget;
 typedef os_uint32  nw_flags;

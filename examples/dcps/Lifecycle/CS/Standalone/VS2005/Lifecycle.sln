@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual Studio 2005
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LifecycleData", "LifeCycleData\LifecycleData.csproj", "{2540C277-52AA-4452-98B1-A19D594B2756}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LifecycleDataPublisher", "LifeCycleDataPublisher\LifecycleDataPublisher.csproj", "{92BC6165-6F68-4E93-ACBC-A3C6294C752B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LifecycleDataSubscriber", "LifeCycleDataSubscriber\LifecycleDataSubscriber.csproj", "{EFB1D944-A089-4213-9B7C-E67056F0A0DE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2540C277-52AA-4452-98B1-A19D594B2756}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2540C277-52AA-4452-98B1-A19D594B2756}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2540C277-52AA-4452-98B1-A19D594B2756}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2540C277-52AA-4452-98B1-A19D594B2756}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92BC6165-6F68-4E93-ACBC-A3C6294C752B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92BC6165-6F68-4E93-ACBC-A3C6294C752B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92BC6165-6F68-4E93-ACBC-A3C6294C752B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92BC6165-6F68-4E93-ACBC-A3C6294C752B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFB1D944-A089-4213-9B7C-E67056F0A0DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFB1D944-A089-4213-9B7C-E67056F0A0DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFB1D944-A089-4213-9B7C-E67056F0A0DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFB1D944-A089-4213-9B7C-E67056F0A0DE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

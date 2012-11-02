@@ -6,24 +6,38 @@
     <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
   </head>
   <body>
-    
+
     <h1>Release Notes</h1>
       <h2>Contents</h2>
         <ul>
           <li><a href="../../LICENSE">Software License</a></li>
-          <li><a href="#fixedbugs">Changes and Fixed Bugs</a></li>
+          <li><a href="#customcorba">Building your own Corba or C++ API</a></li>          <li><a href="#fixedbugs">Changes and Fixed Bugs</a></li>
           <li><a href="knownissues.html">Known Issues</a></li>
         </ul>
       <hr>
       <p>
         For information about installing and configuring OpenSplice DDS Community Edition
-        please refer to the <a href="http://www.opensplice.org/cgi-bin/twiki/view/Community/Installing" target="_blank" >Installation Instructions</a>
-        or the <a href="http://www.opensplice.org/cgi-bin/twiki/view/Community/Building" target="_blank" >Building Instructions</a> if you are building 
+        please refer to the <a href="http://www.prismtech.com/opensplice/opensplice-dds-community/software-downloads/installing" target="_blank" >Installation Instructions</a>
+        or the <a href="http://www.prismtech.com/opensplice/opensplice-dds-community/building" target="_blank" >Building Instructions</a> if you are building
         OpenSplice from source.
       </p>
+
+    <h2><a name="customcorba">Building your own Corba or C++ API</a></h2>
+      <p>
+            The OpenSplice DDS DCPS APIs for the C++ and Java language bindings
+            with Corba cohabitation are delivered using a specific compiler and
+            ORBs. The API for standalone C++ is also compiler-specific.
+      </p>
+      <p>
+            To be able to use a different compiler and/or ORB, the support
+            libraries for these APIs may be rebuilt from the supplied source
+            code, as described in <a href=rebuilding_for_corba.html>this
+            note</a>.
+      </p>
+
     <h2><a name="fixedbugs">Changes and Fixed Bugs per release</a></h2>
       <ul>
-        <li><a href="fixedV5.html">Changes and Fixed bugs for V5</a></li>
+        <li><a href="fixedV5.html">Changes and Fixed bugs for V5 series</a></li>
         <li><a href="fixedV4_3.html">Changes and Fixed bugs for V4.3</a></li>
         <li><a href="fixedV4_2.html">Changes and Fixed bugs for V4.2</a></li>
         <li><a href="fixedV4_1.html">Changes and Fixed bugs for V4.1</a></li>

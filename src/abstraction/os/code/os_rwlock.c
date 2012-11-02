@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -40,8 +40,8 @@
  * no multiple reader can own the rwlock.
  */
 
-#include <os_rwlock.h>
+#include "os_rwlock.h"
 
 /* include OS specific multiple reader writer implementation	*/
-#include <code/os_rwlock.c>
+#include "code/os_rwlock.c"
 

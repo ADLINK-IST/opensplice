@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -45,7 +45,7 @@ extern "C" {
 #include <linux/if.h>
 #endif
 
-#include <../common/include/os_socket.h>
+#include "../common/include/os_socket.h"
 
 #define OS_IFNAMESIZE		IF_NAMESIZE
 #define OS_SOCKET_HAS_SA_LEN	0

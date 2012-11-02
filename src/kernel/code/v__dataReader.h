@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -123,6 +123,10 @@ c_array
 v_dataReaderKeyList(
     v_dataReader _this);
 
+c_array
+v_dataReaderSourceKeyList(
+    v_dataReader _this);
+
 c_field
 v_dataReaderIndexField(
     v_dataReader reader,
@@ -227,6 +231,12 @@ v_dataReaderNotifyIncompatibleQos(
     v_gid writerGID);
 
 void
+v_dataReaderNotifySubscriptionMatched (
+	v_dataReader r,
+    v_gid        writerGID,
+    c_bool       dispose);
+
+void
 v_dataReaderNotifyChangedQos(
     v_dataReader _this);
 
@@ -281,10 +291,6 @@ v_dataReaderInstanceCount(
 v_dataReaderInstance
 v_dataReaderAllocInstance(
     v_dataReader _this);
-
-void
-v_dataReaderDeallocInstance(
-    v_dataReaderInstance _instance);
 
 OS_API v_topic
 v_dataReaderGetTopic(

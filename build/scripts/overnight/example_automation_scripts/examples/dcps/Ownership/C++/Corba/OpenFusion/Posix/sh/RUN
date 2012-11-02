@@ -1,0 +1,34 @@
+if [ "$OSPL_HOME" = "" ];then
+echo "*** Please source release.com to set OpenSplice environment variables";
+echo "*** ERROR OpenSplice environment variables NOT SET"
+exit;
+fi
+echo "=== OSPL_HOME is "${OSPL_HOME}
+echo "=== OSPL_URI is "${OSPL_URI}
+
+$VG_OSPL_START ospl start
+$VG_START_SLEEP
+
+echo "=== Launching Ownership "
+echo === starting publisher "pub1" with ownership strength 5
+sh ./startPublisher.sh   pub1 5 40 1 > pubResult_1.txt&	
+echo === Waiting 2 seconds ...
+sleep 2
+echo === starting publisher "pub2" with ownership strength 10
+sh ./startPublisher.sh   pub2 10 5 0 > pubResult_2.txt&
+sleep 2	
+sh ./startSubscriber.sh "./subResult.txt" 
+ 
+echo "=== Checking Ownership Subscriber results"
+NB_PUB1=`grep pub1 subResult.txt | wc -l`; echo NB_PUB1=$NB_PUB1
+NB_PUB2=`grep pub2 subResult.txt | wc -l`; echo NB_PUB2=$NB_PUB2
+if [ $NB_PUB1 -eq 0 ] || [ $NB_PUB2 -eq 0 ] ;then
+   echo NOK 
+   echo "*** ERROR : example Ownership failed ";
+   cat subResult.txt;
+else
+   echo OK
+fi
+
+$VG_OSPL_START ospl stop
+sleep 2

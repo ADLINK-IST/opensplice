@@ -1,0 +1,70 @@
+rm -rf /tmp/pstore
+rm -f *.log
+rm -f *.txt
+if [ "$OSPL_HOME" = "" ];then
+echo "*** Please source release.com to set OpenSplice environment variables";
+echo "*** ERROR OpenSplice environment variables NOT SET"
+exit;
+fi
+echo "=== OSPL_HOME is "${OSPL_HOME}
+echo "=== OSPL_URI is "${OSPL_URI}
+
+$VG_OSPL_START ospl stop
+sleep 2
+
+$VG_OSPL_START ospl start
+$VG_START_SLEEP
+
+echo "=== Launching Durability "
+sh ./start.sh
+
+# expected result
+IS_CORBA=`echo $PWD | grep Corba | wc -l`
+if [  "$IS_CORBA" =  1 ];then
+   # Corba
+   tail -10 ../../../../../expected_results/subResult.txt  > tail_expected_result
+else
+   # Standalone
+   tail -10 ../../../../expected_results/subResult.txt  > tail_expected_result
+fi
+
+echo "=== Checking Durability Subscriber results Scenario 3.1"
+tail -10 subResult_3.1.txt > tail_subResult.txt
+
+diff -w tail_subResult.txt tail_expected_result > subdiff.txt
+if [ -s subdiff.txt ] || [ ! -r subResult_3.1.txt ];then
+echo NOK
+echo "*** ERROR : example Durability failed ";
+cat subdiff.txt;
+else
+echo OK
+fi
+
+echo "=== Checking Durability second Subscriber results Scenario 3.2"
+# Checking only result of second subscriber
+tail -10 subResult_3.2.2.txt > tail_subResult.txt
+
+diff -w tail_subResult.txt tail_expected_result > subdiff.txt
+if [ -s subdiff.txt ] || [ ! -r subResult_3.2.2.txt ];then
+echo NOK
+echo "*** ERROR : example Durability failed ";
+cat subdiff.txt;
+else
+echo OK
+fi
+
+echo "=== Checking Durability second Subscriber results Scenario 3.3"
+echo "    (not empty after restarting OpenSplice)"
+# Checking only result of second subscriber
+tail +2 subResult_3.3.2.txt > tail_subResult.txt
+if [ -s tail_subResult.txt ];then
+echo OK
+else
+echo NOK
+echo "*** ERROR : example Durability failed ";
+fi
+
+# Don't kill it too soon.
+sleep 5
+$VG_OSPL_START ospl stop
+sleep 2

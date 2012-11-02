@@ -1,7 +1,7 @@
 // $Id:$
 
 #include "TAOTestLibsAPIImpl.h"
-#include "tao/IORTable/IORTable.h"
+#include <tao/IORTable/IORTable.h>
 #include "os_time.h"
 
  

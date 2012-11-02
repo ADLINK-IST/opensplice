@@ -84,8 +84,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  *   type nor a sequence, return FALSE (legal use, since we're not nested).
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * FE_illegal_recursive_type() - Implement the algorithm described above

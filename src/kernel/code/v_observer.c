@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__observer.h"
@@ -166,7 +166,7 @@ v_observerNotify(
             break;
             }
 
-            /* 
+            /*
              * Only trigger condition variable if at least
              * one thread is waiting AND the event is seen for the first time.
              */
@@ -246,7 +246,7 @@ v__observerTimedWait(
      * To avoid any further use of this observer in case of destruction.
      */
     o->eventFlags &= V_EVENT_OBJECT_DESTROYED;
-    
+
     return flags;
 }
 
@@ -283,7 +283,7 @@ v_observerSetEvent(
     c_mutexUnlock(&o->mutex);
 
     return eventMask;
-}    
+}
 
 c_ulong
 v_observerClearEvent(
@@ -301,7 +301,7 @@ v_observerClearEvent(
     c_mutexUnlock(&o->mutex);
 
     return eventMask;
-}    
+}
 
 c_ulong
 v_observerSetEventMask(
@@ -319,7 +319,7 @@ v_observerSetEventMask(
     c_mutexUnlock(&o->mutex);
 
     return eventMask;
-}    
+}
 
 c_ulong
 v_observerGetEventMask(

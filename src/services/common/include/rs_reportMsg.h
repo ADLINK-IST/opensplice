@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -16,10 +16,10 @@
 extern "C" {
 #endif
 
-#include <os_report.h>
-#include <c_typebase.h>
-#include <c_time.h>
-#include <os_if.h>
+#include "os_report.h"
+#include "c_typebase.h"
+#include "c_time.h"
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_REPORTSERVICE
 #define OS_API OS_API_EXPORT

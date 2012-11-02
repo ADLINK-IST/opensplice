@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -23,7 +23,7 @@ extern "C" {
 
 #define D_MINIMUM_LIVELINESS_EXPIRY_TIME            ((float) 0.2e0)
 #define D_DEFAULT_LIVELINESS_EXPIRY_TIME            ((float)10.0e0)
-#define D_MAXIMUM_LIVELINESS_EXPIRY_TIME            ((float)20.0e0)
+#define D_MAXIMUM_LIVELINESS_EXPIRY_TIME            ((float)2147483647.2147483647)
 
 #define D_MINIMUM_LIVELINESS_UPDATE_INTERVAL        ((float)0.05e0)
 #define D_DEFAULT_LIVELINESS_UPDATE_INTERVAL        ((float)0.1e0)
@@ -87,9 +87,16 @@ extern "C" {
 #define D_DEFAULT_PERSISTENT_QUEUE_SIZE             (0)
 #define D_MAXIMUM_PERSISTENT_QUEUE_SIZE             (10000)
 
+#define D_MINIMUM_PERSISTENT_SMP_COUNT              (1)
+#define D_DEFAULT_PERSISTENT_SMP_COUNT              (1)
+
+#define D_MINIMUM_PERSISTENT_MMF_STORE_SIZE         (1048567)
+
 #define D_MINIMUM_OPTIMIZE_INTERVAL                 (10)
 #define D_DEFAULT_OPTIMIZE_INTERVAL                 (0)
 #define D_MAXIMUM_OPTIMIZE_INTERVAL                 (1000000000)
+
+#define D_DEFAULT_ROLE                              "DefaultRole"
 
 void            d_configurationInit                             (d_configuration config,
                                                                  d_durability durability,
@@ -222,6 +229,12 @@ void            d_configurationSetPersistentStoreDirectory  (d_configuration con
 void            d_configurationSetPersistentStoreMode       (d_configuration  config,
                                                              const c_char * storeModeName);
 
+void            d_configurationSetPersistentMMFStoreAddress	(d_configuration  config,
+                                                            c_address address);
+
+void            d_configurationSetPersistentMMFStoreSize    (d_configuration  config,
+                                                            os_size_t size);
+
 void            d_configurationSetPersistentQueueSize       (d_configuration config,
                                                              c_ulong size);
 
@@ -230,6 +243,9 @@ void            d_configurationSetPersistentStoreSleepTime  (d_configuration con
 
 void            d_configurationSetPersistentStoreSessionTime(d_configuration config,
                                                              c_float seconds);
+
+void            d_configurationSetPersistentSMPCount        (d_configuration config,
+                                                             c_ulong count);
 
 void            d_configurationSetDuration                  (v_duration * timeOut,
                                                              c_float seconds );
@@ -262,6 +278,12 @@ void            d_configurationAttrValueLong                (d_configuration con
                                                              const char * attr,
                                                              void (* const setAction)(d_configuration config, c_long longValue));
 
+void            d_configurationAttrValueULong               (d_configuration configuration,
+                                                             u_cfElement  element,
+                                                             const char * tag,
+                                                             const char * attr,
+                                                             void (* const setAction)(d_configuration config, c_ulong longValue));
+
 void            d_configurationAttrValueFloat               (d_configuration configuration,
                                                              u_cfElement  element,
                                                              const char * tag,
@@ -279,6 +301,11 @@ void            d_configurationValueULong                   (d_configuration con
                                                              const char * tag,
                                                              void (* const setAction)(d_configuration config, c_ulong longValue));
 
+void            d_configurationValueSize                   (d_configuration configuration,
+                                                             u_cfElement  element,
+                                                             const char * tag,
+                                                             void (* const setAction)(d_configuration config, c_size size));
+
 void            d_configurationValueLong                    (d_configuration configuration,
                                                              u_cfElement  element,
                                                              const char * tag,
@@ -293,6 +320,10 @@ void            d_configurationValueString                  (d_configuration con
                                                              u_cfElement  element,
                                                              const char * tag,
                                                              void (* const setAction)(d_configuration config, const c_char* str));
+void            d_configurationValueMemAddr					(d_configuration configuration,
+                                                            u_cfElement  element,
+                                                            const char * tag,
+                                                            void (* const setAction)(d_configuration config, c_address addr));
 
 void            d_configurationValueBoolean                 (d_configuration configuration,
                                                              u_cfElement  element,
@@ -304,6 +335,9 @@ void            d_configurationSetOptimizeUpdateInterval    (d_configuration con
 
 void            d_configurationReport                       (d_configuration config,
                                                              d_durability durability);
+
+void            d_configurationSetRole                      (d_configuration config,
+                                                             const c_char* role);
 
 #if defined (__cplusplus)
 }

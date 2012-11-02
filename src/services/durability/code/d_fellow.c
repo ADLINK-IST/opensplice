@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -20,6 +20,7 @@
 #include "d_networkAddress.h"
 #include "v_time.h"
 #include "os_heap.h"
+#include "os_stdlib.h"
 
 struct findNameSpace{
     d_nameSpace template;
@@ -37,6 +38,20 @@ struct alignerNSHelper{
     d_nameSpace nameSpace;
     c_bool aligner;
 };
+
+char* d_fellowState_text[] = {
+        "D_STATE_INIT",
+        "D_STATE_DISCOVER_FELLOWS_GROUPS",
+        "D_STATE_DISCOVER_LOCAL_GROUPS",
+        "D_STATE_DISCOVER_PERSISTENT_SOURCE",
+        "D_STATE_INJECT_PERSISTENT",
+        "D_STATE_FETCH_INITIAL",
+        "D_STATE_COMPLETE",
+        "D_STATE_FETCH",
+        "D_STATE_ALIGN",
+        "D_STATE_FETCH_ALIGN",
+        "D_STATE_TERMINATING",
+        "D_STATE_TERMINATED"};
 
 d_fellow
 d_fellowNew(
@@ -62,6 +77,7 @@ d_fellowNew(
         fellow->expectedGroupCount  = -1;
         fellow->expectedNameSpaces  = 1; /*At lease one namespace is expected*/
         fellow->groupsRequested     = FALSE;
+        fellow->role                = NULL;
     }
     return fellow;
 }
@@ -166,6 +182,10 @@ d_fellowDeinit(
         if(fellow->nameSpaces){
             d_tableFree(fellow->nameSpaces);
             fellow->nameSpaces = NULL;
+        }
+        if (fellow->role) {
+            os_free (fellow->role);
+            fellow->role = NULL;
         }
     }
 }
@@ -921,3 +941,40 @@ d_fellowIsAlignerForNameSpace(
     }
     return status;
 }
+
+void
+d_fellowSetRole (
+    d_fellow fellow,
+    d_name role)
+{
+    if (fellow) {
+        assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
+        d_lockLock(d_lock(fellow));
+
+        fellow->role = os_strdup(role);
+
+        d_lockUnlock(d_lock(fellow));
+    }
+}
+
+c_string
+d_fellowGetRole (
+    d_fellow fellow)
+{
+    d_name result;
+
+    result = NULL;
+
+    if (fellow) {
+        assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
+        d_lockLock(d_lock(fellow));
+
+        result = fellow->role;
+
+        d_lockUnlock(d_lock(fellow));
+    }
+
+    return result;
+}
+
+

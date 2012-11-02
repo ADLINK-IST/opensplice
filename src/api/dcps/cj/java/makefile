@@ -1,31 +1,35 @@
-JAR_MODULE	 = dcpscj.jar
-JAR_LOCATION = $(OSPL_HOME)
-JPACKAGES	 = DDS org/opensplice/dds/dcps
+JAR_MODULE      = dcpscj.jar
+JAR_LOCATION    = $(OSPL_HOME)
 
-JAR_DEPENDENCIES=$(addprefix code/, $(JPACKAGES))
+JCODE_DIR       = ../../saj/java/code
+TOPICIDL        = ../../../../../etc/idl/dds_builtinTopics.idl
+IDL_CODE_DIR    = bld/code/$(SPLICE_TARGET)
+JTIMESTAMP      = bld/code/$(SPLICE_TARGET)/.java_idl.timestamp
 
-# Since the Java files are not there yet, this rule makes sure we look in the saj java code first
-# and replace the saj prefix with the code prefix of the cj.
-JAVA_FILES	= $(subst ../../saj/java/,,$(wildcard $(addsuffix /*.java,$(addprefix ../../saj/java/code/,$(JPACKAGES)))))
+JPACKAGES       = DDS org/opensplice/dds/dcps
+JCODE_PATH      = $(JCODE_DIR)$(JAVA_SRCPATH_SEP)$(IDL_CODE_DIR)
 
-all link: jar
+IDLPP           = $(WINCMD) idlpp
 
-# the precompile rule will copy the code from the saj directory
-# step 1: Copy contents of saj/java/code directory to cj/java/code directory
-# step 2: invoke jacorb to generate the builtintopics idl
-# step 3: the jar rule will compile this code producing the JAR_MODULE
-
-$(JAVA_FILES) $(JAR_DEPENDENCIES):
-	mkdir -p code
-	cp -r ../../saj/java/code/* code/
-	java org.jacorb.idl.parser -d code -forceOverwrite ../../../../../etc/idl/dds_builtinTopics.idl
+all link: idlpp $(JTIMESTAMP) jar
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
+$(JTIMESTAMP): $(TOPICIDL)
+	@mkdir -p $(IDL_CODE_DIR) $(CLASS_DIR)
+	@rm -rf $(IDL_CODE_DIR)/* $(CLASS_DIR)/*
+	$(JAVA) -classpath "$(CLASSPATH)" org.jacorb.idl.parser -d $(IDL_CODE_DIR) $(TOPICIDL)
+	$(IDLPP) -l java -C -d $(IDL_CODE_DIR) $(TOPICIDL)
+	@touch $(JTIMESTAMP)
+	$(JCC) $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(IDL_CODE_DIR)/DDS/*.java
+
+idlpp:
+	cd $(OSPL_HOME)/src/cpp; make
+	cd $(OSPL_HOME)/src/tools/cppgen; make
+	cd $(OSPL_HOME)/src/tools/idlpp; make
 
 analyse:
-	@$(ANALYSE) bld/$(SPLICE_TARGET)
+	@$(ANALYSE) bld/$(SPLICE_TARGET) code
 
 clean:
-	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE)
-
+	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) $(IDL_CODE_DIR)

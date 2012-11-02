@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -20,14 +20,14 @@ os_int
 nw_socketGetDefaultBroadcastInterface(
     const char *addressLookingFor,
     os_int sockfd,
-    struct sockaddr_in *sockAddrPrimary,
-    struct sockaddr_in *sockAddrBroadcast);
+    os_sockaddr_storage *sockAddrPrimary,
+    os_sockaddr_storage *sockAddrBroadcast);
 
 void
 nw_socketBroadcastInitialize(
     nw_socket socket,
     sk_bool receiving);
 
-                      
+
 #endif /* NW_SOCKETBROADCAST_H */
 

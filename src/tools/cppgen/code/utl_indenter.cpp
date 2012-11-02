@@ -67,8 +67,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 // utl_indenter.cc - Implementation of indenter for dumping IDL AST
 //
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Constructors

@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "
+http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" lang="fr">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>OpenSplice DDS examples - Lifecycle</title>
+<link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
+</head>
+
+
+<body>
+<h1> EXAMPLES </h1>
+<ul>
+  <li><a href ="../README.html">Summary</a></li>
+
+  <li>HelloWorld</li>
+  <li><a href ="../WaitSet/README.html">WaitSet </a></li>
+  <li><a href ="../Listener/README.html">Listener </a></li>
+  <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li> 
+  <li><a href ="../QueryCondition/README.html">QueryCondition </a></li> 
+  <li> <a href ="../Lifecycle/README.html">Lifecycle</a></li> 
+  <li><a href ="../Durability/README.html">Durability </a></li>
+  <li> <a href ="../Ownership/README.html">Ownership</a></li>
+  <li> <a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
+</ul>
+<h2> HelloWorld </h2>
+
+<ul>
+  <li><a href ="#STANDALONE">Building/Running of examples in Standalone Mode</a></li>
+  <li><a href ="#CORBA">Building/Running of examples in CORBA Cohabitation Mode</a></li>
+</ul>
+
+<h3>1) Description</h3>
+<p>The basic HelloWorld example is used to illustrate the necessary
+steps to setup DCPS entities</p>
+<h3>2) Design</h3>
+<p>It consists of 4 units :</p>
+
+<ul><li>CheckStatus : provides return status checking</li>
+	<li>DDSEntityManager : implements a class providing operations to setup DCPS entities
+(creation, deletion) </li>
+	<li>HelloWorldPublisher  : implements the publisher's main (uses DDSEntityManager)</li>
+	<li>HelloWorldSubscriber : implements the subscriber's main (uses DDSEntityManager)
+</li></ul>
+<h3>3) Scenario</h3>
+<p>The publisher sends a single HelloWorld sample.
+The sample contains 2 fields :</p>
+	<ul><li> a userID field (long type)
+	</li><li> a message field (string type).</li></ul>
+
+<p>When it receives the sample, the subscriber displays the userID field and the message field.</p>
+
+<h2><balise id="STANDALONE">Building/Running of examples in Standalone Mode</balise></h2>
+<ul>
+  <li><a href ="#Posix">Building/Running examples in Posix </a></li>
+  <li><a href ="#VS">Building/Running examples in Visual Studio 2005/2008</a></li>
+</ul>
+
+<h3><balise id="Posix">Building the examples in a Posix environment</balise></h3>
+
+<h4>Environment Setup</h4>
+<p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
+<p>The OpenSpliceDDS environment variables must be set in order for the examples to build/run correctly.
+To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.com</i>" script supplied with the distribution.</p>
+
+<ul>
+  <li><a href ="#C_C++">C/C++ Examples </a></li>
+  <li><a href ="#Java">Java examples</a></li>
+</ul>
+
+<h4><balise id="C_C++">Building the C/C++ Examples</balise></h4>
+<ul><li>Open a terminal.
+</li><li>Navigate to the C or C++ <b>Posix</b> directory on the example folder that you wish to build the example for, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/HelloWorld/C++/Standalone/Posix</b>.
+</li><li>type <i>make</i>.
+</li></ul>
+<p>Two executables are generated in the <b>exec</b> folder when the example 
+is built:</p>
+
+		<ul><li>HelloWorldDataPublisher </li>
+			<li>HelloWorldDataSubscriber </li>
+		</ul>
+
+<h4><balise id = "Java">Building the Java examples</balise></h4>
+<ul><li>Open a terminal and make sure the OpenSpliceDDS environment is setup.
+</li><li>Navigate to the Java <b>Posix</b> directory for the example for, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/HelloWorld/Java/Standalone/Posix</b>.
+</li><li>Execute the script <i>BUILD</i>.
+</li></ul>
+<p>Two jars are generated in the <b>exec</b> folder when the example 
+is built:</p>
+
+		<ul><li>HelloWorldDataPublisher.jar </li>
+			<li>HelloWorldDataSubscriber.jar </li>
+		</ul>
+<h4>Running the C/C++/Java examples</h4>
+ <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new terminal used.</p>
+ <p>The following steps describe how to run the examples you have just built:
+   <ul><li> Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+
+	<li> Navigate to the <b>sh</b> directory for the C/C++/Java example you have just built, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/HelloWorld/C++/Standalone/Posix/sh</b></li>
+	<li> It is recommended that you run the startSubscriber and startPublisher scripts in seperate terminals to avoid mixing the output</li>
+	<li> Open a terminal. Setup the environment and go to directory <b>sh</b> as described above and type: <i>startSubscriber.sh</i>.</li>
+	<li> Open a terminal. Setup the environment and go to directory <b>sh</b> as described above and type: <i>startPublisher.sh</i>.</li>
+	</ul>
+<h3><balise id="VS">Building/Running C/C++/C#/Java examples in Visual Studio 2005/2008</balise></h3>
+
+<h4>Environment Setup</h4>
+<p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
+<p>The OpenSpliceDDS environment variables must be set in order for the examples to build/run correctly.
+To do this, open a terminal and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution</p>
+
+<ul>
+  <li><a href ="#C_C++_CS_Win">C/C++/C# Examples </a></li>
+  <li><a href ="#Java_Win">Java examples</a></li>
+</ul>
+
+<h4><balise id="C_C++_CS_Win">Building the C/C++/C# Examples</balise></h4>
+	<ul><li>Visual Studio Solution Files are provided for each of the examples:<br/>
+	The OSPL environment variables need to be set before you can build your application. If these variables have been set by the installer, you can start VS directly 
+to open the solution <i>HelloWorld.sln</i> This can be found in <b><i>OpenSplice_install_dir</i>\examples\dcps\HelloWorld\C++\Standalone\VS2005<br/></b>
+Otherwise you need to run the batch file <i>OpenSplice_install_dir\release.bat</i> before opening the VS solution <i>HelloWorld.sln</i>. <br/>
+
+		</li>
+		<li> Build the example using the "Build Solution" option<br/>	Two executables are generated when the example is built: 
+		<ul><li>HelloWorldDataPublisher.exe </li>
+			<li>HelloWorldDataSubscriber.exe </li>
+		</ul>
+	</ul>
+
+<h4><balise id="Java_Win">Building the Java Example</balise></h4>
+<ul><li>Open a terminal and make sure the OpenSpliceDDS environment is setup.
+</li><li>Navigate to the <b>Windows</b> directory for the Java example for, eg: <b><i>OpenSplice_install_dir</i>\examples\dcps\HelloWorld\Java\Standalone\Windows</b>.
+</li><li>Execute the batch file <i>BUILD.bat</i>.
+</li></ul>
+<p>Two jars are generated in the <b>exec</b> folder when the example 
+is built:</p>
+
+		<ul><li>HelloWorldDataPublisher.jar </li>
+			<li>HelloWorldDataSubscriber.jar </li>
+		</ul>
+		
+<h4><balise id="C_C++_CS_Java_Win">Running the C/C++/C#/Java Examples</balise></h4>
+   <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new terminal used.</p>
+ <p>The following steps describe how to run the examples you have just built:
+   <ul><li> Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+
+	<li> Navigate to the <b>Bat</b> directory for the C/C++/C#/Java example you have just built, eg: <b><i>OpenSplice_install_dir</i>\examples\dcps\HelloWorld\C++\Standalone\Windows\Bat</b></li>
+	<li> It is recommended that you run the startSubscriber and startPublisher scripts in seperate terminals to avoid mixing the output</li>
+	<li> Open a terminal. Setup the environment and go to directory <b>Bat</b> as described above and type: <i>startSubscriber.bat</i>.</li>
+	<li> Open a terminal. Setup the environment and go to directory <b>Bat</b> as described above and type: <i>startPublisher.bat</i>.</li>
+	</ul>
+<h2><balise id="CORBA">Building/Running in CORBA Cohabitation Mode</balise></h2>
+<p>Doing the substitution and additionnal setups described below, everything previously said for Standalone Mode can be applied to CORBA Cohabitation Mode.</p>
+<h4>Environment Setup</h4>
+ <p>Besides OpenSplice environment variables, we need to set</p>
+ <ul><li>C/C++</li>
+        <ul><li>The TAO environment variable TAO_ROOT to point to the Tao installation directory.</li></ul>
+     <li>Java</li>
+        <ul><li>The JacORB environment variable JACORB_HOME to point to the JacORB installation directory.</li></ul>
+ </ul>
+ <h4>Substitution</h4>
+	<ul><li>Posix platform</li> 
+		<ul>
+			<li>C/C++ Standalone is replaced by Corba/OpenFusion</li>
+			<li>Java  Standalone is replaced by Corba/JacORB</li>
+		</ul>
+		<li>Windows platform</li>
+        <ul>
+			<li>C/C++ Standalone is replaced by Corba\OpenFusion</li>
+			<li>Java  Standalone is replaced by Corba\JacORB</li>
+		</ul>
+	</ul>
+
+</body>
+</html>

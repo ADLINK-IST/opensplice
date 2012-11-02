@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -16,20 +16,17 @@
 #include "u_topic.h"
 
 u_result
-u_topicInit (
-    u_topic _this);
+u_topicInit(
+    u_topic _this,
+    const c_char *name,
+    u_participant p);
 
 u_result
 u_topicDeinit (
     u_topic _this);
 
-u_result
-u_topicClaim(
-    u_topic _this,
-    v_topic *topic);
-
-u_result
-u_topicRelease(
+c_bool
+u_topicIsBuiltin (
     u_topic _this);
 
 #endif

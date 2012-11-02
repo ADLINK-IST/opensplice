@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,7 +14,6 @@
 
 #include "gapi_common.h"
 #include "gapi_object.h"
-#include "gapi_set.h"
 #include "gapi_waitSet.h"
 #include "gapi_expression.h"
 
@@ -26,6 +25,8 @@
 #define _StatusCondition(o) ((_StatusCondition)(o))
 #define _ReadCondition(o) ((_ReadCondition)(o))
 #define _QueryCondition(o) ((_QueryCondition)(o))
+
+#define U_QUERY_GET(t) u_query(_Condition(t)->uEntity)
 
 #define gapi_conditionClaim(h,r) \
         (_Condition(gapi_objectClaim(h,OBJECT_KIND_CONDITION,r)))
@@ -93,7 +94,7 @@ C_STRUCT(_Condition) {
     C_EXTENDS(_Object);
     _Entity entity;
     u_entity uEntity;
-    gapi_set waitsets;
+    c_iter waitsets;
     GetTriggerValue getTriggerValue;
 };
 
@@ -151,14 +152,6 @@ _ConditionRemoveWaitset (
     _Condition   condition,
     gapi_waitSet waitset,
     u_waitset    uWaitset);
-
-#if 0
-void
-_ConditionDetachWaitset (
-    _Condition condition,
-    _WaitSet   waitset,
-    u_waitset  uWaitset);
-#endif
 
 _GuardCondition
 _GuardConditionNew (
@@ -219,5 +212,9 @@ _StatusConditionNew (
 gapi_returnCode_t
 _StatusConditionFree (
     _StatusCondition statuscondition);
+
+void
+_ConditionFree(
+    _Condition _this);
 
 #endif

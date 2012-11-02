@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,10 +13,10 @@
 #define __UTL_PRAGMAS_HH__
 
 #include <string.h>
-#include <idl_bool.h>
-#include <utl_idlist.h>
-#include <utl_scoped_name.h>
-#include <utl_string.h>
+#include "idl_bool.h"
+#include "utl_idlist.h"
+#include "utl_scoped_name.h"
+#include "utl_string.h"
 
 class UTL_Pragmas
 {

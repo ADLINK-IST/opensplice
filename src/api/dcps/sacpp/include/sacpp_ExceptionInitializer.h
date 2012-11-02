@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -47,6 +47,9 @@ class SACPP_API DDS::ExceptionInitializer
       static Factory lookup (const char *name);
 
    private:
+
+      // Assignment not permitted
+      ExceptionInitializer & operator=( const ExceptionInitializer & );
 
       static ExceptionInitializer *m_head;
       ExceptionInitializer        *m_next;

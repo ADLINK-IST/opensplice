@@ -39,34 +39,34 @@ namespace test.sacs
         public override Test.Framework.TestResult Run()
         {
             DDS.IPublisher publisher;
-            string expResult = "Functions not supported yet.";
+            string expResult = "Functions all supported.";
             Test.Framework.TestResult result;
             DDS.ReturnCode rc;
             result = new Test.Framework.TestResult(expResult, string.Empty, Test.Framework.TestVerdict.Pass,
                 Test.Framework.TestVerdict.Fail);
             publisher = (DDS.IPublisher)this.ResolveObject("publisher");
             rc = publisher.BeginCoherentChanges();
-            if (rc != DDS.ReturnCode.Unsupported)
+            if (rc != DDS.ReturnCode.Ok)
             {
-                result.Result = "begin_coherent_changes succeeded.";
+                result.Result = "begin_coherent_changes failed.";
                 return result;
             }
             rc = publisher.EndCoherentChanges();
-            if (rc != DDS.ReturnCode.Unsupported)
+            if (rc != DDS.ReturnCode.Ok)
             {
-                result.Result = "end_coherent_changes succeeded.";
+                result.Result = "end_coherent_changes failed.";
                 return result;
             }
             rc = publisher.SuspendPublications();
             if (rc != DDS.ReturnCode.Ok)
             {
-                result.Result = "suspend_publication succeeded.";
+                result.Result = "suspend_publication failed.";
                 return result;
             }
             rc = publisher.ResumePublications();
             if (rc != DDS.ReturnCode.Ok)
             {
-                result.Result = "resume_publication succeeded.";
+                result.Result = "resume_publication failed.";
                 return result;
             }
             result.Result = expResult;

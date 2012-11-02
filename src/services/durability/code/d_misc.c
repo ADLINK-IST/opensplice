@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -57,14 +57,21 @@ static void
 d_doPrint(
     d_configuration config,
     const char* format,
-    va_list args)
+    va_list args,
+    const char* header
+    )
 {
     char description[512];
 
     if(config->tracingOutputFile){
-        vsnprintf(description, sizeof(description)-1, format, args);
+        os_vsnprintf(description, sizeof(description)-1, format, args);
         description [sizeof(description)-1] = '\0';
-        fprintf(config->tracingOutputFile, "%s", description);
+        if (header != NULL) {
+            fprintf(config->tracingOutputFile, "%s%s", header, description);
+        }
+        else {
+            fprintf(config->tracingOutputFile, "%s", description);
+        }
         fflush(config->tracingOutputFile);
 
         if(config->tracingSynchronous){
@@ -84,14 +91,15 @@ d_printTimedEvent(
 {
     va_list args;
     d_configuration config;
+    char header[100];
 
     config = d_durabilityGetConfiguration(durability);
 
     if (config && (((c_ulong)level) >= ((c_ulong)config->tracingVerbosityLevel)))
     {
-        d_printState(durability, config, threadName);
+        d_printState(durability, config, threadName, header);
         va_start (args, format);
-        d_doPrint(config, format, args);
+        d_doPrint(config, format, args, header);
         va_end (args);
     }
 }
@@ -111,7 +119,7 @@ d_printEvent(
     if (config && (((c_ulong)level) >= ((c_ulong)config->tracingVerbosityLevel)))
     {
         va_start (args, format);
-        d_doPrint(config, format, args);
+        d_doPrint(config, format, args, NULL);
         va_end (args);
     }
 }
@@ -162,10 +170,11 @@ void
 d_printState(
     d_durability durability,
     d_configuration config,
-    const char* threadName)
+    const char* threadName,
+    char* header)
 {
     os_time time;
-    d_durabilityKind kind;
+    d_serviceState kind;
     const c_char* state;
 
     if(config->tracingOutputFile){
@@ -219,10 +228,10 @@ d_printState(
             if(config->tracingRelativeTimestamps == TRUE){
                 time = os_timeSub(time, config->startTime);
             }
-            fprintf(config->tracingOutputFile, "%d.%9.9d %s (%s) -> ",
-                    time.tv_sec, time.tv_nsec, state, threadName);
+            os_sprintf(header, "%d.%9.9d %s (%s) -> ",
+                time.tv_sec, time.tv_nsec, state, threadName);
         } else {
-            fprintf(config->tracingOutputFile, "%s (%s) -> ", state, threadName);
+            os_sprintf(header, "%s (%s) -> ", state, threadName);
         }
     }
 }
@@ -249,5 +258,70 @@ d_findBaseAction(
 
     data = (struct baseFind*)args;
     data->base = c_getBase(entity);
+}
+
+c_bool
+d_patternMatch(
+    const char* str,
+    const char* pattern )
+{
+    c_bool   stop = FALSE;
+    c_bool   matches = FALSE;
+    c_string strRef = NULL;
+    c_string patternRef = NULL;
+
+    /* QAC EXPECT 2106,2100; */
+    while ((*str != 0) && (*pattern != 0) && (stop == FALSE)) {
+        /* QAC EXPECT 2106,3123; */
+        if (*pattern == '*') {
+            /* QAC EXPECT 0489; */
+            pattern++;
+            /* QAC EXPECT 2106; */
+            while ((*str != 0) && (*str != *pattern)) {
+                /* QAC EXPECT 0489; */
+                str++;
+            }
+            /* QAC EXPECT 2106; */
+            if (*str != 0) {
+                /* QAC EXPECT 0489; */
+                strRef = (c_string)(str+1); /* just behind the matching char */
+                patternRef = (c_string)(pattern-1); /* on the '*' */
+            }
+        /* QAC EXPECT 2106,3123; */
+        } else if (*pattern == '?') {
+            /* QAC EXPECT 0489; */
+            pattern++;
+            /* QAC EXPECT 0489; */
+            str++;
+        /* QAC EXPECT 2004,3401,0489,2106; */
+        } else if (*pattern++ != *str++) {
+            if (strRef == NULL) {
+                matches = FALSE;
+                stop = TRUE;
+            } else {
+                str = strRef;
+                pattern = patternRef;
+                strRef = NULL;
+            }
+        }
+    }
+    /* QAC EXPECT 3892,2106,2100; */
+    if ((*str == (char)0) && (stop == FALSE)) {
+        /* QAC EXPECT 2106,3123; */
+        while (*pattern == '*') {
+            /* QAC EXPECT 0489; */
+            pattern++;
+        }
+        /* QAC EXPECT 3892,2106; */
+        if (*pattern == (char)0) {
+            matches = TRUE;
+        } else {
+            matches = FALSE;
+        }
+    } else {
+        matches = FALSE;
+    }
+    return matches;
+    /* QAC EXPECT 5101; */
 }
 

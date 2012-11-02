@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -17,12 +17,13 @@
 /** \file os/linux/code/os_init.c
  *  \brief Initialization / Deinitialization
  */
-
-#include <code/os__process.h>
-#include <code/os__thread.h>
-#include <code/os__sharedmem.h>
-#include <os_abstract.h>
-#include <os_report.h>
+    
+#include "code/os__process.h"
+#include "code/os__thread.h"
+#include "code/os__sharedmem.h"
+#include "../posix/code/os__mutex.h"
+#include "os_abstract.h"
+#include "os_report.h"
 
 /** \brief Counter that keeps track of number of times os-layer is initialized */
 static os_uint32 _ospl_osInitCount = 0;
@@ -83,4 +84,4 @@ os_osExit (
     return;
 }
 
-#include <../common/code/os_service.c>
+#include "../common/code/os_service.c"

@@ -1,18 +1,19 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
 #include "d_newGroup.h"
 #include "d_message.h"
 #include "os_heap.h"
+#include "os_stdlib.h"
 
 d_newGroup
 d_newGroupNew(
@@ -24,20 +25,20 @@ d_newGroupNew(
     d_quality quality)
 {
     d_newGroup newGroup = NULL;
-    
+
     if(admin){
         newGroup = d_newGroup(os_malloc(C_SIZEOF(d_newGroup)));
         d_messageInit(d_message(newGroup), admin);
-        
+
         if(partition){
             newGroup->partition = (c_char*)(os_malloc(strlen(partition) + 1));
-            sprintf(newGroup->partition, partition);
+            os_sprintf(newGroup->partition, partition);
         } else {
             newGroup->partition = NULL;
         }
         if(topic){
             newGroup->topic = (c_char*)(os_malloc(strlen(topic) + 1));
-            sprintf(newGroup->topic, topic);
+            os_sprintf(newGroup->topic, topic);
         } else {
             newGroup->topic = NULL;
         }
@@ -82,13 +83,13 @@ d_newGroupCompare(
     d_newGroup g2)
 {
     int r;
-    
+
     if(g1 && g2){
         r = strcmp(g1->partition, g2->partition);
-        
+
         if(r == 0){
             r = strcmp(g1->topic, g2->topic);
-            
+
             if(r == 0){
                 if(g1->durabilityKind != g2->durabilityKind){
                     if(g1->durabilityKind == D_DURABILITY_PERSISTENT){
@@ -106,7 +107,7 @@ d_newGroupCompare(
                     } else {
                         assert(FALSE);
                     }
-                }  
+                }
             }
         }
     } else if(!g1 && !g2){

@@ -6,6 +6,7 @@
  *
  **********************************************************************/
 #include <os_heap.h>
+#include <os_stdlib.h>
 #include <ctype.h>
 #include <c_stringSupport.h>
 
@@ -310,7 +311,7 @@ extractIdent(char *str)
       str++;
    }
    yylval.String = (char*)os_malloc(length+1);
-   strncpy(yylval.String, str, length);
+   os_strncpy(yylval.String, str, length);
    yylval.String[length]=0;
    return length;
 }
@@ -320,7 +321,7 @@ extractString(char *str)
 {
    int length = strlen(str) - 1;
    yylval.String = (char*)os_malloc(length);
-   strncpy(yylval.String, ++str, length-1);
+   os_strncpy(yylval.String, ++str, length-1);
    yylval.String[length-1]=0;
    return length;
 }
@@ -354,7 +355,7 @@ preprocessor_directive(char *str)
                         fieldName = c_iterTakeFirst(pragmaItems);
                         if (fieldName[0] == '_') { /* escape character, which must be removed */
                             newFieldName = (char *)os_malloc(strlen(fieldName));
-                            strcpy(newFieldName, &(fieldName[1]));
+                            os_strcpy(newFieldName, &(fieldName[1]));
                             os_free(fieldName);
                             fieldName = newFieldName;
                         }
@@ -381,11 +382,11 @@ preprocessor_directive(char *str)
                         fieldName = c_iterTakeFirst(pragmaItems);
                         if (fieldName[0] == '_') { /* escape character, which must be removed */
                             newFieldName = (char *)os_malloc(strlen(fieldName));
-                            strcpy(newFieldName, &(fieldName[1]));
+                            os_strcpy(newFieldName, &(fieldName[1]));
                             os_free(fieldName);
                             fieldName = newFieldName;
                         }
-                        idl_checkKeyListFieldName(mo, fieldName, yyerror);
+                        idl_checkSimpleFieldName(mo, fieldName, yyerror);
                         strcat(valueString, fieldName);
                         if (c_iterLength(pragmaItems)) {
                             strcat(valueString, ",");
@@ -393,6 +394,33 @@ preprocessor_directive(char *str)
                     }
                 }
                 idl_catsDefAdd (idl_catsDefDefGet(), scope, typeName, valueString);
+            }
+        } else if(pragmaName && strcmp(pragmaName, "stac") == 0) {
+            typeName = c_iterTakeFirst(pragmaItems);
+            if (typeName) {
+                if (idl_checkKeyListTypeName(scope, typeName, yyerror) == 0) {
+                    mo = c_metaObject(c_metaFindByName (scope, typeName, CQ_METAOBJECTS));
+                } else {
+                    mo = NULL;
+                }
+                valueString[0] = '\0';
+                if (mo) {
+                    while (c_iterLength(pragmaItems)) {
+                        fieldName = c_iterTakeFirst(pragmaItems);
+                        if (fieldName[0] == '_') { /* escape character, which must be removed */
+                            newFieldName = (char *)os_malloc(strlen(fieldName));
+                            os_strcpy(newFieldName, &(fieldName[1]));
+                            os_free(fieldName);
+                            fieldName = newFieldName;
+                        }
+                        idl_checkSimpleFieldName(mo, fieldName, yyerror);
+                        strcat(valueString, fieldName);
+                        if (c_iterLength(pragmaItems)) {
+                            strcat(valueString, ",");
+                        }
+                    }
+                }
+                idl_stacDefAdd (idl_stacDefDefGet(), scope, typeName, valueString);
             }
         }
     }
@@ -420,7 +448,7 @@ preprocessor_directive(char *str)
     }
     while ((*ptr != 0) && ((*ptr == ' ') || (*ptr == '\t'))) ptr++;
     if (*ptr != '"') return;
-    strncpy(file_name,fileName,length);
+    os_strncpy(file_name,fileName,length);
     file_name[length] = 0;
     idl_fileMapAdd(idl_fileMapDefGet(), file_name);
     parser_line = lineNumber;

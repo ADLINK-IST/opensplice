@@ -1,58 +1,28 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
 #include "os_report.h"
+#include "os_abstract.h"
 
 #include "u_user.h"
 #include "u__cfData.h"
 #include "u__cfValue.h"
-
+#include "u__entity.h"
 #include "v_cfNode.h"
+#include "c_stringSupport.h"
+
+#include <ctype.h>
 
 #define U_CFDATA_SIZE (sizeof(C_STRUCT(u_cfData)))
-
-u_result
-u_cfDataClaim(
-    u_cfData data,
-    v_cfData *kData)
-{
-    u_result r = U_RESULT_OK;
-
-    if ((data == NULL) || (kData == NULL)) {
-        OS_REPORT(OS_ERROR, "u_cfDataClaim", 0, "Illegal parameter");
-        r = U_RESULT_ILL_PARAM;
-    } else {
-        *kData = v_cfData(u_cfNodeClaim(u_cfNode(data)));
-        if (*kData == NULL) {
-            r = U_RESULT_INTERNAL_ERROR;
-        }
-    }
-    return r;
-}
-
-u_result
-u_cfDataRelease(
-    u_cfData data)
-{
-    u_result r = U_RESULT_OK;
-
-    if (data == NULL) {
-        OS_REPORT(OS_ERROR, "u_cfDataClaim", 0, "Illegal parameter");
-        r = U_RESULT_ILL_PARAM;
-    } else {
-        u_cfNodeRelease(u_cfNode(data));
-    }
-    return r;
-}
 
 u_cfData
 u_cfDataNew(
@@ -95,7 +65,7 @@ u_cfDataStringValue(
 
     result = FALSE;
     if ((data != NULL) && (str != NULL)) {
-        r = u_cfDataClaim(data, &kData);
+        r = u_cfNodeReadClaim(u_cfNode(data), (v_cfNode*)(&kData));
         if (r == U_RESULT_OK) {
             value = v_cfDataValue(kData);
             result = u_cfValueScan(value, V_STRING, &resultValue);
@@ -103,7 +73,7 @@ u_cfDataStringValue(
             if (result == TRUE) {
                 *str = resultValue.is.String;
             }
-            u_cfDataRelease(data);
+            u_cfNodeRelease(u_cfNode(data));
         }
     }
     return result;
@@ -122,7 +92,7 @@ u_cfDataBoolValue(
 
     result = FALSE;
     if ((data != NULL) && (b != NULL)) {
-        r = u_cfDataClaim(data, &kData);
+        r = u_cfNodeReadClaim(u_cfNode(data), (v_cfNode*)(&kData));
         if (r == U_RESULT_OK) {
             value = v_cfDataValue(kData);
             result = u_cfValueScan(value, V_BOOLEAN, &resultValue);
@@ -130,7 +100,7 @@ u_cfDataBoolValue(
             if (result == TRUE) {
                 *b = resultValue.is.Boolean;
             }
-            u_cfDataRelease(data);
+            u_cfNodeRelease(u_cfNode(data));
         }
     }
     return result;
@@ -149,7 +119,7 @@ u_cfDataLongValue(
 
     result = FALSE;
     if ((data != NULL) && (lv != NULL)) {
-        r = u_cfDataClaim(data, &kData);
+        r = u_cfNodeReadClaim(u_cfNode(data), (v_cfNode*)(&kData));
         if (r == U_RESULT_OK) {
             value = v_cfDataValue(kData);
             result = u_cfValueScan(value, V_LONG, &resultValue);
@@ -157,7 +127,7 @@ u_cfDataLongValue(
             if (result == TRUE) {
                 *lv = resultValue.is.Long;
             }
-            u_cfDataRelease(data);
+            u_cfNodeRelease(u_cfNode(data));
         }
     }
     return result;
@@ -176,7 +146,7 @@ u_cfDataULongValue(
 
     result = FALSE;
     if ((data != NULL) && (ul != NULL)) {
-        r = u_cfDataClaim(data, &kData);
+        r = u_cfNodeReadClaim(u_cfNode(data), (v_cfNode*)(&kData));
         if (r == U_RESULT_OK) {
             value = v_cfDataValue(kData);
             result = u_cfValueScan(value, V_ULONG, &resultValue);
@@ -184,7 +154,7 @@ u_cfDataULongValue(
             if (result == TRUE) {
                 *ul = resultValue.is.ULong;
             }
-            u_cfDataRelease(data);
+            u_cfNodeRelease(u_cfNode(data));
         }
     }
     return result;
@@ -203,7 +173,7 @@ u_cfDataFloatValue(
 
     result = FALSE;
     if ((data != NULL) && (f != NULL)) {
-        r = u_cfDataClaim(data, &kData);
+        r = u_cfNodeReadClaim(u_cfNode(data), (v_cfNode*)(&kData));
         if (r == U_RESULT_OK) {
             value = v_cfDataValue(kData);
             result = u_cfValueScan(value, V_FLOAT, &resultValue);
@@ -211,8 +181,169 @@ u_cfDataFloatValue(
             if (result == TRUE) {
                 *f = resultValue.is.Float;
             }
-            u_cfDataRelease(data);
+            u_cfNodeRelease(u_cfNode(data));
         }
     }
+    return result;
+}
+
+c_bool
+u_cfDataSizeValue(
+        u_cfData data,
+        c_size *size)
+{
+    u_result user_result;
+    c_bool result;
+    v_cfData kData;
+    c_value value;
+
+    result = FALSE;
+    if ((data != NULL) && (size != NULL)) {
+        user_result = u_cfNodeReadClaim(u_cfNode(data), (v_cfNode*)(&kData));
+        if (user_result == U_RESULT_OK) {
+            value = v_cfDataValue(kData);
+            if(value.kind == V_STRING){
+                result = u_cfDataSizeValueFromString(value.is.String,size);
+            }
+            else
+            {
+                OS_REPORT(OS_ERROR, "u_cfDataSizeValue", 0, "Value is not a string");
+                assert(value.kind == V_STRING);
+            }
+
+            u_cfNodeRelease(u_cfNode(data));
+        }
+    }
+    return result;
+}
+
+c_bool
+u_cfDataSizeValueFromString(
+    c_char *str,
+    c_size *size)
+{
+    c_bool result = TRUE;
+    c_char *temp, *startChar, *endChar;
+    c_char tempChar;
+
+    if(str){
+
+        temp = c_trimString(str);
+
+        if(temp)
+        {
+            startChar = temp;
+
+            /* get the numeric part */
+            endChar = startChar;
+            while(*endChar != '\0' && isdigit(*endChar))
+            {
+                endChar++;
+            }
+
+            if(startChar == endChar)
+            {
+                result = FALSE;
+            }
+            else {
+                /* endChar now points to the character in the string after the last digit */
+                tempChar = *endChar;
+                *endChar = '\0'; /* make it a 0-terminated string */
+
+                sscanf(startChar, PA_SIZEFMT, size);
+
+                *endChar = tempChar;
+
+                /*
+                 * If endChar is now pointing at '\0', then the size does not contain
+                 * a user-friendly size character. Else continue and interpret the user
+                 * friendly size character.
+                 */
+                if(*endChar != '\0'){
+                    endChar++;
+                    if(*endChar != '\0')
+                    {
+                        /*
+                         * If endChar is '\0' now, then this means that after the
+                         * user friendly size character comes more, which is not
+                         * allowed.
+                         */
+                        result = FALSE;
+                    }
+                    else
+                    {
+                        /* now get the user-friendly part, if available */
+                        switch(tempChar) { /* tmpChar contains the user-friendly character */
+                            case 'K':
+                            case 'k':
+                                if(*size > C_MAX_SIZE/(1<<10)) /* boundary checking */
+                                {
+                                    *size = C_MAX_SIZE;
+                                    OS_REPORT_2(OS_WARNING,
+                                                "u_cfDataSizeValueFromString",
+                                                0,
+                                                "Configuration parameter value (%s) exceeds maximum size, value changed to " PA_SIZEFMT,
+                                                temp,
+                                                C_MAX_SIZE);
+                                }
+                                *size <<= 10; /* multiply by 1024 */
+                                break;
+                            case 'M':
+                            case 'm':
+                                if(*size > C_MAX_SIZE/(1<<20)) /* boundary checking */
+                                {
+                                    *size = C_MAX_SIZE;
+                                    OS_REPORT_2(OS_WARNING,
+                                                "u_cfDataSizeValueFromString",
+                                                0,
+                                                "Configuration parameter value (%s) exceeds maximum size, value changed to " PA_SIZEFMT,
+                                                temp,
+                                                C_MAX_SIZE);
+                                }
+                                *size <<= 20; /* multiply by 1048576 */
+                                break;
+                            case 'G':
+                            case 'g':
+                                if(*size > C_MAX_SIZE/(1<<30)) /* boundary checking */
+                                {
+                                    *size = C_MAX_SIZE;
+                                    OS_REPORT_2(OS_WARNING,
+                                                "u_cfDataSizeValueFromString",
+                                                0,
+                                                "Configuration parameter value (%s) exceeds maximum size, value changed to " PA_SIZEFMT,
+                                                temp,
+                                                C_MAX_SIZE);
+                                }
+                                else{
+                                    *size <<= 30; /* multiply by 1073741824 */
+                                }
+                                break;
+                            default:
+                                result = FALSE;
+                                break;
+                        }
+                    }
+                }
+            }
+
+            if(!result)
+            {
+                *size = 0;
+                OS_REPORT_1(OS_ERROR, "u_cfDataSizeValueFromString", 0, "Invalid size value (\"%s\")", temp);
+            }
+
+            os_free(temp);
+        }
+        else
+        {
+            OS_REPORT_1(OS_ERROR, "u_cfDataSizeValueFromString", 0, "String trimming failed for configuration parameter value (%s)", str);
+            result = FALSE;
+        }
+    }
+    else {
+        OS_REPORT(OS_ERROR, "u_cfDataSizeValueFromString", 0, "Illegal parameter given (NULL pointer) to u_cfDataSizeValueFromString");
+        result = FALSE;
+    }
+
     return result;
 }

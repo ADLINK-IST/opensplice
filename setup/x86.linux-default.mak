@@ -10,7 +10,8 @@ FILTER           = filter_gcc
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
-LD_EXE           = $(CXX)
+LD_EXE           = $(CC)
+LD_CXX           = $(CXX)
 	# GNU yacc
 YACC		 = bison
 	# GNU lex
@@ -19,6 +20,8 @@ LEX		 = flex
 MAKE		 = make
 	# Solaris native touch
 TOUCH		 = touch
+	# Tool used for creating soft/hard links.
+LN               = ln
 	# Archiving
 AR               = /usr/bin/ar
 AR_CMDS          = rv
@@ -34,6 +37,10 @@ JCC              = javac
 
 	#JAR
 JAR		 = jar
+
+#JAVAH
+JAVAH            = javah
+JAVAH_FLAGS      = -force
 
 	#Java
 JAVA		 = java
@@ -57,8 +64,8 @@ CFLAGS_DEBUG     = -g -D_TYPECHECK_
 CFLAGS_STRICT	 = -Wall -W -pedantic -Wno-long-long
 
 # Set compiler options for single threaded process
-CFLAGS		 = -m32 -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -m32 -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CFLAGS		 = -m32 -march=i686 -pipe -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
+CXXFLAGS	 = -m32 -march=i686 -pipe -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 CSFLAGS	     = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # For Linux, this test release version supports symbolic names in stead of IP addresses
@@ -76,7 +83,7 @@ endif
 MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
-LDFLAGS		 = -m32 -static-libgcc -L$(SPLICE_LIBRARY_PATH)
+LDFLAGS		 = -m32 -march=i686 -static-libgcc -L$(SPLICE_LIBRARY_PATH)
 
 # Identify linker options for building shared libraries
 SHLDFLAGS	 = -shared -fpic
@@ -110,11 +117,19 @@ EXEC_PREFIX =
 EXEC_POSTFIX =
 EXEC_LD_POSTFIX =
 INLINESRC_POSTFIX = .i
+CSLIB_PREFIX =
+CSLIB_POSTFIX = .dll
+CSMOD_PREFIX =
+CSMOD_POSTFIX = .netmodule
+CSEXEC_PREFIX =
+CSEXEC_POSTFIX = .exe
+CSDBG_PREFIX =
+CSEXEC_DBG_POSTFIX = .exe.mdb
+CSMOD_DBG_POSTFIX = .netmodule.mdb
+CSLIB_DBG_POSTFIX = .dll.mdb
+CS_LIBPATH_SEP = ,
 
 # Identify linker options for building shared C# libraries and or executables.
 CSTARGET_LIB = -target:library
+CSTARGET_MOD = -t:module
 CSTARGET_EXEC = -target:exe
-CSLIB_PREFIX =
-CSLIB_POSTFIX = .dll
-CSEXEC_PREFIX =
-CSEXEC_POSTFIX = .exe

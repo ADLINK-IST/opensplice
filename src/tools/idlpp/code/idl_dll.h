@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef IDL_DLL_H
@@ -23,6 +23,7 @@
 os_int32       idl_dllSetOption(const char *option);
 const os_char *idl_dllGetMacro (void);
 const os_char *idl_dllGetHeader(void);
+const os_char * idl_dllGetHeaderFile(void);
 void  idl_dllInitialize(void);
 void  idl_dllExit(void);
 

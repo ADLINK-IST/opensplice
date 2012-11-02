@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__observable.h"
@@ -80,7 +80,8 @@ proxy->source2 = observer;
 c_bool
 v_observableRemoveObserver(
     v_observable o,
-    v_observer observer)
+    v_observer observer,
+    void** userData)
 {
     v_proxy found;
     findProxyArgument arg;
@@ -99,6 +100,10 @@ v_observableRemoveObserver(
     if (arg.proxy != NULL) { /* proxy to the observer found */
         found = c_remove(o->observers,arg.proxy,NULL,NULL);
         assert(found == arg.proxy);
+        if(found && userData)
+        {
+            *userData = found->userData;
+        }
         c_free(found);
         result = TRUE;
     }

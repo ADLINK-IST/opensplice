@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -52,7 +52,7 @@ v_cfDataInit (
 {
     assert(C_TYPECHECK(data, v_cfData));
     assert(value.kind != V_UNDEFINED);
-    
+
     v_cfNodeInit(v_cfNode(data), config, V_CFDATA, V_CFDATANAME);
 
     data->value.kind = value.kind;
@@ -85,7 +85,7 @@ v_cfDataInit (
 
     break;
     }
-    
+
 }
 
 /**************************************************************

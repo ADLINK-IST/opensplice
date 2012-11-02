@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -62,7 +62,9 @@ c_scopeNew(
     c_scope o;
 
     o = c_scope(c_new(c_resolve(base,"c_scope")));
-    c_scopeInit(o);
+    if (o) {
+        c_scopeInit(o);
+    }
 
     return o;
 }

@@ -13,4 +13,6 @@ endif
 # Compiler flags
 # -DE_DEBUG is needed to enable debugging info for the SACPP apis
 CFLAGS_DEBUG     = -g -D_TYPECHECK_ -DE_DEBUG
+CFLAGS_OPT       =
+
 JCFLAGS	 	 = -g

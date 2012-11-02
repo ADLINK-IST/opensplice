@@ -2,8 +2,13 @@
 # included by bld/$(SPLICE_TARGET)/makefile
 
 TARGET_DLIB	:= $(DDS_CONFPARSER)
+EXTRACTED_LIB = libddscore
 
 include	$(OSPL_HOME)/setup/makefiles/target.mak
+
+ifneq (,$(ALT_CFLAGS_OPT))
+   CFLAGS_OPT=$(ALT_CFLAGS_OPT)
+endif
 
 CPPFLAGS	+= -DOSPL_BUILD_CONFPRS
 CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)

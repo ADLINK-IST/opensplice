@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -39,6 +39,7 @@ OS_API c_iter  c_iterNew        (void *object);
 OS_API c_iter  c_iterInsert     (c_iter i, void *object);
 OS_API c_iter  c_iterAppend     (c_iter i, void *object);
 OS_API void   *c_iterTakeFirst  (c_iter i);
+OS_API void   *c_iterTakeLast   (c_iter i);
 OS_API void   *c_iterTake       (c_iter i, void *object);
 OS_API void   *c_iterTakeAction (c_iter iter, c_iterAction condition, c_iterActionArg arg);
 OS_API void   *c_iterReadAction (c_iter iter, c_iterAction condition, c_iterActionArg arg);
@@ -48,6 +49,7 @@ OS_API c_long  c_iterLength     (c_iter i);
 OS_API void   *c_iterResolve    (c_iter i, c_iterResolveCompare compare, c_iterResolveCompareArg arg);
 OS_API void   *c_iterObject     (c_iter i, c_long index);
 OS_API void    c_iterWalk       (c_iter i, c_iterWalkAction action, c_iterActionArg arg);
+OS_API void    c_iterWalkUntil  (c_iter i, c_iterAction action, c_iterActionArg arg);
 OS_API void    c_iterArray      (c_iter i, void *ar[]);
 OS_API void    c_iterFree       (c_iter i);
 OS_API c_bool  c_iterContains   (c_iter i, void *object);

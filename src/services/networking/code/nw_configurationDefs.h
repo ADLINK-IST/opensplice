@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -56,6 +56,10 @@
 /* ------------------ General/NetworkInterfaceAddress ---------------------- */
 #define NWCF_NAME_Interface             "NetworkInterfaceAddress"     /* string */
 #define NWCF_DEF_Interface              NWCF_FIRSTAVAILABLE_EXPR
+#define NWCF_ATTRIB_forced              "forced"                     /* boolean */
+#define NWCF_DEF_forced                 (FALSE)
+#define NWCF_ATTRIB_ipv6                "ipv6"                     /* boolean */
+#define NWCF_DEF_ipv6                   (FALSE)
 /* ------------------ General/Reconnection ---------------------- */
 #define NWCF_NAME_Reconnection          "Reconnection"                /* string */
 #define NWCF_ATTRIB_allowed             "allowed"                      /* ulong */
@@ -143,6 +147,18 @@
 #define NWCF_ATTRIB_PriorityKind      "priority_kind"                 /* string */
 #define NWCF_DEF_PriorityKind         "default"
 
+/* ---------------- Channels/Channel/Receiving/PacketRetentionPeriod ------------------- */
+#define NWCF_NAME_PacketRetentionPeriod   "PacketRetentionPeriod"              /* ulong */
+#ifndef NWCF_DEF_PacketRetentionPeriod
+#define NWCF_DEF_PacketRetentionPeriod    (0U)
+#endif
+/* ---------------- Channels/Channel/Receiving/ReliabilityRecoveryPeriod ------------------- */
+#define NWCF_NAME_ReliabilityRecoveryPeriod   "ReliabilityRecoveryPeriod"              /* ulong */
+#ifndef NWCF_DEF_ReliabilityRecoveryPeriod
+#define NWCF_DEF_ReliabilityRecoveryPeriod    (1000U)
+#endif
+
+
 /* ---------------- Channels/Channel/Receiving/ReceiveBufferSize ------------------- */
 #define NWCF_NAME_ReceiveBufferSize   "ReceiveBufferSize"              /* ulong */
 #ifndef NWCF_DEF_ReceiveBufferSize
@@ -178,6 +194,7 @@
 #define NWCF_NAME_FragmentSize        "FragmentSize"                   /* ulong */
 #define NWCF_DEF_FragmentSize         (1300U)
 #define NWCF_MIN_FragmentSize         (200U)
+#define NWCF_MAX_FragmentSize         (4294967295U)                    /* max int */
 
 /* ------------------- Channels/Channel/Sending/MaxRetries ----------------------- */
 #define NWCF_NAME_MaxRetries          "MaxRetries"                     /* ulong */
@@ -185,8 +202,9 @@
 #define NWCF_MIN_MaxRetries           (1U)
 
 /* ------------------ Channels/Channel/Sending/MaxBurstSize ---------------------- */
-#define NWCF_NAME_MaxBurstSize        "MaxBurstSize"                   /* ulong */
-#define NWCF_DEF_MaxBurstSize         (200000U) /* 200 KB/ResolutionTick */
+#define NWCF_NAME_MaxBurstSize        "MaxBurstSize"                           /* ulong */
+#define NWCF_DEF_MaxBurstSize         (0x3FFFFFFFU)               /* 1 GB/ResolutionTick*/
+#define NWCF_MAX_MaxBurstSize         (0x3FFFFFFFU)               /* 1 GB/ResolutionTick*/
 #define NWCF_MIN_MaxBurstSize         (1024U)
 
 /* ------------------ Channels/Channel/Sending/ThrottleThreshold ---------------------- */
@@ -208,7 +226,7 @@
 /* The default if TRUE because in older OpenSplice versions, there was no
  * configuration option and it was always set to true... */
 #define NWCF_NAME_DontRoute           "DontRoute"                      /* bool */
-#define NWCF_DEF_DontRoute            (TRUE) 
+#define NWCF_DEF_DontRoute            (TRUE)
 
 /* ----------------- Channels/Channel/Sending/DontFrag ---------------------- */
 #define NWCF_NAME_DontFragment        "DontFragment"                   /* bool */
@@ -272,10 +290,12 @@
 #define NWCF_ATTRIB_X509Authentication "X509Authentication"
 #define NWCF_ATTRIB_Credentials        "Credentails"
 #define NWCF_ATTRIB_AccessControl      "AccessControl"
+#define NWCF_ATTRIB_MulticastTimeToLive "MulticastTimeToLive"
 #define NWCF_DEF_NWPartitionAddress    ""
 #define NWCF_DEF_Connected             (TRUE)
 #define NWCF_DEF_Compression           (FALSE)
 #define NWCF_DEF_NWSecurityPolicy      (NULL)
+#define NWCF_DEF_MulticastTimeToLive   (32U)
 
 /* ------------------------- Partitioning/PartitionMappings ----------------- */
 #define NWCF_ROOT_PartitionMappings   NWCF_SUBROOT(NWCF_ROOT_Partitioning, "PartitionMappings")

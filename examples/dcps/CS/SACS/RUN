@@ -20,7 +20,7 @@ $VG_PING_S exec/$SPLICE_TARGET/ping.exe $BLOKCOUNT $BLOKSIZE s PongRead PongWrit
 
 sleep 2
 
-$VG_PING_B exec/$SPLICE_TARGET/ping.exe $BLOKCOUNT $BLOKSIZE b PongRead PongWrite
+$VG_PING_B exec/$SPLICE_TARGET/ping.exe $BLOKCOUNT $BLOKSIZE a PongRead PongWrite
 
 sleep 2
 

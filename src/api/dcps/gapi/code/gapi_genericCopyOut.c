@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -61,7 +61,7 @@
     }\
     \
     if ((len > 0UL) && (seq->_maximum == 0UL)) {\
-        seq->_buffer = gapi_genericCopyBufferAllocSeqBuffer((gapiCopyHeader *)cc, ch, size, len);\
+        seq->_buffer = gapi_genericCopyBufferAllocSeqBuffer(cc, ch, size, len);\
         if ( seq->_buffer ) {\
             seq->_maximum = len;\
             seq->_release = TRUE;\
@@ -76,14 +76,6 @@ typedef struct {
     c_long src_offset;
     c_long dst_correction;
 } gapi_co_context;
-
-typedef struct {
-    gapi_unsigned_long _maximum;
-    gapi_unsigned_long _length;
-    void *_buffer;
-    gapi_boolean _release;
-} sequenceType;
-
 
 typedef void (*copyInFromStruct)(gapiCopyHeader *ch, void * src,  gapi_co_context *ctx);
 typedef void (*copyInFromUnion)(gapiCopyHeader *ch, void * src, gapi_co_context *ctx);
@@ -528,6 +520,8 @@ gapi_cfsoLong (
     void * src,
     gapi_co_context *ctx)
 {
+    TRACE (char llstr[36];)
+
     c_longlong *dst = (c_longlong *)((PA_ADDRCAST)ctx->dst + ctx->src_offset + ctx->dst_correction);
     *dst = *(c_longlong *)((PA_ADDRCAST)src + ctx->src_offset);
 
@@ -540,6 +534,8 @@ gapi_cfuoLong (
     void * src,
     gapi_co_context *ctx)
 {
+    TRACE (char llstr[36];)
+
     c_longlong *dst = (c_longlong *)ctx->dst;
     *dst = *(c_longlong *)src;
 
@@ -880,6 +876,8 @@ gapi_cfooArrLong (
     c_longlong *src = srcArray;
     unsigned int i;
 
+    TRACE (char llstr[36];)
+
     ah = (gapiCopyArray *)ch;
     for (i = 0; i < ah->size; i++) {
         dst[i] = src[i];
@@ -999,7 +997,7 @@ gapi_cfooSeqBoolean (
     gapiCopySequence *sh;
     unsigned int arrLen;
     c_bool **src;
-    sequenceType *dst;
+    gapiSequenceType *dst;
     c_bool * buffer;
     unsigned int i;
 
@@ -1020,7 +1018,7 @@ gapi_cfooSeqBoolean (
         dst->_length  = arrLen;
     }
 
-    ctx->dst_correction += 3*sizeof(gapi_unsigned_long);
+    ctx->dst_correction += GAPI_SEQUENCE_CORRECTION;
 
     TRACE(printf ("Copied out Boolean sequence size %d @ offset = %d\n",
                             arrLen, ctx->src_offset));
@@ -1057,7 +1055,7 @@ gapi_cfooSeqByte (
     gapiCopySequence *sh;
     unsigned int arrLen;
     c_octet **src;
-    sequenceType *dst;
+    gapiSequenceType *dst;
     c_octet * buffer;
     unsigned int i;
 
@@ -1078,7 +1076,7 @@ gapi_cfooSeqByte (
         dst->_length  = arrLen;
     }
 
-    ctx->dst_correction += 3*sizeof(gapi_unsigned_long);
+    ctx->dst_correction += GAPI_SEQUENCE_CORRECTION;
 
     TRACE(printf ("Copied out Byte sequence size %d @ offset = %d\n",
                             arrLen, ctx->src_offset));
@@ -1113,7 +1111,7 @@ gapi_cfooSeqChar (
     gapiCopySequence *sh;
     unsigned int arrLen;
     c_char **src;
-    sequenceType *dst;
+    gapiSequenceType *dst;
     c_char * buffer;
     unsigned int i;
 
@@ -1134,7 +1132,7 @@ gapi_cfooSeqChar (
         dst->_length  = arrLen;
     }
 
-    ctx->dst_correction += 3*sizeof(gapi_unsigned_long);
+    ctx->dst_correction += GAPI_SEQUENCE_CORRECTION;
 
     TRACE(printf ("Copied out Char sequence size %d @ offset = %d\n",
                             arrLen, ctx->src_offset));
@@ -1169,7 +1167,7 @@ gapi_cfooSeqShort (
     gapiCopySequence *sh;
     unsigned int arrLen;
     c_short **src;
-    sequenceType *dst;
+    gapiSequenceType *dst;
     c_short *buffer;
     unsigned int i;
 
@@ -1190,7 +1188,7 @@ gapi_cfooSeqShort (
         dst->_length  = arrLen;
     }
 
-    ctx->dst_correction += 3*sizeof(gapi_unsigned_long);
+    ctx->dst_correction += GAPI_SEQUENCE_CORRECTION;
 
     TRACE(printf ("Copied out Short sequence size %d @ offset = %d\n",
                             arrLen, ctx->src_offset));
@@ -1225,7 +1223,7 @@ gapi_cfooSeqInt (
     gapiCopySequence *sh;
     unsigned int arrLen;
     c_long **src;
-    sequenceType *dst;
+    gapiSequenceType *dst;
     c_long * buffer;
     unsigned int i;
 
@@ -1246,7 +1244,7 @@ gapi_cfooSeqInt (
         dst->_length  = arrLen;
     }
 
-    ctx->dst_correction += 3*sizeof(gapi_unsigned_long);
+    ctx->dst_correction += GAPI_SEQUENCE_CORRECTION;
 
     TRACE(printf ("Copied out Int sequence size %d @ offset = %d\n",
                             arrLen, ctx->src_offset));
@@ -1281,7 +1279,7 @@ gapi_cfooSeqLong (
     gapiCopySequence *sh;
     unsigned int arrLen;
     c_longlong **src;
-    sequenceType *dst;
+    gapiSequenceType *dst;
     c_longlong * buffer;
     unsigned int i;
 
@@ -1302,7 +1300,7 @@ gapi_cfooSeqLong (
         dst->_length  = arrLen;
     }
 
-    ctx->dst_correction += 3*sizeof(gapi_unsigned_long);
+    ctx->dst_correction += GAPI_SEQUENCE_CORRECTION;
 
     TRACE(printf ("Copied out Long sequence size %d @ offset = %d\n",
                             arrLen, ctx->src_offset));
@@ -1337,7 +1335,7 @@ gapi_cfooSeqFloat (
     gapiCopySequence *sh;
     unsigned int arrLen;
     c_float **src;
-    sequenceType *dst;
+    gapiSequenceType *dst;
     c_float *buffer;
     unsigned int i;
 
@@ -1358,7 +1356,7 @@ gapi_cfooSeqFloat (
         dst->_length  = arrLen;
     }
 
-    ctx->dst_correction += 3*sizeof(gapi_unsigned_long);
+    ctx->dst_correction += GAPI_SEQUENCE_CORRECTION;
 
     TRACE(printf ("Copied out Float sequence size %d @ offset = %d\n",
                             arrLen, ctx->src_offset));
@@ -1393,7 +1391,7 @@ gapi_cfooSeqDouble (
     gapiCopySequence *sh;
     unsigned int arrLen;
     c_double **src;
-    sequenceType *dst;
+    gapiSequenceType *dst;
     c_double *buffer;
     unsigned int i;
 
@@ -1414,7 +1412,7 @@ gapi_cfooSeqDouble (
         dst->_length  = arrLen;
     }
 
-    ctx->dst_correction += 3*sizeof(gapi_unsigned_long);
+    ctx->dst_correction += GAPI_SEQUENCE_CORRECTION;
 
     TRACE(printf ("Copied out Double sequence size %d @ offset = %d\n",
                             arrLen, ctx->src_offset));
@@ -1721,7 +1719,7 @@ gapi_cfooSequence (
     void *src;
     c_long i;
     c_long seqLen;
-    sequenceType *dst;
+    gapiSequenceType *dst;
     void *buffer;
     c_long dst_correction;
 
@@ -1747,10 +1745,10 @@ gapi_cfooSequence (
         dst->_length = seqLen;
     }
 
-    ctx->dst_correction = dst_correction + 3 * sizeof(gapi_unsigned_long);
+    ctx->dst_correction = dst_correction + GAPI_SEQUENCE_CORRECTION;
 
     TRACE(printf ("Copied out Object sequence size %d @ offset = %d\n",
-                            sh->typeSize, ctx->src_offset));
+                            sh->baseTypeSize, ctx->src_offset));
 }
 #endif
 STATIC void
@@ -1766,7 +1764,7 @@ gapi_cfooSequence (
     void *src;
     c_ulong i;
     c_ulong seqLen;
-    sequenceType *dst;
+    gapiSequenceType *dst;
     void *buffer;
 
     sh = (gapiCopyObjectSequence *)ch;
@@ -1786,6 +1784,7 @@ gapi_cfooSequence (
     if ( buffer ) {
         for (i = 0; i < seqLen; i++) {
             context.dst_correction = 0;
+            context.src_offset = 0;
             coFromArray[sech->copyType] (sech, src, buffer, &context);
             buffer = (void *)((PA_ADDRCAST)buffer + sh->userTypeSize);
             src = (void *)((PA_ADDRCAST)src + sh->baseTypeSize);
@@ -1797,7 +1796,7 @@ gapi_cfooSequence (
         dst->_maximum = 0;
     }
 
-    ctx->dst_correction += 3 * sizeof(gapi_unsigned_long);
+    ctx->dst_correction += GAPI_SEQUENCE_CORRECTION;
 
     TRACE(printf ("Copied out Object sequence size %d @ offset = %d\n",
                             seqLen, ctx->src_offset));
@@ -1899,6 +1898,6 @@ gapi_copyOutAllocBuffer (
 
     assert(size > 0);
 
-    return gapi_genericCopyBufferAllocSeqBuffer((gapiCopyHeader *)copyCache, ch, size, len);
+    return gapi_genericCopyBufferAllocSeqBuffer(copyCache, ch, size, len);
 }
 

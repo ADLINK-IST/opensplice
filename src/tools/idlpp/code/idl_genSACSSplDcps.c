@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -284,6 +284,9 @@ idl_cTypeToCSharp(
         case P_DOUBLE:
             dbType = os_strdup("double");
             break;
+        default:
+            /* Unsupported structure member type */
+            assert(FALSE);
         }
         break;
     case M_ENUMERATION:
@@ -385,6 +388,9 @@ idl_cTypeToBaseType(
         case P_DOUBLE:
             baseType = os_strdup("Double");
             break;
+        default:
+            /* Unsupported structure member type */
+            assert(FALSE);
         }
         break;
     case M_STRUCTURE:
@@ -628,10 +634,18 @@ idl_CreateInitEmbeddedMarshalers(
             isPredefined = TRUE;
         }
 
-        /* Dereference possible typedefs first. */
-        while (c_baseObjectKind(memberType) == M_TYPEDEF && !isPredefined) {
+        /* Dereference possible typedefs/arrays/sequences first. */
+        while ( !isPredefined &&
+                ( c_baseObjectKind(memberType) == M_TYPEDEF ||
+                ( c_baseObjectKind(memberType) == M_COLLECTION &&
+                        ( c_collectionTypeKind(memberType) == C_ARRAY ||
+                          c_collectionTypeKind(memberType) == C_SEQUENCE) ) ) ) {
             os_free(memberTypeName);
-            memberType = c_typeDef(memberType)->alias;
+            if (c_baseObjectKind(memberType) == M_TYPEDEF) {
+                memberType = c_typeDef(memberType)->alias;
+            } else if (c_baseObjectKind(memberType) == M_COLLECTION) {
+                memberType = c_collectionTypeSubType(memberType);
+            }
             memberTypeName = idl_scopeStackFromCType(memberType);
             if (idl_isPredefined(memberTypeName)) {
                 isPredefined = TRUE;
@@ -733,7 +747,7 @@ idl_CreateArrayIterationIndex(
 
     /* Assert that startType is always a collection type and has at least
      * the specified number of dimensions. */
-    strncat(result, "[i0", maxResultLength);
+    os_strncat(result, "[i0", maxResultLength);
     for (i = 1; i < dimension; i++) {
         /* Iterate to the subtype. */
         nextType = c_typeActualType(c_collectionTypeSubType(currentType));
@@ -760,7 +774,7 @@ idl_CreateArrayIterationIndex(
         }
         currentType = nextType;
     }
-    strncat(result, "]", maxResultLength);
+    os_strncat(result, "]", maxResultLength);
 
     return result;
 }
@@ -948,7 +962,7 @@ idl_CreateArrayMemberWrite(
             /* Allocate a matching array in the database. */
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
-                    "IntPtr %s = DDS.OpenSplice.Database.c.newArray(%s, %s);\n",
+                    "IntPtr %s = DDS.OpenSplice.Database.c.newSequence(%s, %s);\n",
                     seqBufName, seqTypeName, seqLengthName);
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(), "Write(%s, %s, %s);\n",
@@ -1646,7 +1660,29 @@ idl_CreateCopyOut(
 {
     c_long i, nrMembers = c_structureMemberCount((c_structure) structType);
 
-    /* Open the 1st CopyIn operation and increase the indent. */
+    /* Open the 1st CopyOut operation and increase the indent. */
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "public override void CopyOut(System.IntPtr from, System.IntPtr to)\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "{\n");
+    indent_level++;
+
+    /* Generate a body that retrieves the C# object and invokes the appropriate CopyOut. */
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "GCHandle tmpGCHandleTo = GCHandle.FromIntPtr(to);\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "object toObj = tmpGCHandleTo.Target;\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "CopyOut(from, ref toObj, 0);\n");
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "if (toObj != tmpGCHandleTo.Target) tmpGCHandleTo.Target = toObj;\n");
+
+    /* Decrease the indent level back to its original value and close the CopyOut operation. */
+    indent_level--;
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(idl_fileCur(), "}\n\n");
+
+    /* Open the 2nd CopyOut operation and increase the indent. */
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "public override void CopyOut(System.IntPtr from, ref object to, int offset)\n");
     idl_printIndent(indent_level);

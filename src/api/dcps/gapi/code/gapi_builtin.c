@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -19,9 +19,7 @@
 #include "gapi_condition.h"
 #include "gapi_domainParticipant.h"
 #include "gapi_domainParticipantFactory.h"
-#include "gapi_dataReaderStatus.h"
 #include "gapi_structured.h"
-#include "gapi_subscriberStatus.h"
 #include "gapi_kernel.h"
 #include "gapi_expression.h"
 
@@ -34,135 +32,6 @@
 #include "kernelModule.h"
 
 #define BUILTIN_TOPIC_COPY_IN
-
-
-const gapi_dataReaderQos  _builtinDataReaderQos = {
-    /* gapi_durabilityQosPolicy durability */
-    {
-        GAPI_TRANSIENT_DURABILITY_QOS   /* gapi_durabilityQosPolicyKind kind */
-    },
-    /* gapi_deadlineQosPolicy deadline */
-    {
-        GAPI_DURATION_INFINITE          /* gapi_duration_t period */
-    },
-    /* gapi_latencyBudgetQosPolicy latency_budget */
-    {
-        GAPI_DURATION_ZERO              /* gapi_duration_t duration */
-    },
-    /* gapi_livelinessQosPolicy liveliness */
-    {
-        GAPI_AUTOMATIC_LIVELINESS_QOS,  /* gapi_livelinessQosPolicyKind kind */
-        GAPI_DURATION_INFINITE          /* gapi_duration_t lease_duration */
-    },
-    /* gapi_reliabilityQosPolicy reliability */
-    {
-        GAPI_RELIABLE_RELIABILITY_QOS,  /* gapi_reliabilityQosPolicyKind kind */
-        GAPI_DURATION_INFINITE,         /* gapi_duration_t max_blocking_time */
-        FALSE                           /* gapi_boolean synchronous */
-    },
-    /* gapi_destinationOrderQosPolicy destination_order */
-    {
-        GAPI_BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS   /* gapi_destinationOrderQosPolicyKind kind */
-    },
-    /* gapi_historyQosPolicy history */
-    {
-        GAPI_KEEP_LAST_HISTORY_QOS,     /* gapi_historyQosPolicyKind kind */
-        1                               /* gapi_long depth */
-    },
-    /* gapi_resourceLimitsQosPolicy resource_limits */
-    {
-        GAPI_LENGTH_UNLIMITED,          /* gapi_long max_samples */
-        GAPI_LENGTH_UNLIMITED,          /* gapi_long max_instances */
-        GAPI_LENGTH_UNLIMITED           /* gapi_long max_samples_per_instance */
-    },
-    /* gapi_userDataQosPolicy user_data */
-    {
-        /* gapi_octetSeq value */
-        {
-            0,          /* _maximum */
-            0,          /* _length  */
-            NULL,       /* _buffer  */
-            FALSE       /* _release */
-        }
-    },
-    {
-        GAPI_SHARED_OWNERSHIP_QOS
-    },
-    /* gapi_timeBasedFilterQosPolicy time_based_filter */
-    {
-        GAPI_DURATION_ZERO              /* gapi_duration_t minimum_separation */
-    },
-    /* gapi_readerDataLifecycleQosPolicy reader_data_lifecycle */
-    {
-        GAPI_DURATION_INFINITE,          /* gapi_duration_t autopurge_nowriter_samples_delay */
-        GAPI_DURATION_INFINITE,          /* gapi_duration_t autopurge_disposed_samples_delay */
-        TRUE                             /* enable_invalid_samples */
-    },
-    /* gapi_subscriptionKeyQosPolicy subscription_keys; */
-    {
-        /* gapi_boolean use_key_list */
-        FALSE,
-        /* gapi_stringSeq key_list */
-        {
-            0,          /* _maximum */
-            0,          /* _length  */
-            NULL,       /* _buffer  */
-            FALSE       /* _release */
-        }
-    },
-    /* gapi_readerDataLifespanQosPolicy reader_lifespan */
-    {
-        FALSE,                  /* gapi_boolean    use_lifespan */
-        GAPI_DURATION_INFINITE, /* gapi_duration_t duration     */
-    },
-    /* gapi_shareQosPolicy share */
-    {
-        NULL,
-        FALSE
-    }
-};
-
-const gapi_subscriberQos  _builtinSubscriberQos = {
-    /* gapi_presentationQosPolicy presentation */
-    {
-        GAPI_TOPIC_PRESENTATION_QOS,    /* gapi_presentationQosPolicyAccessScopeKind access_scope */
-        FALSE,                          /* gapi_boolean coherent_access */
-        FALSE                           /* gapi_boolean ordered_access */
-    },
-    /* gapi_partitionQosPolicy partition */
-    {
-        /* gapi_stringSeq name */
-        {
-            0,          /* _maximum */
-            0,          /* _length  */
-            NULL,       /* _buffer  */
-            FALSE       /* _release */
-        }
-    },
-    /* gapi_groupDataQosPolicy group_data */
-    {
-        /* gapi_octetSeq value */
-        {
-            0,          /* _maximum */
-            0,          /* _length  */
-            NULL,       /* _buffer  */
-            FALSE       /* _release */
-        }
-    },
-    /* gapi_entityFactoryQosPolicy entity_factory */
-    {
-        TRUE            /* gapi_boolean autoenable_created_entities */
-    },
-    /* gapi_shareQosPolicy share */
-    {
-        NULL,
-        FALSE
-    }
-};
-
-static void
-_BuiltinDataReaderFree (
-    _DataReader dataReader);
 
 #define _BUILTIN_PARTICIPANT_INFO  0
 #define _BUILTIN_TOPIC_INFO        1
@@ -204,62 +73,157 @@ const BuiltinTopicTypeInfo builtinTopicTypeInfo[] = {
     }
 };
 
+static void
+initBuiltinDataReaderQos(
+    gapi_dataReaderQos *rQos)
+{
+    rQos->durability.kind                              = GAPI_TRANSIENT_DURABILITY_QOS;
+    rQos->deadline.period.sec                          = GAPI_DURATION_INFINITE_SEC;
+    rQos->deadline.period.nanosec                      = GAPI_DURATION_INFINITE_NSEC;
+    rQos->latency_budget.duration.sec                  = GAPI_DURATION_ZERO_SEC;
+    rQos->latency_budget.duration.nanosec              = GAPI_DURATION_ZERO_NSEC;
+    rQos->liveliness.kind                              = GAPI_AUTOMATIC_LIVELINESS_QOS;
+    rQos->liveliness.lease_duration.sec                = GAPI_DURATION_ZERO_SEC;
+    rQos->liveliness.lease_duration.nanosec            = GAPI_DURATION_ZERO_NSEC;
+    rQos->reliability.kind                             = GAPI_RELIABLE_RELIABILITY_QOS;
+    rQos->reliability.max_blocking_time.sec            = GAPI_DURATION_ZERO_SEC;
+    rQos->reliability.max_blocking_time.nanosec        = GAPI_DURATION_ZERO_NSEC;
+    rQos->reliability.synchronous                      = FALSE;
+    rQos->destination_order.kind                       = GAPI_BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS;
+    rQos->history.kind                                 = GAPI_KEEP_LAST_HISTORY_QOS;
+    rQos->history.depth                                = 1;
+    rQos->resource_limits.max_samples                  = GAPI_LENGTH_UNLIMITED;
+    rQos->resource_limits.max_instances                = GAPI_LENGTH_UNLIMITED;
+    rQos->resource_limits.max_samples_per_instance     = GAPI_LENGTH_UNLIMITED;
+    rQos->user_data.value._maximum                     = 0;
+    rQos->user_data.value._length                      = 0;
+    rQos->user_data.value._buffer                      = NULL;
+    rQos->user_data.value._release                     = FALSE;
+    rQos->ownership.kind                               = GAPI_SHARED_OWNERSHIP_QOS;
+    rQos->time_based_filter.minimum_separation.sec     = GAPI_DURATION_ZERO_SEC;
+    rQos->time_based_filter.minimum_separation.nanosec = GAPI_DURATION_ZERO_NSEC;
+    rQos->reader_data_lifecycle.autopurge_nowriter_samples_delay.sec
+                                                      = GAPI_DURATION_INFINITE_SEC;
+    rQos->reader_data_lifecycle.autopurge_nowriter_samples_delay.nanosec
+                                                      = GAPI_DURATION_INFINITE_NSEC;
+    rQos->reader_data_lifecycle.autopurge_disposed_samples_delay.sec
+                                                      = GAPI_DURATION_INFINITE_SEC;
+    rQos->reader_data_lifecycle.autopurge_disposed_samples_delay.nanosec
+                                                      = GAPI_DURATION_INFINITE_NSEC;
+    rQos->reader_data_lifecycle.enable_invalid_samples = TRUE;
+    rQos->reader_lifespan.use_lifespan                 = FALSE;
+    rQos->reader_lifespan.duration.sec                 = GAPI_DURATION_INFINITE_SEC;
+    rQos->reader_lifespan.duration.nanosec             = GAPI_DURATION_INFINITE_NSEC;
+    rQos->share.enable                                 = FALSE;
+    rQos->share.name                                   = NULL;
+    rQos->subscription_keys.use_key_list               = FALSE;
+    rQos->subscription_keys.key_list._maximum          = 0;
+    rQos->subscription_keys.key_list._length           = 0;
+    rQos->subscription_keys.key_list._buffer           = NULL;
+    rQos->subscription_keys.key_list._release          = FALSE;
+}
 
 _Subscriber
-_SubscriberBuiltinNew (
+_BuiltinSubscriberNew (
     u_participant uParticipant,
     _DomainParticipantFactory factory,
     _DomainParticipant participant)
 {
+    u_subscriber s;
+    _Status status;
     _Subscriber newSubscriber = _SubscriberAlloc();
+    gapi_handle handle;
+    _TypeSupport typeSupport;
+    gapi_dataReaderQos rQos;
+    long i;
 
-    if (newSubscriber != NULL) {
-        _DomainEntityInit (_DomainEntity(newSubscriber),
-                           participant,
-                           _Entity(participant),
-                           TRUE);
+    s = u_participantGetBuiltinSubscriber(uParticipant);
 
-        newSubscriber->dataReaderSet = gapi_setNew(gapi_objectRefCompare);
-        if (newSubscriber->dataReaderSet == NULL) {
-            _DomainEntityDispose(_DomainEntity(newSubscriber));
-            newSubscriber = NULL;
-        }
+    if (s) {
+        newSubscriber = _SubscriberAlloc();
 
-        if ( newSubscriber ) {
-            U_SUBSCRIBER_SET(newSubscriber, u_participantGetBuiltinSubscriber(uParticipant));
-            if (U_SUBSCRIBER_GET(newSubscriber) == NULL) {
-                _DomainEntityDispose(_DomainEntity(newSubscriber));
-                newSubscriber = NULL;
-            }
-        }
+        if (newSubscriber != NULL) {
 
-        if ( newSubscriber ) {
-            _EntityStatus(newSubscriber) = _Status(_SubscriberStatusNew(newSubscriber, NULL, 0));
-            if ( _EntityStatus(newSubscriber) == NULL ) {
-                _DomainEntityDispose(_DomainEntity(newSubscriber));
-                newSubscriber = NULL;
-            }
-        }
+            _EntityInit(_Entity(newSubscriber), _Entity(participant));
 
-        if ( newSubscriber ) {
-            long i;
+            U_SUBSCRIBER_SET(newSubscriber, s);
 
-            for ( i = 0; i < MAX_BUILTIN_TOPIC; i++ ) {
-                _DataReader reader;
+            status = _StatusNew(_Entity(newSubscriber),
+                                STATUS_KIND_SUBSCRIBER,
+                                NULL, 0);
+            if (status) {
+                for ( i = 0; i < MAX_BUILTIN_TOPIC; i++ ) {
+                    _DataReader reader = NULL;
+                    _Topic topic = NULL;
 
-                reader = _BuiltinDataReaderNew(newSubscriber, _BuiltinTopicName(i));
-                if ( reader ) {
-                    gapi_setAdd(newSubscriber->dataReaderSet, (gapi_object)reader);
-                    _ENTITY_REGISTER_OBJECT(_Entity(newSubscriber), (_Object)reader);
-                    _EntityRelease(reader);
+                    typeSupport = _DomainParticipantFindTypeSupport(participant,
+                                                                    _BuiltinTopicTypeName(i));
+                    if (typeSupport) {
+                        c_iter uTopicList;
+                        u_topic uTopic;
+
+                        uTopicList = u_participantFindTopic(uParticipant,
+                                                            _BuiltinTopicName(i),
+                                                            C_TIME_ZERO);
+                        uTopic = c_iterTakeFirst(uTopicList);
+                        if (uTopic) {
+                            topic = _TopicFromKernelTopic(uTopic,
+                                                          _BuiltinTopicName(i),
+                                                          _BuiltinTopicTypeName(i),
+                                                          participant,
+                                                          NULL);
+                            while (uTopic) {
+                                uTopic = c_iterTakeFirst(uTopicList);
+                                /* multiple instances should not occure but
+                                 * just in case this loop frees all references.
+                                 */
+                                assert(uTopic == NULL);
+                                u_entityFree(u_entity(uTopic));
+                            }
+                        } else {
+                            OS_REPORT_2(OS_WARNING,"_BuiltinSubscriberNew",0,
+                                        "failed to resolve User layer Topic "
+                                        "'%s' for Participant 0x%x",
+                                        _BuiltinTopicName(i), participant);
+                        }
+                    } else {
+                        OS_REPORT_2(OS_WARNING,"_BuiltinSubscriberNew",0,
+                                    "Builtin TypeSupport for type '%s' is not "
+                                    "yet registered for Participant 0x%x",
+                                    _BuiltinTopicTypeName(i), participant);
+                    }
+
+                    if (topic) {
+                        initBuiltinDataReaderQos(&rQos);
+                        reader = _DataReaderNew(_TopicDescription(topic),
+                                                typeSupport,
+                                                &rQos,
+                                                NULL, 0,
+                                                newSubscriber);
+
+                        _EntityRelease(topic);
+                    } else {
+                        OS_REPORT_2(OS_WARNING,"_BuiltinSubscriberNew",0,
+                                    "failed to create Builtin Topic '%s' "
+                                    "for Participant 0x%x",
+                                    _BuiltinTopicName(i), participant);
+                    }
+
+                    if ( reader ) {
+                        _ENTITY_REGISTER_OBJECT(_Entity(newSubscriber),
+                                                (_Object)reader);
+                        handle = _EntityRelease(reader);
+                        gapi_entity_enable(handle);
+                    }
                 }
+                newSubscriber->builtin = TRUE;
+                _EntityStatus(newSubscriber) = status;
+            } else {
+                _EntityDispose(_Entity(newSubscriber));
+                newSubscriber = NULL;
             }
-
-            newSubscriber->builtin = TRUE;
-            _EntityEnabled(newSubscriber) = TRUE;
         }
     }
-
     return newSubscriber;
 }
 
@@ -268,96 +232,19 @@ void
 _BuiltinSubscriberFree (
     _Subscriber subscriber)
 {
-    gapi_setIter iterSet;
+    _Status status;
 
     assert(subscriber != NULL);
 
-    iterSet = gapi_setFirst(subscriber->dataReaderSet);
-    while ( gapi_setIterObject(iterSet) ) {
-        _DataReader datareader = _DataReader(gapi_setIterObject(iterSet));
-        _EntityClaim(datareader);
-        _BuiltinDataReaderFree(datareader);
-        gapi_setIterRemove (iterSet);
-    }
-    gapi_setIterFree (iterSet);
+    status = _EntityStatus(subscriber);
+    _StatusSetListener(status, NULL, 0);
 
-    _SubscriberStatusSetListener(_SubscriberStatus(_Entity(subscriber)->status), NULL, 0);
-    _SubscriberStatusFree(_SubscriberStatus(_Entity(subscriber)->status));
+    _EntityClaim(status);
+    _StatusDeinit(status);
 
     u_subscriberFree(U_SUBSCRIBER_GET(subscriber));
 
-    gapi_setFree (subscriber->dataReaderSet);
-    subscriber->dataReaderSet = NULL;
-
-    _DomainEntityDispose(_DomainEntity(subscriber));
-}
-
-_DataReader
-_BuiltinDataReaderNew (
-    _Subscriber subscriber,
-    const char *topicName)
-{
-    _TypeSupport typeSupport  = NULL;
-    _Topic       topic        = NULL;
-    _DataReader newDataReader = NULL;
-    u_subscriber uSubscriber;
-    u_dataReader uReader      = NULL;
-    c_iter uReaders;
-    gapi_char   *typeName;
-    _DomainParticipant participant;
-
-    uSubscriber = _SubscriberUsubscriber(subscriber);
-    uReaders    = u_subscriberLookupReaders(uSubscriber, topicName);
-    uReader     = u_dataReader(c_iterTakeFirst(uReaders));
-    c_iterFree(uReaders);
-
-    if ( uReader ) {
-        participant = _DomainEntityParticipant(_DomainEntity(subscriber));
-
-        topic = _DomainParticipantFindBuiltinTopic(participant, topicName);
-
-        if ( topic ) {
-            typeName = _TopicGetTypeName(topic);
-            if ( typeName ) {
-                typeSupport = _DomainParticipantFindTypeSupport(participant, typeName);
-                gapi_free(typeName);
-            }
-        }
-
-        if ( typeSupport && topic ) {
-            newDataReader = _DataReaderAlloc();
-        }
-    }
-
-    if ( newDataReader ) {
-        _DataReaderInit(newDataReader,
-                        subscriber,
-                        _TopicDescription(topic),
-                        typeSupport,
-                        NULL,
-                        0,
-                        uReader,
-                        TRUE);
-    }
-    return newDataReader;
-}
-
-
-static void
-_BuiltinDataReaderFree (
-    _DataReader datareader)
-{
-    gapi_setIter iterSet;
-
-    assert(datareader);
-
-    iterSet = gapi_setFirst (datareader->conditionSet);
-    while (gapi_setIterObject(iterSet)) {
-        _ReadConditionFree(_ReadCondition(gapi_setIterObject(iterSet)));
-        gapi_setIterRemove (iterSet);
-    }
-    gapi_setIterFree (iterSet);
-    _DataReaderFree(datareader);
+    _EntityDispose(_Entity(subscriber));
 }
 
 const char *
@@ -369,7 +256,18 @@ _BuiltinTopicName  (
     if ( index >= 0 && index < MAX_BUILTIN_TOPIC ) {
         name = builtinTopicTypeInfo[index].topicName;
     }
+    return name;
+}
 
+const char *
+_BuiltinTopicTypeName  (
+    long index)
+{
+    const char *name = NULL;
+
+    if ( index >= 0 && index < MAX_BUILTIN_TOPIC ) {
+        name = builtinTopicTypeInfo[index].typeName;
+    }
     return name;
 }
 
@@ -380,20 +278,20 @@ _BuiltinFindTopicName (
     const char *name = NULL;
 
     switch (_ObjectGetKind(_Object(entity))) {
-        case OBJECT_KIND_DOMAINPARTICIPANT:
-            name = builtinTopicTypeInfo[_BUILTIN_PARTICIPANT_INFO].topicName;
-            break;
-        case OBJECT_KIND_TOPIC:
-            name = builtinTopicTypeInfo[_BUILTIN_TOPIC_INFO].topicName;
-            break;
-        case OBJECT_KIND_DATAWRITER:
-            name = builtinTopicTypeInfo[_BUILTIN_PUBLICATION_INFO].topicName;
-            break;
-        case OBJECT_KIND_DATAREADER:
-            name = builtinTopicTypeInfo[_BUILTIN_SUBSCRIPTION_INFO].topicName;
-            break;
-        default:
-            break;
+    case OBJECT_KIND_DOMAINPARTICIPANT:
+        name = builtinTopicTypeInfo[_BUILTIN_PARTICIPANT_INFO].topicName;
+    break;
+    case OBJECT_KIND_TOPIC:
+        name = builtinTopicTypeInfo[_BUILTIN_TOPIC_INFO].topicName;
+    break;
+    case OBJECT_KIND_DATAWRITER:
+        name = builtinTopicTypeInfo[_BUILTIN_PUBLICATION_INFO].topicName;
+    break;
+    case OBJECT_KIND_DATAREADER:
+        name = builtinTopicTypeInfo[_BUILTIN_SUBSCRIPTION_INFO].topicName;
+    break;
+    default:
+    break;
     }
 
     return name;
@@ -422,7 +320,7 @@ _BuiltinTopicFindTypeInfoByType (
     const BuiltinTopicTypeInfo *info = NULL;
     long i;
 
-    for ( i = 0; i < MAX_BUILTIN_TOPIC; i++ ) {
+    for ( i = 0; (i < MAX_BUILTIN_TOPIC) && (info == NULL); i++ ) {
         if ( strcmp(builtinTopicTypeInfo[i].typeName, typeName) == 0 ) {
             info = &builtinTopicTypeInfo[i];
         }
@@ -480,10 +378,9 @@ builtinUserDataQosPolicyCopyout (
                 dst->value._length  = 0;
                 dst->value._release = TRUE;
             }
-
-            if ( dst->value._maximum >= len ) {
-                memcpy(dst->value._buffer, src->value, len);
-            }
+        }
+        if ( dst->value._maximum >= len ) {
+            memcpy(dst->value._buffer, src->value, len);
         }
     }
 
@@ -504,7 +401,7 @@ builtinUserDataQosPolicyCopyin (
             if (type) {
                 gapi_builtinUserData_type =
                     c_metaArrayTypeNew(c_metaObject(base),
-                                       "C_SEQUENCE<c_octet>",
+                                       "C_ARRAY<c_octet>",
                                        type,0);
             }
         }
@@ -547,10 +444,9 @@ builtinTopicDataQosPolicyCopyout (
                 dst->value._length  = 0;
                 dst->value._release = TRUE;
             }
-
-            if ( dst->value._maximum >= len ) {
-                memcpy(dst->value._buffer, src->value, len);
-            }
+        }
+        if ( dst->value._maximum >= len ) {
+            memcpy(dst->value._buffer, src->value, len);
         }
     }
 
@@ -571,7 +467,7 @@ builtinTopicDataQosPolicyCopyin (
             if (type) {
                 gapi_topicData_type =
                         c_metaArrayTypeNew(c_metaObject(base),
-                                           "C_SEQUENCE<c_char>",
+                                           "C_ARRAY<c_char>",
                                            type,0);
                 c_free(type);
             }
@@ -615,12 +511,11 @@ builtinPartitionQosPolicyCopyout (
                 dst->name._length  = 0;
                 dst->name._release = TRUE;
             }
-
-            if ( dst->name._maximum >= len ) {
-                unsigned long i;
-                for ( i = 0; i < len; i++ ) {
-                    dst->name._buffer[i] = gapi_string_dup(src->name[i]);
-                }
+        }
+        if ( dst->name._maximum >= len ) {
+            unsigned long i;
+            for ( i = 0; i < len; i++ ) {
+                dst->name._buffer[i] = gapi_string_dup(src->name[i]);
             }
         }
     }
@@ -641,7 +536,7 @@ builtinPartitionQosPolicyCopyin (
             c_type type = c_string_t(base);
             if (type) {
                 gapi_partitionQos_type =
-                        c_metaArrayTypeNew(c_metaObject(base),
+                        c_metaSequenceTypeNew(c_metaObject(base),
                                            "C_SEQUENCE<c_string>",
                                            type,0);
                 c_free(type);
@@ -649,7 +544,7 @@ builtinPartitionQosPolicyCopyin (
         }
 
         if ( gapi_partitionQos_type ) {
-            dst->name = c_newArray(c_collectionType(gapi_partitionQos_type),
+            dst->name = c_newSequence(c_collectionType(gapi_partitionQos_type),
                                    src->name._length);
             if ( dst->name ) {
                 gapi_unsigned_long i;
@@ -693,10 +588,9 @@ builtinGroupDataQosPolicyCopyout (
                 dst->value._length  = 0;
                 dst->value._release = TRUE;
             }
-
-            if ( dst->value._maximum >= len ) {
-                memcpy(dst->value._buffer, src->value, len);
-            }
+        }
+        if ( dst->value._maximum >= len ) {
+            memcpy(dst->value._buffer, src->value, len);
         }
     }
 
@@ -717,7 +611,7 @@ builtinGroupDataQosPolicyCopyin (
             if (type) {
                 gapi_groupData_type =
                         c_metaArrayTypeNew(c_metaObject(base),
-                                           "C_SEQUENCE<c_octet>",
+                                           "C_ARRAY<c_octet>",
                                            type,0);
                 c_free(type);
             }
@@ -761,10 +655,9 @@ userDataQosPolicyCopyout (
                 dst->value._length  = 0;
                 dst->value._release = TRUE;
             }
-
-            if ( dst->value._maximum >= len ) {
-                memcpy(dst->value._buffer, src->value, len);
-            }
+        }
+        if ( dst->value._maximum >= len ) {
+            memcpy(dst->value._buffer, src->value, len);
         }
     }
 
@@ -785,7 +678,7 @@ userDataQosPolicyCopyin (
             if (type) {
                 gapi_userData_type =
                         c_metaArrayTypeNew(c_metaObject(base),
-                                           "C_SEQUENCE<c_octet>",
+                                           "C_ARRAY<c_octet>",
                                            type,0);
                 c_free(type);
             }
@@ -1134,6 +1027,7 @@ gapi_publicationBuiltinTopicData__copyOut (
     livelinessQosPolicyCopyout(&from->liveliness, &to->liveliness);
     reliabilityQosPolicyCopyout(&from->reliability, &to->reliability);
     lifespanQosPolicyCopyout(&from->lifespan, &to->lifespan);
+    destinationOrderQosPolicyCopyout(&from->destination_order, &to->destination_order);
     builtinUserDataQosPolicyCopyout(&from->user_data, &to->user_data);
     ownershipQosPolicyCopyout(&from->ownership, &to->ownership);
     ownershipStrengthQosPolicyCopyout(&from->ownership_strength, &to->ownership_strength);
@@ -1175,6 +1069,7 @@ gapi_publicationBuiltinTopicData__copyIn (
     livelinessQosPolicyCopyin(&from->liveliness, &to->liveliness);
     reliabilityQosPolicyCopyin(&from->reliability, &to->reliability);
     lifespanQosPolicyCopyin(&from->lifespan, &to->lifespan);
+    destinationOrderQosPolicyCopyin(&from->destination_order, &to->destination_order);
     builtinUserDataQosPolicyCopyin(base, &from->user_data, &to->user_data);
     ownershipQosPolicyCopyin(&from->ownership, &to->ownership);
     ownershipStrengthQosPolicyCopyin(&from->ownership_strength, &to->ownership_strength);

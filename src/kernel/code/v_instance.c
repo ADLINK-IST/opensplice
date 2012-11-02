@@ -1,15 +1,15 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
- 
+
 #include "v_instance.h"
 
 #include "v_time.h"
@@ -38,7 +38,7 @@ v_instanceDeinit(
     assert(C_TYPECHECK(instance, v_instance));
     /* possible since next and prev are void pointers,
      * so c_free does not crash on this */
-    v_instanceRemove(instance); 
+    v_instanceRemove(instance);
 }
 
 void
@@ -127,7 +127,8 @@ v_instanceWrite(
 void
 v_instanceUnregister (
     v_instance instance,
-    c_long count)
+    v_registration registration,
+    c_time timestamp)
 {
     c_char* metaName;
 
@@ -135,7 +136,8 @@ v_instanceUnregister (
 
     switch (v_objectKind(instance)) {
     case K_DATAREADERINSTANCE:
-        v_dataReaderInstanceUnregister(v_dataReaderInstance(instance),count);
+        v_dataReaderInstanceUnregister(v_dataReaderInstance(instance),
+                registration, timestamp);
     break;
     default:
         metaName = c_metaName(c_metaObject(c_getType(instance)));

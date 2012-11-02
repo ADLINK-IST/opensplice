@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -17,44 +17,10 @@
 #include "u__cfAttribute.h"
 #include "u__cfData.h"
 #include "u__cfValue.h"
-
+#include "u__entity.h"
 #include "v_cfNode.h"
 
 #define U_CFELEMENT_SIZE (sizeof(C_STRUCT(u_cfElement)))
-
-u_result
-u_cfElementClaim(
-    u_cfElement _this,
-    v_cfElement *ke)
-{
-    u_result r = U_RESULT_OK;
-
-    if ((_this == NULL) || (ke == NULL)) {
-        OS_REPORT(OS_ERROR, "u_cfElementClaim", 0, "Illegal parameter");
-        r = U_RESULT_ILL_PARAM;
-    } else {
-        *ke = v_cfElement(u_cfNodeClaim(u_cfNode(_this)));
-        if (*ke == NULL) {
-            r = U_RESULT_INTERNAL_ERROR;
-        }
-    }
-    return r;
-}
-
-u_result
-u_cfElementRelease(
-    u_cfElement _this)
-{
-    u_result r = U_RESULT_OK;
-
-    if (_this == NULL) {
-        OS_REPORT(OS_ERROR, "u_cfElementRelease", 0, "Illegal parameter");
-        r = U_RESULT_ILL_PARAM;
-    } else {
-        u_cfNodeRelease(u_cfNode(_this));
-    }
-    return r;
-}
 
 u_cfElement
 u_cfElementNew(
@@ -94,10 +60,10 @@ u_cfElementGetChildren(
     c_iter        kc;
     c_iter        children;
     u_participant p;
-    
+
     children = c_iterNew(NULL);
     if (element != NULL) {
-        r = u_cfElementClaim(element, &ke);
+        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
         if (r == U_RESULT_OK) {
             p = u_cfNodeParticipant(u_cfNode(element));
             kc = v_cfElementGetChildren(ke);
@@ -121,7 +87,7 @@ u_cfElementGetChildren(
                 child = c_iterTakeFirst(kc);
             }
             c_iterFree(kc);
-            u_cfElementRelease(element);
+            u_cfNodeRelease(u_cfNode(element));
         }
     }
     return children;
@@ -137,11 +103,11 @@ u_cfElementGetAttributes(
     c_iter        ka;
     c_iter        attributes;
     u_participant p;
-    
+
 
     attributes = c_iterNew(NULL);
     if (element != NULL) {
-        r = u_cfElementClaim(element, &ke);
+        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
         if (r == U_RESULT_OK) {
             p = u_cfNodeParticipant(u_cfNode(element));
             ka = v_cfElementGetAttributes(ke);
@@ -151,7 +117,7 @@ u_cfElementGetAttributes(
                 attr = c_iterTakeFirst(ka);
             }
             c_iterFree(ka);
-            u_cfElementRelease(element);
+            u_cfNodeRelease(u_cfNode(element));
         }
     }
     return attributes;
@@ -167,18 +133,18 @@ u_cfElementAttribute(
     v_cfAttribute attr;
     u_cfAttribute attribute;
     u_participant p;
-    
+
     attribute = NULL;
     if (element != NULL) {
-        r = u_cfElementClaim(element, &ke);
+        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
         if (r == U_RESULT_OK) {
             p = u_cfNodeParticipant(u_cfNode(element));
             attr = v_cfElementAttribute(ke, name);
-            
+
             if(attr){
                 attribute = u_cfAttributeNew(p, attr);
             }
-            u_cfElementRelease(element);
+            u_cfNodeRelease(u_cfNode(element));
         }
     }
     return attribute;
@@ -198,7 +164,7 @@ u_cfElementAttributeStringValue(
 
     result = FALSE;
     if ((element != NULL) && (str != NULL)) {
-        r = u_cfElementClaim(element, &ke);
+        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
         if (r == U_RESULT_OK) {
             value = v_cfElementAttributeValue(ke, attributeName);
             result = u_cfValueScan(value, V_STRING, &resultValue);
@@ -206,7 +172,7 @@ u_cfElementAttributeStringValue(
             if (result == TRUE) {
                 *str = resultValue.is.String;
             }
-            u_cfElementRelease(element);
+            u_cfNodeRelease(u_cfNode(element));
         }
     }
     return result;
@@ -226,7 +192,7 @@ u_cfElementAttributeBoolValue(
 
     result = FALSE;
     if ((element != NULL) && (b != NULL)) {
-        r = u_cfElementClaim(element, &ke);
+        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
         if (r == U_RESULT_OK) {
             value = v_cfElementAttributeValue(ke, attributeName);
             result = u_cfValueScan(value, V_BOOLEAN, &resultValue);
@@ -234,7 +200,7 @@ u_cfElementAttributeBoolValue(
             if (result == TRUE) {
                 *b = resultValue.is.Boolean;
             }
-            u_cfElementRelease(element);
+            u_cfNodeRelease(u_cfNode(element));
         }
     }
     return result;
@@ -254,7 +220,7 @@ u_cfElementAttributeLongValue(
 
     result = FALSE;
     if ((element != NULL) && (lv != NULL)) {
-        r = u_cfElementClaim(element, &ke);
+        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
         if (r == U_RESULT_OK) {
             value = v_cfElementAttributeValue(ke, attributeName);
             result = u_cfValueScan(value, V_LONG, &resultValue);
@@ -262,7 +228,7 @@ u_cfElementAttributeLongValue(
             if (result == TRUE) {
                 *lv = resultValue.is.Long;
             }
-            u_cfElementRelease(element);
+            u_cfNodeRelease(u_cfNode(element));
         }
     }
     return result;
@@ -282,7 +248,7 @@ u_cfElementAttributeULongValue(
 
     result = FALSE;
     if ((element != NULL) && (ul != NULL)) {
-        r = u_cfElementClaim(element, &ke);
+        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
         if (r == U_RESULT_OK) {
             value = v_cfElementAttributeValue(ke, attributeName);
             result = u_cfValueScan(value, V_ULONG, &resultValue);
@@ -290,7 +256,39 @@ u_cfElementAttributeULongValue(
             if (result == TRUE) {
                 *ul = resultValue.is.ULong;
             }
-            u_cfElementRelease(element);
+            u_cfNodeRelease(u_cfNode(element));
+        }
+    }
+    return result;
+}
+
+c_bool
+u_cfElementAttributeSizeValue(
+    u_cfElement element,
+    const c_char *attributeName,
+    c_size *size)
+{
+    u_result r;
+    c_bool result;
+    v_cfElement ke;
+    c_value value;
+
+    result = FALSE;
+    if ((element != NULL) && (size != NULL)) {
+        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
+        if (r == U_RESULT_OK) {
+            value = v_cfElementAttributeValue(ke, attributeName);
+
+            if(value.kind == V_STRING){
+                result = u_cfDataSizeValueFromString(value.is.String,size);
+            }
+            else
+            {
+                OS_REPORT(OS_ERROR, "u_cfElementAttributeSizeValue", 0, "Value is not a string");
+                assert(value.kind == V_STRING);
+            }
+
+            u_cfNodeRelease(u_cfNode(element));
         }
     }
     return result;
@@ -310,7 +308,7 @@ u_cfElementAttributeFloatValue(
 
     result = FALSE;
     if ((element != NULL) && (f != NULL)) {
-        r = u_cfElementClaim(element, &ke);
+        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
         if (r == U_RESULT_OK) {
             value = v_cfElementAttributeValue(ke, attributeName);
             result = u_cfValueScan(value, V_FLOAT, &resultValue);
@@ -318,7 +316,7 @@ u_cfElementAttributeFloatValue(
             if (result == TRUE) {
                 *f = resultValue.is.Float;
             }
-            u_cfElementRelease(element);
+            u_cfNodeRelease(u_cfNode(element));
         }
     }
     return result;
@@ -339,7 +337,7 @@ u_cfElementXPath(
 
     children = c_iterNew(NULL);
     if ((element != NULL) && (xpathExpr != NULL)) {
-        r = u_cfElementClaim(element, &ke);
+        r = u_cfNodeReadClaim(u_cfNode(element), (v_cfNode*)(&ke));
         if (r == U_RESULT_OK) {
             p = u_cfNodeParticipant(u_cfNode(element));
             vChildren = v_cfElementXPath(ke, xpathExpr);
@@ -363,7 +361,7 @@ u_cfElementXPath(
                 vChild = c_iterTakeFirst(vChildren);
             }
             c_iterFree(vChildren);
-            u_cfElementRelease(element);
+            u_cfNodeRelease(u_cfNode(element));
         }
     }
     return children;

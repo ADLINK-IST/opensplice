@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -24,7 +24,7 @@ s_doPrint(
     char description[512];
 
     if (config->tracingOutputFile) {
-        vsnprintf(description, sizeof(description)-1, format, args);
+        os_vsnprintf(description, sizeof(description)-1, format, args);
         description [sizeof(description)-1] = '\0';
         fprintf(config->tracingOutputFile, description);
         fflush(config->tracingOutputFile);

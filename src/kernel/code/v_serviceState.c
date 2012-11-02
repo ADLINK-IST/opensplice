@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -78,8 +78,9 @@ v_serviceStateNew(
                 v_object(s)->kernel = k;
             } else {
                 OS_REPORT(OS_ERROR,
-                  "v_serviceStateNew",0,
-                  "Failed to allocate service state.");
+                          "v_serviceStateNew",0,
+                          "Failed to allocate v_serviceState object.");
+                assert(FALSE);
             }
         } else {
             s = NULL;

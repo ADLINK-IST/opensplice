@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -10,7 +10,7 @@
  *
  */
 #include <stdio.h>
-#include <symtbl.h>
+#include "symtbl.h"
 #include "cpp_malloc.h"
 
 DEF **symtbl;
@@ -187,7 +187,7 @@ extern void defd (char * name, int value)
    char temp[64];
    char *cp;
 
-   sprintf(temp, "%d", value);
+   os_sprintf(temp, "%d", value);
    undef(name);
    cp = copyofstr(temp);
    check_os_malloc(cp);

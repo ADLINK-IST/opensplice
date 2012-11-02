@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,6 +14,12 @@
 #define V__WAITSET_H
 
 #include "v_waitset.h"
+
+#define v_waitsetLock(_this) \
+        v_observerLock(v_observer(_this))
+
+#define v_waitsetUnlock(_this) \
+        v_observerUnlock(v_observer(_this))
 
 /**
  * Releases all resources claimed by the referenced waitset object.

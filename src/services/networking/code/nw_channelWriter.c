@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /* Interface */
@@ -45,8 +45,11 @@
 
 /* ----------------------------------- Private ------------------------------ */
 
-C_STRUCT(nw_channelWriter){
-    C_EXTENDS(nw_channelUser);
+/**
+* @extends nw_channelUser_s
+*/
+NW_STRUCT(nw_channelWriter){
+    NW_EXTENDS(nw_channelUser);
     /* Networking channel to write to */
     nw_sendChannel sendChannel;
     /* Id of networking queue to read from */
@@ -116,7 +119,20 @@ nw_channelWriterMain(
     c_ulong timeoutCount;
     nw_signedLength credits;
     v_networking n;
-    NW_STRUCT(plugSendStatistics) pss = {0};
+    NW_STRUCT(plugSendStatistics) pss = {0,0,0,0,0,0,0,0,0,0,
+                                         {0,
+                                          {{0,0},
+                                           0},
+                                          {{0,0},
+                                           0},
+                                          {0.0,0}},
+                                         {0,
+                                          {{0,0},
+                                           0},
+                                          {{0,0},
+                                           0},
+                                          {0.0,0}},
+                                         0,0,0};
     v_fullCounterInit(&(pss.adminQueueAcks));
     v_fullCounterInit(&(pss.adminQueueData));
 
@@ -244,7 +260,7 @@ nw_channelWriterMain(
                 assert( bytesWritten > 0); /* if permission grantedm the value must be greater 0 */
 
                 }
-                
+
                 writtenCountBytesThisBurst += bytesWritten;
 
 #define NW_IS_BUILTIN_DOMAINNAME(name) ((int)(name)[0] == (int)'_')
@@ -277,7 +293,7 @@ nw_channelWriterMain(
             }
             slowingDown = !nw_sendChannelFlush(channelWriter->sendChannel,
                                                TRUE, &credits, &pss);
-        } 
+        }
     }
     NW_TRACE_3(Send, 2,
                "Channel %s: %u messages (%u bytes) taken from queue and "
@@ -359,7 +375,7 @@ nw_channelWriterNew(
                       strlen(NWCF_ROOT(Tx)) + strlen(NWCF_SEP) +
                       strlen(NWCF_ROOT(Scheduling)) + 1 /* '\0' */;
         tmpPath = os_malloc(tmpPathSize);
-        sprintf(tmpPath, "%s%s%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Tx),
+        os_sprintf(tmpPath, "%s%s%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Tx),
                                        NWCF_SEP, NWCF_ROOT(Scheduling));
         nw_channelUserInitialize((nw_channelUser)result,
             pathName /* use pathName as name */, tmpPath, reader,
@@ -408,7 +424,7 @@ nw_channelWriterNew(
                       strlen(NWCF_ROOT(Tx)) + 1;
 
         tmpPath = os_malloc(tmpPathSize);
-        sprintf(tmpPath, "%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Tx));
+        os_sprintf(tmpPath, "%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Tx));
 
         result->reportInterval = NWCF_SIMPLE_PARAM(ULong, tmpPath, ReportInterval);
 

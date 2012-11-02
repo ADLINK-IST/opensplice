@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,13 +20,80 @@
 #include "u__cfData.h"
 #include "u__handle.h"
 #include "u__participant.h"
-#include "u__kernel.h"
-
+#include "u__entity.h"
 #include "v_public.h"
 #include "v_cfNode.h"
 #include "v_configuration.h"
 
+#include "os_stdlib.h"
 #include "os_report.h"
+
+
+u_result
+u_cfNodeReadClaim(
+    u_cfNode node,
+    v_cfNode* kernelNode)
+{
+    v_participant kp;
+    v_configuration config;
+    u_result r;
+
+    *kernelNode = NULL;
+    if (node != NULL || kernelNode == NULL) {
+        r = u_entityReadClaim(u_entity(node->participant),(v_entity*)&kp);
+        if (r == U_RESULT_OK) {
+            r = u_handleClaim(node->configuration, &config);
+            if (r == U_RESULT_OK) {
+                if(config != NULL){
+                    *kernelNode = v_configurationGetNode(config, node->id);
+                    if (*kernelNode == NULL) {
+                        r = U_RESULT_INTERNAL_ERROR;
+                        u_entityRelease(u_entity(node->participant));
+                    }
+                } else {
+                    r = U_RESULT_INTERNAL_ERROR;
+                    u_entityRelease(u_entity(node->participant));
+                    OS_REPORT(OS_ERROR, "u_cfNodeReadClaim", 0,
+                              "Internal error");
+                }
+            } else {
+                u_entityRelease(u_entity(node->participant));
+                OS_REPORT(OS_ERROR, "u_cfNodeReadClaim", 0,
+                          "Could not claim configuration data");
+            }
+        } else {
+            OS_REPORT(OS_ERROR, "u_cfNodeReadClaim", 0,
+                      "Could not protect kernel access, "
+                      "Therefore failed to claim configuration data");
+        }
+    } else {
+        r = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_ERROR, "u_cfNodeReadClaim", 0,
+                  "No configuration data specified to claim");
+    }
+    return r;
+}
+
+u_result
+u_cfNodeRelease(
+    u_cfNode node)
+{
+    u_result r;
+
+    if (node != NULL) {
+        u_handleRelease(node->configuration);
+        r = u_entityRelease(u_entity(node->participant));
+        if (r != U_RESULT_OK) {
+            OS_REPORT(OS_ERROR, "u_cfNodeRelease", 0,
+                      "Release Participant failed.");
+        }
+    } else {
+        r = U_RESULT_ILL_PARAM;
+        OS_REPORT(OS_ERROR, "u_cfNodeRelease", 0,
+                  "No configuration data specified to release");
+    }
+    return r;
+}
 
 void
 u_cfNodeInit(
@@ -72,64 +139,6 @@ u_cfNodeFree (
     }
 }
 
-v_cfNode
-u_cfNodeClaim(
-    u_cfNode node)
-{
-    v_cfNode vNode = NULL;
-    v_participant kp;
-    v_configuration config;
-    u_result r;
-
-    if (node != NULL) {
-            r = u_participantClaim(node->participant,&kp);
-            if (r == U_RESULT_OK) {
-                r = u_handleClaim(node->configuration, &config);
-                if (r == U_RESULT_OK) {
-                    if(config != NULL){
-                        vNode = v_configurationGetNode(config, node->id);
-                    } else {
-                        OS_REPORT(OS_ERROR, "u_cfNodeClaim", 0,
-                                  "Internal error");
-                    }
-                } else {
-                    OS_REPORT(OS_ERROR, "u_cfNodeClaim", 0,
-                              "Could not claim configuration data");
-                }
-                if (vNode == NULL) {
-                    r = u_participantRelease(node->participant);
-                }
-            } else {
-                OS_REPORT(OS_ERROR, "u_cfNodeClaim", 0,
-                          "Could not protect kernel access, "
-                          "Therefore failed to claim configuration data");
-            }
-    } else {
-        OS_REPORT(OS_ERROR, "u_cfNodeClaim", 0,
-                  "No configuration data specified to claim");
-    }
-    return vNode;
-}
-
-void
-u_cfNodeRelease(
-    u_cfNode node)
-{
-    u_result r;
-
-    if (node != NULL) {
-        u_handleRelease(node->configuration);
-        r = u_participantRelease(node->participant);
-        if (r != U_RESULT_OK) {
-            OS_REPORT(OS_ERROR, "u_cfNodeRelease", 0,
-                      "Release Participant failed.");
-        }
-    } else {
-        OS_REPORT(OS_ERROR, "u_cfNodeRelease", 0,
-                  "No configuration data specified to release");
-    }
-}
-
 u_participant
 u_cfNodeParticipant(
     u_cfNode node)
@@ -161,15 +170,16 @@ u_cfNodeName(
     const c_char *vname;
     c_char *name;
     c_ulong length;
+    u_result result;
 
     name = NULL;
     if (node != NULL) {
-        kNode = u_cfNodeClaim(node);
-        if (kNode) {
+        result = u_cfNodeReadClaim(node, &kNode);
+        if (result == U_RESULT_OK) {
             vname = v_cfNodeGetName(kNode);
             length = (c_ulong)strlen(vname);
             name = os_malloc(length + 1U);
-            strncpy(name, vname, length);
+            os_strncpy(name, vname, length);
             name[length] = 0;
             u_cfNodeRelease(node);
         }

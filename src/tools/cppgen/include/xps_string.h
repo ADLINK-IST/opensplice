@@ -153,7 +153,7 @@ private:
          if (len)
          {
             result = new char[len + 1];
-            strcpy(result, s);
+            os_strcpy(result, s);
          }
 
          return result;
@@ -172,17 +172,17 @@ private:
 
          if (s)
          {
-            strcpy(result, s);
+            os_strcpy(result, s);
 
             if (t)
             {
-               strcat(result, t);
+               os_strcat(result, t);
             }
          }
          else
          {
             assert (t != NULL);
-            strcpy(result, t);
+            os_strcpy(result, t);
          }
 
          return result;

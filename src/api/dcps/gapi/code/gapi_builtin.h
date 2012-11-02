@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,7 +15,6 @@
 
 #include "gapi.h"
 #include "gapi_common.h"
-#include "gapi_domainEntity.h"
 #include "gapi_dataReader.h"
 
 #define MAX_BUILTIN_TOPIC 4
@@ -31,7 +30,7 @@ typedef struct BuiltinTopicTypeInfo {
 
 
 _Subscriber
-_SubscriberBuiltinNew (
+_BuiltinSubscriberNew (
     u_participant uParticipant,
     _DomainParticipantFactory factory,
     _DomainParticipant participant);
@@ -40,13 +39,12 @@ void
 _BuiltinSubscriberFree (
     _Subscriber subscriber);
 
-_DataReader
-_BuiltinDataReaderNew (
-    _Subscriber subscriber,
-    const char *topicName);
-
 const char *
 _BuiltinTopicName  (
+    long index);
+
+const char *
+_BuiltinTopicTypeName  (
     long index);
 
 const BuiltinTopicTypeInfo *
@@ -60,6 +58,5 @@ _BuiltinTopicFindTypeInfoByType (
 const char *
 _BuiltinFindTopicName (
     _Entity entity);
-
 
 #endif

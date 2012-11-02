@@ -1,20 +1,22 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
-#include <gapi.h>
+#include "gapi.h"
 
 #include "dds_dcps.h"
 #include "sac_structured.h"
-
+#include "v_public.h"
+#include "v_dataReaderInstance.h"
+#include "u_instanceHandle.h"
 
 /*     Publisher
  *     create_publisher(
@@ -337,8 +339,7 @@ DDS_DomainParticipant_delete_contained_entities (
 {
     return (DDS_ReturnCode_t)
         gapi_domainParticipant_delete_contained_entities (
-            (gapi_domainParticipant)this, NULL, NULL
-        );
+            (gapi_domainParticipant)this);
 }
 
 /*     ReturnCode_t
@@ -621,6 +622,52 @@ DDS_DomainParticipant_get_default_topic_qos (
 
 }
 
+struct copyInstanceHandle {
+    c_ulong index;
+    DDS_InstanceHandleSeq *seq;
+};
+
+static c_bool
+copyInstanceHandle(
+    v_dataReaderInstance instance,
+    c_voidp arg)
+{
+    c_bool result = TRUE;
+    struct copyInstanceHandle *a = (struct copyInstanceHandle *)arg;
+    DDS_InstanceHandle_t ghandle;
+    DDS_unsigned_long length;
+
+    if (a->index == 0) {
+        length = c_count(v_dataReaderInstanceGetNotEmptyInstanceSet(instance));
+
+        /*buffer alloc*/
+        if (length > a->seq->_maximum) {
+
+            /* if release is true free the current buffer*/
+            if (a->seq->_release) {
+                gapi_free(a->seq->_buffer);
+            }
+            /* reallocate a new buffer */
+            a->seq->_buffer = gapi_instanceHandleSeq_allocbuf(length);
+            a->seq->_release = TRUE;
+            a->seq->_length = 0;
+            a->seq->_maximum = length;
+        } else {
+            /* error */
+        }
+    }
+
+    ghandle = u_instanceHandleNew((v_public)instance);
+    if (a->index < a->seq->_maximum) {
+        a->seq->_buffer[a->index++] = ghandle;
+        a->seq->_length++;
+    } else {
+        /* error index out of bounds */
+    }
+
+    return result;
+}
+
 
 /*     ReturnCode_t
  *     get_discovered_participants (
@@ -631,11 +678,27 @@ DDS_DomainParticipant_get_discovered_participants (
     DDS_DomainParticipant this,
     DDS_InstanceHandleSeq  *participant_handles)
 {
+    struct copyInstanceHandle cih;
+    cih.index = 0;
+    participant_handles->_length =0;
+    cih.seq = participant_handles;
+
     return (DDS_ReturnCode_t)
         gapi_domainParticipant_get_discovered_participants (
             (gapi_domainParticipant)this,
-            (gapi_instanceHandleSeq *)participant_handles
+            copyInstanceHandle,
+            &cih
         );
+}
+
+static void
+copyDiscoveredData(
+    c_voidp from,
+    c_voidp to)
+{
+    if (from) {
+        gapi_participantBuiltinTopicData__copyOut(from, to);
+    }
 }
 
 /*     ReturnCode_t
@@ -653,7 +716,8 @@ DDS_DomainParticipant_get_discovered_participant_data (
         gapi_domainParticipant_get_discovered_participant_data (
             (gapi_domainParticipant)this,
             (gapi_participantBuiltinTopicData *)participant_data,
-            (gapi_instanceHandle_t)handle
+            (gapi_instanceHandle_t)handle,
+            copyDiscoveredData
         );
 }
 
@@ -666,11 +730,27 @@ DDS_DomainParticipant_get_discovered_topics (
     DDS_DomainParticipant this,
     DDS_InstanceHandleSeq  *topic_handles)
 {
+    struct copyInstanceHandle cih;
+    cih.index = 0;
+    topic_handles->_length =0;
+    cih.seq = topic_handles;
+
     return (DDS_ReturnCode_t)
         gapi_domainParticipant_get_discovered_topics (
             (gapi_domainParticipant)this,
-            (gapi_instanceHandleSeq *)topic_handles
+            copyInstanceHandle,
+            &cih
         );
+}
+
+static void
+copyDiscoveredTopicData(
+    c_voidp from,
+    c_voidp to)
+{
+    if (from) {
+        gapi_topicBuiltinTopicData__copyOut(from, to);
+    }
 }
 
 /*     ReturnCode_t
@@ -686,10 +766,11 @@ DDS_DomainParticipant_get_discovered_topic_data (
 {
     return (DDS_ReturnCode_t)
         gapi_domainParticipant_get_discovered_topic_data (
-            (gapi_domainParticipant)this,
-            (gapi_topicBuiltinTopicData *)topic_data,
-            (gapi_instanceHandle_t)handle
-        );
+                (gapi_domainParticipant)this,
+                (gapi_topicBuiltinTopicData *)topic_data,
+                (gapi_instanceHandle_t)handle,
+                copyDiscoveredTopicData
+            );
 }
 
 /*     Boolean

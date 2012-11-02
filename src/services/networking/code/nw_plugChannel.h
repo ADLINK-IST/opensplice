@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -34,22 +34,22 @@ nw_priorityKind      nw_plugChannelGetPriorityOffered(
 void                 nw_plugChannelNotifyNodeStarted(
                          nw_plugChannel channel,
                          nw_networkId networkId,
-                         nw_address address);
+                         os_sockaddr_storage address);
 
 void                 nw_plugChannelNotifyNodeStopped(
                          nw_plugChannel channel,
                          nw_networkId networkId,
-                         nw_address address);
+                         os_sockaddr_storage address);
 
 void                 nw_plugChannelNotifyNodeDied(
                          nw_plugChannel channel,
                          nw_networkId networkId,
-                         nw_address address);
+                         os_sockaddr_storage address);
 
 void                 nw_plugChannelNotifyGpAdd(
                          nw_plugChannel channel,
                          nw_networkId networkId,
-                         nw_address address);
+                         os_sockaddr_storage address);
 
 void                 nw_plugChannelNotifyGpAddList(
                         nw_plugChannel channel,
@@ -59,7 +59,7 @@ void                 nw_plugChannelNotifyGpAddList(
 void                 nw_plugChannelNotifyGpRemove(
                          nw_plugChannel channel,
                          nw_networkId networkId,
-                         nw_address address);
+                         os_sockaddr_storage address);
 
 #endif /* NW_PLUGCHANNEL_H */
 

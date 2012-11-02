@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -32,8 +32,8 @@ d_groupNew(
         d_objectInit(d_object(group), D_GROUP, d_groupDeinit);
         group->topic = (c_char*)(os_malloc(strlen(topic) + 1));
         group->partition = (c_char*)(os_malloc(strlen(partition) + 1));
-        strcpy(group->topic, topic);
-        strcpy(group->partition, partition);
+        os_strcpy(group->topic, topic);
+        os_strcpy(group->partition, partition);
         group->kind                = kind;
         group->completeness        = completeness;
         group->quality.seconds     = quality.seconds;

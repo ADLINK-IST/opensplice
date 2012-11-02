@@ -75,8 +75,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * AST_EnumVal)
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Convert a value from the enum AST_Expression::ExprType to a char *

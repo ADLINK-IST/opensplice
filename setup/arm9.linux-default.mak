@@ -1,26 +1,32 @@
 # target context is set in platform specific config.mak
 
 # Set name context of used tooling
-CC              = arm-v5te-linux-gnueabi-gcc
-CXX             = arm-v5te-linux-gnueabi-g++
-CSC             = csc
+CC              = arm-angstrom-linux-gnueabi-gcc
+CXX             = arm-angstrom-linux-gnueabi-g++
+CSC             = echo
 FILTER          = filter_gcc
 LD_SO           = $(CC)
-LD_EXE          = $(CXX)
+LD_EXE           = $(CC)
+LD_CXX           = $(CXX)
 YACC            = bison
 LEX	            = flex
 MAKE            = make
 TOUCH           = touch
-AR              = arm-v5te-linux-gnueabi-ar
+LN              = ln
+AR              = arm-angstrom-linux-gnueabi-ar
 AR_CMDS         = rv
 MAKEDEPFLAGS    = -M
-CPP             = arm-v5te-linux-gnueabi-cpp
-GCPP            = arm-v5te-linux-gnueabi-g++ -E
-GCOV            = arm-v5te-linux-gnueabi-gcov
+CPP             = arm-angstrom-linux-gnueabi-cpp
+GCPP            = arm-angstrom-linux-gnueabi-g++ -E
+GCOV            = arm-angstrom-linux-gnueabi-gcov
 JCC             = javac
 JAR             = jar
 JAVA            = java
 SOAPCPP         = soapcpp2
+
+#JAVAH
+JAVAH            = javah
+JAVAH_FLAGS      = -force
 
 JAVA_SRCPATH_SEP = :
 JAVA_LDFLAGS	 = -L$(JAVA_HOME)/jre/lib/i386
@@ -87,9 +93,19 @@ EXEC_LD_POSTFIX =
 INLINESRC_POSTFIX = .i
 
 # Identify linker options for building shared C# libraries and or executables.
-CSTARGET_LIB = -target:library
-CSTARGET_EXEC = -target:exe
 CSLIB_PREFIX =
 CSLIB_POSTFIX = .dll
 CSEXEC_PREFIX =
 CSEXEC_POSTFIX = .exe
+CSMOD_PREFIX =
+CSMOD_POSTFIX = .netmodule
+CSDBG_PREFIX =
+CSEXEC_DBG_POSTFIX = .exe.mdb
+CSMOD_DBG_POSTFIX = .netmodule.mdb
+CSLIB_DBG_POSTFIX = .dll.mdb
+CS_LIBPATH_SEP = ,
+
+# Identify linker options for building shared C# libraries and or executables.
+CSTARGET_LIB = -target:library
+CSTARGET_MOD = -t:module
+CSTARGET_EXEC = -target:exe

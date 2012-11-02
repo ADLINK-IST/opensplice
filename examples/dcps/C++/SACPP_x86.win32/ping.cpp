@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -19,17 +19,17 @@
 
 #define SEQ_PAYLOAD_SIZE (1000)
 
-// What it does: 
+// What it does:
 //   It send a message on the "PING" partition, which the PONG test is waiting for.
-//   The PONG test will send the same message back on the "PONG" partition, which 
-//   the PING test is waiting for. This sequence is repeated a configurable number 
+//   The PONG test will send the same message back on the "PONG" partition, which
+//   the PING test is waiting for. This sequence is repeated a configurable number
 //   of times.
 //   The PING tests measures:
 //                write_access-time: time the write() method took.
 //                read_access-time:  time the take() method took.
-//                round_trip-time:   time between the call to the write() method 
+//                round_trip-time:   time between the call to the write() method
 //                                   and the return of the take() method.
-//   PING calculates min/max/average statistics on these values over configurable 
+//   PING calculates min/max/average statistics on these values over configurable
 //   data blocks.
 //
 // Configurable:
@@ -38,7 +38,7 @@
 //   - topic:     for the topic, there's a choice between several preconfigured
 //                topics.
 //   - PING and PONG partition: this enables to use several PING-PONG pairs
-//     simultanious with them interfering with each other. It also enables 
+//     simultanious with them interfering with each other. It also enables
 //     creating larger loops, by chaining several PONG tests to one PING test.
 
 using namespace std;
@@ -161,7 +161,7 @@ init_stats (
     stats.count    = 0;
     stats.average  = 0.0;
     stats.min      = 0.0;
-    stats.max      = 0.0; 
+    stats.max      = 0.0;
 }
 
 static void
@@ -170,7 +170,7 @@ init_clock(
     )
 {
     LARGE_INTEGER frequency;
-    
+
     QueryPerformanceFrequency(&frequency);
     clock_frequency = frequency.QuadPart;
 }
@@ -186,7 +186,7 @@ timeGet (
     QueryPerformanceCounter(&timebuffer);
     current_time.tv_sec = (os_timeSec)(timebuffer.QuadPart / clock_frequency);
     current_time.tv_usec = (os_int32)(((timebuffer.QuadPart % clock_frequency)*1000000)/clock_frequency);
-    
+
     return current_time;
 }
 
@@ -228,11 +228,11 @@ PP_min_handler (
     ReturnCode_t      dds_result;
 
     // cout << "PING: PING_min arrived" << endl;
-    
+
     preTakeTime = timeGet ();
     dds_result = PP_min_reader->take (PP_min_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
-    
+
     amount = PP_min_dataList->length ();
     if (amount != 0) {
         if (amount > 1) {
@@ -307,13 +307,13 @@ PP_string_handler (
     int               amount;
     Boolean           result = false;
     ReturnCode_t      dds_result;
-    
+
     // cout << "PING: PING_string arrived" << endl;
-    
+
     preTakeTime = timeGet ();
     dds_result = PP_string_reader->take (PP_string_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
-    
+
     amount = PP_string_dataList->length ();
     if (amount != 0) {
         if (amount > 1) {
@@ -347,13 +347,13 @@ PP_fixed_handler (
     int               amount;
     Boolean           result = false;
     ReturnCode_t      dds_result;
-    
+
     // cout << "PING: PING_fixed arrived" << endl;
-    
+
     preTakeTime = timeGet ();
     dds_result = PP_fixed_reader->take (PP_fixed_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
-    
+
     amount = PP_fixed_dataList->length ();
     if (amount != 0) {
         if (amount > 1) {
@@ -387,13 +387,13 @@ Boolean PP_array_handler (
     int               amount;
     Boolean           result = false;
     ReturnCode_t      dds_result;
-    
+
     // cout << "PING: PING_array arrived" << endl;
-    
+
     preTakeTime = timeGet ();
     dds_result = PP_array_reader->take (PP_array_dataList, infoList, 1, ANY_SAMPLE_STATE, ANY_VIEW_STATE, ANY_INSTANCE_STATE);
     postTakeTime = timeGet ();
-    
+
     amount = PP_array_dataList->length ();
     if (amount != 0) {
         if (amount > 1) {
@@ -439,7 +439,7 @@ main (
     DataWriterQos                        dwQos;
     SubscriberQos                        sQos;
     DataReaderQos                        drQos;
-    
+
     time_t                               clock = time (NULL);
     Duration_t                           wait_timeout = {3,0};
 
@@ -450,11 +450,11 @@ main (
 
     int                                  imax = 1;
     int                                  i;
-    int                                  block;
+    unsigned int                         block;
 
     init_clock();
     //
-    // init timing statistics 
+    // init timing statistics
     //
     init_stats (roundtrip,    "round_trip");
     init_stats (write_access, "write_access");
@@ -485,7 +485,7 @@ main (
         exit (1);
     }
 
-    // 
+    //
     // Create PING publisher
     //
     dp->get_default_publisher_qos (pQos);
@@ -537,16 +537,16 @@ main (
     // Create datareader
     dr = s->create_datareader (PP_seq_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
     PP_seq_reader = dynamic_cast<PP_seq_msgDataReader_ptr>(dr);
-    
+
     // Add datareader statuscondition to waitset
     PP_seq_sc = PP_seq_reader->get_statuscondition ();
     PP_seq_sc->set_enabled_statuses (DATA_AVAILABLE_STATUS);
     result = w.attach_condition (PP_seq_sc);
-    
+
     //
     // PP_string_msg
     //
-    
+
     //  Create Topic
     PP_string_dt.register_type (dp, "pingpong::PP_string_msg");
     PP_string_topic = dp->create_topic ("PP_string_topic", "pingpong::PP_string_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
@@ -558,16 +558,16 @@ main (
     // Create datareader
     dr = s->create_datareader (PP_string_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
     PP_string_reader = dynamic_cast<PP_string_msgDataReader_ptr> (dr);
-    
+
     // Add datareader statuscondition to waitset
     PP_string_sc = PP_string_reader->get_statuscondition ();
     PP_string_sc->set_enabled_statuses (DATA_AVAILABLE_STATUS);
     result = w.attach_condition (PP_string_sc);
-    
+
     //
     // PP_fixed_msg
     //
-    
+
     //  Create Topic
     PP_fixed_dt.register_type (dp, "pingpong::PP_fixed_msg");
     PP_fixed_topic = dp->create_topic ("PP_fixed_topic", "pingpong::PP_fixed_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
@@ -579,16 +579,16 @@ main (
     // Create datareader
     dr = s->create_datareader (PP_fixed_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
     PP_fixed_reader = dynamic_cast<PP_fixed_msgDataReader_ptr> (dr);
-    
+
     // Add datareader statuscondition to waitset
     PP_fixed_sc = PP_fixed_reader->get_statuscondition ();
     PP_fixed_sc->set_enabled_statuses (DATA_AVAILABLE_STATUS);
     result = w.attach_condition (PP_fixed_sc);
-    
+
     //
     // PP_array_msg
     //
-    
+
     //  Create Topic
     PP_array_dt.register_type (dp, "pingpong::PP_array_msg");
     PP_array_topic = dp->create_topic ("PP_array_topic", "pingpong::PP_array_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
@@ -600,16 +600,16 @@ main (
     // Create datareader
     dr = s->create_datareader (PP_array_topic, DATAREADER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
     PP_array_reader = dynamic_cast<PP_array_msgDataReader_ptr> (dr);
-    
+
     // Add datareader statuscondition to waitset
     PP_array_sc = PP_array_reader->get_statuscondition ();
     PP_array_sc->set_enabled_statuses (DATA_AVAILABLE_STATUS);
     result = w.attach_condition (PP_array_sc);
-    
+
     //
     // PP_quit_msg
     //
-    
+
     //  Create Topic
     PP_quit_dt.register_type (dp, "pingpong::PP_quit_msg");
     PP_quit_topic = dp->create_topic("PP_quit_topic", "pingpong::PP_quit_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
@@ -624,7 +624,7 @@ main (
             // Send Initial message
             //
             timeout_flag = false;
-            
+
             switch(topic_id) {
                 case 'm':
                     {
@@ -712,7 +712,7 @@ main (
             if (!terminate) {
                 roundTripTime = preWriteTime;
                 add_stats (write_access, 1E6 * timeToReal (timeSub (postWriteTime, preWriteTime)));
-            
+
                 //
                 // Wait for response, calculate timing, and send another data if not ready
                 //

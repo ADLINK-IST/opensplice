@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -27,6 +27,7 @@
 #include "sd__resultCodesXMLMetadata.h"
 #include "sd_stringsXML.h"
 #include "sd_deepwalkMeta.h"
+#include "c_stringSupport.h"
 
 #define SD_FORMAT_ID      0x584DU    /* currently the same as XML */
 #define SD_FORMAT_VERSION 0x0001U
@@ -314,13 +315,13 @@ sd_printTaggedString(
     c_char *current;
     
     current = dst;
-    len = sprintf(current, "<%s>", tagName);
+    len = os_sprintf(current, "<%s>", tagName);
     result += (c_ulong)len;
     current = SD_DISPLACE(current, C_ADDRESS(len));
     len = sd_printCharData(current, src);
     result += (c_ulong)len;
     current = SD_DISPLACE(current, C_ADDRESS(len));
-    len = sprintf(current, "</%s>", tagName);
+    len = os_sprintf(current, "</%s>", tagName);
     result += (c_ulong)len;
     
     return result;
@@ -392,7 +393,7 @@ sd_concatScoped(
     } else {
         len = strlen(name) + 1;
         result = os_malloc(len);
-        strcpy(result, name);
+        os_strcpy(result, name);
     }
     
     return result;
@@ -477,7 +478,7 @@ sd_XMLMetadataSerCallbackPre(
 
     /* Opening tag */
     tagName = sd_getTagName(name, type);
-    spRes = sprintf(*dataPtrPtr, "<%s>", tagName);
+    spRes = os_sprintf(*dataPtrPtr, "<%s>", tagName);
     if (spRes > 0) {
         *dataPtrPtr = SD_DISPLACE(*dataPtrPtr, C_ADDRESS(spRes));
     }
@@ -519,7 +520,7 @@ sd_XMLMetadataSerCallbackPost(
 
     /* Closing tag */
     tagName = sd_getTagName(name, type);
-    len = sprintf(*dataPtrPtr, "</%s>", tagName);
+    len = os_sprintf(*dataPtrPtr, "</%s>", tagName);
     if (len > 0) {
         *dataPtrPtr = SD_DISPLACE(*dataPtrPtr, C_ADDRESS(len));
     }
@@ -739,7 +740,14 @@ sd_createOrLookupScope(
     c_char *currentSrc, *currentDst;
     int len;
     c_object o;
-    
+
+    /* if the scopeName is the empty string, then the scope is the general scope, i.e.
+     * the general module, thus the base.
+     */
+    if(c_compareString(scopeName, "") == C_EQ)
+    {
+        return c_metaObject(base);
+    }
     len = strlen(scopeName) + 1;
     helperString = os_malloc(len);
     memset(helperString, 0, len);

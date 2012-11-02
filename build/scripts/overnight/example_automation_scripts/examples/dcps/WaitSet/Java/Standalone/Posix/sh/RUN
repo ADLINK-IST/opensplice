@@ -1,0 +1,49 @@
+if [ "$OSPL_HOME" = "" ];then
+echo "*** Please source release.com to set OpenSplice environment variables";
+echo "*** ERROR OpenSplice environment variables NOT SET"
+exit;
+fi
+echo "=== OSPL_HOME is "${OSPL_HOME}
+echo "=== OSPL_URI is "${OSPL_URI}
+
+if [ -z "$JAVA_HOME" ]; then
+    echo "WARNING: JAVA_HOME not defined. Cannot find libjsig.so and set LD_PRELOAD"
+    echo "         This could prevent cleanup of Java application at exit"
+else
+   LD_PRELOAD=`find $JAVA_HOME -follow -name libjsig.so | grep -v server/libjsig.so | grep -v client/libjsig.so`
+   export LD_PRELOAD
+   if [ -z "$LD_PRELOAD" ]; then
+      echo "WARNING: libjsig.so not found in JAVA_HOME: $JAVA_HOME"
+      echo "         This could prevent cleanup of Java application at exit"
+   fi
+fi
+
+$VG_OSPL_START ospl start
+$VG_START_SLEEP
+
+echo "=== Launching WaitSet "
+sh ./startPublisher.sh  > pubResult.txt	
+sh ./startSubscriber.sh "./subResult.txt"
+
+echo "=== Checking WaitSet Subscriber results"
+JOINED=`grep "a MsgWriter joined" subResult.txt | wc -l`;
+FIRST_HELLO=`grep 'Message : "First Hello"' subResult.txt | wc -l`; 
+HELLO_AGAIN=`grep 'Message : "Hello again"' subResult.txt | wc -l`;
+LEFT=`grep "a MsgWriter lost its liveliness" subResult.txt | wc -l`;
+ESCAPE=`grep "escape condition triggered" subResult.txt | wc -l`;
+echo JOINED=$JOINED;
+echo FIRST_HELLO=$FIRST_HELLO;
+echo "HELLO_AGAIN(with QueryCondition)"=$HELLO_AGAIN;
+echo LEFT=$LEFT;
+echo ESCAPE=$ESCAPE;
+if [ $FIRST_HELLO -eq 0 ] || [ $HELLO_AGAIN -eq 0 ] || [ $JOINED -eq 0 ] || [ $LEFT -eq 0 ]  || [ $ESCAPE -eq 0 ];then
+#if [ $FIRST_HELLO -eq 0 ] || [ $HELLO_AGAIN -eq 0 ] || [ $JOINED -eq 0 ] || [ $LEFT -eq 0 ];then
+   echo NOK 
+   echo "*** ERROR : example WaitSet failed ";
+   cat subResult.txt;
+else
+   echo OK
+fi
+
+$VG_OSPL_START ospl stop
+sleep 2

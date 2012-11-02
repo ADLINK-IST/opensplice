@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -31,13 +31,13 @@ C_STRUCT(cm_module){
 C_STRUCT(cm_participant){
     u_participant participant;  /*!<The user participant.*/
     v_kernel kernel;
-    const char* kernel_uri;     /*!<The associated kernel URI.*/
+    const char* uri;     /*!<The associated kernel URI.*/
 };
 
 #define cm_module(e) ((cm_module)(e))
 #define cm_participant(e) ((cm_participant)(e))
 
-static cm_participant cm_getParticipant(const char* kernel_uri);
+static cm_participant cm_getParticipant(const char* uri);
 
 /**@brief Represents the Control & Monitoring API. 
  * 
@@ -52,17 +52,17 @@ static cm_module module = NULL;
  * 
  * A new participant is created when none is active for the requested kernel.
  * 
- * @param kernel_uri The URI associated with the kernel of the participant.
+ * @param uri The URI associated with the kernel of the participant.
  * @return The associated participant.
  */
 static cm_participant
 cm_getParticipant(
-    const char* kernel_uri)
+    const char* uri)
 {
     cm_participant p, temp;
     c_iter copy;
     int found;
-    u_kernel uk;
+    u_domain uk;
     u_participant up;
     int scmp;
     
@@ -75,7 +75,7 @@ cm_getParticipant(
         temp = cm_participant(c_iterTakeFirst(copy));
         
         while( (temp != NULL) && (!found) ){
-           scmp = strcmp(temp->kernel_uri, kernel_uri);
+           scmp = strcmp(temp->uri, uri);
            
             if(scmp == 0){
                 p = temp;
@@ -86,12 +86,12 @@ cm_getParticipant(
         c_iterFree(copy);
         
         if(!found){
-            up = u_participantNew(kernel_uri, 0, "CM API", NULL);
+            up = u_participantNew(uri, 0, "CM API", NULL);
                 
             if(up != NULL){
                 p = cm_participant(os_malloc((size_t)(C_SIZEOF(cm_participant))));
                 p->participant = up;
-                p->kernel_uri = kernel_uri;
+                p->uri = uri;
                 module->participants = c_iterInsert(module->participants, p);
             }
         }
@@ -182,24 +182,24 @@ cm_getKernelURI(
 
 c_voidp
 cm_getRootEntity(
-    const c_char* kernel_uri,
+    const c_char* uri,
     const c_voidp (*func)(v_entity entity, c_voidp funcArg),
     c_voidp fArg)
 {
-    u_kernel uk;
+    u_domain uk;
     c_voidp result;
     cm_participant p;
     
     result = NULL;
 
     if(module != NULL){
-        p = cm_getParticipant(kernel_uri);
+        p = cm_getParticipant(uri);
         
         if(p != NULL){
-            uk = u_participantKernel(p->participant);
+            uk = u_participantDomain(p->participant);
         
             if(uk != NULL){
-               result = u_kernelGetCopy(uk, func, fArg);
+               result = u_domainGetCopy(uk, func, fArg);
             }
         }
     }
@@ -322,7 +322,7 @@ c_voidp
 cm_getEntities(
     c_long index,
     c_long serial,
-    const c_char* kernel_uri,
+    const c_char* uri,
     v_kind kind,
     const c_voidp (*func)(c_iter entities, c_voidp funcArg),
     const c_voidp fArg)
@@ -330,7 +330,7 @@ cm_getEntities(
     v_handle handle;
     u_entity entity;
     cm_participant p;
-    u_kernel kernel;
+    u_domain domain;
     struct cm_getEntitiesArg arg;
     c_voidp result;
     v_entity e;
@@ -340,24 +340,24 @@ cm_getEntities(
     arg.kind = kind;
     
     if(module != NULL){
-        p = cm_getParticipant(kernel_uri);
+        p = cm_getParticipant(uri);
         
         if(p != NULL){
-            kernel = u_participantKernel(p->participant);
+            domain = u_participantDomain(p->participant);
             
-            if(kernel != NULL){
-                handle = v_entity(u_kernelSource(kernel))->handle;
+            if(domain != NULL){
+                handle = v_entity(u_domainSource(domain))->handle;
                 if((handle.index == index) && (handle.serial == serial)) {
 #if 0 /* temporary patch */
-                    u_entityWalkEntities(u_entity(kernel),action,&arg);
+                    u_entityWalkEntities(u_entity(domain),action,&arg);
 #else                    
-                    v_entityWalkEntities(v_entity(kernel->kernel),action,&arg);
+                    v_entityWalkEntities(v_entity(domain->kernel),action,&arg);
 #endif
                     result = func(arg.list, fArg);
                 } else{
                     handle.index = index;
                     handle.serial = serial;
-                    handle.server = u_kernelSource(kernel)->handleServer;
+                    handle.server = u_domainSource(domain)->handleServer;
 #if 0          
                     entity = u_entity(os_malloc((size_t)(C_SIZEOF(u_entity))));
                     entity->handle = handle;
@@ -386,34 +386,28 @@ c_type
 cm_getEntityType(
     c_long index,
     c_long serial,
-    const c_char* kernel_uri)
+    const c_char* uri)
 {
     c_type type;
     cm_participant p;
     v_handle handle;
-    u_kernel kernel;
+    u_domain domain;
     u_entity entity;
     
     type = NULL;
     
     if(module != NULL){
-        p = cm_getParticipant(kernel_uri);
+        p = cm_getParticipant(uri);
         
         if(p != NULL){
-            kernel = u_participantKernel(p->participant);
+            domain = u_participantDomain(p->participant);
             
-            if(kernel != NULL){
+            if(domain != NULL){
                 handle.index = index;
                 handle.serial = serial;
-                handle.server = u_kernelSource(kernel)->handleServer;
+                handle.server = u_domainSource(domain)->handleServer;
 
-#if 0                                                
-                entity = u_entity(os_malloc((size_t)(C_SIZEOF(u_entity))));
-                entity->handle = handle;
-                entity->participant = p->participant;
-#else
                 entity = u_entityFromHandle(handle,p->participant);
-#endif
                 
                 type = u_entityResolveType(entity);
                 

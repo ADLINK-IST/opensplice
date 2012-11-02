@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,7 +13,7 @@
 #define GAPI_SUBSCRIBER_H
 
 #include "gapi_common.h"
-#include "gapi_domainEntity.h"
+#include "gapi_entity.h"
 
 #include "u_user.h"
 #include "os_if.h"
@@ -29,8 +29,11 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-#define U_SUBSCRIBER_GET(s)       u_subscriber(U_ENTITY_GET(s))
-#define U_SUBSCRIBER_SET(s,e)     _EntitySetUserEntity(_Entity(s), u_entity(e))
+#define U_SUBSCRIBER_GET(s) \
+        u_subscriber(U_ENTITY_GET(s))
+
+#define U_SUBSCRIBER_SET(s,e) \
+        _EntitySetUserEntity(_Entity(s), u_entity(e))
 
 #define _Subscriber(o) ((_Subscriber)(o))
 
@@ -46,10 +49,9 @@ extern "C" {
                                   NULL)))
 
 C_STRUCT(_Subscriber) {
-    C_EXTENDS(_DomainEntity);
+    C_EXTENDS(_Entity);
     gapi_dataReaderQos             _defDataReaderQos;
     struct gapi_subscriberListener _Listener;
-    gapi_set                       dataReaderSet;
     gapi_boolean                   builtin;
 };
 
@@ -65,38 +67,26 @@ gapi_returnCode_t
 _SubscriberFree (
     _Subscriber _this);
 
-gapi_boolean
-_SubscriberPrepareDelete (
-    _Subscriber _this);
-
+/* The following method is intended to be local for the gapi component but
+ * is clandestine used by the DLRL, for this we need OS_API to support windows.
+ * This needs to be fixed in the future.
+ */
 OS_API u_subscriber
 _SubscriberUsubscriber (
     _Subscriber _this);
 
-_DomainParticipant
-_SubscriberParticipant (
+c_long
+_SubscriberReaderCount (
     _Subscriber _this);
-
-_DataReader
-_SubscriberLookupDatareader (
-    _Subscriber _this,
-    const gapi_char *topicName);
-
-gapi_boolean
-_SubscriberSetListenerInterestOnChildren (
-    _Subscriber _this,
-    _ListenerInterestInfo info);
-
-void
-_SubscriberSetDeleteAction (
-    _Subscriber _this,
-    gapi_deleteEntityAction action,
-    void *argument);
 
 gapi_boolean
 _SubscriberContainsEntity (
     _Subscriber _this,
     gapi_instanceHandle_t handle);
+
+gapi_returnCode_t
+_SubscriberDeleteContainedEntities (
+    _Subscriber _this);
 
 void
 _SubscriberNotifyListener(

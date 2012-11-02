@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -62,7 +62,7 @@ nw_runnableInitialize(
     const nw_runnableFinalizeFunc finalizeFunc)
 {
     os_mutexAttr mutexAttr;
-    struct nw_schedulingAttr_s schedulingAttr;
+    struct nw_schedulingAttr_s schedulingAttr = {FALSE,0,OS_SCHED_DEFAULT};
     os_int32 schedPrio;
     char *schedClassString;
  

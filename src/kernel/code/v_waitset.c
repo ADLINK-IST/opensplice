@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -26,12 +26,6 @@
 #define v_waitsetEventList(_this) \
         (v_observer(_this)->eventData)
 
-#define v_waitsetLock(_this) \
-        v_observerLock(v_observer(_this))
-
-#define v_waitsetUnlock(_this) \
-        v_observerUnlock(v_observer(_this))
-
 #define v_waitsetWakeup(_this,event,userData) \
         v_observerNotify(v_observer(_this),event,userData)
 
@@ -39,6 +33,11 @@ typedef struct findProxyArgument {
     v_handle observable;
     v_proxy proxy;
 } findProxyArgument;
+
+static void
+v_waitsetClearRemovedObserverPendingEvents(
+    v_waitset _this,
+    void* userDataRemoved);
 
 static c_bool
 findProxy(
@@ -108,6 +107,7 @@ v_waitsetDeinit(
     v_observable o;
     v_proxy found;
     v_handleResult result;
+    void* userDataRemoved = NULL;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
@@ -120,7 +120,8 @@ v_waitsetDeinit(
     while (found) {
         result = v_handleClaim(found->source,(v_object *)&o);
         if (result == V_HANDLE_OK) {
-            v_observableRemoveObserver(o,v_observer(_this));
+            v_observableRemoveObserver(o,v_observer(_this), &userDataRemoved);
+            v_waitsetClearRemovedObserverPendingEvents(_this, userDataRemoved);
             result = v_handleRelease(found->source);
         }
         c_free(found);
@@ -157,6 +158,7 @@ v_waitsetEventNew(
             OS_REPORT(OS_ERROR,
                       "v_waitsetEventNew",0,
                       "Failed to allocate event.");
+            assert(FALSE);
         }
     }
     return event;
@@ -208,22 +210,43 @@ v_waitsetNotify(
         if (e->kind == V_EVENT_HISTORY_DELETE) {
             /* delete historical data */
             wehd = c_new(v_kernelType(k,K_WAITSETEVENTHISTORYDELETE));
-            base = c_getBase(c_object(_this));
-            hde = (v_historyDeleteEventData)e->userData;
+            if (wehd) {
+                base = c_getBase(c_object(_this));
+                hde = (v_historyDeleteEventData)e->userData;
 
-            wehd->deleteTime    = hde->deleteTime;
-            wehd->partitionExpr = c_stringNew(base,hde->partitionExpression);
-            wehd->topicExpr     = c_stringNew(base,hde->topicExpression);
+                wehd->deleteTime    = hde->deleteTime;
+                wehd->partitionExpr = c_stringNew(base,hde->partitionExpression);
+                wehd->topicExpr     = c_stringNew(base,hde->topicExpression);
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_waitset::v_waitsetNotify",0,
+                          "Failed to allocate v_waitsetEventHistoryDelete object.");
+                assert(FALSE);
+            }
             event = (v_waitsetEvent)wehd;
         } else if (e->kind == V_EVENT_HISTORY_REQUEST) {
             /* request historical data */
             wehr = c_new(v_kernelType(k, K_WAITSETEVENTHISTORYREQUEST));
-            wehr->request = (v_historicalDataRequest)c_keep(e->userData);
+            if (wehr) {
+                wehr->request = (v_historicalDataRequest)c_keep(e->userData);
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_waitset::v_waitsetNotify",0,
+                          "Failed to allocate v_waitsetEventHistoryRequest object.");
+                assert(FALSE);
+            }
             event = (v_waitsetEvent)wehr;
         } else if (e->kind == V_EVENT_PERSISTENT_SNAPSHOT) {
             /* request persistent snapshot data */
             weps = c_new(v_kernelType(k, K_WAITSETEVENTPERSISTENTSNAPSHOT));
-            weps->request = (v_persistentSnapshotRequest)c_keep(e->userData);
+            if (weps) {
+                weps->request = (v_persistentSnapshotRequest)c_keep(e->userData);
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_waitset::v_waitsetNotify",0,
+                          "Failed to allocate v_waitsetEventPersistentSnapshot object.");
+                assert(FALSE);
+            }
             event = (v_waitsetEvent)weps;
 
         } else {
@@ -390,6 +413,8 @@ v_waitsetAttach (
 
     arg.observable = v_publicHandle(v_public(o));
     arg.proxy = NULL;
+
+    v_waitsetLock(_this);
     c_setWalk(_this->observables, findProxy,&arg);
     if (arg.proxy == NULL) { /* no proxy to the observer exists */
         proxy = v_proxyNew(v_objectKernel(_this),
@@ -397,6 +422,7 @@ v_waitsetAttach (
         c_insert(_this->observables,proxy);
         c_free(proxy);
     }
+    v_waitsetUnlock(_this);
     result = v_observableAddObserver(o,v_observer(_this), userData);
     /* wakeup blocking threads to evaluate new condition. */
     if (v_observerWaitCount(_this)) {
@@ -413,31 +439,90 @@ v_waitsetDetach (
     c_bool result;
     v_proxy found;
     findProxyArgument arg;
+    void* userDataRemoved = NULL;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
 
     arg.observable = v_publicHandle(v_public(o));
     arg.proxy = NULL;
+    v_waitsetLock(_this);
     c_setWalk(_this->observables,findProxy,&arg);
     if (arg.proxy != NULL) { /* proxy to the observer found */
         found = c_remove(_this->observables,arg.proxy,NULL,NULL);
         assert(found == arg.proxy);
         c_free(found);
     }
+    v_waitsetUnlock(_this);
 
-    arg.observable = v_publicHandle(v_public(o));
-    arg.proxy = NULL;
-    c_setWalk(_this->observables,findProxy,&arg);
-    if (arg.proxy != NULL) { /* proxy to the observer found */
-        found = c_remove(_this->observables,arg.proxy,NULL,NULL);
-        assert(found == arg.proxy);
-        c_free(found);
-    }
-    result = v_observableRemoveObserver(o,v_observer(_this));
+    result = v_observableRemoveObserver(o,v_observer(_this), &userDataRemoved);
+    v_waitsetClearRemovedObserverPendingEvents(_this, userDataRemoved);
+
     /* wakeup blocking threads to evaluate new condition. */
     if (v_observerWaitCount(_this)) {
         v_waitsetTrigger(_this, NULL);
     }
     return result;
+}
+
+void
+v_waitsetClearRemovedObserverPendingEvents(
+    v_waitset _this,
+    void* userDataRemoved)
+{
+    /* check if any events for this removed observer are pending, if so they
+     * must be trashed to avoid crashes, the memory might not be accessible after
+     * this call has ended!
+     */
+    if(userDataRemoved)
+    {
+        v_waitsetEvent eventList;
+        v_waitsetEvent event;
+        v_waitsetEvent prevEvent = NULL;
+
+        eventList = v_waitsetEvent(v_waitsetEventList(_this));
+        event = eventList;
+        while (event)
+        {
+            /* if the userdata of the removed observer matched the userdata of
+             * the found event, then this event pertains to the observer we
+             * just removed and we must undertake action!
+             */
+            if(userDataRemoved == event->userData)
+            {
+                /* We need to remove the event from the linked list, to accomplish
+                 * this we need to link the previous event (if any) to the next
+                 * event, which basically cuts out the now invalid event from
+                 * the event list. If the now invalid list was the head of the
+                 * event list, then make the head of the event list equal to the
+                 * next event
+                 */
+                if(prevEvent)
+                {
+                    prevEvent->next = event->next;
+                } else
+                {
+                    v_waitsetEventList(_this) = event->next;
+                }
+                /* Free the memory of the event */
+                event->next = NULL; /* otherwise entire list is freed! */
+                v_waitsetEventFree(_this,event); /* free whole list. */
+                /* set the event pointer to the correct next event pointer */
+                if(prevEvent)
+                {
+                    event = prevEvent->next;
+                } else
+                {
+                    event = v_waitsetEventList(_this);
+                }
+            } else
+            {
+                /* store this event as the 'prevEvent' and move to the next
+                 * event
+                 */
+                prevEvent = event;
+                event = event->next;
+            }
+        }
+    }
 }

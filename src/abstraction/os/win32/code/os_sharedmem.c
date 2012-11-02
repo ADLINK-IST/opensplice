@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file os/win32/code/os_sharedmem.c
@@ -17,16 +17,22 @@
 
 #include "os_sharedmem.h"
 #include "os_stdlib.h"
+#include "os_abstract.h"
 #include "os_report.h"
 
-#include <os_heap.h>
-#include <os_report.h>
-#include <os_thread.h>
-#include <code/os__debug.h>
+#include "os_heap.h"
+#include "os_thread.h"
+#include "os_mutex.h"
+#include "os_cond.h"
+#include "code/os__debug.h"
 
 #include <assert.h>
 #include <stdio.h>
 
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0500
+#endif
+#include <Sddl.h>
 
 #define OS_LOG_AUTH     LOG_AUTH
 #define OS_LOG_USER     LOG_USER
@@ -38,9 +44,24 @@ struct os_sharedHandle_s {
     char *name;
     HANDLE dataFile;
     HANDLE mapObject;
-    os_uint32 size;
+    os_address size;
     os_int32 shm_created;
 };
+
+struct os_shmInfo {
+    os_sharedHandle sharedHandle;
+    struct os_shmInfo *next;
+};
+
+struct os_shmInfo *shmInfo = NULL;
+
+static int os_isSharedMemGlobal = 1;
+
+int
+os_sharedMemIsGlobal(void)
+{
+    return os_isSharedMemGlobal;
+}
 
 void os_sharedMemoryInit(void)
 {
@@ -48,6 +69,91 @@ void os_sharedMemoryInit(void)
 
 void os_sharedMemoryExit(void)
 {
+}
+
+char *
+os_getDomainNameforMutex(
+    os_mutex *mutex)
+{
+    /* get shm and look if pointer is in memory range */
+    os_address base,size,mtx;
+	struct os_shmInfo *shmInf;
+    char *result = NULL;
+    os_int32 foundName = 0;
+
+    assert(mutex);
+
+    for (shmInf = shmInfo;shmInf != NULL && foundName==0;shmInf = shmInf->next) {
+        base = (os_address)shmInf->sharedHandle->mapped_address;
+        size = (os_address)shmInf->sharedHandle->size;
+        mtx = (os_address)mutex;
+        /* check if the mutex is in the shm range */
+        if((base < mtx) && (mtx < (base+size) )) {
+            result = (char *)shmInf->sharedHandle->name;
+            foundName =1;
+        }
+    }
+    /* is no shm present name = null */
+    return result;
+}
+
+char* os_getDomainNameforCond (os_cond* cond)
+{
+   /* get shm and look if pointer is in memory range */
+   os_address base, size, cnd;
+	struct os_shmInfo* shmInf;
+   char* result = NULL;
+   os_int32 foundName = 0;
+
+   assert(cond);
+
+   for (shmInf = shmInfo;shmInf != NULL && foundName==0;shmInf = shmInf->next)
+   {
+      base = (os_address)shmInf->sharedHandle->mapped_address;
+      size = (os_address)shmInf->sharedHandle->size;
+      cnd = (os_address)cond;
+
+      /* check if the cond is in the shm range */
+      if((base < cnd) && (cnd < (base+size) ))
+      {
+         result = (char*)shmInf->sharedHandle->name;
+         foundName =1;
+      }
+   }
+   /* is no shm present name = null */
+   return result;
+}
+
+os_address
+os_getShmBaseAddressFromPointer(
+    void *vpointer)
+{
+     /* get shm and look if pointer is in memory range */
+     struct os_shmInfo *shmInf;
+     os_address base,size,pointer;
+     os_address result;
+     os_int32 foundName = 0;
+
+     if (shmInfo != NULL) {
+         result = (os_address)shmInfo->sharedHandle->mapped_address;
+     } else {
+         result = 0;
+     }
+
+     if (vpointer != NULL && shmInfo != NULL) {
+
+         for (shmInf = shmInfo;shmInf != NULL && foundName==0;shmInf = shmInf->next) {
+            base = (os_address)shmInf->sharedHandle->mapped_address;
+            size = (os_address)shmInf->sharedHandle->size;
+            pointer = (os_address)vpointer;
+            /* check if the pointer is in the shm range */
+            if((base < pointer) && (pointer < (base+size) )) {
+                result = (os_address)shmInf->sharedHandle->mapped_address;
+                foundName = 1;
+            }
+         }
+     }
+     return result;
 }
 
 /** \brief Create a handle for shared memory operations
@@ -71,7 +177,7 @@ os_sharedCreateHandle(
     if (sh != NULL) {
         sh->name = (char*)os_malloc(strlen(name) + 1);
         if (sh->name != NULL) {
-            strcpy(sh->name, name);
+            os_strcpy(sh->name, name);
             sh->attr = *sharedAttr;
             sh->mapped_address = (void *)0;
             sh->dataFile = 0;
@@ -152,15 +258,15 @@ os_findKeyFile(
     if (key_file_path == NULL) {
         key_file_path = os_getTempDir();
     }
-    
+
     if (key_file_path == NULL) {
         OS_REPORT(OS_ERROR, "os_findKeyFile", 0, "Failed to determine temporary directory");
     }
-    
-    strcpy(key_file_name, key_file_path);
-    strcat(key_file_name, "\\");
-    strcat(key_file_name, key_file_prefix);
-    strcat(key_file_name, "*.tmp");
+
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, key_file_prefix);
+    os_strcat(key_file_name, "*.tmp");
 
     fileHandle = FindFirstFile(key_file_name, &fileData);
 
@@ -172,8 +278,8 @@ os_findKeyFile(
 
         messageSize = sizeof(ERR_MESSAGE) + strlen(key_file_name);
         /* Free any existing thread specific warnings */
-        os_threadMemFree(OS_WARNING);
-        message = (char *)os_threadMemMalloc(OS_WARNING, messageSize);
+        os_threadMemFree(OS_THREAD_WARNING);
+        message = (char *)os_threadMemMalloc(OS_THREAD_WARNING, messageSize);
         if (message) {
             snprintf(message, messageSize, ERR_MESSAGE, key_file_name);
         } else {
@@ -183,9 +289,9 @@ os_findKeyFile(
         return NULL;
     }
 
-    strcpy(key_file_name, key_file_path);
-    strcat(key_file_name, "\\");
-    strcat(key_file_name, fileData.cFileName);
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, fileData.cFileName);
     key_file = fopen(key_file_name, "r");
 
     while (!last) {
@@ -199,7 +305,7 @@ os_findKeyFile(
                     fclose(key_file);
                     kfn = (char*)os_malloc(strlen (key_file_name) + 1);
                     if (kfn != NULL) {
-                        strcpy(kfn, key_file_name);
+                        os_strcpy(kfn, key_file_name);
                     }
                     FindClose(fileHandle);
                     return kfn;
@@ -210,9 +316,9 @@ os_findKeyFile(
         if (FindNextFile(fileHandle, &fileData) == 0) {
             last = 1;
         } else {
-            strcpy(key_file_name, key_file_path);
-            strcat(key_file_name, "\\");
-            strcat(key_file_name, fileData.cFileName);
+            os_strcpy(key_file_name, key_file_path);
+            os_strcat(key_file_name, "\\");
+            os_strcat(key_file_name, fileData.cFileName);
             key_file = fopen(key_file_name, "r");
         }
     }
@@ -224,25 +330,58 @@ os_findKeyFile(
     return NULL;
 }
 
-/** \brief Get a SVR4 IPC key for a shared meory segment by name
+/** \brief Get the SHM map address from shm key file
  *
- * \b os_getKey tries to find the SVR4 IPC key for a named
- * shared memory segment by calling \b os_findKeyFile.
+ * \b os_getShmMapAddress returns the map address of a domain identified by a name
  *
- * If the key file is found, the key is created by calling \b ftok
- * which translates a file path into a key. The key is then returned.
+ * Equivalent of os_svr4_getMapAddress.
+ * Find the key file related to the named shared memory area.
+ * When found, read the map address from the 2nd line.
+ */
+static void *
+os_getShmMapAddress(
+    const char *name)
+{
+    char *key_file_name;
+    void *map_address = NULL;
+    FILE *key_file;
+    char line[512];
+
+    key_file_name = os_findKeyFile(name);
+    if (key_file_name != NULL) {
+        key_file = fopen(key_file_name, "r");
+        if (key_file != NULL) {
+            fgets(line, sizeof(line), key_file);
+            fgets(line, sizeof(line), key_file);
+            sscanf(line, PA_ADDRFMT, (PA_ADDRCAST *)&map_address);
+            fclose(key_file);
+        }
+        os_free(key_file_name);
+    }
+    return map_address;
+}
+
+/** \brief Returns the file-path of the SHM data file
+ *
+ * \b os_getShmFile tries to find the key file for a
+ * Windows shared memory file by calling \b os_findKeyFile.
+ *
+ * If the key file is found, the datafile can be found with
+ * help of the key filename and contents.
  *
  * If the key file could not be found, -1 is returned to the caller
  * if \b create = 0. If \b create is != 0 however, it creates a new
- * key file by calling \b mkstemp, which creates and opens a new
- * unique file based upon the provided path. The \b name is then
- * written in the key file after which it is closed. With the
- * call to \b ftok, the key file is then translated into a key
- * which is returned after the \b key_file_name is freed.
+ * key file by calling \b GetTempFileName and \b CreateFile,
+ * which creates and opens a new unique file based upon the provided path.
+ * The \b domain name, \b map_address, \b size and PID are then
+ * written in the key file after which it is closed.
+ * The key filename is then translated to a shared data filename by changing
+ * the file extension to DBF, and returned after the \b key_file_name is freed.
  */
 static char *
 os_getShmFile(
-    const char *name,
+    os_sharedHandle sharedHandle,
+    os_address size,
     int create)
 {
     char *key_file_name;
@@ -254,7 +393,7 @@ os_getShmFile(
     char buf[512];
     size_t key_file_name_len;
 
-    key_file_name = os_findKeyFile(name);
+    key_file_name = os_findKeyFile(sharedHandle->name);
     if (key_file_name == NULL) {
         if (create == 0) {
             return NULL;
@@ -281,8 +420,11 @@ os_getShmFile(
             OS_REPORT_1(OS_ERROR, "OS Abstraction", 0, "CreateFile failed, System Error Code: %d", (int)GetLastError());
             return NULL;
         }
+
         pid = GetCurrentProcessId();
-        snprintf(buf,sizeof(buf),"%s\n<map_address>\n<size>\n<implementation>\n%d\n", name,pid);
+        snprintf(buf, sizeof(buf), "%s\n"PA_ADDRFMT"\n"PA_ADDRFMT"\nWIN-SHM\n%d\n",
+            sharedHandle->name, (PA_ADDRCAST)sharedHandle->attr.map_address, size, pid);
+
         if (WriteFile((HANDLE)fileHandle, buf, strlen(buf), &written, NULL) == 0) {
             OS_REPORT_1(OS_ERROR, "os_getShmFile", 0,
                     "WriteFile failed, System Error Code:  %d", (int)GetLastError());
@@ -292,33 +434,31 @@ os_getShmFile(
 
     }
     shm_file_name = (char*)os_malloc(MAX_PATH);
-    strcpy(shm_file_name, key_file_name);
-    // strcat(shm_file_name, "_DBF");
+    os_strcpy(shm_file_name, key_file_name);
+    // os_strcat(shm_file_name, "_DBF");
     key_file_name_len = strlen(shm_file_name);
-    strcpy (&shm_file_name [key_file_name_len - 3], "DBF");
+    os_strcpy (&shm_file_name [key_file_name_len - 3], "DBF");
     os_free(key_file_name);
     return shm_file_name;
 }
 
-/** \brief Get a SVR4 IPC key for a shared meory segment by name
+/** \brief Get a name for a file mappin object based on a domain
+ *  name.
  *
- * \b os_getKey tries to find the SVR4 IPC key for a named
- * shared memory segment by calling \b os_findKeyFile.
+ * \b Finds the key file for the given domain name with \b os_findKeyFile.
  *
- * If the key file is found, the key is created by calling \b ftok
- * which translates a file path into a key. The key is then returned.
+ * If the key file is found, uses it's unique 'temp' file name
+ * as the basis for the file mapping object name.
  *
- * If the key file could not be found, -1 is returned to the caller
- * if \b create = 0. If \b create is != 0 however, it creates a new
- * key file by calling \b mkstemp, which creates and opens a new
- * unique file based upon the provided path. The \b name is then
- * written in the key file after which it is closed. With the
- * call to \b ftok, the key file is then translated into a key
- * which is returned after the \b key_file_name is freed.
+ * If the key file could not be found, NULL is returned to the caller
+ *
+ * If the global_map arg is not zero then a name for a shared / global
+ * object is returned. The name will be local otherwise.
  */
 static char *
 os_getMapName(
-    const char *name)
+    const char *name,
+    int global_map)
 {
     char *key_file_name;
     char *map_name;
@@ -334,8 +474,16 @@ os_getMapName(
     }
     key++;
     map_name = (char*)os_malloc(MAX_PATH);
-    strcpy(map_name, key);
-    strcat(map_name, "_MAP");
+    if (global_map)
+    {
+        os_strcpy(map_name, "Global\\");
+        os_strcat(map_name, key);
+    }
+    else
+    {
+        os_strcpy(map_name, key);
+    }
+    os_strcat(map_name, "_MAP");
     os_free(key_file_name);
     return map_name;
 }
@@ -372,14 +520,16 @@ os_destroyKey(
 static os_result
 os_sharedMemoryCreateFile(
     os_sharedHandle sharedHandle,
-    os_uint32 size)
+    os_address size)
 {
     char *shm_file_name;
     char *map_object_name;
     HANDLE dd;
     HANDLE md;
+    SECURITY_ATTRIBUTES security_attributes;
+    BOOL sec_descriptor_ok;
 
-    shm_file_name = os_getShmFile(sharedHandle->name, 1);
+    shm_file_name = os_getShmFile(sharedHandle, size, 1);
     dd = CreateFile(shm_file_name,
                     GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
                     NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -405,15 +555,43 @@ os_sharedMemoryCreateFile(
         CloseHandle((HANDLE)dd);
         return os_resultFail;
     }
-    map_object_name = os_getMapName(sharedHandle->name);
-    md = CreateFileMapping(dd, NULL, PAGE_READWRITE, 0, size, map_object_name);
-    if (md == NULL) {
-        OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
-                "Can not Create mapping object (%s) %d",
-                map_object_name, (int)GetLastError());
+    /* Try and create a global file mapping object first */
+    map_object_name = os_getMapName(sharedHandle->name, 1);
+
+    /* Vista and on have tightened security WRT shared memory
+    we need to grant rights to interactive users et al via a discretionary
+    access control list. NULL attrs does not allow users other than process
+    starter to access */
+    md = NULL;
+    ZeroMemory(&security_attributes, sizeof(security_attributes));
+    security_attributes.nLength = sizeof(security_attributes);
+    sec_descriptor_ok = ConvertStringSecurityDescriptorToSecurityDescriptor
+                            ("D:P(A;OICI;GA;;;WD)", /* grant all access to world */
+                            SDDL_REVISION_1,
+                            &security_attributes.lpSecurityDescriptor,
+                            NULL);
+    if (sec_descriptor_ok)
+    {
+        md = CreateFileMapping(dd, &security_attributes, PAGE_READWRITE, 0, size, map_object_name);
+        LocalFree(security_attributes.lpSecurityDescriptor);
+    }
+
+    if (md == NULL)
+    {
+        /* Couldn't create a global mapping - we're probably not admin or local system */
         os_free(map_object_name);
-        CloseHandle((HANDLE)dd);
-        return os_resultFail;
+        os_isSharedMemGlobal = 0;
+        /* get a local file mapping name instead  and create that */
+        map_object_name = os_getMapName(sharedHandle->name, 0);
+        md = CreateFileMapping(dd, NULL, PAGE_READWRITE, 0, size, map_object_name);
+        if (md == NULL) {
+            OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
+                    "Can not Create mapping object (%s) %d",
+                    map_object_name, (int)GetLastError());
+            os_free(map_object_name);
+            CloseHandle((HANDLE)dd);
+            return os_resultFail;
+        }
     }
     os_free(map_object_name);
     sharedHandle->dataFile = dd;
@@ -432,10 +610,11 @@ os_sharedMemoryAttachFile(
     HANDLE dd;
     HANDLE md;
     void *address;
+    void *request_address;
     DWORD size;
 
     if (!sharedHandle->shm_created) {
-        shm_file_name = os_getShmFile(sharedHandle->name, 0);
+        shm_file_name = os_getShmFile(sharedHandle, 0, 0);
         if (shm_file_name == NULL) {
             return os_resultFail;
         }
@@ -457,26 +636,45 @@ os_sharedMemoryAttachFile(
             return os_resultFail;
         }
         sharedHandle->size = size;
-        map_object_name = os_getMapName(sharedHandle->name);
+        /* Try first to open a global mapping. If that fails just open a local mapping
+        Doesn't matter which order we do this - the temp file naming means the handle name'll
+        have been unique */
+        map_object_name = os_getMapName(sharedHandle->name, 1);
+
         if (map_object_name == NULL) {
             return os_resultFail;
         }
         md = OpenFileMapping(FILE_MAP_ALL_ACCESS, 0, map_object_name);
+
         if (md == NULL) {
-            OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
-                    "Can not Open mapping object (%s) %d",
-                    map_object_name, (int)GetLastError());
+            /* Couldn't open a global mapping - must be local. Just free the name
+            get a local one instead and try again */
             os_free(map_object_name);
-            return os_resultFail;
+            os_isSharedMemGlobal = 0;
+            map_object_name = os_getMapName(sharedHandle->name, 0);
+            md = OpenFileMapping(FILE_MAP_ALL_ACCESS, 0, map_object_name);
+            if (md == NULL) {
+                OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
+                        "Can not Open mapping object (%s) %d",
+                        map_object_name, (int)GetLastError());
+                os_free(map_object_name);
+                return os_resultFail;
+            }
         }
         os_free(map_object_name);
 
         sharedHandle->mapObject = md;
     }
 
+    request_address = os_getShmMapAddress(sharedHandle->name);
+    if (request_address == NULL) {
+        OS_REPORT(OS_ERROR, "OS Abstraction", 0,
+            "Failed to get map_address from key file");
+        return os_resultFail;
+    }
     address = MapViewOfFileEx(sharedHandle->mapObject,
                               FILE_MAP_ALL_ACCESS, 0, 0,
-                              sharedHandle->size, sharedHandle->attr.map_address);
+                              sharedHandle->size, request_address);
 
     if (address == NULL) {
         OS_REPORT_1(OS_ERROR, "OS Abstraction", 0,
@@ -536,7 +734,7 @@ os_sharedMemoryDestroyFile(
         return os_resultFail;
     }
     sharedHandle->dataFile = 0;
-    shm_file_name = os_getShmFile(sharedHandle->name, 0);
+    shm_file_name = os_getShmFile(sharedHandle, 0, 0);
     if (DeleteFile(shm_file_name) == 0) {
         OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
                 "Can not delete data file (%s): System error code %d",
@@ -551,13 +749,13 @@ os_sharedMemoryDestroyFile(
 os_result
 os_sharedMemoryCreate(
     os_sharedHandle sharedHandle,
-    os_uint32 size)
+    os_address size)
 {
     os_result result = os_resultFail;
 
     assert(sharedHandle != NULL);
     assert(sharedHandle->name != NULL);
-    assert(size > 0);
+
     switch (sharedHandle->attr.sharedImpl) {
     case OS_MAP_ON_FILE:
         result = os_sharedMemoryCreateFile (sharedHandle, size);
@@ -599,6 +797,7 @@ os_sharedMemoryAttach(
     os_sharedHandle sharedHandle)
 {
     os_result result = os_resultFail;
+    struct os_shmInfo *shmInf;
 
     assert(sharedHandle != NULL);
     assert(sharedHandle->name != NULL);
@@ -606,6 +805,15 @@ os_sharedMemoryAttach(
     switch (sharedHandle->attr.sharedImpl) {
     case OS_MAP_ON_FILE:
         result = os_sharedMemoryAttachFile (sharedHandle);
+        if (result == os_resultSuccess) {
+            /* add shm to shmInfo object */
+            shmInf = os_malloc(sizeof(struct os_shmInfo));
+            shmInf->sharedHandle = sharedHandle;
+            shmInf->next = shmInfo;
+            shmInfo = shmInf;
+
+            os_timeModuleReinit(sharedHandle->name);
+        }
     break;
     case OS_MAP_ON_SEG:
         result = os_resultUnavailable;
@@ -622,11 +830,58 @@ os_sharedMemoryDetach(
     os_sharedHandle sharedHandle)
 {
     os_result result = os_resultFail;
+    os_boolean shmInfRemoved = OS_FALSE;
+    struct os_shmInfo *shmInfoPrev;
+    struct os_shmInfo *shmInfoCur;
 
     assert(sharedHandle != NULL);
     assert(sharedHandle->name != NULL);
     switch (sharedHandle->attr.sharedImpl) {
     case OS_MAP_ON_FILE:
+        /* Update the shmInfo list to indicate that the shared memory segment
+         * identified by the sharedHandle is no longer valid. We will thus remove
+         * a shmInfo object from the list
+         */
+        shmInfoPrev = NULL;
+        shmInfoCur = shmInfo;
+        while(shmInfRemoved == OS_FALSE && shmInfoCur != NULL)
+        {
+            /* If the shared handle provided for this detach call is the same
+             * as the sharedHandle of the shmInfoCur object then we have found
+             * the shmInfo object describing this particular memory segment.
+             * So we need to proceed to remove it from the list as it will no
+             * longer be valid.
+             */
+            if(shmInfoCur->sharedHandle == sharedHandle)
+            {
+                /* If the shmInfoCur was not the first shmInfo object we
+                 * encountered, then we need to remove a shmInfo object from
+                 * the middle or tail of the list. So we accomplish this by
+                 * updating the 'next' pointer of the shmInfoPrev object (if any)
+                 * to the 'next' pointer of the shmInfoCur object.
+                 * If the shmInfoPrev is still 'NULL' then we are removing the
+                 * shmInfo object at the head of the list, so update the head
+                 * pointer 'shmInfo' accordingly.
+                 */
+                if(shmInfoPrev)
+                {
+                    shmInfoPrev->next = shmInfoCur->next;
+                } else
+                {
+                    shmInfo = shmInfoCur->next;
+                }
+                /* Now free the memory and indicated that we removed a shmInfo
+                 * object from the list
+                 */
+                os_free(shmInfoCur);
+                shmInfoCur = NULL;
+                shmInfRemoved = OS_TRUE;
+            } else
+            {
+                shmInfoPrev = shmInfoCur;
+                shmInfoCur = shmInfoCur->next;
+            }
+        }
         result = os_sharedMemoryDetachFile (sharedHandle);
     break;
     case OS_MAP_ON_SEG:
@@ -655,7 +910,7 @@ os_sharedAttrInit(
 os_result
 os_sharedSize(
     os_sharedHandle sharedHandle,
-    os_uint32 *size)
+    os_address *size)
 {
     os_result result = os_resultFail;
 

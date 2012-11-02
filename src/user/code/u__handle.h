@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -28,7 +28,7 @@
 
 #define u__handleResult(result) \
         ((result == V_HANDLE_OK) ? U_RESULT_OK : \
-         (result == V_HANDLE_EXPIRED) ? U_RESULT_PRECONDITION_NOT_MET : \
+         (result == V_HANDLE_EXPIRED) ? U_RESULT_ALREADY_DELETED : \
                                         U_RESULT_ILL_PARAM)
 
 #define u__handleIsEqual(h1,h2) v_handleIsEqual((h1),(h2))

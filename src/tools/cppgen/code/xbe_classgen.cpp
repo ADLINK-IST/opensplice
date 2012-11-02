@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,13 +11,13 @@
  */
 #include "sacpp_DDS_DCPS.h"
 
-#include <idl.h>
+#include "idl.h"
 
-#include <xbe_classgen.h>
-#include <xbe_globals.h>
-#include <xbe_argument.h>
-#include <xbe_type.h>
-#include <xbe_utils.h>
+#include "xbe_classgen.h"
+#include "xbe_globals.h"
+#include "xbe_argument.h"
+#include "xbe_type.h"
+#include "xbe_utils.h"
 #include "xbe_exception.h"
 
 os_ushort DDS_hash (const char * str)

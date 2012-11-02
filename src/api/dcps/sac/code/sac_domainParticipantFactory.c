@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -10,7 +10,7 @@
  *
  */
 
-#include <gapi.h>
+#include "gapi.h"
 #include "dds_dcps.h"
 #include "sac_builtinTopics.h"
 #include "sac_structured.h"
@@ -227,8 +227,6 @@ DDS_DomainParticipantFactory_delete_contained_entities (
     gapi_returnCode_t result;
 
     result = gapi_domainParticipantFactory_delete_contained_entities (
-        (gapi_domainParticipantFactory)_this,
-        NULL,
-        NULL);
+        (gapi_domainParticipantFactory)_this);
     return (DDS_ReturnCode_t)result;
 }

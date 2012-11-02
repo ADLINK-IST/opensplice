@@ -78,10 +78,10 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * AST_Interface node used to represent this interface is created.
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
-#include <fe_private.h>
+#include "fe_private.h"
 
 /*
  * Constructor(s) and destructor

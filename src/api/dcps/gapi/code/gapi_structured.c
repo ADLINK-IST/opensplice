@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,6 +13,7 @@
 #include "gapi_structured.h"
 #include "gapi_objManag.h"
 
+#include "os_stdlib.h"
 #include "os_heap.h"
 #include "c_stringSupport.h"
 #include "c_iterator.h"
@@ -2138,9 +2139,9 @@ gapi_stringSeq_to_String (
             for ( i = 0; i < sequence->_length; i++ ) {
                 if ( sequence->_buffer[i] ) {
                     if ( i != 0 ) {
-                        strcat(rstring, delimiter);
+                        os_strcat(rstring, delimiter);
                     }
-                    strcat(rstring, sequence->_buffer[i]);
+                    os_strcat(rstring, sequence->_buffer[i]);
                 }
             }
         }

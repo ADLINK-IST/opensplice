@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V__GROUP_H
@@ -29,7 +29,7 @@ v_groupNew (
 
 void
 v_groupDeinit (
-    v_group _this);            
+    v_group _this);
 
 void
 v_groupAddWriter (
@@ -49,9 +49,9 @@ c_iter
 v_groupGetRegisterMessages(
     v_group _this,
     c_ulong systemId);
-    
+
 c_iter
-v_groupGetRegisterMessagesOfWriter(
+v_groupGetRegistrationsOfWriter(
     v_group _this,
     v_gid writerGid);
 
@@ -66,7 +66,7 @@ v_groupGetRegisterMessagesOfWriter(
 #define V_RESEND_REMOTE      (4)
 #define V_RESEND_DURABLE     (8)
 #define V_RESEND_ALL        (15)
-    
+
 v_writeResult
 v_groupResend(
     v_group _this,
@@ -75,9 +75,35 @@ v_groupResend(
     v_resendScope *resendScope,
     v_networkId writingNetworkId);
 
-v_result
+v_writeResult
 v_groupDisposeAll (
     v_group group,
+    c_time timestamp);
+
+typedef c_equality (*v_matchIdentityAction)(v_gid id1, v_gid id2);
+
+v_registration
+v_groupGetRegistration(
+    v_group _this,
+    v_gid writerGid,
+    v_matchIdentityAction predicate);
+
+void
+v_groupDisconnectWriter(
+    v_group g,
+    struct v_publicationInfo *oInfo,
+    c_time timestamp);
+
+void
+v_groupDisconnectNode(
+    v_group _this,
+    struct v_heartbeatInfo *missedHB);
+
+v_message
+v_groupCreateInvalidMessage(
+    v_kernel kernel,
+    v_gid writerGID,
+    c_array writerQos,
     c_time timestamp);
 
 #if defined (__cplusplus)

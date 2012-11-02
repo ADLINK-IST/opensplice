@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -138,8 +138,13 @@ d_waitsetEventHandler(
         }
     }
     if(ur != U_RESULT_OK){
-        d_printTimedEvent(durability, D_LEVEL_WARNING,
-                we->name,  "Waitset no longer available. Fatal error, terminating now...\n");
+        d_printTimedEvent(durability, D_LEVEL_SEVERE,
+            we->name,
+            "Waitset no longer available (result: %d). Fatal error, terminating now...\n",
+            ur);
+        OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+            "Waitset no longer available (result: %d). Fatal error, terminating now...\n",
+            ur);
         d_durabilityTerminate(durability);
     }
     return NULL;
@@ -200,7 +205,7 @@ d_waitsetNew(
             } else {
                 waitset->threads = c_iterNew(NULL);
                 waitset->uwaitset = NULL;
-                waitset->thread = 0;
+                waitset->thread = OS_THREAD_ID_NONE;
             }
         }
     }
@@ -222,7 +227,7 @@ d_waitsetDeinit(
         waitset->terminate = TRUE;
 
         if(waitset->runToCompletion == TRUE){
-            if(waitset->thread) {
+            if(os_threadIdToInteger(waitset->thread)) {
                 u_waitsetNotify(waitset->uwaitset, NULL);
                 os_threadWaitExit(waitset->thread, NULL);
             }
@@ -315,7 +320,7 @@ d_waitsetAttach(
                     helper->waitset     = waitset;
                     helper->entity      = we;
                     helper->terminate   = FALSE;
-                    helper->tid         = 0;
+                    helper->tid         = OS_THREAD_ID_NONE;
                     helper->userWaitset = u_waitsetNew(u_participant(d_durabilityGetService(durability)));
 
                     mask = V_EVENT_DATA_AVAILABLE;

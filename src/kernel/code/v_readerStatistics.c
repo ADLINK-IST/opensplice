@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -66,7 +66,12 @@ void v_readerStatisticsInit(v_readerStatistics rs)
     rs->numberOfSamplesRejectedBySamplesLimit = 0;
     rs->numberOfSamplesRejectedByInstancesLimit = 0;
     rs->numberOfReads = 0;
+    rs->numberOfInstanceReads = 0;
+    rs->numberOfNextInstanceReads = 0;
+    rs->numberOfInstanceLookups = 0;
     rs->numberOfTakes = 0;
+    rs->numberOfInstanceTakes = 0;
+    rs->numberOfNextInstanceTakes = 0;
 }
 
 void v_readerStatisticsDeinit(v_readerStatistics rs)
@@ -113,8 +118,13 @@ c_bool v_readerStatisticsReset(v_readerStatistics rs, const c_char* fieldName)
         v_statisticsULongResetInternal(v_reader, numberOfSamplesRejectedBySamplesLimit, rs);
         v_statisticsULongResetInternal(v_reader, numberOfSamplesRejectedByInstancesLimit, rs);
         v_statisticsULongResetInternal(v_reader, numberOfReads, rs);
+        v_statisticsULongResetInternal(v_reader, numberOfInstanceReads, rs);
+        v_statisticsULongResetInternal(v_reader, numberOfNextInstanceReads, rs);
+        v_statisticsULongResetInternal(v_reader, numberOfInstanceLookups, rs);
         v_statisticsULongResetInternal(v_reader, numberOfTakes, rs);
-        
+        v_statisticsULongResetInternal(v_reader, numberOfInstanceTakes, rs);
+        v_statisticsULongResetInternal(v_reader, numberOfNextInstanceTakes, rs);
+
         result = TRUE;
     }
     return result;

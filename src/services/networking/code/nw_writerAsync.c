@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -167,7 +167,7 @@ nw_ringBufferProcessEntry(
         *sendTo = bufferEntry->sendTo;
         *receiver = bufferEntry->receiver;
 #ifndef NDEBUG
-        memset(bufferEntry, 0, sizeof(C_STRUCT(nw_ringBufferEntry)));
+        memset(bufferEntry, 0, sizeof(NW_STRUCT(nw_ringBufferEntry)));
 #endif
         NW_RINGBUFFER_DEC(ringBuffer);
         result = TRUE;
@@ -181,7 +181,7 @@ nw_ringBufferProcessEntry(
 /* -----------------------------------------------------------------------------
  * - the actual writerAsync class
  * -------------------------------------------------------------------------- */
-C_STRUCT(nw_writerAsync) {
+NW_STRUCT(nw_writerAsync) {
     struct nw_writer_s writer; /* Multiple inheritance */
     struct nw_runnable_s runnable; /* Multiple inheritance */
 #ifdef _MI_
@@ -240,14 +240,14 @@ nw_writerAsyncNew(
             tmpPathSize = strlen(pathName) +  strlen(NWCF_SEP) +
                 strlen(NWCF_ROOT(Scheduling)) + 1 /* '\0' */;
             tmpPath = os_malloc(tmpPathSize);
-            sprintf(tmpPath, "%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Scheduling));
+            os_sprintf(tmpPath, "%s%s%s", pathName, NWCF_SEP, NWCF_ROOT(Scheduling));
         } else
         {
             tmpPathSize = strlen(parentPathName) + strlen(NWCF_SEP) +
                 strlen(NWCF_ROOT(Rx)) + strlen(NWCF_SEP) +
                 strlen(NWCF_ROOT(Scheduling)) + 1 /* '\0' */;
             tmpPath = os_malloc(tmpPathSize);
-            sprintf(tmpPath, "%s%s%s%s%s", parentPathName, NWCF_SEP, NWCF_ROOT(Rx),
+            os_sprintf(tmpPath, "%s%s%s%s%s", parentPathName, NWCF_SEP, NWCF_ROOT(Rx),
                 NWCF_SEP, NWCF_ROOT(Scheduling));
         }
 
@@ -330,15 +330,15 @@ nw_writerAsyncMain(
 {
     nw_writerAsync this = (nw_writerAsync)arg;
     c_time timeOut = {0, 200000000};
-    nw_bool messageAvailable;
-    v_networkReaderEntry entry;
-    v_writeResult write_result;
-    v_message message;
-    c_ulong messageId;
-    v_gid   sender;
-    c_bool  sendTo;
+    nw_bool messageAvailable = FALSE;
+    v_networkReaderEntry entry = NULL;
+    v_writeResult write_result = V_WRITE_SUCCESS;
+    v_message message = NULL;
+    c_ulong messageId = 0;
+    v_gid   sender = {0,0,0};
+    c_bool  sendTo = FALSE;
     c_time sleep = {0,1000000};
-    v_gid   receiver;
+    v_gid   receiver = {0,0,0};
 
     c_ulong level = BUFFERSIZE/2;
 

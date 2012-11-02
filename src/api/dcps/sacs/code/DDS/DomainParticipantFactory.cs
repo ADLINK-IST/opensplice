@@ -1,6 +1,6 @@
 // The OpenSplice DDS Community Edition project.
 //
-// Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
+// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
 // 
 //  This library is free software; you can redistribute it and/or
@@ -250,11 +250,9 @@ namespace DDS
             DomainParticipant participant = a_participant as DomainParticipant;
             if (participant != null)
             {
-                result = OpenSplice.Gapi.DomainParticipantFactory.delete_participant_w_action(
+                result = OpenSplice.Gapi.DomainParticipantFactory.delete_participant(
                     GapiPeer,
-                    participant.GapiPeer,
-                    DeleteEntityAction,
-                    IntPtr.Zero);
+                    participant.GapiPeer);
             }
 
             return result;
@@ -345,7 +343,7 @@ namespace DDS
             return result;
         }
 
-        internal void DeleteEntityAction(IntPtr entityData, IntPtr userData)
+        internal new void DeleteEntityAction(IntPtr entityData, IntPtr userData)
         {
             // Translate the UserData pointer into a valid C# language object.
             SacsSuperClass entity = SacsSuperClass.fromUserData(entityData);
@@ -356,7 +354,5 @@ namespace DDS
                 entity.Dispose();
             }
         }
-
     }
-
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -30,7 +30,7 @@
  * by the same thread.
  */
 
-#include <os_mutex.h>
+#include "os_mutex.h"
 
 /* include OS specific mutual exclusion semaphore implementation */
-#include <code/os_mutex.c>
+#include "code/os_mutex.c"

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /*
@@ -20,16 +20,17 @@
 #include "idl_genCxxHelper.h"
 #include "idl_tmplExp.h"
 
-#include <os_heap.h>
-#include <os_stdlib.h>
-#include <c_typebase.h>
-
+#include "os_heap.h"
+#include "os_stdlib.h"
+#include "c_typebase.h"
+#include <ctype.h>
 #include <fcntl.h>
 
 static idl_macroAttrib idlpp_macroAttrib;
 static idl_streamIn idlpp_inStream;
 static c_char *idlpp_template;
 static idl_macroSet idlpp_macroSet;
+static os_char* clientheader = NULL;
 
 /* QAC EXPECT 0285; Need dollar here, this is specified */
 #define IDL_TOKEN_START         '$'
@@ -40,6 +41,17 @@ static idl_macroSet idlpp_macroSet;
 static void
 idl_null(void)
 {
+}
+
+void
+idl_genCorbaCxxCcpp_setClientHeader(
+    os_char* newClientHeader)
+{
+    assert(!clientheader);
+    if(newClientHeader)
+    {
+        clientheader = os_strdup(newClientHeader);
+    }
 }
 
 /* fileOpen callback
@@ -59,6 +71,8 @@ idl_fileOpen (
     int tmplFile;
     struct os_stat tmplStat;
     unsigned int nRead;
+    os_char* tmpName;
+    os_uint32 i;
 
     tmplPath = os_getenv ("OSPL_TMPL_PATH");
     orbPath = os_getenv ("OSPL_ORB_PATH");
@@ -89,6 +103,28 @@ idl_fileOpen (
     idlpp_macroSet = idl_macroSetNew();
     idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename", name));
+    if(clientheader != NULL)
+    {
+        tmpName = os_strdup(name);
+        for(i = 0; i < strlen(tmpName); i++)
+        {
+            tmpName[i] = toupper (tmpName[i]);
+        }
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", tmpName));
+        os_free(tmpName);
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderdefine", "#define CCPP_USE_CUSTOM_SUFFIX_"));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderundef", "#undef CCPP_USE_CUSTOM_SUFFIX_"));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheader", clientheader));
+    } else
+    {
+        /* dds2071: Define some default macro values.. for the client header .h
+         * was chosen as an arbitrary default
+         */
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("basename_upper", ""));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderdefine", ""));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheaderundef", ""));
+        idl_macroSetAdd(idlpp_macroSet, idl_macroNew("clientheader", ".h"));
+    }
     te = idl_tmplExpNew(idlpp_macroSet);
     idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
     idl_streamInFree(idlpp_inStream);

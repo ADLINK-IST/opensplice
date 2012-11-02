@@ -1,0 +1,1057 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "stax.dtd">
+<stax>
+
+  <!--
+    File:         test_ospl_stax.xml
+    Description:  Some common useful functions for OpenSplice DDS scenarios
+    -->
+  <function name="Initialise" >
+    <function-prolog>
+      <![CDATA[
+      This function must be called first in all functions or jobs. It initialises variables,
+      does various STAX and STAF jiggery pokery, and
+      sets up the Python import path and imports the test classes module.
+      ]]>
+    </function-prolog>
+
+    <function-epilog>
+      <![CDATA[
+        The scope of this funcion is global rather than local so variables created
+        here are all effectively exported. To avoid conflicts with variables in jobs prefix all
+        used in local working with init_* and try and keep them to a min to avoid
+        debugger clutter.
+      ]]>
+    </function-epilog>
+
+    <function-no-args />
+
+    <sequence>
+        <script>
+            # Only do this once
+            try:
+                init_required
+            except NameError:
+                init_required = 1
+        </script>
+        <if expr="init_required == 1">
+            <sequence>
+                <!-- This is a bit laborious. We need to find STAFRoot to import function that lets us
+                read multiple variables at once. To do this we have to read two variables... (goto start) -->
+                <stafcmd>
+                  <location>'%s' % (STAXCurrentXMLMachine)</location>
+                  <service>'var'</service>
+                  <request>'resolve string {STAF/Config/STAFRoot}'</request>
+                </stafcmd>
+                <script>localStafRoot = STAFResult</script>
+                <!-- Import STAX utility functions -->
+                <import file="'%s/services/stax/libraries/STAXUtil.xml' % (localStafRoot)"/>
+                <!-- Import some variables relating to machine this script is running from -->
+                <call function="'STAXUtilImportSTAFVars'">
+                [
+                  {'STAF/Config/Sep/File': 'localFileSep',
+                   'STAF/Config/Sep/Path': 'localPathSep'},
+                   STAXCurrentXMLMachine
+                ]
+                </call>
+                <script>
+                # Add the ../stax directory onto the Python module path
+                init_tmp_current_dir = STAXCurrentXMLFile[:(STAXCurrentXMLFile.rfind(localFileSep))] # STAXCurrentXMLFile.rpartition(localFileSep)
+
+                import sys
+                sys.path.append(init_tmp_current_dir)
+                # Import the test classes definitions
+                from test_ospl import *
+                # Create a STAX global variable if required and initialise the
+                # test run if it's not been done in another thread
+                try:
+                    stax_global
+                except NameError:
+                    stax_global = STAXGlobal(TestRun ())
+
+                if TestRun.the_test_run_ == None:
+                    TestRun.the_test_run_ = stax_global
+                </script>
+            </sequence>
+        </if>
+    </sequence>
+  </function>
+
+  <function name="GetEnv" scope="local">
+    <function-prolog>
+      <![CDATA[
+      Gets an environment value from a TestNode
+      ]]>
+    </function-prolog>
+    <function-epilog>
+      <![CDATA[
+        Returns the variable value or empty string if it can't be resoved on the box.
+      ]]>
+    </function-epilog>
+    <function-list-args>
+      <function-required-arg name="the_node" >
+        Which TestNode to request the variable from
+      </function-required-arg>
+      <function-required-arg name="the_variable_name" >
+        The env variable name required.
+      </function-required-arg>
+    </function-list-args>
+    <sequence>
+      <stafcmd>
+        <location>'%s' % (the_node.get_staf_url())</location>
+        <service>'var'</service>
+        <request>'resolve string {STAF/Env/%s}' % (the_variable_name)</request>
+      </stafcmd>
+      <if expr="RC == 0">
+        <sequence>
+            <return>STAFResult</return>
+        </sequence>
+      </if>
+      <return>''</return>
+    </sequence>
+  </function>
+
+  <function name="patch_release_dot_com" scope="local">
+    <function-prolog>
+      <![CDATA[
+      Check that the release.com script on posix platforms has had the
+      @@INSTALLDIR@@ token removed and is executable.
+      ]]>
+    </function-prolog>
+
+    <function-epilog>
+      <![CDATA[
+      Will replace the token and apply the permission if not.
+      ]]>
+    </function-epilog>
+
+    <function-list-args>
+      <function-required-arg name="the_node" >
+        Which TestNode to do the check on
+      </function-required-arg>
+      <function-optional-arg name="the_ospl_home" default="''">
+        Optionally specify / override the OSPL_HOME to check. If not supplied use the
+        value set globaslly for this node within this run.
+      </function-optional-arg>
+    </function-list-args>
+
+    <sequence>
+        <script>
+            if the_ospl_home == '':
+                the_ospl_home = the_node.get_ospl_home()
+
+            release_dot_com = '%s%srelease.com' % (the_ospl_home, the_node.file_sep())
+        </script>
+
+        <stafcmd name="'Read file contents of %s' % (release_dot_com)">
+            <location>the_node.get_staf_url()</location>
+            <service>'FS'</service>
+            <request>'GET FILE %s' % (release_dot_com)</request>
+        </stafcmd>
+
+        <if expr="RC == 0">
+            <sequence>
+                <!-- If the @@INSTALLDIR@@ tokens still in there replace it-->
+                <if expr="STAFResult.find('@@INSTALLDIR@@') > -1">
+                    <sequence>
+                        <script>
+                            new_release_dot_com = STAFResult.replace('@@INSTALLDIR@@', (the_ospl_home + '/../..'))
+                        </script>
+                        <log message="1">'Replacing token @@INSTALLDIR@@ in %s' % (release_dot_com)</log>
+                        <!-- <process name="'Writing new %s on %s' % (release_dot_com, the_node.get_staf_url())" >
+                            <location>the_node.get_staf_url()</location>
+                            <command>'echo'</command>
+                            <parms>
+                                '%s' % (new_release_dot_com)
+                            </parms>
+                            <workdir>'%s' % (the_ospl_home)</workdir>
+                            <stdout>release_dot_com</stdout>
+                            <returnstderr/>
+                        </process> -->
+                        <process name="'Writing new %s on %s' % (release_dot_com, the_node.get_staf_url())" >
+                            <location>the_node.get_staf_url()</location>
+                            <command>'sed'</command>
+                            <parms>
+                                '-i "s|@@INSTALLDIR@@|%s/../..|g" %s' % (the_ospl_home, release_dot_com)
+                            </parms>
+                            <workdir>'%s/../..' % (the_ospl_home)</workdir>
+                            <stderr mode="'stdout'"/>
+                            <returnstdout/>
+                        </process>
+                        <if expr="RC != 0 or STAFResult != None">
+                            <log level="'error'" message="1">'Failed writing file: %s with RC: %s STAFResult error: %s' % (release_dot_com, RC, STAFResult)</log>
+                            <elseif expr="STAXResult[0][1] != ''">
+                                <log level="'error'" message="1">'Error writing file: %s with STAXResult error: %s' % (release_dot_com, STAXResult[0][1])</log>
+                            </elseif>
+                        </if>
+                    </sequence>
+                </if>
+                <!-- Do a chmod +x on the file in case it's not been done -->
+                <process name="'chmod +x ./release.com on %s' % (the_node.get_staf_url())" >
+                    <location>the_node.get_staf_url()</location>
+                    <command>'chmod'</command>
+                    <parms>
+                        '+x ./release.com'
+                    </parms>
+                    <workdir>'%s' % (the_ospl_home)</workdir>
+                </process>
+            </sequence>
+            <else>
+                <log level="'error'" message="1">
+                    'STAF %s FS GET FILE %s failed with RC=%s Result=%s' % \
+                        (the_node.get_staf_url(), release_dot_com, RC, STAFResult)
+                </log>
+            </else>
+        </if>
+    </sequence>
+  </function>
+
+  <function name="InitialiseNode" >
+    <function-prolog>
+      <![CDATA[
+      Initialise required data values of a particular TestNode within the current TestRun
+      This will query the node for system variables and determine the required environment variables
+      for a particular OSPL_HOME on that Node.
+      ]]>
+    </function-prolog>
+
+    <function-epilog>
+      <![CDATA[
+      This only needs doing opnce per TestNode but it shouldn't do any harm if it's repeated. Other
+      than contributing to general patience trying.
+      ]]>
+    </function-epilog>
+
+    <function-single-arg>
+      <function-required-arg name="the_node" >
+        The TestNode that should be initialised
+      </function-required-arg>
+    </function-single-arg>
+
+    <sequence>
+      <call function="'STAXUtilImportSTAFConfigVars'">the_node.get_staf_url()</call>
+      <if expr="STAXResult[0] == 0">
+        <script>
+            the_node.config_map_ = STAXResult[1]
+        </script>
+        <else>
+            <sequence>
+                <log message="1">'Initialising: Unable to access configuration of TestNode %s %s' % (the_node.get_host_name(), STAXResult[2])</log>
+                <throw exception="'InitialisationError'">
+                    '%s' % (STAXResult[2])
+                </throw>
+            </sequence>
+        </else>
+      </if>
+
+      <!-- If OSPL_HOME set try and get the required test environment -->
+      <if expr="the_node.get_ospl_home() != None">
+        <sequence>
+            <script>
+                init_tmp_script_ext = "com"
+                if the_node.is_windows():
+                    init_tmp_script_ext = "bat"
+            </script>
+            <call function="'STAXUtilListDirectory'">
+            { 'machine': the_node.get_staf_url(),
+              'directory': the_node.get_ospl_home(),
+              'name': "release",
+              'ext': init_tmp_script_ext,
+              'caseSensitive': None,
+              'regularExpression': None }
+            </call>
+            <script>[rc, result] = STAXResult</script>
+            <if expr="rc != 0">
+                <sequence>
+                    <log level="'error'" message="1">'Initialising: Unable to access directory %s on TestNode %s' % (the_node.get_ospl_home(), the_node.get_host_name())</log>
+                    <throw exception="'InitialisationError'">
+                    </throw>
+                </sequence>
+            </if>
+            <script>fileList = result</script>
+            <!-- Check it's found -->
+            <if expr="not fileList">
+                <sequence>
+                    <log level="'error'" message="1">'Initialising: Unable to find release script in %s on TestNode %s' % (the_node.get_ospl_home(), the_node.get_host_name())</log>
+                    <throw exception="'InitialisationError'">
+                    </throw>
+                </sequence>
+            </if>
+            <!-- Support make install ospli product on non windows targets. The release.com seems
+            to need +x permission and the @INSTALLDIR@ token replacing -->
+            <if expr="not the_node.is_windows()">
+                <sequence>
+                    <call function="'patch_release_dot_com'">the_node</call>
+                </sequence>
+            </if>
+            <!-- get the environment on the box running the release script-->
+            <!-- we call release.bat/com and capture the output of set afterwords
+                 then remove anything without an = in it -->
+            <sequence>
+                <process name="'Running %s on %s to get OSPL environment' % (fileList[0], the_node.get_staf_url())">
+                    <location>the_node.get_staf_url()</location>
+                    <command mode="'shell'">'%s%s%s' % (the_node.get_ospl_home(), the_node.file_sep(), fileList[0])</command>
+                    <parms>'set'</parms>
+                    <workdir>'%s' % the_node.get_ospl_home()</workdir>
+                    <stdout>'temp.out'</stdout>
+                    <stderr mode="'stdout'"/>
+                    <returnstdout/>
+                </process>
+
+                <if expr="RC != 0 or STAFResult != None">
+                    <sequence>
+                        <script>err_msg = 'Initialising Node: running %s%s%s failed on %s. RC=%s STAFResult=%s' % (the_node.get_ospl_home(),
+                                            the_node.file_sep(), fileList[0], the_node.get_staf_url(), RC, STAFResult)</script>
+                        <log level="'error'" message="1">err_msg</log>
+                        <if expr="STAXResult != None">
+                            <iterate var="fileInfo" in="STAXResult" indexvar="i">
+                                <if expr="fileInfo[0] == 0">
+                                    <sequence>
+                                        <log level="'error'">fileInfo[1]</log>
+                                    </sequence>
+                                </if>
+                            </iterate>
+                        </if>
+                    </sequence>
+                    <elseif expr="STAXResult != None">
+                      <sequence>
+                        <iterate var="fileInfo" in="STAXResult" indexvar="i">
+                            <if expr="fileInfo[0] == 0">
+                                <sequence>
+                                    <script>
+                                        init_tmp_machine_env = fileInfo[1].splitlines()
+                                        for next_line in init_tmp_machine_env[:]:
+                                            if '=' not in next_line:
+                                                init_tmp_machine_env.remove(next_line)
+                                        the_node.ospl_env_ = init_tmp_machine_env
+                                    </script>
+                                    <log level="'info'">'Node %s OSPL environment: %s' % (the_node.get_staf_url(), the_node.ospl_env_)</log>
+                                </sequence>
+                                <else>
+                                    <log level="'error'" message="1">
+                                    'Retrieval of file %s contents failed with RC=%s' % (i, fileInfo[0])
+                                    </log>
+                                </else>
+                            </if>
+                        </iterate>
+                      </sequence>
+                    </elseif>
+                    <else>
+                        <log level="'error'" message="1">'Initialising Node: STAXResult is None'</log>
+                    </else>
+                </if>
+            </sequence>
+        </sequence>
+        <else>
+            <!-- The machine environment & path has been set up manually. We need to get a value.... -->
+            <sequence>
+                <call function="'GetEnv'">[the_node, "OSPL_URI"]</call>
+                <script>
+                    if STAXResult != '':
+                        the_node.ospl_env_ = [ STAXResult ]
+                </script>
+            </sequence>
+        </else>
+      </if>
+    </sequence>
+  </function>
+
+  <function name="StartOSPL" scope="local">
+    <function-prolog>
+      <![CDATA[
+      Starts OpenSplice on a node. Optionally with a specific domain config.
+      ]]>
+    </function-prolog>
+
+    <function-epilog>
+      <![CDATA[
+      Returns a STAXResult of 0 on successful start or if the splice daemon was already running.
+      ]]>
+    </function-epilog>
+
+    <function-list-args>
+      <function-required-arg name="the_node" >
+        Which TestNode instance to start OSPL on
+      </function-required-arg>
+      <function-required-arg name="the_scenario" >
+        The TestScenario being run.
+      </function-required-arg>
+      <function-optional-arg name="ospl_conf_file" default="''">
+        The file 'URL' of the OSPL config file. Note - this is not a real URL (i.e. it must be machine
+        local on the target machine, not a path on your machine or the STAX controller).
+        If not specified then OSPL is started with the default file as specified by the env property.
+      </function-optional-arg>
+      <function-optional-arg name="ospl_work_dir" default="''">
+        A directory to start OSPL in. If you're not using default test locations it's important to set
+        this if you want to be able to retrieve the ospl logs.
+      </function-optional-arg>
+    </function-list-args>
+    <sequence>
+        <script>
+        if ospl_conf_file == '':
+            ospl_conf_file = the_node.get_ospl_uri()
+
+        if the_node.get_ospl_home != '':
+            ospl_cmd = the_node.get_ospl_home() + '{STAF/Config/Sep/File}bin{STAF/Config/Sep/File}ospl'
+        else:
+            ospl_cmd = 'ospl'
+
+        if ospl_work_dir == '':
+            ospl_work_dir = the_scenario.get_working_dir(the_node)
+        </script>
+        <call function="'OSPLIsRunning'">[the_node, ospl_conf_file]</call>
+        <if expr="STAXResult != 0">
+            <sequence>
+                <log level="'info'">'StartOSPL: OSPL is already running at %s %s' % (the_node.get_staf_url(), ospl_conf_file)</log>
+                <return>0</return>
+            </sequence>
+        </if>
+        <log level="'info'" message="1">'StartOSPL: ospl start %s on %s in %s' % (ospl_conf_file, the_node.get_staf_url(), ospl_work_dir)</log>
+        <process name="'ospl start %s on %s' % (ospl_conf_file, the_node.get_staf_url())" >
+            <location>the_node.get_staf_url()</location>
+            <command>ospl_cmd</command>
+            <parms>
+            'start %s' % (ospl_conf_file)
+            </parms>
+            <workdir>'%s' % ospl_work_dir</workdir>
+            <env>the_node.get_ospl_env()</env>
+            <stderr mode="'stdout'"/>
+            <returnstdout />
+        </process>
+        <if expr="RC != 0 or STAFResult != None">
+            <sequence>
+                <script>err_msg = 'StartOSPL: ospl start %s failed on %s. RC=%s STAFResult=%s' % (ospl_conf_file, the_node.get_staf_url(), RC, STAFResult)</script>
+                <log level="'error'" message="1">err_msg</log>
+                <if expr="STAXResult != None">
+                    <iterate var="fileInfo" in="STAXResult" indexvar="i">
+                        <if expr="fileInfo[0] == 0">
+                            <sequence>
+                                <log level="'error'">fileInfo[1]</log>
+                            </sequence>
+                        </if>
+                    </iterate>
+                </if>
+                <throw exception="'ProcessNoWorkyError'">err_msg</throw>
+            </sequence>
+        </if>
+        <sequence>
+            <script>timerDuration = '30s'</script>
+            <timer duration="'30s'">
+                <loop until="STAXResult == 1">
+                    <call function="'OSPLIsRunning'">[the_node, ospl_conf_file]</call>
+                </loop>
+            </timer>
+            <if expr="RC == 1">
+                <sequence>
+                    <log level="'error'" message="1">'StartOSPL: ospl start %s - domain still not running 30s after start on %s' % (ospl_conf_file, the_node.get_staf_url())</log>
+                    <throw exception="'ProcessNoWorkyError'">'StartOSPL: ospl start %s - domain still not running 30s after start on %s' % (ospl_conf_file, the_node.get_staf_url())</throw>
+                </sequence>
+            </if>
+        </sequence>
+
+        <return>0</return>
+
+    </sequence>
+
+  </function>
+
+  <function name="OSPLIsRunning" scope="local">
+    <function-prolog>
+      <![CDATA[
+        Checks to see if OpenSplice is (already / now) running on a Node
+      ]]>
+    </function-prolog>
+    <function-epilog>
+      <![CDATA[
+        Calls ospl list for the specified doamin URI and returns true if the
+        result is > 0.
+      ]]>
+    </function-epilog>
+    <function-list-args>
+      <function-required-arg name="the_node" >
+        Which node to check
+      </function-required-arg>
+      <function-optional-arg name="ospl_conf_file" default="''">
+        The file 'URL' of the OSPL config file. Note - this is not a real URL (i.e. it must be machine
+        local on the target machine, not a path on your machine or the STAX controller).
+        If not specified then OSPL is started with the default file as specified by the env property.
+      </function-optional-arg>
+    </function-list-args>
+    <sequence>
+        <script>
+        if ospl_conf_file == '':
+            ospl_conf_file = the_node.get_ospl_uri()
+
+        if the_node.get_ospl_home != '':
+            ospl_cmd = the_node.get_ospl_home() + '{STAF/Config/Sep/File}bin{STAF/Config/Sep/File}ospl'
+        else:
+            ospl_cmd = 'ospl'
+        </script>
+        <process name="'ospl list %s on %s' % (ospl_conf_file, the_node.get_staf_url())" >
+            <location>the_node.get_staf_url()</location>
+            <command>ospl_cmd</command>
+            <parms>
+                'list %s' % (ospl_conf_file)
+            </parms>
+            <!-- <workdir>'%s' % test_directory</workdir>-->
+             <env>the_node.get_ospl_env()</env>
+        </process>
+        <if expr="STAFResult != None">
+            <sequence>
+                <log message="1" level="'error'">'OSPLIsRunning: ospl list failed on %s with result %s %s' % (the_node.get_staf_url(),
+                                                                                                              RC, STAFResult)</log>
+                <throw exception="'ProcessNoWorkyError'">'OSPLIsRunning: ospl list failed on %s with result %s %s' % (the_node.get_staf_url(),                                                                                               RC, STAFResult)</throw>
+            </sequence>
+        </if>
+        <return>(RC != 0 and RC != 4294967294L)</return>
+    </sequence>
+  </function>
+
+  <function name="StopOSPL" scope="local">
+    <function-prolog>
+      <![CDATA[
+      Stop OpenSplice on a TestNode. Optionally with a specific domain config or stop the default instance otherwise.
+      ]]>
+    </function-prolog>
+
+    <function-epilog>
+      <![CDATA[
+      Returns a STAXResult of 0 on successful stop or if the splice daemon had already stopped running. Throws and exception
+      otherwise.
+      ]]>
+    </function-epilog>
+
+    <function-list-args>
+      <function-required-arg name="the_node" >
+        Which TestNode instance to stop OSPL on
+      </function-required-arg>
+      <function-required-arg name="the_scenario" >
+        The TestScenario being run currently.
+      </function-required-arg>
+      <function-optional-arg name="ospl_conf_file" default="''">
+        The file 'URL' of the OSPL config file. Note - this is not a real URL (i.e. it must be machine
+        local on the target machine, not a path on your machine or the STAX controller box).
+        If not specified then OSPL is started with the default file as specified by the OSPL_URI env property over there.
+      </function-optional-arg>
+      <function-optional-arg name="ospl_work_dir" default="''">
+        A directory to start OSPL in. If you're not using default test locations for some reason it's important to set
+        this if you want to be able to retrieve the ospl logs.
+      </function-optional-arg>
+    </function-list-args>
+    <sequence>
+        <script>
+        if ospl_conf_file == '':
+            ospl_conf_file = the_node.get_ospl_uri()
+
+        if the_node.get_ospl_home != '':
+            ospl_cmd = the_node.get_ospl_home() + '{STAF/Config/Sep/File}bin{STAF/Config/Sep/File}ospl'
+        else:
+            ospl_cmd = 'ospl'
+
+        if ospl_work_dir == '':
+            ospl_work_dir = the_scenario.get_working_dir(the_node)
+        </script>
+        <call function="'OSPLIsRunning'">[the_node, ospl_conf_file]</call>
+        <if expr="STAXResult == 0">
+            <sequence>
+                <log level="'info'">'StopOSPL: OSPL is already stopped at %s %s' % (the_node.get_staf_url(), ospl_conf_file)</log>
+                <return>0</return>
+            </sequence>
+        </if>
+        <log level="'info'" message="1">'StopOSPL: Stopping OSPL %s on %s' % (the_node.get_staf_url(), ospl_conf_file)</log>
+        <process name="'ospl stop %s on %s' % (ospl_conf_file, the_node.get_staf_url())" >
+            <location>the_node.get_staf_url()</location>
+            <command>ospl_cmd</command>
+            <parms>
+            'stop %s' % (ospl_conf_file)
+            </parms>
+            <workdir>'%s' % ospl_work_dir</workdir>
+            <env>the_node.get_ospl_env()</env>
+            <stderr mode="'stdout'"/>
+            <returnstdout />
+        </process>
+        <if expr="RC != 0 or STAFResult != None">
+            <sequence>
+                <script>err_msg = 'StopOSPL: ospl stop %s failed on %s. RC=%s STAFResult=%s' % (ospl_conf_file, the_node.get_staf_url(), RC, STAFResult)</script>
+                <log level="'error'" message="1">err_msg</log>
+                <if expr="STAXResult != None">
+                    <iterate var="fileInfo" in="STAXResult" indexvar="i">
+                        <if expr="fileInfo[0] == 0">
+                            <sequence>
+                                <log level="'error'">fileInfo[1]</log>
+                            </sequence>
+                        </if>
+                    </iterate>
+                </if>
+                <throw exception="'ProcessNoWorkyError'">err_msg</throw>
+            </sequence>
+        </if>
+
+        <sequence>
+            <timer duration="'30s'">
+                <loop until="STAXResult == 0">
+                    <call function="'OSPLIsRunning'">[the_node, ospl_conf_file]</call>
+                </loop>
+            </timer>
+            <if expr="RC == 1">
+                <sequence>
+                    <log level="'error'" message="1">'StopOSPL: ospl stop %s - domain still running 30s after stop on %s' % (ospl_conf_file, the_node.get_staf_url())</log>
+                    <throw exception="'ProcessNoWorkyError'">'StopOSPL: ospl stop %s - domain still running 30s after stop on %s' % (ospl_conf_file, the_node.get_staf_url())</throw>
+                </sequence>
+            </if>
+        </sequence>
+        <return>0</return>
+
+    </sequence>
+  </function>
+
+  <function name="RetrieveProcessLog" scope="local">
+    <function-prolog>
+      <![CDATA[
+      Manually retrieves process's logs.
+      ]]>
+    </function-prolog>
+    <function-epilog>
+      <![CDATA[
+      Retrieves the stdout & stdin output file created by the process from the remote machine
+      back to the monitoring node.
+      ]]>
+    </function-epilog>
+    <function-list-args>
+      <function-required-arg name="the_process">
+        The Process instance that we need the logs for
+      </function-required-arg>
+    </function-list-args>
+    <sequence>
+        <script>request = 'CREATE DIRECTORY %s' % (init_tmp_current_dir + the_process.test_case_.get_log_dest_dir())</script>
+        <call function="'STAF'">STAXCurrentXMLMachine, 'FS', request</call>
+        <script>[rc, result] = STAXResult</script>
+
+        <if expr="rc != 0">
+            <sequence>
+                <script>err_msg = 'RetrieveProcessLog: for %s failed RC=%s, Result=%s' % (the_process.get_command(), rc, result)</script>
+                <log level="'error'" message="1">err_msg</log>
+                <throw exception="'ProcessNoWorkyError'">err_msg</throw>
+            </sequence>
+        </if>
+
+        <script>
+        request = 'COPY FILE %s{STAF/Config/Sep/File}%s TOFILE %s{STAF/Config/Sep/File}%s TOMACHINE %s' % \
+                                (the_process.get_working_dir(),
+                                the_process.get_log_file(),
+                                (init_tmp_current_dir + the_process.test_case_.get_log_dest_dir()),
+                                the_process.get_log_file(),
+                                STAXCurrentXMLMachine)
+        </script>
+
+        <call function="'STAF'">the_process.node_.get_staf_url(), 'FS', request</call>
+        <script>[rc, result] = STAXResult</script>
+
+        <!-- @todo - this needs a check for this node == that node -->
+        <!-- <if expr="rc != 0">
+            <sequence>
+                <script>err_msg = 'RetrieveProcessLog: Copy logs for %s from failed RC=%s, Result=%s' % (the_process.get_command(), rc, result)</script>
+                <log level="'error'" message="1">err_msg</log>
+                <throw exception="'ProcessNoWorkyError'">err_msg</throw>
+            </sequence>
+        </if>-->
+    </sequence>
+  </function>
+
+  <function name="RunProcess" scope="local">
+    <function-prolog>
+      <![CDATA[
+      Runs a Process on a TestNode 'synchronously'. Process should be expected to complete within a reasonable time.
+      Will timeout otherwise. Optional timeout can be specified.
+      ]]>
+    </function-prolog>
+    <function-epilog>
+      <![CDATA[
+      Will return Process return code on successful completion. Will throw an exception if it times out or cannot
+      be run for some reason.
+      ]]>
+    </function-epilog>
+    <function-list-args>
+      <function-required-arg name="the_process">
+        The Process instance thatshould be run
+      </function-required-arg>
+      <function-optional-arg name="the_timeout" default="'60s'">
+        A timeout to wait for the process to complete.
+      </function-optional-arg>
+    </function-list-args>
+    <sequence>
+        <script>
+            process_return = -1
+        </script>
+        <log level="'info'" message="1">'RunProcess: Running %s on %s' % (the_process.get_command(), the_process.node_.get_staf_url())</log>
+        <timer duration="the_timeout">
+            <sequence>
+                <process name="'%s %s on %s' % (the_process.get_command(), the_process.get_args(), the_process.node_.get_staf_url())">
+                    <location>the_process.node_.get_staf_url()</location>
+                    <command>'%s{STAF/Config/Sep/File}%s' % (the_process.get_working_dir(), the_process.get_command())</command>
+                    <parms>'%s %s' % (the_process.get_args(), the_process.get_test_lib_args())</parms>
+                    <workdir>the_process.get_working_dir()</workdir>
+                    <env>the_process.get_process_env()</env>
+                    <stdout>'%s{STAF/Config/Sep/File}%s' % (the_process.get_working_dir(), the_process.get_log_file())</stdout>
+                    <stderr mode="'stdout'"/>
+                    <returnstdout />
+                </process>
+                <if expr="RC != 0 or STAFResult != None">
+                    <sequence>
+                        <script>err_msg = 'RunProcess: %s failed on %s with RC=%s, STAFResult=%s' % (the_process.get_command(), the_node.get_staf_url(), RC, STAFResult)</script>
+                        <if expr="STAXResult != None">
+                            <iterate var="fileInfo" in="STAXResult" indexvar="i">
+                                <if expr="fileInfo[0] == 0">
+                                    <sequence>
+                                        <log level="'error'">'RunProcess %s %s output:\n%s' % (the_process.get_command(), the_process.get_args(), fileInfo[1])</log>
+                                    </sequence>
+                                </if>
+                            </iterate>
+                        </if>
+                        <log level="'error'" message="1">err_msg</log>
+                        <throw exception="'ProcessNoWorkyError'">err_msg</throw>
+                    </sequence>
+                </if>
+                <script>process_return = RC</script>
+             </sequence>
+        </timer>
+        <if expr="RC == 1">
+            <sequence>
+                <script>err_msg = 'RunProcess: %s timed out on %s after %s, Result=%s' % (the_process.get_command(), the_node.get_staf_url(), the_timeout, RC)</script>
+                <log level="'error'" message="1">err_msg</log>
+                <throw exception="'ProcessNoWorkyError'">err_msg</throw>
+            </sequence>
+        </if>
+        <return>process_return</return>
+    </sequence>
+
+  </function>
+
+  <function name="RunOSPLStart" scope="local">
+    <function-prolog>
+      <![CDATA[
+      Starts OpenSplice on a node.      ]]>
+    </function-prolog>
+    <function-epilog>
+      <![CDATA[
+
+      ]]>
+    </function-epilog>
+    <function-list-args>
+      <function-optional-arg name="location" default="'local'">
+        The STAF URL of the machine of which you wish to start OpenSplice DDS on
+      </function-optional-arg>
+      <function-optional-arg name="test_directory" default="''">
+        Set a working directory where OSPL will be started. This is done to ensure the logs go somewhere logical.
+        If this is not set to they'll end up whereever STAF was started from.
+      </function-optional-arg>
+      <function-optional-arg name="ospl_conf_file" default="''">
+        The file 'URL' of the OSPL config file. Note - this is not a real URL (i.e. it must be machine local on the target machine).
+        If not specified then OSPL is started with the default file as specified by the env property.
+      </function-optional-arg>
+    </function-list-args>
+    <sequence>
+
+      <message>
+              'Starting OSPL %s on %s' % (ospl_conf_file,
+                                          location)
+      </message>
+
+      <process name="'ospl start %s on %s' % (ospl_conf_file, location)" >
+        <location>location</location>
+        <command>'ospl'</command>
+        <parms>
+            'start %s' % (ospl_conf_file)
+        </parms>
+        <workdir>'%s' % test_directory</workdir>
+      </process>
+
+      <if expr="RC != 0">
+        <message>'OSPL start failed on %s' % location</message>
+      </if>
+
+      <return>RC</return>
+
+    </sequence>
+
+  </function>
+
+  <function name="RunOSPLStop" scope="local">
+
+    <function-prolog>
+      <![CDATA[
+      Stops OpenSplice on a node.
+      Note 'ospl -a stop' is not supported as it is evil.
+      If you want to do that go spawn yourself a process.
+      ]]>
+    </function-prolog>
+
+    <function-epilog>
+      <![CDATA[
+
+      ]]>
+    </function-epilog>
+
+    <function-list-args>
+      <function-optional-arg name="location" default="'local'">
+        The STAF daemon URI of the machine of which you wish to stop an OpenSplice DDS domain on.
+      </function-optional-arg>
+
+      <function-optional-arg name="ospl_conf_file" default="''">
+        The optional file 'URL' of the OSPL domain config file. Note - this is not a real URL (i.e. it must be machine local).
+        If not specified then OSPL is started with the default file as specified by the OSPL_URI env property.
+      </function-optional-arg>
+
+    </function-list-args>
+
+    <sequence>
+
+      <message>
+              'Stopping OSPL %s on %s' % (ospl_conf_file,
+                                          location)
+      </message>
+
+      <process name="'ospl stop %s on %s' % (ospl_conf_file, location)">
+        <location>location</location>
+        <command>'ospl'</command>
+        <parms>
+            'stop %s' % (ospl_conf_file)
+        </parms>
+      </process>
+
+      <if expr="RC != 0">
+        <log message="1">'OSPL stop failed on %s' % location</log>
+      </if>
+
+      <return>RC</return>
+
+    </sequence>
+  </function>
+
+  <function name="SpawnProcess" scope="local" >
+    <function-prolog>
+      <![CDATA[
+      Asynchronously spawns a process without waiting for it to complete and returns the handle to the user & stores it
+      on the passed Process.
+      ]]>
+    </function-prolog>
+
+    <function-epilog>
+      <![CDATA[
+        Will throw an exception if the process fails to start.
+      ]]>
+    </function-epilog>
+
+    <function-list-args>
+      <function-required-arg name="the_process">
+        The command of the process you want to start.
+      </function-required-arg>
+    </function-list-args>
+
+    <sequence>
+      <script>
+        request = 'START COMMAND %s{STAF/Config/Sep/File}%s PARMS %s %s ' % \
+            (the_process.get_working_dir(), the_process.get_command(),
+             the_process.get_args(), the_process.get_test_lib_args())
+
+        for env_value in the_process.get_process_env():
+            request += 'ENV %s ' % (env_value)
+
+        request += 'WORKDIR %s STDOUT %s{STAF/Config/Sep/File}%s STDERRTOSTDOUT RETURNSTDOUT' % \
+                 (the_process.get_working_dir(), the_process.get_working_dir(),
+                 the_process.get_log_file())
+
+        request += ' NOTIFY ONEND KEY %s' % (the_process.get_process_id_number())
+      </script>
+
+      <log level="'info'" message="1">'SpawnProcess: Starting %s on %s' % (the_process.get_command(), the_process.node_.get_staf_url())</log>
+      <log level="'debug'">'STAFCMD: STAF %s PROCESS %s' % (the_process.node_.get_staf_url(), request)</log>
+
+      <stafcmd name="'Start %s on %s' % (the_process.get_command(), the_process.node_.get_staf_url())">
+        <location>the_process.node_.get_staf_url()</location>
+        <service>'PROCESS'</service>
+        <request>request</request>
+      </stafcmd>
+
+      <if expr="RC != 0">
+        <sequence>
+            <script>err_msg = 'SpawnProcess: Starting %s %s on %s failed with RC=%s STAFResult=%s' % (the_process.get_command(), the_process.get_args(),
+                                                                    the_process.node_.get_staf_url(), RC, STAFResult)</script>
+            <log level="'error'" message="1">err_msg</log>
+            <throw exception="'ProcessNoWorkyError'">err_msg</throw>
+        </sequence>
+        <else>
+            <sequence>
+                <script>
+                    the_process.handle_ = STAFResult
+                </script>
+                <return>STAFResult</return>
+            </sequence>
+        </else>
+      </if>
+
+      <return>-1</return>
+    </sequence>
+
+  </function>
+
+  <function name="CheckProcessComplete" scope="local" >
+    <function-prolog>
+      <![CDATA[
+      Check an asynchronously started process has completed successfully with return code 0.
+      Terminate it if it hasn't.
+      ]]>
+    </function-prolog>
+
+    <function-epilog>
+      <![CDATA[
+        Will record an error and return the process RC if it hadn't terminated itself and returned 0.
+        Will free handle resources in at all possible. Will only throw exception if the STAF service
+        cannot be contacted.
+      ]]>
+    </function-epilog>
+
+    <function-list-args>
+      <function-required-arg name="the_process">
+        The Process  instance you want to check and stop.
+      </function-required-arg>
+    </function-list-args>
+
+    <sequence>
+      <script>
+        request = 'QUERY HANDLE %s' % (the_process.handle_)
+      </script>
+
+       <!-- Check for process exit information and std / out error -->
+      <stafcmd name="'Peek at event queue for %s on %s process exit' % (the_process.get_command(), the_process.node_.get_staf_url())">
+        <location>STAXCurrentXMLMachine</location>
+        <service>'QUEUE'</service>
+        <request>'PEEK ALL'</request>
+      </stafcmd>
+
+      <log level="'info'">'Peek response after first Process quesry RC=%s STAFResult=%s' % (RC, STAFResult) </log>
+
+      <stafcmd name="'Check %s completed' % (the_process.get_command())">
+        <location>the_process.node_.get_staf_url()</location>
+        <service>'PROCESS'</service>
+        <request>request</request>
+      </stafcmd>
+
+      <log level="'info'">'The STAF result: %s' % (STAFResult)</log>
+
+      <if expr="RC != STAFRC.Ok">
+        <sequence>
+            <script>err_msg = 'CheckProcessComplete: Checking %s on %s failed with RC=%s STAFResult=%s' % (the_process.get_command(),
+                               the_process.node_.get_staf_url(), RC, STAFResult)</script>
+            <log level="'error'" message="1">err_msg</log>
+            <throw exception="'ProcessNoWorkyError'">err_msg</throw>
+        </sequence>
+        <else>
+            <sequence>
+                <if expr="STAFResult['rc'] == None">
+                    <sequence>
+                        <!-- <script>
+                            err_msg = 'CheckProcessComplete: %s still running on %s. Terminating STAFResult=%s' % (the_process.get_command(),
+                                       the_process.node_.get_staf_url(), STAFResult)
+                            return_code = -1
+                        </script>
+                        <log level="'error'" message="1">err_msg</log> -->
+                        <script>return_code = 0</script>
+                        <stafcmd name="'Terminate %s' % (the_process.get_command())">
+                            <location>the_process.node_.get_staf_url()</location>
+                            <service>'PROCESS'</service>
+                            <request>'STOP HANDLE %s' % (the_process.handle_)</request>
+                        </stafcmd>
+                    </sequence>
+                    <elseif expr="STAFResult['rc'] == '0'">
+                        <script>return_code = 0</script>
+                    </elseif>
+                    <else>
+                        <sequence>
+                            <script>return_code = -1</script>
+                        </sequence>
+                    </else>
+                </if>
+            </sequence>
+        </else>
+      </if>
+
+       <!-- Check for process exit information and std / out error -->
+      <stafcmd name="'Peek at event queue for %s on %s process exit' % (the_process.get_command(), the_process.node_.get_staf_url())">
+        <location>STAXCurrentXMLMachine</location>
+        <service>'QUEUE'</service>
+        <request>'PEEK ALL'</request>
+      </stafcmd>
+
+      <log level="'info'">'Peek response RC=%s STAFResult=%s' % (RC, STAFResult) </log>
+
+      <if expr="RC == 0">
+            <if expr="STAFResult != None">
+                <iterate var="event_record" in="STAFResult" indexvar="i">
+                     <log level="'info'">event_record</log>
+                </iterate>
+            </if>
+      </if>
+
+      <stafcmd name="'Free resources from %s' % (the_process.get_command())">
+        <location>the_process.node_.get_staf_url()</location>
+        <service>'PROCESS'</service>
+        <request>'FREE HANDLE %s' % (the_process.handle_)</request>
+      </stafcmd>
+
+      <return>return_code</return>
+    </sequence>
+
+  </function>
+
+  <function name="PASS-if-0" scope="local">
+
+    <function-prolog>
+      This function checks if a value is 0.  If 0, it sets the
+      testcase status result to 'pass'; otherwise, it sets it
+      to 'fail' and sends a message to the STAXMonitor.
+    </function-prolog>
+
+    <function-single-arg>
+      <function-required-arg name="value">
+        Value to compare with 0
+      </function-required-arg>
+    </function-single-arg>
+
+    <if expr="value == 0">
+      <tcstatus result="'pass'"/>
+      <else>
+        <tcstatus result="'fail'">
+          'value=%d. Expected 0.' % value
+        </tcstatus>
+      </else>
+    </if>
+  </function>
+
+<!--
+
+  <function name="InitialiseTest" >
+
+    <function-prolog>
+      This function initialises global variables relating to the test environment,
+      if required, and performs any other necessary initialisation.
+
+      It returns the initialised TestRun object.
+    </function-prolog>
+
+    <sequence>
+      <script>
+          try :
+              stax_global
+          except NameError :
+              stax_global = STAXGlobal (TestRun.get_test_run ())
+      </script>
+      <return>
+        stax_global
+      </return>
+    </sequence>
+  <function>
+
+-->
+
+</stax>

@@ -1,18 +1,18 @@
 ﻿// The OpenSplice DDS Community Edition project.
 //
-// Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
+// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
-// 
+//
 //  This library is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU Lesser General Public
 //  License Version 3 dated 29 June 2007, as published by the
 //  Free Software Foundation.
-// 
+//
 //  This library is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  Lesser General Public License for more details.
-// 
+//
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
 //  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -23,12 +23,19 @@ using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
-{    
+{
     public abstract class TypeSupport : SacsSuperClass, ITypeSupport
     {
         public abstract string TypeName { get; }
         public abstract string KeyList { get; }
         public abstract string Description { get; }
+        public Type TypeSpec
+        {
+            get
+            {
+                return dataType;
+            }
+        }
 
         public abstract DataWriter CreateDataWriter(IntPtr gapiPtr);
 
@@ -65,30 +72,38 @@ namespace DDS.OpenSplice
                0,                           // alloc_size
                IntPtr.Zero,                 // alloc buffer
                IntPtr.Zero,                 // writer copy
-               dummyOperationDelegate,      // reader copy: delay initialization until marshaler present
-               IntPtr.Zero,                 // create datawriter
-               IntPtr.Zero);                // create datareader
+               dummyOperationDelegate);     // reader copy: delay initialization until marshaler present
 
             // Base class handles everything.
-            base.SetPeer(ptr);
+            if (ptr != IntPtr.Zero)
+            {
+                SetPeer(ptr, true);
+            }
+            else
+            {
+                // Gapi already logged that the TypeSupport has not been created
+                // successfully. Now create a deliberate null pointer exception
+                // to let the current constructor fail.
+                throw new System.NullReferenceException("gapi_fooTypeSupport__alloc returned a NULL pointer.");
+            }
         }
 
         // The RegisterType operation should be implemented in its type specific specialization.
         public abstract ReturnCode RegisterType(
-                IDomainParticipant participant, 
+                IDomainParticipant participant,
                 string typeName);
 
-        // TODO: This operation is currently not thread-safe. 
+        // TODO: This operation is currently not thread-safe.
         public virtual ReturnCode RegisterType(
-                IDomainParticipant participant, 
-                string typeName, 
+                IDomainParticipant participant,
+                string typeName,
                 DatabaseMarshaler marshaler)
         {
             ReturnCode result = ReturnCode.BadParameter;
 
-            if (participant != null && marshaler != null) 
+            if (participant != null && marshaler != null)
             {
-                // Now that a marshaler is present, 
+                // Now that a marshaler is present,
                 result = AttachMarshalerDelegates(GapiPeer, marshaler);
                 if (result == ReturnCode.Ok)
                 {
@@ -105,7 +120,7 @@ namespace DDS.OpenSplice
                     }
                 }
             }
-            
+
             return result;
         }
 
@@ -125,7 +140,7 @@ namespace DDS.OpenSplice
                 // will pass a fake delegate, and then internally use the real copyOut, this
                 // may give better performance anyways, since we won't have to convert the
                 // IntPtr to a Delegate for every ReaderCopy invocation.
-                typeSupport.copy_out = dummyOperationDelegate;
+                typeSupport.copy_out = marshaler.CopyOutDelegate;
 
                 typeSupport.reader_copy = marshaler.ReaderCopyDelegate;
                 Gapi.TypeSupport.Release(typeSupport, tsPtr);

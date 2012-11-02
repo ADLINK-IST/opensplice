@@ -1,0 +1,112 @@
+/* -*- c -*- */
+
+/* MISSING IN HW ABSTRACTION LAYER -------------------------------------
+
+   Atomic operations because the two currently present in the
+   abstraction layer don't quite cut it.  Roughly the same as the
+   solaris atomic operations.  */
+NN_C99_INLINE os_uint32 atomic_inc_u32_nv (volatile os_uint32 *value)
+{
+  return pa_increment ((os_uint32 *) value);
+}
+NN_C99_INLINE os_uint32 atomic_dec_u32_nv (volatile os_uint32 *value)
+{
+  return pa_decrement ((os_uint32 *) value);
+}
+
+#if __APPLE__
+
+#include <libkern/OSAtomic.h>
+NN_C99_INLINE void atomic_add_u32_noret (volatile os_uint32 *value, os_uint32 addend)
+{
+  OSAtomicAdd32 ((int32_t) addend, (volatile int32_t *) value);
+}
+NN_C99_INLINE os_uint32 atomic_sub_u32_nv (volatile os_uint32 *value, os_uint32 subtrahend)
+{
+  return (os_uint32) OSAtomicAdd32 ((int32_t) -subtrahend, (volatile int32_t *) value);
+}
+
+#elif defined _WIN32
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+
+NN_C99_INLINE void atomic_add_u32_noret (volatile os_uint32 *value, os_uint32 addend)
+{
+  InterlockedExchangeAdd ((volatile os_int32 *) value, (os_int32) addend);
+}
+NN_C99_INLINE os_uint32 atomic_sub_u32_nv (volatile os_uint32 *value, os_uint32 subtrahend)
+{
+  os_uint32 old;
+  old = (os_uint32) InterlockedExchangeAdd ((volatile os_int32 *) value, (os_int32) -subtrahend);
+  return old - subtrahend;
+}
+
+#elif (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) >= 40100
+
+NN_C99_INLINE void atomic_add_u32_noret (volatile os_uint32 *value, os_uint32 addend)
+{
+  __sync_fetch_and_add (value, addend);
+}
+NN_C99_INLINE os_uint32 atomic_sub_u32_nv (volatile os_uint32 *value, os_uint32 subtrahend)
+{
+  return __sync_sub_and_fetch (value, subtrahend);
+}
+
+#elif defined __sun
+
+#if defined __GNUC__ && defined __sparc__
+/* assume we can use __exchange_and_add from the PA layer */
+#include "../../../abstraction/pa/code/pa_abstract.c"
+NN_C99_INLINE void atomic_add_u32_noret (volatile os_uint32 *value, os_uint32 addend)
+{
+  __exchange_and_add (value, addend);
+}
+NN_C99_INLINE os_uint32 atomic_sub_u32_nv (volatile os_uint32 *value, os_uint32 subtrahend)
+{
+  os_uint32 old = __exchange_and_add (value, -subtrahend);
+  return old - subtrahend;
+}
+#else /* assume we're on Solaris 10 or newer */
+#include <atomic.h>
+NN_C99_INLINE void atomic_add_u32_noret (volatile os_uint32 *value, os_uint32 addend)
+{
+  atomic_add_32 (value, addend);
+}
+NN_C99_INLINE os_uint32 atomic_sub_u32_nv (volatile os_uint32 *value, os_uint32 subtrahend)
+{
+  return atomic_add_32_nv (value, -subtrahend);
+}
+#endif /* solaris + gcc */
+
+#elif defined __GNUC__
+
+#ifdef __i386
+NN_C99_INLINE void atomic_add_u32_noret (volatile os_uint32 *value, os_uint32 addend)
+{
+  __asm__ __volatile__ ("lock; xaddl %1, %0\n" : "=m" (value), "=r" (addend) : "0" (value), "1" (addend));
+}
+NN_C99_INLINE os_uint32 atomic_sub_u32_nv (volatile os_uint32 *value, os_uint32 subtrahend)
+{
+  os_uint32 tmp = -subtrahend;
+  __asm__ __volatile__ ("lock; xaddl %1, %0\n" : "=m" (value), "=r" (tmp) : "0" (value), "1" (tmp));
+  return tmp - subtrahend;
+}
+#endif /* __i386 */
+
+#elif defined AIX
+
+#include <sys/atomic_op.h>
+
+NN_C99_INLINE void atomic_add_u32_noret (volatile os_uint32 *value, os_uint32 addend)
+{
+   fetch_and_add ((int32_t *)value, addend);
+}
+NN_C99_INLINE os_uint32 atomic_sub_u32_nv (volatile os_uint32 *value, os_uint32 subtrahend)
+{
+  os_uint32 old = fetch_and_add ((int32_t *)value, -subtrahend);
+  return old - subtrahend;
+}
+#endif /* AIX */

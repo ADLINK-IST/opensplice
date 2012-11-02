@@ -10,6 +10,7 @@
 #include "idl_fileMap.h"
 #include "idl_keyDef.h"
 #include "idl_catsDef.h"
+#include "idl_stacDef.h"
 #include "idl_sematicRules.h"
 #include "idl_unsupported.h"
 #include "dds_cpp.h"
@@ -1641,6 +1642,7 @@ idl_idlinit(c_module schema)
     idl_fileMap fileMap;
     idl_keyDef keyDef;
     idl_catsDef catsDef;
+    idl_stacDef stacDef;
 
     topLevel = schema;
     scope = topLevel;
@@ -1650,6 +1652,8 @@ idl_idlinit(c_module schema)
     idl_keyDefDefSet(keyDef);
     catsDef = idl_catsDefNew();
     idl_catsDefDefSet(catsDef);
+    stacDef = idl_stacDefNew();
+    idl_stacDefDefSet(stacDef);
 }
 
 int

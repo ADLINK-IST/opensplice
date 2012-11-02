@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "stax.dtd">
+
+<!--
+    run_test.xml - Run the Ping Pong examples test using STAX
+
+    Job Description:
+    This job runs the Ping Pong examples using STAX.
+    The examples are run within an installed distribution.
+-->
+
+<stax>
+
+  <defaultcall function="pingpong_main">
+  </defaultcall>
+
+  <function name="pingpong_main" scope="local" >
+    <function-prolog>
+      Test runs OSPL on two nodes. Ping pong is then run between them.
+
+      If both ping and pong return 0 the  test succeeds.
+      Fails otherwise.
+    </function-prolog>
+
+    <function-no-args/>
+    <sequence>
+        <!-- Always call initialise first -->
+        <import file="'../stax/test_ospl.xml'"/>
+        <call function="'Initialise'" />
+
+        <script>
+            test_run = TestRun.the_test_run_
+            # The test scenario name should be the test directory name. So you should edit this.
+            test_name = 'pingpong'
+            test_scenario = test_run.create_test_scenario(test_name)
+            test_node1 = test_scenario.get_next_node()
+            test_node2 = test_scenario.get_next_node()
+
+            # set up list for the nodes
+            test_nodes = [test_node1, test_node2]
+
+            # set up a list for the processes
+            pings = []
+            pongs = []
+
+            for next_node in test_nodes:
+                next_ping = test_scenario.define_process(next_node)
+                next_ping.set_command('ping')
+                next_ping.set_uses_test_sync_lib(0)
+                next_ping.set_log_file('%s%s.log' % (next_ping.get_command(), next_ping.get_process_id_number()))
+                next_ping.set_args("100 100 m PongRead PongWrite")
+                if next_node.is_windows():
+                    next_ping.set_working_dir('%s%sexamples%sdcps%sstandalone%sC++OnC%sPingPong%sPing' % (next_node.get_ospl_home(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep()))
+                else:
+                    next_ping.set_working_dir('%s%sexamples%sdcps%sstandalone%sC++OnC%sPingPong%sexec' % (next_node.get_ospl_home(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep()))
+                pings.append(next_ping)
+                next_pong = test_scenario.define_process(next_node)
+                next_pong.set_command('pong')
+                next_pong.set_uses_test_sync_lib(0)
+                next_pong.set_log_file('%s%s.log' % (next_pong.get_command(), next_pong.get_process_id_number()))
+                if next_node.is_windows():
+                    next_pong.set_working_dir('%s%sexamples%sdcps%sstandalone%sC++OnC%sPingPong%sPong' % (next_node.get_ospl_home(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep()))
+                else:
+                    next_pong.set_working_dir('%s%sexamples%sdcps%sstandalone%sC++OnC%sPingPong%sexec' % (next_node.get_ospl_home(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep(),
+                                                                                                         next_node.file_sep()))
+                pongs.append(next_pong)
+
+
+            test_result1 = -1
+            test_result2 = -1
+
+            import time
+            starttime = time.time(); # record starting time
+        </script>
+        <testcase name = "test_scenario.get_name()" >
+          <sequence>
+            <iterate var="a_ping" in="pings">
+                <iterate var="a_pong" in="pongs">
+                    <try>
+                        <sequence>
+                            <call function="'StartOSPL'">[ test_node1, test_scenario ]</call>
+                            <call function="'StartOSPL'">[ test_node2, test_scenario ]</call>
+                            <parallel>
+                                <sequence>
+                                    <call function="'RunProcess'">a_ping</call>
+                                    <call function="'PASS-if-0'">STAXResult</call>
+                                </sequence>
+                                <sequence>
+                                    <call function="'RunProcess'">a_pong</call>
+                                    <call function="'PASS-if-0'">STAXResult</call>
+                                </sequence>
+                             </parallel>
+                         </sequence>
+                         <finally>
+                            <parallel>
+                                <call function="'RetrieveProcessLog'">a_ping</call>
+                                <call function="'RetrieveProcessLog'">a_pong</call>
+                                <call function="'StopOSPL'">[ test_node1, test_scenario ]</call>
+                                <call function="'StopOSPL'">[ test_node2, test_scenario ]</call>
+                             </parallel>
+                         </finally>
+                    </try>
+                </iterate>
+            </iterate>
+            <script>
+              stoptime = time.time()
+              elapsedSecs = stoptime - starttime
+            </script>
+
+            <message>'Test complete - ran for %d seconds' % elapsedSecs</message>
+          </sequence>
+        </testcase>
+    </sequence>
+  </function>
+
+  <function name="pingpong_manual">
+    <function-prolog>
+      The manual entry point for this test. Allows you to run this test from the console
+      by specifying init values.
+    </function-prolog>
+    <function-list-args>
+      <function-required-arg name="host_name1">
+        The host name of the first machine you wish test on
+      </function-required-arg>
+      <function-required-arg name="test_root1">
+        Location of test case / source / build checkout on machine 1
+      </function-required-arg>
+      <function-required-arg name="ospl_home1">
+        Location of test case / source / build checkout on machine 1
+      </function-required-arg>
+      <function-required-arg name="host_name2">
+        The host name of the second machine you wish to test on
+      </function-required-arg>
+      <function-required-arg name="test_root2">
+        Location of test case / source / build checkout on machine 1
+      </function-required-arg>
+      <function-required-arg name="ospl_home2">
+        Location of test case / source / build checkout on machine 1
+      </function-required-arg>
+    </function-list-args>
+    <sequence>
+      <import file="'../stax/test_ospl.xml'"/>
+      <call function="'Initialise'" />
+      <script>
+        test_node1 = TestNode(host_name1, test_root1, ospl_home1)
+        test_node2 = TestNode(host_name2, test_root2, ospl_home2)
+        TestRun.the_test_run_ = TestRun( [test_node1, test_node2] )
+      </script>
+      <call function="'InitialiseNode'">test_node1</call>
+      <call function="'InitialiseNode'">test_node2</call>
+      <call function="'pingpong_main'" />
+    </sequence>
+  </function>
+</stax>

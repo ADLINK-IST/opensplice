@@ -1,0 +1,269 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - DDSI2 Release Notes</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="fixedV5.html">
+        Back to Fixed Bugs and Changes V5 series Page<img src="../images/back.gif" align="middle"
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+
+<h1> DDSI2 Service </h1>
+
+<h2> Contents </h2>
+
+<ul>
+  <li><a href="#Introduction">Introduction</a></li>
+  <li><a href="#Interoperability">Interoperability with other vendors</a></li>
+  <li><a href="#Changes">Major changes</a></li>
+  <li><a href="#Features">Features</a></li>
+  <li><a href="#Limitations">Limitations</a></li>
+  <li><a href="#QoS compliancy">QoS compliancy</a></li>
+  <li><a href="#Specification issues">Issues rooted in the standard</a></li>
+  <li><a href="#Open issues">Open issues</a></li>
+</ul>
+
+<h2> <a name="Introduction">Introduction</a> </h2>
+
+<p> These notes document the current state of this beta release of the OpenSplice DDSI2 Service. The DDSI2 service is the new implementation of the OMG DDSI 2.1 specification for OpenSplice DDS. It contains significant improvements over the first beta, but it is not yet feature-complete. </p>
+
+<p> Among the many changes is one that requires special attention: standards conformance. As was noted in the release notes of the previous beta, there are significant differences between most implementations and the actual DDSI standard. Our original aim to provide a standards-compliant implementation that is at the same time interoperable with other vendors has turned out to be too ambitious: the two simply do not go together <em>at the same time</em>. The differences are subtle and easily dealt with in a single code base, but one must choose which behaviour one desires. The default setting is to be strict (with two minor deviations from the standard), which greatly diminishes its interoperability with the implementations of other vendors that we know about, but this can be changed with a single setting if interoperability is desired. See <a href="#Interoperability">Interoperability with other vendors</a> for details. </p>
+
+<p> PrismTech is committed to bringing to the community good standards and real interoperability. As such, we've undertaken several activities at the OMG in order to address the areas of underspecification and potential misinterpretation currently present in the interoperability wire protocol. Our aim is to provide our customers and the DDS community with the reference DDSI implementation in terms of both compliancy as well as efficiency and scalability. </p>
+
+<p> There is a growing body of evidence that there is real interoperability between OpenSplice DDS and other vendors' implementations, and in particular with RTI DDS. Nevertheless, there are still some areas that have seen minimal interoperability testing at best. We kindly invite anyone running into interoperability issues to contact us, either via the <a href="http://forums.opensplice.org/">OpenSplice forum</a>, or, for our commercial customers, via our support channels. </p>
+
+<p> Those interested in testing interoperability by running the same applications used at the &quot;OMG Interoperability Demonstrations&quot; can download the full package <a href="http://code.google.com/p/simd-cxx/downloads/list">here</a>. </p>
+
+<h2> <a name="Interoperability">Interoperability with other vendors</a> </h2>
+
+<h3> Standards conformance modes </h3>
+
+<p> The DDSI2 service operates in one of three modes: <em>pedantic</em>, <em>strict</em> and <em>lax</em>. The default is <em>strict</em>. </p>
+
+<p> In <em>pedantic</em> mode, it strives very hard to strictly conform to the DDSI 2.1 standard. It even uses a vendor-specific extension for the one essential element missing in the specification, used for specifying the GUID of a DataReader or DataWriter in the discovery protocol; and it actually adheres to the specified encoding of the reliability QoS. It stands to reason that this mode is of interest for compliancy testing but not for practical use, even though there is no application-level observable difference between an all-OpenSplice system using the DDSI2 service in pedantic mode and one operating in any of the other modes. </p>
+
+<p> The default mode, <em>strict</em>, instead attempts to follow the intent of the specification while staying close to the letter of it. The two points in which it deviates from the standard are in all probability editing errors that will be rectified in the next update. When operated in this mode, one would expect it to be fully interoperable with the other vendors' implementations, but sadly this is not the case. The deviations in the other vendors' implementations are <em>not</em> required to implement DDSI 2.1, as is proven by the OpenSplice DDSI2 service, and they cannot rightly be considered implementations of the DDSI 2.1 <em>standard</em>. </p>
+
+<p> The third mode, <em>lax</em>, attempts to work around (most of) the deviations of the other implementations, and provides interoperability with (at least) RTI DDS and InterCOM/Gallium DDS.  For compatibility with TwinOaks CoreDX DDS, additional settings are needed. See the table below for more information. In the <em>lax</em> mode, the OpenSplice DDSI2 service not only accepts some invalid messages, but will even transmit them. The consequences for interoperability of not doing this are simply too severe. </p>
+
+<p> It should be noted that if one configures two OpenSplice nodes with DDSI2 in different compliancy modes, the one in the more strict mode will complain about messages sent by the one in the less strict mode. Pedantic mode will complain about invalid encodings used in strict mode, strict mode will complain about illegal messages transmitted by the lax mode. There is nonetheless interoperability between strict and lax. </p>
+
+<table border="0" cellspacing="5" cellpadding="5">
+  <tr> <th> Product </th> <th> Notes </th>
+
+  <tr> <td> RTI DDS </td> <td>
+    <p> Out-of-the-box (i.e., in <em>strict</em> mode) there is interoperation with RTI DDS, but at the cost of incredibly high CPU and network load, caused by a Heartbeats and AckNacks going back-and-forth between a reliable RTI DataWriter and a reliable OpenSplice DataReader. The problem is that once the OpenSplice reader informs the RTI writer that it has received all data (using valid AckNack message), the RTI writer immediately publishes a message listing the range of available sequence numbers and requesting an acknowledgement, which becomes an endless loop. </p>
+
+    <p> Disposing data causes problems as well, as RTI DDS leaves out the serialized key value and instead expects the reader to rely on an embedded hash of the key value. In the strict modes, the DDSI2 service requires a proper key value to be supplied, in the <em>lax</em> mode, it is willing to accept key hash, provided it is of a form that contains the key values in an unmangled form. </p>
+
+    <p> If an RTI DDS DataWriter disposes an instance with a key of which the serialised representation may be larger than 16 bytes, this problem is likely to occur. In practice, the most likely cause is using a key as string, either unbounded, or with a maximum length larger than 11 bytes. See the DDSI specification for details. </p>
+
+    <p> The best settings for interoperation appear to be: <ul>
+      <li> Compatibility/StandardsConforming: <tt>lax</tt> </li>
+      <li> Compatibility/AckNackNumbitsEmptySet: <tt>0</tt>. </li>
+    </ul> </p>
+
+    <p> Note that the latter setting causes the DDSI2 service to generate illegal messages, and is the default when in lax mode. </p>
+  </td> </tr>
+
+  <tr> <td> TwinOaks CoreDX DDS </td> <td>
+    <p> Interoperability with TwinOaks CoreDX requires: <ul>
+      <li> Compatibility/ManySocketsMode: <tt>true</tt> </li>
+      <li> Compatibility/StandardsConforming: <tt>lax</tt> </li>
+      <li> Compatibility/AckNackNumbitsEmptySet: <tt>0</tt>. </li>
+      <li> Compatibility/ExplicitlyPublishQosSetToDefault: <tt>true</tt>.
+    </ul> </p>
+
+    <p> The ManySockets option is the default, and ensures that each domain participant has a unique locator, which is needed because TwinOaks CoreDX DDS does not include the full GUID of a reader or writer if it needs to address just one. Note the behaviour of TwinOaks CoreDX DDS is allowed by the specification. </p>
+
+    <p> The Compatibility/ExplicitlyPublishQosSetToDefault settings works around TwinOaks CoreDX DDS' use of incorrect default values for some of the QoS settings if they are not explicitly supplied during discovery. </p>
+  </td> </tr>
+
+  <tr> <td> InterCOM/Gallium DDS </td> <td>
+    <p> For interoperability with InterCOM/Gallium DDS, it is recommended that the settings for interoperability with RTI DDS are used. </p>
+  </td> </tr>
+</table>
+
+<h2> <a name="Changes">Major changes</a> </h2>
+
+<ul>
+  <li> <p> Fragmentation of large samples has been added. </p> </li>
+
+  <li> <p> Support for DataReaders and DataWriters using multiple partitions or wildcard partitions. </p> </li>
+
+  <li> <p> Improved coverage of QoS settings. </p> </li>
+
+  <li> <p> Improved ability to deal with multi-homed network configurations. </p> </li>
+
+  <li> <p> Special treatment of initial publications made on a node to cover discovery times. </p> </li>
+
+  <li> <p> Less redundant processing and transmission of discovery data by improved sharing within a single instance of the DDSI2 service. </p> </li>
+
+  <li> <p> Support for the write_dispose() operation of OpenSplice. </p> </li>
+
+  <li> <p> Use of fully-qualified type names. </p> </li>
+
+  <li> <p> Improved diagnostics of errors in configuration settings. </p> </li>
+
+  <li> <p> Improved performance. </p> </li>
+
+  <li> <p> Better verification of input validity. </p> </li>
+
+  <li> <p> Bugfixes. </p> </li>
+</ul>
+
+<h2> <a name="Features">Features</a> </h2>
+
+<p> Please note that this section only provides highlights and is not an exhaustive list of features, and is furthermore restricted to this beta release. If the specification describes a feature that is not listed under the limitations, it will likely work. </p>
+
+<ul>
+  <li> <p> Full support for all topic data types. </p> </li>
+
+  <li> <p> Full support for reliability and durability settings. </p> </li>
+
+  <li> <p> Fragmentation of large samples. </p> </li>
+
+  <li> <p> Multicast and unicast discovery are both supported. Unicast discovery requires adding a list of addresses to probe, but it suffices to add the address only on one side of a pair of nodes for both to discovery the other. </p> </li>
+
+  <li> <p> Dynamical switching between unicast transmission for messages destined for a single node, multicast for those destined for multiple nodes. </p> </li>
+
+  <li> <p> The participants on a node collaborate in discovering remote participants. This reduces discovery traffic and effectively provides approximately zero-latency discovery for readers and writers that are created only a little bit later than the first ones for a particular Topic/Partition combination. </p> </li>
+
+  <li> <p> The DDSI2 service can operate stand-alone or in parallel with the native OpenSplice networking service. When operated stand-alone it handles all networking traffic, when operated in parallel all OpenSplice-to-OpenSplice traffic is handled by the native networking service (with all features fully supported) and the DDSI2 service only handles communications with other vendors' DDS implementations </p> </li>
+
+  <li> <p> For an overview of QoS settings, see <a href="#QoS compliancy">QoS compliancy</a> </p> </li>
+</ul>
+
+<h2> <a name="Limitations">Limitations</a> </h2>
+
+<p> Please note that this section may not be exhaustive. </p>
+
+<h3> Related to discovery </h3>
+
+<ul>
+  <li> <p> When multicast is enabled and a participant is discovered that advertises a multicast address, it is assumed to be reachable via that multicast address. If it is not, then it must currently be operated in multicast-disabled mode with all possible peer nodes listed explicitly, as this will restrict the set of addresses advertised by the participant to its unicast address. </p> </li>
+
+  <li> <p> Unicast discovery only sends discovery packets to a fixed set of participant indices (in the sense of the DDSI specification) on a node. This limits the number of unicast-only domain participants of other vendors' implementations on a node that the DDSI service can communicate with. In this release, the set always consists of the first 10 indices. </p> </li>
+
+  <li> <p> The list of different discovery destination addresses quickly becomes huge when unicast discovery comes into play. There are no ways to limit this, and this is despite the limited number of participant indices that will be tried. </p> </li>
+
+  <li> <p> Some configuration options mandated by the DDSI specification have not yet been implemented, notably the various timing parameters. These include the period with which discovery messages are repeated, the repeat rates of heartbeat messages, and the exact timing of retransmissions upon receipt of a negative acknowledgement. </p> </li>
+
+  <li> <p> Built-in DCPS Topics for participants, readers and writers discovered by DDSI are not yet generated. The OpenSplice kernel implementation nonetheless allows OpenSplice applications to be able to read instances of built-in DCPS Topics for remote DCPS entities also running on OpenSplice, because the kernel generates and distributes this data regardless of DDSI discovery. </p> </li>
+
+  <li> <p> IPv6 is not yet supported. </p> </li>
+</ul>
+
+<h3> Other limitations </h3>
+
+<ul>
+  <li> <p> For an overview of QoS settings, see <a href="#QoS compliancy">QoS compliancy</a>. </li>
+
+  <li> <p> Limited influence on congestion-control behaviour. </p> </li>
+  <li> <p> If DDSI2 is operated in its default mode where each participant has its own UDP/IP port number, the maximum number of participants on a node serviced by an instance of the DDSI2 service is limited to approximately 60, exceeding this limit will cause the DDSI2 service to abort. It appears this mode is only required for interoperability with TwinOaks CoreDX DDS. There is never a limit on the number of remote participants. </p> </li>
+  <li> <p> An unresponsive, reliable reader will cause the writer to block; the writer will <em>not</em> drop the reader from its set of attached readers, until the participant that created the unresponsive reader is detected to be no longer alive. </p> </li>
+  <li> <p> No support for inlining QoS settings yet. DataReaders requesting inlined QoS will be ignored. </p> </li>
+  <li> <p> Running DDSI2 in parallel to the native networking may impact the performance of the native networking even when DDSI2 is not actually involved in the transmission of data, as DDSI2 still performs some processing on the data. </p> </li>
+  <li> <p> No more than 32 key fields, and the concatenated key fields may not require more than 32 bytes of storage, where strings count for 4 bytes. </p> </li>
+</ul>
+
+<h2> <a name="QoS compliancy">QoS compliancy</a> </h2>
+
+<p> The following table lists the level of support for each QoS. In some cases, compliancy is better when the DDSI2 service is used to connect two OpenSplice nodes than when it used to connect an OpenSplice node with another vendor's DDS implementation. The OpenSplice kernel performs many aspects of DDS in ways independent of the underlying wire protocol, but interoperating with another vendor's DDS implementation requires the DDSI2 service to fully implement the mapping prescribed by the DDSI 2.1 specification. This work has not been completed yet. </p>
+
+<table border="0" cellspacing="5" cellpadding="5">
+  <tr> <th> QoS </th>                   <th> OpenSplice </th>    <th> Other vendor </th> </tr>
+
+  <tr> <td> USER_DATA </td>             <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr> <td> TOPIC_DATA </td>            <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr> <td> GROUP_DATA </td>            <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr>
+    <td> DURABILITY </td>
+    <td colspan="2"> Compliant, but see <a href="#Specification issues">Issues rooted in the standard</a> </td>
+  </tr>
+  <tr> <td> DURABILITY_SERVICE </td>    <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr>
+    <td> PRESENTATION </td>
+    <td colspan="2"> All data treated as non-coherent, unordered INSTANCE. All presentation settings are correctly advertised and are accounted for when matching DataReaders and DataWriters. </td>
+  </tr>
+  <tr> <td> DEADLINE </td>              <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr> <td> LATENCY_BUDGET </td>        <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr> <td> OWNERSHIP </td>             <td> Compliant </td>     <td> Shared ownership: fully supported; exclusive ownership: partially supported, a higher-strength writer can take ownership but failover to a lower-strength one may not occur. </td> </tr>
+  <tr> <td> OWNERSHIP_STRENGTH </td>    <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr>
+    <td> LIVELINESS </td>
+    <td> Compliant </td>
+    <td> All entities treated as if liveliness is AUTOMATIC. For OpenSplice participants, the lease duration is fixed at 11s, for readers and writers at infinity. Lease durations of remote participants, readers and writers are honoured correctly. </td>
+  </tr>
+  <tr>
+    <td> TIME_BASED_FILTER </td>
+    <td colspan="2"> Compliant, except that all there is no filtering to limit the rate with which samples are delivered to the reader. </td>
+  </tr>
+  <tr> <td> PARTITION </td>             <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr> <td> RELIABILITY </td>           <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr> <td> TRANSPORT_PRIORITY </td>    <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr> <td> LIFESPAN </td>              <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr> <td> DESTINATION_ORDER </td>     <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr>
+    <td> HISTORY </td>
+    <td colspan="2"> Compliant, except that the writer history for a DataWriter of transient-local durability is always maintained as if the history setting is KEEP_LAST with depth 1 </td>
+  </tr>
+  <tr> <td> RESOURCE_LIMITS </td>       <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr> <td> ENTITY_FACTORY </td>        <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr> <td> WRITER_DATA_LIFECYCLE </td> <td> Compliant </td>     <td> Compliant </td> </tr>
+  <tr> <td> READER_DATA_LIFECYCLE </td> <td> Compliant </td>     <td> Compliant </td> </tr>
+</table>
+
+<h2> <a name="Specification issues">Issues rooted in the standard</a> </h2>
+
+<ul>
+  <li> <p> The specification only deals with volatile and transient-local data, and leaves the behaviour for transient and persistent data undefined. Many OpenSplice applications follow the recommendation to use transient data and not transient-local data, and indeed, OpenSplice implements transient-local as transient. This evidently creates a complex situation for a DDSI implementation. </p>
+
+  <p> The following two tables aim to provide an overview of the expected behaviour when both sides are using OpenSplice, and when only one side is. <p>
+
+  <p> OpenSplice writer: </p>
+  <table border="0" cellspacing="5" cellpadding="5">
+    <tr> <th> Writer QoS </th> <th> Reader QoS </th> <th> Behaviour </th> </tr>
+    <tr> <td> <em>all</em> </td> <td> volatile </td> <td> as expected </td> </tr>
+    <tr> <td> transient-local </td> <td> transient-local </td> <td> DDSI2 will internally manage a writer history cache containing the historical data for a history setting of KEEP_LAST with depth 1 (note that this is the default for writers). The data will be advertised in accordance with the specification and new readers receive the old data upon request. An OpenSplice reader will also receive the data maintained by the OpenSplice durability service. </td> </tr>
+    <tr> <td rowspan="2"> transient </td> <td> transient-local </td> <td> A remote reader on OpenSplice will receive transient data from the OpenSplice durability service, but a remote reader on another vendor's implementation will not. </td> </tr>
+    <tr> <td> transient </td> <td> same as previous case </td> </tr>
+    <tr> <td> persistent </td> <td> <em>all</em> </td> <td> deviations from the expected behaviour are the same as for transient </td> </tr>
+  </table>
+
+  <p> Non-OpenSplice writer, OpenSplice reader: </p>
+  <table border="0" cellspacing="5" cellpadding="5">
+    <tr> <th> Writer QoS </th> <th> Reader QoS </th> <th> Behaviour </th> </tr>
+    <tr> <td> <em>all</em> </td> <td> volatile </td> <td> as expected </td> </tr>
+    <tr> <td> transient-local </td> <td> transient-local </td> <td> The reader will request historical data from the writer, and will in addition receive whatever data is stored by the OpenSplice durability service. </td> </tr>
+    <tr> <td rowspan="2"> transient </td> <td> transient-local </td> <td> The reader may or may not receive transient data from the remote system, depending on the remote implementation. It will receive data from the OpenSplice durability service. The durability service will commence storing data when the first reader or writer for that topic/partition combination is created by any OpenSplice participant (i.e., it is immaterial on which node). </td> </tr>
+    <tr> <td> transient </td> <td> same as previous case </td> </tr>
+    <tr> <td> persistent </td> <td> <em>all</em> </td> <td> deviations from the expected behaviour are the same as for transient </td> </tr>
+  </table>
+
+  <p> Once the specification is extended to cover transient data, the situation will become much more straightforward. In the meantime it may be possible to make more configurations work as expected. The specification process is currently actively exploring the alternatives. </p>
+  </li>
+  <li> <p> No verification of topic consistency between OpenSplice and other vendors' implementations. The specification leaves this undefined. OpenSplice-to-OpenSplice the kernel will detect inconsistencies. </p> </li>
+
+  <li> <p> <a name="SharedDiscovery">DDSI2 uses a shared set of discovered participants, readers and writers on a single node. Consequently, a new OpenSplice participant learns of the readers and writers of remote participants and starts communicating with them, even before the remote participant has had a chance of discovering this new participant. This behaviour is believed to be allowed by the specification, but one other implementation has at one point been observed to malfunction because of this.</a> </p> </li>
+  <li> <p> The specification of the format of a KeyHash is ambiguous, in that one can argue whether or not padding should be used within a KeyHash to align the fields to their natural boundaries. The DDSI2 service currently does not insert padding, as this has the benefit of allowing more complex keys to be packed into the fixed-length key hash. It may be that this is not the intended interpretation. </p> </li>
+</ul>
+
+<h2> <a name="Open issues">Open issues</a> </h2>
+
+<ul>
+
+  <li> <p> Handling of Unregister and Dispose for transient-local data in the writer history cache is wrong: while the writer exists, the instance is retained and kept available for late-joining readers. This should not have consequences beyond a slight increase in resource usage. </p> </li>
+  <li> <p> A DDSI data message that combines unregister and dispose is treated as a dispose. </p> </li>
+  <li> <p> Verification of incoming messages is quite strict, but enum values embedded in the data are not checked against the set of valid values. </p> </li>
+  <li> <p> The deserialisation code accepts a bounded sequence longer than the maximum allowed sequence length. </p> </li>
+</ul>
+
+</body> </html>

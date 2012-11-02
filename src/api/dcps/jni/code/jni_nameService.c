@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,6 +13,7 @@
 #include "jni_nameService.h"
 #include "jni_misc.h"
 #include "c_typebase.h"
+#include "os_stdlib.h"
 #include "os_heap.h"
 
 static jni_nameService ns = NULL;
@@ -107,7 +108,7 @@ jni_nameServiceAddDomain(
             domainId = c_iterLength(mappings);
             mapping->domainId = domainId;
             mapping->uri = (c_char*)(os_malloc(strlen(uri) + 1));
-            strcpy(mapping->uri, uri);
+            os_strcpy(mapping->uri, uri);
             c_iterInsert(mappings, mapping);
         } else {
            /*URI already exists, do nothing.*/

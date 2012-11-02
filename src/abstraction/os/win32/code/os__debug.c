@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -23,8 +23,8 @@
 
 /* implementation */
 #include <crtdbg.h>
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 
 
 typedef struct os_crtReportInfo_s {
@@ -61,7 +61,7 @@ setCrtMode(
     _HFILE reportFile;
     os_crtReportInfo result = NULL;
 
-    fileName = getenv(envName);
+    fileName = os_getenv(envName);
     if (!fileName) {
         fileName = defaultName;
     }
@@ -148,7 +148,7 @@ os_debugModeInit()
     /* Only do this if no-one has called function before
      * unless os_debugModeExit has been called */
     if (!infoBlock) {
-        pathName = getenv(REPORTFILE_PATHNAME);
+        pathName = os_getenv(REPORTFILE_PATHNAME);
         if (pathName) {
             infoBlock = (os_crtReportInfoBlock)os_malloc(sizeof(*infoBlock));
             infoBlock->warnInfo = setCrtMode(_CRT_WARN, REPORTFILE_WARNFILENAME,

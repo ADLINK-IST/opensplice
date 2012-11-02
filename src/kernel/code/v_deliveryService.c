@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -310,22 +310,29 @@ updateMatchingGuards(
             type = c_subType(a->guard->publications);
             publication = c_new(type);
             c_free(type);
-            publication->readerGID = a->readerGID;
-            publication->count = 0;
-            if (a->alive) {
-                found = c_remove(a->guard->publications, publication,NULL,NULL);
-                c_free(found);
-                found = c_insert(a->guard->publications, publication);
-                assert(found == publication);
-                a->publication = publication;
-                v_writerGroupWalk(a->writer,updatePublication,arg);
-            } else {
-                found = c_find(a->guard->publications, publication);
-                c_free(publication);
-                publication = found;
-                if (publication) {
-                    publication->count--;
+            if (publication) {
+                publication->readerGID = a->readerGID;
+                publication->count = 0;
+                if (a->alive) {
+                    found = c_remove(a->guard->publications, publication,NULL,NULL);
+                    c_free(found);
+                    found = c_insert(a->guard->publications, publication);
+                    assert(found == publication);
+                    a->publication = publication;
+                    v_writerGroupWalk(a->writer,updatePublication,arg);
+                } else {
+                    found = c_find(a->guard->publications, publication);
+                    c_free(publication);
+                    publication = found;
+                    if (publication) {
+                        publication->count--;
+                    }
                 }
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_deliveryService::updateMatchingGuards",0,
+                          "Failed to allocate v_deliveryPublisher object.");
+                assert(FALSE);
             }
             if ((publication) && (publication->count == 0)) {
                 /* The DataReader is no longer connected so there is no need
@@ -490,7 +497,7 @@ v_deliveryServiceUnregister(
             for (i=0; i<nrOfPartitions; i++) {
                 c_string name = v_entityName(group->partition);
                 if (v_partitionStringMatchesExpression(name,rInfo->userData.partition.name[i])) {
-                    arg.groupList = c_iterInsert(arg.groupList,group);
+                    arg.groupList = c_iterInsert(arg.groupList,c_keep(group));
                     i = nrOfPartitions; /* exit for loop */
                 }
             }

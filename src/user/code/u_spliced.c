@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,7 +14,7 @@
 #include "u_spliced.h"
 #include "u__types.h"
 #include "u__entity.h"
-#include "u__kernel.h"
+#include "u__domain.h"
 #include "u__cfValue.h"
 
 #include "v_entity.h"
@@ -28,62 +28,58 @@
 /**************************************************************
  * Private functions
  **************************************************************/
-u_result
-u_splicedClaim(
-    u_spliced _this,
-    v_spliced *spliced)
-{
-    u_result result = U_RESULT_OK;
-
-    if ((_this != NULL) && (spliced != NULL)) {
-        *spliced = v_spliced(u_entityClaim(u_entity(_this)));
-        if (*spliced == NULL) {
-            OS_REPORT_2(OS_WARNING, "u_splicedClaim", 0,
-                        "Claim Spliced failed. "
-                        "<_this = 0x%x, spliced = 0x%x>.",
-                         _this, spliced);
-            result = U_RESULT_INTERNAL_ERROR;
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,"u_splicedClaim",0,
-                    "Illegal parameter. "
-                    "<_this = 0x%x, spliced = 0x%x>.",
-                    _this, spliced);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_splicedRelease(
-    u_spliced _this)
-{
-    u_result result = U_RESULT_OK;
-
-    if (_this != NULL) {
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_ERROR,"u_splicedRelease",0,
-                    "Illegal parameter. <_this = 0x%x>.", _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
 
 #ifndef INTEGRITY
-#define DAEMON_PATH "Daemon"
+#define DAEMON_PATH "Domain/Daemon"
+#define DAEMON_PATH_DEPRECATED "Daemon"
+
+static int
+checkLockingEnabled(v_cfElement root, const c_char *path, int *lock) {
+
+    v_cfElement service;
+    v_cfData data;
+    c_iter iter;
+    int iterLength;
+    int iterLengthRoot;
+    c_value value;
+    int found= 0;
+    iter = v_cfElementXPath(root, path);
+    iterLengthRoot = c_iterLength(iter);
+    if (iterLengthRoot > 0) {
+        service = v_cfElement(c_iterTakeFirst(iter));
+        c_iterFree(iter);
+        iter = v_cfElementXPath(service, "Locking/#text");
+        iterLength = c_iterLength(iter);
+        if (iterLength > 0) {
+            data = v_cfData(c_iterTakeFirst(iter));
+            c_iterFree(iter);
+            if (u_cfValueScan(v_cfDataValue(data), V_BOOLEAN, &value)) {
+                if (value.is.Boolean) {
+                    *lock = 1;
+                } else {
+                    *lock = 0;
+                }
+                found = 1;
+            }
+        }
+        if (iterLength > 1 && found) {
+            OS_REPORT(OS_WARNING,"lockPages", 0,"Daemon: multiple locking tags found, first one used");
+        }
+    }
+    if (iterLengthRoot > 1) {
+        OS_REPORT(OS_WARNING,"lockPages", 0,"Daemon: multiple daemon tags found, first tag used to read locking");
+    }
+    return found;
+}
+
 static int
 lockPages(
     v_spliced kSpliced)
 {
     v_configuration cfg;
     v_cfElement root;
-    v_cfElement service;
-    v_cfData data;
     int lock;
-    c_iter iter;
-    int iterLength;
-    c_value value;
+    int result;
     v_kernel k;
 
     assert(kSpliced);
@@ -95,40 +91,22 @@ lockPages(
     if (cfg != NULL) {
         root = v_configurationGetRoot(cfg);
         if (root != NULL) {
-            iter = v_cfElementXPath(root, DAEMON_PATH);
-            iterLength = c_iterLength(iter);
-            if (iterLength == 1) {
-                service = v_cfElement(c_iterTakeFirst(iter));
-                c_iterFree(iter);
-                iter = v_cfElementXPath(service, "Locking/#text");
-                iterLength = c_iterLength(iter);
-                if (iterLength == 1) {
-                    data = v_cfData(c_iterTakeFirst(iter));
-                    c_iterFree(iter);
-                    if (u_cfValueScan(v_cfDataValue(data), V_BOOLEAN, &value)) {
-                        if (value.is.Boolean) {
-                            lock = 1;
-                            OS_REPORT(OS_INFO,"lockPages", 0,
-                                "Daemon: Locking enabled for spliced");
-                        }
-                    } else {
-                        OS_REPORT(OS_WARNING,"lockPages", 0,
-                            "Failed to retrieve Locking for Daemon: Locking disabled");
-                    }
-                } else {
-                    OS_REPORT(OS_INFO,"lockPages", 0,
-                        "Daemon: Locking disabled");
-                    c_iterFree(iter);
+            result = checkLockingEnabled(root,DAEMON_PATH,&lock);
+            if (result && lock) {
+                OS_REPORT(OS_INFO,"lockPages", 0,"Daemon: Locking enabled for spliced");
+            } else if (result && !lock) {
+                OS_REPORT(OS_INFO,"lockPages", 0,"Daemon: Locking disabled for spliced");
+            }
+            if (!result) {
+                result = checkLockingEnabled(root,DAEMON_PATH_DEPRECATED, &lock);
+                if (result && lock) {
+                    OS_REPORT(OS_WARNING,"lockPages", 0,"DEPRECATED location for " DAEMON_PATH_DEPRECATED "/Locking location changed to " DAEMON_PATH "/Locking : Locking enabled for spliced");
+                } else if (result && !lock) {
+                    OS_REPORT(OS_WARNING,"lockPages", 0,"DEPRECATED location for " DAEMON_PATH_DEPRECATED "/Locking location changed to " DAEMON_PATH "/Locking : Locking disabled for spliced");
                 }
-            } else {
-                c_voidp e;
-                OS_REPORT(OS_WARNING,"lockPages", 0,
-                    "No configuration specified for Daemon. Therefore the default will be used: Locking disabled");
-                do{
-                    e = c_iterTakeFirst(iter);
-                    c_free(e);
-                } while(e != NULL);
-                c_iterFree(iter);
+            }
+            if (!result) {
+                OS_REPORT(OS_INFO,"lockPages", 0,"Daemon: Locking not defined using default value disabled");
             }
             c_free(root);
         }
@@ -137,21 +115,23 @@ lockPages(
     return lock;
 }
 #undef DAEMON_PATH
+#undef DAEMON_PATH_DEPRECATED
 #endif
 
 static v_spliced
 getKernelSplicedaemon(
-    u_kernel k)
+    u_domain k)
 {
     u_result r;
     v_kernel kk;
     c_iter participants;
     v_spliced spliced;
 
-    r = u_kernelClaim(k,&kk);
-    if ((r == U_RESULT_OK) && (kk != NULL)) {
+    r = u_entityReadClaim(u_entity(k),(v_entity*)(&kk));
+    if (r == U_RESULT_OK) {
+        assert(kk);
         participants = v_resolveParticipants(kk, V_SPLICED_NAME);
-        r = u_kernelRelease(k);
+        r = u_entityRelease(u_entity(k));
         assert(c_iterLength(participants) == 1);
         spliced = v_spliced(c_iterTakeFirst(participants));
         c_iterFree(participants);
@@ -166,12 +146,12 @@ getKernelSplicedaemon(
 static u_result
 u_splicedInit(
     u_spliced spliced,
-    u_kernel k)
+    u_domain domain)
 {
     u_result result;
 
     if (spliced != NULL) {
-        result = u_serviceInit(u_service(spliced), U_SERVICE_SPLICED, k);
+        result = u_serviceInit(u_service(spliced), U_SERVICE_SPLICED, domain);
         u_entity(spliced)->flags |= U_ECREATE_INITIALISED;
     } else {
         OS_REPORT(OS_ERROR,"u_splicedInit",0,
@@ -183,19 +163,19 @@ u_splicedInit(
 
 static u_result
 u_splicedDeinit(
-    u_spliced spliced)
+    u_spliced _this)
 {
     u_result r;
     v_spliced s;
 
-    r = u_splicedClaim(spliced, &s);
-    if ((r == U_RESULT_OK) && (s != NULL))
-    {
-       v_splicedCAndMCommandDispatcherQuit(s);
-       r = u_splicedRelease(spliced);
+    r = u_entityReadClaim(u_entity(_this), (v_entity*)(&s));
+    if (r == U_RESULT_OK) {
+        assert(s);
+        v_splicedCAndMCommandDispatcherQuit(s);
+        r = u_entityRelease(u_entity(_this));
     }
-    
-    return u_serviceDeinit(u_service(spliced));
+
+    return u_serviceDeinit(u_service(_this));
 }
 
 /**************************************************************
@@ -209,7 +189,7 @@ u_splicedNew(
     const c_char *uri)
 {
     u_result r;
-    u_kernel k;
+    u_domain domain;
     v_kernel kk;
     v_serviceStateKind sdState;
     v_serviceManager sm;
@@ -223,11 +203,11 @@ u_splicedNew(
     kSpliced = NULL;
     spliced = NULL;
 
-#if !defined (VXWORKS_RTP) && !defined (__INTEGRITY)
-    k = u_userKernelOpen(uri, -1 /* no timeout and no error logging */);
-    if (k != NULL) {
+#if !defined (VXWORKS_RTP) && !defined (__INTEGRITY) && !defined (WINCE)
+    domain = u_domainOpen(uri, -1 /* no timeout and no error logging */);
+    if (domain != NULL) {
         printf("Database opened, opening kernel\n");
-        r = u_kernelClaim(k,&kk);
+        r = u_entityWriteClaim(u_entity(domain),(v_entity*)(&kk));
         if ((r == U_RESULT_OK) && (kk != NULL)) {
             sm = v_getServiceManager(kk);
 
@@ -244,37 +224,36 @@ u_splicedNew(
                     os_nanoSleep(pollDelay);
                 }
             } while (otherSpliced && (nrSec < 4));
-            r = u_kernelRelease(k);
+            r = u_entityRelease(u_entity(domain));
         }
+        u_domainFree(domain);
         if (otherSpliced) {
             printf("Other splicedaemon running!\n");
-            u_userKernelClose(k);
         } else {
-            u_userKernelClose(k);
-            k = u_userKernelNew(uri);
-            if (k == NULL) {
+            domain = u_domainNew(uri);
+            if (domain == NULL) {
                 printf("Creation of kernel failed!\n");
             } else {
                 /* create new proxy to v_spliced object */
-                kSpliced = getKernelSplicedaemon(k);
+                kSpliced = getKernelSplicedaemon(domain);
             }
         }
     } else
 #endif
     {
 
-        k = u_userKernelNew(uri);
-        if (k == NULL) {
+        domain = u_domainNew(uri);
+        if (domain == NULL) {
             printf("Creation of kernel failed!\n");
         } else {
             /* create new proxy to v_spliced object */
-            kSpliced = getKernelSplicedaemon(k);
+            kSpliced = getKernelSplicedaemon(domain);
         }
     }
 
     if (kSpliced != NULL) {
         spliced = u_entityAlloc(NULL,u_spliced,kSpliced,TRUE);
-        r = u_splicedInit(spliced, k);
+        r = u_splicedInit(spliced, domain);
         if (r != U_RESULT_OK) {
             u_serviceFree(u_service(spliced));
             OS_REPORT(OS_ERROR,"u_splicedNew",0,
@@ -301,30 +280,52 @@ u_splicedNew(
 
 u_result
 u_splicedFree(
-    u_spliced spliced)
+    u_spliced _this)
 {
-    u_result r;
-    u_kernel kernel;
+    u_result result;
+    u_domain domain;
+    c_bool destroy;
 
-    if (spliced != NULL) {
-        if (u_entity(spliced)->flags & U_ECREATE_INITIALISED) {
-            kernel = u_participant(spliced)->kernel;
-            r = u_splicedDeinit(spliced);
-            os_free(spliced);
-
-            /* now close the kernel: should always be the last action of
-               this routine!
-            */
-            u_userKernelFree(kernel);
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        destroy = u_entityDereference(u_entity(_this));
+        /* if refCount becomes zero then this call
+         * returns true and destruction can take place
+         */
+        if (destroy) {
+            domain = u_participantDomain(u_participant(_this));
+            result = u_splicedDeinit(_this);
+            if (result == U_RESULT_OK) {
+                u_entityDealloc(u_entity(_this));
+#if 0
+                result = u_domainFree(domain);
+                if (result != U_RESULT_OK) {
+                    OS_REPORT_2(OS_ERROR,
+                                "user::u_spliced::u_splicedFree", 0,
+                                "Operation u_domainFree(0x%x) failed."
+                                OS_REPORT_NL "result = %s.",
+                                domain, u_resultImage(result));
+                }
+#endif
+            } else {
+                OS_REPORT_2(OS_ERROR,
+                            "user::u_spliced::u_splicedFree",0,
+                            "Operation u_splicedDeinit(0x%x) failed: "
+                            "result = %s.",
+                            _this, u_resultImage(result));
+                u_entityUnlock(u_entity(_this));
+            }
         } else {
-            r = u_entityFree(u_entity(spliced));
+            u_entityUnlock(u_entity(_this));
         }
     } else {
-        OS_REPORT(OS_WARNING,"u_splicedFree",0,
-                  "The specified Spliced = NIL.");
-        r = U_RESULT_OK;
+        OS_REPORT_2(OS_ERROR,
+                    "user::u_spliced::u_splicedFree",0,
+                    "Operation u_entityLock(0x%x) failed: "
+                    "result = %s.",
+                    _this, u_resultImage(result));
     }
-    return r;
+    return result;
 }
 
 /**************************************************************
@@ -341,10 +342,11 @@ u_splicedKernelManager(
     u_result r;
     v_spliced s;
 
-    r = u_splicedClaim(spliced, &s);
-    if ((r == U_RESULT_OK) && (s != NULL)) {
+    r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
+    if (r == U_RESULT_OK) {
+        assert(s);
         v_splicedKernelManager(s);
-        r = u_splicedRelease(spliced);
+        r = u_entityRelease(u_entity(spliced));
     } else {
         OS_REPORT(OS_WARNING, "u_splicedKernelManager", 0,
                   "Could not claim spliced.");
@@ -359,12 +361,13 @@ u_splicedBuiltinResendManager(
     u_result r;
     v_spliced s;
 
-    r = u_splicedClaim(spliced, &s);
-    if ((r == U_RESULT_OK) && (s != NULL)) {
+    r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
+    if (r == U_RESULT_OK) {
+        assert(s);
         v_splicedBuiltinResendManager(s);
-        r = u_splicedRelease(spliced);
+        r = u_entityRelease(u_entity(spliced));
     } else {
-        OS_REPORT(OS_WARNING, "u_splicedKernelManager", 0,
+        OS_REPORT(OS_WARNING, "u_splicedBuiltinResendManager", 0,
                   "Could not claim spliced.");
     }
     return r;
@@ -377,12 +380,13 @@ u_splicedBuiltinCAndMCommandDispatcher(
     u_result r;
     v_spliced s;
 
-    r = u_splicedClaim(spliced, &s);
-    if ((r == U_RESULT_OK) && (s != NULL)) {
+    r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
+    if (r == U_RESULT_OK) {
+        assert(s);
         v_splicedBuiltinCAndMCommandDispatcher(s);
-        r = u_splicedRelease(spliced);
+        r = u_entityRelease(u_entity(spliced));
     } else {
-        OS_REPORT(OS_WARNING, "u_splicedKernelManager", 0,
+        OS_REPORT(OS_WARNING, "u_splicedBuiltinCAndMCommandDispatcher", 0,
                   "Could not claim spliced.");
     }
     return r;
@@ -395,10 +399,11 @@ u_splicedGarbageCollector(
     u_result r;
     v_spliced s;
 
-    r = u_splicedClaim(spliced, &s);
-    if ((r == U_RESULT_OK) && (s != NULL)) {
+    r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
+    if (r == U_RESULT_OK) {
+        assert(s);
         v_splicedGarbageCollector(s);
-        r = u_splicedRelease(spliced);
+        r = u_entityRelease(u_entity(spliced));
     } else {
         OS_REPORT(OS_WARNING, "u_splicedGarbageCollector", 0,
                   "Could not claim spliced.");
@@ -413,10 +418,11 @@ u_splicedPrepareTermination(
     u_result r;
     v_spliced s;
 
-    r = u_splicedClaim(spliced, &s);
-    if ((r == U_RESULT_OK) && (s != NULL)) {
+    r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
+    if (r == U_RESULT_OK) {
+        assert(s);
         v_splicedPrepareTermination(s);
-        r = u_splicedRelease(spliced);
+        r = u_entityRelease(u_entity(spliced));
     } else {
         OS_REPORT(OS_WARNING, "u_splicedPrepareTermination", 0,
                   "Could not claim spliced.");
@@ -434,14 +440,15 @@ u_splicedStartHeartbeat(
     v_spliced s;
     c_bool started;
 
-    r = u_splicedClaim(spliced, &s);
-    if ((r == U_RESULT_OK) && (s != NULL)) {
+    r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
+    if (r == U_RESULT_OK) {
+        assert(s);
         started = v_splicedStartHeartbeat(s, period, renewal);
         if (started == FALSE) {
             r = U_RESULT_INTERNAL_ERROR;
-            u_splicedRelease(spliced);
+            u_entityRelease(u_entity(spliced));
         } else {
-            r = u_splicedRelease(spliced);
+            r = u_entityRelease(u_entity(spliced));
         }
     } else {
         OS_REPORT(OS_WARNING, "u_splicedStartHeartbeat", 0,
@@ -458,14 +465,15 @@ u_splicedStopHeartbeat(
     v_spliced s;
     c_bool stopped;
 
-    r = u_splicedClaim(spliced, &s);
-    if ((r == U_RESULT_OK) && (s != NULL)) {
+    r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
+    if (r == U_RESULT_OK) {
+        assert(s);
         stopped = v_splicedStopHeartbeat(s);
         if (stopped == FALSE) {
             r = U_RESULT_INTERNAL_ERROR;
-            u_splicedRelease(spliced);
+            u_entityRelease(u_entity(spliced));
         } else {
-            r = u_splicedRelease(spliced);
+            r = u_entityRelease(u_entity(spliced));
         }
     } else {
         OS_REPORT(OS_WARNING, "u_splicedStopHeartbeat", 0,
@@ -473,3 +481,4 @@ u_splicedStopHeartbeat(
     }
     return r;
 }
+

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -50,6 +50,17 @@ extern "C" {
 #endif
 
 #include "u_types.h"
+
+/**
+ * brief The writers copy method prototype.
+ *
+ * This prototype specifies the signature of the method the writer will use
+ * to transform application data into kernel data.
+ * This method is provided by the application.
+ */
+typedef c_bool (*u_writerCopy)(c_type type, void *data, void *to);
+typedef c_bool (*u_writerAction)(u_writer writer, c_voidp arg);
+
 #include "u_instanceHandle.h"
 #include "v_status.h"
 #include "os_if.h"
@@ -61,17 +72,8 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-/**
- * brief The writers copy method prototype.
- *
- * This prototype specifies the signature of the method the writer will use
- * to transform application data into kernel data.
- * This method is provided by the application.
- */
-typedef c_bool (*u_writerCopy)(c_type type, void *data, void *to);
-typedef c_bool (*u_writerAction)(c_object o, c_voidp copyArg);
-
-#define  u_writer(w) ((u_writer)(w))
+#define u_writer(w) \
+        ((u_writer)u_entityCheckType(u_entity(w), U_WRITER))
 
 /**
  * \brief The User Layer Writer constructor.
@@ -108,11 +110,18 @@ u_writerNew (
     c_bool enable);
 
 OS_API u_result
-u_writerInit (
-    u_writer _this);
+u_writerInit(
+    u_writer _this,
+    u_publisher publisher,
+    const c_char *name,
+    u_writerCopy copy);
 
 OS_API u_result
 u_writerFree (
+    u_writer _this);
+
+OS_API u_publisher
+u_writerPublisher(
     u_writer _this);
 
 OS_API u_result
@@ -163,7 +172,7 @@ u_writerAssertLiveliness (
     u_writer _this);
 
 OS_API u_result
-u_writerInstanceCopyKeys (
+u_writerCopyKeysFromInstanceHandle (
     u_writer _this,
     u_instanceHandle handle,
     u_writerAction action,
@@ -211,11 +220,27 @@ u_writerGetPublicationMatchStatus (
     v_statusAction action,
     c_voidp arg);
 
+OS_API u_result
+u_writerGetMatchedSubscriptions (
+    u_writer _this,
+    v_statusAction action,
+    c_voidp arg);
+
+OS_API u_result
+u_writerGetMatchedSubscriptionData (
+    u_writer _this,
+    u_instanceHandle subscription_handle,
+    v_statusAction action,
+    c_voidp arg);
 
 OS_API u_result
 u_writerWaitForAcknowledgments(
     u_writer _this,
     c_time timeout);
+
+OS_API c_char *
+u_writerTopicName (
+    u_writer _this);
 
 #undef OS_API
 

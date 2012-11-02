@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl_program.h"
@@ -17,9 +17,9 @@
 #include "idl_tmplExp.h"
 #include "idl_keyDef.h"
 
-#include <os_heap.h>
-#include <os_stdlib.h>
-#include <c_typebase.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
+#include "c_typebase.h"
 
 static idl_macroAttrib idlpp_macroAttrib;
 static idl_streamIn idlpp_inStream;
@@ -60,7 +60,7 @@ idl_fileOpen(
     /* Prepare file header template */
     snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%csacClassBodyHeader", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
     /* QAC EXPECT 3416; No unexpected side effects here */
-    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) || 
+    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
         printf("No template found or protection violation (%s)\n", tmplFileName);
         return (idl_abort);
@@ -157,7 +157,7 @@ idl_sequenceObjManagDef(
         if (idl_typeSpecHasRef(typeSpec)) {
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "    void DDS_sequence_%s_freebuf (void *buffer);\n\n",
+                "    DDS_boolean DDS_sequence_%s_freebuf (void *buffer);\n\n",
                 idl_scopeStack(scope, "_", name));
             idl_fileOutPrintf(
                 idl_fileCur(),
@@ -177,7 +177,7 @@ idl_sequenceObjManagDef(
             /* Deallocation routine for the buffer is required */
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "\nvoid DDS_sequence_%s_freebuf (void *buffer)\n",
+                "\nDDS_boolean DDS_sequence_%s_freebuf (void *buffer)\n",
                 idl_scopeStack(scope, "_", name));
             idl_fileOutPrintf(idl_fileCur(), "{\n");
             idl_fileOutPrintf(idl_fileCur(), "    DDS_unsigned_long *count = (DDS_unsigned_long *)DDS__header (buffer);\n");
@@ -197,6 +197,7 @@ idl_sequenceObjManagDef(
                 "        %s__free (&b[i]);\n",
                 idl_scopeStack(scope, "_", name));
             idl_fileOutPrintf(idl_fileCur(), "    }\n");
+            idl_fileOutPrintf(idl_fileCur(), "    return TRUE;\n");
             idl_fileOutPrintf(idl_fileCur(), "}\n");
         }
         idl_fileOutPrintf(idl_fileCur(), "\n");

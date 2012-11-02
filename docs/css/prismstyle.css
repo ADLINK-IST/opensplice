@@ -36,6 +36,12 @@ h4 /*inherits from body */
   margin-left: 3em;
 }
 
+h5 /*inherits from body */
+{
+  font-size: 100%;
+  margin-left: 4em;
+}
+
 td h4 /*inherits from body */
 {
   font-size: 110%;

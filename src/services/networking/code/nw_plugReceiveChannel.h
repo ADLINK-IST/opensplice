@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -51,13 +51,13 @@ NW_STRUCT(plugReceiveStatistics){
 NW_CLASS(nw_plugReceiveChannel);
 
 /* Note the symmetry between the read and write functions:
- * 
- * 
+ *
+ *
  *  |                          >------> ReadWait
  * \|/  WriteMessageStart      |      |   ReadMessageStart
  *  |     WriteGetNextFragment ^      |     ReadGetNextFragment
  *  |   WriteMessageEnd        |     \|/  ReadMessageEnd
- *  | WriteFlush               |      |   
+ *  | WriteFlush               |      |
  *  >---->---->---->---->---->-^      |
  */
 /* Read functions and corresponding buffer management functions */
@@ -65,7 +65,7 @@ NW_CLASS(nw_plugReceiveChannel);
 /* Read data from socket into internal buffers and handle control messages
  */
 void           nw_plugReceiveChannelProcessIncoming(
-                   nw_plugChannel channel); 
+                   nw_plugChannel channel);
 
 
 /* Blocking call returning a pointer to the next message. Function returns
@@ -76,7 +76,7 @@ c_bool         nw_plugReceiveChannelMessageStart(
                    nw_length *length,
 				   nw_senderInfo sender,
                    plugReceiveStatistics prs);
-                   
+
 /* Non-blocking call returning the remaining part of a message if fragmentation
  * has occurred over the previous buffer */
 void           nw_plugReceiveChannelGetNextFragment(
@@ -87,7 +87,7 @@ void           nw_plugReceiveChannelGetNextFragment(
 /* Non-blocking call that throws away all buffers related to the current message */
 void           nw_plugReceiveChannelMessageIgnore(
                    nw_plugChannel channel);
-                   
+
 /* Non-blocking call freeing the resources used for the message retrieved
  * with the MessageStart function */
 void           nw_plugReceiveChannelMessageEnd(

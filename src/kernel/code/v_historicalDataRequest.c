@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -59,6 +59,7 @@ v_historicalDataRequestNew(
         OS_REPORT(OS_ERROR,
                   "v_historicalDataRequestNew",0,
                   "Failed to allocate request.");
+        assert(FALSE);
     }
 
     return request;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -37,7 +37,7 @@ jni_getFullName(
     c_char* result;
     
     result = (c_char*)(os_malloc(strlen(class) + strlen(DCPSPACKAGE) + 1));
-    sprintf(result, "%s%s", DCPSPACKAGE, class);
+    os_sprintf(result, "%s%s", DCPSPACKAGE, class);
     return result;
 }
 
@@ -48,7 +48,7 @@ jni_getFullRepresentation(
     c_char* result;
     
     result = (c_char*)(os_malloc(strlen(class) + strlen(DCPSPACKAGE) + 3));
-    sprintf(result, "L%s%s;", DCPSPACKAGE, class);
+    os_sprintf(result, "L%s%s;", DCPSPACKAGE, class);
     return result;
 }
 

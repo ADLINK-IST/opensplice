@@ -111,7 +111,7 @@ in_runnableInit(
 
         _this->runState = IN_RUNSTATE_NONE;
         _this->terminate = OS_FALSE;
-        _this->threadId = 0;
+        _this->threadId = OS_THREAD_ID_NONE;
 
         os_mutexAttrInit(&mutexAttr);
         mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;

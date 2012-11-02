@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,8 +15,8 @@
 #if defined (__cplusplus)
 extern "C" {
 #endif
-#include <dds_dcpsSplDcps.h>
-#include <os_if.h>
+#include "dds_dcpsSplDcps.h"
+#include "os_if.h"
 
 #ifdef OSPL_BUILD_DCPSSAC
 #define OS_API OS_API_EXPORT
@@ -58,7 +58,7 @@ typedef void *                                  DDS_Object;
 /* Generic allocation/release functions */
 OS_API void DDS_free (void *);
 OS_API extern DDS_char *DDS_string_alloc (DDS_unsigned_long len);
-typedef void (*dealloactorType)(void *object);
+typedef DDS_boolean (*dealloactorType)(void *object);
 OS_API void * DDS_sequence_malloc (void);
 OS_API void * DDS_sequence_allocbuf (dealloactorType deallocator,
                                      DDS_unsigned_long len,
@@ -2046,6 +2046,7 @@ OS_API DDS_TopicBuiltinTopicData *DDS_sequence_DDS_TopicBuiltinTopicData_allocbu
  *     LivelinessQosPolicy liveliness;
  *     ReliabilityQosPolicy reliability;
  *     LifespanQosPolicy lifespan;
+ *     DestinationOrderQosPolicy destination_order;
  *     UserDataQosPolicy user_data;
  *     OwnershipQosPolicy ownership;
  *     OwnershipStrengthQosPolicy ownership_strength;
@@ -2067,6 +2068,7 @@ struct DDS_PublicationBuiltinTopicData_s {
     DDS_LivelinessQosPolicy liveliness;
     DDS_ReliabilityQosPolicy reliability;
     DDS_LifespanQosPolicy lifespan;
+    DDS_DestinationOrderQosPolicy destination_order;
     DDS_UserDataQosPolicy user_data;
     DDS_OwnershipQosPolicy ownership;
     DDS_OwnershipStrengthQosPolicy ownership_strength;
@@ -2710,7 +2712,7 @@ DDS_DomainParticipantFactory_get_default_participant_qos (
 OS_API DDS_Domain
 DDS_DomainParticipantFactory_lookup_domain (
     DDS_DomainParticipantFactory _this,
-    DDS_DomainId_t domain_id);
+    const DDS_DomainId_t domain_id);
 
 /*     ReturnCode_t
  *     delete_domain(
@@ -4126,6 +4128,7 @@ typedef DDS_sequence_DDS_SampleInfo DDS_SampleInfoSeq;
 OS_API DDS_SampleInfoSeq *DDS_SampleInfoSeq__alloc (void);
 OS_API DDS_SampleInfo *DDS_SampleInfoSeq_allocbuf (DDS_unsigned_long len);
 
+#if 1
 /*
  * The following FooTypeSupport operations are not for
  * use by the application programmer, these interfaces
@@ -4153,11 +4156,12 @@ DDS__FooTypeSupport__alloc (
     const DDS_char *type_name,
     const DDS_char *type_keys,
     const DDS_char *type_def,
-    const DDS_typeSupportLoad type_load,
+    DDS_typeSupportLoad type_load,
     const DDS_copyIn copy_in,
     const DDS_copyOut copy_out,
     const DDS_unsigned_long alloc_size,
     const DDS_typeSupportAllocBuffer alloc_buffer);
+#endif
 
 OS_API DDS_string
 DDS__FooTypeSupport_get_type_name (

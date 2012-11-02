@@ -1,6 +1,7 @@
 # included by bld/$(SPLICE_TARGET)/makefile
 
 TARGET_DLIB	:= $(DDS_UTIL)
+EXTRACTED_LIB = libddscore
 
 ifneq (,$(findstring vxworks6,$(SPLICE_TARGET)))
 OS_UTILS        = ut_avltree.c ut_collection.c

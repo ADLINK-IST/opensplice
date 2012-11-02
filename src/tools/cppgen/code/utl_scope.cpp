@@ -66,8 +66,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * utl_scope.cc - Implementation of class UTL_Scope
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 #include <assert.h>
 
 #undef INCREMENT

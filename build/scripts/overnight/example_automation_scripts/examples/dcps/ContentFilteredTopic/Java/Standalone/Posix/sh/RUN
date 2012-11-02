@@ -1,0 +1,42 @@
+if [ "$OSPL_HOME" = "" ];then
+echo "*** Please source release.com to set OpenSplice environment variables";
+echo "*** ERROR OpenSplice environment variables NOT SET"
+exit;
+fi
+echo "=== OSPL_HOME is "${OSPL_HOME}
+echo "=== OSPL_URI is "${OSPL_URI}
+
+if [ -z "$JAVA_HOME" ]; then
+    echo "WARNING: JAVA_HOME not defined. Cannot find libjsig.so and set LD_PRELOAD"
+    echo "         This could prevent cleanup of Java application at exit"
+else
+   LD_PRELOAD=`find $JAVA_HOME -follow -name libjsig.so | grep -v server/libjsig.so | grep -v client/libjsig.so`
+   export LD_PRELOAD
+   if [ -z "$LD_PRELOAD" ]; then
+      echo "WARNING: libjsig.so not found in JAVA_HOME: $JAVA_HOME"
+      echo "         This could prevent cleanup of Java application at exit"
+   fi
+fi
+
+$VG_OSPL_START ospl start
+$VG_START_SLEEP
+
+echo "=== Launching ContentFilteredTopic "
+
+sh ./startPublisher.sh  > pubResult.txt	&
+sleep 2
+sh ./startSubscriber.sh "./subResult.txt"
+
+echo "=== Checking ContentFilteredTopic Subscriber results"
+NB_GE=`grep GE subResult.txt | wc -l`; echo NB_GE=$NB_GE
+NB_MSFT=`grep MSFT subResult.txt | wc -l`; echo NB_MSFT=$NB_MSFT
+if [ $NB_GE -gt 0 ] && [ $NB_MSFT -eq 0 ] ;then
+   echo OK
+else
+   echo NOK 
+   echo "*** ERROR : example ContentFilteredTopic failed ";
+   cat subResult.txt;
+fi
+
+$VG_OSPL_START ospl stop
+sleep 2

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef NW_STATISTICS_H_
@@ -18,10 +18,13 @@
 extern "C" {
 #endif
 
+#define NW_STRUCT(name)  struct name##_s
+#define NW_EXTENDS(type) NW_STRUCT(type) _parent
+#define NW_CLASS(name)   typedef NW_STRUCT(name) *name
 
-C_CLASS(nw_SendChannelStatistics);
+NW_CLASS(nw_SendChannelStatistics);
 
-C_STRUCT(nw_SendChannelStatistics){
+NW_STRUCT(nw_SendChannelStatistics){
 
     c_ulong            numberOfMessagesSent;
 	c_ulong            numberOfBytesSent;
@@ -61,9 +64,9 @@ nw_SendChannelStatistics        nw_SendChannelStatisticsNew      ();
 
 void                       nw_SendChannelStatisticsFree     (nw_SendChannelStatistics s);
 
-C_CLASS(nw_ReceiveChannelStatistics);
+NW_CLASS(nw_ReceiveChannelStatistics);
 
-C_STRUCT(nw_ReceiveChannelStatistics){
+NW_STRUCT(nw_ReceiveChannelStatistics){
     c_ulong            numberOfMessagesSent;
 	c_ulong            numberOfBytesSent;
 	c_ulong            numberOfPacketsSent;
@@ -96,17 +99,17 @@ C_STRUCT(nw_ReceiveChannelStatistics){
     c_ulong            nofBytesAfterDecompression;
 };
 
-C_CLASS(nw_SendChannelStatisticsArgs);
+NW_CLASS(nw_SendChannelStatisticsArgs);
 
-C_STRUCT(nw_SendChannelStatisticsArgs){
+NW_STRUCT(nw_SendChannelStatisticsArgs){
 
 	nw_SendChannelStatistics            scs;
 	c_ulong            					channel_id;
 };
 
-C_CLASS(nw_ReceiveChannelStatisticsArgs);
+NW_CLASS(nw_ReceiveChannelStatisticsArgs);
 
-C_STRUCT(nw_ReceiveChannelStatisticsArgs){
+NW_STRUCT(nw_ReceiveChannelStatisticsArgs){
 
 	nw_ReceiveChannelStatisticsArgs     rcs;
 	c_ulong            					channel_id;

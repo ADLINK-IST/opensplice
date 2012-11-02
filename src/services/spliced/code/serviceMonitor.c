@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,9 +9,9 @@
  *   for full copyright notice and license terms.
  *
  */
-#include <os.h>
+#include "os.h"
 
-#include <v_event.h>
+#include "v_event.h"
 
 #include "report.h"
 #include "serviceMonitor.h"
@@ -53,7 +53,7 @@ serviceMonitorMain(
                 OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0,
                     "Service '%s' DIED -> kill", info->name);
 #if !defined OS_WIN32_DEFS_H
-                os_procDestroy(info->procId, SIGKILL);
+                os_procDestroy(info->procId, OS_SIGKILL);
 #endif
             break;
             case RR_RESTART:
@@ -72,7 +72,7 @@ serviceMonitorMain(
                     os_nanoSleep(sleepTime);
                 }
 #if !defined OS_WIN32_DEFS_H && !defined INTEGRITY
-                os_procDestroy(info->procId, SIGKILL);
+                os_procDestroy(info->procId, OS_SIGKILL);
 #endif
                 os_procCheckStatus(info->procId, &dummy);
 

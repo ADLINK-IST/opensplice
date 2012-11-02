@@ -1,15 +1,24 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-#include <os_socket.h>
+#include "os_socket.h"
+#include "os_stdlib.h"
+
+#ifndef OS_NO_GETIFADDRS
+#if defined (VXWORKS_RTP)
+#include <net/ifaddrs.h>
+#else
+#include <ifaddrs.h>
+#endif
+#endif
 
 #ifdef VXWORKS_RTP
 #include <sockLib.h>
@@ -131,6 +140,14 @@ os_sockSelect(
     return r;
 }
 
+/**
+* Populates an os_ifAttributes_s struct for a particular ifreq interface instance.
+* @param s A socket fd that is required for ioctl calls
+* @param ifr The interface we want to query the attributes of. Its ifr_addr will be stored and
+* the ifr_name used for the other ioctl calls.
+* @param ifElement The struct to be populated with the interface's attributes
+* @return os_resultSuccess on success, os_resultFail otherwise.
+*/
 static os_result
 os_queryInterfaceAttributes(
     os_socket s,
@@ -141,55 +158,95 @@ os_queryInterfaceAttributes(
     struct ifreq ifAttr;
     os_result result = os_resultSuccess;
 
-    strncpy (ifElement->name, ifr->ifr_name, OS_IFNAMESIZE);
-    ifElement->address = ifr->ifr_addr;
-    ifAttr = *ifr;
-#ifdef INTEGRITY
-    if ( !strcmp("lo0", ifAttr.ifr_name) )
+    os_strncpy (ifElement->name, ifr->ifr_name, OS_IFNAMESIZE);
+
+    memcpy(&ifElement->address, &ifr->ifr_addr,
+            ifr->ifr_addr.sa_family == AF_INET6 ? sizeof(os_sockaddr_in6) : sizeof(os_sockaddr_in));
+    if (ifr->ifr_addr.sa_family == AF_INET6)
     {
-       ifElement->flags = IFF_UP | IFF_LOOPBACK;
+        /* Just zero these fileds for IPv6 */
+        ifElement->flags = 0;
+        memset (&ifElement->broadcast_address, 0, sizeof (ifElement->broadcast_address));
+        memset (&ifElement->network_mask, 0, sizeof (&ifElement->network_mask));
     }
     else
     {
-       ifElement->flags = IFF_BROADCAST | IFF_MULTICAST | IFF_UP;
-    }
-#else
-    retVal = ioctl (s, SIOCGIFFLAGS, &ifAttr);
-    if (retVal == 0) {
-        ifElement->flags = ifAttr.ifr_flags;
-    } else {
-        result = os_resultFail;
-    }
-#endif
-    if (ifElement->flags & IFF_BROADCAST)
-    {
         ifAttr = *ifr;
-        retVal = ioctl (s, SIOCGIFBRDADDR, &ifAttr);
+#ifdef INTEGRITY
+        if ( !strcmp("lo0", ifAttr.ifr_name) )
+        {
+           ifElement->flags = IFF_UP | IFF_LOOPBACK;
+        }
+        else
+        {
+           ifElement->flags = IFF_BROADCAST | IFF_MULTICAST | IFF_UP;
+        }
+#else
+        retVal = ioctl (s, SIOCGIFFLAGS, &ifAttr);
         if (retVal == 0) {
-            ifElement->broadcast_address = ifAttr.ifr_broadaddr;
+            ifElement->flags = ifAttr.ifr_flags;
+        } else {
+            result = os_resultFail;
+        }
+#endif
+        if (ifElement->flags & IFF_BROADCAST)
+        {
+            ifAttr = *ifr;
+            retVal = ioctl (s, SIOCGIFBRDADDR, &ifAttr);
+            if (retVal == 0) {
+                memcpy(&ifElement->broadcast_address, &ifAttr.ifr_broadaddr, sizeof(os_sockaddr_in));
+            } else {
+                result = os_resultFail;
+            }
+        }
+        else
+        {
+            memset (&ifElement->broadcast_address, 0, sizeof (ifElement->broadcast_address));
+        }
+        ifAttr = *ifr;
+        retVal = ioctl (s, SIOCGIFNETMASK, &ifAttr);
+        if (retVal == 0) {
+            memcpy(&ifElement->network_mask, &ifAttr.ifr_addr, sizeof(os_sockaddr_in));
         } else {
             result = os_resultFail;
         }
     }
-    else
-    {
-        memset (&ifElement->broadcast_address, 0, sizeof (ifElement->broadcast_address));
-    }
+#if defined (OS_NO_SIOCGIFINDEX)
+    /* Looks like Greenhills & AIX at least don't have SIOCGIFINDEX */
+    /* @todo dds2523 To investigate - note only really required for IPv6 */
+    ifElement->interfaceIndexNo = 0;
+#elif defined (OS_SOLARIS) || defined (AIX)
+    /* Solaris has if_nametoindex */
+    ifElement->interfaceIndexNo = (os_uint) if_nametoindex((const char*)&ifr->ifr_name);
+#else
+    /* Get the interface index number */
     ifAttr = *ifr;
-    retVal = ioctl (s, SIOCGIFNETMASK, &ifAttr);
-    if (retVal == 0) {
-        ifElement->network_mask = ifAttr.ifr_addr;
+    retVal = ioctl (s, SIOCGIFINDEX, &ifAttr);
+    if (retVal == 0)
+    {
+        ifElement->interfaceIndexNo = (os_uint) ifAttr.ifr_ifindex;
     } else {
         result = os_resultFail;
     }
+#endif
     return result;
 }
 
+/**
+* Use the SIOCGIFCONF ioctl query on a socket to list available network interfaces.
+* Is used for IPv4 address querying & IPv6 queries on platforms
+* where getifaddrs is not available
+* @param addressFamily Determines the type of socket and hence which
+* interfaces you wish to query. AF_INET for IPv4, AF_INET6 for IPv6
+* @see os_sockQueryInterfaces
+* @see os_sockQueryIPv6Interfaces
+*/
 os_result
-os_sockQueryInterfaces(
+os_sockQueryInterfacesBase(
     os_ifAttributes *ifList,
     os_uint32 listSize,
-    os_uint32 *validElements)
+    os_uint32 *validElements,
+    short addressFamily)
 {
     os_result result = os_resultSuccess;
     struct ifconf ifc;
@@ -199,7 +256,7 @@ os_sockQueryInterfaces(
     unsigned int listIndex;
     unsigned int ifrLen;
 
-    ifcs = os_sockNew (AF_INET, SOCK_DGRAM);
+    ifcs = os_sockNew (addressFamily, SOCK_DGRAM);
     if (ifcs >= -1) {
         ifc.ifc_len = bufLen;
         ifc.ifc_buf = os_malloc (ifc.ifc_len);
@@ -225,20 +282,20 @@ os_sockQueryInterfaces(
                     if (ifr->ifr_addr.sa_family == AF_INET) {
                         ifrLen += sizeof(struct sockaddr_in);
                     } else if (ifr->ifr_addr.sa_family == AF_INET6) {
-                        ifrLen += sizeof(struct sockaddr_in6);
+                        ifrLen += sizeof(os_sockaddr_in6);
                     } else {
                         ifrLen += (unsigned int)sizeof(struct sockaddr);
                     }
 #endif
                    /*
-                    * For some platforms (e.g. 64 bit), the sockaddr members may not be the longest members 
-                    * of the Union. In that case the "sizeof"-size should be used. 
+                    * For some platforms (e.g. 64 bit), the sockaddr members may not be the longest members
+                    * of the Union. In that case the "sizeof"-size should be used.
                     */
                    if (ifrLen < sizeof(struct ifreq)) {
                       ifrLen = sizeof(struct ifreq);
                    }
 
-                   if (ifr->ifr_addr.sa_family == AF_INET) {
+                   if (ifr->ifr_addr.sa_family == addressFamily) {
                         /* Get other interface attributes */
                         result = os_queryInterfaceAttributes (ifcs, ifr,
                             &ifList[listIndex]);
@@ -254,7 +311,7 @@ os_sockQueryInterfaces(
             } else {
                 os_free (ifc.ifc_buf);
                 bufLen += 1000;
-                ifc.ifc_len = bufLen; 
+                ifc.ifc_len = bufLen;
                 ifc.ifc_buf = os_malloc (ifc.ifc_len);
             }
         }
@@ -262,4 +319,67 @@ os_sockQueryInterfaces(
         os_sockFree (ifcs);
     }
     return result;
+}
+
+os_result
+os_sockQueryInterfaces(
+    os_ifAttributes *ifList,
+    os_uint32 listSize,
+    os_uint32 *validElements)
+{
+    return os_sockQueryInterfacesBase(ifList, listSize, validElements, AF_INET);
+}
+
+os_result
+os_sockQueryIPv6Interfaces(
+    os_ifAttributes *ifList,
+    os_uint32 listSize,
+    os_uint32 *validElements)
+{
+#ifdef OS_NO_GETIFADDRS
+    /* If getifaddrs isn't available fall back to ioctl. Might work... */
+    return os_sockQueryInterfacesBase(ifList, listSize, validElements, AF_INET6);
+#else
+    /* SIOCGIFCONF doesn't list Ipv6 interfaces on Linux. getifaddrs is preferable
+    if available anyway */
+    struct ifaddrs* interfaceList = NULL;
+    struct ifaddrs* nextInterface = NULL;
+    unsigned int listIndex = 0;
+
+    *validElements = 0;
+
+    if (getifaddrs (&interfaceList) != 0)
+    {
+        return os_resultFail;
+    }
+
+    nextInterface = interfaceList;
+
+    while (nextInterface != NULL && listIndex < listSize)
+    {
+        if (nextInterface->ifa_addr &&
+            nextInterface->ifa_addr->sa_family == AF_INET6)
+        {
+            os_sockaddr_in6* v6Address;
+
+            v6Address = (os_sockaddr_in6 *) nextInterface->ifa_addr;
+
+            if (!IN6_IS_ADDR_UNSPECIFIED(&v6Address->sin6_addr))
+            {
+                os_strncpy(ifList[listIndex].name, nextInterface->ifa_name, OS_IFNAMESIZE);
+                memcpy(&ifList[listIndex].address, v6Address, sizeof (os_sockaddr_in6));
+                ifList[listIndex].flags = 0;
+                memset(&ifList[listIndex].broadcast_address, 0, sizeof (ifList[listIndex].broadcast_address));
+                memset(&ifList[listIndex].network_mask, 0, sizeof (&ifList[listIndex].network_mask));
+                ifList[listIndex].interfaceIndexNo = (os_uint) if_nametoindex(nextInterface->ifa_name);
+                ++listIndex;
+            }
+        }
+        nextInterface = nextInterface->ifa_next;
+    }
+
+    *validElements = listIndex;
+    freeifaddrs(interfaceList);
+    return os_resultSuccess;
+#endif /*OS_NO_GETIFADDRS */
 }

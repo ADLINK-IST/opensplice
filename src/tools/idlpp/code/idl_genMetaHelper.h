@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,8 +14,19 @@
 
 #include "idl_scope.h"
 
-#include <c_metabase.h>
+#include "c_metabase.h"
 
 char *idl_genXMLmeta (c_type type);
+
+/*
+ * dds#2745
+ * Allows to replace
+ * 'A very very big string'
+ * by :
+ * 'a very"
+ * "very big"
+ * "string'
+ */
+char *idl_cutXMLmeta (char *meta);
 
 #endif /* IDL_GENMETAHELPER_H */

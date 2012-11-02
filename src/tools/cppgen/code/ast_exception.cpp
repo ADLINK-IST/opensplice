@@ -71,8 +71,8 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * and of UTL_Scope
  */
 
-#include <idl.h>
-#include <idl_extern.h>
+#include "idl.h"
+#include "idl_extern.h"
 
 /*
  * Constructor(s) and destructor

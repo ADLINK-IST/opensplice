@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -569,10 +569,56 @@ OS_API c_type c_literal_t   (c_base _this);
 OS_API c_type c_property_t  (c_base _this);
 OS_API c_type c_unionCase_t (c_base _this);
 
-#if 1
+
+/**************************************************************************
+
+  The functions c_arraySize and c_sequenceSize are specified in
+  c_metabase.h and not in c_collection.h because the type system
+  uses arrays/sequences to store its meta-data.
+
+  On the other hand, c_collection.h has dependencies on c_metabase.h
+  because it offers functions to instantiate a collection for any given
+  element-type, which is passed as a c_type.
+
+  Specifying both c_arraySize and c_sequenceSize on this level avoids
+  cyclic dependencies between c_metabase.h and c_collection.h.
+
+  However, the implementation of the functions has moved to c_base.h,
+  mainly because their implementation require inside knowledge about
+  headers and confidence numbers.
+
+ *************************************************************************/
+
+
+/**
+ * \brief This operation returns the number of element the specified array
+ *        can hold.
+ *
+ * This operation returns the number of element the specified array can hold.
+ *
+ * \param a The array on which this operation operates.
+ *
+ * \return The size in elements of the given array.
+ */
 OS_API c_long
-c_arraySize(
-    c_array _this);
+c_arraySize (
+    c_array a);
+
+/**
+ * \brief This operation returns the number of element the specified sequence
+ *        can hold.
+ *
+ * This operation returns the number of element the specified sequence can hold.
+ *
+ * \param a The sequence on which this operation operates.
+ *
+ * \return The size in elements of the given sequence.
+ */
+OS_API c_long
+c_sequenceSize (
+    c_sequence s);
+
+/**************************************************************************/
 
 OS_API c_type
 c_metaArrayTypeNew(
@@ -581,10 +627,12 @@ c_metaArrayTypeNew(
     c_type subType,
     c_long maxSize);
 
-#else
-#define c_arraySize(_this) \
-        (_this ? c_collectionType(c_getType(_this))->maxSize : 0)
-#endif
+OS_API c_type
+c_metaSequenceTypeNew(
+    c_metaObject scope,
+    const c_char *name,
+    c_type subType,
+    c_long maxSize);
 
 #undef OS_API
 

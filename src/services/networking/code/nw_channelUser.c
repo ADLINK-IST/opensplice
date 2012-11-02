@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -108,15 +108,15 @@ nw_channelUserRetrieveNewGroup(
     nw_adminMessage message;
     
     if (channelUser) {
-        if ( c_iterLength(channelUser->messageBuffer) != 0 ) {
-            os_mutexLock(&channelUser->messageBufferMutex);
+         os_mutexLock(&channelUser->messageBufferMutex);
+         if ( c_iterLength(channelUser->messageBuffer) != 0 ) {
             message = (nw_adminMessage)c_iterTakeFirst(channelUser->messageBuffer);
-            os_mutexUnlock(&channelUser->messageBufferMutex);
             
             *entry = message->entry;
             result = TRUE;
             nw_adminMessageFree(message);
         }
+	os_mutexUnlock(&channelUser->messageBufferMutex);
     }
     
     return result;

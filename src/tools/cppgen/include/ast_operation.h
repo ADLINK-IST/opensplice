@@ -75,12 +75,12 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 ** USE: included from ast.hh
 */
 
-#include <idl_fwd.h>
-#include <idl_narrow.h>
-#include <utl_list.h>
-#include <ast_decl.h>
-#include <utl_scope.h>
-#include <utl_scoped_name.h>
+#include "idl_fwd.h"
+#include "idl_narrow.h"
+#include "utl_list.h"
+#include "ast_decl.h"
+#include "utl_scope.h"
+#include "utl_scoped_name.h"
 
 
 class AST_Operation : public virtual AST_Decl, public virtual UTL_Scope

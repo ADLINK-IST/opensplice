@@ -79,10 +79,10 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
  * FE includes
  */
 
-#include <fe_interface_header.h>// class FE_InterfaceHeader
-#include <fe_declarator.h> // class FE_Declarator
-#include <fe_value_inheritance_spec.h>
-#include <fe_value_header.h>
+#include "fe_interface_header.h"// class FE_InterfaceHeader
+#include "fe_declarator.h" // class FE_Declarator
+#include "fe_value_inheritance_spec.h"
+#include "fe_value_header.h"
 
 /*
  * FE Operations

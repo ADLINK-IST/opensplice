@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,11 +12,11 @@
 #ifndef _XBE_OPERATION_HH
 #define _XBE_OPERATION_HH
 
-#include <xbe_codegen.h>
-#include <xbe_type.h>
-#include <xbe_exception.h>
-#include <xbe_classgen.h>
-#include <tlist.h>
+#include "xbe_codegen.h"
+#include "xbe_type.h"
+#include "xbe_exception.h"
+#include "xbe_classgen.h"
+#include "tlist.h"
 
 class be_interface;
 class be_DispatchableType;

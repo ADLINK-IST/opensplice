@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,7 +14,7 @@
  * This module generates Splice meta data load functions
  * related to an IDL input file.
  */
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 
 #include "idl_program.h"
 #include "idl_scope.h"
@@ -23,8 +23,8 @@
 #include "idl_genSplHelper.h"
 #include "idl_tmplExp.h"
 
-#include <c_typebase.h>
-#include <c_iterator.h>
+#include "c_typebase.h"
+#include "c_iterator.h"
 
 /* The following IDL to metadata type mapping applies to all routines.
  *
@@ -43,8 +43,8 @@
  *  double			c_double	c_primitive->kind P_DOUBLE
  *  string			c_string	c_collectionType->kind C_STRING, ->maxSize 0, ->subType "c_char"
  *  string<len>			c_string	c_collectionType->kind C_STRING, ->maxSize len, ->subType "c_char"
- *  sequence<type>		c_array		c_collectionType->kind C_SEQUENCE, ->maxSize 0, ->subType <type>
- *  sequence<type,len>		c_array		c_collectionType->kind C_SEQUENCE, ->maxSize len, ->subType <type>
+ *  sequence<type>		c_sequence	c_collectionType->kind C_SEQUENCE, ->maxSize 0, ->subType <type>
+ *  sequence<type,len>		c_sequence		c_collectionType->kind C_SEQUENCE, ->maxSize len, ->subType <type>
  *  typedef <type-name> <name>	-		c_typeDef->alias <type-name>
  *  enum <name> {				c_enumeration->elements
  *	<element-name>				    elements[0..n] c_constant

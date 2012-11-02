@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_publisher.h"
@@ -15,27 +15,25 @@
 #include "gapi_dataWriter.h"
 #include "gapi_topicDescription.h"
 #include "gapi_topic.h"
+#include "gapi_entity.h"
 #include "gapi_kernel.h"
-#include "gapi_set.h"
-#include "gapi_domainEntity.h"
 #include "gapi_structured.h"
 #include "gapi_typeSupport.h"
 #include "gapi_qos.h"
-#include "gapi_publisherStatus.h"
 #include "gapi_objManag.h"
 #include "gapi_error.h"
 
 #include "os_heap.h"
 #include "u_user.h"
 
-#define U_PUBLISHER_SET(p,e)     _EntitySetUserEntity(_Entity(p), u_entity(e))
+#define U_PUBLISHER_SET(p,e) \
+        _EntitySetUserEntity(_Entity(p), u_entity(e))
 
 
 C_STRUCT(_Publisher) {
-    C_EXTENDS(_DomainEntity);
+    C_EXTENDS(_Entity);
     gapi_dataWriterQos             _defDataWriterQos;
     struct gapi_publisherListener  _Listener;
-    gapi_set                       dataWriterSet;
 };
 
 static gapi_boolean
@@ -71,11 +69,11 @@ copyPublisherQosIn (
 
     if (copied) {
         dstQos->partition = gapi_stringSeq_to_String(&srcQos->partition.name,",");
-        if ( srcQos->partition.name._length > 0 &&  !dstQos->partition) { 
+        if ( srcQos->partition.name._length > 0 &&  !dstQos->partition) {
             copied = FALSE;
         }
     }
-    
+
     if (copied) {
         dstQos->presentation.access_scope    =
                 srcQos->presentation.access_scope;
@@ -97,7 +95,7 @@ copyPublisherQosOut (
 {
     assert(srcQos);
     assert(dstQos);
-    
+
     if ( dstQos->group_data.value._maximum > 0 ) {
         if ( dstQos->group_data.value._release ) {
             gapi_free(dstQos->group_data.value._buffer);
@@ -120,7 +118,7 @@ copyPublisherQosOut (
             dstQos->group_data.value._length  = 0;
             dstQos->group_data.value._release = FALSE;
             dstQos->group_data.value._buffer = NULL;
-    }  
+    }
 
     gapi_string_to_StringSeq(srcQos->partition,",",&dstQos->partition.name);
 
@@ -132,7 +130,7 @@ copyPublisherQosOut (
             srcQos->presentation.ordered_access;
     dstQos->entity_factory.autoenable_created_entities =
             srcQos->entityFactory.autoenable_created_entities;
-        
+
     return TRUE;
 }
 
@@ -154,19 +152,12 @@ _PublisherNew (
     newPublisher = _PublisherAlloc();
 
     if ( newPublisher ) {
-        _DomainEntityInit (_DomainEntity(newPublisher),
-                           participant,
-                           _Entity(participant),
-                           FALSE);
+        _EntityInit (_Entity(newPublisher),
+                           _Entity(participant));
         gapi_dataWriterQosCopy (&gapi_dataWriterQosDefault,
                                 &newPublisher->_defDataWriterQos);
         if ( a_listener ) {
             newPublisher->_Listener = *a_listener;
-        }
-        newPublisher->dataWriterSet = gapi_setNew (gapi_objectRefCompare);
-        if ( newPublisher->dataWriterSet == NULL ) {
-            _DomainEntityDispose(_DomainEntity(newPublisher));
-            newPublisher = NULL;
         }
     }
 
@@ -174,19 +165,18 @@ _PublisherNew (
         publisherQos = u_publisherQosNew(NULL);
         if ( publisherQos ) {
             if ( !copyPublisherQosIn(qos, publisherQos)) {
-                _DomainEntityDispose(_DomainEntity(newPublisher));
+                _EntityDispose(_Entity(newPublisher));
                 newPublisher = NULL;
             }
         } else {
-            gapi_setFree(newPublisher->dataWriterSet);
-            _DomainEntityDispose(_DomainEntity(newPublisher));
+            _EntityDispose(_Entity(newPublisher));
             newPublisher = NULL;
         }
     }
-        
-    if ( newPublisher  ) {        
+
+    if ( newPublisher  ) {
         u_publisher uPublisher;
-        
+
         uPublisher = u_publisherNew (uParticipant,
                                      "publisher",
                                      publisherQos,
@@ -195,34 +185,35 @@ _PublisherNew (
         if ( uPublisher ) {
             U_PUBLISHER_SET(newPublisher, uPublisher);
         } else {
-            gapi_setFree(newPublisher->dataWriterSet);
-            _DomainEntityDispose(_DomainEntity(newPublisher));
+            _EntityDispose(_Entity(newPublisher));
             newPublisher = NULL;
         }
     }
 
-    if ( newPublisher ) {        
-        _EntityStatus(newPublisher) = _Status(_PublisherStatusNew(newPublisher,
-                                              a_listener,
-                                             mask));
-        if ( _EntityStatus(newPublisher) ) {
+    if ( newPublisher ) {
+        _Status status;
+
+        status = _StatusNew(_Entity(newPublisher),
+                            STATUS_KIND_PUBLISHER,
+                            (struct gapi_listener *)a_listener, mask);
+        if (status) {
+            _EntityStatus(newPublisher) = status;
             if ( qos->partition.name._length == 0 ) {
-                /* 
-                 * behaviour of the kernel in case of an empty sequence is that
-                 * it is related no none of the partitions, while DCPS expects
-                 * it to be conected to all partitions.
+                /*
+                 * behaviour of the kernel in case of an empty sequence
+                 * is that it is related to none of the partitions,
+                 * while DCPS expects it to be conected to all partitions.
                  * Therefore this has to be done seperately.
                  */
                 u_publisherPublish (U_PUBLISHER_GET(newPublisher), "");
             }
         } else {
             u_publisherFree(U_PUBLISHER_GET(newPublisher));
-            gapi_setFree(newPublisher->dataWriterSet);
-            _DomainEntityDispose(_DomainEntity(newPublisher));
+            _EntityDispose(_Entity(newPublisher));
             newPublisher = NULL;
-         }
+        }
     }
-         
+
     return newPublisher;
 }
 
@@ -231,44 +222,33 @@ _PublisherFree (
     _Publisher _this)
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
+    _Status status;
+    u_publisher p;
 
     assert(_this);
 
-    _PublisherStatusSetListener(_PublisherStatus(_Entity(_this)->status), NULL, 0);
+    status = _EntityStatus(_this);
+    _StatusSetListener(status, NULL, 0);
 
-    _PublisherStatusFree(_PublisherStatus(_Entity(_this)->status));
+    _EntityClaim(status);
+    _StatusDeinit(status);
 
-    _EntityFreeStatusCondition(_Entity(_this));
+    gapi_dataWriterQos_free(&_this->_defDataWriterQos);
 
-    if (u_publisherFree(U_PUBLISHER_GET(_this)) != U_RESULT_OK) {
+    p = U_PUBLISHER_GET(_this);
+    _EntityDispose (_Entity(_this));
+    if (u_publisherFree(p) != U_RESULT_OK) {
         result = GAPI_RETCODE_ERROR;
     }
-    
-    gapi_setFree (_this->dataWriterSet);
-    _this->dataWriterSet = NULL;
-    
-    gapi_dataWriterQos_free(&_this->_defDataWriterQos);
-    
-    _DomainEntityDispose (_DomainEntity(_this));
 
     return result;
 }
 
-gapi_boolean
-_PublisherPrepareDelete (
+c_long
+_PublisherWriterCount (
     _Publisher _this)
 {
-    gapi_boolean result;
-
-    assert(_this);
-
-    if ( gapi_setIsEmpty (_this->dataWriterSet) ) {
-        result = TRUE;
-    } else {
-        result = FALSE;
-    }
-
-    return result;
+    return u_publisherWriterCount(U_PUBLISHER_GET(_this));
 }
 
 u_publisher
@@ -279,24 +259,26 @@ _PublisherUpublisher (
     return U_PUBLISHER_GET(_this);
 }
 
-gapi_publisherQos *
+u_result
 _PublisherGetQos (
     _Publisher _this,
     gapi_publisherQos *qos)
 {
     v_publisherQos publisherQos;
     u_publisher uPublisher;
-    
+    u_result result;
+
     assert(_this);
 
     uPublisher = U_PUBLISHER_GET(_this);
-        
-    if ( u_entityQoS(u_entity(uPublisher), (v_qos*)&publisherQos) == U_RESULT_OK ) {
+
+    result = u_entityQoS(u_entity(uPublisher), (v_qos*)&publisherQos);
+    if ( result == U_RESULT_OK ) {
         copyPublisherQosOut(publisherQos,  qos);
         u_publisherQosFree(publisherQos);
     }
 
-    return qos;
+    return result;
 }
 
 gapi_dataWriter
@@ -315,16 +297,16 @@ gapi_publisher_create_datawriter (
     gapi_context context;
     gapi_topicQos* topicQos;
     gapi_returnCode_t rc;
-    
+
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_CREATE_DATAWRITER);
 
     publisher = gapi_publisherClaim(_this, NULL);
 
     if ( publisher ) {
         topic = _TopicFromHandle(a_topic);
-    } 
+    }
 
-    if ( topic ) { 
+    if ( topic ) {
         if ( qos == GAPI_DATAWRITER_QOS_DEFAULT ) {
             writerQos = &publisher->_defDataWriterQos;
         } else if ( qos == GAPI_DATAWRITER_QOS_USE_TOPIC_QOS ) {
@@ -338,39 +320,41 @@ gapi_publisher_create_datawriter (
             writerQos = (gapi_dataWriterQos *)qos;
         }
 
-        if ( gapi_dataWriterQosIsConsistent(writerQos, &context) == GAPI_RETCODE_OK ) {
+        rc = gapi_dataWriterQosIsConsistent(writerQos, &context);
+
+        if ( rc == GAPI_RETCODE_OK ) {
             gapi_char *typeName;
             gapi_char *topicName;
             _DomainParticipant participant;
-            _TypeSupport typeSupport;
-            
+            _TypeSupport typeSupport = NULL;
+
             /* find topic with the participant for consistency */
             typeName  = _TopicGetTypeName(topic);
             topicName = _TopicGetName(topic);
-            participant = _DomainEntityParticipant(_DomainEntity(publisher));
+            participant = _EntityParticipant(_Entity(publisher));
 
             /* find type support for the data type to find data writer create function */
             typeSupport = _DomainParticipantFindType(participant, typeName);
-            /* if create function is NULL, take default from data writer */
-            if ( _TypeSupportGetDataWriter(typeSupport) == NULL ) {
+            if(typeSupport)
+            {
+                /* if create function is NULL, take default from data writer */
                 datawriter = _DataWriterNew(topic,
                                             typeSupport,
                                             writerQos,
                                             a_listener,
                                             mask,
                                             publisher);
-            } else {
-                result = _TypeSupportGetDataWriter(typeSupport)(a_topic,
-                                                                writerQos,
-                                                                a_listener,
-                                                                mask,
-                                                                _this);
-                datawriter = gapi_dataWriterClaim(_this, &rc);
+                if ( datawriter ) {
+                    _ENTITY_REGISTER_OBJECT(_Entity(publisher),
+                                            (_Object)datawriter);
+                }
+            }else{
+                OS_REPORT_1(OS_WARNING,
+                            "gapi_publisher_create_datawriter", 0,
+                            "TypeSupport %s not found !",
+                            typeName);
             }
-            if ( datawriter ) {
-                gapi_setAdd(publisher->dataWriterSet, (gapi_object)datawriter);
-                _ENTITY_REGISTER_OBJECT(_Entity(publisher), (_Object)datawriter);
-            }
+
             gapi_free(typeName);
             gapi_free(topicName);
         }
@@ -387,7 +371,7 @@ gapi_publisher_create_datawriter (
         statusHandle = _EntityHandle(_Entity(datawriter)->status);
         result = (gapi_dataWriter)_EntityRelease(datawriter);
     }
-    
+
     return result;
 }
 
@@ -398,41 +382,30 @@ gapi_publisher_delete_datawriter (
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _Publisher publisher;
-    _DataWriter datawriter = NULL;
+    _DataWriter datawriter;
+    c_bool contains;
 
     publisher = gapi_publisherClaim(_this, &result);
 
     if ( publisher ) {
         datawriter = gapi_dataWriterClaimNB(a_datawriter, NULL);
-        if ( datawriter == NULL ) {
-            result = GAPI_RETCODE_BAD_PARAMETER;
-        }
-    }
-
-    if ( datawriter ) {
-        gapi_setIter dataWriterIter = gapi_setFind(publisher->dataWriterSet,
-                                                   (gapi_object)datawriter);
-        if ( dataWriterIter != NULL ) {
-            if ( gapi_setIterObject(dataWriterIter) ) {
-                if ( _DataWriterPrepareDelete(datawriter) ) {
-                    gapi_setRemove(publisher->dataWriterSet,
-                                   (gapi_object)datawriter);
-                    _DataWriterFree(datawriter);
-                    datawriter = NULL;
-                } else {
-                    result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+        if ( datawriter ) {
+            contains = u_publisherContainsWriter(U_PUBLISHER_GET(publisher),
+                                                 U_WRITER_GET(datawriter));
+            if (contains) {
+                result = _DataWriterFree(datawriter);
+                if ( result != GAPI_RETCODE_OK ) {
+                    _EntityRelease(datawriter);
                 }
             } else {
+                _EntityRelease(datawriter);
                 result = GAPI_RETCODE_PRECONDITION_NOT_MET;
             }
-            gapi_setIterFree(dataWriterIter);
         } else {
-            result = GAPI_RETCODE_OUT_OF_RESOURCES;
+            result = GAPI_RETCODE_BAD_PARAMETER;
         }
-        _EntityRelease(datawriter);
+        _EntityRelease(publisher);
     }
-    _EntityRelease(publisher);
-
     return result;
 }
 
@@ -442,65 +415,57 @@ gapi_publisher_lookup_datawriter (
     const gapi_char *topic_name)
 {
     _Publisher publisher;
-    _DataWriter dataWriter = NULL;
+    u_writer found;
+    gapi_dataWriter handle = NULL;
+    c_iter iter;
 
-    publisher  = gapi_publisherClaim(_this, NULL);
-
-    if ( publisher && topic_name ) {
-        gapi_setIter iter;
-        
-        iter = gapi_setFirst(publisher->dataWriterSet);
-        while ( (dataWriter == NULL) && (gapi_setIterObject(iter) != NULL) ) {
-            _DataWriter dw = _DataWriter(gapi_setIterObject(iter));
-            gapi_string name;
-           
-            assert(dw->topic);
-            name = _TopicGetName(dw->topic);
-            assert(name);
-            if ( strcmp(name, topic_name) == 0 ) {
-                dataWriter = dw;
-            } else {
-                gapi_setIterNext(iter);
+    if (topic_name) {
+        publisher  = gapi_publisherClaim(_this, NULL);
+        if (publisher) {
+            iter = u_publisherLookupWriters(U_PUBLISHER_GET(publisher), topic_name);
+            if (iter) {
+                found = c_iterTakeFirst(iter);
+                if (found) {
+                    handle = u_entityGetUserData(u_entity(found));
+                }
+                c_iterFree(iter);
             }
-            gapi_free(name);
+            _EntityRelease(publisher);
         }
-        gapi_setIterFree(iter);
     }
 
-    _EntityRelease(publisher);
-    
-    return (gapi_dataWriter)_EntityHandle(dataWriter);
+    return handle;
 }
 
 gapi_returnCode_t
 gapi_publisher_delete_contained_entities (
-    gapi_publisher _this,
-    gapi_deleteEntityAction action,
-    void *action_arg)
+    gapi_publisher _this)
 {
-    gapi_returnCode_t result = GAPI_RETCODE_OK;
     _Publisher publisher;
+    _DataWriter dataWriter;
+    gapi_dataWriter handle;
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
+    c_iter writers;
+    u_writer w;
     void *userData;
-    gapi_setIter iterSet;
-    
+
     publisher  = gapi_publisherClaim(_this, &result);
 
     if ( publisher != NULL ) {
         /* delete all datawriters in the datawriterSet */
-        iterSet = gapi_setFirst (publisher->dataWriterSet);
-        
-        while ((gapi_setIterObject(iterSet)) && (result == GAPI_RETCODE_OK)) {
-            _DataWriter dataWriter = _DataWriter(gapi_setIterObject(iterSet));
-            _EntityClaimNotBusy(dataWriter);
-            userData = _ObjectGetUserData(_Object(dataWriter));                
-            _DataWriterPrepareDelete(dataWriter);
-            _DataWriterFree(dataWriter);
-            gapi_setIterRemove (iterSet);
-            if ( action ) {
-                action(userData, action_arg);
+        writers = u_publisherLookupWriters(U_PUBLISHER_GET(publisher),NULL);
+
+        w = c_iterTakeFirst(writers);
+        while (w) {
+            handle = u_entityGetUserData(u_entity(w));
+            dataWriter = gapi_dataWriterClaimNB(handle,&result);
+            if (dataWriter) {
+                userData = _ObjectGetUserData(_Object(dataWriter));
+                _DataWriterFree(dataWriter);
             }
+            w = c_iterTakeFirst(writers);
         }
-        gapi_setIterFree (iterSet);
+        c_iterFree(writers);
         _EntityRelease(publisher);
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
@@ -521,7 +486,7 @@ gapi_publisher_set_qos (
     gapi_publisherQos *existing_qos;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_QOS);
-    
+
     publisher = gapi_publisherClaim(_this, &result);
 
     if ( publisher && qos ) {
@@ -529,17 +494,21 @@ gapi_publisher_set_qos (
     } else {
         result = GAPI_RETCODE_BAD_PARAMETER;
     }
-    
-    if ((result == GAPI_RETCODE_OK ) && (_Entity(publisher)->enabled)) {
-        existing_qos = gapi_publisherQos__alloc();
 
-        result = gapi_publisherQosCheckMutability(qos,
-                                                  _PublisherGetQos(publisher,
-                                                                   existing_qos),
-                                                  &context);
+    if ((result == GAPI_RETCODE_OK ) && (_EntityEnabled(publisher))) {
+        existing_qos = gapi_publisherQos__alloc();
+        uResult = _PublisherGetQos(publisher, existing_qos);
+        result = kernelResultToApiResult(uResult);
+        if(result == GAPI_RETCODE_OK)
+        {
+            result = gapi_publisherQosCheckMutability(
+                     qos,
+                     existing_qos,
+                     &context);
+        }
         gapi_free(existing_qos);
     }
-    
+
     if ( result == GAPI_RETCODE_OK ) {
         publisherQos = u_publisherQosNew(NULL);
         if (publisherQos) {
@@ -562,17 +531,18 @@ gapi_publisher_set_qos (
 }
 
 gapi_returnCode_t
-
 gapi_publisher_get_qos (
     gapi_publisher _this,
     gapi_publisherQos *qos)
 {
     _Publisher publisher;
     gapi_returnCode_t result;
+    u_result uResult;
 
     publisher = gapi_publisherClaim(_this, &result);
     if ( publisher && qos ) {
-        _PublisherGetQos(publisher, qos);
+        uResult = _PublisherGetQos(publisher, qos);
+        result = kernelResultToApiResult(uResult);
     }
 
     _EntityRelease(publisher);
@@ -591,7 +561,7 @@ gapi_publisher_set_listener (
     publisher  = gapi_publisherClaim(_this, &result);
 
     if ( publisher != NULL ) {
-        _PublisherStatus status;
+        _Status status;
 
         if ( a_listener ) {
             publisher->_Listener = *a_listener;
@@ -599,8 +569,11 @@ gapi_publisher_set_listener (
             memset(&publisher->_Listener, 0, sizeof(publisher->_Listener));
         }
 
-        status = _PublisherStatus(_EntityStatus(publisher));
-        if ( _PublisherStatusSetListener(status, a_listener, mask) ) {
+        status = _EntityStatus(publisher);
+        if ( _StatusSetListener(status,
+                                (struct gapi_listener *)a_listener,
+                                mask) )
+        {
             result = GAPI_RETCODE_OK;
         }
     }
@@ -615,7 +588,7 @@ gapi_publisher_get_listener (
 {
     _Publisher publisher;
     struct gapi_publisherListener listener;
-    
+
     publisher  = gapi_publisherClaim(_this, NULL);
 
     if ( publisher != NULL ) {
@@ -640,7 +613,7 @@ gapi_publisher_suspend_publications (
     publisher  = gapi_publisherClaim(_this, &result);
 
     if ( publisher != NULL ) {
-        if ( _Entity(publisher)->enabled) {
+        if ( _EntityEnabled(publisher)) {
             uResult = u_publisherSuspend(U_PUBLISHER_GET(publisher));
             result = kernelResultToApiResult(uResult);
         } else {
@@ -664,7 +637,7 @@ gapi_publisher_resume_publications (
     publisher  = gapi_publisherClaim(_this, &result);
 
     if ( publisher != NULL ) {
-        if ( _Entity(publisher)->enabled) {
+        if ( _EntityEnabled(publisher)) {
             uResult = u_publisherResume(U_PUBLISHER_GET(publisher));
             result = kernelResultToApiResult(uResult);
         } else {
@@ -687,7 +660,7 @@ gapi_publisher_begin_coherent_changes (
     publisher  = gapi_publisherClaim(_this, &result);
 
     if ( publisher != NULL ) {
-        if ( _Entity(publisher)->enabled) {
+        if ( _EntityEnabled(publisher)) {
             uResult = u_publisherCoherentBegin(U_PUBLISHER_GET(publisher));
             result = kernelResultToApiResult(uResult);
         } else {
@@ -710,7 +683,7 @@ gapi_publisher_end_coherent_changes (
     publisher  = gapi_publisherClaim(_this, &result);
 
     if ( publisher != NULL ) {
-        if ( _Entity(publisher)->enabled) {
+        if ( _EntityEnabled(publisher)) {
             uResult = u_publisherCoherentEnd(U_PUBLISHER_GET(publisher));
             result = kernelResultToApiResult(uResult);
         } else {
@@ -736,15 +709,15 @@ gapi_publisher_get_participant (
 {
     _Publisher publisher;
     _DomainParticipant participant = NULL;
-    
+
     publisher  = gapi_publisherClaim(_this, NULL);
 
     if ( publisher != NULL ) {
-        participant = _DomainEntityParticipant(_DomainEntity(publisher));
+        participant = _EntityParticipant(_Entity(publisher));
     }
 
     _EntityRelease(publisher);
-    
+
     return (gapi_domainParticipant)_EntityHandle(participant);
 }
 
@@ -780,8 +753,8 @@ gapi_publisher_get_default_datawriter_qos (
     gapi_dataWriterQos *qos)
 {
     _Publisher publisher;
-    gapi_returnCode_t result;    
-        
+    gapi_returnCode_t result;
+
     publisher  = gapi_publisherClaim(_this, &result);
     if (result == GAPI_RETCODE_OK) {
         if (qos) {
@@ -819,26 +792,30 @@ gapi_publisher_copy_from_topic_qos (
     return result;
 }
 
-gapi_boolean
-_PublisherSetListenerInterestOnChildren (
-    _Publisher publisher,
-    _ListenerInterestInfo info)
+struct check_handle_arg {
+    gapi_instanceHandle_t handle;
+    gapi_boolean result;
+};
+
+static c_bool
+check_handle(
+    u_writer writer,
+    struct check_handle_arg *arg)
 {
-    gapi_setIter iterSet;
-    _Entity      entity;
-    gapi_boolean result = TRUE;
+    gapi_object handle;
+    _Entity e;
 
-    assert(publisher);
+    assert(writer);
+    assert(arg);
 
-    iterSet = gapi_setFirst(publisher->dataWriterSet);
-    while (result && gapi_setIterObject (iterSet)) {
-        entity = _Entity(gapi_setIterObject(iterSet));
-        result = _EntitySetListenerInterest(entity, info);
-        gapi_setIterNext (iterSet);
+    if (!arg->result) {
+        handle = u_entityGetUserData(u_entity(writer));
+        e = _Entity(gapi_objectPeekUnchecked(handle));
+        if (e) {
+            arg->result = _EntityHandleEqual(e,arg->handle);
+        }
     }
-    gapi_setIterFree (iterSet);
-    
-    return result;
+    return !arg->result;
 }
 
 gapi_boolean
@@ -846,24 +823,94 @@ _PublisherContainsEntity (
     _Publisher _this,
     gapi_instanceHandle_t handle)
 {
-    gapi_boolean result = FALSE;
-    gapi_setIter iterSet;
+    struct check_handle_arg arg;
 
     assert(_this);
 
     _EntityClaim(_this);
 
-    iterSet = gapi_setFirst(_this->dataWriterSet);
-    while ( !result && gapi_setIterObject(iterSet) ) {
-        _DataWriter writer = _DataWriter(gapi_setIterObject(iterSet));
-        result = _EntityHandleEqual(_Entity(writer), handle);
-        gapi_setIterNext(iterSet);                
-    }
-    gapi_setIterFree (iterSet);
-    
+    arg.handle = handle;
+    arg.result = FALSE;
+
+    u_publisherWalkWriters(U_PUBLISHER_GET(_this),
+                           (u_writerAction)check_handle,
+                           (c_voidp)&arg);
+
     _EntityRelease(_this);
 
-    return result;
+    return arg.result;
 }
 
+static gapi_boolean
+gapi_requestedIncompatibleQosStatus_free (
+    void *object)
+{
+    gapi_requestedIncompatibleQosStatus *o;
+
+    o = (gapi_requestedIncompatibleQosStatus *) object;
+
+    gapi_free(o->policies._buffer);
+    return TRUE;
+}
+
+
+gapi_requestedIncompatibleQosStatus *
+gapi_requestedIncompatibleQosStatus_alloc (
+    void)
+{
+    gapi_requestedIncompatibleQosStatus *newStatus;
+
+    newStatus = (gapi_requestedIncompatibleQosStatus *)
+                    gapi__malloc(gapi_requestedIncompatibleQosStatus_free, 0, sizeof(gapi_requestedIncompatibleQosStatus));
+
+    if ( newStatus ) {
+        newStatus->policies._buffer  = gapi_qosPolicyCountSeq_allocbuf(MAX_POLICY_COUNT_ID);
+        newStatus->policies._length  = 0;
+        newStatus->policies._maximum = MAX_POLICY_COUNT_ID;
+        newStatus->policies._release = TRUE;
+
+        if ( newStatus->policies._buffer == NULL ) {
+            gapi_free(newStatus);
+            newStatus = NULL;
+        }
+    }
+
+    return newStatus;
+}
+
+static gapi_boolean
+gapi_offeredIncompatibleQosStatus_free (
+    void *object)
+{
+    gapi_offeredIncompatibleQosStatus *o;
+
+    o = (gapi_offeredIncompatibleQosStatus *) object;
+
+    gapi_free(o->policies._buffer);
+    return TRUE;
+}
+
+gapi_offeredIncompatibleQosStatus *
+gapi_offeredIncompatibleQosStatus_alloc (
+    void)
+{
+    gapi_offeredIncompatibleQosStatus *newStatus;
+
+    newStatus = (gapi_offeredIncompatibleQosStatus *)
+                    gapi__malloc(gapi_offeredIncompatibleQosStatus_free, 0, sizeof(gapi_offeredIncompatibleQosStatus));
+
+    if ( newStatus ) {
+        newStatus->policies._buffer  = gapi_qosPolicyCountSeq_allocbuf(MAX_POLICY_COUNT_ID);
+        newStatus->policies._length  = 0;
+        newStatus->policies._maximum = MAX_POLICY_COUNT_ID;
+        newStatus->policies._release = TRUE;
+
+        if ( newStatus->policies._buffer == NULL ) {
+            gapi_free(newStatus);
+            newStatus = NULL;
+        }
+    }
+
+    return newStatus;
+}
 

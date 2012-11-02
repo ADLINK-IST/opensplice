@@ -1,6 +1,6 @@
 ﻿// The OpenSplice DDS Community Edition project.
 //
-// Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
+// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
 // 
 //  This library is free software; you can redistribute it and/or
@@ -93,8 +93,6 @@ namespace DDS.OpenSplice.Gapi
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_dataReaderView_delete_contained_entities")]
         public static extern ReturnCode delete_contained_entities(
-            IntPtr _this,
-            gapi_deleteEntityAction action,
-            IntPtr action_arg);
+            IntPtr _this);
     }
 }

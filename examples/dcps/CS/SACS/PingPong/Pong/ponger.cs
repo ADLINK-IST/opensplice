@@ -1,7 +1,7 @@
 /*
 *                         OpenSplice DDS
 *
-*   This software and documentation are Copyright 2006 to 2009 PrismTech 
+*   This software and documentation are Copyright 2006 to 2011 PrismTech 
 *   Limited and its licensees. All rights reserved. See file:
 *
 *                     $OSPL_HOME/LICENSE 
@@ -217,7 +217,6 @@ namespace PingPong
             PP_string_dt = new pingpong.PP_string_msgTypeSupport();
             PP_string_dt.RegisterType(dp, "pingpong::PP_string_msg");
             PP_string_topic = dp.CreateTopic("PP_string_topic", "pingpong::PP_string_msg", tQos);
-            System.Console.WriteLine("created topic: PP_string_topic");
 
             /* Create datawriter */
             PP_string_writer = p.CreateDataWriter(PP_string_topic, dwQos) as pingpong.PP_string_msgDataWriter;
@@ -318,7 +317,10 @@ namespace PingPong
                             {
                                 for (j = 0; j < jmax; j++)
                                 {
-                                    result = PP_min_writer.Write(PP_min_dataList[j], DDS.InstanceHandle.Nil);
+                                    if (infoList[j].ValidData)
+                                    {
+                                        result = PP_min_writer.Write(PP_min_dataList[j], DDS.InstanceHandle.Nil);
+                                    }
                                 }
                                 result = PP_min_reader.ReturnLoan(ref PP_min_dataList, ref infoList);
                             }
@@ -337,7 +339,10 @@ namespace PingPong
                             {
                                 for (j = 0; j < jmax; j++)
                                 {
-                                    result = PP_seq_writer.Write(PP_seq_dataList[j], DDS.InstanceHandle.Nil);
+                                    if (infoList[j].ValidData)
+                                    {
+                                        result = PP_seq_writer.Write(PP_seq_dataList[j], DDS.InstanceHandle.Nil);
+                                    }
                                 }
                                 result = PP_seq_reader.ReturnLoan(ref PP_seq_dataList, ref infoList);
                             }
@@ -356,7 +361,10 @@ namespace PingPong
                             {
                                 for (j = 0; j < jmax; j++)
                                 {
-                                    result = PP_string_writer.Write(PP_string_dataList[j], DDS.InstanceHandle.Nil);
+                                    if (infoList[j].ValidData)
+                                    {
+                                        result = PP_string_writer.Write(PP_string_dataList[j], DDS.InstanceHandle.Nil);
+                                    }
                                 }
                                 result = PP_string_reader.ReturnLoan(ref PP_string_dataList, ref infoList);
                             }
@@ -375,7 +383,10 @@ namespace PingPong
                             {
                                 for (j = 0; j < jmax; j++)
                                 {
-                                    result = PP_fixed_writer.Write(PP_fixed_dataList[j], DDS.InstanceHandle.Nil);
+                                    if (infoList[j].ValidData)
+                                    {
+                                        result = PP_fixed_writer.Write(PP_fixed_dataList[j], DDS.InstanceHandle.Nil);
+                                    }
                                 }
                                 result = PP_fixed_reader.ReturnLoan(ref PP_fixed_dataList, ref infoList);
                             }
@@ -394,7 +405,10 @@ namespace PingPong
                             {
                                 for (j = 0; j < jmax; j++)
                                 {
-                                    result = PP_array_writer.Write(PP_array_dataList[j], DDS.InstanceHandle.Nil);
+                                    if (infoList[j].ValidData)
+                                    {
+                                        result = PP_array_writer.Write(PP_array_dataList[j], DDS.InstanceHandle.Nil);
+                                    }
                                 }
                                 result = PP_array_reader.ReturnLoan(ref PP_array_dataList, ref infoList);
                             }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,7 +15,6 @@
 #include "gapi_kernel.h"
 #include "gapi_objManag.h"
 #include "gapi_structured.h"
-#include "gapi_dataReaderStatus.h"
 #include "gapi_genericCopyIn.h"
 #include "gapi_genericCopyOut.h"
 
@@ -1519,7 +1518,22 @@ gapi_fooDataReader_get_key_value (
     const gapi_instanceHandle_t handle
     )
 {
-    return GAPI_RETCODE_UNSUPPORTED;
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
+    _DataReader datareader;
+
+    datareader = gapi_dataReaderClaim(_this, &result);
+
+    if ( datareader ) {
+        if ( (key_holder == NULL) || (handle == GAPI_HANDLE_NIL) ) {
+            result = GAPI_RETCODE_BAD_PARAMETER;
+        } else {
+            result = _DataReaderGetKeyValue(datareader, key_holder, handle);
+        }
+    }
+
+    _EntityRelease(datareader);
+
+    return result;
 }
 
 typedef struct readerCopyInInfo_s {

@@ -113,12 +113,21 @@ class v_readerStatistics extends v_statistics {
     attribute c_ulong            numberOfSamplesRejectedByInstancesLimit;
 
     attribute c_ulong            numberOfReads;
+    attribute c_ulong            numberOfInstanceReads;
+    attribute c_ulong            numberOfNextInstanceReads;
+    attribute c_ulong            numberOfInstanceLookups;
     attribute c_ulong            numberOfTakes;
+    attribute c_ulong            numberOfInstanceTakes;
+    attribute c_ulong            numberOfNextInstanceTakes;
 };
 
 class v_queryStatistics extends v_statistics {
     attribute c_ulong            numberOfReads;
+    attribute c_ulong            numberOfInstanceReads;
+    attribute c_ulong            numberOfNextInstanceReads;
     attribute c_ulong            numberOfTakes;
+    attribute c_ulong            numberOfInstanceTakes;
+    attribute c_ulong            numberOfNextInstanceTakes;
 };
 
 class v_networkQueueStatistics { /* Reachable via v_networkReaderStatistics only */
@@ -268,9 +277,8 @@ class v_kernelStatistics extends v_statistics  {
 typedef struct v_handleInfo_s {
     c_object object;      /* object that is managed associated to the handle described by this info */
     c_long   serial;      /* handle generation for this specific handle. */
-    c_long   count;       /* the number of actual claims. */
+    c_ulong  count;       /* the number of actual claims. */
     c_bool   freed;       /* a flag indicating that the handle is freed. */
-    c_mutex  mutex;       /* a mutex that handles access to this info. */
     c_long   nextFree;    /* only used if this handle is ready for reuse, implements a free list. */
 } v_handleInfo;
 
@@ -318,7 +326,7 @@ enum v_kind {
     K_GROUP,             K_WRITERGROUP,        K_CACHE,
     K_GROUPACTION,       K_GROUPSTREAM,
     K_GROUPQUEUE,        K_GROUPQUEUESAMPLE,
-    K_DATAREADER,        K_DELIVERYSERVICE,          K_PARTICIPANT,
+    K_DATAREADER,        K_DELIVERYSERVICE,    K_PARTICIPANT,
     K_PURGELISTITEM,     K_GROUPPURGEITEM,
     K_INDEX,
     K_READERSTATUS,      K_WRITERSTATUS,
@@ -330,7 +338,7 @@ enum v_kind {
     K_WAITSETEVENTHISTORYDELETE, K_WAITSETEVENTHISTORYREQUEST, K_WAITSETEVENTPERSISTENTSNAPSHOT,
     K_SERVICEMANAGER,    K_SERVICE,            K_SERVICESTATE,
     K_NETWORKING,        K_DURABILITY,         K_CMSOAP,
-    K_LEASEMANAGER,      K_LEASE,
+    K_LEASEMANAGER,      K_LEASE,              K_LEASEACTION,
     K_SPLICED,
     K_CONFIGURATION,
     K_REGISTRATION,
@@ -341,6 +349,7 @@ enum v_kind {
     K_NETWORKMAPENTRY,
     K_HISTORICALDATAREQUEST,
     K_PERSISTENTSNAPSHOTREQUEST,
+    K_PENDINGDISPOSEELEMENT,
     /* This constant must always be the last */
     K_TYPECOUNT
 };
@@ -454,34 +463,38 @@ class v_waitset extends v_observer {
 enum v_leaseActionId {
     V_LEASEACTION_UNDEFINED,
     V_LEASEACTION_SERVICESTATE_EXPIRED,
-    V_LEASEACTION_WRITER_RESEND,
     V_LEASEACTION_READER_DEADLINE_MISSED,
     V_LEASEACTION_WRITER_DEADLINE_MISSED,
     V_LEASEACTION_LIVELINESS_CHECK,
     V_LEASEACTION_HEARTBEAT_SEND,
     V_LEASEACTION_HEARTBEAT_CHECK,
+    V_LEASEACTION_SPLICED_DEATH_DETECTED,
     V_LEASEACTION_COUNT /* This constant must always be the last */
 };
 
-const c_long V_LEASE_REPEAT_INFINITE = -1;
+class v_leaseManager;
 
 class v_lease extends v_object {
     attribute c_mutex                        mutex;
     attribute c_time                         expiryTime;
-    attribute c_long                         repeatCount;
-/* readonly attributes */
     attribute v_duration                     duration;
-    attribute v_handle                       object;
-    attribute v_leaseActionId                actionId;
-    attribute c_voidp                        leaseManager;
+    attribute SET<v_leaseManager>            observers;
+};
+
+class v_leaseAction extends v_object 
+{
+    attribute v_lease lease;
+    attribute v_leaseActionId actionId;
+    attribute v_handle actionObject;
+    attribute c_bool repeat;
 };
 
 class v_leaseManager extends v_object {
     attribute c_mutex                        mutex;
     attribute c_cond                         cond;
     attribute c_bool                         quit;
-    attribute v_lease                        head;
-    attribute SET<v_lease>                   leases;
+    attribute v_leaseAction                  firstLeaseToExpire;
+    attribute SET<v_leaseAction>             leases;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -553,6 +566,8 @@ struct v_livelinessChangedInfo {
 struct v_topicMatchInfo {
     c_long                         totalCount;
     c_long                         totalChanged;
+    c_long                         currentCount;
+    c_long                         currentChanged;
     v_gid                          instanceHandle;
 };
 
@@ -963,11 +978,6 @@ class v_subscriberQos extends v_qos {
     attribute v_sharePolicy             share;
 };
 
-class v_indexQos extends v_qos {
-    attribute v_historyPolicy           history;
-    attribute v_resourcePolicy          resource;
-};
-
 class v_dataViewQos extends v_qos {
     attribute v_userKeyPolicy           userKey;
 };
@@ -1080,6 +1090,16 @@ typedef struct v_laptime_s {
 } v_laptime;
 #endif
 
+/*
+ * allocTime is filled when a message is first written and subsequently used 
+ * during the processing whenever the current time is used, upto the point where 
+ * it is inserted in the reader databases where it is also used for the insertion_time.
+ * For practical purposes this works okay, but for accurate internal latency
+ * measurement this disturbes the outcome, as the time needed for processing can no 
+ * longer be measured. For this purpose the _NAT_ compile flag exist. When this flag is 
+ * cleared, allocTime isn't used and accurate latency measurements are possible.
+ * This flag should only be cleared when doing such internal measurements.
+ */
 class v_message extends v_node {
 #ifndef _NAT_
     attribute c_time                         allocTime;
@@ -1134,7 +1154,7 @@ class v_lifespanAdmin {
 /* Instance pipeline cache implementation                                     */
 /* -------------------------------------------------------------------------- */
 
-enum v_cacheKind { V_CACHE_OWNER,
+enum v_cacheKind { V_CACHE_CONNECTION,
                    V_CACHE_TARGETS,
                    V_CACHE_SOURCES,
                    V_CACHE_ANY };
@@ -1145,7 +1165,7 @@ struct v_cacheLink {
 };
 
 class v_cacheNode {
-    attribute v_cacheLink                    owner;
+    attribute v_cacheLink                    connections;
     attribute v_cacheLink                    targets;
     attribute v_cacheLink                    sources;
 };
@@ -1205,8 +1225,8 @@ class v_dataViewInstanceTemplate extends v_dataViewInstance {
 };
 
 class v_dataReaderSample extends v_readerSample {
-    attribute v_dataReaderSample             prev;
-    attribute c_voidp                        next;
+    attribute v_dataReaderSample             older;
+    attribute c_voidp                        newer;
     attribute c_time                         insertTime;
     attribute c_long                         disposeCount;
     attribute c_long                         noWritersCount;
@@ -1229,6 +1249,11 @@ struct v_owner {
     c_bool exclusive;
 };
 
+struct v_historyBookmark {
+    c_time sourceTimestamp;
+    v_gid gid;
+};
+
 class v_dataReaderInstance extends v_instance {
     attribute c_voidp                        index;
     attribute v_state                        instanceState;
@@ -1237,6 +1262,7 @@ class v_dataReaderInstance extends v_instance {
     attribute c_long                         sampleCount;
     attribute c_time                         purgeInsertionTime;
     attribute c_time                         epoch;
+    attribute v_historyBookmark              lastConsumed;
     attribute c_voidp                        userDataDataReaderInstance;
     attribute c_long                         liveliness;
     attribute v_owner                        owner;
@@ -1247,7 +1273,7 @@ class v_dataReaderInstance extends v_instance {
 
 class v_dataReaderInstanceTemplate extends v_dataReaderInstance {
     attribute v_dataReaderSampleTemplate     sample;
-    attribute c_voidp                        tail;
+    attribute c_voidp                        oldest;
 };
 
 class v_entry extends v_object {
@@ -1304,7 +1330,9 @@ class v_groupSampleTemplate extends v_groupSample {
 };
 
 class v_registration {
-    attribute v_message                      message;
+    attribute v_gid                          writerGID;
+    attribute v_messageQos                   qos;
+    attribute c_time                         writeTime;
     attribute v_registration                 next;
 };
 
@@ -1315,9 +1343,8 @@ class v_groupInstance extends v_object {
     attribute c_voidp                        group;
     attribute c_voidp                        oldest;
     attribute v_cache                        targetCache;
-    attribute v_cache                        sourceCache;
     attribute v_registration                 registrations;
-    attribute v_registration                 unregisterMessages;
+    attribute v_registration                 unregistrations;
     attribute c_time                         epoch;
     attribute v_owner                        owner;
 };
@@ -1329,7 +1356,7 @@ class v_groupInstanceTemplate extends v_groupInstance {
 class v_groupEntry {
     attribute v_entry                        entry;
     attribute c_long                         sequenceNumber;
-    attribute v_cache                        targetCache;
+    attribute v_cache                        connectionCache;
     attribute v_groupEntry                   next;
 };
 
@@ -1341,6 +1368,7 @@ struct v_groupEntrySet {
 class v_groupPurgeItem {
     attribute v_groupInstance                instance;
     attribute c_time                         insertionTime;
+    attribute v_groupPurgeItem               next;
 };
 
 enum v_groupAttachState {
@@ -1377,7 +1405,6 @@ class v_group extends v_entity {
     attribute c_long                         sequenceNumber;
     attribute c_long                         count;
     attribute c_time                         creationTime;
-    attribute c_time                         lastDisposeAll;
     attribute c_bool                         infWait;
     attribute c_bool                         complete;
 
@@ -1387,8 +1414,11 @@ class v_group extends v_entity {
 
     /* group data storage */
     attribute SET<v_groupInstance>           instances;
-    attribute LIST<v_groupPurgeItem>          disposedInstances;
-    attribute LIST<v_groupPurgeItem>         purgeListEmpty;
+    attribute v_groupPurgeItem               disposedInstances;
+    attribute c_voidp                        disposedInstancesLast;
+    attribute v_groupPurgeItem               purgeListEmpty;
+    attribute c_voidp                        purgeListEmptyLast;
+
     attribute v_lifespanAdmin                lifespanAdmin;
 
     /* Group resource optimisation */
@@ -1538,12 +1568,11 @@ class v_publisher extends v_observer {
     attribute c_time                         suspendTime; /* inf means not suspended */
     attribute c_ulong                        transactionId;
 };
-
+const string V_BUILT_IN_PARTICIPANT_NAME = "Built-in participant";
 class v_participant extends v_observer {
     attribute SET<v_entity>                  entities;
     attribute c_lock                         lock;
     attribute v_participantQos               qos;
-    attribute v_lease                        lease;
     attribute v_leaseManager                 leaseManager;
 /* resend thread will wait on this condition. This thread is created in the
    user layer!
@@ -1577,6 +1606,7 @@ class v_serviceState extends v_observable {
 };
 
 class v_service extends v_participant {
+    attribute v_lease lease;
     attribute v_serviceState state;
 };
 
@@ -1713,6 +1743,7 @@ struct v_publicationInfo {
     v_livelinessPolicy                       liveliness;
     v_reliabilityPolicy                      reliability;
     v_lifespanPolicy                         lifespan;
+    v_orderbyPolicy                          destination_order;
     v_builtinUserDataPolicy                  user_data;
     v_ownershipPolicy                        ownership;
     v_strengthPolicy                         ownership_strength;
@@ -1721,7 +1752,6 @@ struct v_publicationInfo {
     v_builtinTopicDataPolicy                 topic_data;
     v_builtinGroupDataPolicy                 group_data;
 /* all fields above must be memory layout compatible with the dds spec. */
-    v_orderbyPolicy                          destination_order;
     v_writerLifecyclePolicy                  lifecycle;
     c_bool                                   alive; /* Indicates whether the writer is alive or not,
                                                      * with respect to liveliness policy.
@@ -1805,6 +1835,7 @@ const c_long V_OWNERSTRENGTH_MINIMUM = 0x7fffffff;
 
 class v_index extends v_object {
     attribute ARRAY<c_field>                 sourceKeyList;
+    attribute ARRAY<c_field>                 messageKeyList;
     attribute c_voidp                        reader;
     attribute SET<v_object>                  objects;
     attribute SET<v_object>                  notEmptyList;
@@ -1875,6 +1906,7 @@ class v_dataReader extends v_reader {
     attribute c_long                         cachedSampleCount;
 #endif
     attribute c_long                         sampleCount;
+    attribute c_long                         notReadCount;
     attribute c_bool                         maxInstances;
     /* Attributes maintaining the current state wrt the policies */
     attribute c_long                         depth;
@@ -1886,6 +1918,7 @@ class v_dataReader extends v_reader {
     attribute v_dataReaderSample             triggerValue;
     attribute c_bool                         walkRequired;
     attribute c_ulong                        updateCnt;
+    
     /* This Count is the read/take sequence number of the reader.
      * Any read or take operation will increment this value and mark
      * all processed samples with this value by assigning this value to
@@ -1963,6 +1996,8 @@ class v_groupQueue extends v_groupStream {
     attribute c_ulong            maxSize;
     attribute v_groupQueueSample head;
     attribute v_groupQueueSample tail;
+    attribute v_groupQueueSample marker;
+    attribute c_bool			 markerReached;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -2088,6 +2123,11 @@ class v_crc {
     attribute c_ulong table[V_CRC_TABLE_SIZE];
 };
 
+class v_pendingDisposeElement {
+    attribute v_commandDisposeAllData disposeCmd;
+    attribute c_time disposeTimestamp;
+};
+
 class v_kernel extends v_observable {
     attribute v_gid                          GID;
     attribute SET<v_participant>             participants;
@@ -2104,11 +2144,33 @@ class v_kernel extends v_observable {
     attribute v_configuration                configuration;
     attribute c_ulong                        userCount;
     attribute c_ulong                        transactionCount;
+    /* ES: dds2476: Added a boolean to indicate if the spliced is running or not
+     * this boolean is set to false when it is detected by any (non-service)
+     * participant that the splice deamon is not longer running. 
+     * Once set to false the u_entityClaim functions will no longer work as those
+     * check this boolean
+     */
+    attribute c_bool                        splicedRunning;
+    /* ES: dds2235: added warning levels for resource limits
+     * whenever the value is exceed a warning message will be printed.
+     * To ensure the log files are not flooded by warning messages
+     * a boolean is maintained to ensure a warning is only printed once
+     */
+    attribute c_ulong                        maxSamplesWarnLevel;
+    attribute c_bool                         maxSamplesWarnShown;
+    attribute c_ulong                        maxSamplesPerInstanceWarnLevel;
+    attribute c_bool                         maxSamplesPerInstanceWarnShown;
+    attribute c_ulong                        maxInstancesWarnLevel;
+    attribute c_bool                         maxInstancesWarnShown;
 
     attribute v_builtin                      builtin;
 
     /* Set of enabled statistics categories */
     attribute SET<v_statisticsCategory>      enabledStatisticsCategories;
+
+    /* List of dispose alls pending for groups not yet seen */
+    attribute LIST<v_pendingDisposeElement>  pendingDisposeList;
+    attribute c_mutex                        pendingDisposeListMutex;
 
     /* Set of shared entities */
     attribute c_mutex                        sharesMutex;
@@ -2137,7 +2199,8 @@ class v_spliced extends v_service {
 
     attribute c_mutex         mtx;
     attribute c_mutex         cAndMCommandMutex;
-    attribute SET<v_message>  missedHB;
+    attribute c_mutex         builtinDataMutex;
+    attribute SET<v_message>  missedHB; /* c_table missedHB<v_message> */
 };
 
 };

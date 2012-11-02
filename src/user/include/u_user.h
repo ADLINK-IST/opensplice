@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -106,7 +106,8 @@ extern "C" {
  * The constructor is idem-potent so multiple calls will not have any effect,
  * however this call is not MT-save.
  */
-OS_API u_result u_userInitialise();
+OS_API u_result
+u_userInitialise();
 
 /** \brief The class destructor.
  *
@@ -117,15 +118,6 @@ OS_API u_result u_userInitialise();
  */
 OS_API u_result
 u_userDetach ();
-
-OS_API u_kernel
-u_userKernelOpen (
-    const c_char *uri,
-    c_long timeout);
-
-OS_API u_result
-u_userKernelClose (
-    u_kernel kernel);
 
 /** \brief Increases the refCount of the object only within the lifespan of the process.
  */

@@ -1,20 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
- 
+
 #include "saj_utilities.h"
 #include "saj_qosUtils.h"
 
 /**
- * @brief Initializes the DeadlineQosPolicy by caching the field id's of 
+ * @brief Initializes the DeadlineQosPolicy by caching the field id's of
  * its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -22,7 +22,7 @@
 saj_returnCode saj_InitializeDeadlineQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the DestinationOrderQosPolicy by caching the field id's of 
+ * @brief Initializes the DestinationOrderQosPolicy by caching the field id's of
  * its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -30,7 +30,7 @@ saj_returnCode saj_InitializeDeadlineQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeDestinationOrderQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the DurabilityQosPolicy by caching the field id's of 
+ * @brief Initializes the DurabilityQosPolicy by caching the field id's of
  * its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -38,7 +38,7 @@ saj_returnCode saj_InitializeDestinationOrderQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeDurabilityQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the DurabilityServiceQosPolicy by caching the field id's of 
+ * @brief Initializes the DurabilityServiceQosPolicy by caching the field id's of
  * its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -46,7 +46,7 @@ saj_returnCode saj_InitializeDurabilityQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeDurabilityServiceQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the EntityFactoryQosPolicy by caching the field id's of 
+ * @brief Initializes the EntityFactoryQosPolicy by caching the field id's of
  * its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -86,7 +86,7 @@ saj_returnCode saj_InitializeSubscriptionKeyQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeViewKeyQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the GroupDataQosPolicy by caching the field id's of 
+ * @brief Initializes the GroupDataQosPolicy by caching the field id's of
  * its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -94,7 +94,7 @@ saj_returnCode saj_InitializeViewKeyQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeGroupDataQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the HistoryQosPolicy by caching the field id's of 
+ * @brief Initializes the HistoryQosPolicy by caching the field id's of
  * its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -102,7 +102,7 @@ saj_returnCode saj_InitializeGroupDataQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeHistoryQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the LatencyBudgetQosPolicy by caching the field id's of 
+ * @brief Initializes the LatencyBudgetQosPolicy by caching the field id's of
  * its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -110,7 +110,7 @@ saj_returnCode saj_InitializeHistoryQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeLatencyBudgetQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the LifespanQosPolicy by caching the field id's of 
+ * @brief Initializes the LifespanQosPolicy by caching the field id's of
  * its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -118,7 +118,7 @@ saj_returnCode saj_InitializeLatencyBudgetQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeLifespanQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the LivelinessQosPolicy by caching the field id's of 
+ * @brief Initializes the LivelinessQosPolicy by caching the field id's of
  * its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -126,7 +126,7 @@ saj_returnCode saj_InitializeLifespanQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeLivelinessQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the OwnershipQosPolicy by caching the field id's of 
+ * @brief Initializes the OwnershipQosPolicy by caching the field id's of
  * its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -134,7 +134,7 @@ saj_returnCode saj_InitializeLivelinessQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeOwnershipQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the OwnershipStrengthQosPolicy by caching the field id's 
+ * @brief Initializes the OwnershipStrengthQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -142,7 +142,7 @@ saj_returnCode saj_InitializeOwnershipQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeOwnershipStrengthQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the PartitionQosPolicy by caching the field id's 
+ * @brief Initializes the PartitionQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -150,7 +150,7 @@ saj_returnCode saj_InitializeOwnershipStrengthQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializePartitionQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the PresentationQosPolicy by caching the field id's 
+ * @brief Initializes the PresentationQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -158,7 +158,7 @@ saj_returnCode saj_InitializePartitionQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializePresentationQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the ReaderDataLifecycleQosPolicy by caching the field id's 
+ * @brief Initializes the ReaderDataLifecycleQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -166,7 +166,7 @@ saj_returnCode saj_InitializePresentationQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeReaderDataLifecycleQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the ReliabilityQosPolicy by caching the field id's 
+ * @brief Initializes the ReliabilityQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -174,7 +174,7 @@ saj_returnCode saj_InitializeReaderDataLifecycleQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeReliabilityQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the ResourceLimitsQosPolicy by caching the field id's 
+ * @brief Initializes the ResourceLimitsQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -182,7 +182,7 @@ saj_returnCode saj_InitializeReliabilityQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeResourceLimitsQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the TimeBasedFilterQosPolicy by caching the field id's 
+ * @brief Initializes the TimeBasedFilterQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -190,7 +190,7 @@ saj_returnCode saj_InitializeResourceLimitsQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeTimeBasedFilterQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the TopicDataQosPolicy by caching the field id's 
+ * @brief Initializes the TopicDataQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -198,7 +198,7 @@ saj_returnCode saj_InitializeTimeBasedFilterQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeTopicDataQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the TransportPriorityQosPolicy by caching the field id's 
+ * @brief Initializes the TransportPriorityQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -206,7 +206,7 @@ saj_returnCode saj_InitializeTopicDataQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeTransportPriorityQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the UserDataQosPolicy by caching the field id's 
+ * @brief Initializes the UserDataQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -214,7 +214,7 @@ saj_returnCode saj_InitializeTransportPriorityQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeUserDataQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the WriterDataLifecycleQosPolicy by caching the field id's 
+ * @brief Initializes the WriterDataLifecycleQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -222,7 +222,7 @@ saj_returnCode saj_InitializeUserDataQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeWriterDataLifecycleQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the SchedulingClassQosPolicy by caching the field id's 
+ * @brief Initializes the SchedulingClassQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -230,7 +230,7 @@ saj_returnCode saj_InitializeWriterDataLifecycleQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeSchedulingClassQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the SchedulingPriorityQosPolicy by caching the field id's 
+ * @brief Initializes the SchedulingPriorityQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -238,7 +238,7 @@ saj_returnCode saj_InitializeSchedulingClassQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeSchedulingPriorityQosPolicy(JNIEnv *env);
 
 /**
- * @brief Initializes the SchedulingQosPolicy by caching the field id's 
+ * @brief Initializes the SchedulingQosPolicy by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -249,7 +249,7 @@ saj_returnCode saj_InitializeSchedulingQosPolicy(JNIEnv *env);
 saj_returnCode saj_InitializeDomainParticipantFactoryQos(JNIEnv *env);
 
 /**
- * @brief Initializes the DomainParticipantQos by caching the field id's 
+ * @brief Initializes the DomainParticipantQos by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -273,7 +273,7 @@ saj_returnCode saj_InitializeDataReaderQos(JNIEnv *env);
 saj_returnCode saj_InitializeDataReaderViewQos(JNIEnv *env);
 
 /**
- * @brief Initializes the DataWriterQos by caching the field id's 
+ * @brief Initializes the DataWriterQos by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -281,7 +281,7 @@ saj_returnCode saj_InitializeDataReaderViewQos(JNIEnv *env);
 saj_returnCode saj_InitializeDataWriterQos(JNIEnv *env);
 
 /**
- * @brief Initializes the TopicQos by caching the field id's 
+ * @brief Initializes the TopicQos by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -289,7 +289,7 @@ saj_returnCode saj_InitializeDataWriterQos(JNIEnv *env);
 saj_returnCode saj_InitializeTopicQos(JNIEnv *env);
 
 /**
- * @brief Initializes the PublisherQos by caching the field id's 
+ * @brief Initializes the PublisherQos by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -297,7 +297,7 @@ saj_returnCode saj_InitializeTopicQos(JNIEnv *env);
 saj_returnCode saj_InitializePublisherQos(JNIEnv *env);
 
 /**
- * @brief Initializes the SubscriberQos by caching the field id's 
+ * @brief Initializes the SubscriberQos by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -309,7 +309,7 @@ saj_returnCode saj_InitializeSubscriberQos(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeDataReaderQosHolder(JNIEnv *env);
 
 /**
@@ -325,7 +325,7 @@ saj_returnCode saj_InitializeDataReaderViewQosHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeInstanceHandleSeqHolder(JNIEnv *env);
 
 /**
@@ -333,8 +333,10 @@ saj_returnCode saj_InitializeInstanceHandleSeqHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializePublicationBuiltinTopicDataHolder(JNIEnv *env);
+
+saj_returnCode saj_InitializePublicationBuiltinTopicData(JNIEnv *env);
 
 saj_returnCode saj_InitializeStatusHolders(JNIEnv *env);
 
@@ -344,7 +346,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeDataWriterQosHolder(JNIEnv *env);
 
 /**
@@ -352,8 +354,10 @@ saj_returnCode saj_InitializeDataWriterQosHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeSubscriptionBuiltinTopicDataHolder(JNIEnv *env);
+
+saj_returnCode saj_InitializeSubscriptionBuiltinTopicData(JNIEnv *env);
 
 saj_returnCode saj_InitializeDomainParticipantFactoryQosHolder(JNIEnv *env);
 
@@ -362,7 +366,7 @@ saj_returnCode saj_InitializeDomainParticipantFactoryQosHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeDomainParticipantQosHolder(JNIEnv *env);
 
 /**
@@ -370,7 +374,7 @@ saj_returnCode saj_InitializeDomainParticipantQosHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializePublisherQosHolder(JNIEnv *env);
 
 /**
@@ -378,7 +382,7 @@ saj_returnCode saj_InitializePublisherQosHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeSubscriberQosHolder(JNIEnv *env);
 
 /**
@@ -386,7 +390,7 @@ saj_returnCode saj_InitializeSubscriberQosHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeTopicQosHolder(JNIEnv *env);
 
 /**
@@ -394,7 +398,7 @@ saj_returnCode saj_InitializeTopicQosHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeDataReaderSeqHolder(JNIEnv *env);
 
 /**
@@ -402,7 +406,7 @@ saj_returnCode saj_InitializeDataReaderSeqHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeConditionSeqHolder(JNIEnv *env);
 
 /**
@@ -410,7 +414,7 @@ saj_returnCode saj_InitializeConditionSeqHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeSampleInfo(JNIEnv *env);
 
 /**
@@ -418,7 +422,7 @@ saj_returnCode saj_InitializeSampleInfo(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeSampleInfoHolder(JNIEnv *env);
 
 /**
@@ -426,7 +430,7 @@ saj_returnCode saj_InitializeSampleInfoHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeSampleInfoSeqHolder(JNIEnv *env);
 
 /**
@@ -434,7 +438,7 @@ saj_returnCode saj_InitializeSampleInfoSeqHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeTime_tHolder(JNIEnv *env);
 
 /**
@@ -442,7 +446,7 @@ saj_returnCode saj_InitializeTime_tHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeStringHolder(JNIEnv *env);
 
 /**
@@ -450,7 +454,7 @@ saj_returnCode saj_InitializeStringHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeErrorCodeHolder(JNIEnv *env);
 
 /**
@@ -458,7 +462,7 @@ saj_returnCode saj_InitializeErrorCodeHolder(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeDuration_t(JNIEnv *env);
 
 /**
@@ -466,7 +470,7 @@ saj_returnCode saj_InitializeDuration_t(JNIEnv *env);
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
- */ 
+ */
 saj_returnCode saj_InitializeTime_t(JNIEnv *env);
 
 saj_returnCode saj_InitializeInconsistentTopicStatus(JNIEnv *env);
@@ -677,11 +681,19 @@ saj_returnCode saj_InitializeSAJ(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
+    if (saj_InitializePublicationBuiltinTopicData(env) != SAJ_RETCODE_OK)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
     if (saj_InitializeDataWriterQosHolder(env) != SAJ_RETCODE_OK)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     if (saj_InitializeSubscriptionBuiltinTopicDataHolder(env) != SAJ_RETCODE_OK)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+    if (saj_InitializeSubscriptionBuiltinTopicData(env) != SAJ_RETCODE_OK)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
@@ -728,7 +740,7 @@ saj_returnCode saj_InitializeSAJ(JNIEnv *env)
     if (saj_InitializeTime_tHolder(env) != SAJ_RETCODE_OK)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
-    }    
+    }
     if (saj_InitializeStringHolder(env) != SAJ_RETCODE_OK)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
@@ -822,7 +834,7 @@ saj_returnCode saj_InitializeSAJ(JNIEnv *env)
     if(saj_InitializeConstantObjects(env) != SAJ_RETCODE_OK){
         return SAJ_RETCODE_ERROR;
     }
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -830,19 +842,19 @@ saj_returnCode saj_InitializeDeadlineQosPolicy(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/DeadlineQosPolicy");
     SET_CACHED(deadlineQosPolicy_period_fid ,(*env)->GetFieldID(
-        env, 
-        tempClass, 
-        "period", 
+        env,
+        tempClass,
+        "period",
         "LDDS/Duration_t;"
     ));
-    
+
     if (GET_CACHED(deadlineQosPolicy_period_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -851,20 +863,20 @@ saj_returnCode saj_InitializeDestinationOrderQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/DestinationOrderQosPolicy");
     SET_CACHED(destinationOrderQosPolicy_kind_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "kind", 
+            env,
+            tempClass,
+            "kind",
             "LDDS/DestinationOrderQosPolicyKind;"
         )
     );
-    
+
     if (GET_CACHED(destinationOrderQosPolicy_kind_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -873,20 +885,20 @@ saj_returnCode saj_InitializeDurabilityQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/DurabilityQosPolicy");
     SET_CACHED(durabilityQosPolicy_kind_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "kind", 
+            env,
+            tempClass,
+            "kind",
             "LDDS/DurabilityQosPolicyKind;"
         )
     );
-    
-    if (GET_CACHED(durabilityQosPolicy_kind_fid) == NULL) 
+
+    if (GET_CACHED(durabilityQosPolicy_kind_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -896,54 +908,54 @@ saj_returnCode saj_InitializeDurabilityServiceQosPolicy(JNIEnv *env)
 
     SET_CACHED(durabilityServiceQosPolicy_historyKind_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "history_kind", 
+            env,
+            tempClass,
+            "history_kind",
             "LDDS/HistoryQosPolicyKind;"
         )
     );
 
     SET_CACHED(durabilityServiceQosPolicy_historyDepth_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "history_depth", 
+            env,
+            tempClass,
+            "history_depth",
             "I"
         )
     );
-    
+
     SET_CACHED(durabilityServiceQosPolicy_maxSamples_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "max_samples", 
+            env,
+            tempClass,
+            "max_samples",
             "I"
         )
     );
-    
+
     SET_CACHED(durabilityServiceQosPolicy_maxInstances_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "max_instances", 
+            env,
+            tempClass,
+            "max_instances",
             "I"
         )
     );
-    
+
     SET_CACHED(durabilityServiceQosPolicy_maxSamplesPerInstance_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "max_samples_per_instance", 
+            env,
+            tempClass,
+            "max_samples_per_instance",
             "I"
         )
     );
-    
+
     SET_CACHED(durabilityServiceQosPolicy_serviceCleanupDelay_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "service_cleanup_delay", 
+            env,
+            tempClass,
+            "service_cleanup_delay",
             "LDDS/Duration_t;"
         )
     );
@@ -957,9 +969,9 @@ saj_returnCode saj_InitializeDurabilityServiceQosPolicy(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -968,20 +980,20 @@ saj_returnCode saj_InitializeEntityFactoryQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/EntityFactoryQosPolicy");
     SET_CACHED(entityFactoryQosPolicy_autoenableCreatedEntities_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "autoenable_created_entities", 
+            env,
+            tempClass,
+            "autoenable_created_entities",
             "Z" /* = boolean */
         )
     );
-    
+
     if (GET_CACHED(entityFactoryQosPolicy_autoenableCreatedEntities_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -990,20 +1002,20 @@ saj_returnCode saj_InitializeGroupDataQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/GroupDataQosPolicy");
     SET_CACHED(groupDataQosPolicy_value_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "value", 
+            env,
+            tempClass,
+            "value",
             "[B" /* = byte array = char sequence */
         )
     );
-    
+
     if (GET_CACHED(groupDataQosPolicy_value_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1156,30 +1168,30 @@ saj_returnCode saj_InitializeHistoryQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/HistoryQosPolicy");
     SET_CACHED(historyQosPolicy_kind_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "kind", 
+            env,
+            tempClass,
+            "kind",
             "LDDS/HistoryQosPolicyKind;"
         )
     );
-    
+
     SET_CACHED(historyQosPolicy_depth_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "depth", 
+            env,
+            tempClass,
+            "depth",
             "I" /* = int */
         )
     );
-    
-    if (GET_CACHED(historyQosPolicy_kind_fid) == NULL || 
+
+    if (GET_CACHED(historyQosPolicy_kind_fid) == NULL ||
         GET_CACHED(historyQosPolicy_depth_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1188,20 +1200,20 @@ saj_returnCode saj_InitializeLatencyBudgetQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/LatencyBudgetQosPolicy");
     SET_CACHED(latencyBudgetQosPolicy_duration_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "duration", 
+            env,
+            tempClass,
+            "duration",
             "LDDS/Duration_t;"
         )
     );
-    
+
     if (GET_CACHED(latencyBudgetQosPolicy_duration_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1210,20 +1222,20 @@ saj_returnCode saj_InitializeLifespanQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/LifespanQosPolicy");
     SET_CACHED(lifespanQosPolicy_duration_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "duration", 
+            env,
+            tempClass,
+            "duration",
             "LDDS/Duration_t;"
         )
     );
-    
+
     if (GET_CACHED(lifespanQosPolicy_duration_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1232,30 +1244,30 @@ saj_returnCode saj_InitializeLivelinessQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/LivelinessQosPolicy");
     SET_CACHED(livelinessQosPolicy_leaseDuration_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "lease_duration", 
+            env,
+            tempClass,
+            "lease_duration",
             "LDDS/Duration_t;"
         )
     );
-    
+
     SET_CACHED(livelinessQosPolicy_kind_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "kind", 
+            env,
+            tempClass,
+            "kind",
             "LDDS/LivelinessQosPolicyKind;"
         )
     );
-    
-    if (GET_CACHED(livelinessQosPolicy_leaseDuration_fid) == NULL || 
+
+    if (GET_CACHED(livelinessQosPolicy_leaseDuration_fid) == NULL ||
         GET_CACHED(livelinessQosPolicy_kind_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1264,20 +1276,20 @@ saj_returnCode saj_InitializeOwnershipQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/OwnershipQosPolicy");
     SET_CACHED(ownershipQosPolicy_kind_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "kind", 
+            env,
+            tempClass,
+            "kind",
             "LDDS/OwnershipQosPolicyKind;"
         )
     );
-    
+
     if (GET_CACHED(ownershipQosPolicy_kind_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1286,42 +1298,42 @@ saj_returnCode saj_InitializeOwnershipStrengthQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/OwnershipStrengthQosPolicy");
     SET_CACHED(ownershipStrengthQosPolicy_value_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "value", 
+            env,
+            tempClass,
+            "value",
             "I"
         )
     );
-    
+
     if (GET_CACHED(ownershipStrengthQosPolicy_value_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
 saj_returnCode saj_InitializePartitionQosPolicy(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/PartitionQosPolicy");
-    SET_CACHED(partitionQosPolicy_name_fid, 
+    SET_CACHED(partitionQosPolicy_name_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "name", 
+            env,
+            tempClass,
+            "name",
             "[Ljava/lang/String;" /* string array */
         )
     );
-    
+
     if (GET_CACHED(partitionQosPolicy_name_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1330,94 +1342,94 @@ saj_returnCode saj_InitializePresentationQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/PresentationQosPolicy");
     SET_CACHED(presentationQosPolicy_accessScope_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "access_scope", 
+            env,
+            tempClass,
+            "access_scope",
             "LDDS/PresentationQosPolicyAccessScopeKind;"
         )
     );
-    
+
     SET_CACHED(presentationQosPolicy_coherentAccess_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "coherent_access", 
+            env,
+            tempClass,
+            "coherent_access",
             "Z" /* boolean */
         )
     );
-    
+
     SET_CACHED(presentationQosPolicy_orderedAccess_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "ordered_access", 
+            env,
+            tempClass,
+            "ordered_access",
             "Z" /* boolean */
         )
     );
-    
+
     if (GET_CACHED(presentationQosPolicy_accessScope_fid) == NULL ||
         GET_CACHED(presentationQosPolicy_coherentAccess_fid) == NULL ||
         GET_CACHED(presentationQosPolicy_orderedAccess_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
 saj_returnCode saj_InitializeReaderDataLifecycleQosPolicy(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/ReaderDataLifecycleQosPolicy");
-    SET_CACHED(readerDataLifecycleQosPolicy_autopurgeNowriterSamplesDelay_fid, 
+    SET_CACHED(readerDataLifecycleQosPolicy_autopurgeNowriterSamplesDelay_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "autopurge_nowriter_samples_delay", 
+            env,
+            tempClass,
+            "autopurge_nowriter_samples_delay",
             "LDDS/Duration_t;"
         )
     );
-    
+
     if (GET_CACHED(
         readerDataLifecycleQosPolicy_autopurgeNowriterSamplesDelay_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
 
-    SET_CACHED(readerDataLifecycleQosPolicy_autopurgeDisposedSamplesDelay_fid, 
+    SET_CACHED(readerDataLifecycleQosPolicy_autopurgeDisposedSamplesDelay_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "autopurge_disposed_samples_delay", 
+            env,
+            tempClass,
+            "autopurge_disposed_samples_delay",
             "LDDS/Duration_t;"
         )
     );
-    
+
     if (GET_CACHED(
         readerDataLifecycleQosPolicy_autopurgeDisposedSamplesDelay_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
-    SET_CACHED(readerDataLifecycleQosPolicy_enable_invalid_samples_fid, 
+
+    SET_CACHED(readerDataLifecycleQosPolicy_enable_invalid_samples_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "enable_invalid_samples", 
+            env,
+            tempClass,
+            "enable_invalid_samples",
             "Z" /* boolean */
         )
     );
-    
+
     if (GET_CACHED(
-        readerDataLifecycleQosPolicy_enable_invalid_samples_fid) == 
+        readerDataLifecycleQosPolicy_enable_invalid_samples_fid) ==
             NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1426,22 +1438,22 @@ saj_returnCode saj_InitializeReliabilityQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/ReliabilityQosPolicy");
     SET_CACHED(reliabilityQosPolicy_kind_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "kind", 
+            env,
+            tempClass,
+            "kind",
             "LDDS/ReliabilityQosPolicyKind;"
         )
     );
-    
+
     SET_CACHED(reliabilityQosPolicy_maxBlockingTime_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "max_blocking_time", 
+            env,
+            tempClass,
+            "max_blocking_time",
             "LDDS/Duration_t;"
         )
     );
-    
+
     SET_CACHED(reliabilityQosPolicy_synchronous_fid,
         (*env)->GetFieldID(
             env,
@@ -1451,15 +1463,15 @@ saj_returnCode saj_InitializeReliabilityQosPolicy(JNIEnv *env)
         )
     );
 
-    if (GET_CACHED(reliabilityQosPolicy_kind_fid) == NULL || 
+    if (GET_CACHED(reliabilityQosPolicy_kind_fid) == NULL ||
         GET_CACHED(reliabilityQosPolicy_maxBlockingTime_fid) == NULL ||
         GET_CACHED(reliabilityQosPolicy_synchronous_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1468,40 +1480,40 @@ saj_returnCode saj_InitializeResourceLimitsQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/ResourceLimitsQosPolicy");
     SET_CACHED(resourceLimitsQosPolicy_maxSamples_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "max_samples", 
+            env,
+            tempClass,
+            "max_samples",
             "I" /* int */
         )
     );
-    
+
     SET_CACHED(resourceLimitsQosPolicy_maxInstances_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "max_instances", 
+            env,
+            tempClass,
+            "max_instances",
             "I" /* int */
         )
     );
-    
+
     SET_CACHED(resourceLimitsQosPolicy_maxSamplesPerInstance_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "max_samples_per_instance", 
+            env,
+            tempClass,
+            "max_samples_per_instance",
             "I" /* int */
         )
     );
-    
-    if (GET_CACHED(resourceLimitsQosPolicy_maxSamples_fid) == NULL || 
-        GET_CACHED(resourceLimitsQosPolicy_maxInstances_fid) == NULL || 
+
+    if (GET_CACHED(resourceLimitsQosPolicy_maxSamples_fid) == NULL ||
+        GET_CACHED(resourceLimitsQosPolicy_maxInstances_fid) == NULL ||
         GET_CACHED(resourceLimitsQosPolicy_maxSamplesPerInstance_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1510,20 +1522,20 @@ saj_returnCode saj_InitializeTimeBasedFilterQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/TimeBasedFilterQosPolicy");
     SET_CACHED(timeBasedFilterQosPolicy_minimumSeparation_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "minimum_separation", 
+            env,
+            tempClass,
+            "minimum_separation",
             "LDDS/Duration_t;"
         )
     );
-    
+
     if (GET_CACHED(timeBasedFilterQosPolicy_minimumSeparation_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1532,20 +1544,20 @@ saj_returnCode saj_InitializeTopicDataQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/TopicDataQosPolicy");
     SET_CACHED(topicDataQosPolicy_value_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "value", 
+            env,
+            tempClass,
+            "value",
             "[B" /* byte array */
         )
     );
-    
+
     if (GET_CACHED(topicDataQosPolicy_value_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1554,20 +1566,20 @@ saj_returnCode saj_InitializeTransportPriorityQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/TransportPriorityQosPolicy");
     SET_CACHED(transportPriorityQosPolicy_value_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "value", 
+            env,
+            tempClass,
+            "value",
             "I" /* int */
         )
     );
-    
+
     if (GET_CACHED(transportPriorityQosPolicy_value_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1576,42 +1588,42 @@ saj_returnCode saj_InitializeUserDataQosPolicy(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/UserDataQosPolicy");
     SET_CACHED(userDataQosPolicy_value_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "value", 
+            env,
+            tempClass,
+            "value",
             "[B" /* byte array */
         )
     );
-    
+
     if (GET_CACHED(userDataQosPolicy_value_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
 saj_returnCode saj_InitializeWriterDataLifecycleQosPolicy(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/WriterDataLifecycleQosPolicy");
-    SET_CACHED(writerDataLifecycleQosPolicy_autodisposeUnregisteredInstances_fid, 
+    SET_CACHED(writerDataLifecycleQosPolicy_autodisposeUnregisteredInstances_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "autodispose_unregistered_instances", 
+            env,
+            tempClass,
+            "autodispose_unregistered_instances",
             "Z" /* boolean */
         )
     );
-    
+
     if (GET_CACHED(
-        writerDataLifecycleQosPolicy_autodisposeUnregisteredInstances_fid) == 
+        writerDataLifecycleQosPolicy_autodisposeUnregisteredInstances_fid) ==
             NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     SET_CACHED(writerDataLifecycleQosPolicy_autopurgeSuspendedSamplesDelay_fid,
         (*env)->GetFieldID(
             env,
@@ -1645,18 +1657,18 @@ saj_returnCode saj_InitializeWriterDataLifecycleQosPolicy(JNIEnv *env)
     }
 
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
 saj_returnCode saj_InitializeSchedulingClassQosPolicy(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/SchedulingClassQosPolicy");
-    SET_CACHED(schedulingClassQosPolicy_kind_fid, 
+    SET_CACHED(schedulingClassQosPolicy_kind_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "kind", 
+            env,
+            tempClass,
+            "kind",
             "LDDS/SchedulingClassQosPolicyKind;"
         )
     );
@@ -1665,20 +1677,20 @@ saj_returnCode saj_InitializeSchedulingClassQosPolicy(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
 saj_returnCode saj_InitializeSchedulingPriorityQosPolicy(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/SchedulingPriorityQosPolicy");
-    SET_CACHED(schedulingPriorityQosPolicy_kind_fid, 
+    SET_CACHED(schedulingPriorityQosPolicy_kind_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "kind", 
+            env,
+            tempClass,
+            "kind",
             "LDDS/SchedulingPriorityQosPolicyKind;"
         )
     );
@@ -1687,38 +1699,38 @@ saj_returnCode saj_InitializeSchedulingPriorityQosPolicy(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
 saj_returnCode saj_InitializeSchedulingQosPolicy(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/SchedulingQosPolicy");
-    SET_CACHED(schedulingQosPolicy_schedulingClass_fid, 
+    SET_CACHED(schedulingQosPolicy_schedulingClass_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "scheduling_class", 
+            env,
+            tempClass,
+            "scheduling_class",
             "LDDS/SchedulingClassQosPolicy;"
         )
     );
 
-    SET_CACHED(schedulingQosPolicy_schedulingPriorityKind_fid, 
+    SET_CACHED(schedulingQosPolicy_schedulingPriorityKind_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "scheduling_priority_kind", 
+            env,
+            tempClass,
+            "scheduling_priority_kind",
             "LDDS/SchedulingPriorityQosPolicy;"
         )
     );
 
-    SET_CACHED(schedulingQosPolicy_schedulingPriority_fid, 
+    SET_CACHED(schedulingQosPolicy_schedulingPriority_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "scheduling_priority", 
+            env,
+            tempClass,
+            "scheduling_priority",
             "I" /* int */
         )
     );
@@ -1729,26 +1741,26 @@ saj_returnCode saj_InitializeSchedulingQosPolicy(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
 saj_returnCode saj_InitializeDomainParticipantFactoryQos(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/DomainParticipantFactoryQos");
-    
-    SET_CACHED(domainParticipantFactoryQos_entityFactory_fid, 
+
+    SET_CACHED(domainParticipantFactoryQos_entityFactory_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "entity_factory", 
+            env,
+            tempClass,
+            "entity_factory",
             "LDDS/EntityFactoryQosPolicy;"
         )
-    );    
+    );
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1758,36 +1770,36 @@ saj_returnCode saj_InitializeDomainParticipantQos(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/DomainParticipantQos");
     SET_CACHED(domainParticipantQos_userData_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "user_data", 
+            env,
+            tempClass,
+            "user_data",
             "LDDS/UserDataQosPolicy;"
         )
     );
-    
-    SET_CACHED(domainParticipantQos_entityFactory_fid, 
+
+    SET_CACHED(domainParticipantQos_entityFactory_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "entity_factory", 
+            env,
+            tempClass,
+            "entity_factory",
             "LDDS/EntityFactoryQosPolicy;"
         )
     );
 
-    SET_CACHED(domainParticipantQos_watchdogScheduling_fid, 
+    SET_CACHED(domainParticipantQos_watchdogScheduling_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "watchdog_scheduling", 
+            env,
+            tempClass,
+            "watchdog_scheduling",
             "LDDS/SchedulingQosPolicy;"
         )
     );
 
-    SET_CACHED(domainParticipantQos_listenerScheduling_fid, 
+    SET_CACHED(domainParticipantQos_listenerScheduling_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "listener_scheduling", 
+            env,
+            tempClass,
+            "listener_scheduling",
             "LDDS/SchedulingQosPolicy;"
         )
     );
@@ -1797,9 +1809,9 @@ saj_returnCode saj_InitializeDomainParticipantQos(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1808,9 +1820,9 @@ saj_returnCode saj_InitializeDataReaderQos(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/DataReaderQos");
     SET_CACHED(dataReaderQos_durability_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "durability", 
+            env,
+            tempClass,
+            "durability",
             "LDDS/DurabilityQosPolicy;"
         )
     );
@@ -1826,90 +1838,90 @@ saj_returnCode saj_InitializeDataReaderQos(JNIEnv *env)
 
     SET_CACHED(dataReaderQos_latencyBudget_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "latency_budget", 
+            env,
+            tempClass,
+            "latency_budget",
             "LDDS/LatencyBudgetQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataReaderQos_liveliness_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "liveliness", 
+            env,
+            tempClass,
+            "liveliness",
             "LDDS/LivelinessQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataReaderQos_reliability_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "reliability", 
+            env,
+            tempClass,
+            "reliability",
             "LDDS/ReliabilityQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataReaderQos_destinationOrder_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "destination_order", 
+            env,
+            tempClass,
+            "destination_order",
             "LDDS/DestinationOrderQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataReaderQos_history_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "history", 
+            env,
+            tempClass,
+            "history",
             "LDDS/HistoryQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataReaderQos_resourceLimits_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "resource_limits", 
+            env,
+            tempClass,
+            "resource_limits",
             "LDDS/ResourceLimitsQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataReaderQos_userData_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "user_data", 
+            env,
+            tempClass,
+            "user_data",
             "LDDS/UserDataQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataReaderQos_ownership_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "ownership", 
+            env,
+            tempClass,
+            "ownership",
             "LDDS/OwnershipQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataReaderQos_timeBasedFilter_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "time_based_filter", 
+            env,
+            tempClass,
+            "time_based_filter",
             "LDDS/TimeBasedFilterQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataReaderQos_readerDataLifecycle_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "reader_data_lifecycle", 
+            env,
+            tempClass,
+            "reader_data_lifecycle",
             "LDDS/ReaderDataLifecycleQosPolicy;"
         )
     );
@@ -1957,9 +1969,9 @@ saj_returnCode saj_InitializeDataReaderQos(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -1991,130 +2003,130 @@ saj_returnCode saj_InitializeDataWriterQos(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/DataWriterQos");
     SET_CACHED(dataWriterQos_durability_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "durability", 
+            env,
+            tempClass,
+            "durability",
             "LDDS/DurabilityQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_deadline_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "deadline", 
+            env,
+            tempClass,
+            "deadline",
             "LDDS/DeadlineQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_latencyBudget_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "latency_budget", 
+            env,
+            tempClass,
+            "latency_budget",
             "LDDS/LatencyBudgetQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_liveliness_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "liveliness", 
+            env,
+            tempClass,
+            "liveliness",
             "LDDS/LivelinessQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_reliability_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "reliability", 
+            env,
+            tempClass,
+            "reliability",
             "LDDS/ReliabilityQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_destinationOrder_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "destination_order", 
+            env,
+            tempClass,
+            "destination_order",
             "LDDS/DestinationOrderQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_history_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "history", 
+            env,
+            tempClass,
+            "history",
             "LDDS/HistoryQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_resourceLimits_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "resource_limits", 
+            env,
+            tempClass,
+            "resource_limits",
             "LDDS/ResourceLimitsQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_transportPriority_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "transport_priority", 
+            env,
+            tempClass,
+            "transport_priority",
             "LDDS/TransportPriorityQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_lifespan_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "lifespan", 
+            env,
+            tempClass,
+            "lifespan",
             "LDDS/LifespanQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_userData_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "user_data", 
+            env,
+            tempClass,
+            "user_data",
             "LDDS/UserDataQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_ownership_fid,
             (*env)->GetFieldID(
-                env, 
-                tempClass, 
-                "ownership", 
+                env,
+                tempClass,
+                "ownership",
                 "LDDS/OwnershipQosPolicy;"
             )
         );
-    
+
     SET_CACHED(dataWriterQos_ownershipStrength_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "ownership_strength", 
+            env,
+            tempClass,
+            "ownership_strength",
             "LDDS/OwnershipStrengthQosPolicy;"
         )
     );
-    
+
     SET_CACHED(dataWriterQos_writerDataLifecycle_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "writer_data_lifecycle", 
+            env,
+            tempClass,
+            "writer_data_lifecycle",
             "LDDS/WriterDataLifecycleQosPolicy;"
         )
     );
-    
+
     if (GET_CACHED(dataWriterQos_durability_fid) == NULL        ||
         GET_CACHED(dataWriterQos_deadline_fid) == NULL          ||
         GET_CACHED(dataWriterQos_latencyBudget_fid) == NULL     ||
@@ -2132,9 +2144,9 @@ saj_returnCode saj_InitializeDataWriterQos(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -2143,121 +2155,121 @@ saj_returnCode saj_InitializeTopicQos(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/TopicQos");
     SET_CACHED(topicQos_topicData_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "topic_data", 
+            env,
+            tempClass,
+            "topic_data",
             "LDDS/TopicDataQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_durability_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "durability", 
+            env,
+            tempClass,
+            "durability",
             "LDDS/DurabilityQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_durabilityService_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "durability_service", 
+            env,
+            tempClass,
+            "durability_service",
             "LDDS/DurabilityServiceQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_deadline_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "deadline", 
+            env,
+            tempClass,
+            "deadline",
             "LDDS/DeadlineQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_latencyBudget_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "latency_budget", 
+            env,
+            tempClass,
+            "latency_budget",
             "LDDS/LatencyBudgetQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_liveliness_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "liveliness", 
+            env,
+            tempClass,
+            "liveliness",
             "LDDS/LivelinessQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_reliability_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "reliability", 
+            env,
+            tempClass,
+            "reliability",
             "LDDS/ReliabilityQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_destinationOrder_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "destination_order", 
+            env,
+            tempClass,
+            "destination_order",
             "LDDS/DestinationOrderQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_history_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "history", 
+            env,
+            tempClass,
+            "history",
             "LDDS/HistoryQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_resourceLimits_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "resource_limits", 
+            env,
+            tempClass,
+            "resource_limits",
             "LDDS/ResourceLimitsQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_transportPriority_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "transport_priority", 
+            env,
+            tempClass,
+            "transport_priority",
             "LDDS/TransportPriorityQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_lifespan_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "lifespan", 
+            env,
+            tempClass,
+            "lifespan",
             "LDDS/LifespanQosPolicy;"
         )
     );
-    
+
     SET_CACHED(topicQos_ownership_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "ownership", 
+            env,
+            tempClass,
+            "ownership",
             "LDDS/OwnershipQosPolicy;"
         )
     );
-    
+
     if (GET_CACHED(topicQos_topicData_fid) == NULL          ||
         GET_CACHED(topicQos_durability_fid) == NULL         ||
         GET_CACHED(topicQos_durabilityService_fid) == NULL  ||
@@ -2274,9 +2286,9 @@ saj_returnCode saj_InitializeTopicQos(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -2285,40 +2297,40 @@ saj_returnCode saj_InitializePublisherQos(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/PublisherQos");
     SET_CACHED(publisherQos_presentation_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "presentation", 
+            env,
+            tempClass,
+            "presentation",
             "LDDS/PresentationQosPolicy;"
         )
     );
-    
+
     SET_CACHED(publisherQos_partition_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "partition", 
+            env,
+            tempClass,
+            "partition",
             "LDDS/PartitionQosPolicy;"
         )
     );
-    
+
     SET_CACHED(publisherQos_groupData_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "group_data", 
+            env,
+            tempClass,
+            "group_data",
             "LDDS/GroupDataQosPolicy;"
         )
     );
-    
+
     SET_CACHED(publisherQos_entityFactory_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "entity_factory", 
+            env,
+            tempClass,
+            "entity_factory",
             "LDDS/EntityFactoryQosPolicy;"
         )
     );
-    
+
     if (GET_CACHED(publisherQos_presentation_fid) == NULL   ||
         GET_CACHED(publisherQos_partition_fid) == NULL      ||
         GET_CACHED(publisherQos_groupData_fid) == NULL      ||
@@ -2326,9 +2338,9 @@ saj_returnCode saj_InitializePublisherQos(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -2337,40 +2349,40 @@ saj_returnCode saj_InitializeSubscriberQos(JNIEnv *env)
     jclass tempClass = (*env)->FindClass(env, "DDS/SubscriberQos");
     SET_CACHED(subscriberQos_presentation_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "presentation", 
+            env,
+            tempClass,
+            "presentation",
             "LDDS/PresentationQosPolicy;"
         )
     );
-    
+
     SET_CACHED(subscriberQos_partition_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "partition", 
+            env,
+            tempClass,
+            "partition",
             "LDDS/PartitionQosPolicy;"
         )
     );
-    
+
     SET_CACHED(subscriberQos_groupData_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "group_data", 
+            env,
+            tempClass,
+            "group_data",
             "LDDS/GroupDataQosPolicy;"
         )
     );
-    
+
     SET_CACHED(subscriberQos_entityFactory_fid,
         (*env)->GetFieldID(
-            env, 
-            tempClass, 
-            "entity_factory", 
+            env,
+            tempClass,
+            "entity_factory",
             "LDDS/EntityFactoryQosPolicy;"
         )
     );
-    
+
     SET_CACHED(subscriberQos_share_fid,
         (*env)->GetFieldID(
             env,
@@ -2388,9 +2400,9 @@ saj_returnCode saj_InitializeSubscriberQos(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
-    
+
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -2478,6 +2490,182 @@ saj_returnCode saj_InitializePublicationBuiltinTopicDataHolder(JNIEnv *env)
     return SAJ_RETCODE_OK;
 }
 
+saj_returnCode saj_InitializePublicationBuiltinTopicData(JNIEnv *env)
+{
+    jclass tempClass = (*env)->FindClass(env, "DDS/PublicationBuiltinTopicData");
+    SET_CACHED(publicationBuiltinTopicData_key_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "key",
+            "[I"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_participantKey_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "participant_key",
+            "[I"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_topicName_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "topic_name",
+            "Ljava/lang/String;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_typeName_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "type_name",
+            "Ljava/lang/String;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_durability_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "durability",
+            "LDDS/DurabilityQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_latencyBudget_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "latency_budget",
+            "LDDS/LatencyBudgetQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_liveliness_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "liveliness",
+            "LDDS/LivelinessQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_reliability_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "reliability",
+            "LDDS/ReliabilityQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_ownership_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "ownership",
+            "LDDS/OwnershipQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_ownershipStrength_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "ownership_strength",
+            "LDDS/OwnershipStrengthQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_lifespan_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "lifespan",
+            "LDDS/LifespanQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_destinationOrder_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "destination_order",
+            "LDDS/DestinationOrderQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_userData_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "user_data",
+            "LDDS/UserDataQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_deadline_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "deadline",
+            "LDDS/DeadlineQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_presentation_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "presentation",
+            "LDDS/PresentationQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_partition_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "partition",
+            "LDDS/PartitionQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_topicData_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "topic_data",
+            "LDDS/TopicDataQosPolicy;"
+        )
+    );
+    SET_CACHED(publicationBuiltinTopicData_groupData_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "group_data",
+            "LDDS/GroupDataQosPolicy;"
+        )
+    );
+
+    if (GET_CACHED(publicationBuiltinTopicData_key_fid) == NULL               ||
+        GET_CACHED(publicationBuiltinTopicData_participantKey_fid) == NULL    ||
+        GET_CACHED(publicationBuiltinTopicData_topicName_fid) == NULL         ||
+        GET_CACHED(publicationBuiltinTopicData_typeName_fid) == NULL          ||
+        GET_CACHED(publicationBuiltinTopicData_durability_fid) == NULL        ||
+        GET_CACHED(publicationBuiltinTopicData_latencyBudget_fid) == NULL     ||
+        GET_CACHED(publicationBuiltinTopicData_liveliness_fid) == NULL        ||
+        GET_CACHED(publicationBuiltinTopicData_reliability_fid) == NULL       ||
+        GET_CACHED(publicationBuiltinTopicData_ownership_fid) == NULL         ||
+        GET_CACHED(publicationBuiltinTopicData_ownershipStrength_fid) == NULL ||
+        GET_CACHED(publicationBuiltinTopicData_lifespan_fid) == NULL          ||
+        GET_CACHED(publicationBuiltinTopicData_destinationOrder_fid) == NULL  ||
+        GET_CACHED(publicationBuiltinTopicData_userData_fid) == NULL          ||
+        GET_CACHED(publicationBuiltinTopicData_deadline_fid) == NULL          ||
+        GET_CACHED(publicationBuiltinTopicData_presentation_fid) == NULL      ||
+        GET_CACHED(publicationBuiltinTopicData_partition_fid) == NULL         ||
+        GET_CACHED(publicationBuiltinTopicData_topicData_fid) == NULL         ||
+        GET_CACHED(publicationBuiltinTopicData_groupData_fid) == NULL )
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+
+    (*env)->DeleteLocalRef(env, tempClass);
+
+    return SAJ_RETCODE_OK;
+
+}
+
 saj_returnCode saj_InitializeDataWriterQosHolder(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/DataWriterQosHolder");
@@ -2518,6 +2706,173 @@ saj_returnCode saj_InitializeSubscriptionBuiltinTopicDataHolder(JNIEnv *env)
 
     (*env)->DeleteLocalRef(env, tempClass);
     return SAJ_RETCODE_OK;
+}
+
+saj_returnCode saj_InitializeSubscriptionBuiltinTopicData(JNIEnv *env)
+{
+    jclass tempClass = (*env)->FindClass(env, "DDS/SubscriptionBuiltinTopicData");
+    SET_CACHED(subscriptionBuiltinTopicData_key_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "key",
+            "[I"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_participantKey_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "participant_key",
+            "[I"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_topicName_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "topic_name",
+            "Ljava/lang/String;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_typeName_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "type_name",
+            "Ljava/lang/String;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_durability_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "durability",
+            "LDDS/DurabilityQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_latencyBudget_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "latency_budget",
+            "LDDS/LatencyBudgetQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_liveliness_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "liveliness",
+            "LDDS/LivelinessQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_reliability_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "reliability",
+            "LDDS/ReliabilityQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_ownership_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "ownership",
+            "LDDS/OwnershipQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_destinationOrder_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "destination_order",
+            "LDDS/DestinationOrderQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_userData_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "user_data",
+            "LDDS/UserDataQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_timeBasedFilter_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "time_based_filter",
+            "LDDS/TimeBasedFilterQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_deadline_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "deadline",
+            "LDDS/DeadlineQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_presentation_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "presentation",
+            "LDDS/PresentationQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_partition_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "partition",
+            "LDDS/PartitionQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_topicData_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "topic_data",
+            "LDDS/TopicDataQosPolicy;"
+        )
+    );
+    SET_CACHED(subscriptionBuiltinTopicData_groupData_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "group_data",
+            "LDDS/GroupDataQosPolicy;"
+        )
+    );
+
+    if (GET_CACHED(subscriptionBuiltinTopicData_key_fid) == NULL              ||
+        GET_CACHED(subscriptionBuiltinTopicData_participantKey_fid) == NULL   ||
+        GET_CACHED(subscriptionBuiltinTopicData_topicName_fid) == NULL        ||
+        GET_CACHED(subscriptionBuiltinTopicData_typeName_fid) == NULL         ||
+        GET_CACHED(subscriptionBuiltinTopicData_durability_fid) == NULL       ||
+        GET_CACHED(subscriptionBuiltinTopicData_latencyBudget_fid) == NULL    ||
+        GET_CACHED(subscriptionBuiltinTopicData_liveliness_fid) == NULL       ||
+        GET_CACHED(subscriptionBuiltinTopicData_reliability_fid) == NULL      ||
+        GET_CACHED(subscriptionBuiltinTopicData_ownership_fid) == NULL        ||
+        GET_CACHED(subscriptionBuiltinTopicData_destinationOrder_fid) == NULL ||
+        GET_CACHED(subscriptionBuiltinTopicData_userData_fid) == NULL         ||
+        GET_CACHED(subscriptionBuiltinTopicData_timeBasedFilter_fid) == NULL  ||
+        GET_CACHED(subscriptionBuiltinTopicData_deadline_fid) == NULL         ||
+        GET_CACHED(subscriptionBuiltinTopicData_presentation_fid) == NULL     ||
+        GET_CACHED(subscriptionBuiltinTopicData_partition_fid) == NULL        ||
+        GET_CACHED(subscriptionBuiltinTopicData_topicData_fid) == NULL        ||
+        GET_CACHED(subscriptionBuiltinTopicData_groupData_fid) == NULL )
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+
+    (*env)->DeleteLocalRef(env, tempClass);
+
+    return SAJ_RETCODE_OK;
+
 }
 
 saj_returnCode saj_InitializeDomainParticipantFactoryQosHolder(JNIEnv *env)
@@ -2586,7 +2941,7 @@ saj_returnCode saj_InitializePublisherQosHolder(JNIEnv *env)
 saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
 {
     jclass tempClass;
-    
+
     tempClass = (*env)->FindClass(env, "DDS/InconsistentTopicStatusHolder");
     SET_CACHED(inconsistentTopicStatusHolder_value_fid,
         (*env)->GetFieldID(
@@ -2602,7 +2957,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/AllDataDisposedTopicStatusHolder");
     SET_CACHED(allDataDisposedTopicStatusHolder_value_fid,
@@ -2619,7 +2974,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/LivelinessLostStatusHolder");
     SET_CACHED(livelinessLostStatusHolder_value_fid,
@@ -2636,7 +2991,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/OfferedDeadlineMissedStatusHolder");
     SET_CACHED(offeredDeadlineMissedStatusHolder_value_fid,
@@ -2653,7 +3008,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/OfferedIncompatibleQosStatusHolder");
     SET_CACHED(offeredIncompatibleQosStatusHolder_value_fid,
@@ -2670,7 +3025,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/PublicationMatchedStatusHolder");
     SET_CACHED(publicationMatchedStatusHolder_value_fid,
@@ -2687,7 +3042,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/LivelinessChangedStatusHolder");
     SET_CACHED(livelinessChangedStatusHolder_value_fid,
@@ -2704,7 +3059,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/RequestedDeadlineMissedStatusHolder");
     SET_CACHED(requestedDeadlineMissedStatusHolder_value_fid,
@@ -2721,7 +3076,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/RequestedIncompatibleQosStatusHolder");
     SET_CACHED(requestedIncompatibleQosStatusHolder_value_fid,
@@ -2738,7 +3093,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/SubscriptionMatchedStatusHolder");
     SET_CACHED(subscriptionMatchedStatusHolder_value_fid,
@@ -2755,7 +3110,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/SampleRejectedStatusHolder");
     SET_CACHED(sampleRejectedStatusHolder_value_fid,
@@ -2772,7 +3127,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     /**********************************************************************/
     tempClass = (*env)->FindClass(env, "DDS/SampleLostStatusHolder");
     SET_CACHED(sampleLostStatusHolder_value_fid,
@@ -2789,7 +3144,7 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env)
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
     (*env)->DeleteLocalRef(env, tempClass);
-    
+
     return SAJ_RETCODE_OK;
 }
 
@@ -2986,7 +3341,7 @@ saj_returnCode saj_InitializeSampleInfoSeqHolder(JNIEnv *env)
     return SAJ_RETCODE_OK;
 }
 
-saj_returnCode 
+saj_returnCode
 saj_InitializeDuration_t(
     JNIEnv *env)
 {
@@ -2995,17 +3350,17 @@ saj_InitializeDuration_t(
 
     tempClass = (*env)->FindClass(env, "DDS/Duration_t");
     grClass = (*env)->NewGlobalRef (env, tempClass);
-    
+
     SET_CACHED(duration_t_class, grClass);
-    
+
     SET_CACHED(
-        duration_t_constructor_mid, 
+        duration_t_constructor_mid,
         (*env)->GetMethodID (env, tempClass, "<init>", "(II)V")
     );
-    
+
     SET_CACHED(duration_t_sec_fid,
         (*env)->GetFieldID(env, tempClass, "sec", "I"));
-   
+
     SET_CACHED(duration_t_nanosec_fid,
         (*env)->GetFieldID(env, tempClass, "nanosec", "I"));
 
@@ -3021,7 +3376,7 @@ saj_InitializeDuration_t(
     return SAJ_RETCODE_OK;
 }
 
-saj_returnCode 
+saj_returnCode
 saj_InitializeTime_t(
     JNIEnv *env)
 {
@@ -3124,19 +3479,19 @@ saj_InitializeInconsistentTopicStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/InconsistentTopicStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(inconsistentTopicStatus_class, grClass);
-    
+
     if(GET_CACHED(inconsistentTopicStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(inconsistentTopicStatus_constructor_mid, 
+        SET_CACHED(inconsistentTopicStatus_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(II)V"));
-        
+
         if(GET_CACHED(inconsistentTopicStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3151,19 +3506,19 @@ saj_InitializeGetAllDataDisposedTopicStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/AllDataDisposedTopicStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(allDataDisposedTopicStatus_class, grClass);
-    
+
     if(GET_CACHED(allDataDisposedTopicStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(allDataDisposedTopicStatus_constructor_mid, 
+        SET_CACHED(allDataDisposedTopicStatus_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(II)V"));
-        
+
         if(GET_CACHED(allDataDisposedTopicStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3178,19 +3533,19 @@ saj_InitializeLivelinessLostStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/LivelinessLostStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(livelinessLostStatus_class, grClass);
-    
+
     if(GET_CACHED(livelinessLostStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(livelinessLostStatus_constructor_mid, 
+        SET_CACHED(livelinessLostStatus_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(II)V"));
-        
+
         if(GET_CACHED(livelinessLostStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3205,19 +3560,19 @@ saj_InitializeOfferedDeadlineMissedStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/OfferedDeadlineMissedStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(offeredDeadlineMissedStatus_class, grClass);
-    
+
     if(GET_CACHED(offeredDeadlineMissedStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(offeredDeadlineMissedStatus_constructor_mid, 
+        SET_CACHED(offeredDeadlineMissedStatus_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(IIJ)V"));
-        
+
         if(GET_CACHED(offeredDeadlineMissedStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3232,19 +3587,19 @@ saj_InitializeOfferedIncompatibleQosStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/OfferedIncompatibleQosStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(offeredIncompatibleQosStatus_class, grClass);
-    
+
     if(GET_CACHED(offeredIncompatibleQosStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(offeredIncompatibleQosStatus_constructor_mid, 
+        SET_CACHED(offeredIncompatibleQosStatus_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(III[LDDS/QosPolicyCount;)V"));
-        
+
         if(GET_CACHED(offeredIncompatibleQosStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3259,19 +3614,19 @@ saj_InitializePublicationMatchStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/PublicationMatchedStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(publicationMatchStatus_class, grClass);
-    
+
     if(GET_CACHED(publicationMatchStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(publicationMatchStatus_constructor_mid, 
+        SET_CACHED(publicationMatchStatus_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(IIIIJ)V"));
-        
+
         if(GET_CACHED(publicationMatchStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3286,19 +3641,19 @@ saj_InitializeQosPolicyCount(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/QosPolicyCount");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(qosPolicyCount_class, grClass);
-    
+
     if(GET_CACHED(qosPolicyCount_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(qosPolicyCount_constructor_mid, 
+        SET_CACHED(qosPolicyCount_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(II)V"));
-        
+
         if(GET_CACHED(qosPolicyCount_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3313,34 +3668,34 @@ saj_InitializeSampleRejectedStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/SampleRejectedStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(sampleRejectedStatus_class, grClass);
-    
+
     if(GET_CACHED(sampleRejectedStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(sampleRejectedStatus_constructor_mid, 
-                                (*env)->GetMethodID (env, cls, "<init>", 
+        SET_CACHED(sampleRejectedStatus_constructor_mid,
+                                (*env)->GetMethodID (env, cls, "<init>",
                                 "(IILDDS/SampleRejectedStatusKind;J)V"));
-        
+
         if(GET_CACHED(sampleRejectedStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         } else {
             cls = (*env)->FindClass(env, "DDS/SampleRejectedStatusKind");
             grClass = (*(env))->NewGlobalRef (env, cls);
             SET_CACHED(sampleRejectedStatusKind_class, grClass);
-            
+
             if(GET_CACHED(sampleRejectedStatusKind_class == NULL)){
                 rc = SAJ_RETCODE_ERROR;
             } else {
-                SET_CACHED(sampleRejectedStatusKind_fromInt_mid, 
-                        (*env)->GetStaticMethodID(env, cls, "from_int", 
+                SET_CACHED(sampleRejectedStatusKind_fromInt_mid,
+                        (*env)->GetStaticMethodID(env, cls, "from_int",
                                         "(I)LDDS/SampleRejectedStatusKind;"));
-                
+
                 if(GET_CACHED(sampleRejectedStatusKind_fromInt_mid == NULL)){
                     rc = SAJ_RETCODE_ERROR;
                 }
@@ -3349,7 +3704,7 @@ saj_InitializeSampleRejectedStatus(
     }
     return rc;
 }
-    
+
 saj_returnCode
 saj_InitializeLivelinessChangedStatus(
     JNIEnv *env)
@@ -3357,19 +3712,19 @@ saj_InitializeLivelinessChangedStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/LivelinessChangedStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(livelinessChangedStatus_class, grClass);
-    
+
     if(GET_CACHED(livelinessChangedStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(livelinessChangedStatus_constructor_mid, 
+        SET_CACHED(livelinessChangedStatus_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(IIIIJ)V"));
-        
+
         if(GET_CACHED(livelinessChangedStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3384,19 +3739,19 @@ saj_InitializeRequestedDeadlineMissedStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/RequestedDeadlineMissedStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(requestedDeadlineMissedStatus_class, grClass);
-    
+
     if(GET_CACHED(requestedDeadlineMissedStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(requestedDeadlineMissedStatus_constructor_mid, 
+        SET_CACHED(requestedDeadlineMissedStatus_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(IIJ)V"));
-        
+
         if(GET_CACHED(requestedDeadlineMissedStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3411,19 +3766,19 @@ saj_InitializeRequestedIncompatibleQosStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/RequestedIncompatibleQosStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(requestedIncompatibleQosStatus_class, grClass);
-    
+
     if(GET_CACHED(requestedIncompatibleQosStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(requestedIncompatibleQosStatus_constructor_mid, 
+        SET_CACHED(requestedIncompatibleQosStatus_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(III[LDDS/QosPolicyCount;)V"));
-        
+
         if(GET_CACHED(requestedIncompatibleQosStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3438,19 +3793,19 @@ saj_InitializeSubscriptionMatchStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/SubscriptionMatchedStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(subscriptionMatchStatus_class, grClass);
-    
+
     if(GET_CACHED(subscriptionMatchStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(subscriptionMatchStatus_constructor_mid, 
+        SET_CACHED(subscriptionMatchStatus_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(IIIIJ)V"));
-        
+
         if(GET_CACHED(subscriptionMatchStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3465,19 +3820,19 @@ saj_InitializeSampleLostStatus(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "DDS/SampleLostStatus");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(sampleLostStatus_class, grClass);
-    
+
     if(GET_CACHED(sampleLostStatus_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else {
-        SET_CACHED(sampleLostStatus_constructor_mid, 
+        SET_CACHED(sampleLostStatus_constructor_mid,
                     (*env)->GetMethodID (env, cls, "<init>", "(II)V"));
-        
+
         if(GET_CACHED(sampleLostStatus_constructor_mid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         }
@@ -3492,32 +3847,32 @@ saj_InitializeTypeSupport(
     saj_returnCode rc;
     jclass grClass;
     jclass cls;
-    
+
     rc = SAJ_RETCODE_OK;
     cls = (*env)->FindClass(env, "org/opensplice/dds/dcps/TypeSupportImpl");
     grClass = (*(env))->NewGlobalRef (env, cls);
 
     SET_CACHED(typeSupport_class, grClass);
-    
+
     if(GET_CACHED(typeSupport_class == NULL)){
         rc = SAJ_RETCODE_ERROR;
     } else
     {
-        SET_CACHED(typeSupportDataReader_fid, 
-                    (*env)->GetFieldID(env, cls, "dataReaderClass", 
+        SET_CACHED(typeSupportDataReader_fid,
+                    (*env)->GetFieldID(env, cls, "dataReaderClass",
                                                  "Ljava/lang/String;"));
-        
+
         if(GET_CACHED(typeSupportDataReader_fid == NULL)){
             rc = SAJ_RETCODE_ERROR;
         } else{
-            SET_CACHED(typeSupportDataWriter_fid, 
+            SET_CACHED(typeSupportDataWriter_fid,
                         (*env)->GetFieldID(env, cls, "dataWriterClass",
                                                      "Ljava/lang/String;"));
-            
+
             if(GET_CACHED(typeSupportDataWriter_fid == NULL)){
                 rc = SAJ_RETCODE_ERROR;
             } else {
-                SET_CACHED(typeSupportConstructorSignature_fid, 
+                SET_CACHED(typeSupportConstructorSignature_fid,
                             (*env)->GetFieldID(env, cls, "constructorSignature",
                                                          "Ljava/lang/String;"));
                 if(GET_CACHED(typeSupportConstructorSignature_fid == NULL)){
@@ -3547,19 +3902,19 @@ saj_InitializeTopicListener(
 {
     saj_returnCode rc;
     jclass cls, grClass;
-    
+
     rc = SAJ_RETCODE_ERROR;
     cls = (*env)->FindClass(env, "DDS/TopicListenerOperations");
     grClass = (*(env))->NewGlobalRef (env, cls);
     SET_CACHED(listener_topic_class, grClass);
- 
+
     if(GET_CACHED(listener_topic_class) != NULL){
-        SET_CACHED(listener_onInconsistentTopic_mid, 
+        SET_CACHED(listener_onInconsistentTopic_mid,
                     (*env)->GetMethodID (env, cls,  "on_inconsistent_topic",
                                     "(LDDS/Topic;LDDS/InconsistentTopicStatus;)V"));
-    
+
         (*env)->DeleteLocalRef(env, cls);
-        
+
         if(GET_CACHED(listener_onInconsistentTopic_mid) != NULL){
             rc = SAJ_RETCODE_OK;
         }
@@ -3573,19 +3928,19 @@ saj_InitializeExtTopicListener(
 {
     saj_returnCode rc;
     jclass cls, grClass;
-    
+
     rc = SAJ_RETCODE_ERROR;
     cls = (*env)->FindClass(env, "DDS/ExtTopicListenerOperations");
     grClass = (*(env))->NewGlobalRef (env, cls);
     SET_CACHED(listener_topic_class, grClass);
- 
+
     if(GET_CACHED(listener_topic_class) != NULL){
-        SET_CACHED(listener_onAllDataDisposed_mid, 
+        SET_CACHED(listener_onAllDataDisposed_mid,
                     (*env)->GetMethodID (env, cls, "on_all_data_disposed",
                                     "(LDDS/Topic;)V"));
-    
+
         (*env)->DeleteLocalRef(env, cls);
-        
+
         if(GET_CACHED(listener_onAllDataDisposed_mid) != NULL){
             rc = SAJ_RETCODE_OK;
         }
@@ -3599,56 +3954,56 @@ saj_InitializeDataReaderListener(
 {
     saj_returnCode rc;
     jclass cls, grClass;
-    
+
     rc = SAJ_RETCODE_ERROR;
     cls = (*env)->FindClass(env, "DDS/DataReaderListenerOperations");
     grClass = (*(env))->NewGlobalRef (env, cls);
     SET_CACHED(listener_datareader_class, grClass);
- 
+
     if(GET_CACHED(listener_datareader_class) != NULL){
-        SET_CACHED(listener_onRequestedDeadlineMissed_mid, 
-                    (*env)->GetMethodID (env, cls,  
+        SET_CACHED(listener_onRequestedDeadlineMissed_mid,
+                    (*env)->GetMethodID (env, cls,
                     "on_requested_deadline_missed",
                     "(LDDS/DataReader;LDDS/RequestedDeadlineMissedStatus;)V"));
-        
+
         if(GET_CACHED(listener_onRequestedDeadlineMissed_mid) != NULL){
-            SET_CACHED(listener_onRequestedIncompatibleQos_mid, 
-                    (*env)->GetMethodID (env, cls,  
+            SET_CACHED(listener_onRequestedIncompatibleQos_mid,
+                    (*env)->GetMethodID (env, cls,
                     "on_requested_incompatible_qos",
                     "(LDDS/DataReader;LDDS/RequestedIncompatibleQosStatus;)V"));
-                    
+
             if(GET_CACHED(listener_onRequestedIncompatibleQos_mid) != NULL){
-                SET_CACHED(listener_onSampleRejected_mid, 
-                        (*env)->GetMethodID (env, cls,  
+                SET_CACHED(listener_onSampleRejected_mid,
+                        (*env)->GetMethodID (env, cls,
                         "on_sample_rejected",
                         "(LDDS/DataReader;LDDS/SampleRejectedStatus;)V"));
-                
+
                 if(GET_CACHED(listener_onSampleRejected_mid) != NULL){
-                    SET_CACHED(listener_onLivelinessChanged_mid, 
-                        (*env)->GetMethodID (env, cls,  
+                    SET_CACHED(listener_onLivelinessChanged_mid,
+                        (*env)->GetMethodID (env, cls,
                         "on_liveliness_changed",
                         "(LDDS/DataReader;LDDS/LivelinessChangedStatus;)V"));
-                
+
                     if(GET_CACHED(listener_onLivelinessChanged_mid) != NULL){
-                        SET_CACHED(listener_onDataAvailable_mid, 
-                            (*env)->GetMethodID (env, cls,  
+                        SET_CACHED(listener_onDataAvailable_mid,
+                            (*env)->GetMethodID (env, cls,
                                     "on_data_available",
                                     "(LDDS/DataReader;)V"));
-                    
+
                         if(GET_CACHED(listener_onDataAvailable_mid) != NULL){
-                            SET_CACHED(listener_onSubscriptionMatch_mid, 
-                                (*env)->GetMethodID (env, cls,  
+                            SET_CACHED(listener_onSubscriptionMatch_mid,
+                                (*env)->GetMethodID (env, cls,
                                 "on_subscription_matched",
                                 "(LDDS/DataReader;LDDS/SubscriptionMatchedStatus;)V"));
-                        
+
                             if(GET_CACHED(listener_onSubscriptionMatch_mid) != NULL){
-                                SET_CACHED(listener_onSampleLost_mid, 
-                                    (*env)->GetMethodID (env, cls,  
+                                SET_CACHED(listener_onSampleLost_mid,
+                                    (*env)->GetMethodID (env, cls,
                                     "on_sample_lost",
                                     "(LDDS/DataReader;LDDS/SampleLostStatus;)V"));
-                            
+
                                 (*env)->DeleteLocalRef(env, cls);
-        
+
                                 if(GET_CACHED(listener_onSampleLost_mid) != NULL){
                                     rc = SAJ_RETCODE_OK;
                                 }
@@ -3668,37 +4023,37 @@ saj_InitializeDataWriterListener(
 {
     saj_returnCode rc;
     jclass cls, grClass;
-    
+
     rc = SAJ_RETCODE_ERROR;
     cls = (*env)->FindClass(env, "DDS/DataWriterListenerOperations");
     grClass = (*(env))->NewGlobalRef (env, cls);
     SET_CACHED(listener_datawriter_class, grClass);
- 
+
     if(GET_CACHED(listener_datawriter_class) != NULL){
-        SET_CACHED(listener_onOfferedDeadlineMissed_mid, 
-                    (*env)->GetMethodID (env, cls,  
+        SET_CACHED(listener_onOfferedDeadlineMissed_mid,
+                    (*env)->GetMethodID (env, cls,
                     "on_offered_deadline_missed",
                     "(LDDS/DataWriter;LDDS/OfferedDeadlineMissedStatus;)V"));
-        
+
         if(GET_CACHED(listener_onOfferedDeadlineMissed_mid) != NULL){
-            SET_CACHED(listener_onOfferedIncompatibleQos_mid, 
-                    (*env)->GetMethodID (env, cls,  
+            SET_CACHED(listener_onOfferedIncompatibleQos_mid,
+                    (*env)->GetMethodID (env, cls,
                     "on_offered_incompatible_qos",
                     "(LDDS/DataWriter;LDDS/OfferedIncompatibleQosStatus;)V"));
-                    
+
             if(GET_CACHED(listener_onOfferedIncompatibleQos_mid) != NULL){
-                SET_CACHED(listener_onLivelinessLost_mid, 
-                        (*env)->GetMethodID (env, cls,  
+                SET_CACHED(listener_onLivelinessLost_mid,
+                        (*env)->GetMethodID (env, cls,
                         "on_liveliness_lost",
                         "(LDDS/DataWriter;LDDS/LivelinessLostStatus;)V"));
-                
+
                 if(GET_CACHED(listener_onLivelinessLost_mid) != NULL){
-                    SET_CACHED(listener_onPublicationMatch_mid, 
-                        (*env)->GetMethodID (env, cls,  
+                    SET_CACHED(listener_onPublicationMatch_mid,
+                        (*env)->GetMethodID (env, cls,
                         "on_publication_matched",
                         "(LDDS/DataWriter;LDDS/PublicationMatchedStatus;)V"));
                     (*env)->DeleteLocalRef(env, cls);
-        
+
                     if(GET_CACHED(listener_onPublicationMatch_mid) != NULL){
                         rc = SAJ_RETCODE_OK;
                     }
@@ -3715,19 +4070,19 @@ saj_InitializeSubscriberListener(
 {
     saj_returnCode rc;
     jclass cls, grClass;
-    
+
     rc = SAJ_RETCODE_ERROR;
     cls = (*env)->FindClass(env, "DDS/SubscriberListenerOperations");
     grClass = (*(env))->NewGlobalRef (env, cls);
     SET_CACHED(listener_subscriber_class, grClass);
- 
+
     if(GET_CACHED(listener_subscriber_class) != NULL){
-        SET_CACHED(listener_onDataOnReaders_mid, 
-                    (*env)->GetMethodID (env, cls,  
+        SET_CACHED(listener_onDataOnReaders_mid,
+                    (*env)->GetMethodID (env, cls,
                     "on_data_on_readers",
                     "(LDDS/Subscriber;)V"));
         (*env)->DeleteLocalRef(env, cls);
-        
+
         if(GET_CACHED(listener_onDataOnReaders_mid) != NULL){
             rc = SAJ_RETCODE_OK;
         }
@@ -3741,20 +4096,20 @@ saj_InitializeUtilities(
 {
     saj_returnCode rc;
     jclass cls, grClass;
-    
+
     rc = SAJ_RETCODE_ERROR;
     cls = (*env)->FindClass(env, PACKAGENAME "Utilities");
     grClass = (*(env))->NewGlobalRef (env, cls);
     SET_CACHED(utilities_class, grClass);
- 
+
     if(GET_CACHED(utilities_class) != NULL){
-        SET_CACHED(utilities_throwException_mid, 
-                    (*env)->GetStaticMethodID (env, cls,  
+        SET_CACHED(utilities_throwException_mid,
+                    (*env)->GetStaticMethodID (env, cls,
                     "createException",
                     "(ILjava/lang/String;)Ljava/lang/RuntimeException;"));
-        
+
         (*env)->DeleteLocalRef(env, cls);
-        
+
         if(GET_CACHED(utilities_throwException_mid) != NULL){
             rc = SAJ_RETCODE_OK;
         }
@@ -3886,16 +4241,16 @@ saj_InitializeConstantObjects(
 	    }
         }
     }
-    
+
     if (rc == SAJ_RETCODE_OK) {
         rc = SAJ_RETCODE_ERROR;
         cls = (*env)->FindClass(env, "DDS/StringSeqHolder");
-        
+
         if (cls) {
-            SET_CACHED (stringSeqHolder_stringSeq_fid, 
-                            (*env)->GetFieldID(env, cls, 
+            SET_CACHED (stringSeqHolder_stringSeq_fid,
+                            (*env)->GetFieldID(env, cls,
                                 "value", "[Ljava/lang/String;"));
-            
+
             if (GET_CACHED(stringSeqHolder_stringSeq_fid) != NULL) {
                 rc = SAJ_RETCODE_OK;
             }

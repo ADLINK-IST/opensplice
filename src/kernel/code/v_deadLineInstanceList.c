@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -48,6 +48,7 @@ v_deadLineInstanceListNew(
         OS_REPORT(OS_ERROR,
                   "v_deadLineInstanceListNew",0,
                   "Failed to allocate v_deadLineInstanceList.");
+        assert(FALSE);
     }
 
     return list;
@@ -71,12 +72,15 @@ v_deadLineInstanceListSetDuration(
     v_deadLineInstanceList list,
     v_duration duration)
 {
+    v_kernel k;
+    v_result result;
+
     assert(C_TYPECHECK(list,v_deadLineInstanceList));
 
     list->leaseDuration = duration;
     if (list->deadlineLease != NULL) {
         if (c_timeCompare(duration, C_TIME_INFINITE) != C_EQ) {
-            v_leaseRenew(list->deadlineLease,duration);
+            v_leaseRenew(list->deadlineLease, &duration);
         } else {
             v_leaseManagerDeregister(list->leaseManager, list->deadlineLease);
             c_free(list->deadlineLease);
@@ -85,11 +89,25 @@ v_deadLineInstanceListSetDuration(
     } else {
         if ((v_objectKind(v_instance(list)->prev) != K_DEADLINEINSTANCE) &&  /* not in list */
             (c_timeCompare(duration, C_TIME_INFINITE) != C_EQ)) { /* new instance */
-            list->deadlineLease = v_leaseManagerRegister(list->leaseManager,
-                                                         v_public(list->actionObject),
-                                                         duration,
-                                                         list->actionId,
-                                                         V_LEASE_REPEAT_INFINITE);
+            k = v_objectKernel(list->leaseManager);
+            list->deadlineLease = v_leaseNew(k, duration);
+            if(list->deadlineLease)
+            {
+                result = v_leaseManagerRegister(
+                    list->leaseManager,
+                    list->deadlineLease,
+                    list->actionId,
+                    v_public(list->actionObject),
+                    TRUE /* repeat lease if expired */);
+                if(result != V_RESULT_OK)
+                {
+                    c_free(list->deadlineLease);
+                    list->deadlineLease = NULL;
+                    OS_REPORT_1(OS_ERROR, "v_deadLineInstanceList", 0,
+                        "A fatal error was detected when trying to register the deadline lease."
+                        "The result code was %d.", result);
+                }
+            }
         }
     }
 }
@@ -101,6 +119,8 @@ v_deadLineInstanceListInsertInstance(
     v_instance instance)
 {
     v_instance head = v_instance(list);
+    v_kernel k;
+    v_result result;
 
     assert(C_TYPECHECK(instance,v_instance));
     assert(C_TYPECHECK(list,v_deadLineInstanceList));
@@ -115,11 +135,25 @@ v_deadLineInstanceListInsertInstance(
     v_instanceAppend(head,instance);
     if (list->deadlineLease == NULL) {
         if (c_timeCompare(list->leaseDuration, C_TIME_INFINITE) != C_EQ) {
-            list->deadlineLease = v_leaseManagerRegister(list->leaseManager,
-                                                         v_public(list->actionObject),
-                                                         list->leaseDuration,
-                                                         list->actionId,
-                                                         V_LEASE_REPEAT_INFINITE);
+            k = v_objectKernel(list->leaseManager);
+            list->deadlineLease = v_leaseNew(k, list->leaseDuration);
+            if(list->deadlineLease)
+            {
+                result = v_leaseManagerRegister(
+                    list->leaseManager,
+                    list->deadlineLease,
+                    list->actionId,
+                    v_public(list->actionObject),
+                    TRUE /* repeat lease if expired */);
+                if(result != V_RESULT_OK)
+                {
+                    c_free(list->deadlineLease);
+                    list->deadlineLease = NULL;
+                    OS_REPORT_1(OS_ERROR, "v_deadLineInstanceList", 0,
+                        "A fatal error was detected when trying to register the deadline lease."
+                        "The result code was %d.", result);
+                }
+            }
         }
     }
 }
@@ -216,7 +250,7 @@ v_deadLineInstanceListCheckDeadlineMissed(
              */
             expiryTime = c_timeAdd(listItem->lastCheckTime, deadlineTime);
             expiryTime = c_timeSub(expiryTime, now);
-            v_leaseRenew(list->deadlineLease, expiryTime);
+            v_leaseRenew(list->deadlineLease, &expiryTime);
         }
     }
     return missed;

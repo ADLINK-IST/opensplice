@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,8 +13,9 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdlib.h>
 
-#define MAX_ARGS 256
+#define MAX_ARGS 512
 
 extern char **environ;
 typedef char *cptr;
@@ -41,17 +42,96 @@ void addarg( char *pattern, char *val )
    }
 }
 
+void fixenv( char *envname )
+{
+   char *winval;
+   int newlen;
+   char *env;
+   env = getenv(envname);
+   if ( env && env[0] != '\0' )
+   {
+     int len = cygwin32_posix_to_win32_path_list_buf_size (env);
+     winval = malloc(len);
+     cygwin32_conv_to_win32_path(env, winval );
+     setenv( envname, winval, 1 );
+     free(winval);
+   }
+}
+
 int main( int argc, char ** argv)
 {
    int count;
    int i;
+
+/* Executable name - strip off path if it was specified */
+
+   char *exe = strrchr (argv[1], '/');
+   if (exe)
+   {
+      exe += 1;
+   }
+   else
+   {
+      exe = argv[1];
+   }
+
+/* Argument processing */
+
    for ( count=1 ; count < argc; count++ )
    {
       char *arg = argv[count];
       if ( arg[0] == '-' )
       {
-         if ( !strcmp( argv[1], "idlpp" )
-              || !strcmp( argv[1], "tao_idl" )
+	 if ( !strcmp( exe, "arpentium" ) 
+	      || !strcmp( exe, "arppc" ) )
+	 {
+            addarg( "%s", argv[count] );
+	    fixenv( "WIND_HOME");
+	 } 
+	 else if ( !strcmp( exe, "ccpentium" ) 
+	      || !strcmp( exe, "c++pentium" )
+	      || !strcmp( exe, "ldpentium" )
+	      || !strcmp( exe, "c++ppc" )
+	      || !strcmp( exe, "ccppc" )
+	      || !strcmp( exe, "ldppc" ))
+         {
+	    fixenv( "WIND_HOME");
+            switch ( arg[1] )
+            {
+               case 'I' :
+               {
+                  addarg( "-I%s", &arg[2] );
+                  break;
+               }
+               case 'L' :
+               {
+                  addarg( "-L%s", &arg[2] );
+                  break;
+               }
+               case 'o' :
+               {
+                  if ( arg[2] == '\0' )
+                  {
+                     char *narg=argv[count+1];
+                     int arglen = strlen( narg );
+                     addarg( "%s", "-o" );
+                     addarg( "%s", narg );
+                     count++;
+                  }
+                  else
+                  {
+                     addarg( "%s", arg );
+                  }
+                  break;
+               }
+               default:
+               {
+                  addarg( "%s", argv[count] );
+               }
+            }
+         }
+         else if ( !strcmp( exe, "idlpp" )
+              || !strcmp( exe, "tao_idl" )
          )
          {
             switch ( arg[1] )
@@ -83,7 +163,7 @@ int main( int argc, char ** argv)
                }
             }
          }
-         else if ( !strcmp( argv[1], "mt" ))
+         else if ( !strcmp( exe, "mt" ))
          {
             if (!strcmp( arg, "-manifest" ))
             {
@@ -102,9 +182,9 @@ int main( int argc, char ** argv)
                addarg( "%s", argv[count] );
             }
          }
-         else if ( !strcmp( argv[1], "cl" )
-                   || !strcmp( argv[1], "link" )
-                   || !strcmp( argv[1], "lib" ))
+         else if ( !strcmp( exe, "cl" )
+                   || !strcmp( exe, "link" )
+                   || !strcmp( exe, "lib" ))
          {
             switch ( arg[1] )
             {

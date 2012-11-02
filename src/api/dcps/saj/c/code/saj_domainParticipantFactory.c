@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,14 +14,13 @@
 #include "saj_qosUtils.h"
 #include "saj_domainParticipantListener.h"
 #include "saj_extDomainParticipantListener.h"
-#include "saj_domainParticipantFactory.h"
+#include "saj_DomainParticipantFactory.h"
 #include "os_process.h"
 #include "os_stdlib.h"
 #include "os_heap.h"
 #include "os_report.h"
-#include "saj_extDomainParticipantListener.h"
 
-#define SAJ_FUNCTION(name) Java_DDS_DomainParticipantFactory_##name
+#define SAJ_FUNCTION(name) Java_org_opensplice_dds_dcps_DomainParticipantFactoryImpl_##name
 
 /*
  * Method: jniGetInstance
@@ -40,6 +39,7 @@ SAJ_FUNCTION(jniGetInstance)(
     jParticipantFactory = NULL;
 
     ldPreload = os_getenv("LD_PRELOAD");
+
     if(ldPreload){
         if(strstr(ldPreload, "jsig") == NULL){
             os_procSetSignalHandlingEnabled(0);
@@ -53,7 +53,7 @@ SAJ_FUNCTION(jniGetInstance)(
         gapiParticipantFactory = gapi_domainParticipantFactory_get_instance ();
 
         if(gapiParticipantFactory != NULL){
-            saj_construct_java_object(env, "DDS/DomainParticipantFactory",
+            saj_construct_java_object(env, PACKAGENAME"DomainParticipantFactoryImpl",
                                           (PA_ADDRCAST)gapiParticipantFactory,
                                           &jParticipantFactory);
         }
@@ -189,19 +189,17 @@ SAJ_FUNCTION(jniDeleteParticipant) (
     gapi_domainParticipantFactory factory;
     gapi_domainParticipant participant;
     saj_userData ud;
+    c_bool must_free;
 
     factory = (gapi_domainParticipantFactory)saj_read_gapi_address(env, this);
     participant = (gapi_domainParticipant)saj_read_gapi_address(env, jParticipant);
 
     ud = gapi_object_get_user_data(participant);
-    rc = gapi_domainParticipantFactory_delete_participant_w_action(factory,
-                                                participant,
-                                                saj_destroy_user_data_callback,
-                                                (void*)env);
 
-    if(rc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
+    must_free = saj_setThreadEnv(env);
+    rc = gapi_domainParticipantFactory_delete_participant(factory, participant);
+    saj_delThreadEnv(must_free);
+
     return (jint)rc;
 }
 
@@ -421,17 +419,15 @@ SAJ_FUNCTION(jniDeleteDomain) (
     gapi_returnCode_t rc;
     gapi_domainParticipantFactory factory;
     gapi_domain domain;
-    saj_userData ud;
+    c_bool must_free;
 
     factory = (gapi_domainParticipantFactory)saj_read_gapi_address(env, this);
     domain = (gapi_domain)saj_read_gapi_address(env, jDomain);
 
-    ud = gapi_object_get_user_data(domain);
+    must_free = saj_setThreadEnv(env);
     rc = gapi_domainParticipantFactory_delete_domain(factory, domain);
+    saj_delThreadEnv(must_free);
 
-    if(rc == GAPI_RETCODE_OK){
-        saj_destroy_user_data(env, ud);
-    }
     return (jint)rc;
 }
 
@@ -447,12 +443,13 @@ SAJ_FUNCTION(jniDeleteContainedEntities)(
 {
     gapi_returnCode_t rc;
     gapi_domainParticipantFactory factory;
+    c_bool must_free;
 
     factory = (gapi_domainParticipantFactory)saj_read_gapi_address(env, this);
-    rc = gapi_domainParticipantFactory_delete_contained_entities(
-        factory,
-        saj_destroy_user_data_callback,
-        (void *)env);
+
+    must_free = saj_setThreadEnv(env);
+    rc = gapi_domainParticipantFactory_delete_contained_entities(factory);
+    saj_delThreadEnv(must_free);
 
     return (jint)rc;
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -27,7 +27,7 @@ getFieldName(
         str = q_getId(fieldExpr);
         len = strlen(str)+1;
         name = (c_char *)os_malloc(len);
-        strncpy(name,str,len);
+        os_strncpy(name,str,len);
         return name;
     } else {
         return q_propertyName(fieldExpr);
@@ -104,6 +104,7 @@ v_mappingNew(
         OS_REPORT(OS_ERROR,
                   "v_mappingNew",0,
                   "Failed to allocate mapping rule.");
+        assert(FALSE);
     }
     return rule;
 }
@@ -241,6 +242,7 @@ v_projectionNew(
         OS_REPORT(OS_ERROR,
                   "v_projectionNew",0,
                   "Failed to allocate projection.");
+        assert(FALSE);
     }
 
     return p;

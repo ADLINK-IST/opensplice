@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -26,8 +26,8 @@
 #include "v_topic.h"
 #include "v_time.h"
 #include "os_report.h"
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 #include <stdio.h>
 
 c_char*
@@ -98,7 +98,7 @@ cmx_writerInit(
     v_writer writer;
     
     writer = v_writer(entity);
-    sprintf(buf, "<kind>WRITER</kind>");
+    os_sprintf(buf, "<kind>WRITER</kind>");
     
     return (c_char*)(os_strdup(buf));
 }

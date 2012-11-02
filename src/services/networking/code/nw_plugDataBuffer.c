@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,12 +11,13 @@
  */
 
 /* interface */
+#include "os_stdlib.h"
 #include "nw__plugDataBuffer.h"
 
 /* implementation */
 #include "nw_misc.h"
 #include "nw__confidence.h"
-
+#include "os_stdlib.h"
 
 
 /* --------------------------- analysis functions --------------------------- */
@@ -120,7 +121,7 @@ nw_plugDataBufferToString(
 
     str = os_malloc(200);
     NW_CONFIDENCE(buffer != NULL);
-    sprintf(str,"partitionId(%d),nrOfMessages(%d),packetNr(%d),fragmentedMsgNr(%d),fragmentNr(%d),terminatedMsgNr(%d),terminatingFragmentNr(%d)",
+    os_sprintf(str,"partitionId(%d),nrOfMessages(%d),packetNr(%d),fragmentedMsgNr(%d),fragmentNr(%d),terminatedMsgNr(%d),terminatingFragmentNr(%d)",
     buffer->partitionId,
     buffer->nrOfMessages,
     buffer->packetNr,

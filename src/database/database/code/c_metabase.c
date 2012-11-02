@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -22,7 +22,7 @@
 #include "c_stringSupport.h"
 #include "c__collection.h"
 #include "c_metafactory.h"
-#include "ctype.h"
+#include <ctype.h>
 #include "c_module.h"
 
 extern c_type c_getMetaType(c_base base, c_metaKind kind);
@@ -388,7 +388,9 @@ c_metaDefine(
     case M_RELATION:
     case M_UNIONCASE:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        o->kind = kind;
+        if (o) {
+            o->kind = kind;
+        }
     break;
     case M_COLLECTION:
     case M_ENUMERATION:
@@ -396,37 +398,47 @@ c_metaDefine(
     case M_TYPEDEF:
     case M_BASE:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        o->kind = kind;
-        c_type(o)->base = base; /* REMARK c_keep(base); */
+        if (o) {
+            o->kind = kind;
+            c_type(o)->base = base; /* REMARK c_keep(base); */
+        }
     break;
     case M_UNION:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        o->kind = kind;
-        c_union(o)->scope = c_scopeNew(base);
-        c_type(o)->base = base; /* REMARK c_keep(base); */
+        if (o) {
+            o->kind = kind;
+            c_union(o)->scope = c_scopeNew(base);
+            c_type(o)->base = base; /* REMARK c_keep(base); */
+        }
     break;
     case M_STRUCTURE:
     case M_EXCEPTION:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        o->kind = kind;
-        c_structure(o)->scope = c_scopeNew(base);
-        c_type(o)->base = base; /* REMARK c_keep(base); */
+        if (o) {
+            o->kind = kind;
+            c_structure(o)->scope = c_scopeNew(base);
+            c_type(o)->base = base; /* REMARK c_keep(base); */
+        }
     break;
     case M_MODULE:
-          o = (c_baseObject)c_new(c_getMetaType(base,kind));
-          o->kind = kind;
-          c_module(o)->scope = c_scopeNew(base);
-          c_mutexInit(&c_module(o)->mtx, SHARED_MUTEX);
+        o = (c_baseObject)c_new(c_getMetaType(base,kind));
+        if (o) {
+            o->kind = kind;
+            c_module(o)->scope = c_scopeNew(base);
+            c_mutexInit(&c_module(o)->mtx, SHARED_MUTEX);
+        }
     break;
     case M_CLASS:
     case M_INTERFACE:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
-        o->kind = kind;
-        if (kind == M_CLASS) {
-            c_class(o)->extends = NULL;
+        if (o) {
+            o->kind = kind;
+            if (kind == M_CLASS) {
+                c_class(o)->extends = NULL;
+            }
+            c_interface(o)->scope = c_scopeNew(base);
+            c_type(o)->base = base; /* REMARK c_keep(base); */
         }
-        c_interface(o)->scope = c_scopeNew(base);
-        c_type(o)->base = base; /* REMARK c_keep(base); */
     break;
     default:
         o = NULL;
@@ -1409,6 +1421,8 @@ c_objectIsType(
         return FALSE;
     }
     switch(o->kind) {
+    case M_EXTENT:
+    case M_EXTENTSYNC:
     case M_TYPEDEF:
     case M_CLASS:
     case M_COLLECTION:
@@ -1510,17 +1524,17 @@ c_metaScopedName(
                 case M_MEMBER:
                 case M_RELATION:
                 case M_UNIONCASE:
-                    sprintf(ptr,".");
+                    os_sprintf(ptr,".");
                     ptr = C_DISPLACE(ptr,1);
                 break;
                 default:
-                    sprintf(ptr,"::");
+                    os_sprintf(ptr,"::");
                     ptr = C_DISPLACE(ptr,2);
                 break;
                 }
             }
             name = c_metaName(scope);
-            strncpy(ptr,name,length);
+            os_strncpy(ptr,name,length);
             c_free(name);
             ptr = C_DISPLACE(ptr,length);
             previous = scope;
@@ -1696,7 +1710,7 @@ c_alignment(
 }
 
 int
-c_size(
+c_getSize(
     c_baseObject o)
 {
     if (o == NULL) {
@@ -1705,17 +1719,17 @@ c_size(
     switch(o->kind) {
     case M_ATTRIBUTE:
     case M_RELATION:
-        return c_size(c_baseObject(c_property(o)->type));
+        return c_getSize(c_baseObject(c_property(o)->type));
     case M_CONSTANT:
-        return c_size(c_baseObject(c_constant(o)->type));
+        return c_getSize(c_baseObject(c_constant(o)->type));
     case M_CONSTOPERAND:
-        return c_size(c_baseObject(c_constOperand(o)->constant));
+        return c_getSize(c_baseObject(c_constOperand(o)->constant));
     case M_TYPEDEF:
-        return c_size(c_baseObject(c_typeDef(o)->alias));
+        return c_getSize(c_baseObject(c_typeDef(o)->alias));
     case M_MEMBER:
     case M_PARAMETER:
     case M_UNIONCASE:
-        return c_size(c_baseObject(c_specifier(o)->type));
+        return c_getSize(c_baseObject(c_specifier(o)->type));
     case M_CLASS:
     case M_COLLECTION:
     case M_ENUMERATION:
@@ -1835,6 +1849,37 @@ c_metaArrayTypeNew(
     if (_this == NULL) {
         _this = c_metaDefine(c_metaObject(c__getBase(scope)),M_COLLECTION);
         c_collectionType(_this)->kind = C_ARRAY;
+        c_collectionType(_this)->subType = c_keep(subType);
+        c_collectionType(_this)->maxSize = maxSize;
+        c_metaFinalize(_this);
+        if (name) {
+            found = c_metaBind(scope, name, _this);
+            assert(found != NULL);
+            c_free(_this);
+            if (found != _this) {
+                _this = found;
+            }
+        }
+    }
+    return c_type(_this);
+}
+
+c_type
+c_metaSequenceTypeNew(
+    c_metaObject scope,
+    const c_char *name,
+    c_type subType,
+    c_long maxSize)
+{
+    c_metaObject _this = NULL;
+    c_metaObject found;
+
+    if (name) {
+        _this = c_metaResolve(scope, name);
+    }
+    if (_this == NULL) {
+        _this = c_metaDefine(c_metaObject(c__getBase(scope)),M_COLLECTION);
+        c_collectionType(_this)->kind = C_SEQUENCE;
         c_collectionType(_this)->subType = c_keep(subType);
         c_collectionType(_this)->maxSize = maxSize;
         c_metaFinalize(_this);
@@ -2188,7 +2233,7 @@ c_metaFindByComp (
         case TK_IDENT:
             length = abs((c_address)tail - (c_address)head)+1;
             str = (char *)os_malloc(length);
-            strncpy(str,head,length);
+            os_strncpy(str,head,length);
             str[length-1]=0;
 
             switch (state) {

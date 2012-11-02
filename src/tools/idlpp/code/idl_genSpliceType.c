@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -29,10 +29,11 @@
 #include "idl_dependencies.h"
 #include "idl_dll.h"
 #include "idl_catsDef.h"
+#include "idl_stacDef.h"
 
 #include <ctype.h>
-#include <os_stdlib.h>
-#include <c_typebase.h>
+#include "os_stdlib.h"
+#include "c_typebase.h"
 
 	/** indentation level */
 static c_long indent_level = 0;
@@ -64,7 +65,7 @@ idl_genSpliceTypeUseVoidPtrs (
     useVoidPtrs = val;
 }
 
-static void idl_arrayDimensions(idl_typeArray typeArray);
+static void idl_arrayDimensions(idl_typeArray typeArray, os_boolean resolveTypedefs);
 
 /** @brief generate name which will be used as a macro to prevent multiple inclusions
  *
@@ -91,7 +92,7 @@ idl_macroFromBasename(
         macro[i] = toupper(basename[i]);
         macro[i+1] = '\0';
     }
-    strncat(macro, append, (size_t)sizeof(macro));
+    os_strncat(macro, append, (size_t)sizeof(macro));
 
     return macro;
 }
@@ -135,7 +136,7 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "#include <c_collection.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "#include <c_field.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
-    
+
     /* Generate code for inclusion of application specific include files */
     for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
         idl_fileOutPrintf(idl_fileCur(), "#include \"%sSplDcps.h\"\n", idl_depGet (idl_depDefGet(), i));
@@ -249,10 +250,10 @@ idl_structureOpen(
         idl_fileOutPrintf(idl_fileCur(), "extern c_metaObject __%s__load (c_base base);\n",
 	        idl_scopeStack(scope, "_", name));
 	/* define the prototype of the function for querying the keys */
-        idl_fileOutPrintf(idl_fileCur(), "extern char * __%s__keys (void);\n",
+        idl_fileOutPrintf(idl_fileCur(), "extern const char * __%s__keys (void);\n",
 	        idl_scopeStack(scope, "_", name));
 	/* define the prototype of the function for querying scoped structure name */
-        idl_fileOutPrintf(idl_fileCur(), "extern char * __%s__name (void);\n",
+        idl_fileOutPrintf(idl_fileCur(), "extern const char * __%s__name (void);\n",
 	        idl_scopeStack(scope, "_", name));
         if(!test_mode)
         {
@@ -372,10 +373,10 @@ idl_structureClose (
         sequence<spec> <name>[n1]..[nn];        => c_array <name>[n1]..[nn];
         sequence<spec,length> <name>[n1]..[nn]; => c_array <name>[n1]..[nn];
    @endverbatim
- * If the type specification is idl_tseq then generate a mapping on c_array:
+ * If the type specification is idl_tseq then generate a mapping on c_sequence:
  * @verbatim
-        sequence<spec> <name>;        => c_array <name>;
-        sequence<spec,length> <name>; => c_array <name>;
+        sequence<spec> <name>;        => c_sequence <name>;
+        sequence<spec,length> <name>; => c_sequence <name,length>;
    @endverbatim
  *
  * @param scope Current scope
@@ -396,27 +397,38 @@ idl_structureMemberOpenClose(
         idl_typeSpecType(typeSpec) == idl_tbasic)
     {
         os_boolean catsRequested = OS_FALSE;
-        idl_typeSpec typeSpecTMP;
-        if(idl_typeSpecType(typeSpec) == idl_ttypedef)
-        {
-            typeSpecTMP = idl_typeDefResolveFully(idl_typeDef(typeSpec));
-            if((idl_typeSpecType(typeSpecTMP) == idl_tarray))
-            {
-                idl_basicType basic;
-                idl_typeSpec subType = idl_typeDefResolveFully(idl_typeArrayActual(idl_typeArray(typeSpecTMP)));
-                if(idl_typeSpecType(subType) == idl_tbasic)
-                {
-                    idl_scope tmpScope = idl_scopeDup(scope);
-                    os_char* containingElement;
+        os_boolean stacRequested = OS_FALSE;
+        idl_typeSpec baseTypeDereffered = NULL;
+        idl_typeSpec typeDereffered;
 
-                    basic = idl_typeBasicType(idl_typeBasic(subType));
-                    containingElement = idl_scopeElementName(idl_scopeCur (scope));
-                    idl_scopePop(tmpScope);
-                    catsRequested = idl_catsListItemIsDefined (idl_catsDefDefGet(), tmpScope, containingElement, name);
-                }
-            }
+        /* is a stac pragma defined for this member? */
+        stacRequested = idl_stacDef_isStacDefined(scope, name, typeSpec, &baseTypeDereffered);
+        if(!stacRequested)
+        {
+            /* Cats and stac def can not be defined over the same member as
+             * one excepts string types and the other char (array) types
+             */
+            catsRequested = idl_catsDef_isCatsDefined(scope, name, typeSpec);
         }
-        if(!catsRequested)
+
+        if(catsRequested)
+        {
+            assert(!stacRequested);
+            typeDereffered = idl_typeDefResolveFully(typeSpec);
+            idl_structureMemberOpenClose(scope, name, typeDereffered, userData);
+        } else if(stacRequested)
+        {
+            assert(baseTypeDereffered);
+            typeDereffered = idl_typeDefResolveFully(typeSpec);
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(), "c_char %s", idl_languageId (name));
+            /* potential array bounds */
+            if((idl_typeSpecType(typeDereffered) == idl_tarray))
+            {
+                idl_arrayDimensions(idl_typeArray(typeDereffered), OS_TRUE);
+            }
+            idl_fileOutPrintf(idl_fileCur(), "[%d];\n", idl_typeBasicMaxlen(idl_typeBasic(baseTypeDereffered))+1);
+        } else
         {
             /* generate code for a standard mapping or a typedef, enum, struct or union user-type mapping */
             idl_printIndent(indent_level);
@@ -425,29 +437,38 @@ idl_structureMemberOpenClose(
                 "%s %s;\n",
                 idl_scopedSplTypeIdent(typeSpec),
                 idl_languageId(name));
-        } else
-        {
-            idl_structureMemberOpenClose(scope, name, typeSpecTMP, userData);
         }
     } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
         /* generate code for an array mapping */
         os_boolean catsRequested = OS_FALSE;
-        idl_basicType basic;
-        idl_typeSpec subType = idl_typeDefResolveFully(idl_typeArrayActual(idl_typeArray(typeSpec)));
-        if(idl_typeSpecType(subType) == idl_tbasic)
-        {
-            idl_scope tmpScope = idl_scopeDup(scope);
-            os_char* containingElement;
+        os_boolean stacRequested = OS_FALSE;
+        idl_typeSpec baseTypeDereffered = NULL;
 
-            basic = idl_typeBasicType(idl_typeBasic(subType));
-            containingElement = idl_scopeElementName(idl_scopeCur (scope));
-            idl_scopePop(tmpScope);
-            catsRequested = idl_catsListItemIsDefined (idl_catsDefDefGet(), tmpScope, containingElement, name);
-        }
-        if(catsRequested && basic == idl_char)
+        /* is a stac pragma defined for this member? */
+        stacRequested = idl_stacDef_isStacDefined(scope, name, typeSpec, &baseTypeDereffered);
+        if(!stacRequested)
         {
+            /* Cats and stac def can not be defined over the same member as
+             * one excepts string types and the other char (array) types
+             */
+            catsRequested = idl_catsDef_isCatsDefined(scope, name, typeSpec);
+        }
+        if(catsRequested)
+        {
+            assert(!stacRequested);
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(), "c_string %s;\n", idl_languageId(name));
+        } else if(stacRequested)
+        {
+            assert(!catsRequested);
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(
+                idl_fileCur(),
+                "c_char %s",
+                idl_languageId(name));
+            idl_arrayDimensions(idl_typeArray(typeSpec), OS_TRUE);
+            idl_fileOutPrintf(idl_fileCur(),"[%d]", idl_typeBasicMaxlen(idl_typeBasic(baseTypeDereffered))+1);
+            idl_fileOutPrintf(idl_fileCur(), ";\n");
         } else
         {
             idl_printIndent(indent_level);
@@ -462,7 +483,7 @@ idl_structureMemberOpenClose(
             {
                 idl_fileOutPrintf(idl_fileCur(), "c_array %s", idl_languageId (name));
             }
-            idl_arrayDimensions(idl_typeArray(typeSpec));
+            idl_arrayDimensions(idl_typeArray(typeSpec), OS_FALSE);
             idl_fileOutPrintf(idl_fileCur(), ";\n");
         }
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
@@ -470,10 +491,10 @@ idl_structureMemberOpenClose(
         idl_printIndent(indent_level);
         if (idl_typeSeqMaxSize (idl_typeSeq(typeSpec)) == 0) {
 	    /* unbounded sequence */
-            idl_fileOutPrintf(idl_fileCur(), "c_array %s", idl_languageId(name));
+            idl_fileOutPrintf(idl_fileCur(), "c_sequence %s", idl_languageId(name));
         } else {
 	    /* bounded sequence */
-            idl_fileOutPrintf (idl_fileCur(), "c_array %s", idl_languageId(name));
+            idl_fileOutPrintf (idl_fileCur(), "c_sequence %s", idl_languageId(name));
         }
         idl_fileOutPrintf (idl_fileCur(), ";\n");
     } else {
@@ -561,10 +582,10 @@ idl_unionOpen(
         idl_fileOutPrintf(idl_fileCur(), "extern c_metaObject __%s__load (c_base base);\n",
 	    idl_scopeStack(scope, "_", name));
 	/* define the prototype of the function for querying the keys */
-        idl_fileOutPrintf(idl_fileCur(), "extern char * __%s__keys (void);\n",
+        idl_fileOutPrintf(idl_fileCur(), "extern const char * __%s__keys (void);\n",
 	    idl_scopeStack(scope, "_", name));
 	/* define the prototype of the function for querying scoped union name */
-        idl_fileOutPrintf(idl_fileCur(), "extern char * __%s__name (void);\n",
+        idl_fileOutPrintf(idl_fileCur(), "extern const char * __%s__name (void);\n",
 	    idl_scopeStack(scope, "_", name));
     }
     /* open the struct */
@@ -684,10 +705,10 @@ idl_unionClose (
         sequence<spec> <name>[n1]..[nn];        => c_array <name>[n1]..[nn];
         sequence<spec,length> <name>[n1]..[nn]; => c_array <name>[n1]..[nn];
    @endverbatim
- * If the type specification is idl_tseq then generate a mapping on c_array:
+ * If the type specification is idl_tseq then generate a mapping on c_sequence:
  * @verbatim
-        sequence<spec> <name>;        => c_array <name>;
-        sequence<spec,length> <name>; => c_array <name>;
+        sequence<spec> <name>;        => c_sequence <name>;
+        sequence<spec,length> <name>; => c_sequence <name>;
    @endverbatim
  *
  * @param scope Current scope (the union the union case is defined in)
@@ -728,17 +749,17 @@ idl_unionCaseOpenClose(
                 "c_array %s",
                 idl_languageId(name));
         }
-        idl_arrayDimensions(idl_typeArray(typeSpec));
+        idl_arrayDimensions(idl_typeArray(typeSpec), OS_FALSE);
         idl_fileOutPrintf(idl_fileCur(), ";\n");
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
         /* generate code for a sequence mapping */
         idl_printIndent(indent_level);
         if (idl_typeSeqMaxSize (idl_typeSeq(typeSpec)) == 0) {
             /* unbounded sequence */
-            idl_fileOutPrintf(idl_fileCur(), "c_array %s", idl_languageId (name));
+            idl_fileOutPrintf(idl_fileCur(), "c_sequence %s", idl_languageId (name));
         } else {
             /* bounded sequence */
-            idl_fileOutPrintf(idl_fileCur(), "c_array %s", idl_languageId (name));
+            idl_fileOutPrintf(idl_fileCur(), "c_sequence %s", idl_languageId (name));
         }
         idl_fileOutPrintf(idl_fileCur(), ";\n");
     } else {
@@ -874,11 +895,19 @@ idl_enumerationElementOpenClose(
  */
 static void
 idl_arrayDimensions (
-    idl_typeArray typeArray)
+    idl_typeArray typeArray,
+    os_boolean resolveTypedefs)
 {
+    idl_typeSpec subType;
+
     idl_fileOutPrintf(idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
-    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
-        idl_arrayDimensions (idl_typeArray(idl_typeArrayType(typeArray)));
+    subType = idl_typeArrayType(typeArray);
+    while(resolveTypedefs && idl_typeSpecType(subType) == idl_ttypedef)
+    {
+        subType = idl_typeDefResolveFully(subType);
+    }
+    if (idl_typeSpecType(subType) == idl_tarray) {
+        idl_arrayDimensions (idl_typeArray(subType), resolveTypedefs);
     }
 }
 
@@ -920,10 +949,10 @@ idl_arrayDimensions (
         sequence<spec,length> <name>[n1]..[nn]; =>
             typedef c_array <scope-elements>_<name>[n1]..[nn];
    @endverbatim
- * If the type specification is idl_tseq then generate a mapping on c_array:
+ * If the type specification is idl_tseq then generate a mapping on c_sequence:
  * @verbatim
-        sequence<spec> <name>;        => typedef c_array <scope-elements>_<name>;
-        sequence<spec,length> <name>; => typedef c_array <scope-elements>_<name>;
+        sequence<spec> <name>;        => typedef c_sequence <scope-elements>_<name>;
+        sequence<spec,length> <name>; => typedef c_sequence <scope-elements>_<name>;
    @endverbatim
  *
  * @param scope Current scope
@@ -948,12 +977,12 @@ idl_typedefOpenClose(
             /* define the prototype of the function for querying the keys 	*/
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "extern char * __%s__keys (void);\n",
+                "extern const char * __%s__keys (void);\n",
                 idl_scopeStack(scope, "_", name));
 	    /* define the prototype of the function for querying scoped structure name */
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "extern char * __%s__name (void);\n",
+                "extern const char * __%s__name (void);\n",
                 idl_scopeStack(scope, "_", name));
         }
     }
@@ -977,7 +1006,7 @@ idl_typedefOpenClose(
             "typedef %s _%s",
             idl_scopedSplTypeIdent(idl_typeArrayActual (idl_typeArray(idl_typeDefRefered(defSpec)))),
             idl_scopeStack(scope, "_", name));
-        idl_arrayDimensions(idl_typeArray(idl_typeDefRefered(defSpec)));
+        idl_arrayDimensions(idl_typeArray(idl_typeDefRefered(defSpec)), OS_FALSE);
 	    idl_fileOutPrintf(idl_fileCur(), ";\n\n");
     } else if (idl_typeSpecType(idl_typeSpec(idl_typeDefRefered(defSpec))) == idl_tseq) {
         /* generate code for a sequence mapping */
@@ -986,13 +1015,13 @@ idl_typedefOpenClose(
 	    /* unbounded sequence */
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef c_array _%s",
+                "typedef c_sequence _%s",
                 idl_scopeStack (scope, "_", name));
         } else {
 	    /* bounded sequence */
             idl_fileOutPrintf(
                 idl_fileCur(),
-                "typedef c_array _%s",
+                "typedef c_sequence _%s",
                 idl_scopeStack(scope, "_", name));
         }
         idl_fileOutPrintf (idl_fileCur(), ";\n\n");

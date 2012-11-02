@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,9 +17,9 @@
 #include "idl_tmplExp.h"
 #include "idl_keyDef.h"
 
-#include <os_heap.h>
-#include <os_stdlib.h>
-#include <os_iterator.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
+#include "os_iterator.h"
 
 static idl_macroAttrib idlpp_macroAttrib;
 static idl_streamIn idlpp_inStream;
@@ -70,19 +70,19 @@ idl_genSajXMLMeta(
         ptr = meta;
         newMeta[0] = 0;
         while (pcs > 1) {
-            strcat(newMeta, "\"");
+            os_strcat(newMeta, "\"");
 	    i = 1;
 	    while (ptr[IDL_MAX_JSTRING_META_SIZE-i] == '\\') {
 		i++;
 	    }
-            strncat(newMeta, ptr, IDL_MAX_JSTRING_META_SIZE-i+1);
+            os_strncat(newMeta, ptr, IDL_MAX_JSTRING_META_SIZE-i+1);
             ptr += (IDL_MAX_JSTRING_META_SIZE-i+1);
-            strcat(newMeta, "\",\n");
+            os_strcat(newMeta, "\",\n");
             pcs--;   
         }
-        strcat(newMeta, "\"");
-        strcat(newMeta, ptr);
-        strcat(newMeta, "\"");
+        os_strcat(newMeta, "\"");
+        os_strcat(newMeta, ptr);
+        os_strcat(newMeta, "\"");
     }
     os_free(meta);
     return newMeta;

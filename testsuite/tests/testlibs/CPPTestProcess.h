@@ -23,6 +23,10 @@ namespace OSPLTestLib
         {
         }
 
+        virtual ~CPPTestProcess ()
+        {
+        }
+
         /**
         * @brief Argument parsing and initialisation.
         */
@@ -47,7 +51,7 @@ namespace OSPLTestLib
         }
 
         /**
-        * @brief Sets the 'other' process name. For use *iff* this is a two proces test.
+        * @brief Sets the 'other' process name. For use *iff* this is a two process test.
         */
         void set_other_process_name (const char* process_name)
         {

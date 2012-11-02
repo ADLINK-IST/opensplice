@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -592,7 +592,7 @@ public class QoSDeserializerXML implements QoSDeserializer {
             kind = ReliabilityKind.from_string(el.getFirstChild().getNodeValue());
             t = this.parseTime("max_blocking_time", e);
             child = this.getChildNode(e, "synchronous");
-            synchronous = new Boolean(child.getNodeValue()).booleanValue();
+            synchronous = new Boolean(child.getFirstChild().getNodeValue()).booleanValue();
             
             result = new ReliabilityPolicy(kind, t, synchronous);
         }

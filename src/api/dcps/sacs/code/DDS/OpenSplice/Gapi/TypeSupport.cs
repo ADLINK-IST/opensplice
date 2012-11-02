@@ -1,6 +1,6 @@
 // The OpenSplice DDS Community Edition project.
 //
-// Copyright (C) 2006 to 2009 PrismTech Limited and its licensees.
+// Copyright (C) 2006 to 2011 PrismTech Limited and its licensees.
 // Copyright (C) 2009  L-3 Communications / IS
 // 
 //  This library is free software; you can redistribute it and/or
@@ -27,6 +27,8 @@ namespace DDS.OpenSplice.Gapi
     {
         //gapi_object 
         public IntPtr   handle;
+        //gapi_unsigned_long
+        public uint		refCount;
         //gapi_string
         public string   type_name;
         //gapi_string        
@@ -49,10 +51,6 @@ namespace DDS.OpenSplice.Gapi
         public Delegate reader_copy;
         //gapi_writerCopy
         public IntPtr   writer_copy;
-        //gapi_createDataWriter
-        public IntPtr   create_datawriter;
-        //gapi_createDataReader
-        public IntPtr   create_datareader;
         //c_metaObject
         public IntPtr   typeSpec;
         //gapi_boolean

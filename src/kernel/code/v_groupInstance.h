@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,8 +15,8 @@
 
 #include "v_kernel.h"
 #include "v_writerInstance.h"
-#include "v_writerCache.h"
 #include "v_state.h"
+#include "v__group.h"
 
 #define v_groupInstance(_this) (C_CAST(_this,v_groupInstance))
 #define v_groupInstanceTemplate(_this) \
@@ -65,9 +65,6 @@
                      resendScope, \
                      V_NETWORKID_LOCAL)
 
-#define v_groupInstanceRegisterSource(_this,item) \
-        v_writerCacheInsert(v_groupInstance(_this)->sourceCache,item);
-
 #define v_groupInstanceSetEpoch(_this,_epoch) \
         v_groupInstance(_this)->epoch = _epoch
 
@@ -101,6 +98,12 @@ v_groupInstanceRegister (
     v_groupInstance _this,
     v_message message,
     v_message *regMsg);
+
+v_writeResult
+v_groupInstanceRemoveRegistration(
+    v_groupInstance instance,
+    v_registration registration,
+    c_time timestamp);
 
 v_writeResult
 v_groupInstanceUnregister (
@@ -150,10 +153,16 @@ v_groupInstanceGetRegisterMessages(
     c_ulong systemId,
     c_iter *messages);
 
-v_message
-v_groupInstanceGetRegisterMessageOfWriter(
-    v_groupInstance _this,
-    v_gid writerGid);
+c_bool
+v_groupInstanceHasRegistration(
+    v_groupInstance instance,
+    v_registration registration);
+
+v_registration
+v_groupInstanceGetRegistration(
+    v_groupInstance instance,
+    v_gid gidTemplate,
+    v_matchIdentityAction predicate);
 
 c_bool
 v_groupInstanceAcceptMessage(
@@ -169,9 +178,15 @@ void
 v_groupInstanceDisconnect(
     v_groupInstance _this);
 
-v_result
+v_writeResult
 v_groupInstanceDispose (
     v_groupInstance instance,
+    c_time timestamp);
+
+void
+v_groupInstancecleanup(
+    v_groupInstance _this,
+    v_registration registration,
     c_time timestamp);
 
 #endif

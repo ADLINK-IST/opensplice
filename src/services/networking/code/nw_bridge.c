@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -390,17 +390,18 @@ nw_bridgeRead(
         /* Init out parameters */
         /* *message = NULL;  - now an IN/OUT */
         NW_REPORT_INFO(5, "entering transport read");
-                
+
     	if (*message != NULL) {
             /*
              * If there is still a message present, don't read another message,
              * but only process incoming data from the network.
              */
     		 NW_REPORT_INFO(5, "previous message still pending in out-queue, just processing incoming messages");
-    		        
+
             nw_plugReceiveChannelProcessIncoming(plugChannel);
         } else {
-            NW_STRUCT(nw_senderInfo) senderInfo = {0,0};
+            NW_STRUCT(nw_senderInfo) senderInfo;
+            memset(&senderInfo, 0, sizeof(senderInfo));
             stream = NW_STREAM_BY_ID(bridge, channelId);
             result = nw_stream_readBegin(stream, &senderInfo, prs);
 
@@ -418,7 +419,7 @@ nw_bridgeRead(
                     }
                     nw_stream_readString(stream,NULL,&topicName);
                     if (topicName) {
-                        
+
                     	type = typeLookupAction(hashValue,
                                                 partitionName, topicName, /* TODO: topicName: expensive string duplication each iteration */
                                                 typeLookupArg);
@@ -429,14 +430,14 @@ nw_bridgeRead(
                             }
                         }
 
-                    	
+
                     	NW_REPORT_INFO_2(5, "reading message type %s via %s", topicName, partitionName);
-                        
+
                         if (type) {
                         	/* in any case parse the data from package */
                           	NW_REPORT_INFO_2(4, "parsing instance of %s from %s", topicName, (senderInfo.dn));
                             *message = nw_stream_read(stream, type);
-                                 
+
                             if (!(*message)) {
                             	/* slow path */
                             	NW_REPORT_ERROR_2("nw_bridgeRead", "failed to parse instance of topic %s from partition %s", topicName, partitionName);
@@ -444,7 +445,7 @@ nw_bridgeRead(
                             } else {
 
                             	/* else-branch is fast path */
-								/* if sender has not permission to send that data item, ignore and delete it */ 
+								/* if sender has not permission to send that data item, ignore and delete it */
 								if (!(NW_SECURITY_CHECK_FOR_PUBLISH_PERMISSION_OF_SENDER_ON_RECEIVER_SIDE(senderInfo, partitionName, topicName))) {
 									NW_REPORT_INFO_2(4, "sender no permission granted, dropping message %s from %s", topicName, (senderInfo.dn));
 									c_free(*message);
@@ -462,9 +463,9 @@ nw_bridgeRead(
                         } else {
                             /* Trash rest of message */
                         	NW_REPORT_INFO_2(5, "type unknown, trash message type %s via %s", topicName, partitionName);
-                        	                        
-                        	*message = nw_stream_read(stream, type); /* otherwise *message stays defined and 
-																		causing side effects in next iteration */ 
+
+                        	*message = nw_stream_read(stream, type); /* otherwise *message stays defined and
+																		causing side effects in next iteration */
                             assert(*message == NULL);
                             if (prs != NULL) {
                                 if (prs->enabled) {
@@ -598,7 +599,7 @@ void
 nw_bridgeNotifyNodeStarted(
     nw_bridge bridge,
     v_networkId networkId,
-    nw_address address)
+    os_sockaddr_storage address)
 {
     nw_seqNr i;
     nw_plugChannel channel;
@@ -618,7 +619,7 @@ void
 nw_bridgeNotifyNodeStopped(
     nw_bridge bridge,
     v_networkId networkId,
-    nw_address address)
+    os_sockaddr_storage address)
 {
     nw_seqNr i;
     nw_plugChannel channel;
@@ -639,7 +640,7 @@ void
 nw_bridgeNotifyNodeDied(
     nw_bridge bridge,
     v_networkId networkId,
-    nw_address address)
+    os_sockaddr_storage address)
 {
     nw_seqNr i;
     nw_plugChannel channel;
@@ -659,7 +660,7 @@ void
 nw_bridgeNotifyGpAdd(
     nw_bridge bridge,
     v_networkId networkId,
-    nw_address address)
+    os_sockaddr_storage address)
 {
     nw_seqNr i;
     nw_plugChannel channel;
@@ -680,7 +681,7 @@ void
 nw_bridgeNotifyGpRemove(
     nw_bridge bridge,
     v_networkId networkId,
-    nw_address address)
+    os_sockaddr_storage address)
 {
     nw_seqNr i;
     nw_plugChannel channel;

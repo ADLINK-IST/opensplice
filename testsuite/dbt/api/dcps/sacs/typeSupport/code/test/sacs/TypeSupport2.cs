@@ -17,7 +17,7 @@ namespace test.sacs
         {
             string expResult = "register_typesupport tests pass";
             DDS.DomainParticipantFactory factory;
-			DDS.DomainParticipantQos participantQosHolder = null;
+	    DDS.DomainParticipantQos participantQosHolder = null;
             DDS.IDomainParticipant participant;
             mod.tstTypeSupport typeSupport;
             DDS.ReturnCode rc;

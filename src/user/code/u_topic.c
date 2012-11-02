@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -14,56 +14,15 @@
 #include "u__types.h"
 #include "u__entity.h"
 #include "u__dispatcher.h"
-#include "u__kernel.h"
+#include "u__domain.h"
 #include "u__participant.h"
 #include "u__user.h"
 
 #include "v_kernel.h"
 #include "v_topic.h"
 #include "v_entity.h"
+#include "v_filter.h"
 #include "os_report.h"
-
-u_result
-u_topicClaim(
-    u_topic _this,
-    v_topic *topic)
-{
-    u_result result = U_RESULT_OK;
-
-    if ((_this != NULL) && (topic != NULL)) {
-        *topic = v_topic(u_entityClaim(u_entity(_this)));
-        if (*topic == NULL) {
-            OS_REPORT_2(OS_WARNING, "u_topicClaim", 0,
-                        "Claim Topic failed. "
-                        "<_this = 0x%x, topic = 0x%x>.",
-                         _this, topic);
-            result = U_RESULT_INTERNAL_ERROR;
-        }
-    } else {
-        OS_REPORT_2(OS_ERROR,"u_topicClaim",0,
-                    "Illegal parameter. "
-                    "<_this = 0x%x, topic = 0x%x>.",
-                    _this, topic);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
-
-u_result
-u_topicRelease(
-    u_topic _this)
-{
-    u_result result = U_RESULT_OK;
-
-    if (_this != NULL) {
-        result = u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT_1(OS_ERROR,"u_topicRelease",0,
-                    "Illegal parameter. <_this = 0x%x>.", _this);
-        result = U_RESULT_ILL_PARAM;
-    }
-    return result;
-}
 
 u_topic
 u_topicNew(
@@ -80,19 +39,28 @@ u_topicNew(
 
     if (name != NULL) {
         if (p != NULL) {
-            result = u_kernelClaim(p->kernel,&kk);
-            if ((result == U_RESULT_OK) && (kk != NULL)) {
+            result = u_entityWriteClaim(u_entity(p->domain),(v_entity*)(&kk));
+            if (result == U_RESULT_OK) {
+                assert(kk);
                 kt = v_topicNew(kk,name,typeName,keyList,qos);
                 if (kt != NULL) {
                     _this = u_entityAlloc(p,u_topic,kt,FALSE);
                     if (_this != NULL) {
-                        result = u_topicInit(_this);
-                        if (result == U_RESULT_OK) {                            
+                      /* This call is moved to u_entityNew to support
+                       * proxy Topics. This move does not comply with
+                       * the constructor pattern used by all other
+                       * Entities, so this need to be fixed.
+                       *
+                    result = u_topicInit(_this,name,p);
+                       */
+
+                        if (result == U_RESULT_OK) {
                             v_entitySetUserData(v_entity(kt), _this);
                         } else {
                             OS_REPORT_1(OS_ERROR, "u_topicNew", 0,
                                         "Initialisation failed. "
                                         "For Topic: <%s>", name);
+                            u_topicFree(_this);
                         }
                     } else {
                         OS_REPORT_1(OS_ERROR, "u_topicNew", 0,
@@ -101,11 +69,11 @@ u_topicNew(
                     }
                     c_free(kt);
                 } else {
-                    OS_REPORT_1(OS_ERROR, "u_topicNew", 0,
+                    OS_REPORT_1(OS_WARNING, "u_topicNew", 0,
                                 "Create kernel entity failed. "
                                 "For Topic: <%s>", name);
                 }
-                result = u_kernelRelease(p->kernel);
+                result = u_entityRelease(u_entity(p->domain));
             } else {
                 OS_REPORT_1(OS_WARNING, "u_topicNew", 0,
                             "Claim Kernel failed. "
@@ -125,13 +93,21 @@ u_topicNew(
 
 u_result
 u_topicInit(
-    u_topic _this)
+    u_topic _this,
+    const c_char *name,
+    u_participant p)
 {
     u_result result;
 
     if (_this != NULL) {
         result = u_dispatcherInit(u_dispatcher(_this));
-        u_entity(_this)->flags |= U_ECREATE_INITIALISED;
+        if (result == U_RESULT_OK) {
+            _this->name = os_strdup(name);
+            _this->participant = p;
+            u_entity(_this)->flags |= U_ECREATE_INITIALISED;
+/* Note: redefinitions of the a topic are added to the list. */
+            result = u_participantAddTopic(p,_this);
+        }
     } else {
         OS_REPORT(OS_ERROR,"u_topicInit",0, "Illegal parameter.");
         result = U_RESULT_ILL_PARAM;
@@ -144,16 +120,35 @@ u_topicFree(
     u_topic _this)
 {
     u_result result;
+    c_bool destroy;
 
-    if (_this != NULL) {
-        if (u_entity(_this)->flags & U_ECREATE_INITIALISED) {
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
+        destroy = u_entityDereference(u_entity(_this));
+        /* if refCount becomes zero then this call
+         * returns true and destruction can take place
+         */
+        if (destroy) {
             result = u_topicDeinit(_this);
-            os_free(_this);
+            if (result == U_RESULT_OK) {
+                u_entityDealloc(u_entity(_this));
+            } else {
+                OS_REPORT_2(OS_WARNING,
+                            "u_topicFree",0,
+                            "Operation u_topicDeinit failed: "
+                            "Topic = 0x%x, result = %s.",
+                            _this, u_resultImage(result));
+                u_entityUnlock(u_entity(_this));
+            }
         } else {
-            result = u_entityFree(u_entity(_this));
+            u_entityUnlock(u_entity(_this));
         }
     } else {
-        result = U_RESULT_OK;
+        OS_REPORT_2(OS_WARNING,
+                    "u_topicFree",0,
+                    "Operation u_entityLock failed: "
+                    "Topic = 0x%x, result = %s.",
+                    _this, u_resultImage(result));
     }
     return result;
 }
@@ -165,12 +160,51 @@ u_topicDeinit(
     u_result result;
 
     if (_this != NULL) {
-        result = u_dispatcherDeinit(u_dispatcher(_this));
+        result = u_participantRemoveTopic(_this->participant, _this);
+        if (result == U_RESULT_OK) {
+            result = u_dispatcherDeinit(u_dispatcher(_this));
+            if (result == U_RESULT_OK) {
+                if (_this->name) {
+                    os_free(_this->name);
+                    _this->name = NULL;
+                }
+            } else {
+                OS_REPORT_1(OS_WARNING,
+                            "u_topicDeinit", 0,
+                            "Operation u_dispatcherDeinit failed. "
+                            "Topic = 0x%x",
+                            _this);
+            }
+        } else {
+            OS_REPORT_2(OS_WARNING,
+                        "u_topicDeinit", 0,
+                        "The Topic (0x%x) could not be removed "
+                        "from the Participant (0x%x).",
+                        _this, _this->participant);
+        }
     } else {
-        OS_REPORT(OS_ERROR,"u_topicDeinit", 0, "Illegal parameter.");
+        OS_REPORT(OS_ERROR,
+                  "u_topicDeinit", 0,
+                  "Illegal parameter: Topic == NULL.");
         result = U_RESULT_ILL_PARAM;
     }
     return result;
+}
+
+c_char *
+u_topicName(
+    u_topic t)
+{
+    c_char *name;
+
+    if (t) {
+        name = os_strdup(t->name);
+    } else {
+        OS_REPORT(OS_WARNING, "u_topicName", 0,
+                  "topic == NULL.");
+        name = NULL;
+    }
+    return name;
 }
 
 c_char *
@@ -181,10 +215,12 @@ u_topicTypeName(
     u_result r;
     c_char *name;
 
-    r = u_topicClaim(t,&kt);
-    if ((r == U_RESULT_OK) && (kt != NULL)) {
+
+    r = u_entityReadClaim(u_entity(t),(v_entity*)(&kt));
+    if (r == U_RESULT_OK) {
+        assert(kt);
         name = (c_char *)c_metaScopedName(c_metaObject(v_topicDataType(kt)));
-        u_topicRelease(t);
+        u_entityRelease(u_entity(t));
     } else {
         OS_REPORT(OS_WARNING, "u_topicTypeName", 0,
                   "Could not claim topic.");
@@ -204,11 +240,11 @@ u_topicGetInconsistentTopicStatus (
     u_result result;
     v_result r;
 
-    result = u_topicClaim(_this, &topic);
-
-    if ((result == U_RESULT_OK) && (topic != NULL)) {
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&topic));
+    if (result == U_RESULT_OK) {
+        assert(topic);
         r = v_topicGetInconsistentTopicStatus(topic,reset,action,arg);
-        u_topicRelease(_this);
+        u_entityRelease(u_entity(_this));
         result = u_resultFromKernel(r);
     }
     return result;
@@ -226,11 +262,11 @@ u_topicGetAllDataDisposedStatus (
     u_result result;
     v_result r;
 
-    result = u_topicClaim(_this, &topic);
-
-    if ((result == U_RESULT_OK) && (topic != NULL)) {
+    result = u_entityReadClaim(u_entity(_this), (v_entity*)(&topic));
+    if (result == U_RESULT_OK) {
+        assert(topic);
         r = v_topicGetAllDataDisposedStatus(topic,reset,action,arg);
-        u_topicRelease(_this);
+        u_entityRelease(u_entity(_this));
         result = u_resultFromKernel(r);
     }
     return result;
@@ -243,12 +279,67 @@ u_topicDisposeAllData (u_topic _this)
     u_result result;
     v_result r;
 
-    result = u_topicClaim(_this, &topic);
-
-    if ((result == U_RESULT_OK) && (topic != NULL)) {
+    result = u_entityWriteClaim(u_entity(_this), (v_entity*)(&topic));
+    if (result == U_RESULT_OK) {
+        assert(topic);
         r = v_topicDisposeAllData(topic);
-        u_topicRelease(_this);
+        u_entityRelease(u_entity(_this));
         result = u_resultFromKernel(r);
+    }
+    return result;
+}
+
+c_bool
+u_topicIsBuiltin (
+    u_topic _this)
+{
+    c_bool result = FALSE;
+
+    if (_this) {
+        result = (strncmp(_this->name, "DCPS", 4) == 0);
+    }
+    return result;
+}
+
+u_participant
+u_topicParticipant (
+    u_topic _this)
+{
+    return _this->participant;
+}
+
+c_bool
+u_topicContentFilterValidate (
+    u_topic _this,
+    q_expr expr,
+    c_value params[])
+{
+    v_topic topic;
+    c_type type;
+    c_bool result;
+    q_expr subexpr, term;
+    int i;
+    v_filter filter;
+    u_result uResult;
+
+    result = FALSE;
+    filter = NULL;
+    uResult = u_entityReadClaim(u_entity(_this), (v_entity*)(&topic));
+    if (uResult == U_RESULT_OK) {
+        assert(topic);
+        type = v_topicMessageType(topic);
+        i = 0;
+        subexpr = q_getPar(expr, i); /* get rid of Q_EXPR_PROGRAM */
+        while ((term = q_getPar(subexpr, i++)) != NULL) {
+            if (q_getTag(term) == Q_EXPR_WHERE) {
+                filter = v_filterNew(topic, term, params);
+            }
+        }
+        u_entityRelease(u_entity(_this));
+    }
+    if (filter != NULL) {
+        result = TRUE;
+        c_free(filter);
     }
     return result;
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,10 +9,10 @@
  *   for full copyright notice and license terms.
  *
  */
-#include <c_iterator.h>
+#include "c_iterator.h"
 #include <ctype.h>
-#include <os_heap.h>
-#include <os_stdlib.h>
+#include "os_heap.h"
+#include "os_stdlib.h"
 
 #include "idl_tmplExp.h"
 
@@ -543,7 +543,7 @@ idl_fileOutNew (
 
     if(idl_outputdir){
         fname = os_malloc(strlen(idl_outputdir) + strlen(os_fileSep()) + strlen(name) + 1);
-        sprintf(fname, "%s%s%s", idl_outputdir, os_fileSep(), name);
+        os_sprintf(fname, "%s%s%s", idl_outputdir, os_fileSep(), name);
     } else {
         fname = os_strdup(name);
     }
@@ -805,7 +805,7 @@ idl_tmplExpGetMacroSingleArg (
         }
     }
     idl_streamOutPut (argStream, '\0');
-    strcpy (arg, idl_streamGet(idl_stream(argStream)));
+    os_strcpy (arg, idl_streamGet(idl_stream(argStream)));
     idl_streamOutFree (argStream);
     /* QAC EXPECT 3416; No unexpected side effect here */
     if (idl_streamInCur(si) == si->macroAttrib->closeToken) {
@@ -838,7 +838,7 @@ idl_tmplExpGetMacroDoubleArg (
         }
     }
     idl_streamOutPut (arg1Stream, '\0');
-    strcpy (arg1, idl_streamGet(idl_stream(arg1Stream)));
+    os_strcpy (arg1, idl_streamGet(idl_stream(arg1Stream)));
     idl_streamOutFree (arg1Stream);
     /* QAC EXPECT 3416; No unexpected side effect here */
     if (idl_streamInCur(si) == ',') {
@@ -1066,11 +1066,11 @@ idl_tmplExpProcessMacro (
             substr = strstr (src, trim);
             if (substr == NULL) {
 	/* QAC EXPECT 5007; will not use wrapper */
-                strcpy (res, src);
+                os_strcpy (res, src);
             } else {
 	/* QAC EXPECT 0488; Mind your own bissiness */
                 substr += strlen(trim);
-                strcpy (res, substr);
+                os_strcpy (res, substr);
             }
             idl_tmplExpInsertText (so, res);
         break;
@@ -1113,7 +1113,7 @@ idl_tmplExpProcessMacro (
                     p_substr = substr;
                 }
             }
-            strcpy (res, src);
+            os_strcpy (res, src);
             if (p_substr != NULL) {
                 res[p_substr-src] = '\0';
             }

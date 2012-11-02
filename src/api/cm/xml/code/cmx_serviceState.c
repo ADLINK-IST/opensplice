@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,7 +12,7 @@
 #include "cmx__serviceState.h"
 #include "cmx__entity.h"
 #include <stdio.h>
-#include <os_stdlib.h>
+#include "os_stdlib.h"
 
 c_char*
 cmx_serviceStateInit(
@@ -21,10 +21,10 @@ cmx_serviceStateInit(
     char buf[512];
     
     if(v_entityName(entity) == NULL){
-        sprintf(buf, "<kind>SERVICESTATE</kind><statename>NULL</statename><state>%s</state>", 
+        os_sprintf(buf, "<kind>SERVICESTATE</kind><statename>NULL</statename><state>%s</state>", 
         cmx_serviceStateKindToString(entity->stateKind));
     } else {
-       sprintf(buf, "<kind>SERVICESTATE</kind><statename>%s</statename><state>%s</state>", 
+       os_sprintf(buf, "<kind>SERVICESTATE</kind><statename>%s</statename><state>%s</state>", 
         v_entityName(entity),
         cmx_serviceStateKindToString(entity->stateKind));
     }    

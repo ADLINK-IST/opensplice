@@ -3,7 +3,7 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="ccpp_net_compression_dds1578_pub"
-	ProjectGUID="{3287EB0A-FECA-1BAD-EC4B-04567D83A2AC}"
+	ProjectGUID="{3287EB0A-FECA-1BAD-EC4B-04567883A2AC}"
 	RootNamespace="ccpp_net_compression_dds1578_pub"
 	Keyword="Win32Proj"
 	SignManifests="true"
@@ -50,7 +50,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_M_IX86;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
@@ -69,14 +69,14 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib cmxmld.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib cmxml.lib"
 				OutputFile="$(OutDir)\ccpp_net_compression_dds1578_pub.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -132,7 +132,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_M_IX86;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="FALSE"
@@ -148,14 +148,14 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib cmxml.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib cmxml.lib"
 				OutputFile="$(OutDir)\ccpp_net_compression_dds1578_pub.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
@@ -213,7 +213,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 				PreprocessorDefinitions="_DEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_AMD64_;_WIN64;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
@@ -232,7 +232,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="_DEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WIN64"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -240,7 +240,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/machine:AMD64"
-				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib cmxmld.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACEd.lib TAOd.lib TAO_AnyTypeCoded.lib TAO_PortableServerd.lib ospl_testlibd.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib cmxml.lib"
 				OutputFile="$(OutDir)\ccpp_net_compression_dds1578_pub.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -296,7 +296,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 				PreprocessorDefinitions="NDEBUG;WIN32;_CONSOLE;_CRT_NONSTDC_NO_WARNINGS;_AMD64_;_WIN64;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="FALSE"
@@ -312,7 +312,7 @@
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG;_CRT_SECURE_NO_WARNINGS;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_WIN64"
 				Culture="1033"
-				AdditionalIncludeDirectories="$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
+				AdditionalIncludeDirectories="$(OSPL_HOME)\include\dcps\C++\CCPP,$(OSPL_HOME)\include\dcps\C++\CCPP\$(SPLICE_ORB),$(OSPL_HOME)\include,$(OSPL_HOME)\include\sys,$(ACE_ROOT),$(TAO_ROOT),$(TAO_ROOT)\include,.."
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -320,7 +320,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/machine:AMD64"
-				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib cmxml.lib ddsosnet.lib ddsos.lib ddsuser.lib ddsutil.lib ddsdatabase.lib ddsserialization.lib ddskernel.lib dcpsgapi.lib dcpsccpp.lib"
+				AdditionalDependencies="ACE.lib TAO.lib TAO_AnyTypeCode.lib TAO_PortableServer.lib ospl_testlib.lib ddsos.lib ddsutil.lib ddsdatabase.lib ddsconf.lib ddsconfparser.lib ddsserialization.lib ddskernel.lib ddsuser.lib dcpsgapi.lib dcpsccpp.lib cmxml.lib"
 				OutputFile="$(OutDir)\ccpp_net_compression_dds1578_pub.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"

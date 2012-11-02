@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file os/common/code/os_sharedmem.c
@@ -19,11 +19,11 @@
  * - Heap
  */
 
-#include <os_heap.h>
+#include "os_heap.h"
 #include <assert.h>
 #include <strings.h>
 
-#include <../common/code/os_sharedmem_handle.c>
+#include "../common/code/os_sharedmem_handle.c"
 
 void
 os_sharedMemoryInit(void)
@@ -42,13 +42,13 @@ os_sharedMemoryExit(void)
 os_result
 os_sharedMemoryCreate(
     os_sharedHandle sharedHandle,
-    os_uint32 size)
+    os_address size)
 {
     os_result result = os_resultFail;
 
     assert(sharedHandle != NULL);
     assert(sharedHandle->name != NULL);
-    assert(size > 0);
+
     switch (sharedHandle->attr.sharedImpl) {
     case OS_MAP_ON_FILE:
         result = os_posix_sharedMemoryCreate(sharedHandle->name, &sharedHandle->attr, size);
@@ -137,7 +137,7 @@ os_sharedMemoryDetach(
 os_result
 os_sharedSize(
     os_sharedHandle sharedHandle,
-    os_uint32 *size)
+    os_address *size)
 {
     os_result result = os_resultFail;
 

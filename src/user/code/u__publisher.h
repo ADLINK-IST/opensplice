@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2009 PrismTech 
+ *   This software and documentation are Copyright 2006 to 2011 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -16,20 +16,22 @@
 #include "u_publisher.h"
 
 u_result
+u_publisherAddWriter (
+    u_publisher _this,
+    u_writer writer);
+
+u_result
+u_publisherRemoveWriter (
+    u_publisher _this,
+    u_writer writer);
+
+u_result
 u_publisherInit (
-    u_publisher _this);
+    u_publisher _this,
+    u_participant participant);
 
 u_result
 u_publisherDeinit (
-    u_publisher _this);
-
-u_result
-u_publisherClaim(
-    u_publisher _this,
-    v_publisher *publisher);
-
-u_result
-u_publisherRelease(
     u_publisher _this);
 
 #endif
