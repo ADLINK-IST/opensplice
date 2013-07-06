@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -67,13 +67,13 @@
 #define v_dataReaderSampleInstanceStateTest(_this,_mask) \
         v_dataReaderInstanceStateTest(v_dataReaderSampleInstance(_this),_mask)
 
-OS_API c_bool
+OS_API v_actionResult
 v_dataReaderSampleRead(
     v_dataReaderSample _this,
     v_readerSampleAction action,
     c_voidp arg);
 
-OS_API c_bool
+OS_API v_actionResult
 v_dataReaderSampleTake(
     v_dataReaderSample _this,
     v_readerSampleAction action,

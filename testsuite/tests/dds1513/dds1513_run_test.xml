@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "stax.dtd">
+<!-
+ * MultiDomain Testing 
+ * This use case describes the scenario where a single application
+ * connects to two OpenSplice domains, on a single node, by creating
+ * Domain Participant entities in each domain. The application acts
+ * as a bridge between domains (this is App2 as described below).
+ * 
+ * App1 uses Domain1 only. It writes one sample to Domain1.
+ * App2 uses Domain1 and Domain2. It receives the sample from Domain1,
+ * and then forwards this to Domain2.  App2 is the "bridge".
+ * App3 uses Domain2 only. It receives the sample from Domain2
+ * 
+ * To avoid complicated timing issues between the 3 applications, they
+ * are started in reverse order, i.e
+ * 
+ * App3 waits for the sample to arrive in D2
+ * App2 then waits for the sample to arrive in D1
+ * App1 is then started and writes the sample to D1, which should trigger
+ * the message flow as described above.
+->
+<stax>
+
+  <defaultcall function="dds1513_main">
+  </defaultcall>
+
+  <function name="dds1513_main" scope="local" >
+    <function-prolog>
+
+    </function-prolog>
+
+    <function-list-args>
+        <function-required-arg name="host1_name">
+            The name for the first host you wish test on in double quotes, use the following format: "name"
+        </function-required-arg>
+        <function-required-arg name="host2_name">
+            The name for the second host you wish to test on in double quotes, use the following format: "name"
+        </function-required-arg>
+          
+        <function-required-arg name="host1_ospl_home">
+            OSPL_HOME of an installed OpenSplice on the host1
+        </function-required-arg>
+        <function-required-arg name="host2_ospl_home">
+            OSPL_HOME of an installed OpenSplice on the host2
+        </function-required-arg>
+        
+        <function-required-arg name="host1_ospl_src_home">
+            Location on the host1 where /osplo and /ospli can be found, in double quotes and double backslash, use the following format: "dir1\\dir2"
+        </function-required-arg>
+        <function-required-arg name="host2_ospl_src_home">
+            Location on the host2 host where /osplo and /ospli can be found, in double quotes and double backslash, use the following format: "dir1\\dir2"
+        </function-required-arg>
+        
+        <function-required-arg name="host1_tao_root">
+            TAO_ROOT on the host1, in double quotes and double backslash, use the following format: "dir1\\dir2"
+        </function-required-arg>
+        <function-required-arg name="host2_tao_root">
+            TAO_ROOT on the host2, in double quotes and double backslash, use the following format: "dir1\\dir2"
+        </function-required-arg>
+
+        <function-required-arg name="log_dir">
+            The location where the logs will be stored on the master host in double quotes and double backslash, use the following format: "dir1\\dir2"
+        </function-required-arg>
+
+
+        <function-optional-arg name="test_framework_root" default="'../common'">
+            Absolute path of stax framework root on the local host in double quotes and double backslash.
+            By default it this_xml_folder/../../common.
+            Use the format "/home/username/ospli/testsuite/tests/common")
+        </function-optional-arg>
+    </function-list-args>
+    
+    <sequence>
+        <script>
+            import os
+            if test_framework_root == '../common':
+                host_manager_file = os.path.join(os.path.dirname(STAXCurrentXMLFile), test_framework_root, "HostManager.xml")
+            else:
+                host_manager_file = os.path.join(test_framework_root, "HostManager.xml")
+        </script>
+        <import file="host_manager_file"/>
+        <call function="'Initialize'" />
+    
+        <script>
+                time_stamp = time.strftime("%d-%m-%Y-%H-%M-%S", time.localtime())
+                if log_dir ==".":
+                    log_dir = os.path.join(os.path.dirname(STAXCurrentXMLFile), "dds1513_log", time_stamp) 
+                else:
+                    log_dir = os.path.join(log_dir, "dds1513_log", time_stamp)
+                    
+                if not os.path.exists(log_dir): os.makedirs(log_dir)
+                test_scenario = BaseTestScenario("dds1513", 
+                                                 "Network messages", 
+                                                 log_dir, 
+                                                 os.path.join(log_dir, "result.txt"))
+                test_scenario.set_log_root(log_dir)
+            </script>
+            
+            <testcase name="'testcase_dds1513'">
+                <try>
+                    <sequence>
+                        <call function="'CreateLocalhost'"/>
+                        <script>localhost = STAXResult</script>                    
+                        <call function="'RequestHost'">{'hostname': host1_name}</call>
+                        <script>
+                            host1 = STAXResult
+                            test_scenario.add_host(host1)
+                        </script>
+                        <call function="'RequestHost'">{'hostname': host2_name, 'reused_host': 1}</call>
+                        <script>
+                            host2 = STAXResult
+                            test_scenario.add_host(host2)                            
+                        </script>
+                        <script>
+                            host1.set_ospl_home(host1_ospl_home)
+                            host2.set_ospl_home(host2_ospl_home)
+                            host1.set_env('OSPL_OUTER_HOME', host1.pathjoin(host1_ospl_src_home, 'osplo'))
+                            host2.set_env('OSPL_OUTER_HOME', host2.pathjoin(host2_ospl_src_home, 'osplo'))
+                            host1.TAO_ROOT = host1_tao_root
+                            host2.TAO_ROOT = host2_tao_root
+                        </script>
+                        <iterate in="[host1, host2]" var="host">
+                            <sequence>
+                                <call function="'DeployHost'">{'host': host}</call>
+                                <!--Add to PATH/LD_LIBRARY_PATH path to osplo test libs that are needed for test application-->
+                                <script>
+                                    path_var = host.isWindows() and 'PATH' or 'LD_LIBRARY_PATH'
+                                </script>
+                                <call function="'GetEnv'">[host, 'PATH']</call>
+                                <script> path = STAXResult </script>
+                                <call function="'GetEnv'">[host, 'LD_LIBRARY_PATH']</call>
+                                <script> ld_library_path = STAXResult </script>
+                                <script>
+                                    lib_path = host.pathjoin(host.get_env('OSPL_OUTER_HOME'), 'testsuite', 'lib', host.get_target() + '-release')
+                                    tao_path = host.pathjoin(host.TAO_ROOT, 'bin')
+                                    tao_lib = host.pathjoin(host.TAO_ROOT, 'lib')
+                                    if host.isWindows():
+                                        host.set_env('PATH', lib_path + host.get_pathsep() + tao_path + host.get_pathsep() + path)
+                                    else:
+                                        host.set_env('LD_LIBRARY_PATH', lib_path + host.get_pathsep() + ld_library_path)
+                                        host.set_env('PATH', tao_path + host.get_pathsep() + path)
+                                        host.set_env('LD_LIBRARY_PATH', tao_lib + host.get_pathsep() + host.get_env('LD_LIBRARY_PATH'))
+                                   
+                                    host.set_scenario('dds1513_scenario')
+                                    host_D_COMMON_DIR = host.pathjoin(host.get_env("OSPL_OUTER_HOME"), 'testsuite', 'rbt', 'ccpp', 'multiDomain-common')
+                                    host.OSPL_URI1 = "file://" + host.pathjoin(host_D_COMMON_DIR, 'code', 'ospl-domain1-networked.xml')
+                                    host.OSPL_URI2 = "file://" + host.pathjoin(host_D_COMMON_DIR, 'code', 'ospl-domain2-networked.xml')
+                                    host.app_dir = host.pathjoin(host.get_env("OSPL_OUTER_HOME"), 'testsuite', 'rbt', 'ccpp', 'multiDomain-domainBridge', 'bld', host.get_target() + '-release')
+                                    host.set_logdir(host.pathjoin(host.app_dir, "log"))
+                                </script>
+                            </sequence>
+                        </iterate>
+                        <script>
+                            test_scenario.set_test_scenario_initialized(1)
+                            host1.set_logdir(host1.pathjoin(host1.app_dir, "log"))
+                            host2.set_logdir(host2.pathjoin(host2.app_dir, "log"))
+                            host1_app1 = Process(command = "multiDomain-domainBridge", 
+                                                 working_dir = host1.app_dir,
+                                                 log_file = host1.pathjoin(host1.get_logdir(), "app1.log"),
+                                                 args = "App1 " + host1.OSPL_URI1)
+                            host2_app2 = Process(command = "./multiDomain-domainBridge", 
+                                                 working_dir = host2.app_dir,
+                                                 log_file = host2.pathjoin(host2.get_logdir(), "app2.log"),
+                                                 args = "App2 " + host2.OSPL_URI1 + " " + host2.OSPL_URI2)
+                            host1_app3 = Process(command = "multiDomain-domainBridge", 
+                                                 working_dir = host1.app_dir,
+                                                 log_file = host1.pathjoin(host1.get_logdir(), "app3.log"),
+                                                 args = "App3 " + host1.OSPL_URI2)
+                        </script>
+                        <paralleliterate in="[host1, host2]" var="host">
+                            <sequence>
+                                <call function="'CreateDirectory'">[host, host.get_logdir()]</call>
+                                <call function="'StartOpenSplice'">[host, host.OSPL_URI1, 0]</call>
+                                <call function="'StartOpenSplice'">[host, host.OSPL_URI2, 0]</call>
+                            </sequence>
+                        </paralleliterate>
+                        <script>time.sleep(3)</script>
+                        <call function="'SpawnProcess'">[host1, host1_app3]</call> 
+                        <script>time.sleep(10)</script>
+                        <call function="'SpawnProcess'">[host2, host2_app2]</call>
+                        <script>time.sleep(10)</script>
+                        <call function="'RunProcess'">[host1, host1_app1, '90s']</call>
+                        <script>
+                            time.sleep(10)
+                            if STAXResult['timed_out']:
+                                test_scenario.warnings.append("App1 process was timed out")
+                            elif STAXResult['RC'] != 0:
+                                test_scenario.errors.append("App1 process was failed with RC: %s" %(STAXResult['RC']))
+                        </script>
+                        <script>time.sleep(1)</script>
+                        <call function="'TerminateProcess'">[host1, host1_app3]</call>
+                        <script>
+                            if STAXResult['terminated']:
+                                test_scenario.warnings.append("App3 process was terminated")
+                            elif str(STAXResult['RC']) != '0':
+                                test_scenario.errors.append("App3 process was failed with RC: %s" %((STAXResult['RC'])))
+                        </script>
+                        <call function="'TerminateProcess'">[host2, host2_app2]</call>
+                        <script>
+                            if STAXResult['terminated']:
+                                test_scenario.warnings.append("App1 process was terminated")
+                            elif str(STAXResult['RC']) != '0':
+                                test_scenario.errors.append("App2 process was failed with RC: %s" %((STAXResult['RC'])))
+                        </script>
+                        <paralleliterate in="[host1, host2]" var="host">
+                            <sequence>
+                                <call function="'StopOpenSplice'">host</call>
+                                <call function="'CopyPathFromTo'">
+                                    {'src_host': host,
+                                     'src_path': host.get_logdir(),
+                                     'dest_host': localhost,
+                                     'dest_path': os.path.join(log_dir, host.get_hostname()),
+                                     'overwrite': 1,
+                                     'remove': 1}
+                                </call>
+                            </sequence>
+                        </paralleliterate>
+                        <script>
+                            test_scenario.check_results()
+                            test_scenario.analyze()
+                        </script>
+                        <message>"Test is completed        " </message>
+                        <message>"Job log is saved to %s" % log_dir </message>
+                        
+                    </sequence> 
+                    <finally>             
+                        <paralleliterate in="test_scenario.get_all_hosts()" var="host">                    
+                            <sequence>
+                                <call function="'StopOpenSplice'">host</call>
+                                <call function="'ReleaseHost'">host</call>
+                            </sequence>
+                        </paralleliterate>
+                    </finally>                
+                </try>
+            </testcase>    
+        </sequence>
+    </function>
+</stax>

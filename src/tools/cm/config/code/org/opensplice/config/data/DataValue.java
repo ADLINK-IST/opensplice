@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -11,13 +11,25 @@
  */
 package org.opensplice.config.data;
 
+import java.util.HashSet;
+
+import org.opensplice.config.meta.MetaConfiguration;
+import org.opensplice.config.meta.MetaValue;
+import org.opensplice.config.meta.MetaValueBoolean;
+import org.opensplice.config.meta.MetaValueDouble;
+import org.opensplice.config.meta.MetaValueEnum;
+import org.opensplice.config.meta.MetaValueFloat;
+import org.opensplice.config.meta.MetaValueInt;
+import org.opensplice.config.meta.MetaValueLong;
+import org.opensplice.config.meta.MetaValueNatural;
+import org.opensplice.config.meta.MetaValueSize;
+import org.opensplice.config.meta.MetaValueString;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Text;
 
-import org.opensplice.config.meta.*;
-
 public class DataValue extends DataNode {
     private Object value;
+    private HashSet<DataValue> DVdependencies = null;
 
     public DataValue(MetaValue metadata, Attr parent, Object value) throws DataException {
         super(metadata, parent);
@@ -31,6 +43,17 @@ public class DataValue extends DataNode {
 
     public Object getValue(){
         return this.value;
+    }
+
+    public void addDataValueDependency(DataValue dv) {
+        if (DVdependencies == null) {
+            DVdependencies = new HashSet<DataValue>();
+        }
+        DVdependencies.add(dv);
+    }
+
+    public HashSet<DataValue> getDataValueDependencies() {
+        return DVdependencies;
     }
 
     public void testSetValue(Object value) throws DataException {
@@ -56,9 +79,11 @@ public class DataValue extends DataNode {
                 Object max = mv.getMaxValue();
 
                 if(tempValue.compareTo((Double)min) < 0){
-                    throw new DataException("Value: " + tempValue + "<" + min);
+                    throw new DataException("<" + this.node.getParentNode().getNodeName() + "> Value: " + tempValue
+                            + "<" + min);
                 } else if(tempValue.compareTo((Double)max) > 0){
-                    throw new DataException("Value: " + tempValue + ">" + max);
+                    throw new DataException("<" + this.node.getParentNode().getNodeName() + "> Value: " + tempValue
+                            + ">" + max);
                 }
             } else if(this.metadata instanceof MetaValueEnum){
                 if(value instanceof String){
@@ -95,9 +120,11 @@ public class DataValue extends DataNode {
                 Object max = mv.getMaxValue();
 
                 if(tempValue.compareTo((Float)min) < 0){
-                    throw new DataException("Value: " + tempValue + " < " + min );
+                    throw new DataException("<" + this.node.getParentNode().getNodeName() + "> Value: " + tempValue
+                            + " < " + min);
                 } else if(tempValue.compareTo((Float)max) > 0){
-                    throw new DataException("Value: " + tempValue + " > " + max);
+                    throw new DataException("<" + this.node.getParentNode().getNodeName() + "> Value: " + tempValue
+                            + " > " + max);
                 }
             } else if(this.metadata instanceof MetaValueInt){
                 Integer tempValue;
@@ -114,9 +141,11 @@ public class DataValue extends DataNode {
                 Object max = mv.getMaxValue();
 
                 if(tempValue.compareTo((Integer)min) < 0){
-                    throw new DataException("Value: " + tempValue + "<" + min);
+                    throw new DataException("<" + this.node.getParentNode().getNodeName() + "> Value: " + tempValue
+                            + "<" + min);
                 } else if(tempValue.compareTo((Integer)max) > 0){
-                    throw new DataException("Value: " + tempValue + ">" + max);
+                    throw new DataException("<" + this.node.getParentNode().getNodeName() + "> Value: " + tempValue
+                            + ">" + max);
                 }
             } else if(this.metadata instanceof MetaValueLong){
                 Long tempValue;
@@ -133,9 +162,11 @@ public class DataValue extends DataNode {
                 Object max = mv.getMaxValue();
 
                 if(tempValue.compareTo((Long)min) < 0){
-                    throw new DataException("Value: " + tempValue + "<" + min);
+                    throw new DataException("<" + this.node.getParentNode().getNodeName() + "> Value: " + tempValue
+                            + "<" + min);
                 } else if(tempValue.compareTo((Long)max) > 0){
-                    throw new DataException("Value: " + tempValue + ">" + max);
+                    throw new DataException("<" + this.node.getParentNode().getNodeName() + "> Value: " + tempValue
+                            + ">" + max);
                 }
             } else if(this.metadata instanceof MetaValueSize){
                 Long tempValue;
@@ -143,8 +174,6 @@ public class DataValue extends DataNode {
 
                 if(value instanceof String){
                     tempValue = MetaConfiguration.createLongValuefromSizeValue((String)value);
-                } else if(value instanceof Long){
-                    tempValue = Long.parseLong((String)value);
                 } else if(!(value instanceof Long)){
                     throw new NumberFormatException();
                 } else {
@@ -154,9 +183,11 @@ public class DataValue extends DataNode {
                 Object max = mv.getMaxValue();
 
                 if(tempValue.compareTo((Long)min) < 0){
-                    throw new DataException("Value: " + tempValue + "<" + min);
+                    throw new DataException("<" + this.node.getParentNode().getNodeName() + "> Value: " + tempValue
+                            + "<" + min);
                 } else if(tempValue.compareTo((Long)max) > 0){
-                    throw new DataException("Value: " + tempValue + ">" + max);
+                    throw new DataException("<" + this.node.getParentNode().getNodeName() + "> Value: " + tempValue
+                            + ">" + max);
                 }
             } else if(this.metadata instanceof MetaValueString){
                 if(value instanceof String){
@@ -169,7 +200,21 @@ public class DataValue extends DataNode {
                         int maxLength = ((MetaValueString)this.metadata).getMaxLength();
 
                         if((maxLength != 0) && (length > maxLength)){
-                            throw new DataException("String length: " + length + ">" + maxLength);
+                            throw new DataException("<" + this.node.getParentNode().getNodeName() + "> String length: "
+                                    + length + ">" + maxLength);
+                        }
+                    }
+                    /*
+                     * check if we got a domain service name element of service
+                     * tag name element
+                     */
+                    if (this.getOwner() != null && this.getOwner().getServiceNames().contains(this)) {
+                        if (!this.getValue().equals(value)) {
+                            for (DataValue dv : this.getOwner().getServiceNames()) {
+                                if (dv.getValue().equals(value)) {
+                                    throw new DataException("Name [" + value + "] is already used by another service");
+                                }
+                            }
                         }
                     }
                 } else if(value == null){
@@ -200,14 +245,29 @@ public class DataValue extends DataNode {
 
     public void setValue(Object value) throws DataException {
         this.testSetValue(value);
-        this.value = value;
 
+        this.value = value;
         /*testSetValue succeeded*/
         if(this.node instanceof Attr){
             ((Attr)this.node).setValue(this.value.toString());
         } else if(this.node instanceof Text){
             ((Text)this.node).replaceWholeText(this.value.toString());
         }
+
+        if (DVdependencies != null) {
+            for (DataValue dv : DVdependencies) {
+                Object oldValue = dv.getValue();
+                dv.value = value;
+                /* testSetValue succeeded */
+                if (dv.node instanceof Attr) {
+                    ((Attr) dv.node).setValue(dv.value.toString());
+                } else if (dv.node instanceof Text) {
+                    ((Text) dv.node).replaceWholeText(dv.value.toString());
+                }
+                dv.getOwner().notifyValueChanged(dv, oldValue, value);
+            }
+        }
+
     }
 
     public void resetValue(){

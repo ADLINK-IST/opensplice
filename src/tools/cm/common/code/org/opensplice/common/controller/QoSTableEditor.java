@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -21,13 +21,32 @@ import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 import javax.swing.AbstractCellEditor;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.TableCellEditor;
 
 import org.opensplice.cm.Time;
-import org.opensplice.cm.qos.*;
+import org.opensplice.cm.qos.DurabilityKind;
+import org.opensplice.cm.qos.GroupDataPolicy;
+import org.opensplice.cm.qos.HistoryQosKind;
+import org.opensplice.cm.qos.LivelinessKind;
+import org.opensplice.cm.qos.OrderbyKind;
+import org.opensplice.cm.qos.OwnershipKind;
+import org.opensplice.cm.qos.ParticipantQoS;
+import org.opensplice.cm.qos.PresentationKind;
+import org.opensplice.cm.qos.PublisherQoS;
+import org.opensplice.cm.qos.QoS;
+import org.opensplice.cm.qos.ReaderQoS;
+import org.opensplice.cm.qos.ReliabilityKind;
+import org.opensplice.cm.qos.ScheduleKind;
+import org.opensplice.cm.qos.SchedulePriorityKind;
+import org.opensplice.cm.qos.SubscriberQoS;
+import org.opensplice.cm.qos.TopicDataPolicy;
+import org.opensplice.cm.qos.TopicQoS;
+import org.opensplice.cm.qos.UserDataPolicy;
+import org.opensplice.cm.qos.WriterQoS;
 import org.opensplice.common.model.table.qos.EntityQoSTableModel;
 import org.opensplice.common.util.Config;
 import org.opensplice.common.view.StatusPanel;
@@ -41,8 +60,8 @@ import org.opensplice.common.view.table.QoSTable;
  */
 public class QoSTableEditor extends AbstractCellEditor implements TableCellEditor, ActionListener, KeyListener {
     private Object curValue = null;
-    private Color editColor = Config.getInputColor();
-    private Color errorColor = Config.getIncorrectColor();
+    private final Color editColor = Config.getInputColor();
+    private final Color errorColor = Config.getIncorrectColor();
     private QoSTable view = null;
     private EntityQoSTableModel model = null;
     private StatusPanel status = null;
@@ -70,14 +89,16 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         status = _status;
     }
     
+    @Override
     public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
         Component result = null;
         
         editRow = row;
         editColumn = column;
         curValue = value;
-        
-        if(value instanceof Integer){
+        if (table.getModel().getColumnCount() > 3 && column == 0) {
+            result = this.getCheckboxEditor(value);
+        } else if (value instanceof Integer) {
             result = this.getTextFieldEditor(value);
         } else if(value instanceof Boolean){
             result = this.getBooleanEditor(value);
@@ -113,10 +134,12 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         return result;
     }
 
+    @Override
     public Object getCellEditorValue() {
         return curValue;
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource().equals(curEditor)){
             this.assign();
@@ -130,6 +153,7 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
      * 
      * @param e The key event that occurred.
      */
+    @Override
     public void keyReleased(KeyEvent e) {
         if(curEditor != null){
             if(e.getSource() instanceof JTextField){
@@ -191,6 +215,7 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
     /**
      * Called when editing has been cancelled.
      */
+    @Override
     public void cancelCellEditing(){
         super.cancelCellEditing();
         curEditor = null;
@@ -203,6 +228,7 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
     /**
      * Called when editing has been stopped.
      */
+    @Override
     public boolean stopCellEditing(){
         boolean result = true;
         
@@ -219,11 +245,13 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
     /**
      * Does nothing.
      */
+    @Override
     public void keyTyped(KeyEvent e) {}
     
     /**
      * Does nothing.
      */
+    @Override
     public void keyPressed(KeyEvent e) {}
 
     public boolean isEditing(){
@@ -277,6 +305,12 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         return this.getTextFieldEditor(value);
     }
     
+    private Component getCheckboxEditor(Object value) {
+        JCheckBox result = new JCheckBox();
+        result.setSelected((Boolean) value);
+        return result;
+    }
+
     private Component getBooleanEditor(Object value){
         Object bool[] = {Boolean.TRUE, Boolean.FALSE};
         
@@ -360,7 +394,7 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
     private byte[] getByteArray(String value) throws NumberFormatException {
         byte[] result = null;
         
-        if(value.length() < 3){
+        if (value == null || value.length() < 3) {
             throw new NumberFormatException("Value not valid.");
         } else if("NULL".equalsIgnoreCase(value)){
             /*ok; do nothing.*/
@@ -405,8 +439,10 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
     }
     
     private Time getTime(String value){
-        Time t = Time.fromString(value);
-                
+        Time t = null;
+        if (value != null) {
+            t = Time.fromString(value);
+        }
         return t;
     }
     
@@ -416,12 +452,14 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         
         if("ENTITY_FACTORY".equals(name)){
             if("autoenable_created_entities".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getEntityFactory().autoenable_created_entities = true;
-                    result = Boolean.TRUE;
-                } else {
-                    qos.getEntityFactory().autoenable_created_entities = false;
-                    result = Boolean.FALSE;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getEntityFactory().autoenable_created_entities = true;
+                        result = Boolean.TRUE;
+                    } else {
+                        qos.getEntityFactory().autoenable_created_entities = false;
+                        result = Boolean.FALSE;
+                    }
                 }
             }
         } else if("USER_DATA".equals(name)){
@@ -451,10 +489,12 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         
         if("ENTITY_FACTORY".equals(name)){
             if("autoenable_created_entities".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getEntityFactory().autoenable_created_entities = true;
-                } else {
-                    qos.getEntityFactory().autoenable_created_entities = false;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getEntityFactory().autoenable_created_entities = true;
+                    } else {
+                        qos.getEntityFactory().autoenable_created_entities = false;
+                    }
                 }
             }
         } else if("GROUP_DATA".equals(name)){
@@ -467,16 +507,20 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             if("access_scope".equals(field)){
                 qos.getPresentation().access_scope = (PresentationKind)value;
             } else if("coherent_access".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getPresentation().coherent_access = true;
-                } else {
-                    qos.getPresentation().coherent_access = false;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getPresentation().coherent_access = true;
+                    } else {
+                        qos.getPresentation().coherent_access = false;
+                    }
                 }
             } else if("ordered_access".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getPresentation().ordered_access = true;
-                } else {
-                    qos.getPresentation().ordered_access = false;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getPresentation().ordered_access = true;
+                    } else {
+                        qos.getPresentation().ordered_access = false;
+                    }
                 }
             }
         } else if("PARTITION".equals(name)){
@@ -485,12 +529,14 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             }
         } else if("SHARE".equals(name)){
             if("enable".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getShare().enable = true;
-                    result = Boolean.TRUE;
-                } else {
-                    qos.getShare().enable = false;
-                    result = Boolean.FALSE;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getShare().enable = true;
+                        result = Boolean.TRUE;
+                    } else {
+                        qos.getShare().enable = false;
+                        result = Boolean.FALSE;
+                    }
                 }
             } else if("name".equals(field)){
                 qos.getShare().name = (String)value;
@@ -507,10 +553,12 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
         
         if("ENTITY_FACTORY".equals(name)){
             if("autoenable_created_entities".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getEntityFactory().autoenable_created_entities = true;
-                } else {
-                    qos.getEntityFactory().autoenable_created_entities = false;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getEntityFactory().autoenable_created_entities = true;
+                    } else {
+                        qos.getEntityFactory().autoenable_created_entities = false;
+                    }
                 }
             }
         } else if("GROUP_DATA".equals(name)){
@@ -523,16 +571,20 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             if("access_scope".equals(field)){
                 qos.getPresentation().access_scope = (PresentationKind)value;
             } else if("coherent_access".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getPresentation().coherent_access = true;
-                } else {
-                    qos.getPresentation().coherent_access = false;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getPresentation().coherent_access = true;
+                    } else {
+                        qos.getPresentation().coherent_access = false;
+                    }
                 }
             } else if("ordered_access".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getPresentation().ordered_access = true;
-                } else {
-                    qos.getPresentation().ordered_access = false;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getPresentation().ordered_access = true;
+                    } else {
+                        qos.getPresentation().ordered_access = false;
+                    }
                 }
             }
         } else if("PARTITION".equals(name)){
@@ -732,35 +784,41 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
                 result = this.getTime((String)value);
                 qos.getLifecycle().autopurge_disposed_samples_delay = (Time)result;
             } else if("enable_invalid_samples".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getLifecycle().enable_invalid_samples = true;
-                    result = Boolean.TRUE;
-                } else {
-                    qos.getLifecycle().enable_invalid_samples = false;
-                    result = Boolean.FALSE;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getLifecycle().enable_invalid_samples = true;
+                        result = Boolean.TRUE;
+                    } else {
+                        qos.getLifecycle().enable_invalid_samples = false;
+                        result = Boolean.FALSE;
+                    }
                 }
             }
         } else if("READER_DATA_LIFESPAN".equals(name)){
             if("used".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getLifespan().used = true;
-                    result = Boolean.TRUE;
-                } else {
-                    qos.getLifespan().used = false;
-                    result = Boolean.FALSE;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getLifespan().used = true;
+                        result = Boolean.TRUE;
+                    } else {
+                        qos.getLifespan().used = false;
+                        result = Boolean.FALSE;
+                    }
                 }
             } else if("duration".equals(field)){
-                result = this.getTime((String)value);
+                result = this.getTime((String) value);
                 qos.getLifespan().duration = (Time)result;
             }
         } else if("SHARE".equals(name)){
             if("enable".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getShare().enable = true;
-                    result = Boolean.TRUE;
-                } else {
-                    qos.getShare().enable = false;
-                    result = Boolean.FALSE;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getShare().enable = true;
+                        result = Boolean.TRUE;
+                    } else {
+                        qos.getShare().enable = false;
+                        result = Boolean.FALSE;
+                    }
                 }
             } else if("name".equals(field)){
                 qos.getShare().name = (String)value;
@@ -768,12 +826,14 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             }
         } else if("USER_KEY".equals(name)){
             if("enable".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getUserKey().enable = true;
-                    result = Boolean.TRUE;
-                } else {
-                    qos.getUserKey().enable = false;
-                    result = Boolean.FALSE;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getUserKey().enable = true;
+                        result = Boolean.TRUE;
+                    } else {
+                        qos.getUserKey().enable = false;
+                        result = Boolean.FALSE;
+                    }
                 }
             } else if("expression".equals(field)){
                 qos.getUserKey().expression = (String)value;
@@ -871,10 +931,12 @@ public class QoSTableEditor extends AbstractCellEditor implements TableCellEdito
             }
         } else if("WRITER_DATA_LIFECYCLE".equals(name)){
             if("autodispose_unregistered_instances".equals(field)){
-                if(value.equals(Boolean.TRUE)){
-                    qos.getLifecycle().autodispose_unregistered_instances = true;
-                } else {
-                    qos.getLifecycle().autodispose_unregistered_instances = false;
+                if (value != null) {
+                    if (value.equals(Boolean.TRUE)) {
+                        qos.getLifecycle().autodispose_unregistered_instances = true;
+                    } else {
+                        qos.getLifecycle().autodispose_unregistered_instances = false;
+                    }
                 }
             } else if("autopurge_suspended_samples_delay".equals(field)){
                 result = this.getTime((String)value);

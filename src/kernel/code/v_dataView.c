@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -35,31 +35,8 @@
 #include "v_time.h"
 #include "v_state.h"
 #include "v__collection.h"
-#define _EXTENT_
-#ifdef _EXTENT_
-#include "c_extent.h"
-#endif
 
 /* ------------------------------- private ---------------------------------- */
-
-static v_readerQos
-v_dataViewQosFromReader(
-    v_reader reader)
-{
-    v_readerQos result;
-    v_kernel kernel;
-
-    kernel = v_objectKernel(reader);
-    result = v_readerQosNew(kernel, reader->qos);
-    if (result != NULL) {
-        result->history.kind = V_HISTORY_KEEPLAST;
-        result->history.depth = V_LENGTH_UNLIMITED;
-        result->resource.max_samples = V_LENGTH_UNLIMITED;
-        result->resource.max_instances = V_LENGTH_UNLIMITED;
-        result->resource.max_samples_per_instance = V_LENGTH_UNLIMITED;
-    }
-    return result;
-}
 
 static c_type
 dataViewSampleTypeNew(
@@ -324,14 +301,8 @@ v_dataViewInit(
     dataView->reader = dataReader;
     dataView->instances = c_tableNew(dataViewInstanceType,keyExpr);
     dataView->sampleType = dataViewSampleType;
+    dataView->instanceType = dataViewInstanceType;
     dataView->takenInstance = NULL;
-#ifdef _EXTENT_
-#define _COUNT_ (32)
-    dataView->instanceExtent = c_extentSyncNew(dataViewInstanceType,_COUNT_,TRUE);
-    dataView->sampleExtent = c_extentSyncNew(dataViewSampleType,_COUNT_,TRUE);
-#endif
-    c_free(dataViewInstanceType);
-    c_free(dataViewSampleType);
     os_free(keyExpr);
 
     /* finally add myself to the dataReader views set */
@@ -427,11 +398,12 @@ v_dataViewWipeSamples(
     }
 }
 
-c_bool
+v_actionResult
 v_dataViewWrite(
     v_dataView _this,
     v_readerSample sample)
 {
+    v_actionResult result = 0;
     v_dataViewInstance instance, found;
 
     assert(C_TYPECHECK(_this,v_dataView));
@@ -447,7 +419,9 @@ v_dataViewWrite(
         }
         c_free(instance);
     }
-    return TRUE;
+
+    v_actionResultSet(result, V_PROCEED);
+    return result;
 }
 
 /* -------------------------------- public ---------------------------------- */
@@ -500,7 +474,7 @@ v_dataViewRead(
 
     v_dataViewLock(_this);
     v_dataReaderUpdatePurgeLists(v_dataReader(_this->reader));
-    proceed = c_readAction(_this->instances,
+    proceed = c_tableReadCircular(_this->instances,
                            (c_action)instanceReadSamples,
                            &argument);
     action(NULL,arg); /* This triggers the action routine that the
@@ -610,7 +584,7 @@ v_dataViewTake(
     v_dataViewLock(_this);
     v_dataReaderUpdatePurgeLists(v_dataReader(_this->reader));
 
-    proceed = c_readAction(_this->instances,
+    proceed = c_tableReadCircular(_this->instances,
                            (c_action)instanceTakeSamples,
                            &argument);
     if (argument.emptyList != NULL) {
@@ -713,6 +687,8 @@ v_dataViewSetQos(
 {
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_dataView));
+    OS_UNUSED_ARG(_this);
+    OS_UNUSED_ARG(qos);
 
     /* No need to call v_dataViewQosSet because it is currently not stored. */
     return V_RESULT_IMMUTABLE_POLICY;

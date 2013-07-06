@@ -1,20 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef CCPP_QOSUTILS_H
 #define CCPP_QOSUTILS_H
 
+#include "ccpp_Utils.h"
 #include "gapi.h"
 
-#include "ccpp_Utils.h"
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 //policies conversions
@@ -371,18 +371,26 @@ namespace DDS
                   const gapi_publicationMatchedStatus & from,
                   ::DDS::PublicationMatchedStatus &to);
 
+    OS_DCPS_API void ccpp_InvalidSampleVisibilityQosPolicy_copyOut(
+                  const gapi_invalidSampleVisibilityQosPolicy &from,
+                  ::DDS::InvalidSampleVisibilityQosPolicy &to);
+
+    OS_DCPS_API void ccpp_InvalidSampleVisibilityQosPolicy_copyIn(
+                  const ::DDS::InvalidSampleVisibilityQosPolicy &from,
+                  gapi_invalidSampleVisibilityQosPolicy &to);
+
     struct DefaultQos
     {
-        static const ::DDS::DomainParticipantFactoryQos * const ParticipantFactoryQosDefault;
-        static const ::DDS::DomainParticipantQos        * const ParticipantQosDefault;
-        static const ::DDS::TopicQos                    * const TopicQosDefault;
-        static const ::DDS::PublisherQos                * const PublisherQosDefault;
-        static const ::DDS::SubscriberQos               * const SubscriberQosDefault;
-        static const ::DDS::DataReaderQos               * const DataReaderQosDefault;
-        static const ::DDS::DataReaderQos               * const DataReaderQosUseTopicQos;
-        static const ::DDS::DataWriterQos               * const DataWriterQosDefault;
-        static const ::DDS::DataWriterQos               * const DataWriterQosUseTopicQos;
-        static const ::DDS::DataReaderViewQos           * const DataReaderViewQosDefault;
+        static ::DDS::DomainParticipantFactoryQos_var ParticipantFactoryQosDefault;
+        static ::DDS::DomainParticipantQos_var        ParticipantQosDefault;
+        static ::DDS::TopicQos_var                    TopicQosDefault;
+        static ::DDS::PublisherQos_var                PublisherQosDefault;
+        static ::DDS::SubscriberQos_var               SubscriberQosDefault;
+        static ::DDS::DataReaderQos_var               DataReaderQosDefault;
+        static ::DDS::DataReaderQos_var               DataReaderQosUseTopicQos;
+        static ::DDS::DataWriterQos_var               DataWriterQosDefault;
+        static ::DDS::DataWriterQos_var               DataWriterQosUseTopicQos;
+        static ::DDS::DataReaderViewQos_var           DataReaderViewQosDefault;
     };
 
 }

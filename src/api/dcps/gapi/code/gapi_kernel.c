@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_kernel.h"
@@ -47,6 +47,14 @@ kernelGetBase(u_entity e)
     return base;
 }
 
+
+/*
+ * This function determines whether a reader has unprocessed data available.
+ * Be aware that this is a walk function, that wants to stop the walk when
+ * a Reader has been found that has its DATA_AVAILABLE flag set to TRUE.
+ * That is why it returns FALSE in case of DATA_AVAILABLE, since that stops
+ * the walk function from checking other readers as well.
+ */
 static c_bool
 readerHasDataAvailable (
     v_entity e,
@@ -77,9 +85,6 @@ getStatusMask(
     } else {
         *mask = v_statusGetMask(e->status);
     }
-
-//    c_long *mask = (c_long *)arg;
-//    *mask = v_statusGetMask(e->status);
 }
 
 c_long
@@ -172,6 +177,9 @@ kernelResultToApiResult(
             break;
         case U_RESULT_TIMEOUT:
             result = GAPI_RETCODE_TIMEOUT;
+            break;
+        case U_RESULT_OUT_OF_RESOURCES:
+            result = GAPI_RETCODE_OUT_OF_RESOURCES;
             break;
         case U_RESULT_IMMUTABLE_POLICY:
             result = GAPI_RETCODE_IMMUTABLE_POLICY;
@@ -389,10 +397,12 @@ typedef struct {
 
 static c_equality
 topicKeyCompare (
-    gapi_char *n1,
-    gapi_char *n2)
+    c_voidp o,
+    c_iterResolveCompareArg arg)
 {
     c_equality result = C_NE;
+    gapi_char *n1 = (gapi_char *) o;
+    gapi_char *n2 = (gapi_char *) arg;
 
     if ( strcmp(n1, n2) == 0 ) {
         result = C_EQ;
@@ -453,8 +463,8 @@ kernelCheckTopicKeyList (
     argument.keyList = keyList;
     argument.equal   = FALSE;
 
-    u_entityAction(u_entity(topic), checkTopicKeyList, &argument);
 
+    u_entityAction(u_entity(topic), checkTopicKeyList, &argument);
     return argument.equal;
 }
 
@@ -557,7 +567,21 @@ gapi_kernelReaderQosCopyIn (
                              &dstQos->lifecycle.autopurge_nowriter_samples_delay);
         kernelCopyInDuration(&srcQos->reader_data_lifecycle.autopurge_disposed_samples_delay,
                              &dstQos->lifecycle.autopurge_disposed_samples_delay);
-        dstQos->lifecycle.enable_invalid_samples = srcQos->reader_data_lifecycle.enable_invalid_samples;
+
+
+        /*
+         * Deprecated 'enable_invalid_samples' and new 'invalid_sample_visibility'
+         * are both mapped to the 'enable_invalid_samples' v_readerQos.
+         * (When GAPI_ALL_INVALID_SAMPLES is implemented, v_readerQos should be modified
+         * to use invalid_sample_visibility as enum type)
+         */
+        if (!srcQos->reader_data_lifecycle.enable_invalid_samples) {
+            dstQos->lifecycle.enable_invalid_samples = FALSE;
+        } else {
+            dstQos->lifecycle.enable_invalid_samples = (srcQos->reader_data_lifecycle.invalid_sample_visibility.kind == GAPI_MINIMUM_INVALID_SAMPLES);
+        }
+
+
 
         dstQos->lifespan.used = srcQos->reader_lifespan.use_lifespan;
         kernelCopyInDuration(&srcQos->reader_lifespan.duration,
@@ -632,7 +656,19 @@ gapi_kernelReaderQosCopyOut (
                               &dstQos->reader_data_lifecycle.autopurge_nowriter_samples_delay);
         kernelCopyOutDuration(&srcQos->lifecycle.autopurge_disposed_samples_delay,
                               &dstQos->reader_data_lifecycle.autopurge_disposed_samples_delay);
+
+        /*
+         * Deprecated 'enable_invalid_samples' and new 'invalid_sample_visibility'
+         * are both mapped to the 'enable_invalid_samples' v_readerQos.
+         * (When GAPI_ALL_INVALID_SAMPLES is implemented, v_readerQos should be modified
+         * to use invalid_sample_visibility as enum type)
+         */
         dstQos->reader_data_lifecycle.enable_invalid_samples = srcQos->lifecycle.enable_invalid_samples;
+        if (srcQos->lifecycle.enable_invalid_samples == TRUE) {
+            dstQos->reader_data_lifecycle.invalid_sample_visibility.kind = GAPI_MINIMUM_INVALID_SAMPLES;
+        } else {
+            dstQos->reader_data_lifecycle.invalid_sample_visibility.kind = GAPI_NO_INVALID_SAMPLES;
+        }
 
         dstQos->reader_lifespan.use_lifespan = srcQos->lifespan.used;
         kernelCopyOutDuration(&srcQos->lifespan.duration, &dstQos->reader_lifespan.duration);

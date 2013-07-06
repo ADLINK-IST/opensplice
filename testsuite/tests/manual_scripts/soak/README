@@ -1,0 +1,55 @@
+* First read ../README.common and ../touchstones/README.
+
+
+Note: Normally we try to keep variables and code that uses them close to each
+other. In case of soak testing we make several assumptions that are hardcoded
+in the scripts for soak testing. In particular we hardcode hostnames that we
+use (i.e. LIN64_HOSTNAME, LIN32_HOSTNAME, WIN32_HOSTNAME; those names belong
+to ospltestutils.shsrc)
+
+
+* Soak testing uses touchstones so first of all touchstones must be build.
+Just do ../touchstones/getNpatchNbuild.sh.
+
+
+* The steps to start the soak testing are the following (note: there is not need
+to redirect the screen log to file, script does this to screen.log in the log
+directory):
+
+On Linux (64-bit), in our case it's named vm-dds-rhel53x64, in 4 separeate
+consoles start these scripts:
+./run_soak_cpp.sh --remote=glasgow --clean-logs
+./run_soak_java.sh --remote=glasgow --clean-logs
+./run_soak_cpp.sh --remote=vm-dds-03 --clean-logs
+./run_soak_java.sh --remote=vm-dds-03 --clean-logs
+
+On Linux (32-bit), in our case it's named glasgow, in 2 separeate
+consoles start these scripts:
+./run_soak_cpp.sh --remote=vm-dds-rhel53x64 --clean-logs
+./run_soak_java.sh --remote=vm-dds-rhel53x64 --clean-logs
+
+On Windows (32-bit), in our case it's named vm-dds-03, in 2 separeate
+consoles start these scripts:
+./run_soak_cpp.sh --remote=vm-dds-rhel53x64 --clean-logs
+./run_soak_java.sh --remote=vm-dds-rhel53x64 --clean-logs
+
+The script in each console will block in mmstat utility. In order to stop it
+press q button. mmstat will quit and script will do cleanup of all other
+processes that were started for the test. In case there are any problems
+during cleanup (which normally should not be the case) run ./clean_hanging.sh
+which is a nuclear weapon against any bugs in the soak scripts.
+
+Remember to activate the hosts exactly in this order. I.e. Linux 64 must be
+activated first as it communicates to both Linux 32 and Windows 32, otherwise
+the results can be unreliable. Also don't delay activation of Linux 32 and
+Windows 32 too much this can produce unreliable results either. An indicator
+of a successful start is a watcher log. For each instance of touchstone it
+must contain some data within 1-2 minutes. If not then stop each instance and
+start the whole process from the very beginning (maybe it's worth running
+clean_hanging.sh on each host before starting soak testing in this case).
+
+
+* After the tests are run we must collect the logs. On single host run
+./savelogs.sh. This script requires STAF running on all hosts that participate
+in testing. The result is a file soakYYYY-MM-DD_SSSSSSSSSS.tar.gz in the
+current directory.

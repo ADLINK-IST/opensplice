@@ -1,0 +1,11 @@
+// $Id$
+
+project : tena_base {
+  macros += TENA_PLATFORM=$(TENA_PLATFORM)
+
+  specific (prop:windows) {
+    lit_libs += libTENA_Middleware-$(TENA_PLATFORM)-v$(TENA_VERSION)
+  } else {
+    libs += TENA_Middleware-$(TENA_PLATFORM)-v$(TENA_VERSION)
+  }
+}

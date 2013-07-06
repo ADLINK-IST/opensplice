@@ -1,0 +1,19 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+startOSPL
+
+echo "=== Launching ContentFilteredTopic "
+
+./sacpp_contentfilteredtopic_sub GE > subResult.txt &
+
+sleep 2
+
+./sacpp_contentfilteredtopic_pub  > pubResult.txt
+
+sleep 5
+
+contentfilteredtopicCheckResult
+
+stopOSPL

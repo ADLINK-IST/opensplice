@@ -1,0 +1,23 @@
+Kernel
+        Filename                DynamicDownload
+EndKernel
+
+AddressSpace
+        Name                            cmsoap
+        Filename                        cmsoap
+        MemoryPoolSize                  0x800000
+        MaximumPriority                 254
+        MaximumWeight                   65535
+        Language                        C
+        HeapSize                        0x400000
+
+        Object
+           MemoryRegion
+                                        Name .argsection
+                                        Section .argsection
+        EndObject
+        Task Initial
+                StartIt true
+                StackSize 0x20000
+        EndTask
+EndAddressSpace

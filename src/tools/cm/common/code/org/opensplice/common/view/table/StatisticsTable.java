@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,14 +12,10 @@
 
 package org.opensplice.common.view.table;
 
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
-import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumnModel;
 
 import org.opensplice.cm.Entity;
@@ -74,15 +70,6 @@ public class StatisticsTable extends JTable{
         this.setModel(new StatisticsTableModel(entity));
         this.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         this.getTableHeader().setReorderingAllowed(false);
-        this.getTableHeader().addMouseListener(
-                new MouseAdapter(){
-
-                    public void mouseClicked(MouseEvent e) {
-                        int x = ((JTableHeader)e.getComponent()).getColumnModel().getColumnIndexAtX(e.getX());
-                        
-                        //System.out.println("Width: " + (((JTableHeader)e.getComponent()).getColumnModel().getColumn(x).getWidth()));
-                    }
-                });
         this.setAutoResizeMode(AUTO_RESIZE_LAST_COLUMN);
         this.setSurrendersFocusOnKeystroke(true);
         
@@ -108,6 +95,7 @@ public class StatisticsTable extends JTable{
         return ((StatisticsTableModel)this.dataModel).update();
     }
     
+    @Override
     public boolean isCellEditable(int row, int column){
         return false;
     }

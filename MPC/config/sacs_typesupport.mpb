@@ -1,0 +1,9 @@
+// -*- MPC -*-
+// $Id:$
+
+project : dcps_typesupport_base, csharp, ospl_dcpssacs {
+
+  splice_ts_flags += \
+    -S -l cs
+
+}

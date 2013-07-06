@@ -1,20 +1,26 @@
-ifeq ("$(VS_VER)","14")
-VS_INCLUDE = -I"$(VS_HOME)/VC/INCLUDE" -I"$(VS_HOME)/VC/PlatformSDK/include"
-VS_LIBS = -L"$(VS_HOME)/VC/lib" -L"$(VS_HOME)/VC/PlatformSDK/lib"
-endif
+include $(OSPL_HOME)/setup/makefiles/makefile.mak
 
-ifeq ("$(VS_VER)","15")
-VS_INCLUDE += -I"$(VS_HOME)/VC/include" -I"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/Include"  -I"$(WINDOWSSDKDIR)/Include"
-VS_LIBS = -L"$(VS_HOME)/VC/lib" -L"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/lib"  -L"$(WINDOWSSDKDIR)/lib"
-endif
+ifeq ($(SPLICE_TARGET), $(SPLICE_HOST))
 
-$(OSPL_HOME)/bin/ospl_winln.exe: ospl_winln.exe
-	cp `pwd`/ospl_winln.exe $(OSPL_HOME)/bin/ospl_winln.exe
+all compile link gcov qac: bld/$(SPLICE_TARGET)/makefile
+	@$(MAKE) -C bld/$(SPLICE_TARGET) $@
 
-ospl_winln.exe: ospl_winln.c
-	$(OSPL_HOME)/bin/ospl_wincmd cl -DWIN32 -nologo -TC -Z7 -Od -W3 $(VS_INCLUDE) -c ospl_winln.c
-	$(OSPL_HOME)/bin/ospl_wincmd link -incremental:no -machine:IX86 -subsystem:console -NODEFAULTLIB:MSVCRT $(VS_LIBS) ospl_winln.obj -lkernel32 -o ospl_winln.exe
+analyse:
+	@$(ANALYSE) bld/$(SPLICE_TARGET) code
 
 clean:
+	@rm -rf bld/$(SPLICE_TARGET)
 	rm -f $(OSPL_HOME)/bin/ospl_winln.exe
-	rm -f ospl_winln.exe
+
+else
+
+all compile link metre splint qac: bld/$(SPLICE_HOST)/makefile
+	@(SPLICE_TARGET=$(SPLICE_HOST); export SPLICE_TARGET; SPLICE_LIBRARY_PATH=$(OSPL_HOME)/lib/$(SPLICE_HOST); export SPLICE_LIBRARY_PATH;SPLICE_EXEC_PATH=$(OSPL_HOME)/exec/$(SPLICE_HOST); export SPLICE_EXEC_PATH; $(MAKE) -C bld/$(SPLICE_HOST) $@)
+
+analyse:
+	@$(ANALYSE) bld/$(SPLICE_HOST) code
+
+clean:
+	@rm -rf bld/$(SPLICE_HOST)
+	rm -f $(OSPL_HOME)/bin/ospl_winln.exe
+endif

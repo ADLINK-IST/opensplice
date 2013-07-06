@@ -1,0 +1,18 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+get_libjsig
+
+startOSPL
+
+echo "=== Launching QueryCondition "
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP QueryConditionDataSubscriber MSFT > subResult.txt &
+
+sleep 2
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP QueryConditionDataPublisher > pubResult.txt
+
+queryconditionCheckResult
+
+stopOSPL

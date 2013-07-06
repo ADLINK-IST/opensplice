@@ -91,7 +91,7 @@ COMMENT2        "//"[^\n]*
 SD		("select"{BLANK}"distict")
 
 %%
-"$"		{ RETURN (DOLLAR); }
+"$"		{  OS_UNUSED_ARG(yyunput); RETURN (DOLLAR); }
 "%"		{ RETURN (PERCENT); }
 "("		{ RETURN (LRPAR); }
 ")"             { RETURN (RRPAR); }

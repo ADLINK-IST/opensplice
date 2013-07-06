@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -61,7 +61,7 @@ d_readerRequestNew(
     d_readerRequest request;
     c_long i;
     v_handleResult handleResult;
-    v_reader vreader;
+    v_reader vreader, *vreaderPtr;
     c_iter partitions;
     v_partition partition;
     v_topic topic;
@@ -102,13 +102,13 @@ d_readerRequestNew(
         }
         request->groups = d_tableNew(d_groupCompare, d_groupFree);
 
-        handleResult = v_handleClaim(source, (v_object*)&vreader);
+        handleResult = v_handleClaim(source, (v_object*)(vreaderPtr = &vreader));
 
         if(handleResult == V_HANDLE_OK){
             if(v_object(vreader)->kind == K_DATAREADER){
                 topic      = v_dataReaderGetTopic(v_dataReader(vreader));
                 topicName  = v_entity(topic)->name;
-                partitions = c_select(v_subscriber(vreader->subscriber)->partitions->partitions, 0);
+                partitions = ospl_c_select(v_subscriber(vreader->subscriber)->partitions->partitions, 0);
                 partition  = v_partition(c_iterTakeFirst(partitions));
 
                 while(partition){
@@ -369,6 +369,7 @@ checkCompleteness(
 {
     c_bool result;
 
+    OS_UNUSED_ARG(args);
     assert(!args);
 
     if(d_groupGetCompleteness(group) == D_GROUP_COMPLETE){
@@ -431,6 +432,7 @@ printGroup(
 {
     c_char *partition, *topic;
 
+    OS_UNUSED_ARG(args);
     assert(!args);
     partition = d_groupGetPartition(group);
     topic = d_groupGetTopic(group);

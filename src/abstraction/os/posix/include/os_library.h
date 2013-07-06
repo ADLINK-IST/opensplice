@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -16,10 +16,13 @@
 extern "C" {
 #endif
 
+#if !defined ( _WRS_KERNEL ) || defined ( VXWORKS_55 ) || defined ( VXWORKS_54 )
 #include <dlfcn.h>
+#endif
 
 typedef void *os_os_library;
 typedef void *os_os_symbol;
+/* typedef void (*os_os_symbol) (void);*/
 
 #if defined (__cplusplus)
 }

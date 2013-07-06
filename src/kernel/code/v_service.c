@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -276,6 +276,7 @@ v_serviceNotify(
             /* This allows receiving the event by means of a waitset.*/
             v_observableNotify(v_observable(service), event);
         break;
+        case V_EVENT_CONNECT_WRITER:
         case V_EVENT_PERSISTENT_SNAPSHOT:
             /* This allows receiving the event by means of a waitset.*/
             v_observableNotify(v_observable(service), event);
@@ -316,7 +317,39 @@ v_serviceChangeState(
     assert(C_TYPECHECK(service->state, v_serviceState));
 
     result = v_serviceStateChangeState(service->state, newState);
-
+    if(result)
+    {
+        switch(newState)
+        {
+            case STATE_OPERATIONAL:
+                OS_REPORT_1(OS_INFO, "v_serviceChangeState", 0,
+                    "++++++++++++++++++++++++++++++++++++++++++++++++" OS_REPORT_NL
+                    "++ The service '%s' is now operational. " OS_REPORT_NL
+                    "++++++++++++++++++++++++++++++++++++++++++++++++",
+                    v_serviceGetName(service));
+                break;
+            case STATE_TERMINATED:
+                OS_REPORT_1(OS_INFO, "v_serviceChangeState", 0,
+                    "================================================" OS_REPORT_NL
+                    "== The service '%s' has now terminated. "OS_REPORT_NL
+                    "================================================",
+                    v_serviceGetName(service));
+                break;
+            case STATE_DIED:
+                OS_REPORT_1(OS_INFO, "v_serviceChangeState", 0,
+                    "================================================" OS_REPORT_NL
+                    "== The service '%s' has died. "OS_REPORT_NL
+                    "================================================",
+                    v_serviceGetName(service));
+                break;
+            case STATE_NONE:
+            case STATE_INITIALISING:
+            case STATE_TERMINATING:
+            default:
+                /* ignore */
+                break;
+        }
+    }
     return result;
 }
 
@@ -342,7 +375,7 @@ v_serviceFillNewGroups(
         g = v_group(c_read(newGroups)); /* need a group for the event */
 
         if(v_observer(service)->eventData != NULL){
-            oldGroups = c_select((c_set)v_observer(service)->eventData, 0);
+            oldGroups = ospl_c_select((c_set)v_observer(service)->eventData, 0);
             oldGroup = v_group(c_iterTakeFirst(oldGroups));
 
             while(oldGroup){

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -154,7 +154,7 @@ d_readerListenerAction(
     return (event->events & V_EVENT_DATA_AVAILABLE);
 }
 
-c_bool
+v_actionResult
 d_readerListenerCopy(
     c_object object,
     c_voidp copyArg)
@@ -162,7 +162,7 @@ d_readerListenerCopy(
     d_readerListener listener;
     d_message        message;
     v_message        readerMessage;
-    c_bool result = FALSE;
+    v_actionResult result = 0;
 
     if(object != NULL) {
         if (v_stateTest(v_readerSampleState(object), L_VALIDDATA)) {
@@ -179,7 +179,7 @@ d_readerListenerCopy(
             listener->processMessage = TRUE;
         } else {
             /* Ignore data that is not valid but continue with the read action */
-            result = TRUE;
+            v_actionResultSet(result, V_PROCEED);
         }
     }
     return result;

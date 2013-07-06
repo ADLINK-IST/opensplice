@@ -1,12 +1,14 @@
 BUILD=yes
 SETUP_TYPE=x86.linux2.6-dev
+BUILD_SRC=yes
 BUILD_DIST=yes
 BUILD_EXAMPLES=yes
 KEEP_DIST=yes
 RUN_DBT=no
 RUN_RBT=no
-RUN_EXAMPLES=yes
+RUN_EXAMPLES_SP=yes
+RUN_EXAMPLES_SHM=yes
 VALGRIND=no
 
-export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.0.3
+export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
 . configs/`hostname`/common

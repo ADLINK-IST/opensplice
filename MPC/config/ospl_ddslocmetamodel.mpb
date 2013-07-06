@@ -1,6 +1,10 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_ddslocmetamodel_incl, ospl_base {
+project : ospl_base {
   lit_libs += ddslocmetamodel
+}
+
+feature(src_co) {
+  includes += $(OSPL_HOME_NORMALIZED)/src/loc/metamodel/include
 }

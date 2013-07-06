@@ -65,12 +65,7 @@ LD_LIBS  := -lc -lm -lpthread -lnsl -ldcpsgapi -lddsdatabase -lddsos -lstdc++
 
 # SPLICE IDL preprocessor and preprocessor flags
 IDLPP := idlpp
-
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
-IDLPPFLAGS := -P SACPP_API -S -l cpp
-else
 IDLPPFLAGS := -S -l cpp
-endif
 
 #Dependencies
 

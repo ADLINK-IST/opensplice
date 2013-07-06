@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -122,6 +122,7 @@ v_filterNew(
 
     assert(C_TYPECHECK(t,v_topic));
 
+    filter = NULL;
     kernel = v_objectKernel(t);
     type = v_topicMessageType(t);
 
@@ -133,7 +134,6 @@ v_filterNew(
                             "Failed to resolve fields in filter expression."
                             OS_REPORT_NL "Topic = \"%s\"",
                             v_topicName(t));
-                filter = NULL;
             } else {
                 filter = c_new(v_kernelType(kernel, K_FILTER));
     

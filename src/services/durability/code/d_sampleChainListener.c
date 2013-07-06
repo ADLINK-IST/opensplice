@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -38,6 +38,7 @@
 #include "d_networkAddress.h"
 #include "d_message.h"
 #include "v_group.h"
+#include "v_groupInstance.h"
 #include "v_writer.h"
 #include "v_topic.h"
 #include "v_partition.h"
@@ -56,6 +57,7 @@ C_CLASS(d_resendAction);
 
 C_STRUCT(d_resendAction){
     c_list messages;
+    c_list instances;
     d_group group;
     d_sampleChainListener listener;
 };
@@ -112,6 +114,7 @@ struct chainRequestHelper{
     d_chain chain;
     d_fellow fellow;
     d_networkAddress master;
+    d_name role;
 };
 
 static c_bool
@@ -126,29 +129,35 @@ findAligner(
     struct chainRequestHelper* helper;
     d_fellowAlignStatus status = D_ALIGN_FALSE;
     d_networkAddress fellowAddress;
+    d_name fellowRole;
+
 
     helper = (struct chainRequestHelper*)args;
 
     if(d_fellowGetCommunicationState(fellow) == D_COMMUNICATION_STATE_APPROVED) {
-        fellowComplete = d_fellowIsCompleteForGroup(fellow,
-                                        helper->chain->request->partition,
-                                        helper->chain->request->topic,
-                                        helper->chain->request->durabilityKind);
+        fellowRole = d_fellowGetRole(fellow);
 
-        if(fellowComplete == FALSE){
-            status = d_fellowIsAlignerForGroup(fellow,
-                                        helper->chain->request->partition,
-                                        helper->chain->request->topic,
-                                        helper->chain->request->durabilityKind);
+        if(strcmp(fellowRole, helper->role) == 0){
+            fellowComplete = d_fellowIsCompleteForGroup(fellow,
+                                            helper->chain->request->partition,
+                                            helper->chain->request->topic,
+                                            helper->chain->request->durabilityKind);
 
-            if((status == D_ALIGN_TRUE) || (status == D_ALIGN_UNKNOWN)){
-                fellowMightKnowGroup = TRUE;
+            if(fellowComplete == FALSE){
+                status = d_fellowIsAlignerForGroup(fellow,
+                                            helper->chain->request->partition,
+                                            helper->chain->request->topic,
+                                            helper->chain->request->durabilityKind);
+
+                if((status == D_ALIGN_TRUE) || (status == D_ALIGN_UNKNOWN)){
+                    fellowMightKnowGroup = TRUE;
+                }
+            } else {
+                status = d_fellowIsAlignerForGroup(fellow,
+                                            helper->chain->request->partition,
+                                            helper->chain->request->topic,
+                                            helper->chain->request->durabilityKind);
             }
-        } else {
-            status = d_fellowIsAlignerForGroup(fellow,
-                                        helper->chain->request->partition,
-                                        helper->chain->request->topic,
-                                        helper->chain->request->durabilityKind);
         }
     }
 
@@ -208,7 +217,6 @@ findAligner(
 
 static d_resendAction
 d_resendActionNew(
-    c_list messages,
     d_sampleChainListener listener,
     const d_group group)
 {
@@ -217,7 +225,8 @@ d_resendActionNew(
     action = d_resendAction(os_malloc(C_SIZEOF(d_resendAction)));
 
     if(action){
-        action->messages = messages;
+        action->messages = NULL;
+        action->instances = NULL;
         action->group = d_group(d_objectKeep(d_object(group)));
         action->listener = listener;
     }
@@ -248,12 +257,14 @@ d_resendRejected(
     d_resendAction resendData;
     v_message message;
     v_group group;
-       v_writeResult writeResult;
-       c_bool callAgain;
-       d_durability durability;
-       d_admin admin;
+    v_groupInstance instance;
+    v_writeResult writeResult;
+    c_bool callAgain;
+    d_durability durability;
+    d_admin admin;
+    v_resendScope resendScope = V_RESEND_NONE; /* resendScope not yet used here beyond this function */
 
-       callAgain = TRUE;
+    callAgain = TRUE;
     resendData = d_resendAction(d_actionGetArgs(action));
     group = d_groupGetKernelGroup(resendData->group);
     admin = d_listenerGetAdmin(d_listener(resendData->listener));
@@ -261,16 +272,20 @@ d_resendRejected(
 
     if(terminate == FALSE){
         message = c_take(resendData->messages);
+        instance = c_take(resendData->instances);
         writeResult = V_WRITE_SUCCESS;
 
         while(message && (writeResult == V_WRITE_SUCCESS)){
-            writeResult = v_groupWrite(group, message, NULL, V_NETWORKID_ANY);
+            writeResult = v_groupWrite(group, message, &instance, V_NETWORKID_ANY, &resendScope);
 
             if (writeResult != V_WRITE_SUCCESS) {
                 c_insert(resendData->messages, message);
+                c_insert(resendData->instances, instance);
             } else {
                 c_free(message);
+                c_free(instance);
                 message = c_take(resendData->messages);
+                instance = c_take(resendData->instances);
             }
         }
 
@@ -664,7 +679,7 @@ d_sampleChainListenerReportGroup(
         quality      = d_groupGetQuality(group);
         kind         = d_groupGetKind(group);
 
-        inNameSpace = d_adminGroupInAlignerNS(admin, partition, topic, kind);
+        inNameSpace = d_adminGroupInAlignerNS(admin, partition, topic);
 
         if((inNameSpace == TRUE) || (completeness != D_GROUP_COMPLETE)) {
             d_printTimedEvent(durability, D_LEVEL_FINER,
@@ -793,6 +808,8 @@ d_sampleChainListenerNotifyFellowRemoved(
     d_mergeAction mergeAction;
     c_ulong chainCount;
 
+    OS_UNUSED_ARG(ns);
+    OS_UNUSED_ARG(eventUserData);
     listener = d_sampleChainListener(userData);
     assert(d_listenerIsValid(d_listener(listener), D_SAMPLE_CHAIN_LISTENER));
 
@@ -1102,11 +1119,11 @@ d_sampleChainListenerInsertRequest(
         nameSpace        = d_adminGetNameSpaceForGroup(
                                             admin,
                                             chain->request->partition,
-                                            chain->request->topic,
-                                            chain->request->durabilityKind);
+                                            chain->request->topic);
         notInitial       = d_nameSpaceIsAlignmentNotInitial(nameSpace);
         data.chain       = chain;
         data.fellow      = NULL;
+        data.role        = configuration->role;
 
         if(nameSpace){
             data.master = d_nameSpaceGetMaster(nameSpace);
@@ -1120,8 +1137,7 @@ d_sampleChainListenerInsertRequest(
             iAmAligner    = d_adminGroupInAlignerNS(
                                 admin,
                                 chain->request->partition,
-                                chain->request->topic,
-                                chain->request->durabilityKind);
+                                chain->request->topic);
 
             if(iAmAligner == FALSE){
                 if(reportGroupWhenUnfullfilled){
@@ -1259,6 +1275,10 @@ d_sampleChainListenerAction(
     v_message vmessage;
     d_fellow fellow, dummy;
     d_networkAddress sender;
+    c_memoryThreshold status;
+    c_base base;
+    d_networkAddress myAddr;
+
 
     admin = d_listenerGetAdmin(listener);
     durability = d_adminGetDurability(admin);
@@ -1296,64 +1316,87 @@ d_sampleChainListenerAction(
     if(chain){
         assert(d_objectIsValid(d_object(chain), D_CHAIN) == TRUE);
 
-        switch(sampleChain->msgBody._d){
-            case BEAD:
-                vmessage = (v_message)(sd_serializerDeserialize(
-                                        chain->serializer,
-                                        (sd_serializedData)(sampleChain->msgBody._u.bead.value)));
+        base = d_findBase(durability);
+        status = c_baseGetMemThresholdStatus(base);
 
-                bead = d_chainBeadNew(sender, vmessage);
-                inserted = d_tableInsert(chain->beads, bead);
+        if(status == C_MEMTHRESHOLD_SERV_REACHED){
+            d_printTimedEvent(durability, D_LEVEL_SEVERE,
+                D_THREAD_SAMPLE_CHAIN_LISTENER,
+                "Unrecoverable error: service memory threshold reached; terminating.");
+            OS_REPORT(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                "Unrecoverable error: service memory threshold reached; terminating.");
+            d_durabilityTerminate(durability);
+        } else {
+            switch(sampleChain->msgBody._d){
+                case BEAD:
+                    vmessage = (v_message)(sd_serializerDeserialize(
+                                            chain->serializer,
+                                            (sd_serializedData)(sampleChain->msgBody._u.bead.value)));
 
-                /*
-                 * Duplicates are not inserted
-                 * A message is considered a duplicate if the writer GID and the
-                 * source timestamp are equal to the ones in the other message.
-                 */
-                if(inserted != NULL){
-                    /* Number of expected samples must be lowered.
+                    /* Do not receive alignment data that belongs to yourself.
+                     * To verify if the data belongs to youself the systemId of the writer
+                     * that was wrote the data is compared with the system Id.
                      */
-                    chain->samplesExpect--;
-                    d_chainBeadFree(bead);
-                } else {
-                    chain->receivedSize += sd_serializedDataGetTotalSize((sd_serializedData)(sampleChain->msgBody._u.bead.value));
-                }
-                break;
-            case LINK:
-                chain->samplesExpect += sampleChain->msgBody._u.link.nrSamples;
-                link = d_chainLinkNew(sender, sampleChain->msgBody._u.link.nrSamples, admin);
-                d_tableInsert(chain->links, link);
-                d_printTimedEvent(
-                        durability,
-                        D_LEVEL_FINE,
-                        D_THREAD_SAMPLE_CHAIN_LISTENER,
-                        "Received link for group %s.%s. #links == %u\n",
-                        chain->request->partition,
-                        chain->request->topic,
-                        d_tableSize(chain->links));
-                d_printTimedEvent(
-                        durability,
-                        D_LEVEL_FINE,
-                        D_THREAD_SAMPLE_CHAIN_LISTENER,
-                        "Fellow sent %u samples\n",
-                        sampleChain->msgBody._u.link.nrSamples);
-                break;
-            default:
-                OS_REPORT_1(OS_ERROR, "d_sampleChainListenerAction", 0,
-                            "Illegal message discriminator value (%d) detected.",
-                            sampleChain->msgBody._d);
-                assert(FALSE);
-                break;
+                    myAddr = d_adminGetMyAddress(admin);
+                    if (vmessage->writerGID.systemId != myAddr->systemId) {
+                        /* the message is written by somebody else, create a bead */
+                        bead = d_chainBeadNew(sender, vmessage, chain);
+                        inserted = d_tableInsert(chain->beads, bead);
+                        /*
+                         * Duplicates are not inserted
+                         * A message is considered a duplicate if the writer GID and the
+                         * source timestamp are equal to the ones in the other message.
+                         */
+                        if(inserted != NULL){
+                            /* Number of expected samples must be lowered.
+                             */
+                            chain->samplesExpect--;
+                            d_chainBeadFree(bead);
+                        } else {
+                            chain->receivedSize += sd_serializedDataGetTotalSize((sd_serializedData)(sampleChain->msgBody._u.bead.value));
+                        }
+                    } else {
+                        /* the message orginated from myself, no need to create a bead */
+                        chain->samplesExpect--;
+                    }
+                    d_networkAddressFree(myAddr);
+                    c_free(vmessage);
+                    break;
+                case LINK:
+                    chain->samplesExpect += sampleChain->msgBody._u.link.nrSamples;
+                    link = d_chainLinkNew(sender, sampleChain->msgBody._u.link.nrSamples, admin);
+                    d_tableInsert(chain->links, link);
+                    d_printTimedEvent(
+                            durability,
+                            D_LEVEL_FINE,
+                            D_THREAD_SAMPLE_CHAIN_LISTENER,
+                            "Received link for group %s.%s. #links == %u\n",
+                            chain->request->partition,
+                            chain->request->topic,
+                            d_tableSize(chain->links));
+                    d_printTimedEvent(
+                            durability,
+                            D_LEVEL_FINE,
+                            D_THREAD_SAMPLE_CHAIN_LISTENER,
+                            "Fellow sent %u samples\n",
+                            sampleChain->msgBody._u.link.nrSamples);
+                    break;
+                default:
+                    OS_REPORT_1(OS_ERROR, "d_sampleChainListenerAction", 0,
+                                "Illegal message discriminator value (%d) detected.",
+                                sampleChain->msgBody._d);
+                    assert(FALSE);
+                    break;
+            }
+
+            complete = d_sampleChainListenerCheckChainComplete(sampleChainListener, chain);
+
+            if(complete == TRUE) {
+                chain = d_sampleChainListenerRemoveChain (sampleChainListener, chain);
+                assert(d_objectIsValid(d_object(chain), D_CHAIN) == TRUE);
+                d_chainFree(chain);
+            }
         }
-
-        complete = d_sampleChainListenerCheckChainComplete(sampleChainListener, chain);
-
-        if(complete == TRUE) {
-            chain = d_sampleChainListenerRemoveChain (sampleChainListener, chain);
-            assert(d_objectIsValid(d_object(chain), D_CHAIN) == TRUE);
-            d_chainFree(chain);
-        }
-
     }
     d_networkAddressFree(sender);
     return;
@@ -1371,7 +1414,32 @@ findEntryGroup(
     v_proxy proxy,
     c_voidp args)
 {
-    return TRUE;
+    v_group vgroup;
+    v_handleResult handleResult;
+    c_bool result;
+    c_string topicName, partitionName;
+
+    struct findEntryHelper *entryHelper;
+    entryHelper = (struct findEntryHelper*)args;
+    result = TRUE;
+
+    handleResult = v_handleClaim(proxy->source, (v_object*)(&vgroup));
+
+    if(handleResult == V_HANDLE_OK){
+        topicName = v_entityName(v_groupTopic(vgroup));
+        partitionName = v_entityName(v_groupPartition(vgroup));
+
+        if(topicName && partitionName){
+            if(strcmp(entryHelper->topic, topicName) == 0){
+                if(strcmp(entryHelper->partition, partitionName) == 0){
+                    entryHelper->entry = entryHelper->current;
+                    result = FALSE;
+                }
+            }
+        }
+        v_handleRelease(proxy->source);
+    }
+    return result;
 }
 
 static c_bool
@@ -1383,7 +1451,7 @@ findEntry(
     entryHelper = (struct findEntryHelper*)args;
     entryHelper->current = entry;
 
-    return c_tableWalk(entry->groups, (c_action)findEntryGroup, NULL);
+    return c_tableWalk(entry->groups, (c_action)findEntryGroup, args);
 
 }
 
@@ -1409,7 +1477,7 @@ d_sampleChainListenerCheckChainComplete(
     struct writeBeadHelper beadHelper;
     struct findEntryHelper entryHelper;
     v_handleResult handleResult;
-    v_reader vreader;
+    v_reader vreader, *vreaderPtr;
     d_nameSpace nameSpace, myNameSpace;
     d_mergeAction mergeAction;
     d_mergeState newState;
@@ -1447,7 +1515,7 @@ d_sampleChainListenerCheckChainComplete(
                     "Received %u beads for group %s.%s.\n",
                     d_tableSize(chain->beads), partition, topic);
 
-                resendData = d_resendActionNew(NULL, listener, dgroup);
+                resendData = d_resendActionNew(listener, dgroup);
                 as = d_aligneeStatisticsNew();
                 beadHelper.action = resendData;
                 beadHelper.totalCount = 0;
@@ -1468,7 +1536,7 @@ d_sampleChainListenerCheckChainComplete(
                     assert(readerRequest);
 
                     handle = d_readerRequestGetHandle(readerRequest);
-                    handleResult = v_handleClaim(handle, (v_object*)&vreader);
+                    handleResult = v_handleClaim(handle, (v_object*)(vreaderPtr = &vreader));
 
                     if(handleResult == V_HANDLE_OK){
                         entryHelper.partition = chain->request->partition;
@@ -1838,44 +1906,49 @@ processChains(
     return TRUE;
 }
 
-void
+c_bool
 d_sampleChainListenerInsertMergeAction(
     d_sampleChainListener listener,
     d_mergeAction action)
 {
     d_admin admin;
     struct processChainsHelper helper;
+    d_mergeAction duplicate;
+    c_bool result;
 
     assert(d_listenerIsValid(d_listener(listener), D_SAMPLE_CHAIN_LISTENER));
     assert(action);
+    result = FALSE;
 
     if(listener && action){
         admin = d_listenerGetAdmin(d_listener(listener));
 
-        helper.fellow = d_mergeActionGetFellow(action);
-        helper.addressee = d_fellowGetAddress(helper.fellow);
-        helper.as = d_aligneeStatisticsNew();
-        helper.durability = d_adminGetDurability(admin);
-        helper.publisher = d_adminGetPublisher(admin);
-        helper.listener = listener;
-
         d_listenerLock(d_listener(listener));
 
-        d_tableInsert(listener->mergeActions, action);
+        duplicate = d_mergeAction(d_tableInsert(listener->mergeActions, action));
 
-        /* Walk over all chains in the mergeAction to send out sample requests*/
-        d_mergeActionChainWalk(action, processChains, &helper);
+        if(duplicate == NULL){
+            helper.fellow = d_mergeActionGetFellow(action);
+            helper.addressee = d_fellowGetAddress(helper.fellow);
+            helper.as = d_aligneeStatisticsNew();
+            helper.durability = d_adminGetDurability(admin);
+            helper.publisher = d_adminGetPublisher(admin);
+            helper.listener = listener;
 
-        d_durabilityUpdateStatistics(helper.durability,
-                d_statisticsUpdateAlignee, helper.as);
+            /* Walk over all chains in the mergeAction to send out sample requests*/
+            d_mergeActionChainWalk(action, processChains, &helper);
 
+            d_durabilityUpdateStatistics(helper.durability,
+                    d_statisticsUpdateAlignee, helper.as);
 
+            d_aligneeStatisticsFree(helper.as);
+            d_networkAddressFree(helper.addressee);
+
+            result = TRUE;
+        }
         d_listenerUnlock(d_listener(listener));
-
-        d_aligneeStatisticsFree(helper.as);
-        d_networkAddressFree(helper.addressee);
     }
-    return;
+    return result;
 }
 
 void
@@ -1949,7 +2022,6 @@ d_chainNew(
 {
     d_chain chain;
     d_group group;
-    v_group vgroup;
 
     assert(request);
     chain = NULL;
@@ -1968,11 +2040,11 @@ d_chainNew(
             group = d_adminGetLocalGroup(admin,
                                      request->partition, request->topic,
                                      request->durabilityKind);
-            vgroup = d_groupGetKernelGroup(group);
-            chain->serializer = sd_serializerBigENewTyped(v_topicMessageType(vgroup->topic));
-            c_free(vgroup);
+            chain->vgroup = d_groupGetKernelGroup(group);
+            chain->serializer = sd_serializerBigENewTyped(v_topicMessageType(chain->vgroup->topic));
         } else {
             chain->serializer = NULL;
+            chain->vgroup = NULL;
         }
     }
     return chain;
@@ -2010,6 +2082,10 @@ d_chainDeinit(
     if(object){
         chain = d_chain(object);
 
+        if(chain->vgroup){
+            c_free(chain->vgroup);
+            chain->vgroup = NULL;
+        }
         if(chain->beads){
             d_tableFree(chain->beads);
             chain->beads = NULL;
@@ -2047,14 +2123,41 @@ d_chainFree(
 d_chainBead
 d_chainBeadNew(
     d_networkAddress sender,
-    v_message message)
+    v_message message,
+    d_chain chain)
 {
     d_chainBead chainBead = NULL;
+    c_array messageKeyList;
+    c_ulong i;
 
     assert(message);
-
     chainBead = d_chainBead(os_malloc(C_SIZEOF(d_chainBead)));
-    chainBead->message = message;
+    memset(chainBead->keyValues, 0, sizeof(chainBead->keyValues));
+
+    messageKeyList = v_topicMessageKeyList(v_groupTopic(chain->vgroup));
+    chainBead->nrOfKeys = c_arraySize(messageKeyList);
+
+    if (chainBead->nrOfKeys > 32) {
+        OS_REPORT_1(OS_ERROR,
+                    "d_sampleChainListener::d_chainBeadNew",0,
+                    "too many keys %d exceeds limit of 32",
+                    chainBead->nrOfKeys);
+    } else {
+        for (i=0;i<chainBead->nrOfKeys;i++) {
+            chainBead->keyValues[i] = c_fieldValue(messageKeyList[i], message);
+        }
+    }
+
+    /* In case of an unregister message, store the instance and an
+     * untyped sample.
+     */
+    if(v_messageStateTest(message, L_UNREGISTER)){
+        chainBead->message = v_groupCreateUntypedInvalidMessage(
+                v_kernel(v_object(chain->vgroup)->kernel), message);
+        assert(c_refCount(chainBead->message) == 1);
+    } else {
+        chainBead->message = c_keep(message);
+    }
 #ifndef _NAT_
     chainBead->message->allocTime = v_timeGet();
 #endif
@@ -2073,6 +2176,8 @@ void
 d_chainBeadFree(
     d_chainBead chainBead)
 {
+    c_ulong i;
+
     assert(chainBead);
 
     if(chainBead){
@@ -2083,6 +2188,9 @@ d_chainBeadFree(
         if(chainBead->sender){
             d_networkAddressFree(chainBead->sender);
             chainBead->sender = NULL;
+        }
+        for (i=0;i<chainBead->nrOfKeys;i++) {
+            c_valueFreeRef(chainBead->keyValues[i]);
         }
         os_free(chainBead);
     }
@@ -2115,9 +2223,9 @@ d_chainBeadCompare(
     result = d_networkAddressCompare(bead1->sender, bead2->sender);
 
     if(result == 0){
-    	if(bead1->message == bead2->message){
-    		result = 0;
-    	} else if(bead1->message && bead2->message){
+        if(bead1->message == bead2->message){
+            result = 0;
+        } else if(bead1->message && bead2->message){
             eq = v_gidCompare(bead1->message->writerGID,bead2->message->writerGID);
             if (eq == C_EQ) {
                 eq = v_timeCompare(bead1->message->writeTime, bead2->message->writeTime);
@@ -2202,39 +2310,115 @@ d_chainBeadInject(
 {
     d_resendAction action;
     v_group group;
+    v_groupInstance instance;
+    c_bool doRegister;
     v_writeResult writeResult;
     struct writeBeadHelper *helper;
+    v_resendScope resendScope = V_RESEND_NONE; /*TODO: resendScope not yet used here beyond this function */
+    v_registration registration;
+    v_message registerMessage;
+    c_array messageKeyList;
+    c_long i, nrOfKeys;
 
     helper = (struct writeBeadHelper*)args;
     action = d_resendAction(helper->action);
     group = d_groupGetKernelGroup(action->group);
 
-    if(helper->entry){
-        writeResult = v_groupWriteNoStreamWithEntry(group, bead->message, NULL, V_NETWORKID_ANY, helper->entry);
+    instance = v_groupLookupInstance(group, bead->keyValues);
+
+    /* We need to determine whether the instance still has a registration
+     * for the DataWriter that wrote bead->message, because the instance
+     * pipeline will have been destroyed already for existing data-readers
+     * if such a registration does not exist. If it does not exist, the instance
+     * handle cannot be used as an implicit registration is needed to ensure the
+     * instance pipeline is reconstructed for existing data-readers.
+     */
+
+    if(instance){
+        registration = v_groupInstanceGetRegistration(
+                instance, bead->message->writerGID, v_gidCompare);
+
+        if (registration) {
+            c_free(registration);
+            doRegister = FALSE;
+        } else {
+            doRegister = TRUE;
+        }
     } else {
-        writeResult = v_groupWrite(group, bead->message, NULL, V_NETWORKID_ANY);
+        doRegister = TRUE;
     }
 
-    if (writeResult != V_WRITE_SUCCESS) {
-        if(!action->messages){
-            action->messages = c_listNew(c_getType(bead->message));
-        }
-        c_append(action->messages, bead->message);
-    } else {
-        helper->totalCount++;
+    if(doRegister){
+        registerMessage = v_topicMessageNew(v_groupTopic(group));
 
-        if((v_stateTest(v_nodeState(bead->message), L_WRITE)) &&
-           (v_stateTest(v_nodeState(bead->message), L_DISPOSED))){
-            helper->writeDisposeCount++;
-        } else if(v_stateTest(v_nodeState(bead->message), L_WRITE)){
-            helper->writeCount++;
-        } else if(v_stateTest(v_nodeState(bead->message), L_DISPOSED)){
-            helper->disposeCount++;
-        } else if(v_stateTest(v_nodeState(bead->message), L_REGISTER)){
-            helper->registerCount++;
-        } else if(v_stateTest(v_nodeState(bead->message), L_UNREGISTER)){
-            helper->unregisterCount++;
+        if (registerMessage != NULL){
+            v_nodeState(registerMessage) = L_REGISTER;
+            registerMessage->writerGID = bead->message->writerGID;
+            registerMessage->writeTime = bead->message->writeTime;
+            registerMessage->qos = c_keep(bead->message->qos);
+
+            messageKeyList = v_topicMessageKeyList(v_groupTopic(group));
+            nrOfKeys = c_arraySize(messageKeyList);
+
+            for (i=0;i<nrOfKeys;i++){
+                c_fieldAssign(
+                        messageKeyList[i], registerMessage, bead->keyValues[i]);
+            }
+            if(instance == NULL){
+                v_groupWrite(
+                        group, registerMessage, &instance, V_NETWORKID_ANY,
+                        &resendScope);
+            } else {
+                v_groupWrite(
+                        group, registerMessage, NULL, V_NETWORKID_ANY,
+                        &resendScope);
+            }
+            c_free(registerMessage);
+        } else {
+            c_free(instance);
+            instance = NULL;
+            OS_REPORT(OS_ERROR, D_CONTEXT, 0, "Unable to allocate sample.");
         }
+    }
+
+    if(instance){
+        resendScope = V_RESEND_NONE;
+
+        if(helper->entry){
+            writeResult = v_groupWriteNoStreamWithEntry(group, bead->message,
+                    &instance, V_NETWORKID_ANY, helper->entry);
+        } else {
+            writeResult = v_groupWrite(group, bead->message,
+                    &instance, V_NETWORKID_ANY, &resendScope);
+        }
+
+        if (writeResult != V_WRITE_SUCCESS) {
+            if(!action->messages){
+                action->messages = c_listNew(c_getType(bead->message));
+                action->instances = c_listNew(c_getType(instance));
+            }
+            c_append(action->messages, bead->message);
+            c_append(action->instances, instance);
+        } else {
+            helper->totalCount++;
+
+            if((v_stateTest(v_nodeState(bead->message), L_WRITE)) &&
+               (v_stateTest(v_nodeState(bead->message), L_DISPOSED))){
+                helper->writeDisposeCount++;
+            } else if(v_stateTest(v_nodeState(bead->message), L_WRITE)){
+                helper->writeCount++;
+            } else if(v_stateTest(v_nodeState(bead->message), L_DISPOSED)){
+                helper->disposeCount++;
+            } else if(v_stateTest(v_nodeState(bead->message), L_REGISTER)){
+                helper->registerCount++;
+            } else if(v_stateTest(v_nodeState(bead->message), L_UNREGISTER)){
+                helper->unregisterCount++;
+            }
+        }
+        c_free(instance);
+    } else {
+        OS_REPORT(OS_ERROR, D_CONTEXT, 0,
+                "Unable to deliver aligned sample to local readers.");
     }
     c_free(group);
 

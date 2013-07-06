@@ -76,16 +76,44 @@ ProcessArgs()
    done
 }
 
+PreRunSetup()
+{
+   if [ -z "$CONFIGFILE" ]
+   then
+      echo "CONFIGFILE not set, PreRunSetup must be called after ProcessArgs and LoadConfig"
+      return 1
+   fi
+   if [ -f "$CONFDIR/$PRE_BUILDSYS_SETUP" ]
+   then
+      . $CONFDIR/$PRE_BUILDSYS_SETUP
+   fi
+   return 0
+
+}
+
+PostRunSetup()
+{
+   if [ -z "$CONFIGFILE" ]
+   then
+      echo "CONFIGFILE not set, PostRunSetup must be called after ProcessArgs and LoadConfig"
+      return 1
+   fi
+   if [ -f "$CONFDIR/$POST_BUILDSYS_SETUP" ]
+   then
+      . $CONFDIR/$POST_BUILDSYS_SETUP
+   fi
+   return 0
+}
 
 CHECK_COMPILER()
 {
-    #These two vars must be set in the env file for the 
+    #These two vars must be set in the env file for the
     #build
     if [ "$COMPILER_CHECK_STRING" != "$COMPILER_VER" ]
     then
         echo "Incorrect compiler version"
         echo "Expected - [$COMPILER_CHECK_STRING]"
-        echo "Got      - [$COMPILER_VER]"  
+        echo "Got      - [$COMPILER_VER]"
         exit 1
     fi
 }
@@ -143,7 +171,7 @@ Retrieve()
    # The log is always copied after the release, so wait for it to appear
    # to prevent downloading a part uploaded release!!
    $RCP $LOG_USER@$LOG_HOST:$INPUT_DIR/logs/$TARGET_EORBENV-create-release.txt .
-   while [ $? != 0 ] 
+   while [ $? != 0 ]
    do
       echo "Build not transfered from $LOG_HOST, build still in progess?"
 
@@ -159,7 +187,7 @@ Retrieve()
    done
    $RCP eorb@$LOG_HOST:$INPUT_DIR/$1 $2
    if [ $? != 0 ]
-   then 
+   then
       echo "rcp of build \"$INPUT_DIR/$1\" failed."
       return 1
    fi
@@ -205,14 +233,14 @@ SetupRemoteLogDir()
 }
 
 
-Findrm () 
-{ 
+Findrm ()
+{
     find $2 -type $1 -name "$3" | xargs rm -rf 2> /dev/null
     LEFTOVER=`find $2 -type $1 -name "$3"`
     if [ "$LEFTOVER" != "" ]
-    then         
-        echo $4 
-        exit 1   
+    then
+        echo $4
+        exit 1
     fi
 }
 
@@ -294,4 +322,23 @@ LoadConfigs()
    # Then the config for opensplice
    . configs/$INDEX
    return 0
+}
+
+pathcheck ()
+{
+    for i in $SPATH
+    do
+        PATHCHECK_FOUND="`echo $i | tr '\177' ' '`/$1"
+        test -f "$PATHCHECK_FOUND" && return 0
+    done
+    PATHCHECK_FOUND=
+    return 1
+}
+
+# Quick mock up of readlink (which doesn't exist on Solaris or AIX).
+# @param The DIRECTORY ONLY that may be a link
+#
+FakeReadlink() {
+    dir=$1
+    cd $dir 2> /dev/null && pwd -P
 }

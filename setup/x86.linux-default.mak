@@ -6,7 +6,9 @@ CXX		 = g++
 CSC		 = gmcs
 
     # Binary used for filtering
+ifeq ($(INCLUDE_FILTERS),yes)
 FILTER           = filter_gcc
+endif
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
@@ -27,13 +29,21 @@ AR               = /usr/bin/ar
 AR_CMDS          = rv
 	# preprocessor
 MAKEDEPFLAGS     = -M
-CPP		 = cpp
+CPP		 = gcc
 GCPP		 = g++ -E
 	# gcov
 GCOV		 = gcov
 
 	#Javac
 JCC              = javac
+JCFLAGS_JACORB   = -endorseddirs "$(JACORB_HOME)/lib/endorsed"
+JACORB_INC       =
+
+ifdef JAVA_COMPATJAR
+ifneq (,$(JAVA_COMPATJAR))
+JCFLAGS_COMPAT   = -source 1.6 -target 1.6 -bootclasspath "$(JAVA_COMPATJAR)"
+endif
+endif
 
 	#JAR
 JAR		 = jar
@@ -44,7 +54,6 @@ JAVAH_FLAGS      = -force
 
 	#Java
 JAVA		 = java
-JAVA_SRCPATH_SEP = :
 JAVA_LDFLAGS	 = -L"$(JAVA_HOME)/jre/lib/i386"
 JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/jre/lib/i386/client"
 JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/jre/lib/i386/native_threads"
@@ -64,8 +73,8 @@ CFLAGS_DEBUG     = -g -D_TYPECHECK_
 CFLAGS_STRICT	 = -Wall -W -pedantic -Wno-long-long
 
 # Set compiler options for single threaded process
-CFLAGS		 = -m32 -march=i686 -pipe -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -m32 -march=i686 -pipe -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CFLAGS		 = -m32 -march=i686 -pipe -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
+CXXFLAGS	 = -m32 -march=i686 -pipe -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 CSFLAGS	     = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # For Linux, this test release version supports symbolic names in stead of IP addresses
@@ -84,6 +93,9 @@ MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
 LDFLAGS		 = -m32 -march=i686 -static-libgcc -L$(SPLICE_LIBRARY_PATH)
+ifeq ($(INCLUDE_LD_NOASNEEDED),yes)
+LDFLAGS += -Wl,-no-as-needed
+endif
 
 # Identify linker options for building shared libraries
 SHLDFLAGS	 = -shared -fpic
@@ -94,13 +106,13 @@ SHLDFLAGS	 = -shared -fpic
 LDLIBS           = -lc -lm -lpthread# -lposix4
 
 # Set library context for building shared libraries
-SHLDLIBS	 = 
+SHLDLIBS	 =
 
 # Set component specific libraries that are platform dependent
 LDLIBS_CXX = -lstdc++
-LDLIBS_NW = 
+LDLIBS_NW =
 LDLIBS_OS = -lrt -lpthread -ldl
-LDLIBS_CMS = 
+LDLIBS_CMS =
 LDLIBS_JAVA = -ljvm -ljava -lverify -lhpi
 LDLIBS_ODBC= -lodbc
 LDLIBS_ZLIB = -lz
@@ -113,7 +125,7 @@ SLIB_PREFIX = lib
 SLIB_POSTFIX = .a
 DLIB_PREFIX = lib
 DLIB_POSTFIX = .so
-EXEC_PREFIX = 
+EXEC_PREFIX =
 EXEC_POSTFIX =
 EXEC_LD_POSTFIX =
 INLINESRC_POSTFIX = .i

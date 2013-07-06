@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef OS_SIGNAL_H
@@ -42,7 +42,7 @@ OS_API void
 os_sigsetEmpty(
     os_sigset *set);
 
-OS_API void
+OS_API os_result
 os_sigsetFill(
     os_sigset *set);
 
@@ -107,7 +107,7 @@ os_sigProcSetMask(
     os_sigset *mask,
     os_sigset *omask);
 
-OS_API void
+OS_API os_result
 os_sigThreadSetMask(
     os_sigset *mask,
     os_sigset *omask);

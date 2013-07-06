@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -510,6 +510,9 @@ collect_writers(
         if (strcmp(name, a->topic_name) == 0)
         {
             a->writers = c_iterInsert(a->writers, w);
+        }
+        if (name != NULL) {
+            os_free(name);
         }
     }
 }

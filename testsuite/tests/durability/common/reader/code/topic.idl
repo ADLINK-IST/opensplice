@@ -1,0 +1,15 @@
+module simpleTopic {
+    struct Type1 {
+        long key;
+        long val1;
+        long val2;
+    };
+#pragma keylist Type1 key
+
+    struct Type1Persistent {
+        long key;
+        long val1;
+        long val2;
+    };
+#pragma keylist Type1Persistent key
+};

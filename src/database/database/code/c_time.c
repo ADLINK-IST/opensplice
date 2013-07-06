@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -21,6 +21,10 @@ typedef union c_time_conv {
     c_time cTime;
 } c_time_conv;
 
+const c_time C_TIME_ZERO         = {0,0};
+const c_time C_TIME_INFINITE     = {0x7fffffff,0x7fffffffU};
+const c_time C_TIME_MIN_INFINITE = {-0x7fffffff,0x7fffffffU};
+const c_time C_TIME_INVALID      = {-1, 0xffffffffU};
 
 c_time
 c_timeNormalize(
@@ -269,10 +273,11 @@ c_timeResult
 c_timeNanoSleep(
     c_time interval)
 {
-    c_time_conv t;
+    os_time t;
     
-    t.cTime = interval;
-    return (c_timeResult) os_nanoSleep(t.osTime);
+    t.tv_sec = interval.seconds;
+    t.tv_nsec = interval.nanoseconds;
+    return (c_timeResult) os_nanoSleep(t);
     
 }
 

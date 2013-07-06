@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -352,6 +352,15 @@ v_messageQos_isReaderCompatible (
     v_readerQos qos;
 
     qos = r->qos;
+    if (_this == NULL) {
+        /* Messages without Qos are implied lifecycle changes (for example resulting
+         * from a call to the dispose_all_data operation on the topic) and should
+         * always be delivered to all readers. Readers that have no corresponding
+         * instance will automatically ignore these implied lifecycle changes.
+         */
+        return TRUE;
+    }
+
     if ((qos->reliability.kind == V_RELIABILITY_RELIABLE) &&
         !v_messageQos_isReliable(_this)) {
         return FALSE;

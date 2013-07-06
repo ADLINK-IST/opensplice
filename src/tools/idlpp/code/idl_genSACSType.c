@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -41,8 +41,6 @@ static c_long indent_level = 0;
 static c_long enum_element = 0;
     /** enumeration enum name */
 static char *enum_enumName = NULL;
-
-static void idl_arrayDimensions(idl_typeArray typeArray);
 
 /* @brief callback function called on opening the IDL input file.
  *
@@ -89,7 +87,7 @@ idl_moduleOpen(
 
     /* Generate the C# code that opens the namespace. */
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "namespace %s\n", idl_CsharpId(name, csUserData->customPSM));
+    idl_fileOutPrintf(idl_fileCur(), "namespace %s\n", idl_CsharpId(name, csUserData->customPSM, FALSE));
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
 
@@ -164,7 +162,7 @@ idl_structureOpen(
         idl_metaCharpAddType(scope, name, idl_typeSpec(structSpec), &csUserData->idlpp_metaList);
 
         /* Generate the C# code that opens a sealed class. */
-        structName = idl_CsharpId(name, csUserData->customPSM);
+        structName = idl_CsharpId(name, csUserData->customPSM, FALSE);
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(), "#region %s\n", structName);
         idl_printIndent(indent_level);
@@ -267,14 +265,14 @@ idl_structureMemberOpenClose (
                 idl_fileCur(),
                 "public %s %s = string.Empty;\n",
                 idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM),
-                idl_CsharpId(name, csUserData->customPSM));
+                idl_CsharpId(name, csUserData->customPSM, FALSE));
         } else {
             /* generate code for a standard primitive type. */
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "public %s %s;\n",
                 idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM),
-                idl_CsharpId(name, csUserData->customPSM));
+                idl_CsharpId(name, csUserData->customPSM, FALSE));
         }
         break;
 
@@ -284,7 +282,7 @@ idl_structureMemberOpenClose (
             idl_fileCur(),
             "public %s %s;\n",
             idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM),
-            idl_CsharpId(name, csUserData->customPSM));
+            idl_CsharpId(name, csUserData->customPSM, FALSE));
         break;
 
     case idl_tstruct:
@@ -296,7 +294,7 @@ idl_structureMemberOpenClose (
             idl_fileCur(),
             "public %s %s = new %s();\n",
             tpName,
-            idl_CsharpId(name, csUserData->customPSM),
+            idl_CsharpId(name, csUserData->customPSM, FALSE),
             tpName);
         os_free(tpName);
         break;
@@ -314,7 +312,7 @@ idl_structureMemberOpenClose (
             "public %s%s %s = new %s%s;\n",
             tpName,
             idl_arrayCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, &emptyStrLen),
-            idl_CsharpId(name, csUserData->customPSM),
+            idl_CsharpId(name, csUserData->customPSM, FALSE),
             tpName,
             idl_arrayCsharpIndexString(typeSpec, SACS_INCLUDE_INDEXES, &indexStrLen));
         os_free(tpName);
@@ -333,7 +331,7 @@ idl_structureMemberOpenClose (
             "public %s%s %s = new %s%s;\n",
             tpName,
             idl_sequenceCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, NULL, &emptyStrLen),
-            idl_CsharpId(name, csUserData->customPSM),
+            idl_CsharpId(name, csUserData->customPSM, FALSE),
             tpName,
             idl_sequenceCsharpIndexString(typeSpec, SACS_INCLUDE_INDEXES, NULL, &indexStrLen));
         os_free(tpName);
@@ -347,7 +345,7 @@ idl_structureMemberOpenClose (
                 idl_fileCur(),
                 "public %s %s;\n",
                 idl_CsharpTypeFromTypeSpec(typeSpec, FALSE),
-                idl_CsharpId(name, csUserData->customPSM));
+                idl_CsharpId(name, csUserData->customPSM, FALSE));
         break;
 
     default:
@@ -392,7 +390,7 @@ idl_unionOpen(
     }
     idl_definitionAdd("definition", idl_scopeStack (scope, ".", name));
 
-    unionTypeName = idl_CsharpId(name, csUserData->customPSM);
+    unionTypeName = idl_CsharpId(name, csUserData->customPSM, FALSE);
     discrTypeName = idl_CsharpTypeFromTypeSpec(
             idl_typeUnionSwitchKind(unionSpec),
             csUserData->customPSM);
@@ -432,54 +430,6 @@ idl_unionOpen(
     idl_printIndent(--indent_level);
     idl_fileOutPrintf(idl_fileCur(),"}\n");
 
-
-
-//    /* define the prototype of the function allocate the union */
-//    idl_fileOutPrintf(
-//        idl_fileCur(),
-//        "%s *%s__alloc (void);\n",
-//        idl_scopeStack(scope, "_", name),
-//        idl_scopeStack (scope, "_", name));
-//    /* open the struct */
-//    idl_printIndent(indent_level);
-//    idl_fileOutPrintf(
-//        idl_fileCur(),
-//        "struct %s {\n",
-//        idl_scopeStack(scope, "_", name));
-//    indent_level++;
-//    /* generate code for the switch */
-//    if (idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) == idl_tbasic) {
-//        idl_printIndent(indent_level);
-//         idl_fileOutPrintf(
-//            idl_fileCur(),
-//            "%s _d;\n",
-//            idl_CsharpTypeFromTypeSpec(idl_typeUnionSwitchKind(unionSpec)));
-//    } else if (idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) == idl_tenum) {
-//        idl_printIndent(indent_level);
-//        idl_fileOutPrintf(
-//            idl_fileCur(),
-//            "%s _d;\n",
-//            idl_CsharpTypeFromTypeSpec(idl_typeUnionSwitchKind(unionSpec)));
-//    } else if (idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) == idl_ttypedef) {
-//        switch (idl_typeSpecType(idl_typeDefActual(idl_typeDef(idl_typeUnionSwitchKind(unionSpec))))) {
-//        case idl_tbasic:
-//        case idl_tenum:
-//            idl_printIndent(indent_level);
-//            idl_fileOutPrintf(
-//                idl_fileCur(),
-//                "%s _d;\n",
-//                idl_scopedSacTypeIdent(idl_typeUnionSwitchKind(unionSpec)));
-//        break;
-//        default:
-//            printf ("idl_unionOpen: Unsupported switckind\n");
-//        }
-//    } else {
-//        printf ("idl_unionOpen: Unsupported switckind\n");
-//    }
-//    /* open the union */
-//    idl_printIndent(indent_level);
-//    idl_fileOutPrintf(idl_fileCur(), "union {\n");
-//    indent_level++;
     os_free(discrTypeName);
     os_free(unionTypeName);
 
@@ -548,48 +498,7 @@ idl_unionCaseOpenClose(
     idl_typeSpec typeSpec,
     void *userData)
 {
-//    if (idl_typeSpecType(typeSpec) == idl_tbasic ||
-//        idl_typeSpecType(typeSpec) == idl_ttypedef ||
-//        idl_typeSpecType(typeSpec) == idl_tenum ||
-//        idl_typeSpecType(typeSpec) == idl_tstruct ||
-//        idl_typeSpecType(typeSpec) == idl_tunion) {
-//        /* generate code for a standard mapping or a typedef, enum, struct or union user-type mapping */
-//        idl_printIndent(indent_level);
-//        idl_fileOutPrintf(
-//            idl_fileCur(),
-//            "%s %s;\n",
-//            idl_scopedSacTypeIdent(typeSpec),
-//            idl_languageId(name));
-//    } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
-//        /* generate code for an array mapping */
-//        idl_printIndent(indent_level);
-//        if (idl_typeSpecType(idl_typeArrayActual (idl_typeArray(typeSpec))) != idl_tseq) {
-//            idl_fileOutPrintf(
-//                idl_fileCur(),
-//                "%s %s",
-//                idl_CsharpTypeFromTypeSpec(idl_typeArrayActual(idl_typeArray(typeSpec))),
-//                idl_languageId (name));
-//        } else {
-//            idl_fileOutPrintf(
-//                idl_fileCur(),
-//                "%s %s",
-//                idl_CsharpTypeFromTypeSpec(idl_typeSeq(idl_typeArrayActual(idl_typeArray(typeSpec)))),
-//                idl_languageId (name));
-//        }
-//        idl_arrayDimensions(idl_typeArray(typeSpec));
-//        idl_fileOutPrintf(idl_fileCur(), ";\n");
-//    } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-//        /* generate code for a sequence mapping */
-//        idl_printIndent(indent_level);
-//        idl_fileOutPrintf(
-//            idl_fileCur(),
-//            "%s %s;\n",
-//            idl_sequenceIdent(idl_typeSeq(typeSpec)),
-//            idl_languageId(name));
-//    } else {
-//        printf("idl_unionCaseOpenClose: Unsupported union case type (case name = %s, type = %s)\n",
-//            name, idl_scopedTypeName(typeSpec));
-//    }
+
 }
 
 /** @brief callback function called on definition of an enumeration.
@@ -622,7 +531,7 @@ idl_enumerationOpen(
     }
     idl_definitionAdd("definition", idl_scopeStack(scope, ".", name));
 
-    enumName = idl_CsharpId(name, csUserData->customPSM);
+    enumName = idl_CsharpId(name, csUserData->customPSM, FALSE);
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "#region %s\n", enumName);
     idl_printIndent(indent_level);
@@ -706,7 +615,7 @@ idl_enumerationElementOpenClose (
     idl_CsharpRemovePrefix(enum_enumName, nameCopy);
 
     /* Translate the remaining label into its C# representation. */
-    labelName = idl_CsharpId(nameCopy, csUserData->customPSM);
+    labelName = idl_CsharpId(nameCopy, csUserData->customPSM, FALSE);
     enum_element--;
     if (enum_element == 0) {
         idl_printIndent(indent_level);
@@ -734,7 +643,7 @@ idl_constantOpenClose (
     idl_printIndent(indent_level);
     idl_fileOutPrintf(
             idl_fileCur(),
-            "struct %s { static %s value = %s; }\n\n",
+            "public struct %s { public static readonly %s value = %s; }\n\n",
             idl_constSpecName(constantSpec),
             constTypeName,
             idl_constSpecImage(constantSpec));

@@ -1,0 +1,9 @@
+// $Id$
+project: wxbase {
+  specific(prop:windows) {                                  
+    Debug::lit_libs   += wx$(WX_VERSION)$(WX_UNICODE)d_odbc
+    Release::lit_libs += wx$(WX_VERSION)$(WX_UNICODE)_odbc
+  } else {
+    lit_libs += wx_base$(WX_UNICODE)_odbc$(WX_VERSION)
+  }
+}

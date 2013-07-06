@@ -4,16 +4,11 @@ else
 include $(OSPL_OUTER_HOME)/setup/$(SPLICE_TARGET)/config.mak
 endif
 
-ifdef FLEX_HOME
-FLEX_LM_NEW     ?= lm_new$(OBJ_POSTFIX)
-endif
-
 # This makefile defined the platform and component independent make rules.
 CLASS_DIR  =bld/$(SPLICE_TARGET)
 JCODE_DIR ?=code
 JCODE_PATH ?= $(JCODE_DIR)
-JFLAGS    ?= -source 1.5 -target 1.5
-JFLAGS    +=-sourcepath '$(JCODE_PATH)'
+JCFLAGS    +=-sourcepath '$(JCODE_PATH)'
 MANIFEST   =manifest/$(SPLICE_TARGET)/manifest.mf
 
 # If JAR_MODULE is not defined, assign something to prevent warnings in make
@@ -28,13 +23,28 @@ MANIFEST_MAIN=Main-Class: $(JAVA_MAIN_CLASS)
 endif
 
 ifdef JAVA_INC
-ifeq (,$(findstring win32,$(SPLICE_HOST))) 
-MANIFEST_CLASSPATH=Class-Path: $(notdir $(subst :, ,$(JAVA_INC)))
-#MANIFEST_CLASSPATH=Class-Path: $(subst $(JAR_INC_DIR)/,,$(subst :, ,$(JAVA_INC)))
-else # it is windows
-MANIFEST_CLASSPATH=Class-Path: $(notdir $(foreach entry,$(subst ;, ,$(JAVA_INC)),$(shell cygpath "$(entry)")))
-#MANIFEST_CLASSPATH=Class-Path: $(notdir $(subst ;, ,$(JAVA_INC)))
+# $(notdir) doesn't cope with spaces in pathnames. NB this workaround doesn't
+# cope with ? in pathnames.
+JAVA_INC2 = $(subst $(empty) ,?,$(JAVA_INC))
+MANIFEST_CLASSPATH=Class-Path: $(subst ?, ,$(notdir $(subst :, ,$(JAVA_INC2))))
 endif
+
+ifdef JACORB_HOME
+CP_JACORB_IDL=-classpath "$(JACORB_HOME)/lib/idl.jar:$(JACORB_HOME)/lib/endorsed/logkit.jar"
+
+ifeq "$(JAVA_ORB)" "JACORB"
+JAVA_ORB_INC=$(JACORB_INC)
+JCFLAGS_ORB=$(JCFLAGS_JACORB)
+endif
+
+endif
+
+JCC_ARGS=$(JCFLAGS_COMPAT) $(JCFLAGS) $(JCFLAGS_ORB) $(JCFLAGS_EXTRA) -classpath "$(JAVA_ORB_INC):$(JAVA_SYSTEM_INC):$(JAVA_INC)" -d $(CLASS_DIR)
+
+ifeq "$(origin VERBOSE)" "undefined"
+	AT_SIGN=@
+else
+	AT_SIGN=
 endif
 
 $(CLASS_DIR):
@@ -42,45 +52,68 @@ $(CLASS_DIR):
 
 LOCAL_CLASS_DIR	=$(CLASS_DIR)/$(PACKAGE_DIR)
 
+ifdef OSPL_INNER_REV
+   ifneq (,$(OSPL_INNER_REV))
+      OSPL_REV_FLAGS  = -DOSPL_INNER_REV=$(OSPL_INNER_REV)
+   endif
+endif
+
+ifdef OSPL_OUTER_REV
+   ifneq (,$(OSPL_OUTER_REV))
+      OSPL_REV_FLAGS  += -DOSPL_OUTER_REV=$(OSPL_OUTER_REV)
+   endif
+endif
+
+CPPFLAGS+=-DOSPL_VERSION=$(PACKAGE_VERSION) $(OSPL_REV_FLAGS)
+
 .PRECIOUS: %.c %.h
 
 (%.o): %.o
 	$(AR) r $@ $<
 
-ifeq (,$(findstring win32,$(SPLICE_HOST)))
+ifeq (,$(or $(findstring win32,$(SPLICE_HOST)), $(findstring win64,$(SPLICE_HOST))))
 ifeq (,$(findstring studio,$(SPLICE_HOST)))
 %.d: %.c
-	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< >$@
+	@echo DEP $<
+	$(AT_SIGN)$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< >$@
 else
 %.d: %.c
-	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | sed -e 's/\([^:\\]\) /\1\\ /g' >$@
+	@echo DEP $<
+	$(AT_SIGN)$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | sed -e 's/\([^:\\]\) /\1\\ /g' >$@
 endif
 else
 %.d: %.c
-	$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | grep "^#line.*\\\\ospl[io]\\\\" | cut -d '"' -f 2 | sort -u | sed -e 's@\([A-Za-z]\)\:@ /cygdrive/\1@' -e 's@\\\\@/@g' -e '$$!s@$$@ \\@' -e '1s@^@$*$(OBJ_POSTFIX): @' >$@
+	@echo DEP $<
+	$(AT_SIGN)$(CPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CINCS) $< | grep "^#line.*\\\\ospl[io]\\\\" | cut -d '"' -f 2 | sort -u | sed -e 's@\([A-Za-z]\)\:@ /cygdrive/\1@' -e 's@\\\\@/@g' -e '$$!s@$$@ \\@' -e '1s@^@$*$(OBJ_POSTFIX): @' >$@
 endif
 
-ifeq (,$(findstring win32,$(SPLICE_HOST)))
+ifeq (,$(or $(findstring win32,$(SPLICE_HOST)), $(findstring win64,$(SPLICE_HOST))))
 ifeq (,$(findstring studio,$(SPLICE_HOST)))
 %.d: %.cpp
-	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< >$@
+	@echo DEP $<
+	$(AT_SIGN)$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< >$@
 else
 %.d: %.cpp
-	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | sed -e 's/\([^:\\]\) /\1\\ /g' >$@
+	@echo DEP $<
+	$(AT_SIGN)$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | sed -e 's/\([^:\\]\) /\1\\ /g' >$@
 endif
 else
 %.d: %.cpp
-	$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | grep "^#line.*\\\\ospl[io]\\\\" | cut -d '"' -f 2 | sort -u | sed -e 's@\([A-Za-z]\)\:@ /cygdrive/\1@' -e 's@\\\\@/@g' -e '$$!s@$$@ \\@' -e '1s@^@$*$(OBJ_POSTFIX): @' >$@
+	@echo DEP $<
+	$(AT_SIGN)$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | grep "^#line.*\\\\ospl[io]\\\\" | cut -d '"' -f 2 | sort -u | sed -e 's@\([A-Za-z]\)\:@ /cygdrive/\1@' -e 's@\\\\@/@g' -e '$$!s@$$@ \\@' -e '1s@^@$*$(OBJ_POSTFIX): @' >$@
 endif
 
 %$(OBJ_POSTFIX): %.c
-	$(FILTER) $(CC) $(CPPFLAGS) $(CFLAGS) $(CINCS) -c $<
+	@echo $(CC) $<
+	$(AT_SIGN)$(FILTER) $(CC) $(CPPFLAGS) $(CFLAGS) $(CINCS) -c $<
 
 %$(OBJ_POSTFIX): %.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXINCS) -c $<
+	@echo $(CXX) $<
+	$(AT_SIGN)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXINCS) -c $<
 
 %$(OBJ_POSTFIX): %.cc
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXINCS) -c $<
+	@echo $(CXX) $<
+	$(AT_SIGN)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXINCS) -c $<
 
 %.c: %.y
 	$(YACC) $< -o $@
@@ -94,12 +127,8 @@ endif
 %.c.gcov: %.bb
 	$(GCOV) -b -f $< > $@.sum
 
-$(CLASS_DIR)/%.class: $(JCODE_DIR)/%.java 
-ifeq (,$(findstring win32,$(SPLICE_HOST))) 
-	$(JCC) -classpath "$(CLASS_DIR):$(JAVA_INC):$(JAVA_SYSTEM_CP)" $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(dir $<)*.java
-else
-	$(JCC) -classpath '$(CLASS_DIR);$(JAVA_INC);$(JAVA_SYSTEM_CP)' $(JFLAGS) -d $(CLASS_DIR) $(JCFLAGS) $(dir $<)*.java
-endif
+$(CLASS_DIR)/%.class: $(JCODE_DIR)/%.java
+	$(JCC) $(JCC_ARGS) $(dir $<)*.java
 
 CODE_DIR	?= ../../code
 
@@ -115,14 +144,14 @@ CINCS		+= -I../../include
 CINCS		+= -I$(CODE_DIR)
 
 ifndef OSPL_OUTER_HOME
-CINCS		+= -I$(OSPL_HOME)/src/include
+CINCS		+= -I$(OSPL_HOME)/src/kernel/bld/$(SPLICE_TARGET)
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/os/include
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC_CORE)
 else
-CINCS		+= -I$(OSPL_HOME)/src/include
+CINCS		+= -I$(OSPL_HOME)/src/kernel/bld/$(SPLICE_TARGET)
 CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/include
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
 CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
@@ -140,19 +169,19 @@ CXXINCS	+= -I../../include
 CXXINCS	+= -I$(CODE_DIR)
 
 ifndef OSPL_OUTER_HOME
-CXXINCS	+= -I$(OSPL_HOME)/src/include
-CXXINCS  += -I$(OSPL_HOME)/src/abstraction/os/include
+CXXINCS	+= -I$(OSPL_HOME)/src/kernel/bld/$(SPLICE_TARGET)
+CXXINCS += -I$(OSPL_HOME)/src/abstraction/os/include
 CXXINCS	+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 else
-CXXINCS	+= -I$(OSPL_HOME)/src/include
-CXXINCS  += -I$(OSPL_OUTER_HOME)/src/abstraction/os/include
-CXXINCS  += -I$(OSPL_HOME)/src/abstraction/os/include
+CXXINCS	+= -I$(OSPL_HOME)/src/kernel/bld/$(SPLICE_TARGET)
+CXXINCS += -I$(OSPL_OUTER_HOME)/src/abstraction/os/include
+CXXINCS += -I$(OSPL_HOME)/src/abstraction/os/include
 CXXINCS	+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 CXXINCS	+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 endif
 
-C_FILES		?= $(notdir $(wildcard $(CODE_DIR)/*.c)) 
-CPP_FILES	?= $(notdir $(wildcard $(CODE_DIR)/*.cpp))
+C_FILES		?= $(filter-out $(C_FILES_TO_FILTER), $(notdir $(wildcard $(CODE_DIR)/*.c)))
+CPP_FILES	?= $(filter-out $(CPP_FILES_TO_FILTER), $(notdir $(wildcard $(CODE_DIR)/*.cpp)))
 Y_FILES		:= $(notdir $(wildcard $(CODE_DIR)/*.y))
 L_FILES		:= $(notdir $(wildcard $(CODE_DIR)/*.l))
 ODL_FILES	= $(notdir $(wildcard $(CODE_DIR)/*.odl))
@@ -166,7 +195,7 @@ ODL_C		:= $(addsuffix .c,$(ODL_MODULES))
 ODL_O		:= $(addsuffix $(OBJ_POSTFIX),$(ODL_MODULES))
 
 ifndef OBJECTS
-OBJECTS                := $(C_FILES:%.c=%$(OBJ_POSTFIX)) $(CPP_FILES:%.cpp=%$(OBJ_POSTFIX)) $(Y_FILES:%.y=%$(OBJ_POSTFIX)) $(ODL_O) $(IDL_O)
+OBJECTS                := $(C_FILES:%.c=%$(OBJ_POSTFIX)) $(CPP_FILES:%.cpp=%$(OBJ_POSTFIX)) $(Y_FILES:%.y=%$(OBJ_POSTFIX)) $(ODL_O) $(IDL_O) $(EXTRAOBJECTS)
 endif
 
 DEPENDENCIES	:= $(C_FILES:%.c=%.d) $(CPP_FILES:%.cpp=%.d) $(Y_FILES:%.y=%.d) $(ODL_C:%.c=%.d)
@@ -182,15 +211,13 @@ $(DEPENDENCIES): $(H_FILES) $(ODL_H) $(IDL_H) $(JNI_H)
 
 $(ODL_H): $(ODL_FILES)
 	sh $(OSPL_HOME)/bin/sppodl $(SPPODL_FLAGS) $<
-	cp $(ODL_H)  $(OSPL_HOME)/src/include
 
 $(ODL_C): $(ODL_FILES)
 	sh $(OSPL_HOME)/bin/sppodl $(SPPODL_FLAGS) $<
-	cp $(ODL_H)  $(OSPL_HOME)/src/include
 
 jar: $(JAR_FILE)
 
-ifeq (,$(findstring win32,$(SPLICE_HOST))) 
+ifeq (,$(or $(findstring win32,$(SPLICE_HOST)), $(findstring win64,$(SPLICE_HOST))))
 $(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR) $(CLASS_FILES) $(JAR_TARGET) $(MANIFEST)
 	$(JAR) cmf $(MANIFEST) $(JAR_FILE) -C bld/$(SPLICE_TARGET) .
 else
@@ -198,16 +225,34 @@ $(JAR_FILE): $(JAR_DEPENDENCIES) $(CLASS_DIR) $(CLASS_FILES) $(JAR_TARGET) $(MAN
 	$(JAR) cmf $(MANIFEST) $(shell cygpath -m $(JAR_FILE)) -C bld/$(SPLICE_TARGET) .
 endif
 
+CURRENT_JAVA_DDS_VERSION = "Implementation-Version:\ $(PACKAGE_VERSION)"
+
+ifdef OSPL_INNER_REV
+ifneq (,$(OSPL_INNER_REV))
+CURRENT_JAVA_DDS_VERSION_1 = $(shell echo "$(CURRENT_JAVA_DDS_VERSION), build $(OSPL_INNER_REV)")
+endif
+endif
+
+ifdef OSPL_OUTER_REV
+ifneq (,$(OSPL_OUTER_REV))
+CURRENT_JAVA_DDS_VERSION_GIT = $(shell echo "$(CURRENT_JAVA_DDS_VERSION_1)/$(OSPL_OUTER_REV)")
+endif
+else
+CURRENT_JAVA_DDS_VERSION_GIT = $(shell echo "$(CURRENT_JAVA_DDS_VERSION), non-PrismTech build")
+endif
+
+
 ifdef MANIFEST_CLASSPATH
 $(MANIFEST):
 	@mkdir -p manifest/$(SPLICE_TARGET)
 	@touch -a $(MANIFEST)
-	@printf "%s\n%s\n" "$(MANIFEST_CLASSPATH)" "$(MANIFEST_MAIN)" > $(MANIFEST)
+	@printf "%s\n%s\n%s\n" "$(CURRENT_JAVA_DDS_VERSION_GIT)" "$(MANIFEST_CLASSPATH)" "$(MANIFEST_MAIN)"  > $(MANIFEST)
 else
 $(MANIFEST):
 	@mkdir -p manifest/$(SPLICE_TARGET)
 	@touch -a $(MANIFEST)
-	@printf "%s\n" "$(MANIFEST_MAIN)" > $(MANIFEST)
+	@printf "%s\n%s\n" "$(CURRENT_JAVA_DDS_VERSION_GIT)" "$(MANIFEST_MAIN)"  > $(MANIFEST)
+
 endif
 
 $(JAR_TARGET):

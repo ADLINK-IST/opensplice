@@ -1,0 +1,42 @@
+#!/bin/sh
+
+. $OSPL_HOME/examples/functions
+
+CURRENT_PL='uname | grep SunOS'
+
+if [ "$CURRENT_PL" != "" ]
+then
+   echo "Linking \"$OSPL_HOME\"/examples/dcps/Tutorial/cpp/standalone/libsacpp_tutorial_types.so to libsacpp_tutorial_types.so"
+   ln -s "$OSPL_HOME"/examples/dcps/Tutorial/cpp/standalone/libsacpp_tutorial_types.so libsacpp_tutorial_types.so
+fi
+
+check_osplhome
+
+startOSPL
+
+echo Start MessageBoard
+$VG_WHITELIST_MESSAGEBOARD ./WhiteListedMessageBoard -name family & > messageBoard.log
+
+sleep 5
+
+echo Start run Editor
+
+$VG_WHITELIST_EDITOR ./WhiteListEditor -name family -add 1,mam 2,dad 3,John > editor.log
+
+sleep 5
+
+echo Start run Viewer
+$VG_WHITELIST_VIEWER ./WhiteListViewer > viewer.log
+
+sleep 5
+
+echo "Start Chatter.  These messages should appear on the MessageBoard"
+"$OSPL_HOME"/examples/dcps/Tutorial/cpp/standalone/Chatter 3 John
+
+echo "Start Chatter.  These messages should not appear on the MessageBoard"
+"$OSPL_HOME"/examples/dcps/Tutorial/cpp/standalone/Chatter 4 Dave
+
+echo "Stop MessageBoard"
+"$OSPL_HOME"/examples/dcps/Tutorial/cpp/standalone/Chatter -1
+
+stopOSPL

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -109,6 +109,10 @@ extern "C" {
 OS_API u_result
 u_userInitialise();
 
+OS_API void
+u_userExit(
+    void);
+
 /** \brief The class destructor.
  *
  * The destructor disconnects all objects created in the scope of the given
@@ -130,6 +134,13 @@ u_userKeep(
 OS_API void
 u_userFree (
     c_object o);
+
+OS_API c_char *
+u_userDomainIdToDomainName(
+    const os_int32 id);
+
+OS_API int
+u_userGetDomainIdFromEnvUri();
 
 #undef OS_API
 

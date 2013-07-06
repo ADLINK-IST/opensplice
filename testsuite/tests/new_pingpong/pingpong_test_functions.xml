@@ -1,0 +1,495 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "../stax/stax.dtd">
+<stax>  
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+  <function name="CreateTestLogDirectory" scope="local">
+     <function-prolog>
+      <![CDATA[
+        Creation of logging directory for tests by time
+      ]]>
+    </function-prolog>
+    <function-epilog>
+      <![CDATA[
+        Creation of loging directory for tests by time
+      ]]>
+    </function-epilog>
+    <function-list-args>
+      <function-required-arg name="the_host">
+        The host for creation loging directory
+      </function-required-arg>
+      <function-required-arg name="test_name">
+        The test name 
+      </function-required-arg>
+    </function-list-args>
+    <sequence>
+        <script>
+            file_sep = str(the_host.get_file_sep())
+            request = 'CREATE DIRECTORY ' + the_host.get_test_root() + file_sep + test_name
+        </script>
+        <call function="'STAF'">the_host.get_staf_url(), 'FS', request</call>
+        <script>[rc, result] = STAXResult</script>
+        <if expr="rc != 0">
+            <sequence>
+                <script>err_msg = 'CreateTestLogDirectory: for %s failed RC=%s, Result=%s' % (the_host, rc, result)</script>
+                <log level="'error'" message="1">err_msg</log>
+                <throw exception="'ProcessNoWorkyError'">err_msg</throw>
+            </sequence>
+        </if>
+        
+        <script>
+            from time import localtime, strftime
+            current_log_dir_name = strftime("%d_%m_%Y_%H-%M-%S", localtime())
+            request = 'CREATE DIRECTORY ' + the_host.get_test_root() + file_sep + test_name + file_sep + current_log_dir_name
+        </script>
+        <call function="'STAF'">the_host.get_staf_url(), 'FS', request</call>
+        <script>[rc, result] = STAXResult</script>
+
+        <if expr="rc != 0">
+            <sequence>
+                <script>err_msg = 'CreateTestLogDirectory: for %s failed RC=%s, Result=%s' % (the_host, rc, result)</script>
+                <log level="'error'" message="1">err_msg</log>
+                <throw exception="'ProcessNoWorkyError'">err_msg</throw>
+            </sequence>
+        </if>
+
+        <script>
+            request = 'CREATE DIRECTORY ' + the_host.get_test_root() + file_sep + test_name + file_sep + current_log_dir_name + file_sep + "logs"
+        </script>
+        <call function="'STAF'">the_host.get_staf_url(), 'FS', request</call>
+        <script>[rc, result] = STAXResult</script>
+        <if expr="rc != 0">
+            <sequence>
+                <script>err_msg = 'CreateTestLogDirectory: for %s failed RC=%s, Result=%s' % (the_host, rc, result)</script>
+                <log level="'error'" message="1">err_msg</log>
+                <throw exception="'ProcessNoWorkyError'">err_msg</throw>
+            </sequence>
+        </if>
+
+        <return>
+            current_log_dir_name + file_sep + "logs"
+        </return>
+    </sequence>
+    </function>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->    
+    <function name="AnalyzeTestLog" scope="local">
+     <function-prolog>
+      <![CDATA[
+        Analyze of ping and pong test logs for compliance of expected results.
+      ]]>
+    </function-prolog>
+    <function-epilog>
+      <![CDATA[
+        Create output analyze.log file with quantity of passed or failed tests.
+      ]]>
+    </function-epilog>
+    <function-list-args>
+         <function-required-arg name="full_path_to_log_dir">
+            The full path to loging directory
+        </function-required-arg>
+        <function-required-arg name="array_of_test_results">
+            The array of test result entities
+        </function-required-arg>
+        <function-required-arg name="quantity_of_blocks">
+            The quantity of blocks for ping test 
+        </function-required-arg>
+    </function-list-args>
+    <sequence>
+        <script>
+            import fnmatch
+            import os
+            import re
+            count_of_java_passed_tests = 0
+            count_of_c_passed_tests = 0
+            count_of_cpp_passed_tests = 0
+            #count_of_cs_passed_tests = 0
+            count_of_corba_java_passed_tests = 0
+            count_of_rt_java_passed_tests = 0
+            count_of_corba_cpp_passed_tests = 0
+            
+            count_of_java_failed_tests = 0
+            count_of_c_failed_tests = 0
+            count_of_cpp_failed_tests = 0
+            #count_of_cs_failed_tests = 0
+            count_of_corba_java_failed_tests = 0
+            count_of_rt_java_failed_tests = 0
+            count_of_corba_cpp_failed_tests = 0
+            error_log_file_detected = "false"
+            def calculation_of_test_results_counts_by_lang(lang, criteria):
+                global count_of_java_passed_tests
+                global count_of_c_passed_tests
+                global count_of_cpp_passed_tests
+                #global count_of_cs_passed_tests 
+                global count_of_corba_java_passed_tests
+                global count_of_rt_java_passed_tests
+                global count_of_corba_cpp_passed_tests
+                global count_of_java_failed_tests
+                global count_of_c_failed_tests
+                global count_of_cpp_failed_tests
+                #global count_of_cs_failed_tests
+                global count_of_corba_java_failed_tests
+                global count_of_rt_java_failed_tests
+                global count_of_corba_cpp_failed_tests
+                if criteria == "pass":
+                    if lang == java_key:
+                        count_of_java_passed_tests = count_of_java_passed_tests + 1
+                    if lang == c_key:
+                        count_of_c_passed_tests = count_of_c_passed_tests + 1
+                    if lang == cpp_key:
+                        count_of_cpp_passed_tests = count_of_cpp_passed_tests + 1
+                    #if lang == cs_key:
+                    #    count_of_cs_passed_tests + count_of_cs_passed_tests + 1
+                    if lang == corba_cpp_key:
+                        count_of_corba_cpp_passed_tests = count_of_corba_cpp_passed_tests + 1
+                    if lang == corba_java_key:
+                        count_of_corba_java_passed_tests = count_of_corba_java_passed_tests + 1
+                    if lang == rto_java_key:
+                        count_of_rt_java_passed_tests = count_of_rt_java_passed_tests + 1
+                else:
+                    if lang == java_key:
+                        count_of_java_failed_tests = count_of_java_failed_tests + 1
+                    if lang == c_key:
+                        count_of_c_failed_tests = count_of_c_failed_tests + 1
+                    if lang == cpp_key:
+                        count_of_cpp_failed_tests = count_of_cpp_failed_tests + 1
+                    #if lang == cs_key:
+                    #    count_of_cs_failed_tests = count_of_cs_failed_tests + 1
+                    if lang == corba_cpp_key:
+                        count_of_corba_cpp_failed_tests = count_of_corba_cpp_failed_tests + 1
+                    if lang == corba_java_key:
+                        count_of_corba_java_failed_tests = count_of_corba_java_failed_tests + 1
+                    if lang == rto_java_key:
+                        count_of_rt_java_failed_tests = count_of_rt_java_failed_tests + 1
+            
+            
+            max_time = 20000
+            check_max_time = "true"
+            analyze_file_name = "analyze.txt"
+            passed_name = "passed"
+            failed_name = "failed"
+            end_of_line = "\n"
+            pong_test_error = re.compile(r'Error|ERROR|fatal|FAIL:|FAILED|EXCEPTION')
+            full_path_to_log_dir = full_path_to_log_dir + os.sep
+            try:
+                #Opens a file for writing only. Overwrites the file if the file exists. If the file does not exist, creates a new file for writing.
+                analyze_file = open(full_path_to_log_dir + analyze_file_name, "w")
+                analyze_file.write("-------------------------------------------------------------------------------" + end_of_line)
+            except IOError:
+                print "AnalyzeTestLog: Error: can\'t creates a new file %s for writing " % (analyze_file_name)
+            else:
+                
+                
+                
+                for result in array_of_test_results:
+                    count_of_max_time_detected = 0
+                    
+                    #check pong result files
+                    if result.get_name() == "pong":
+                        if (os.path.exists(result.get_log_name()) and os.path.isfile(result.get_log_name())):
+                            try:
+                                try:
+                                    pong_log_file = open(result.get_log_name())
+                                    lines = pong_log_file.readlines()
+                                finally:
+                                    pong_log_file.close()
+                                
+                            except IOError:
+                                print "AnalyzeTestLog: Error: can\'t find file or read file data in %s" % (result.get_log_name())
+                                analyze_file.write("Test " + result.get_name() + " on " + result.get_op_key() + " was " + failed_name + end_of_line)
+                                analyze_file.write("reason: Error: can\'t find file or read file data in %s \n" % (result.get_log_name()))
+                                calculation_of_test_results_counts_by_lang(result.get_op_key(), "fail")
+                                break;
+                            else:
+                                pong_passed = "true"
+                                for i in range(len(lines)):
+                                    line = lines[i]
+                                    print line
+                                    if (pong_test_error.search(line)):
+                                        print "AnalyzeTestLog: Pong log file: some error words have been detected."
+                                        analyze_file.write("Test " + result.get_name() + " on " + result.get_op_key()  + " was " + failed_name + end_of_line)
+                                        analyze_file.write("reason: Pong log file: some error words have been detected. \n")
+                                        calculation_of_test_results_counts_by_lang(result.get_op_key(), "fail")
+                                        pong_passed = "false"
+                                        break
+
+                                if (pong_passed == "true" ):
+                                    analyze_file.write("Test " + result.get_name() + " on " + result.get_op_key()  + " was " + passed_name + end_of_line)
+                                    calculation_of_test_results_counts_by_lang(result.get_op_key(), "pass")
+                        else:
+                            print "AnalyzeTestLog: Pong log file: %s not exist!" % (result.get_log_name())
+                            analyze_file.write("Test " + result.get_name() + " on " + result.get_op_key()  + " was " + failed_name + end_of_line)
+                            analyze_file.write("reason: Pong log file: %s not exist!\n" % (result.get_log_name()))
+                            calculation_of_test_results_counts_by_lang(result.get_op_key(), "fail")
+
+                    #check ping result files
+                    if result.get_name() == "ping":
+                        timeout_was_detected = "false"
+                        if (os.path.exists(result.get_log_name()) and os.path.isfile(result.get_log_name())):
+                            comments_shift = 4#4( quantity of lines of comments)
+                            try:
+                                try:
+                                    ping_log_file = open(result.get_log_name())
+                                    lines = ping_log_file.readlines()
+                                finally:
+                                    ping_log_file.close()
+                                
+                            except IOError:
+                                print "AnalyzeTestLog: Error: can\'t find file or read file data in %s" % (result.get_log_name())
+                                analyze_file.write("Test " + result.get_name() + " on " + result.get_op_key()  + " with parameter " + result.get_param_name() +  " was " + failed_name + end_of_line)
+                                analyze_file.write("reason: Error: can\'t find file or read file data in %s\n" % (result.get_log_name()))
+                                calculation_of_test_results_counts_by_lang(result.get_op_key(), "fail")
+                                break
+                            else:    
+                                expected_quantity = int(quantity_of_blocks) + comments_shift# quantity of lines of comments + quantity of blocks
+                                if (expected_quantity > len(lines)): 
+                                    print "AnalyzeTestLog: Ping log file: %s error of quantity blocks, expected %s, actual %s" % (result.get_log_name(), expected_quantity, len(lines))
+                                    analyze_file.write("Test " + result.get_name() + " on " + result.get_op_key()  + " with parameter " + result.get_param_name() +  " was " + failed_name + end_of_line)
+                                    analyze_file.write("reason: Ping log file: %s error of quantity blocks, expected %s, actual %s\n" % (result.get_log_name(), expected_quantity, len(lines)))
+                                    calculation_of_test_results_counts_by_lang(result.get_op_key(), "fail")
+                                else:
+                                    start_row = comments_shift + 1
+                                    end_row = start_row + int(quantity_of_blocks)
+                                    for i in range(len(lines)):
+                                        line = lines[i]
+                                        if string.find(line, "TIMEOUT") == -1:
+                                            if ((i >= start_row) and (end_row > i)):
+                                                values =  lines[i].split( )
+                                                for value in values:
+                                                    if (check_max_time == "true" ):
+                                                        try:                                                               
+                                                            int_value = int(value)
+                                                            if int_value >= max_time:
+                                                                print "AnalyzeTestLog: Max time was detected in %s line of %s file" % (i, result.get_log_name())
+                                                                count_of_max_time_detected = count_of_max_time_detected + 1
+                                                                    
+                                                        except ValueError:
+                                                            if (value == "Completed"):
+                                                                break
+                                                            else:
+                                                                print "AnalyzeTestLog: Parse exception"
+                                                                analyze_file.write("Test " + result.get_name() + " on " + result.get_op_key() + " with parameter " + result.get_param_name() +  " was " + failed_name + end_of_line)
+                                                                analyze_file.write("reason: Parse exception - expected an int and got " + value + "\n")
+                                                                calculation_of_test_results_counts_by_lang(result.get_op_key(), "fail")
+                                                                break
+                                        else:
+                                            print "AnalyzeTestLog: Timeout was detected"
+                                            analyze_file.write("Test " + result.get_name() + " on " + result.get_op_key()  + " with parameter " + result.get_param_name() +  " was " + failed_name + end_of_line)
+                                            analyze_file.write("reason: Timeout was detected\n")
+                                            calculation_of_test_results_counts_by_lang(result.get_op_key(), "fail")
+                                            timeout_was_detected = "true"
+                                            break
+                                    if (timeout_was_detected == "false"):
+                                        if count_of_max_time_detected == 0:
+                                            analyze_file.write("Test " + result.get_name() + " on " + result.get_op_key()  + " with parameter " + result.get_param_name() +  " was " + passed_name + end_of_line)
+                                            calculation_of_test_results_counts_by_lang(result.get_op_key(), "pass")
+                                        else:
+                                            analyze_file.write("Test " + result.get_name() + " on " + result.get_op_key()  + " with parameter " + result.get_param_name() +  " was " + failed_name + end_of_line)
+                                            analyze_file.write("reason: Max time was detected in %s file, %s times\n" % (result.get_log_name(), count_of_max_time_detected))
+                                            calculation_of_test_results_counts_by_lang(result.get_op_key(), "fail")
+                                        
+
+                        else:
+                            print "AnalyzeTestLog: Ping log file: %s not exist!" % (result.get_log_name())
+                            analyze_file.write("Test " + result.get_name() + " on " + result.get_op_key()  + " with parameter " + result.get_param_name() +  " was " + failed_name + end_of_line)
+                            analyze_file.write("reason: Ping log file: %s not exist!\n" % (result.get_log_name()))
+                            calculation_of_test_results_counts_by_lang(result.get_op_key(), "fail")
+                        
+                            
+                
+                analyze_file.write("-------------------------------------------------------------------------------" + end_of_line)
+                analyze_file.write("Total of JAVA passed tests            : " + str(count_of_java_passed_tests))
+                analyze_file.write(" and failed tests : " + str(count_of_java_failed_tests) + end_of_line)
+                
+                analyze_file.write("Total of C passed tests               : " + str(count_of_c_passed_tests))
+                analyze_file.write(" and failed tests : " + str(count_of_c_failed_tests) + end_of_line)
+                
+                analyze_file.write("Total of C++ passed tests             : " + str(count_of_cpp_passed_tests))
+                analyze_file.write(" and failed tests : " + str(count_of_cpp_failed_tests) + end_of_line)
+                
+                #analyze_file.write("Total of cs passed tests              : " + str(count_of_cs_passed_tests) )
+                #analyze_file.write(" total of cs failed tests : " + str(count_of_cs_failed_tests) + end_of_line)
+                
+                analyze_file.write("Total of JACORB passed tests          : " + str(count_of_corba_java_passed_tests))
+                analyze_file.write(" and failed tests : " + str(count_of_corba_java_failed_tests) + end_of_line)
+                
+                analyze_file.write("Total of RTORB passed tests           : " + str(count_of_rt_java_passed_tests))
+                analyze_file.write(" and failed tests : " + str(count_of_rt_java_failed_tests) + end_of_line)
+                
+                analyze_file.write("Total of Open Fusion C++ passed tests : " + str(count_of_corba_cpp_passed_tests))
+                analyze_file.write(" and failed tests : " + str(count_of_corba_cpp_failed_tests) + end_of_line)
+                
+                count_of_total_passed_tests = count_of_java_passed_tests + count_of_c_passed_tests + count_of_cpp_passed_tests + count_of_corba_java_passed_tests + count_of_rt_java_passed_tests + count_of_corba_cpp_passed_tests
+            
+            
+                count_of_total_failed_tests = count_of_java_failed_tests + count_of_c_failed_tests + count_of_cpp_failed_tests + count_of_corba_java_failed_tests + count_of_rt_java_failed_tests + count_of_corba_cpp_failed_tests
+                
+                count_of_total_tests = count_of_total_passed_tests + count_of_total_failed_tests
+                analyze_file.write("-------------------------------------------------------------------------------" + end_of_line)
+                analyze_file.write("Total of passed tests : " + str(count_of_total_passed_tests) + end_of_line)
+                analyze_file.write("Total of failed tests : " + str(count_of_total_failed_tests) + end_of_line)
+                analyze_file.write("Total of all tests    : " + str(count_of_total_tests) + end_of_line)
+                analyze_file.write("-------------------------------------------------------------------------------" + end_of_line)
+                
+                for file in os.listdir(full_path_to_log_dir):
+                    if fnmatch.fnmatch(file, "ospl-error-*.log"):
+                        error_log_file_detected = "true"
+                        break
+                if error_log_file_detected == "true":
+                    analyze_file.write("Error log file(s) was detected" + end_of_line)
+                else:
+                    analyze_file.write("Error log file(s) was't detected" + end_of_line)
+                    
+                analyze_file.write("-------------------------------------------------------------------------------" + end_of_line)
+                analyze_file.close()
+
+        </script>
+    </sequence>
+    </function>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <function name="MoveSysLogToHost" scope="local">
+        <function-prolog>
+            <![CDATA[
+                Moving ospl process's logs (ospl-info and ospl-error) to destination host.
+            ]]>
+        </function-prolog>
+        <function-epilog>
+            <![CDATA[
+                Moving ospl process's logs (ospl-info and ospl-error) to destination host and adding source host name.
+        ]]>
+        </function-epilog>
+
+        <function-list-args>
+            <function-required-arg name="source_host">
+                The host instance with the process.
+            </function-required-arg>
+            <function-required-arg name="dest_host">
+                The host instance where log will be copied.
+            </function-required-arg>
+            <function-required-arg name="dest_folder">
+                Where process log will be stored on the local host.
+            </function-required-arg>
+        </function-list-args>
+
+        <sequence>
+            <script>
+                import os
+                info_log_file_name = "ospl-info.log"
+                error_log_file_name = "ospl-error.log"
+                request = "QUERY ENTRY %s" % (source_host.get_ospl_log_dir() + source_host.get_file_sep() + info_log_file_name)
+            </script>
+            <call function="'STAF'">[source_host.get_staf_url(), "FS", request]</call>
+            <script>
+                [RC, result] = STAXResult
+            </script>
+
+            <if expr="RC == 0">
+                <sequence>
+                    <!-- Copy the info log from the remote host to the local -->
+                    <script>
+                        dest_log_file = "ospl-info-" + str(source_host.get_host_name()) + ".log"
+                        dest_log_file_path = "%s%s%s"% (dest_folder, dest_host.get_file_sep(), dest_log_file)
+                                            
+                        request = "COPY FILE %s TOFILE %s TOMACHINE %s" % (source_host.get_ospl_log_dir() + source_host.get_file_sep() +  info_log_file_name, dest_log_file_path, dest_host.get_staf_url())
+                    </script>
+                    <call function="'STAF'">[source_host.get_staf_url(), "FS", request]</call>
+                    <script>
+                        [RC, result] = STAXResult
+                    </script>
+
+                    <if expr="RC != 0">
+                        <sequence>
+                            <script>
+                                err_msg = "MoveProcessLogToHost: Copy log [%s] from [%s] to [%s] failed with result [%s] [%s]"%\
+                                    (info_log_file_name,
+                                    source_host.get_host_name(),
+                                    dest_host.get_host_name(),
+                                    RC,
+                                    result)
+                            </script>
+                            <call function="'ShowErrorMsgAndThrowException'">[err_msg]</call>
+                        </sequence>
+                    </if>
+                    
+                    <!-- Delete the log from the remote host  -->
+                    <script>
+                        request = "DELETE ENTRY %s CONFIRM RECURSE IGNOREERRORS "%\
+                                (source_host.get_ospl_log_dir() + source_host.get_file_sep() + info_log_file_name)
+                    </script>
+                    <call function="'STAF'">[source_host.get_staf_url(), "FS", request]</call>
+                    <script>
+                        [RC, result] = STAXResult
+                    </script>
+
+                    <if expr="RC != 0">
+                        <sequence>
+                            <script>
+                                err_msg = "MoveProcessLogToHost: Delete log [%s] failed with result [%s] [%s]"%\
+                                        (info_log_file_name,
+                                        RC,
+                                        result)
+                            </script>
+                        <call function="'ShowErrorMsg'">[err_msg]</call>
+                        </sequence>
+                    </if>
+                </sequence>
+            </if>
+            <script>
+                request = "QUERY ENTRY %s" % (source_host.get_ospl_log_dir() + source_host.get_file_sep() + error_log_file_name)
+            </script>
+            <call function="'STAF'">[source_host.get_staf_url(), "FS", request]</call>
+            <script>
+                [RC, result] = STAXResult
+            </script>
+            <if expr="RC == 0">
+                <sequence>
+                    <!-- Copy the log from the remote host to the local -->
+                    <script>
+
+                        dest_log_file = "ospl-error-" + str(source_host.get_host_name()) + ".log"
+                        dest_log_file_path = "%s%s%s"% (dest_folder, dest_host.get_file_sep(), dest_log_file)
+                        request = "COPY FILE %s TOFILE %s TOMACHINE %s" % (source_host.get_ospl_log_dir() + source_host.get_file_sep() +  error_log_file_name, dest_log_file_path, dest_host.get_staf_url())
+                    </script>
+                    <call function="'STAF'">[source_host.get_staf_url(), "FS", request]</call>
+                    <script>
+                        [RC, result] = STAXResult
+                    </script>
+
+                    <if expr="RC != 0">
+                        <sequence>
+                            <script>
+                                err_msg = "MoveProcessLogToHost: Copy log [%s] from [%s] to [%s] failed with result [%s] [%s]"%\
+                                    (error_log_file_name,
+                                    source_host.get_host_name(),
+                                    dest_host.get_host_name(),
+                                    RC,
+                                    result)
+                            </script>
+                            <call function="'ShowErrorMsgAndThrowException'">[err_msg]</call>
+                        </sequence>
+                    </if>
+                    <!-- Delete the log from the remote host  -->
+                    <script>
+                        request = "DELETE ENTRY %s CONFIRM RECURSE IGNOREERRORS "%\
+                                (source_host.get_ospl_log_dir() + source_host.get_file_sep() + error_log_file_name)
+                    </script>
+                    <call function="'STAF'">[source_host.get_staf_url(), "FS", request]</call>
+                    <script>
+                        [RC, result] = STAXResult
+                    </script>
+
+                    <if expr="RC != 0">
+                        <sequence>
+                            <script>
+                                err_msg = "MoveProcessLogToHost: Delete log [%s] failed with result [%s] [%s]"%\
+                                        (error_log_file_name,
+                                        RC,
+                                        result)
+                            </script>
+                        <call function="'ShowErrorMsg'">[err_msg]</call>
+                        </sequence>
+                    </if>
+                </sequence>
+            </if>
+        </sequence>
+  </function>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+  </stax>

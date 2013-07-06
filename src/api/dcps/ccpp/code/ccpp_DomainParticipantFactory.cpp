@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,8 +9,8 @@
  *   for full copyright notice and license terms.
  *
  */
-#include "gapi.h"
 #include "ccpp.h"
+#include "gapi.h"
 #include "ccpp_dds_dcps.h"
 #include "ccpp_DomainParticipantFactory.h"
 #include "ccpp_DomainParticipant_impl.h"
@@ -96,7 +96,7 @@ DDS::DomainParticipantFactory::get_instance(
             if (myUD)
             {
               gapi_object_set_user_data(_gapi_self, (CORBA::Object *)myUD,
-                                        DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                        ccpp_CallBack_DeleteUserData,NULL);
             }
             else
             {
@@ -129,9 +129,10 @@ DDS::DomainParticipantFactory::get_instance(
     return DomainParticipantFactoryInterface::_duplicate(singletonSelf);
 }
 
+
 DDS::DomainParticipant_ptr
 DDS::DomainParticipantFactory::create_participant (
-    const char * domainId,
+    DDS::DomainId_t domain_id,
     const DDS::DomainParticipantQos & qos,
     DDS::DomainParticipantListener_ptr a_listener,
     DDS::StatusMask mask
@@ -158,7 +159,7 @@ DDS::DomainParticipantFactory::create_participant (
       }
     }
 
-    if (&qos == DDS::DefaultQos::ParticipantQosDefault)
+    if (&qos == &DDS::DefaultQos::ParticipantQosDefault.in())
     {
       gapi_dpqos = GAPI_PARTICIPANT_QOS_DEFAULT;
     }
@@ -178,13 +179,14 @@ DDS::DomainParticipantFactory::create_participant (
       }
     }
 
+
     handle = gapi_domainParticipantFactory_create_participant (
         _gapi_self,
-        (gapi_domainId_t)domainId,
+        (gapi_domainId_int_t)domain_id,
         gapi_dpqos,
         gapi_listener,
         mask,
-        NULL, NULL, NULL);
+        NULL, NULL, NULL, NULL);
 
     if (allocatedQos)
     {
@@ -203,7 +205,7 @@ DDS::DomainParticipantFactory::create_participant (
           {
             gapi_domainParticipantFactoryQos *dpfqos = gapi_domainParticipantFactoryQos__alloc();
             gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                      DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                      ccpp_CallBack_DeleteUserData,NULL);
             if(dpfqos){
                 if(gapi_domainParticipantFactory_get_qos(_gapi_self, dpfqos) == GAPI_RETCODE_OK){
                     if(dpfqos->entity_factory.autoenable_created_entities) {
@@ -304,7 +306,7 @@ DDS::DomainParticipantFactory::delete_participant (
 
 DDS::DomainParticipant_ptr
 DDS::DomainParticipantFactory::lookup_participant (
-  const char * domainId
+  DDS::DomainId_t domainId
 ) THROW_ORB_EXCEPTIONS
 {
     gapi_domainParticipant handle = NULL;
@@ -312,7 +314,7 @@ DDS::DomainParticipantFactory::lookup_participant (
 
     handle = gapi_domainParticipantFactory_lookup_participant(
         _gapi_self,
-        (gapi_domainId_t)domainId
+        (gapi_domainId_int_t)domainId
      );
      if (handle)
      {
@@ -343,13 +345,14 @@ DDS::DomainParticipantFactory::lookup_participant (
      return myParticipant;
 }
 
-DDS::ReturnCode_t DDS::DomainParticipantFactory::set_qos (
+DDS::ReturnCode_t
+DDS::DomainParticipantFactory::set_qos (
   const DDS::DomainParticipantFactoryQos & qos
 ) THROW_ORB_EXCEPTIONS
 {
     DDS::ReturnCode_t result;
 
-    if (&qos == DDS::DefaultQos::ParticipantFactoryQosDefault)
+    if (&qos == &DDS::DefaultQos::ParticipantFactoryQosDefault.in())
     {
       result = gapi_domainParticipantFactory_set_qos(_gapi_self, GAPI_PARTICIPANTFACTORY_QOS_DEFAULT);
     }
@@ -396,7 +399,7 @@ DDS::DomainParticipantFactory::get_qos (
 
 DDS::Domain_ptr
 DDS::DomainParticipantFactory::lookup_domain (
-  const char * domainId
+  DDS::DomainId_t domainId
 ) THROW_ORB_EXCEPTIONS
 {
     gapi_domainParticipant handle = NULL;
@@ -404,7 +407,7 @@ DDS::DomainParticipantFactory::lookup_domain (
 
     handle = gapi_domainParticipantFactory_lookup_domain (
         _gapi_self,
-        (gapi_domainId_t)domainId
+        (gapi_domainId_int_t)domainId
      );
      if (handle)
      {
@@ -436,7 +439,7 @@ DDS::DomainParticipantFactory::lookup_domain (
                 if (myUD)
                 {
                     gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                              DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                              ccpp_CallBack_DeleteUserData,NULL);
                 } else
                 {
                     OS_REPORT(OS_ERROR,
@@ -539,55 +542,55 @@ DDS::DomainParticipantFactory::get_default_participant_qos (
     return result;
 }
 
-const DDS::DomainParticipantQos * const
+const DDS::DomainParticipantQos *
 DDS::DomainParticipantFactory::participant_qos_default (void)
 {
     return DDS::DefaultQos::ParticipantQosDefault;
 }
 
-const DDS::TopicQos * const
+const DDS::TopicQos *
 DDS::DomainParticipantFactory::topic_qos_default (void)
 {
     return DDS::DefaultQos::TopicQosDefault;
 }
 
-const DDS::PublisherQos * const
+const DDS::PublisherQos *
 DDS::DomainParticipantFactory::publisher_qos_default (void)
 {
     return DDS::DefaultQos::PublisherQosDefault;
 }
 
-const DDS::SubscriberQos * const
+const DDS::SubscriberQos *
 DDS::DomainParticipantFactory::subscriber_qos_default (void)
 {
     return DDS::DefaultQos::SubscriberQosDefault;
 }
 
-const DDS::DataReaderQos * const
+const DDS::DataReaderQos *
 DDS::DomainParticipantFactory::datareader_qos_default (void)
 {
     return DDS::DefaultQos::DataReaderQosDefault;
 }
 
-const DDS::DataReaderViewQos * const
+const DDS::DataReaderViewQos *
 DDS::DomainParticipantFactory::datareaderview_qos_default (void)
 {
     return DDS::DefaultQos::DataReaderViewQosDefault;
 }
 
-const DDS::DataReaderQos * const
+const DDS::DataReaderQos *
 DDS::DomainParticipantFactory::datareader_qos_use_topic_qos (void)
 {
     return DDS::DefaultQos::DataReaderQosUseTopicQos;
 }
 
-const DDS::DataWriterQos * const
+const DDS::DataWriterQos *
 DDS::DomainParticipantFactory::datawriter_qos_default (void)
 {
     return DDS::DefaultQos::DataWriterQosDefault;
 }
 
-const DDS::DataWriterQos * const
+const DDS::DataWriterQos *
 DDS::DomainParticipantFactory::datawriter_qos_use_topic_qos (void)
 {
     return DDS::DefaultQos::DataWriterQosUseTopicQos;

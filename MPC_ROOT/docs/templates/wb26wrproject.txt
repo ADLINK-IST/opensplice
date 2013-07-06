@@ -1,0 +1,54 @@
+// $Id$
+//
+// Document template variables for templates templates/wb26wrproject.mpd.
+// Please try to keep this alphabetically sorted.
+//
+ar = Tool that creates archive libraries
+ar_dbgflags = Flags passed to ar in debug mode only
+ar_derivedsigs = File extension created by ar
+ar_flags = Flags passed to ar regardless of debug mode
+ar_nondbgflags = Flags passed to ar in non-debug mode
+ass_dbgflags = Flags passed to the assembler in debug mode only
+ass_derivedsigs = File extension created by the assembler
+ass_flags = Flags passed to the assembler regardless of debug mode
+ass_nondbgflags = Flags passed to the assembler in non-debug mode
+c_dbgflags = C compiler flags for debug mode
+c_derivedsigs = C compiler output file pattern
+c_flags = C compiler flags regardless of debug mode
+c_nondbgflags = C compiler flags for non-debug mode
+cc = C compiler
+clnk_derivedsigs = C linker output file pattern
+common_defines = Specifies macros that are common to all target types
+cxx = C++ compiler
+cxx_dbgflags = C++ compiler flags for debug mode
+cxx_derivedsigs = C++ compiler output file pattern
+cxx_flags = C++ compiler flags regardless of debug mode
+cxx_nondbgflags = C++ compiler flags for non-debug mode
+cxxlnk_derivedsigs = C++ linker output file pattern
+default_buildspec = Which buildspec from the buildspecs should be default
+defines = Specifies macros that are common to all target types
+dll_buildtool = Name of the tool to use to create shared/dynamic libraries (for example, C++-Linker or C-Linker)
+dll_prefix = Prefix for shared/dynamic libraries
+exe_buildtool = Name of the tool to use to create executables (for example, C++-Linker or C-Linker)
+librarian_objects = Object file list to use as input to the archiver/librarian
+link_groups = A boolean template variable that determines if the GNU linker specific --start-group and --end-group options are used for the VxWorks Partial Image Linker
+linker_dbgflags = Linker flags for debug mode (VxWorks)
+linker_flags = Linker flags regardless of debug mode (VxWorks)
+linker_nondbgflags = Linker flags for non-debug mode (VxWorks)
+munchflag = Flags for the VxWorks munch TCL script
+nm = nm utility (VxWorks)
+no_platform_in_wrproject = If enabled, the platform attribute of the wrxml/properties XML element in .wrproject is empty.
+part_dbgflags = Debug flags for the VxWorks Partial Image Linker
+part_derivedsigs = Outupt file patterns for the VxWorks Partial Image Linker
+part_flags = Flags for the VxWorks Partial Image Linker
+part_nondbgflags = Non-debug flags for the VxWorks Partial Image Linker
+pic = Special flags needed to build objects that will become part of a shared library (-fPIC on Linux)
+platform_asflags = Assembler flags common to the platform or buildspec
+platform_ccflags = C compiler flags common to the platform or buildspec
+platform_cxxflags = C++ compiler flags common to the platform or buildspec
+platform_includes = Include directories common to the platform or buildspec
+platform_name = Value of the platform_name attribute of the wrxml/properties XML element in .wrproject
+project_type = Value of the project_type attribute of the wrxml/properties XML element in .wrproject
+project_type_macro = Value of the PROJECT_TYPE macro in the GlobalMacro list
+shflags = Flags passed to the linker to create a shared/dynamic libraries instead of an executable
+wrprj_macros = List of Macros for the BLD::Info|Macros section of the .wrproject.  Each element in this list will in turn be de-referenced (used as an MPC template variable name) to obtain its values.  LIBPATH and LIBS has special treatment here to get -L and -l prepended.

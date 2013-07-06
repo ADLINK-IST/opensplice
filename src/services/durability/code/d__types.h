@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
 typedef enum d_storeType{
-    D_STORE_TYPE_UNKNOWN, D_STORE_TYPE_XML, D_STORE_TYPE_BIG_ENDIAN, D_STORE_TYPE_MEM_MAPPED_FILE
+    D_STORE_TYPE_UNKNOWN, D_STORE_TYPE_XML, D_STORE_TYPE_BIG_ENDIAN, D_STORE_TYPE_MEM_MAPPED_FILE, D_STORE_TYPE_KV
 } d_storeType;
 
 typedef enum d_storeResult{
@@ -73,6 +73,7 @@ C_CLASS(d_groupList);
 C_CLASS(d_store);
 C_CLASS(d_storeXML);
 C_CLASS(d_storeMMF);
+C_CLASS(d_storeKV);
 C_CLASS(d_action);
 C_CLASS(d_actionQueue);
 C_CLASS(d_groupCreationQueue);

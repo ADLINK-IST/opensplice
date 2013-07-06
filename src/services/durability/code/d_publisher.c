@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -188,6 +188,7 @@ d_publisherNew(
             d_writerQosFree(writerQos);
         } else {
             d_publisherFree(publisher);
+            publisher = NULL;
         }
     }
     return publisher;
@@ -292,6 +293,7 @@ d_publisherStatusWrite(
     c_bool terminate;
     d_durability durability;
 
+    OS_UNUSED_ARG(addressee);
     result = FALSE;
     assert(d_objectIsValid(d_object(publisher), D_PUBLISHER) == TRUE);
 
@@ -313,6 +315,19 @@ d_publisherStatusWrite(
                     result = TRUE;
                 } else if(ur == U_RESULT_TIMEOUT) {
                     terminate = d_durabilityMustTerminate(durability);
+                    if(!terminate && d_message(message)->senderState == D_STATE_TERMINATING){
+                        /* ES 21 - okt - 2011:
+                         * if durability is not yet terminating, but the message being written
+                         * does indicate that termination of durability is imminent, then we have
+                         * to prevent durability from constantly retrying in the case of a TIMEOUT
+                         * of the datawriter. The standard timeout provided to the write will ensure
+                         * the write is tried during the period of the timeout. But once that timeout is
+                         * exceeded then it is fruitless to continue try to write the terminating message
+                         * Without this specific code, durability will hang when terminating is caused
+                         * by splice daemon terminating.
+                         */
+                        terminate = TRUE;
+                    }
                     resendCount++;
 
                     if(terminate){
@@ -356,6 +371,7 @@ d_publisherNewGroupWrite(
     c_bool terminate;
     d_durability durability;
 
+    OS_UNUSED_ARG(addressee);
     result = FALSE;
     assert(d_objectIsValid(d_object(publisher), D_PUBLISHER) == TRUE);
 
@@ -420,6 +436,7 @@ d_publisherGroupsRequestWrite(
     c_bool terminate;
     d_durability durability;
 
+    OS_UNUSED_ARG(addressee);
     result = FALSE;
     assert(d_objectIsValid(d_object(publisher), D_PUBLISHER) == TRUE);
 
@@ -482,6 +499,7 @@ d_publisherStatusRequestWrite(
     c_bool terminate;
     d_durability durability;
 
+    OS_UNUSED_ARG(addressee);
     result = FALSE;
     assert(d_objectIsValid(d_object(publisher), D_PUBLISHER) == TRUE);
 
@@ -544,6 +562,7 @@ d_publisherSampleRequestWrite(
     c_bool terminate;
     d_durability durability;
 
+    OS_UNUSED_ARG(addressee);
     result = FALSE;
     assert(d_objectIsValid(d_object(publisher), D_PUBLISHER) == TRUE);
 
@@ -606,6 +625,7 @@ d_publisherSampleChainWrite(
     c_bool terminate;
     d_durability durability;
 
+    OS_UNUSED_ARG(addressee);
     result = FALSE;
     assert(d_objectIsValid(d_object(publisher), D_PUBLISHER) == TRUE);
 
@@ -668,6 +688,7 @@ d_publisherNameSpacesRequestWrite(
     c_bool terminate;
     d_durability durability;
 
+    OS_UNUSED_ARG(addressee);
     result = FALSE;
     assert(d_objectIsValid(d_object(publisher), D_PUBLISHER) == TRUE);
 
@@ -730,6 +751,7 @@ d_publisherNameSpacesWrite(
     c_bool terminate;
     d_durability durability;
 
+    OS_UNUSED_ARG(addressee);
     result = FALSE;
     assert(d_objectIsValid(d_object(publisher), D_PUBLISHER) == TRUE);
 
@@ -792,6 +814,7 @@ d_publisherDeleteDataWrite(
     c_bool terminate;
     d_durability durability;
 
+    OS_UNUSED_ARG(addressee);
     result = FALSE;
     assert(d_objectIsValid(d_object(publisher), D_PUBLISHER) == TRUE);
 
@@ -927,6 +950,7 @@ d_publisherStatusWriterCopy(
     void *data,
     void *to)
 {
+    OS_UNUSED_ARG(type);
     assert(type);
     return d_publisherMessageWriterCopy(&d_status(data)->parentMsg, &d_status(to)->parentMsg);
 }
@@ -995,8 +1019,10 @@ d_publisherStatusRequestWriterCopy(
     void *data,
     void *to)
 {
+    OS_UNUSED_ARG(type);
     assert(type);
     return d_publisherMessageWriterCopy(&d_statusRequest(data)->parentMsg, &d_status(to)->parentMsg);
+
 }
 
 c_bool
@@ -1064,6 +1090,7 @@ d_publisherNameSpacesWriterCopy(
     d_nameSpaces msgFrom = d_nameSpaces(data);
     d_nameSpaces msgTo   = d_nameSpaces(to);
     c_base base          = c_getBase(type);
+    OS_UNUSED_ARG(type);
 
     result = d_publisherMessageWriterCopy(&msgFrom->parentMsg, &msgTo->parentMsg);
 
@@ -1079,7 +1106,6 @@ d_publisherNameSpacesWriterCopy(
     msgTo->master.lifecycleId         = msgFrom->master.lifecycleId;
     msgTo->isComplete                 = msgFrom->isComplete;
     msgTo->masterConfirmed            = msgFrom->masterConfirmed;
-    msgTo->state.role                 = c_stringNew(base, msgFrom->state.role);
     msgTo->state.value                = msgFrom->state.value;
 
     if(msgFrom->partitions) {
@@ -1124,6 +1150,7 @@ d_publisherNameSpacesRequestWriterCopy(
     void *data,
     void *to)
 {
+    OS_UNUSED_ARG(type);
     assert(type);
 
     return d_publisherMessageWriterCopy(&d_nameSpacesRequest(data)->parentMsg, &d_nameSpacesRequest(to)->parentMsg);

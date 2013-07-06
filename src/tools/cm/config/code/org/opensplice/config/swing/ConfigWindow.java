@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,9 +14,20 @@ package org.opensplice.config.swing;
 import java.awt.BorderLayout;
 import java.awt.Cursor;
 import java.awt.Event;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
 
-import javax.swing.JPanel;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
 import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 
 import org.opensplice.common.view.MainWindow;
 import org.opensplice.common.view.StatusPanel;
@@ -27,20 +38,6 @@ import org.opensplice.config.data.DataNode;
 import org.opensplice.config.data.DataValue;
 import org.opensplice.config.meta.MetaElement;
 import org.opensplice.config.meta.MetaNode;
-
-import javax.swing.JTabbedPane;
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.KeyStroke;
-import javax.swing.SwingUtilities;
-
-import java.awt.event.ActionEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.File;
-
-import javax.swing.JMenuItem;
 
 public class ConfigWindow extends MainWindow implements DataConfigurationListener {
     private static final long serialVersionUID = 1L;
@@ -62,15 +59,27 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     private JMenu helpMenu = null;
     private JMenuItem helpContentsItem = null;
     private DataConfiguration config = null;
+
+
     private DataNodePopup popupSupport = null;
     private ConfigTransferHandler transferHandler = null;
-    private final String defaultTitle = "OpenSplice Configurator";
+    private static final String    defaultTitle      = "OpenSplice Configurator";
     /**
      * This is the default constructor
      */
     public ConfigWindow() {
         super();
         initialize();
+    }
+
+    public ConfigWindow(String uri) {
+        super();
+        initialize();
+        controller.handleOpenFromUri(uri);
+    }
+
+    public DataConfiguration getConfig() {
+        return config;
     }
 
     public void setDataConfiguration(DataConfiguration config){
@@ -101,6 +110,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         this.updateMenus();
     }
     
+    @Override
     public void nodeAdded(DataElement parent, DataNode nodeAdded) {
         this.updateMenus();
         
@@ -109,6 +119,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
                 final DataElement service = (DataElement)nodeAdded;
                 
                 Runnable worker = new Runnable(){
+                    @Override
                     public void run(){
                         ServicePanel servicePanel = new ServicePanel(service, statusPanel);
                         servicePanel.setTransferHandler(transferHandler);
@@ -122,6 +133,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         }
     }
 
+    @Override
     public void nodeRemoved(DataElement parent, DataNode nodeRemoved) {
         this.updateMenus();
         
@@ -130,6 +142,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
                 final DataElement service = (DataElement)nodeRemoved;
                 
                 Runnable worker = new Runnable(){
+                    @Override
                     public void run(){
                         ServicePanel servicePanel;
                         boolean found = false;
@@ -149,6 +162,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         }
     }
 
+    @Override
     public void valueChanged(DataValue data, Object oldValue, Object newValue) {
         ServicePanel servicePanel;
         
@@ -165,6 +179,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         return this.config;
     }
     
+    @Override
     public void disableView(){
         ServicePanel sp;
         
@@ -194,6 +209,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
     /**
      * Enables the view component.
      */
+    @Override
     public void enableView(){
         this.setFocusable(true);
         this.setEnabled(true);
@@ -248,12 +264,12 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
             f = config.getFile();
             
             if(f != null){
-                title = this.defaultTitle + " | " + f.getAbsolutePath();
+                title = ConfigWindow.defaultTitle + " | " + f.getAbsolutePath();
             } else {
-                title = this.defaultTitle + " | <NoName>";
+                title = ConfigWindow.defaultTitle + " | <NoName>";
             }
         } else {
-            title = this.defaultTitle;
+            title = ConfigWindow.defaultTitle;
         }
         this.setTitle(title);
     }
@@ -274,7 +290,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         } else {
             item.setEnabled(false);
         }
-        item.setActionCommand("add");
+        item.setActionCommand("addService");
         item.addActionListener(this.popupSupport);
         return item;
     }
@@ -296,7 +312,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         } else {
             item.setEnabled(false);
         }
-        item.setActionCommand("remove");
+        item.setActionCommand("removeService");
         item.addActionListener(this.popupSupport); 
         return item;
     }
@@ -313,11 +329,12 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
         this.transferHandler = new ConfigTransferHandler(this);
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.setJMenuBar(getConfigMenuBar());
-        this.setTitle(this.defaultTitle);
+        this.setTitle(ConfigWindow.defaultTitle);
         this.setLocationRelativeTo(this.getParent());
         this.setContentPane(getJContentPane());
         
         this.addWindowListener(new WindowAdapter() {
+            @Override
             public void windowClosing(WindowEvent e) {
                 controller.actionPerformed(
                     new ActionEvent(exitItem, 0, "exit"));
@@ -346,6 +363,7 @@ public class ConfigWindow extends MainWindow implements DataConfigurationListene
      *  
      * @return The status panel of the window.
      */    
+    @Override
     protected StatusPanel getStatusPanel() {
         if (statusPanel == null) {
             statusPanel = new StatusPanel(300, "Ready", false, true);

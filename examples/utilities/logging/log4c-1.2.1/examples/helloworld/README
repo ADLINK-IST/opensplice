@@ -1,0 +1,4 @@
+See the developers guide for a detailed description, but to see the output
+from this program copy the log4crc file in and add this line:
+<category name="log4c.examples.helloworld" priority="debug" appender="stdout"/>
+

@@ -1,0 +1,43 @@
+// -*- MPC -*-
+// $Id$
+
+project: qt4_core {
+  lit_libs += QtGui$(QT_CFG)
+
+  // On some linux systems with both Qt3 and Qt4 installed, the uic and moc
+  // executables for Qt4 need to be run as "uic-qt4" (doesn't apply to rcc).
+  // Expand the variable here to avoid the "undefined" warning from msvc.
+  expand(QT4_SUFFIX) {
+    $QT4_SUFFIX
+    ""
+  }
+
+  Define_Custom(UIC) {
+    command          = $(QTDIR)/bin/uic$(QT4_SUFFIX)
+    output_option    = -o
+    inputext         = .ui
+    pre_filename     = ui_
+    header_outputext = .h
+  }
+
+  Define_Custom(MOC) {
+    automatic_in     = 0
+    automatic_out    = 0
+    command          = $(QTDIR)/bin/moc$(QT4_SUFFIX)
+    output_option    = -o
+    pch_postrule     = 1
+    inputext         = .h
+    pre_extension    = _moc
+    source_outputext = .cpp
+  }
+
+  Define_Custom(QRC) {
+    command          = $(QTDIR)/bin/rcc
+    output_option    =  -o
+    commandflags     = -name <%input_noext%>
+    pch_postrule     = 1
+    inputext         = .qrc
+    pre_extension    = _qrc
+    source_outputext = .cpp
+  }
+}

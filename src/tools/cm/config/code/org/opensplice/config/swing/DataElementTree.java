@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -38,12 +38,12 @@ public class DataElementTree extends JTree
     implements DataConfigurationListener, TreeCellRenderer, DataNodePopupSupport 
 {
     private static final long serialVersionUID = 5103341138480897742L;
-    private DataElement rootElement;
-    private DefaultMutableTreeNode rootNode;
-    private DefaultTreeModel model;
-    private DefaultTreeCellRenderer initialRenderer;
+    private final DataElement rootElement;
+    private final DefaultMutableTreeNode rootNode;
+    private final DefaultTreeModel model;
+    private final DefaultTreeCellRenderer initialRenderer;
     private DataNodePopup popupController;
-    private StatusPanel status;
+    private final StatusPanel status;
     
     public DataElementTree(DataElement rootElement, DataNodePopup popup, StatusPanel status){
         super();
@@ -65,7 +65,7 @@ public class DataElementTree extends JTree
                     new TreePath(
                             ((DefaultMutableTreeNode)this.rootNode.getFirstChild()).getPath()));
         }
-        this.setSelectionPath(new TreePath(((DefaultMutableTreeNode)this.rootNode).getPath()));
+        this.setSelectionPath(new TreePath(this.rootNode.getPath()));
         
         if(popup == null){
             this.popupController = new DataNodePopup();
@@ -93,11 +93,12 @@ public class DataElementTree extends JTree
         }
     }
 
+    @Override
     public void nodeAdded(DataElement parent, DataNode nodeAdded) {
         DefaultMutableTreeNode parentNode, childNode;
         
         if(nodeAdded instanceof DataElement){
-            parentNode = this.lookupNode(this.rootNode, (DataElement)parent);
+            parentNode = this.lookupNode(this.rootNode, parent);
             
             if(parentNode != null){
                 if(((MetaElement)nodeAdded.getMetadata()).hasElementChildren()){
@@ -116,6 +117,7 @@ public class DataElementTree extends JTree
         this.repaint();
     }
 
+    @Override
     public void nodeRemoved(DataElement parent, DataNode nodeRemoved) {
         DefaultMutableTreeNode node;
         
@@ -134,6 +136,7 @@ public class DataElementTree extends JTree
         this.repaint();
     }
 
+    @Override
     public void valueChanged(DataValue data, Object oldValue, Object newValue) {
         this.repaint();
     }
@@ -151,6 +154,7 @@ public class DataElementTree extends JTree
         return result;
     }
 
+    @Override
     public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
         Component result = null;
         JLabel temp;
@@ -193,16 +197,24 @@ public class DataElementTree extends JTree
         return result;
     }
 
+    @Override
     public DataNode getDataNodeAt(int x, int y) {
+        DataNode retVal = null;
         TreePath path = this.getClosestPathForLocation(x, y);
-        this.setSelectionPath(path);
-        return (DataElement)((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();
+
+        if (path != null) {
+            this.setSelectionPath(path);
+            retVal = (DataElement)((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();
+        }
+        return retVal;
     }
 
+    @Override
     public void showPopup(JPopupMenu popup, int x, int y) {
         popup.show(this, x, y);
     }
 
+    @Override
     public void setStatus(String message, boolean persistent, boolean busy) {
         if(this.status != null){
             this.status.setStatus(message, persistent, busy);

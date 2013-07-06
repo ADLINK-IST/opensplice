@@ -43,7 +43,7 @@
                 result.Result = "Default DomainParticipantQos could not be resolved.";
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, pqosHolder);//, null, 0);
+            participant = factory.CreateParticipant(DDS.DomainId.Default, pqosHolder);//, null, 0);
             if (participant == null)
             {
                 result.Result = "Creation of DomainParticipant failed.";

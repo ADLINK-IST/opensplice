@@ -1,20 +1,18 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
 #include "os.h"
 #include "c_iterator.h"
 #include "c_base.h"
-
-C_CLASS(c_iterNode);
 
 C_STRUCT(c_iter) {
     c_long length;
@@ -26,7 +24,6 @@ C_STRUCT(c_iterNode) {
     c_iterNode next;
     void *object;
 };
-
 
 c_iter
 c_iterNew(
@@ -85,7 +82,7 @@ c_iterInsert(
     iter->head = n;
 
     if(iter->tail == NULL){
-    	iter->tail = n;
+        iter->tail = n;
     }
     iter->length++;
 
@@ -108,11 +105,11 @@ c_iterAppend(
     n->next = NULL;
 
     if(iter->tail){
-    	iter->tail->next = n;
-    	iter->tail = n;
+        iter->tail->next = n;
+        iter->tail = n;
     } else {
-    	iter->head = n;
-    	iter->tail = n;
+        iter->head = n;
+        iter->tail = n;
     }
 
     iter->length++;
@@ -137,8 +134,8 @@ c_iterTakeFirst(
     iter->length--;
 
     if(iter->length == 0){
-    	assert(n->next == NULL);
-    	iter->tail = NULL;
+        assert(n->next == NULL);
+        iter->tail = NULL;
     }
     os_free(n);
 
@@ -169,7 +166,7 @@ c_iterTakeLast(
     iter->length--;
 
     if(iter->length == 0){
-    	iter->head = NULL;
+        iter->head = NULL;
     }
     os_free(n);
 
@@ -238,12 +235,12 @@ c_iterTakeAction (
     p = &iter->head;
     while (*p != NULL) {
         if (condition((*p)->object,arg)) {
-        	if((*p)->next == NULL){
-            	if(*p == iter->head){
-	            	iter->tail = NULL;
-	            } else {
-	            	iter->tail = *p;
-	            }
+            if((*p)->next == NULL){
+                if(*p == iter->head){
+                    iter->tail = NULL;
+                } else {
+                    iter->tail = *p;
+                }
             }
             object = (*p)->object;
             p2 = *p;
@@ -328,11 +325,10 @@ c_iterCopy(
         n = n->next;
     }
     if(l){
-	    l->tail = iter->tail;
+        l->tail = iter->tail;
     }
     return l;
 }
-
 c_long
 c_iterLength(
     c_iter iter)
@@ -399,7 +395,7 @@ c_iterWalk(
     }
 }
 
-void
+c_bool
 c_iterWalkUntil(
     c_iter iter,
     c_iterAction action,
@@ -409,13 +405,14 @@ c_iterWalkUntil(
     c_bool proceed = TRUE;
 
     if (iter == NULL) {
-        return;
+        return 1;
     }
     l = iter->head;
     while ((proceed) && (l != NULL)) {
         proceed = action(l->object,actionArg);
         l = l->next;
     }
+    return proceed;
 }
 
 void
@@ -437,21 +434,47 @@ c_iterArray(
 c_bool
 c_iterContains(
     c_iter iter,
-	 void *object)
+     void *object)
 {
-    c_iterNode *p;
+    c_iterNode p;
 
     if (iter == NULL) return 0;
     if (object == NULL) return 0;
 
-    p = &iter->head;
+    p = iter->head;
 
-    while (*p != NULL) {
-        if ((*p)->object == object) {
+    while (p != NULL) {
+        if (p->object == object) {
             return 1;
         }
-        p = &((*p)->next);
+        p = p->next;
     }
     return 0;
+}
+
+c_iterIter
+c_iterIterGet(
+    c_iter i)
+{
+    c_iterIter result;
+
+    result.current = i->head;
+
+    return result;
+}
+
+void*
+c_iterNext(
+    c_iterIter* iterator)
+{
+    void* result;
+
+    result = 0;
+    if(iterator->current) {
+        result = iterator->current->object;
+        iterator->current = iterator->current->next;
+    }
+
+    return result;
 }
 

@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "../../stax/stax.dtd">
+<!--
+## \defgroup dds2341 DDS2341 - Different persistency configurations
+#
+# \b Test \b ID: dds2341
+#
+# \b Test \b Objectives: \n
+# Nodes A & B subscribe to a Topic (T1) in a partition (P1) that has persistent durability policy on Node A and transient
+# durability policy on Node B. Data published by Node A (and read by Node B) is written to persistent store on Node A.
+# Then OpenSplice is stopped on both nodes. On restart of OpenSplice on Node B the persistent data is not loaded.
+# Then on restart of OpenSplice on Node A the persistent data is loaded and made available on both nodes.
+#
+# \b Prerequisites, \b assumptions, \b constraints
+#
+# \par \e Environment:
+#
+# \par \e Invariant:
+# Nodes A and B are running OpenSplice daemon with networking and durability services enabled on the default domain.
+# The topic 'TestTopic' (T1) is used for this test, created with default QoS settings with the following exceptions:
+# durability is set to PERSISTENT, reliability is set to RELIABLE
+#
+# \par \e Node \e A:
+# Namespace1 contains partitionA with a PERSISTENT durability policy and a TRUE aligner policy
+#
+# \par \e Node \e B:
+# Namespace1 contains partitionA with a TRANSIENT durability policy and a FALSE aligner policy
+#
+# \b Test \b Procedure
+#
+# \b Step \b 1
+# \par \e Action
+# Start OpenSplice on both nodes.
+# Create a publisher for topic T1 on NodeA. The QoS settings can be copied from the topic QoS,
+# except writer_data_lifycycle.autodispose_unregistered_instances is set to FALSE.
+# \par \e Result
+# OpenSplice daemon and services are started on both nodes, nothing is written to error log.
+# All samples are successfully published on NodeA.
+#
+# \b Step \b 2
+# \par \e Action
+# Create a subscriber (and datareader) for topic T1 on NodeB. Call wait_for_historical_data on the reader.
+# \par \e Result
+# The wait_for_historical_data call returns successfully (RETCODE_OK)
+
+# \b Step \b 3
+# \par \e Action
+# Take all samples with the datareader on NodeB
+# \par \e Result
+# All samples published previously on NodeA, are received by the reader on NodeB
+#
+# \b Step \b 4
+# \par \e Action
+# Stop OpenSplice on both nodes. Start OpenSplice again on NodeB.
+# Create a subscriber (and datareader) for topic T1 on NodeB. Call wait_for_historical_data on the reader,
+# with a timeout of 5 seconds
+# \par \e Result
+# The wait_for_historical_data call returns a time-out (RETCODE_TIMEOUT)
+#
+# \b Step \b 5
+# \par \e Action
+# Take all samples with the datareader on NodeB
+# \par \e Result
+# No samples are received by the reader on NodeB (RETCODE_NO_DATA)
+#
+# \b Step \b 6
+# \par \e Action
+# Start OpenSplice on NodeA and wait until the durability service has reached the COMPLETE state
+# Then take all samples with the reader on NodeB
+# \par \e Result
+# All samples published previously on NodeA are received by the reader on NodeB
+#
+# \b Step \b 7
+# \par \e Action
+# Create a subscriber (and datareader) for topic T1 on NodeA. Call wait_for_historical_data on the reader.
+# \par \e Result
+# The wait_for_historical_data call returns successfully (RETCODE_OK)
+#
+# \b Step \b 8
+# \par \e Action
+# Take all samples with the reader on NodeA
+# \par \e Result
+# All samples published previously on NodeA, are received by the reader on NodeA
+-->
+<stax>
+    <defaultcall function="Run"/>
+    <function name="Run">
+        <function-list-args>
+            <function-optional-arg name="host1" default="None">
+                STAF machine nickname (hostname) of host 1
+            </function-optional-arg>
+            <function-optional-arg name="host2" default="None">
+                STAF machine nickname (hostname) of host 2
+            </function-optional-arg>
+        </function-list-args>
+
+        <sequence>
+            <import file="'../../common/HostManager.xml'"/>
+            <import file="'../common/Publisher.xml'"/>
+            <import file="'../common/Subscriber.xml'"/>
+            <import file="'../../common/DurabilityService.xml'"/>
+            <import file="'../../common/LogWriter.xml'"/>
+            <call function="'Initialize'"/>
+
+            <script>
+                hostList = [None, None]
+                portList = [None, None, None]
+
+                if ((STAXJobName == None) or (len(STAXJobName) == 0)):
+                    STAXJobName = 'Job%d_dds2341_scenario1' % STAXJobID
+
+                uri1 = os.path.dirname(STAXCurrentXMLFile) + file_sep + 'etc' + file_sep + 'config_dds2341_node1.xml'
+                uri2 = os.path.dirname(STAXCurrentXMLFile) + file_sep + 'etc' + file_sep + 'config_dds2341_node2.xml'
+
+                samples = os.path.dirname(STAXCurrentXMLFile) + file_sep + 'etc' + file_sep + 'samples_dds2341.txt'
+
+                STAXMessageLog = 1
+            </script>
+
+            <try>
+                <sequence>
+                    <!-- Request/lock machines by hostname or by requesting random hosts -->
+                    <block name="'RequestHosts'">
+                        <if expr="(host1 != None) and (host2 != None)">
+                            <sequence>
+                                <call-with-map function="'RequestHost'">
+                                    <call-map-arg name="'hostname'">host1</call-map-arg>
+                                </call-with-map>
+                                <script>hostList[0] = STAXResult</script>
+                                <call-with-map function="'RequestHost'">
+                                    <call-map-arg name="'hostname'">host2</call-map-arg>
+                                </call-with-map>
+                                <script>hostList[1] = STAXResult</script>
+                            </sequence>
+                            <else>
+                                <loop from="0" to="len(hostList) - 1" var="i">
+                                    <sequence>
+                                        <call-with-map function="'RequestHost'">
+                                            <call-map-arg name="'target'">'.*linux2\.6.*'</call-map-arg>
+                                        </call-with-map>
+                                        <script>hostList[i] = STAXResult</script>
+                                    </sequence>
+                                </loop>
+                            </else>
+                        </if>
+                    </block>
+
+                    <!-- Request/lock three UDP ports during the testcase -->
+                    <block name="'RequestPorts'">
+                        <loop from="0" to="len(portList) - 1" var="i">
+                            <sequence>
+                                <call function="'RequestPortResource'"/>
+                                <script>
+                                    [RC, port] = STAXResult
+                                    portList[i] = port
+                                </script>
+                            </sequence>
+                        </loop>
+                    </block>
+
+                    <!-- Deploy OpenSplice on the machines and set some common properties -->
+                    <block name="'DeployHosts'">
+                        <sequence>
+                            <paralleliterate in="hostList" var="host">
+                                <sequence>
+                                    <script>host.set_ospl_home(None)</script>
+                                    <call-with-map function="'DeployHost'">
+                                        <call-map-arg name="'host'">host</call-map-arg>
+                                    </call-with-map>
+                                    <script>
+                                        # Set some common parameters
+                                        host.set_scenario('tc_dds2341_001')
+                                        host.set_env('OSPL_BESTEFFORT_PORT', portList[0])
+                                        host.set_env('OSPL_RELIABLE_PORT', portList[1])
+                                        host.set_env('OSPL_DISCOVERY_PORT', portList[2])
+                                        host.set_env('OSPL_ERRORFILE', host.get_scenario() + '-ospl-error.log')
+                                        host.set_env('OSPL_INFOFILE', host.get_scenario() + '-ospl-info.log')
+                                        host.set_env('OSPL_DURABILITY_TRACE', host.get_scenario() + '-durability.log')
+                                        host.set_env('OSPL_PSTORE', host.get_basedir() + host.get_filesep() + 'pstore_dds2341' )
+                                    </script>
+                                </sequence>
+                            </paralleliterate>
+                        </sequence>
+                    </block>
+
+                    <block name="'DeployFiles'">
+                        <paralleliterate in="hostList" var="host">
+                            <sequence>
+                                <call function="'DeployPublisher'">host</call>
+                                <call function="'DeploySubscriber'">host</call>
+                            </sequence>
+                        </paralleliterate>
+                    </block>
+
+                    <block name="'RunScenario'">
+                        <sequence>
+                            <script>proceed = STAXGlobal([1])</script>
+                            <!--  Start OpenSplice on both hosts and publish all samples (persistent) on host 1 -->
+                            <call function="'tc_dds2341_persistency_001a'"/>
+
+                            <!-- Run subscriber, wait for historical data and take all samples on host 2 -->
+                            <call function="'tc_dds2341_persistency_001b'"/>
+
+                            <!-- Stop OpenSplice both hosts, then (re)start OpenSplice on host 2 -->
+                            <call function="'tc_dds2341_persistency_001c'"/>
+
+                            <!-- Run subscriber, wait for historical data and take all samples on host 2 (expected DDS_RETCODE_TIMEOUT) -->
+                            <call function="'tc_dds2341_persistency_001d'"/>
+
+                            <!-- Start OpenSplice on host 1, then run subscriber, wait for historical data and take all samples on both hosts -->
+                            <call function="'tc_dds2341_persistency_001e'"/>
+
+                            <!-- Stop OpenSplice on both hosts -->
+                            <call function="'tc_dds2341_persistency_001f'"/>
+                        </sequence>
+                    </block>
+                </sequence>
+
+                <catch exception="'Resource'" var="msg">
+                    <log message="1">'An exception occurred related to a resource needed to run this test. The test cannot start.\nException: %s' % msg</log>
+                </catch>
+                <catch exception="'TestCase'" var="msg">
+                    <sequence>
+                        <log message="1">'An exception occured during a testcase. Succeeding tests are cancelled.\nException: %s' % msg</log>
+                        <if expr="STAXCurrentTestcase != None">
+                            <tcstatus result="'fail'">'Exception occurred'</tcstatus>
+                        </if>
+                    </sequence>
+                </catch>
+
+                <finally>
+                    <!-- Release, cleanup resources -->
+                    <sequence>
+                        <paralleliterate in="hostList" var="host">
+                            <if expr="host != None">
+                                <call function="'CleanupHost'">host</call>
+                            </if>
+                        </paralleliterate>
+                        <paralleliterate in="portList" var="port">
+                            <if expr="port != None">
+                                <call function="'ReleasePortResource'">port</call>
+                            </if>
+                        </paralleliterate>
+                    </sequence>
+                </finally>
+            </try>
+        </sequence>
+    </function>
+
+    <!--  Start OpenSplice on both hosts and publish all samples (persistent) on host 1 -->
+    <function name="tc_dds2341_persistency_001a">
+        <function-no-args/>
+        <testcase name="'tc_dds2341_persistency_001a'">
+            <sequence>
+                <!-- Start OpenSplice on both hosts -->
+                <call function="'SetURI'">hostList[0], uri1</call>
+                <call function="'SetURI'">hostList[1], uri2</call>
+                <paralleliterate in="hostList" var="host">
+                    <sequence>
+                        <call function="'StartOpenSplice'">host</call>
+                        <tcstatus result="'info'">'Started OpenSplice on %s' % host.get_hostname()</tcstatus>
+                    </sequence>
+                </paralleliterate>
+
+                <!--  Run publisher on host 1 -->
+                <call-with-map function="'Publisher'">
+                    <call-map-arg name="'host'">hostList[0]</call-map-arg>
+                    <call-map-arg name="'samples'">samples</call-map-arg>
+                    <call-map-arg name="'persistent'">1</call-map-arg>
+                    <call-map-arg name="'autodispose'">1</call-map-arg>
+                    <call-map-arg name="'partition'">'partitionA'</call-map-arg>
+                </call-with-map>
+                <if expr="STAXResult != STAFRC.Ok">
+                    <sequence>
+                        <script>proceed.set(0)</script>
+                        <log message="STAXMessageLog" level="'info'">'Publisher failed on %s (RC=%s)' % (hostsList[0].get_hostname(), STAXResult)</log>
+                        <tcstatus result="'fail'">'Failed to write samples on %s' % hostList[0].get_hostname()</tcstatus>
+                    </sequence>
+                    <else>
+                        <sequence>
+                            <log message="STAXMessageLog" level="'info'">'Publisher successful on %s (RC=%s)' % (hostList[0].get_hostname(), STAXResult)</log>
+                            <tcstatus result="'pass'">'Publisher successful on %s (RC=%s)' % (hostList[0].get_hostname(), STAXResult)</tcstatus>
+                            <script>
+                                import time
+                                time.sleep(5)
+                            </script>
+                        </sequence>
+                    </else>
+                </if>
+            </sequence>
+        </testcase>
+    </function>
+
+    <!-- Run subscriber, wait for historical data and take all samples on host 2 -->
+    <function name="tc_dds2341_persistency_001b">
+        <function-no-args/>
+        <testcase name="'tc_dds2341_persistency_001b'">
+            <if expr="proceed">
+                <!-- Run Subscriber -->
+                <sequence>
+                    <call-with-map function="'Subscriber'">
+                        <call-map-arg name="'host'">hostList[1]</call-map-arg>
+                        <call-map-arg name="'samples'">samples</call-map-arg>
+                        <call-map-arg name="'take'">1</call-map-arg>
+                        <call-map-arg name="'wait'">5000</call-map-arg>
+                        <call-map-arg name="'persistent'">1</call-map-arg>
+                        <call-map-arg name="'partition'">'partitionA'</call-map-arg>
+                    </call-with-map>
+                    <if expr="STAXResult != STAFRC.Ok">
+                        <sequence>
+                            <script>proceed.set(0)</script>
+                            <log message="STAXMessageLog" level="'info'">'Subscriber failed on %s (RC=%s)' % (hostList[1].get_hostname(), STAXResult)</log>
+                            <tcstatus result="'fail'">'Failed to read samples on %s' % hostList[1].get_hostname()</tcstatus>
+                        </sequence>
+                        <else>
+                            <sequence>
+                                <tcstatus result="'pass'">'Subscriber read all expected samples on %s' % (hostList[1].get_hostname())</tcstatus>
+                                <log message="STAXMessageLog" level="'info'">'Subscriber successful on %s (RC=%s)' % (hostList[1].get_hostname(), STAXResult)</log>
+                            </sequence>
+                        </else>
+                    </if>
+                </sequence>
+                <else>
+                    <tcstatus result="'fail'">'Previous failure, skipping test'</tcstatus>
+                </else>
+            </if>
+        </testcase>
+    </function>
+
+    <!-- Stop OpenSplice on host 1, Restart OpenSplice on host 2 -->
+    <function name="tc_dds2341_persistency_001c">
+        <function-no-args/>
+        <testcase name="'tc_dds2341_persistency_001c'">
+            <sequence>
+                <if expr="proceed">
+                    <!-- Stop OpenSplice on all hosts -->
+                    <sequence>
+                        <script>success = STAXGlobal(1)</script>
+                        <paralleliterate in="hostList" var="host">
+                            <sequence>
+                                <call function="'StopOpenSplice'">host</call>
+                                <if expr="STAXResult != STAFRC.Ok">
+                                    <sequence>
+                                        <tcstatus result="'fail'">'Failure stopping OpenSplice on %s' % host.get_hostname()</tcstatus>
+                                        <script>success.set(0)</script>
+                                    </sequence>
+                                    <else>
+                                        <tcstatus result="'info'">'Stopped OpenSplice on %s' % host.get_hostname()</tcstatus>
+                                    </else>
+                                </if>
+                            </sequence>
+                        </paralleliterate>
+                        <if expr="not success">
+                            <script>proceed.set(0)</script>
+                        </if>
+                    </sequence>
+                    <else>
+                        <tcstatus result="'fail'">'Previous failure, skipping test'</tcstatus>
+                    </else>
+                </if>
+
+                <!-- Start OpenSplice on host 2 -->
+                <if expr="proceed">
+                    <sequence>
+                        <call function="'StartOpenSplice'">hostList[1]</call>
+                        <tcstatus result="'info'">'Started OpenSplice on %s' % hostList[1].get_hostname()</tcstatus>
+                        <if expr="success">
+                            <sequence>
+                                <tcstatus result="'pass'">'Stopped OpenSplice on %s, restarted OpenSplice on %s' % (hostList[0].get_hostname(), hostList[1].get_hostname())</tcstatus>
+                                <script>
+                                    import time
+                                    time.sleep(5)
+                                </script>
+                            </sequence>
+                        </if>
+                    </sequence>
+                </if>
+            </sequence>
+        </testcase>
+    </function>
+
+    <!-- Run subscriber, wait for historical data and take all samples on host 2 -->
+    <function name="tc_dds2341_persistency_001d">
+        <function-no-args/>
+        <testcase name="'tc_dds2341_persistency_001d'">
+            <if expr="proceed">
+                <!-- Run Subscriber -->
+                <sequence>
+                    <call-with-map function="'Subscriber'">
+                        <call-map-arg name="'host'">hostList[1]</call-map-arg>
+                        <call-map-arg name="'samples'">samples</call-map-arg>
+                        <call-map-arg name="'take'">1</call-map-arg>
+                        <call-map-arg name="'wait'">5000</call-map-arg>
+                        <call-map-arg name="'persistent'">1</call-map-arg>
+                        <call-map-arg name="'partition'">'partitionA'</call-map-arg>
+                    </call-with-map>
+                    <!-- Expects a timeout on the wait for historical data call (DDS_RETCODE_TIMEOUT) -->
+                    <if expr="STAXResult != 10">
+                        <sequence>
+                            <script>proceed.set(0)</script>
+                            <log message="STAXMessageLog" level="'info'">'Subscriber failed on %s (RC=%s)' % (hostList[1].get_hostname(), STAXResult)</log>
+                            <tcstatus result="'fail'">'Subscriber failed to get a DDS_RETCODE_TIMEOUT code on %s' % hostList[1].get_hostname()</tcstatus>
+                        </sequence>
+                        <else>
+                            <sequence>
+                                <tcstatus result="'pass'">'Subscriber read DDS_RETCODE_TIMEOUT samples on %s' % (hostList[1].get_hostname())</tcstatus>
+                                <log message="STAXMessageLog" level="'info'">'Subscriber successful on %s (RC=%s)' % (hostList[1].get_hostname(), STAXResult)</log>
+                            </sequence>
+                        </else>
+                    </if>
+                </sequence>
+                <else>
+                    <tcstatus result="'fail'">'Previous failure, skipping test'</tcstatus>
+                </else>
+            </if>
+        </testcase>
+    </function>
+
+    <!-- Start OpenSplice on host 1 and run subscriber (wait for historical data and take all samples) on host 2 -->
+    <function name="tc_dds2341_persistency_001e">
+        <function-no-args/>
+        <testcase name="'tc_dds2341_persistency_001e'">
+            <sequence>
+                <!-- Start OpenSplice on host 1 -->
+                <if expr="proceed">
+                    <sequence>
+                        <call function="'StartOpenSplice'">hostList[0]</call>
+                        <tcstatus result="'info'">'Started OpenSplice on %s' % hostList[0].get_hostname()</tcstatus>
+                    </sequence>
+                    <else>
+                        <tcstatus result="'fail'">'Previous failure, skipping test'</tcstatus>
+                    </else>
+                </if>
+
+                <!-- Wait some time to allow durability services to align -->
+                <stafcmd name="'DurabilityAlignmentDelay'">
+                    <location>host.get_staf_url()</location>
+                    <service>'DELAY'</service>
+                    <request>'DELAY 20s'</request>
+                </stafcmd>
+
+                <if expr="proceed">
+                    <!-- Run Subscriber on both hosts -->
+                    <sequence>
+                        <script>success = STAXGlobal(1)</script>
+                        <paralleliterate in="hostList" var="host">
+                            <sequence>
+                                <call-with-map function="'Subscriber'">
+                                    <call-map-arg name="'host'">host</call-map-arg>
+                                    <call-map-arg name="'samples'">samples</call-map-arg>
+                                    <call-map-arg name="'take'">1</call-map-arg>
+                                    <call-map-arg name="'wait'">5000</call-map-arg>
+                                    <call-map-arg name="'persistent'">1</call-map-arg>
+                                    <call-map-arg name="'partition'">'partitionA'</call-map-arg>
+                                </call-with-map>
+                                <if expr="STAXResult != STAFRC.Ok">
+                                    <sequence>
+                                        <script>success.set(0)</script>
+                                        <log message="STAXMessageLog" level="'info'">'Subscriber failed on %s (RC=%s)' % (host.get_hostname(), STAXResult)</log>
+                                        <tcstatus result="'fail'">'Failed to read samples on %s' % host.get_hostname()</tcstatus>
+                                    </sequence>
+                                    <else>
+                                        <log message="STAXMessageLog" level="'info'">'Subscriber successful on %s (RC=%s)' % (host.get_hostname(), STAXResult)</log>
+                                    </else>
+                                </if>
+                            </sequence>
+                        </paralleliterate>
+                        <if expr="success">
+                            <tcstatus result="'pass'">'Subscriber read all expected samples on both hosts'</tcstatus>
+                        </if>
+                    </sequence>
+                </if>
+            </sequence>
+        </testcase>
+    </function>
+
+    <!-- Stop OpenSplice on both hosts -->
+    <function name="tc_dds2341_persistency_001f">
+        <function-no-args/>
+        <testcase name="'tc_dds2341_persistency_001f'">
+            <sequence>
+                <script>success = STAXGlobal(1)</script>
+                <paralleliterate in="hostList" var="host">
+                    <sequence>
+                        <call function="'StopOpenSplice'">host</call>
+                        <if expr="STAXResult != STAFRC.Ok">
+                            <sequence>
+                                <tcstatus result="'fail'">'Failure stopping OpenSplice on %s' % host.get_hostname()</tcstatus>
+                                <script>success.set(0)</script>
+                            </sequence>
+                            <else>
+                                <tcstatus result="'info'">'Stopped OpenSplice on %s' % host.get_hostname()</tcstatus>
+                            </else>
+                        </if>
+                    </sequence>
+                </paralleliterate>
+                <if expr="success">
+                    <tcstatus result="'pass'">'Stopped OpenSplice on all hosts'</tcstatus>
+                </if>
+            </sequence>
+        </testcase>
+    </function>
+
+</stax>

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -74,8 +74,8 @@ idl_stacDefFindMemberIndexByName(
 
 static c_equality
 idl_stacDefNamesAreEqual(
-    os_char* exclusionName,
-    os_char* memberName);
+    void* exclusionName,
+    void* memberName);
 
 static os_boolean
 idl_stacDefOnlyExclusionsDefined(
@@ -625,10 +625,15 @@ idl_stacDefIsFieldExcluded(
 
 c_equality
 idl_stacDefNamesAreEqual(
-    os_char* exclusionName,
-    os_char* memberName)
+    void *_exclusionName,
+    void *_memberName)
 {
+    os_char* exclusionName;
+    os_char* memberName;
     c_equality eq = C_NE;
+
+    exclusionName = _exclusionName;
+    memberName = _memberName;
 
     if(strlen(exclusionName) > 1 && exclusionName[0] == '!')
     {

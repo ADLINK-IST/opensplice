@@ -5,7 +5,7 @@ TARGET_EXEC	:= cppgen
 
 include	$(OSPL_HOME)/setup/makefiles/target.mak
 
-ifeq "$(OS)$(OS_REV)" "win32"
+ifeq "$(OS)" "win"
 ifeq "$(SPECIAL)" "RELEASE"
 #Reset to remove the -O2 which does not work
 CFLAGS_OPT = -DNDEBUG -MD

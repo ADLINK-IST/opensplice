@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -289,9 +289,8 @@ namespace DDS
    typedef DDS_DCPSInterface_var <ErrorInfoInterface> ErrorInfoInterface_var;
    typedef DDS_DCPSInterface_out <ErrorInfoInterface> ErrorInfoInterface_out;
 
-   typedef DDS::Char* DomainId_t;
-   typedef DDS::String_var DomainId_t_var;
-   typedef DDS::String_out DomainId_t_out;
+   typedef DDS::Long DomainId_t;
+   typedef DDS::String DomainId_str_t;
 
    typedef DDS::LongLong InstanceHandle_t;
 
@@ -313,6 +312,7 @@ namespace DDS
     const DDS::ULong DURATION_ZERO_NSEC = (DDS::ULong) 0UL;
     const DDS::Long TIMESTAMP_INVALID_SEC = (DDS::Long) -1L;
     const DDS::ULong TIMESTAMP_INVALID_NSEC = (DDS::ULong) 4294967295UL;
+    const DDS::DomainId_t DOMAIN_ID_DEFAULT = (DDS::DomainId_t) 0x7fffffff;
     const DDS::Long RETCODE_OK = (DDS::Long) 0UL;
     const DDS::Long RETCODE_ERROR = (DDS::Long) 1UL;
     const DDS::Long RETCODE_UNSUPPORTED = (DDS::Long) 2UL;
@@ -1120,7 +1120,7 @@ namespace DDS
       virtual ReturnCode_t ignore_topic (InstanceHandle_t handle) = 0;
       virtual ReturnCode_t ignore_publication (InstanceHandle_t handle) = 0;
       virtual ReturnCode_t ignore_subscription (InstanceHandle_t handle) = 0;
-      virtual DomainId_t get_domain_id () = 0;
+      virtual DDS::DomainId_t get_domain_id () = 0;
       virtual ReturnCode_t assert_liveliness () = 0;
       virtual ReturnCode_t set_default_publisher_qos (const PublisherQos& qos) = 0;
       virtual ReturnCode_t get_default_publisher_qos (PublisherQos& qos) = 0;
@@ -1188,14 +1188,15 @@ namespace DDS
       static const char * _local_id;
       DomainParticipantFactoryInterface_ptr _this () { return this; }
 
-      virtual DomainParticipant_ptr create_participant (const DDS::Char* domainId, const DomainParticipantQos& qos, DomainParticipantListener_ptr a_listener, StatusMask mask) = 0;
+      virtual DomainParticipant_ptr create_participant (DDS::DomainId_t domainId, const DomainParticipantQos& qos, DomainParticipantListener_ptr a_listener, StatusMask mask) = 0;
+
       virtual ReturnCode_t delete_participant (DomainParticipant_ptr a_participant) = 0;
-      virtual DomainParticipant_ptr lookup_participant (const DDS::Char* domainId) = 0;
+      virtual DomainParticipant_ptr lookup_participant (DDS::DomainId_t domainId) = 0;
       virtual ReturnCode_t set_qos (const DomainParticipantFactoryQos& qos) = 0;
       virtual ReturnCode_t get_qos (DomainParticipantFactoryQos& qos) = 0;
       virtual ReturnCode_t set_default_participant_qos (const DomainParticipantQos& qos) = 0;
       virtual ReturnCode_t get_default_participant_qos (DomainParticipantQos& qos) = 0;
-      virtual Domain_ptr lookup_domain (const DDS::Char* domain_id) = 0;
+      virtual Domain_ptr lookup_domain (DDS::DomainId_t domain_id) = 0;
       virtual ReturnCode_t delete_domain (Domain_ptr a_domain) = 0;
       virtual ReturnCode_t delete_contained_entities () = 0;
 
@@ -1266,7 +1267,7 @@ namespace DDS
 
    class SACPP_API TopicDescription
    :
-      virtual public DDS::Entity
+       virtual public DDS::LocalObject
    {
    public:
       typedef TopicDescription_ptr _ptr_type;
@@ -1296,6 +1297,7 @@ namespace DDS
 
    class SACPP_API Topic
    :
+      virtual public Entity,
       virtual public TopicDescription
    {
    public:
@@ -1515,10 +1517,60 @@ namespace DDS
       Subscriber & operator = (const Subscriber &);
    };
 
+   struct Property;
+
+   typedef Property * Property_ptr;
+   typedef DDS_DCPSInterface_var <Property> Property_var;
+   typedef DDS_DCPSInterface_out <Property> Property_out;
+
+   struct  Property
+   {
+     typedef Property_var _var_type;
+     typedef Property_out _out_type;
+
+     char* name;
+     char* value;
+   };
+
+   class SACPP_API PropertyInterface;
+   typedef PropertyInterface *PropertyInterface_ptr;
+   typedef DDS_DCPSInterface_var <PropertyInterface> PropertyInterface_var;
+   typedef DDS_DCPSInterface_out <PropertyInterface> PropertyInterface_out;
+
+   class SACPP_API PropertyInterface
+       :
+         virtual public DDS::LocalObject
+     {
+     public:
+       typedef PropertyInterface_ptr _ptr_type;
+       typedef PropertyInterface_var _var_type;
+       typedef PropertyInterface_out _out_type;
+
+       // The static operations.
+       static PropertyInterface_ptr _duplicate (PropertyInterface_ptr obj);
+       DDS::Boolean _local_is_a (const char * id);
+
+       static PropertyInterface_ptr _narrow (::DDS::Object_ptr obj);
+       static PropertyInterface_ptr _unchecked_narrow (::DDS::Object_ptr obj);
+       static PropertyInterface_ptr _nil (void) { return static_cast<PropertyInterface_ptr> (0); }
+       static const char * _local_id;
+
+       virtual ::DDS::ReturnCode_t set_property (const ::DDS::Property & a_property) = 0;
+       virtual ::DDS::ReturnCode_t get_property (::DDS::Property & a_property) = 0;
+
+     protected:
+       PropertyInterface () {};
+       ~PropertyInterface () {};
+
+     private:
+       PropertyInterface (const PropertyInterface &);
+       void operator= (const PropertyInterface &);
+   };
 
    class SACPP_API DataReader
    :
-      virtual public Entity
+      virtual public Entity,
+      virtual public PropertyInterface
    {
    public:
       typedef DataReader_ptr _ptr_type;
@@ -1583,6 +1635,7 @@ namespace DDS
       DDS::Long sample_rank;
       DDS::Long generation_rank;
       DDS::Long absolute_generation_rank;
+      Time_t reception_timestamp;
    };
 
    typedef DDS_DCPSStruct_var <SampleInfo> SampleInfo_var;
@@ -1640,6 +1693,10 @@ namespace DDS
       static const char * _local_id;
       DataReaderView_ptr _this () { return this; }
 
+      virtual ReadCondition_ptr create_readcondition (SampleStateMask sample_states, ViewStateMask view_states, InstanceStateMask instance_states) = 0;
+      virtual QueryCondition_ptr create_querycondition (SampleStateMask sample_states, ViewStateMask view_states, InstanceStateMask instance_states, const DDS::Char* query_expression, const StringSeq& query_parameters) = 0;
+      virtual ReturnCode_t delete_readcondition (ReadCondition_ptr a_condition) = 0;
+      virtual ReturnCode_t delete_contained_entities () = 0;
       virtual ReturnCode_t set_qos (const DataReaderViewQos& qos) = 0;
       virtual ReturnCode_t get_qos (DataReaderViewQos& qos) = 0;
       virtual DataReader_ptr get_datareader () = 0;

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE stax SYSTEM "stax.dtd">
+<stax>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <function name="TestInstallOSPL" scope="local">
+        <function-list-args>
+            <function-required-arg name="source_host_name">
+                The host name where the installation and the license are stored
+            </function-required-arg>
+            <function-required-arg name="target_host_name">
+                The target host name to install the OSPL
+            </function-required-arg>
+            <function-required-arg name="installer_path">
+                The path to the installer of the OSPL on the "source" host
+            </function-required-arg>
+            <function-required-arg name="target_install_dir">
+                The path where the OSPL will be installed on the "target" host
+            </function-required-arg>
+            <function-optional-arg name="license_path" default="None">
+                The path to the license  on the "source" host to use for the installation
+            </function-optional-arg>
+        </function-list-args>
+
+        <sequence>
+            <import file="'../test_ospl.xml'"/>
+            <call function="'Initialise'"/>
+
+            <script>
+                source_host = Host(host_name = source_host_name)
+                target_host = Host(host_name = target_host_name, staf_port = 6511)
+            </script>
+
+            <try>
+                <sequence>
+                    <call function="'InitHost'">source_host</call>
+                    <call function="'InitHost'">target_host</call>
+                </sequence>
+                <catch exception="'...'" var="info">
+                </catch>
+            </try>
+
+            <import file="'../open_splice.xml'"/>
+            <try>
+                <sequence>
+                    <call function="'InstallOSPL'">[source_host, target_host, installer_path, target_install_dir, license_path]</call>
+                </sequence>
+                <catch exception="'...'" var="info">
+                    <message>"Caught exception: %s"% info</message>
+                </catch>
+            </try>
+        </sequence>
+    </function>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <function name="TestUninstallOSPL" scope="local">
+        <function-list-args>
+            <function-required-arg name="target_host_name">
+                The target host name to install the OSPL
+            </function-required-arg>
+            <function-required-arg name="target_install_dir">
+                The path where the OSPL will be installed on the "target" host
+            </function-required-arg>
+        </function-list-args>
+
+        <sequence>
+            <import file="'../test_ospl.xml'"/>
+            <call function="'Initialise'"/>
+
+            <script>
+                target_host = Host(host_name = target_host_name, staf_port = 6511)
+            </script>
+
+            <try>
+                <sequence>
+                    <call function="'InitHost'">target_host</call>
+                </sequence>
+                <catch exception="'...'" var="info">
+                </catch>
+            </try>
+
+            <import file="'../open_splice.xml'"/>
+            <try>
+                <sequence>
+                    <call function="'UninstallOSPL'">[target_host, target_install_dir]</call>
+                </sequence>
+                <catch exception="'...'" var="info">
+                    <message>"Caught exception: %s"% info</message>
+                </catch>
+            </try>
+        </sequence>
+    </function>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+</stax>

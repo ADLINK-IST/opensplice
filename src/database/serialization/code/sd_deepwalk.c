@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -460,15 +460,15 @@ sd_deepwalk(
     sd_deepwalkFunc action,
     void *actionArg)
 {
-    c_object *placeHolder;
+    c_object **placeHolder;
 
     SD_CONFIDENCE(objectPtr);
 
     if (c_typeIsRef(type)) {
-        placeHolder = (c_object *)&objectPtr;
+        placeHolder = &objectPtr;
     } else {
-        placeHolder = objectPtr;
+        placeHolder = (c_object**)objectPtr;
     }
 
-    sd_deepwalkType(type, placeHolder, action, actionArg);
+    sd_deepwalkType(type, (c_object*)placeHolder, action, actionArg);
 }

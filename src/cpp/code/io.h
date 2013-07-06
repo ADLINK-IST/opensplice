@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -44,11 +44,11 @@ extern "C"
    extern char **Curdir (void);
    extern char *read_ctrl (void);
    extern char *read_ident (void);
-   extern void init_io (FILE *, char *);
-   extern void init_incldir (char *);
+   extern void init_io (FILE *, const char *);
+   extern void init_incldir (const char *);
    extern void push_new_file (char *, FILE *);
    extern void Push (char);
-   extern void out_at (int, char *);
+   extern void out_at (int, const char *);
    extern void outputc (char);
    extern void outputs (char *);
    extern void outputd (int);

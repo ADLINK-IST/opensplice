@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -170,7 +170,7 @@ a_shmAttach(
 			if (!a_shmIsAttached(context)) {
 				os_sharedAttr shm_attr;
 				os_sharedAttrInit(&shm_attr);
-				context->handle = os_sharedCreateHandle(context->shm_name, &shm_attr);
+				context->handle = os_sharedCreateHandle(context->shm_name, &shm_attr, 0);
 				osResult = os_sharedMemoryAttach(context->handle);
 			} else {
 				osResult = os_resultFail;
@@ -228,7 +228,7 @@ a_shmCreateShm(
 				sharedAttr.sharedImpl = OS_MAP_ON_SEG;
 				sharedAttr.map_address = (void *)map_address;
 		
-				context->handle = os_sharedCreateHandle(context->shm_name, &sharedAttr);
+				context->handle = os_sharedCreateHandle(context->shm_name, &sharedAttr, 0);
 		
 				if (context->handle ) {
 					osResult = os_sharedMemoryCreate(context->handle, (os_uint)size);

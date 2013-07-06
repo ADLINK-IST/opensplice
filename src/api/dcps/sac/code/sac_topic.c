@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -122,6 +122,30 @@ DDS_Topic_dispose_all_data (
 {
     return (DDS_ReturnCode_t)
     gapi_topic_dispose_all_data (
+        (gapi_topic)_this);
+}
+
+/*     DDS_string
+ *     DDS_Topic_get_metadescription();
+ */
+DDS_string
+DDS_Topic_get_metadescription (
+    DDS_Topic _this)
+{
+    return (DDS_string)
+    gapi_topic_get_metadescription (
+        (gapi_topic)_this);
+}
+
+/*     DDS_string
+ *     DDS_Topic_get_keylist();
+ */
+DDS_string
+DDS_Topic_get_keylist (
+    DDS_Topic _this)
+{
+    return (DDS_string)
+    gapi_topic_get_keylist (
         (gapi_topic)_this);
 }
 

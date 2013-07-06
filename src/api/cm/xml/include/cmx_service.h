@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /**@file api/cm/xml/include/cmx_service.h
@@ -31,7 +31,7 @@ extern "C" {
 
 /**
  * @brief Provides access to the state of the supplied service.
- * 
+ *
  * The state looks like:
  @verbatim
     <entity>
@@ -55,25 +55,24 @@ extern "C" {
  *      -# TERMINATED
  *      -# DIED
  * @param The service where to resolve the state from.
- * @return The state of the supplied service. If the service is not available 
+ * @return The state of the supplied service. If the service is not available
  *         (anymore), NULL is returned.
  */
 OS_API c_char*         cmx_serviceGetState     (const c_char* service);
 
 /**
  * @brief Applied the supplied state on the supplied service.
- * 
+ *
  * @param service The service to apply the state on.
  * @param state The state that must be applied to the supplied servive.
  * @return Whether or not the state change succeeded. When succeeded:
  *         @verbatim<result>OK</result>@endverbatim is returned,
  *         @verbatim<result>FAILED</result>@endverbatim otherwise.
- * 
+ *
  * @todo Actual implementation of the state change.
  */
 OS_API const c_char*   cmx_serviceSetState     (const c_char* service,
                                                 const c_char* state);
-
 #undef OS_API
 
 #if defined (__cplusplus)

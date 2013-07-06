@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE stax SYSTEM "../../stax/stax.dtd">
+
+<stax>
+    <defaultcall function="main"/>
+    <script>
+        STAXMessageLog = 1
+    </script>
+
+    <function name="main">
+        <function-single-arg>
+            <function-optional-arg name="runs" default="1">Number of test runs, default is one</function-optional-arg>
+        </function-single-arg>
+        <sequence>
+            <import file="'../../common/LogWriter.xml'"/>
+            <script>
+                import os
+                scriptdir = os.path.dirname(STAXCurrentXMLFile)
+            </script>
+
+            <loop from="1" to="1" var="i">
+                <sequence>
+                    <script>tc_name = 'dds2342_singlesource_persistency_%d' % i</script>
+                    <job name="tc_name" monitor="0" clearlogs="'enabled'">
+                        <job-file>scriptdir + '/dds2342_scenario1.xml'</job-file>
+                        <job-function>'Run'</job-function>
+                        <job-function-args>['x64-ub10-01.office.ptnl', 'x64-ub10-02.office.ptnl']</job-function-args>
+                    </job>
+                    <if expr="RC == STAFRC.Ok">
+                        <call function="'SaveJobLog'">tc_name, STAXSubJobID</call>
+                        <else>
+                            <log message="STAXMessageLog" level="'error'">
+                                'Sub-job %s could not be started: %s (RC: %s)' % (tc_name, STAFResult, RC)
+                            </log>
+                        </else>
+                    </if>
+                </sequence>
+            </loop>
+
+        </sequence>
+    </function>
+</stax>

@@ -84,7 +84,7 @@
                     non-responsiveness of a service is detected, but leads to more processing. Increasing it has
                     the opposite effect.</p>
                 ]]></comment>
-        <default>20.0</default>
+        <default>10.0</default>
         <minimum>0.2</minimum>
         <attributeFloat name="update_factor" required="true">
           <comment><![CDATA[
@@ -96,7 +96,7 @@
                     ]]></comment>
                     <minimum>0.01</minimum>
                     <maximum>1.0</maximum>
-                    <default>0.1</default>
+                    <default>0.2</default>
                 </attributeFloat>
             </leafFloat>
         </element>
@@ -150,6 +150,35 @@
       <maximum>60.0</maximum>
       <default>10.0</default>
     </leafFloat>
+    <leafBoolean name="SingleProcess" minOccurrences="0" maxOccurrences="1">
+      <comment><![CDATA[
+                    <p>This element specifies whether the OpenSplice Domain and other OpenSplice
+                      services and applications are intended to be all deployed within the same
+                      process.  The default is to start each service in a seperate new process,
+                      but it is an optimisation under certain conditions to be able to have all
+                      OpenSplice components running in the same process.</p>
+                    <p>Refer to the OpenSplice documentation for more details of how this deployment
+                       style can optimise your system.</p>
+                    <p>There are two modes of a "Single Process" style deployment:</p>
+                    <p><b>Mode 1</b> : the user starts an application as a new process.  In this
+                      case, the create_participant operation will implicitly start the OpenSplice
+                      daemon as a thread in the existing application process.  The OpenSplice daemon
+                      thread will then also implicitly start all services (and other applications)
+                      specified in the configuration as threads within the same process.</p>
+                    <p><b>Mode 2</b> : "ospl start" is ran as normal, in which case the OpenSplice
+                      daemon will be started as a new process but will start all services (and other
+                      applications) specified in the configuration as threads within the same process.</p>
+                    <p>Please note that the Application elements specified under Domain will only
+                      take effect for either mode when this SingleProcess attribute has a value
+                      of true.</p>
+                    <p>Please note also that the choice to use the SingleProcess deployment also
+                      implies the use of heap memory for the OpenSplice database management rather
+                      than shared memory that is typically used for this purpose.  Heap memory is
+                      limited by the Operating System, so the Database element under Domain does
+                      not take effect when SingleProcess has a value of true.</p>
+                ]]></comment>
+      <default>false</default>
+    </leafBoolean>
     <element name="Daemon" minOccurrences="0" maxOccurrences="1">
     <comment><![CDATA[
             Every domain is controlled by exactly one daemon: the Splice Daemon.
@@ -310,7 +339,7 @@
       </element>
     </element>
   </element>
-    <element name="Database" minOccurrences="1" maxOccurrences="1">
+    <element name="Database" minOccurrences="0" maxOccurrences="1">
       <comment><![CDATA[
                     This element contains information about the nodal administration (shared memory) to be used.
             ]]></comment>
@@ -554,6 +583,66 @@
         <value>systemhalt</value>
         <default>skip</default>
       </leafEnum>
+    </element>
+    <element name="Application" minOccurrences="0" maxOccurrences="0">
+      <comment><![CDATA[
+                <p>The Domain service can deploy DDS applications by dynamically loading application
+                shared libraries and starting threads within the existing process.</p>
+                <p><b>Note that Applications only take affect when the SingleProcess configuration
+                 is enabled</b></p>
+            ]]></comment>
+      <attributeString name="name" required="true">
+        <comment><![CDATA[
+                    <p>The name uniquely identifies the application</p>
+                ]]></comment>
+        <maxLength>0</maxLength>
+        <default>application1</default>
+      </attributeString>
+      <attributeBoolean name="enabled" required="false">
+        <comment><![CDATA[
+                    <p>This attribute indicates whether the application is actually started or not.</p>
+                    <p>Toggling an applicatione between enabled and disabled is a quick alternative for
+                    commenting out the corresponding lines in the configuration file.</p>
+                ]]></comment>
+        <maxLength>0</maxLength>
+        <default>true</default>
+      </attributeBoolean>
+      <leafString name="Command" minOccurrences="1" maxOccurrences="1">
+        <comment><![CDATA[
+                    <p>Command is the name of both the entry point function to invoked and the name of the
+                    shared library to be dynamically loaded into the process.  The signature of the entry
+                    point function is the same as argc/argv usually seen with main.</p>
+                    <p>For example, if Command is "HelloWorld", OpenSpliceDDS will attempt to load
+                    "libHelloWorld.so" on Unix (or "HelloWorld.dll" on Windows) into the existing process
+                    and then  invoke the "HelloWorld" entry point to start that DDS application.</p>
+                    <p>If the name of the shared library does not have the same name as the entry point the
+                    user is able to override the name of the library by using the Application's Library attribute</p>
+                    <p>The shared library is located by way of the current working directory, or LD_LIBRARY_PATH
+                    for Unix systems, and PATH for Windows systems.</p>
+                ]]></comment>
+        <maxLength>0</maxLength>
+        <default>application1</default>
+      </leafString>
+      <leafString name="Arguments" minOccurrences="0" maxOccurrences="1">
+        <comment><![CDATA[
+                    <p>This optional attribute allows the user to specify arguments to be passed to the
+                    DDS application's entry point when it is invoked.</p>
+                    <p>For example, if Command is "HelloWorld" and Arguments is "arg1 arg2", OpenSplice will
+                    invoke the HelloWorld function with the argc = 3 and argv = {"HelloWorld", "arg1", "arg2"}</p>
+                ]]></comment>
+        <maxLength>0</maxLength>
+        <default></default>
+      </leafString>
+      <leafString name="Library" minOccurrences="0" maxOccurrences="1">
+        <comment><![CDATA[
+                    <p>The optional Library attribute allows the user to override the name of the shared
+                    library if it is different to the name of the entry point specified by Command.</p>
+                    <p>The shared library is located by way of the current working directory, or LD_LIBRARY_PATH
+                    for Unix systems, and PATH for Windows systems.</p>
+                ]]></comment>
+        <maxLength>0</maxLength>
+        <default>application1</default>
+      </leafString>
     </element>
     <element name="BuiltinTopics" minOccurrences="0" maxOccurrences="1">
       <comment><![CDATA[
@@ -1519,13 +1608,13 @@
           <maxLength>0</maxLength>
           <default>defaultNameSpace</default>
         </attributeString>
-        <leafString name="Partition" minOccurrences="1" maxOccurrences="0">
+        <leafString name="Partition" minOccurrences="0" maxOccurrences="0">
           <comment><![CDATA[
-                        This element specifies a partition expression that
+                        This element specifies a partition-topic expression that
                         matches the namespace. A namespace consists of a set of
                         partition expressions. Together they determine the
                         partitions that belong to the namespace. Make sure the
-                        different name-spaces do not have an overlap in partitions.
+                        different namespaces do not have an overlap in partitions.
                         The default configuration has one namespace containing all
                         partitions. A partition may contain the
                         wildcards '*' to match any number of characters and '?'
@@ -1533,6 +1622,21 @@
                     ]]></comment>
           <maxLength>0</maxLength>
           <default>*</default>
+        </leafString>
+        <leafString name="PartitionTopic" minOccurrences="0" maxOccurrences="0">
+          <comment><![CDATA[
+                        This element specifies a partition-topic - or 'group' expression that
+                        matches the namespace. A group expression is a combination of a 
+                        partition- and a topic expression. The notation is 'partition.topic'. 
+                        A namespace consists of a set of group expressions. Together they 
+                        determine the groups that belong to the namespace. Make sure the
+                        different namespaces do not have an overlap in groups.
+                        The default configuration has one namespace containing all
+                        groups. A group expression may contain the wildcards '*' to match 
+                        any number of characters and '?' to match one single character.
+                    ]]></comment>
+          <maxLength>0</maxLength>
+          <default>*.*</default>
         </leafString>
       </element>
       <element name="Policy" minOccurrences="1" maxOccurrences="0">
@@ -1617,6 +1721,16 @@
                 		historical data to other durability services.
                 	]]></comment>
           <default>True</default>
+        </attributeBoolean>
+        <attributeBoolean name="delayedAlignment" required="false">
+	        <comment><![CDATA[
+	                		[BETA] This element determines if the durability allows delayed alignment of initial data.
+	                		This can be usefull for systems where there can be late-joining nodes with a persistent
+	                		dataset, which by default are then not inserted.
+	                		When this option is enabled, durability will only insert a persistent set from a late joining 
+	                		node when no writers have been created in the partitions matched by the namespace!
+	                	]]></comment>
+	        <default>False</default>
         </attributeBoolean>
         <attributeEnum name="alignee" required="true">
           <comment><![CDATA[
@@ -1757,7 +1871,7 @@
       </leafBoolean>
       <leafEnum name="Verbosity" minOccurrences="0" maxOccurrences="1">
         <comment><![CDATA[
-                    This element specifies the verbosity level of the loggin
+                    This element specifies the verbosity level of the logging
                     information. The higher the level, the more (detailed)
                     information will be logged.
                 ]]></comment>
@@ -1768,6 +1882,7 @@
         <value>FINE</value>
         <value>FINER</value>
         <value>FINEST</value>
+        <value>NONE</value>
         <default>INFO</default>
       </leafEnum>
     </element>
@@ -2438,7 +2553,7 @@
                     ]]></comment>
           <minimum>1</minimum>
           <maximum>65535</maximum>
-          <default>3367</default>
+          <default>53430</default>
         </leafInt>
         <leafSize name="FragmentSize" minOccurrences="0" maxOccurrences="1">
           <comment><![CDATA[
@@ -2774,7 +2889,7 @@
                 ]]></comment>
         <minimum>1</minimum>
         <maximum>65536</maximum>
-        <default>3369</default>
+        <default>53450</default>
       </leafInt>
       <leafString name="ProbeList" minOccurrences="0" maxOccurrences="1">
         <comment><![CDATA[
@@ -3239,12 +3354,12 @@
                      is no good reason not to.</li>
                    </ul></p>
 
-                   <p>The default setting is "strict".</p>
+                   <p>The default setting is "lax".</p>
           ]]></comment>
         <value>pedantic</value>
         <value>strict</value>
         <value>lax</value>
-        <default>strict</default>
+        <default>lax</default>
       </leafEnum>
       <leafBoolean name="ExplicitlyPublishQosSetToDefault" minOccurrences="0" maxOccurrences="1">
         <comment><![CDATA[
@@ -3444,7 +3559,7 @@
         <value>fine</value>
         <value>finer</value>
         <value>finest</value>
-        <default>info</default>
+        <default>warning</default>
       </leafEnum>
       <leafString name="OutputFile" minOccurrences="0" maxOccurrences="1">
         <comment><![CDATA[

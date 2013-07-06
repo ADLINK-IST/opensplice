@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -393,10 +393,7 @@ d_avlTreeFind (
     assert(compareFunction != (int (*)())NULL);
 
     node = rootNode;
-    for (;;) {
-        if (node == NULL) {
-            return NULL;
-        }
+    while (node) {
         comparison = compareFunction(data, node->data);
         if (comparison < 0) {
             node = node->left;
@@ -502,7 +499,6 @@ d_avlTreeWalk (
         routestack[++stack_count] = D_AVLTREE_LEFT;
         stack_ptr++;
     }
-    return TRUE;
 }
 
 /***********************************************************************

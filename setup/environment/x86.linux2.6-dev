@@ -1,4 +1,4 @@
-. $OSPL_HOME/bin/checkconf
+. "$OSPL_HOME/bin/checkconf"
 
 SPLICE_HOST=x86.linux2.6-dev
 SPLICE_TARGET=x86.linux2.6-dev
@@ -7,6 +7,7 @@ echo
 
 ERRS=0
 gcc_check || ERRS=1
+glibc_check || ERRS=1
 valgrind_check || ERRS=1
 make_check || ERRS=1
 gawk_check || ERRS=1
@@ -16,6 +17,12 @@ javac_check || ERRS=1
 gmcs_check || ERRS=1
 tao_check || ERRS=1
 jacorb_check || ERRS=1
+openorb_check || ERRS=1
+doxygen_check || ERRS=1
+
+SPLICE_HOST_FULL=x86.linux-gcc${GCC_FULLVERSION}-glibc${GLIBC_VERSION}-dev
+SPLICE_TARGET_FULL=$SPLICE_HOST_FULL
+export SPLICE_HOST_FULL SPLICE_TARGET_FULL
 
 if [ -z $REPORT ]
 then

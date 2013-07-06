@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -12,15 +12,21 @@
 #include "os_stdlib.h"
 #include "os_heap.h"
 #include "os_report.h"
-#include "code/os__socket.h"
+#include "os__socket.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
 
-#include "code/os_stdlib_getopt.c"
+#include "os_stdlib_getopt.c"
 #include "../common/code/os_stdlib_locate.c"
+#include "../common/code/os_stdlib_bsearch.c"
+#include "../common/code/os_stdlib_strtok_r.c"
+
+static os_int32
+os_ensurePathExists(
+    char* dir_name);
 
 /**
  *  \brief create a directory with default
@@ -155,7 +161,7 @@ char *
 os_strdup(
     const char *s1)
 {
-    int len;
+    os_size_t len;
     char *dup;
 
     len = strlen(s1) + 1;
@@ -245,18 +251,19 @@ digit_value(
             val = -1;
         }
     } else if (digit >= 'a' && digit <= 'z') {
-        val = digit - 'a';
+        val = digit - 'a' + 10;
         if (val >= base) {
             val = -1;
         }
     } else if (digit >= 'A' && digit <= 'Z') {
-        val = digit - 'A';
+        val = digit - 'A' + 10;
         if (val >= base) {
             val = -1;
         }
     } else {
         val = -1;
     }
+
     return (long long)val;
 }
 
@@ -276,7 +283,7 @@ os_strtoll(
     if (endptr) {
         *endptr = (char *)str;
     }
-    while (isspace(*str)) {
+    while (isspace ((int)*str)) {
         str++;
     }
     if (*str == '-') {
@@ -334,6 +341,7 @@ os_strtoll(
     if (endptr) {
         *endptr = (char *)str;
     }
+
     return value*sign;
 }
 
@@ -595,13 +603,88 @@ os_getTempDir()
         dir_name = os_getenv("TMP");
     }
 
+    /* Now we need to verify if we found a temp directory path, and if we did
+     * we have to make sure all the (sub)directories in the path exist.
+     * This is needed  to prevent any other operations from using the directory
+     * path while it doesn't exist and therefore running into errors.
+     */
     if (dir_name == NULL || (strcmp (dir_name, "") == 0)) {
         OS_REPORT(OS_ERROR, "os_getTempDir", 0,
             "Could not retrieve temporary directory path - "
             "neither of environment variables TEMP, TMP, OSPL_TEMP were set");
+    } else if(os_ensurePathExists(dir_name) != 0)
+    {
+        OS_REPORT_1(OS_ERROR, "os_getTempDir", 0,
+            "Could not ensure all (sub)directories of the temporary directory "OS_REPORT_NL
+            "path '%s' exist. "OS_REPORT_NL
+            "This has consequences for the ability of OpenSpliceDDS to run "OS_REPORT_NL
+            "properly, as the directory path must be accessible to create "OS_REPORT_NL
+            "database and key files in. Without this ability OpenSpliceDDS can "OS_REPORT_NL
+            "not start."OS_REPORT_NL,
+            dir_name);
     }
 
     return dir_name;
+}
+
+os_int32
+os_ensurePathExists(
+    char* dir_name)
+{
+    char* tmp;
+    char* ptr;
+    char ptrTmp;
+    struct os_stat statBuf;
+    os_result status;
+    os_int32 result = 0;
+    os_int32 cont = 1;
+
+    if(dir_name)
+    {
+        tmp = os_strdup(dir_name);
+
+        for (ptr = tmp; cont; ptr++)
+        {
+            if (*ptr == '\\' || *ptr == '/' || *ptr == '\0')
+            {
+                ptrTmp = ptr[0];
+                ptr[0] = '\0';
+                status = os_stat(tmp, &statBuf);
+
+                if (status != os_resultSuccess)
+                {
+                    os_mkdir(tmp, 0);
+                    status = os_stat(tmp, &statBuf);
+                }
+
+                if (!OS_ISDIR (statBuf.stat_mode))
+                {
+                    if ((strlen(tmp) == 2) && (tmp[1] == ':')) {
+                        /*This is a device like for instance: 'C:'*/
+                    }
+                    else
+                    {
+                        OS_REPORT_3(OS_ERROR, "os_ensurePathExists", 0,
+                        "Unable to create directory '%s' within path '%s'. Errorcode: %d",
+                        tmp,
+                        dir_name,
+                        (int)errno);
+                        result = -1;
+                    }
+                }
+                ptr[0] = ptrTmp;
+            }
+            if(*ptr == '\0' || result == -1)
+            {
+                cont = 0;
+            }
+        }
+        if(tmp)
+        {
+            os_free(tmp);
+        }
+    }
+    return result;
 }
 
 #pragma warning( disable : 4996 )
@@ -626,46 +709,21 @@ os_vsnprintf(
      * available. Thus, a return value of size or more means that the output was
      * truncated. If an output error is encountered, a negative value is
      * returned. */
+
     result = _vsnprintf(str, size, format, args);
 
     if(result == -1){
-        /* Output was truncated, so calculate length of resulting string. The
-         * length of the resulting string is calculated by:
-         * strlen(<format>) - strlen(<format_specifiers>) + strlen(<formatted args>).
-         * This is really hard to do, since the formatted length of the arguments
-         * needs to be determined. Therefore it is implemented by generating the
-         * string on heap until not truncated anymore and returning that length. */
-        char *tmp;
-        int newSize = strlen(format) + size;
-
-        /* 256 would probably be a good starting point, unless input is already
-         * larger. Will be multiplied by two. */
-        newSize = (newSize > 128) ? newSize : 128;
-
-        do{
-            newSize *= 2;
-            tmp = (char*) os_malloc(newSize);
-
-            if(tmp){
-                result = _vsnprintf(tmp, newSize, format, args);
-                os_free(tmp); /* Do not set tmp to NULL, since it is used in
-                                 loop-condition to see whether the memory-claim
-                                 succeeded. */
-            } else {
-                /* Memory-claim denied, result == -1. */
-                OS_REPORT_1 (OS_ERROR, "snprintf", 0,
-                            "Memory-claim (heap) of size %d denied",
-                            newSize);
-            }
-        } while(result == -1 && tmp); /* NOTE: *tmp may NOT be read at this point */
+       /* vsnprintf will return the length that would be written for the given
+        * formatting arguments if invoked with NULL and 0 as the first two arguments.
+        */
+        result = _vsnprintf(NULL,0,format,args);
     }
 
     /* Truncation occurred, so we need to guarantee that the string is NULL-
      * terminated. */
-    if(result >= size){
+    if((size_t) result >= size){
         str[size - 1] = '\0';
     }
-
     return result;
 }
 #pragma warning( default : 4996 )
@@ -689,13 +747,7 @@ snprintf(
    return result;
 }
 
-char * os_strerror(int errnum, char *buf, size_t n)
+os_ssize_t os_write(int fd, const void *buf, size_t count)
 {
-    strerror_s(buf, n, errnum);
-    return buf;
-}
-
-ssize_t os_write(int fd, const void *buf, size_t count)
-{
-  return write(fd, buf, count);
+  return write(fd, buf, (int)count);
 }

@@ -1,0 +1,5 @@
+export OPENORB_HOME=/home/dds/INSTALLED_FOR_DDS/OPENORB
+export OPENORB_VERSION=1.4.0e
+export JAVA_HOME=/usr/local/jdk1.6.0
+export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/tao161
+export JACORB_HOME="/home/dds/INSTALLED FOR DDS/JacORB-v2.3.1.0"

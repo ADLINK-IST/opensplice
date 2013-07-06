@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -30,6 +30,29 @@ extern "C" {
 
 #define v_dataViewUnlock(_this) \
         v_observerUnlock(v_dataViewReader(_this))
+
+/* The trigger-value stores a sample but needs access to the unreferenced
+ * instance-pointer of the sample, which thus needs to be explicitly kept and
+ * freed.
+ *
+ * This macro returns the parameter sample
+ *
+ * @return sample */
+#define v_dataViewTriggerValueKeep(sample) \
+        (c_keep(v_readerSample(sample)->instance), \
+         c_keep(sample))
+
+/* The sample stored in the trigger-value has its (otherwise unreferenced)
+ * instance-pointer explicitly kept, so it has to be freed. */
+#define v_dataViewTriggerValueFree(triggerValue)            \
+    {                                                       \
+        v_dataViewInstance instance;                        \
+                                                            \
+        assert(C_TYPECHECK(triggerValue, v_dataViewSample));\
+        instance = v_readerSample(triggerValue)->instance;  \
+        c_free(triggerValue);                               \
+        c_free(instance);                                   \
+    }
 
 void
 v_dataViewDeinit(

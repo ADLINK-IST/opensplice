@@ -1,0 +1,12 @@
+
+project (ISO_Cxx*Typesupport) : _repetitive_isocpp_example_types {
+}
+
+project (ISO_Cxx*Implementation) : _repetitive_isocpp_example_impl {
+}
+
+project (ISO_Cxx*Publisher) : _repetitive_isocpp_example_pub {
+}
+
+project (ISO_Cxx*Subscriber) : _repetitive_isocpp_example_sub {
+}

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -18,6 +18,9 @@
 
 #include "os_report.h"
 
+#ifdef __APPLE__
+#include <sys/time.h>
+#endif
 #include <time.h>
 #include <errno.h>
 
@@ -34,17 +37,30 @@ os_time
 os_timeGet (
     void)
 {
+#ifdef __APPLE__
+    struct timeval tv;
+#else
     struct timespec t;
+#endif
     int result;
     os_time rt;
 
     if (clockGet) {
         rt = clockGet ();
     } else {
+#ifdef __APPLE__
+        result = gettimeofday (&tv, NULL);
+#else
         result = clock_gettime (CLOCK_REALTIME, &t);
+#endif
         if (result == 0) {
+#ifdef __APPLE__
+	    rt.tv_sec = tv.tv_sec;
+	    rt.tv_nsec = tv.tv_usec*1000;
+#else
 	    rt.tv_sec = t.tv_sec;
 	    rt.tv_nsec = t.tv_nsec;
+#endif
         } else {
 	    OS_REPORT_1 (OS_WARNING, "os_timeGet", 1, "clock_gettime failed with error %d", errno);
 	    rt.tv_sec = 0;

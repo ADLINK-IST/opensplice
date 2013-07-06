@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -80,5 +80,15 @@ public class MetaValueEnum extends MetaValue {
             result = false;
         }
         return result;
+    }
+    
+    @Override
+    public int hashCode() {
+        int var_gen_code;
+        int hash = 13;
+        var_gen_code = (null == defaultValue ? 0 : defaultValue.hashCode());
+        var_gen_code += (null == posValues ? 0 : posValues.hashCode());
+        hash = 31 * hash + var_gen_code;
+        return hash;
     }
 }

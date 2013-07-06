@@ -47,7 +47,7 @@ namespace test.sacs
                     , expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            participant = factory.CreateParticipant(null);
+            participant = factory.CreateParticipant(DDS.DomainId.Default);
             if (participant == null)
             {
                 result = new Test.Framework.TestResult(expResult, "Creation of participant failed."

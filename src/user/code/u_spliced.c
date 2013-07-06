@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -24,6 +24,8 @@
 
 #include "v_leaseManager.h"
 #include "os_report.h"
+
+static c_bool splicedStartedInThisProcess = FALSE;
 
 /**************************************************************
  * Private functions
@@ -105,13 +107,9 @@ lockPages(
                     OS_REPORT(OS_WARNING,"lockPages", 0,"DEPRECATED location for " DAEMON_PATH_DEPRECATED "/Locking location changed to " DAEMON_PATH "/Locking : Locking disabled for spliced");
                 }
             }
-            if (!result) {
-                OS_REPORT(OS_INFO,"lockPages", 0,"Daemon: Locking not defined using default value disabled");
-            }
             c_free(root);
         }
     }
-
     return lock;
 }
 #undef DAEMON_PATH
@@ -165,16 +163,6 @@ static u_result
 u_splicedDeinit(
     u_spliced _this)
 {
-    u_result r;
-    v_spliced s;
-
-    r = u_entityReadClaim(u_entity(_this), (v_entity*)(&s));
-    if (r == U_RESULT_OK) {
-        assert(s);
-        v_splicedCAndMCommandDispatcherQuit(s);
-        r = u_entityRelease(u_entity(_this));
-    }
-
     return u_serviceDeinit(u_service(_this));
 }
 
@@ -204,7 +192,18 @@ u_splicedNew(
     spliced = NULL;
 
 #if !defined (VXWORKS_RTP) && !defined (__INTEGRITY) && !defined (WINCE)
-    domain = u_domainOpen(uri, -1 /* no timeout and no error logging */);
+    r = u_domainOpen(&domain, uri, -1);
+
+    if (r == U_RESULT_PRECONDITION_NOT_MET)
+    {
+        /* If the return code is PRECONDITION_NOT_MET it means that
+           there is a problem with the report plugins and so the spliced
+           should fail to start.  If the return code is 0 it means
+           that a domain was not opened or 1 means a domain was opened, in 
+           both cases we should continue */
+        return spliced;
+    }
+
     if (domain != NULL) {
         printf("Database opened, opening kernel\n");
         r = u_entityWriteClaim(u_entity(domain),(v_entity*)(&kk));
@@ -230,9 +229,9 @@ u_splicedNew(
         if (otherSpliced) {
             printf("Other splicedaemon running!\n");
         } else {
-            domain = u_domainNew(uri);
-            if (domain == NULL) {
-                printf("Creation of kernel failed!\n");
+            r = u_domainNew(&domain, uri);
+            if (r != U_RESULT_OK) {
+                printf("Creation of kernel failed! - return code %d\n", r);
             } else {
                 /* create new proxy to v_spliced object */
                 kSpliced = getKernelSplicedaemon(domain);
@@ -242,9 +241,10 @@ u_splicedNew(
 #endif
     {
 
-        domain = u_domainNew(uri);
-        if (domain == NULL) {
-            printf("Creation of kernel failed!\n");
+        r = u_domainNew(&domain, uri);
+
+        if (r != U_RESULT_OK) {
+            printf("Creation of kernel failed! Return code %d\n", r);
         } else {
             /* create new proxy to v_spliced object */
             kSpliced = getKernelSplicedaemon(domain);
@@ -393,6 +393,26 @@ u_splicedBuiltinCAndMCommandDispatcher(
 }
 
 u_result
+u_splicedCAndMCommandDispatcherQuit(
+   u_spliced spliced)
+{
+   u_result r;
+   v_spliced s;
+
+   r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
+   if (r == U_RESULT_OK) {
+      assert(s);
+      v_splicedCAndMCommandDispatcherQuit(s);
+      r = u_entityRelease(u_entity(spliced));
+   } else {
+      OS_REPORT(OS_WARNING,
+                "u_splicedBuiltinCAndMCommandDispatcherQuit", 0,
+                "Could not claim spliced.");
+   }
+   return r;
+}
+
+u_result
 u_splicedGarbageCollector(
     u_spliced spliced)
 {
@@ -422,6 +442,9 @@ u_splicedPrepareTermination(
     if (r == U_RESULT_OK) {
         assert(s);
         v_splicedPrepareTermination(s);
+
+        /* Request shutdown of & wakeup cAndMCommandManager thread */
+        v_splicedCAndMCommandDispatcherQuit(s);
         r = u_entityRelease(u_entity(spliced));
     } else {
         OS_REPORT(OS_WARNING, "u_splicedPrepareTermination", 0,
@@ -465,20 +488,38 @@ u_splicedStopHeartbeat(
     v_spliced s;
     c_bool stopped;
 
-    r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
-    if (r == U_RESULT_OK) {
-        assert(s);
-        stopped = v_splicedStopHeartbeat(s);
-        if (stopped == FALSE) {
-            r = U_RESULT_INTERNAL_ERROR;
-            u_entityRelease(u_entity(spliced));
+    if(spliced)
+    {
+        r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
+        if (r == U_RESULT_OK) {
+            assert(s);
+            stopped = v_splicedStopHeartbeat(s);
+            if (stopped == FALSE) {
+                r = U_RESULT_INTERNAL_ERROR;
+                u_entityRelease(u_entity(spliced));
+            } else {
+                r = u_entityRelease(u_entity(spliced));
+            }
         } else {
-            r = u_entityRelease(u_entity(spliced));
+            OS_REPORT_1(OS_WARNING, "u_splicedStopHeartbeat", 0,
+                      "Could not claim spliced, result was %s.", u_resultImage(r));
         }
-    } else {
-        OS_REPORT(OS_WARNING, "u_splicedStopHeartbeat", 0,
-                  "Could not claim spliced.");
+    } else
+    {
+        r = U_RESULT_ILL_PARAM;
     }
     return r;
 }
 
+u_result
+u_splicedSetInProcess()
+{
+    splicedStartedInThisProcess = TRUE;
+    return U_RESULT_OK;
+}
+
+c_bool
+u_splicedInProcess()
+{
+    return splicedStartedInThisProcess;
+}

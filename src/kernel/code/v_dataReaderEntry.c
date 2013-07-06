@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -58,8 +58,6 @@ lifespanTakeAction(
     c_bool result;
     v_lifespanArg lifespanArg = (v_lifespanArg)arg;
     v_dataReaderInstance instance;
-    c_long sampleCount;
-    v_message message;
 
     /* Data is expired, remove the sample from its instance
      * NOTE: the sampleCount of index is decreased by this function */
@@ -70,27 +68,7 @@ lifespanTakeAction(
     }
     if (result) {
         instance = v_dataReaderInstance(v_readerSample(sample)->instance);
-        sampleCount = instance->sampleCount;
-        /* If the sample taken is newer than the previously taken
-         * sample, then update the history bookmark to indicate that
-         * all samples prior to the current sample are consumed.
-         */
-        message = v_dataReaderSampleMessage(sample);
-        if (c_timeCompare(message->writeTime, instance->lastConsumed.sourceTimestamp) == C_GT ||
-           (
-                c_timeCompare(message->writeTime, instance->lastConsumed.sourceTimestamp) == C_EQ &&
-                v_gidCompare(message->writerGID, instance->lastConsumed.gid) == C_GT
-           )
-        )
-        {
-            instance->lastConsumed.sourceTimestamp = v_dataReaderSampleMessage(sample)->writeTime;
-            instance->lastConsumed.gid = v_dataReaderSampleMessage(sample)->writerGID;
-        }
-
-        v_dataReaderSampleTake(v_dataReaderSample(sample),NULL,NULL);
-        sampleCount -= instance->sampleCount;
-        assert(sampleCount >= 0);
-        v_dataReader(lifespanArg->index->reader)->sampleCount -= sampleCount;
+        v_dataReaderInstanceSampleRemove(instance, v_dataReaderSample(sample));
 
         assert(v_dataReader(lifespanArg->index->reader)->sampleCount >= 0);
         if (v_dataReaderInstanceEmpty(instance)) {
@@ -135,13 +113,17 @@ v_dataReaderEntryNew(
 
 /* Callback functions for the index write action */
 
-static c_bool
+static v_actionResult
 onSampleDumpedAction(
-    v_readerSample sample,
+    c_object sample,
     c_voidp arg)
 {
+    v_actionResult result = 0;
+    OS_UNUSED_ARG(arg);
+
     v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
-    return TRUE;
+    v_actionResultSet(result, V_PROCEED);
+    return result;
 }
 
 static void
@@ -190,11 +172,10 @@ updateTransaction(
     v_transaction t = (v_transaction)o;
     C_STRUCT(updateArg) *a = (C_STRUCT(updateArg) *)arg;
     c_bool result = TRUE;
-
-    if (t->transactionId == a->msg->transactionId) {
+    if (t->transactionId == V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(a->msg->transactionId)) {
         if (v_gidEqual(t->writerGID,a->msg->writerGID)) {
             if (v_stateTest(v_nodeState(a->msg),L_TRANSACTION)) {
-                t->count -= a->msg->sequenceNumber;
+                t->count -= V_MESSAGE_GET_TRANSACTION_COUNT(a->msg->transactionId);
             } else {
                 t->count++;
             }
@@ -212,7 +193,7 @@ makeSamplesAvailable (
     c_object o,
     c_voidp arg)
 {
-    v_dataReaderInstanceFlushTransaction(v_dataReaderInstance(o),*(c_ulong *)arg);
+    v_dataReaderInstanceFlushTransaction(v_dataReaderInstance(o),V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(*(c_ulong *)arg));
     return TRUE;
 }
 
@@ -222,6 +203,8 @@ transactionListUpdate(
     v_message msg)
 {
     v_transaction item = NULL;
+    v_dataReader reader;
+
     C_STRUCT(updateArg) update;
 
     if ((msg->transactionId != 0) &&
@@ -248,9 +231,9 @@ transactionListUpdate(
             if (item) {
                 item->writerGID = msg->writerGID;
                 item->count = 1;
-                item->transactionId = msg->transactionId;
+                item->transactionId = V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(msg->transactionId);
                 if (v_stateTest(v_nodeState(msg),L_TRANSACTION)) {
-                    item->count -= msg->sequenceNumber;
+                    item->count -= V_MESSAGE_GET_TRANSACTION_COUNT(msg->transactionId);
                 }
                 if (entry->transactionList == NULL) {
                     entry->transactionList =
@@ -279,6 +262,17 @@ transactionListUpdate(
                        makeSamplesAvailable,
                        &msg->transactionId);
             }
+
+            /* At this point we have made the data belonging to the transaction
+             * available, but we still need to wakeup threads that are blocked
+             * on waitsets for the data.
+             * This is what we do here by calling v_dataReaderNotifyDataAvailable
+             * with a NULL sample, since there is not a specific sample associated
+             * with a transaction */
+
+            reader = v_dataReader(v_entry(entry)->reader);
+            v_dataReaderNotifyDataAvailable (reader, NULL);
+
             item = c_remove(entry->transactionList, update.remove, NULL, NULL);
             c_free(item);
             c_free(update.remove);
@@ -490,6 +484,7 @@ alwaysFalse(
     c_voidp arg)
 {
     c_object *o = (c_object *)arg;
+    OS_UNUSED_ARG(requested);
 
     assert(o != NULL);
     assert(*o == NULL); /* out param */
@@ -561,6 +556,7 @@ doWrite(
                              v_publicGid(NULL));
             result = V_WRITE_REJECTED;
         break;
+        case V_DATAREADER_FILTERED_OUT:
         case V_DATAREADER_NOT_OWNER:
         case V_DATAREADER_OUTDATED:
         case V_DATAREADER_DUPLICATE_SAMPLE:
@@ -671,23 +667,15 @@ v_dataReaderEntryWrite(
     }
 
     /* Execute content based filter (if set).
-     * For now do not filter on register/unregister messages. The filter must
+     * For now do not filter on register/unregister/dispose messages. The filter must
      * be split into a key part and a non-key part. For register/unregister
      * messages only the key part of the filter needs to be evaluated.
      * Functionally it is not a problem by always allowing instances
      * regardless of the filter, it will only consume resources (memory),
-     * which was not needed.
+     * which was not needed. (see dds#3067)
      */
     if (_this->filter != NULL) {
-        if (((v_stateTest(state, L_WRITE)) ||
-             (v_stateTest(state, L_DISPOSED))) &&
-             /* Prevent filter evaluation of filter of combined DISPOSE and
-              * UNREGISTER messages. Invalid messages have no data and a
-              * filter evaluation will lead to a crash.
-              */
-             (!v_stateTest(state, L_UNREGISTER)) &&
-            (!v_filterEval(_this->filter,message)))
-        {
+        if (v_stateTest(state, L_WRITE) && !v_filterEval(_this->filter,message)) {
             transactionListUpdate(_this,message);
             v_observerUnlock(v_observer(reader));
             return V_WRITE_SUCCESS;
@@ -729,11 +717,11 @@ v_dataReaderEntryWrite(
                 assert(c_refCount(found) == 2);
                 if (v_dataReader(reader)->maxInstances == TRUE) {
                     /* The maximum number of instances was already reached.
-                     * Therefore the instance was inserted undeserved and must
+                     * Therefore the instance was inserted unnecessarily and must
                      * be removed. */
                     found = c_remove(instanceSet, instance,NULL,NULL);
                     assert(found == instance);
-                    v_dataReaderInstanceFree(found);
+                    c_free(found);
                     assert(c_refCount(found) == 1);
                     found = NULL;
                     onSampleRejected(v_dataReader(reader),
@@ -744,11 +732,11 @@ v_dataReaderEntryWrite(
                     assert(c_refCount(instance) == 1);
                 } else if (v_messageStateTest(message,L_UNREGISTER)) {
                     /* There is no use case to support implicit unregister.
-                     * Therefore the instance was inserted unnecessary and can
+                     * Therefore the instance was inserted unnecessarily and can
                      * be removed. */
                     found = c_remove(instanceSet, instance,NULL,NULL);
                     assert(found == instance);
-                    v_dataReaderInstanceFree(found);
+                    c_free(found);
                     assert(c_refCount(found) == 1);
                     found = NULL;
                     result = V_WRITE_SUCCESS;
@@ -774,7 +762,7 @@ v_dataReaderEntryWrite(
                  */
                 c_keep(found);
             }
-            v_dataReaderInstanceFree(instance);
+            c_free(instance);
         } else {
             /* failed to create a new instance. */
             found = NULL;
@@ -808,7 +796,7 @@ v_dataReaderEntryWrite(
         if ((instancePtr) && (*instancePtr == NULL)) {
             *instancePtr = v_instance(found); /* transfer keep */
         } else {
-            v_dataReaderInstanceFree(found);
+            c_free(found);
         }
     }
     v_observerUnlock(v_observer(reader));
@@ -852,7 +840,7 @@ v_dataReaderEntryDisposeAll (
     /* Purge samples */
     v_dataReaderEntryUpdatePurgeLists(_this);
 
-    disposeArg.result = V_RESULT_OK;
+    disposeArg.result = V_WRITE_SUCCESS;
     disposeArg.disposeMsg = disposeMsg;
     disposeArg.entry = _this;
 
@@ -866,7 +854,7 @@ v_dataReaderEntryDisposeAll (
     return disposeArg.result;
 }
 
-v_result
+v_dataReaderResult
 v_dataReaderEntryApplyUnregisterMessageToInstanceList (
     v_dataReaderEntry _this,
     v_message unregisterMsg,

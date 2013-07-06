@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -33,13 +33,17 @@ OS_CLASS(ut_crc);
 
 OS_API ut_crc
 ut_crcNew(
-	os_uint32 key);
+        os_uint32 key);
 
 OS_API os_uint32
 ut_crcCalculate(
     ut_crc _this,
     void *buf,
     os_uint32 length);
+
+OS_API void
+ut_crcFree(
+    ut_crc _this);
 
 #undef OS_API
 

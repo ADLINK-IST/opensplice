@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -37,6 +37,15 @@
  * one of its subclasses.
  */
 #define v_dataViewSample(_this) (C_CAST(_this,v_dataViewSample))
+
+#define v_dataViewSampleState(_this) \
+        (v_readerSample(_this)->sampleState)
+
+#define v_dataViewSampleTestState(_this,mask) \
+        v_stateTest(v_dataViewSampleState(_this),mask)
+
+#define  v_dataViewSampleInstance(o) \
+         ((v_dataViewInstance)(v_readerSampleInstance(v_readerSample(o))))
 
 /**
  * \brief The <code>v_dataViewSampleList</code> cast method.

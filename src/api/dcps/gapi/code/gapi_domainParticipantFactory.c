@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -22,6 +22,7 @@
 
 #include "os.h"
 #include "c_iterator.h"
+#include "u_user.h"
 
 #define U_PARTITION_GET(t)       u_partition(U_ENTITY_GET(t))
 
@@ -86,13 +87,15 @@ copyParticipantFactoryQosOut (
 static c_equality
 gapi_compareParticipantDomainId(
     _DomainParticipant participant,
-    gapi_domainId_t domainId)
+    gapi_domainName_t domainId)
 {
     c_equality result = C_NE;
     if(participant)
     {
+        gapi_domainName_t domainIdString =
+            gapi_domainParticipant_get_domain_id_as_str((gapi_domainParticipant)_EntityHandle(participant));
         /* Participant was created with domain_id = NULL */
-        if ((gapi_domainParticipant_get_domain_id((gapi_domainParticipant)_EntityHandle(participant)) == NULL) && (domainId == NULL)) {
+        if (domainIdString == NULL && domainId == NULL) {
             result = C_EQ;
         } else {
             /* Participant was created with either a name or uri.
@@ -106,15 +109,15 @@ gapi_compareParticipantDomainId(
                result = C_EQ;
             }
         }
+        gapi_free(domainIdString);
     }
     return result;
 }
 
-
 static c_equality
 gapi_compareDomainId(
     _Domain domain,
-    gapi_domainId_t domainId)
+    gapi_domainName_t domainId)
 {
     c_equality result = C_NE;
     if (domain)
@@ -209,6 +212,9 @@ gapi_domainParticipantFactory_get_instance(
             }
         }
     } else { /* wait for the factory to become initialized */
+#ifdef _WRS_KERNEL
+    	os_procInitialize();
+#endif
         if (TheFactory == NULL) {
             count = 0;
             while ((count < 5) && (TheFactory == NULL)) {
@@ -234,18 +240,19 @@ gapi_domainParticipantFactory_get_instance(
 gapi_domainParticipant
 gapi_domainParticipantFactory_create_participant(
     gapi_domainParticipantFactory _this,
-    const gapi_domainId_t domainId,
+    const gapi_domainId_int_t domainId,
     const gapi_domainParticipantQos *qos,
     const struct gapi_domainParticipantListener *a_listener,
     const gapi_statusMask mask,
     gapi_listenerThreadAction thread_start_action,
     gapi_listenerThreadAction thread_stop_action,
-    void *thread_action_arg)
+    void *thread_action_arg,
+    const char *name)
 {
     _DomainParticipantFactory factory;
     _DomainParticipant newParticipant = NULL;
     gapi_context context;
-    gapi_domainId_t domainId2 = NULL;
+    gapi_domainName_t domainId2 = NULL;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_CREATE_PARTICIPANT);
 
@@ -265,27 +272,39 @@ gapi_domainParticipantFactory_create_participant(
         qos = &factory->defaultQos;
     }
     if (gapi_domainParticipantQosIsConsistent(qos, &context) == GAPI_RETCODE_OK) {
-        if ((domainId == NULL) || (strlen(domainId) == 0)) {
-            domainId2 = os_getenv("OSPL_URI");
-            if(!domainId2) {
-                domainId2 = DOMAIN_NAME;
+        if (domainId2 == NULL) {
+            domainId2 = u_userDomainIdToDomainName(domainId);
+        }
+        if(!domainId2) {
+            newParticipant = NULL;
+            if(domainId == INVALID_DOMAIN_ID)
+            {
+                OS_REPORT(OS_ERROR,
+                     "gapi::gapi_domainParticipantFactory::gapi_domainParticipantFactory_create_participant",0,
+                     "Failed to connect to/create the default domain");
+            } else
+            {
+                OS_REPORT_1(OS_ERROR,
+                     "gapi::gapi_domainParticipantFactory::gapi_domainParticipantFactory_create_participant",0,
+                     "Failed to connect to/create the domain with ID %d",domainId);
             }
         } else {
-            domainId2 = domainId;
+
+            newParticipant = _DomainParticipantNew (domainId2, qos,
+                                                    a_listener, mask, factory,
+                                                    thread_start_action,
+                                                    thread_stop_action,
+                                                    thread_action_arg,
+                                                    &context,
+                                                    domainId,
+                                                    name);
+
+            if ( newParticipant ) {
+                c_iterInsert (factory->DomainParticipantList, newParticipant);
+                _ObjectRegistryRegister(factory->registry, (_Object)newParticipant);
+            }
+            os_free(domainId2);
         }
-
-        newParticipant = _DomainParticipantNew (domainId2, qos,
-                                                a_listener, mask, factory,
-                                                thread_start_action,
-                                                thread_stop_action,
-                                                thread_action_arg,
-                                                &context);
-
-        if ( newParticipant ) {
-            c_iterInsert (factory->DomainParticipantList, newParticipant);
-            _ObjectRegistryRegister(factory->registry, (_Object)newParticipant);
-        }
-
     } else {
         newParticipant = NULL;
     }
@@ -296,7 +315,7 @@ gapi_domainParticipantFactory_create_participant(
 }
 
 typedef struct {
-    gapi_domainId_t domainId;
+    gapi_domainName_t domainId;
     int nrOfConnectedParticipants;
 
 } countConnectedParticipantArg;
@@ -342,48 +361,62 @@ gapi_domainParticipantFactory_delete_participant(
                     if (c_iterTake (factory->DomainParticipantList, participant) != participant) {
                         result = GAPI_RETCODE_BAD_PARAMETER;
                     } else {
-                        countConnectedParticipantArg arg;
-                        arg.domainId = gapi_string_dup(_DomainParticipantGetDomainId(participant));
-                        arg.nrOfConnectedParticipants = 0;
-                        /* Check if this pariticpant is the last participant of its domain.
+                        /* Builtin Subscriber and Builtin Topics may not have been cleaned up yet,
+                         * because the PrepareDelete function does not account for them.
+                         * By invoking DeleteContainedEntities (unlocked version), we make sure that
+                         * all builtin entities are properly disposed of.
                          */
-                        c_iterWalk(factory->DomainParticipantList, countConnectedParticipant, &arg);
-
-                        /* if the just deleted participant was the last, also delete
-                         * the reference to the domain, as it no longer exists */
-                        if(arg.nrOfConnectedParticipants == 0)
+                        result = _DomainParticipantDeleteContainedEntitiesNoClaim(participant);
+                        if (result == GAPI_RETCODE_OK)
                         {
-                            _Domain domain;
-                            domain = c_iterResolve(factory->DomainList, gapi_compareDomainId, (void*)arg.domainId);
-                            if ( domain != NULL ) {
-                                domain = c_iterTake (factory->DomainList, domain);
-                                assert(domain);
-                                if(domain)
-                                {
-                                    _DomainFree (domain);
-                                    domain = NULL;
-                                }
-                                else {
-                                    OS_REPORT_1(OS_ERROR,
-                                                "gapi::DomainParticipantFactory::delete_participant", 0,
-                                                "Could not obtain domain '%s' from the factory's domain list.", arg.domainId);
-                                    result = GAPI_RETCODE_ERROR;
+                            countConnectedParticipantArg arg;
+                            arg.domainId = gapi_string_dup(_DomainParticipantGetDomainId(participant));
+                            arg.nrOfConnectedParticipants = 0;
+                            /* Check if this pariticpant is the last participant of its domain.
+                             */
+                            c_iterWalk(factory->DomainParticipantList, countConnectedParticipant, &arg);
+    
+                            /* if the just deleted participant was the last, also delete
+                             * the reference to the domain, as it no longer exists */
+                            if(arg.nrOfConnectedParticipants == 0)
+                            {
+                                _Domain domain;
+                                domain = c_iterResolve(factory->DomainList, (c_iterResolveCompare)gapi_compareDomainId, (c_iterResolveCompareArg)arg.domainId);
+                                if ( domain != NULL ) {
+                                    domain = c_iterTake (factory->DomainList, domain);
+                                    assert(domain);
+                                    if(domain)
+                                    {
+                                        _DomainFree (domain);
+                                        domain = NULL;
+                                    }
+                                    else {
+                                        OS_REPORT_1(OS_ERROR,
+                                                    "gapi::DomainParticipantFactory::delete_participant", 0,
+                                                    "Could not obtain domain '%s' from the factory's domain list.", arg.domainId);
+                                        result = GAPI_RETCODE_ERROR;
+                                    }
                                 }
                             }
-                        }
-
-                        result = _DomainParticipantFree (participant);
-                        if( result == GAPI_RETCODE_OK )
-                        {
-                            participant = NULL;
-                        }
-                        else
-                        {
+    
+                            result = _DomainParticipantFree (participant);
+                            if( result == GAPI_RETCODE_OK )
+                            {
+                                participant = NULL;
+                            }
+                            else
+                            {
+                                OS_REPORT(OS_ERROR,
+                                          "gapi::DomainParticipantFactory::delete_participant", 0,
+                                          "Could not properly free the particpant.");
+                            }
+                            gapi_free(arg.domainId);
+                        } else {
                             OS_REPORT(OS_ERROR,
                                       "gapi::DomainParticipantFactory::delete_participant", 0,
-                                      "Could not properly free the particpant.");
+                                      "Could not properly delete the remaining builtin entities.");
+
                         }
-                        gapi_free(arg.domainId);
                     }
                 } else {
                     result = GAPI_RETCODE_PRECONDITION_NOT_MET;
@@ -401,15 +434,45 @@ gapi_domainParticipantFactory_delete_participant(
     return result;
 }
 
-
 gapi_domainParticipant
 gapi_domainParticipantFactory_lookup_participant(
     gapi_domainParticipantFactory _this,
-    const gapi_domainId_t domain_id)
+    const gapi_domainId_int_t domain_id)
 {
     _DomainParticipantFactory factory;
     _DomainParticipant participant = NULL;
-    gapi_domainId_t domain_id2;
+    gapi_domainName_t domain_id2;
+
+    domain_id2 = u_userDomainIdToDomainName(domain_id);
+
+    if (domain_id2 != NULL) {
+
+        factory = gapi_domainParticipantFactoryClaim(_this, NULL);
+
+        if ( factory ) {
+            if ( factory == TheFactory ) {
+                os_mutexLock(&factory->mtx);
+                participant = c_iterResolve(factory->DomainParticipantList,
+                                                        (c_iterResolveCompare)gapi_compareParticipantDomainId,
+                                                        (c_iterResolveCompareArg)domain_id2);
+                os_mutexUnlock(&factory->mtx);
+            }
+        }
+
+        _EntityRelease(factory);
+    }
+
+    return (gapi_domainParticipant)_EntityHandle(participant);
+}
+
+gapi_domainParticipant
+gapi_domainParticipantFactory_lookup_participant_as_str(
+    gapi_domainParticipantFactory _this,
+    const gapi_domainName_t domain_id)
+{
+    _DomainParticipantFactory factory;
+    _DomainParticipant participant = NULL;
+    gapi_domainName_t domain_id2;
 
     if ((domain_id == NULL) || (strlen(domain_id) == 0)) {
         domain_id2 = os_getenv("OSPL_URI");
@@ -417,22 +480,25 @@ gapi_domainParticipantFactory_lookup_participant(
             domain_id2 = DOMAIN_NAME;
         }
     } else {
-        domain_id2 = domain_id;
+    domain_id2 = domain_id;
     }
 
-    factory = gapi_domainParticipantFactoryClaim(_this, NULL);
+    if (domain_id2 != NULL) {
 
-    if ( factory ) {
-        if ( factory == TheFactory ) {
-            os_mutexLock(&factory->mtx);
-            participant = c_iterResolve(factory->DomainParticipantList,
-                                                    gapi_compareParticipantDomainId,
-                                                    (void *)domain_id2);
-            os_mutexUnlock(&factory->mtx);
+        factory = gapi_domainParticipantFactoryClaim(_this, NULL);
+
+        if ( factory ) {
+            if ( factory == TheFactory ) {
+                os_mutexLock(&factory->mtx);
+                participant = c_iterResolve(factory->DomainParticipantList,
+                                            (c_iterResolveCompare)gapi_compareParticipantDomainId,
+                                            (c_iterResolveCompareArg)domain_id2);
+                os_mutexUnlock(&factory->mtx);
+            }
         }
-    }
 
-    _EntityRelease(factory);
+        _EntityRelease(factory);
+    }
 
     return (gapi_domainParticipant)_EntityHandle(participant);
 }
@@ -596,56 +662,55 @@ gapi_domainParticipantFactory_get_default_participant_qos(
 
 /*     Domain
  *     lookup_domain(
- *         in DomainId domain_id);
+ *         in DomainId domain);
  */
 gapi_domain
 gapi_domainParticipantFactory_lookup_domain (
     gapi_domainParticipantFactory _this,
-    const gapi_domainId_t domain_id)
+    const gapi_domainId_int_t domain_id)
 {
     _DomainParticipantFactory factory;
     _Domain domain = NULL;
     c_iter iterResult;
-    gapi_domainId_t domain_id2 = NULL;
+    gapi_domainName_t domain_id2 = NULL;
 
-    if ((domain_id == NULL) || (strlen(domain_id) == 0)) {
-        domain_id2 = os_getenv("OSPL_URI");
-        if(!domain_id2) {
-            domain_id2 = DOMAIN_NAME;
-        }
-    } else {
-        domain_id2 = domain_id;
-    }
 
-    factory = gapi_domainParticipantFactoryClaim(_this, NULL);
-    if (factory)
-    {
-        if (factory == TheFactory)
+    domain_id2 = u_userDomainIdToDomainName(domain_id);
+
+    if (domain_id2 != NULL) {
+
+        factory = gapi_domainParticipantFactoryClaim(_this, NULL);
+        if (factory)
         {
-            os_mutexLock(&factory->mtx);
-            domain = c_iterResolve(factory->DomainList, gapi_compareDomainId, (void*)domain_id2);
-            if(!domain)
+            if (factory == TheFactory)
             {
-                domain = _DomainNew(domain_id2);
-                if(domain)
+                os_mutexLock(&factory->mtx);
+                domain = c_iterResolve(factory->DomainList,
+                                       (c_iterResolveCompare)gapi_compareDomainId,
+                                       (c_iterResolveCompareArg)domain_id2);
+                if(!domain)
                 {
-                    iterResult = c_iterInsert(factory->DomainList, domain);
-                    if(!iterResult)
+                    domain = _DomainNew(domain_id2);
+                    if(domain)
                     {
-                        _DomainFree(domain);
-                        domain = NULL;
-                    } else
-                    {
-                        _ObjectRegistryRegister(factory->registry, (_Object)domain);
-                    }
+                        iterResult = c_iterInsert(factory->DomainList, domain);
+                        if(!iterResult)
+                        {
+                            _DomainFree(domain);
+                            domain = NULL;
+                        } else
+                        {
+                            _ObjectRegistryRegister(factory->registry, (_Object)domain);
+                        }
 
-                } /* else domain remains null */
-                _ObjectRelease((_Object)domain);
-            }
-            os_mutexUnlock(&factory->mtx);
+                    } /* else domain remains null */
+                    _ObjectRelease((_Object)domain);
+                }
+                os_mutexUnlock(&factory->mtx);
+            }/* else domain remains null */
+            _EntityRelease(factory);
         }/* else domain remains null */
-        _EntityRelease(factory);
-    }/* else domain remains null */
+    }
 
     return (gapi_domain)_ObjectToHandle((_Object)domain);
 }
@@ -774,10 +839,12 @@ gapi_domainParticipantFactory_delete_contained_entities(
 
 static c_equality
 gapi_compareTypesupport(
-    _DomainParticipant participant,
-    _TypeSupport       typeSupport)
+    c_voidp o,
+    c_iterResolveCompareArg arg)
 {
     c_equality equal = C_NE;
+    _DomainParticipant participant = (_DomainParticipant) o;
+    _TypeSupport typeSupport = (_TypeSupport) arg;
 
     _EntityClaim(participant);
     if (_DomainParticipantContainsTypeSupport(participant,typeSupport)) {
@@ -796,9 +863,10 @@ _DomainParticipantFactoryFindParticipantFromType(
 
     if ( TheFactory ) {
         os_mutexLock(&TheFactory->mtx);
-        participant = c_iterResolve (TheFactory->DomainParticipantList,
-                                     gapi_compareTypesupport,
-                                     (void *)typeSupport);
+        participant = (_DomainParticipant) c_iterResolve (
+                TheFactory->DomainParticipantList,
+                gapi_compareTypesupport,
+                typeSupport);
         os_mutexUnlock(&TheFactory->mtx);
     }
 
@@ -827,23 +895,32 @@ factoryCleanup(void)
     c_iter list;
     _ObjectRegistry registry;
 
-    if ( TheFactory ) {
-        list = TheFactory->DomainParticipantList;
-        participant = _DomainParticipant(c_iterTakeFirst(list));
-        while ( participant ) {
-            _DomainParticipantCleanup(participant);
+    /* Can not prevent the exit handler to be installed during single process
+     * mode (the check is not valid always at that time), so have to check here
+     * to ensure this exit handler is done in the correct order. This mainly
+     * concerns the u_userExit
+     */
+    if(!os_serviceGetSingleProcess())
+    {
+        if ( TheFactory ) {
+            list = TheFactory->DomainParticipantList;
             participant = _DomainParticipant(c_iterTakeFirst(list));
-        }
-        list = TheFactory->DomainList;
-        domain = _Domain(c_iterTakeFirst(list));
-        while ( domain ) {
-            _ObjectClaimNotBusy((_Object)domain);
-            _DomainFree(domain);
+            while ( participant ) {
+                _DomainParticipantCleanup(participant);
+                participant = _DomainParticipant(c_iterTakeFirst(list));
+            }
+            list = TheFactory->DomainList;
             domain = _Domain(c_iterTakeFirst(list));
+            while ( domain ) {
+                _ObjectClaimNotBusy((_Object)domain);
+                _DomainFree(domain);
+                domain = _Domain(c_iterTakeFirst(list));
+            }
+            os_mutexDestroy(&TheFactory->mtx);
+            registry = TheFactory->registry;
+            TheFactory->registry = NULL;
+            _ObjectRegistryFree(registry);
+            u_userExit();
         }
-        os_mutexDestroy(&TheFactory->mtx);
-        registry = TheFactory->registry;
-        TheFactory->registry = NULL;
-        _ObjectRegistryFree(registry);
     }
 }

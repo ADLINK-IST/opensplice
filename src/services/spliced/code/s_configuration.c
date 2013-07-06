@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -361,38 +361,51 @@ s_configurationSetServiceTerminatePeriod(
     s_configurationSetTime(&(config->serviceTerminatePeriod), sec);
 }
 
+/**
+ * Sets the lease-period, which is the ExpiryTime. After this call the lease-
+ * period will be set to MAX(S_CFG_LEASE_EXPIRYTIME_MINIMUM, expiryTime).
+ * @param config The configuration struct to store the renewal-period in
+ * @param expiryTime The ExpiryTime of the lease.
+ */
 static void
 s_configurationSetLeasePeriod(
     s_configuration config,
-    c_float sec)
+    c_float expiryTime)
 {
-    if (sec < S_CFG_LEASEPERIOD_MINIMUM) {
-        sec = S_CFG_LEASEPERIOD_MINIMUM;
+    if (expiryTime < S_CFG_LEASE_EXPIRYTIME_MINIMUM) {
+        expiryTime = S_CFG_LEASE_EXPIRYTIME_MINIMUM;
     }
 
-    s_configurationSetDuration(&(config->leasePeriod), sec);
+    s_configurationSetDuration(&(config->leasePeriod), expiryTime);
 }
 
+/**
+ * Sets the lease-renewal-period, which is defined by
+ * ExpiryTime * ExpiryTime@update_factor. After this call the renewal period
+ * will be set to ExpiryTime * MIN(S_CFG_LEASE_UPDATE_FACTOR_MAXIMUM,
+ * MAX(S_CFG_LEASE_UPDATE_FACTOR_MINIMUM, update_factor)).
+ * @param config The configuration struct to store the renewal-period in
+ * @param update_factor The update-factor that needs to be applied to the ExpiryTime
+ */
 static void
 s_configurationSetLeaseRenewalPeriod(
     s_configuration config,
-    c_float frac)
+    c_float update_factor)
 {
     os_time leasePeriod;
-    if (frac < S_CFG_LEASERENEWALPERIOD_MINIMUM) {
-        frac = S_CFG_LEASERENEWALPERIOD_MINIMUM;
+    if (update_factor < S_CFG_LEASE_UPDATE_FACTOR_MINIMUM) {
+        update_factor = S_CFG_LEASE_UPDATE_FACTOR_MINIMUM;
     }
 
-    if (frac > S_CFG_LEASERENEWALPERIOD_MAXIMUM) {
-        frac = S_CFG_LEASERENEWALPERIOD_MAXIMUM;
+    if (update_factor > S_CFG_LEASE_UPDATE_FACTOR_MAXIMUM) {
+        update_factor = S_CFG_LEASE_UPDATE_FACTOR_MAXIMUM;
     }
 
     leasePeriod.tv_sec = config->leasePeriod.seconds;
     leasePeriod.tv_nsec = config->leasePeriod.nanoseconds;
-    frac = frac*(c_float)os_timeToReal(leasePeriod);
-    s_configurationSetDuration(&(config->leaseRenewalPeriod), frac);
+    update_factor = update_factor * (c_float)os_timeToReal(leasePeriod);
+    s_configurationSetDuration(&(config->leaseRenewalPeriod), update_factor);
 }
-
 
 static void s_configurationSetSchedulingClass( os_threadAttr *tattr,
                                                const c_char* class )
@@ -424,6 +437,14 @@ s_configurationSetLeaseRenewSchedulingClass(
     const c_char* class)
 {
     s_configurationSetSchedulingClass( &config->leaseRenewScheduling, class );
+}
+
+static void
+s_configurationSetDomainName(
+    s_configuration config,
+    const c_char* domainName)
+{
+    config->domainName = os_strdup(domainName);
 }
 
 static void
@@ -609,14 +630,14 @@ s_configurationInit(
         config->tracingTimestamps           = TRUE;
         config->tracingRelativeTimestamps   = FALSE;
         config->startTime                   = os_timeGet();
+        config->domainName                  = NULL;
 
         config->enableCandMCommandThread    = TRUE;
 
         /*s_printTimedEvent(daemon, S_RPTLEVEL_FINER, S_THREAD_MAIN, "Initializing configuration...\n");*/
-
         s_configurationSetTime(&(config->serviceTerminatePeriod), S_CFG_SERVICETERMINATEPERIOD_DEFAULT);
-        s_configurationSetDuration(&(config->leasePeriod), S_CFG_LEASEPERIOD_DEFAULT);
-        s_configurationSetDuration(&(config->leaseRenewalPeriod), S_CFG_LEASERENEWALPERIOD_DEFAULT);
+        s_configurationSetLeasePeriod(config, S_CFG_LEASE_EXPIRYTIME_DEFAULT);
+        s_configurationSetLeaseRenewalPeriod(config, S_CFG_LEASE_UPDATE_FACTOR_DEFAULT);
 
         /* Apply defaults to rest of configuration */
         os_threadAttrInit(&config->kernelManagerScheduling);
@@ -652,6 +673,12 @@ s_configurationDeinit(
             }
             os_free(config->tracingOutputFileName);
             config->tracingOutputFileName = NULL;
+            if(config->domainName)
+            {
+                os_free(config->domainName);
+                config->domainName = NULL;
+            }
+
         }
 
     }
@@ -784,6 +811,7 @@ s_configurationRead(
     }
 
     if (domain) {
+        s_configurationValueString (config, domain, "Name/#text", s_configurationSetDomainName);
         /* Enable statistics */
         iter = u_cfElementXPath(domain,
                                 "Statistics/Category[@enabled='true']");

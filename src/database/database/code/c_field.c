@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -305,26 +305,36 @@ c_fieldConcat (
     return field;
 }
 
+static void *get_field_address (c_field field, c_object o)
+{
+    void *p = o;
+    c_long i,n;
+    c_array refs;
+    if (field->refs) {
+        refs = field->refs;
+        n = c_arraySize(refs)-1;
+        for(i=0;i<n;i++) {
+            if ((p = C_DISPLACE(p,refs[i])) == NULL) {
+                return NULL;
+            }
+            p = *(c_voidp *)p;
+        }
+        if(p == NULL) {
+            return NULL;
+        } else {
+            p = C_DISPLACE(p,refs[n]);
+        }
+    } else {
+        p = C_DISPLACE(p,field->offset);
+    }
+    return p;
+}
+
 void
 c_fieldFreeRef (
     c_field field,
     c_object o)
 {
-    c_long i,n;
-    c_voidp p = o;
-    c_array refs;
-
-    if (field->refs) {
-        refs = field->refs;
-        n = c_arraySize(refs)-1;
-        for(i=0;i<n;i++) {
-            p = *(c_voidp *)C_DISPLACE(p,refs[i]);
-        }
-        p = C_DISPLACE(p,refs[n]);
-    } else {
-        p = C_DISPLACE(p,field->offset);
-    }
-
     switch(field->kind) {
     case V_ADDRESS:   break;
     case V_BOOLEAN:   break;
@@ -338,19 +348,18 @@ c_fieldFreeRef (
     case V_CHAR:      break;
     case V_WCHAR:     break;
     case V_STRING:
-        c_free((c_object)(*(c_string *)p));
-        (*(c_string *)p) = NULL;
-    break;
     case V_WSTRING:
-        c_free((c_object)(*(c_wstring *)p));
-        (*(c_wstring *)p) = NULL;
-    break;
+    case V_OBJECT:
+      {
+        void *p;
+        if ((p = get_field_address (field, o)) != NULL) {
+          c_free ((c_object) (*(void **)p));
+          (*(void **)p) = NULL;
+        }
+        break;
+      }
     case V_FLOAT:     break;
     case V_DOUBLE:    break;
-    case V_OBJECT:
-        c_free(*(c_object *)p);
-        (*(c_object *)p) = NULL;
-    break;
     case V_VOIDP:     break;
     case V_FIXED:
     case V_UNDEFINED:
@@ -362,26 +371,13 @@ c_fieldFreeRef (
     }
 }
 
-void
+    void
 c_fieldAssign (
     c_field field,
     c_object o,
     c_value v)
 {
-    c_long i,n;
-    c_voidp p = o;
-    c_array refs;
-
-    if (field->refs) {
-        refs = field->refs;
-        n = c_arraySize(refs)-1;
-        for(i=0;i<n;i++) {
-            p = *(c_voidp *)C_DISPLACE(p,refs[i]);
-        }
-        p = C_DISPLACE(p,refs[n]);
-    } else {
-        p = C_DISPLACE(p,field->offset);
-    }
+    c_voidp p = get_field_address (field, o);
     v.kind = field->kind;
 
 #define _VAL_(f,t) *((t *)p) = v.is.f
@@ -434,10 +430,8 @@ c_fieldValue(
     c_field field,
     c_object o)
 {
+    c_voidp p = get_field_address (field, o);
     c_value v;
-    c_long i,n;
-    c_array refs;
-    c_voidp p = o;
 
     /* initialize v! variable v has to be initialized as parts of the
      * union might not be initialized.
@@ -453,26 +447,9 @@ c_fieldValue(
     memset(&v, 0, sizeof(v));
 #endif
 
-    if (field->refs) {
-        refs = field->refs;
-        n = c_arraySize(refs)-1;
-        for(i=0;i<n;i++) {
-            p = C_DISPLACE(p,refs[i]);
-            if (p == NULL) {
-                v.kind = V_UNDEFINED;
-                return v;
-            }
-            p = *(c_voidp *)p;
-        }
-        if(p == NULL){
-            v.kind = V_UNDEFINED;
-            return v;
-        }
-        else {
-            p = C_DISPLACE(p,refs[n]);
-        }
-    } else {
-        p = C_DISPLACE(p,field->offset);
+    if (p == NULL) {
+        v.kind = V_UNDEFINED;
+        return v;
     }
 
 #if 0
@@ -540,32 +517,8 @@ c_fieldCopy(
     c_field dstfield,
     c_object dst)
 {
-    c_long i,n;
-    c_array refs;
-    c_voidp srcp = src;
-    c_voidp dstp = dst;
-
-    if (srcfield->refs) {
-        refs = srcfield->refs;
-        n = c_arraySize(refs)-1;
-        for(i=0;i<n;i++) {
-            srcp = *(c_voidp *)C_DISPLACE(srcp,refs[i]);
-        }
-        srcp = C_DISPLACE(srcp,refs[n]);
-    } else {
-        srcp = C_DISPLACE(srcp,srcfield->offset);
-    }
-
-    if (dstfield->refs) {
-        refs = dstfield->refs;
-        n = c_arraySize(refs)-1;
-        for(i=0;i<n;i++) {
-            dstp = *(c_voidp *)C_DISPLACE(dstp,refs[i]);
-        }
-        dstp = C_DISPLACE(dstp,refs[n]);
-    } else {
-        dstp = C_DISPLACE(dstp,dstfield->offset);
-    }
+    c_voidp srcp = get_field_address (srcfield, src);
+    c_voidp dstp = get_field_address (dstfield, dst);
     memcpy(dstp,srcp,dstfield->type->size);
     if ((dstfield->kind == V_STRING) ||
         (dstfield->kind == V_WSTRING) ||
@@ -581,36 +534,12 @@ c_fieldClone(
     c_field dstfield,
     c_object dst)
 {
-    c_long i,n;
-    c_array refs;
-    c_voidp srcp = src;
-    c_voidp dstp = dst;
-
-    if (srcfield->refs) {
-        refs = srcfield->refs;
-        n = c_arraySize(refs)-1;
-        for(i=0;i<n;i++) {
-            srcp = *(c_voidp *)C_DISPLACE(srcp,refs[i]);
-        }
-        srcp = C_DISPLACE(srcp,refs[n]);
-    } else {
-        srcp = C_DISPLACE(srcp,srcfield->offset);
-    }
-
-    if (dstfield->refs) {
-        refs = dstfield->refs;
-        n = c_arraySize(refs)-1;
-        for(i=0;i<n;i++) {
-            dstp = *(c_voidp *)C_DISPLACE(dstp,refs[i]);
-        }
-        dstp = C_DISPLACE(dstp,refs[n]);
-    } else {
-        dstp = C_DISPLACE(dstp,dstfield->offset);
-    }
+    c_voidp srcp = get_field_address (srcfield, src);
+    c_voidp dstp = get_field_address (dstfield, dst);
     if ((dstfield->kind == V_STRING) ||
         (dstfield->kind == V_WSTRING) ||
         (dstfield->kind == V_FIXED)) {
-    	dstp = c_stringNew(c_getBase(dstfield), srcp);
+        *((c_char **)dstp) = c_stringNew(c_getBase(dstfield), *(c_char **)srcp);
     } else {
         memcpy(dstp,srcp,dstfield->type->size);
     }
@@ -623,35 +552,13 @@ c_fieldCompare (
     c_field field2,
     c_object src2)
 {
-    c_long i,n,r;
-    c_array refs;
-    c_voidp p1 = src1;
-    c_voidp p2 = src2;
+    c_long r;
+    c_voidp p1 = get_field_address (field1, src1);
+    c_voidp p2 = get_field_address (field2, src2);
     c_equality result;
 
     result = C_NE;
 
-    if (field1->refs) {
-        refs = field1->refs;
-        n = c_arraySize(refs)-1;
-        for(i=0;i<n;i++) {
-            p1 = *(c_voidp *)C_DISPLACE(p1,refs[i]);
-        }
-        p1 = C_DISPLACE(p1,refs[n]);
-    } else {
-        p1 = C_DISPLACE(p1,field1->offset);
-    }
-
-    if (field2->refs) {
-        refs = field2->refs;
-        n = c_arraySize(refs)-1;
-        for(i=0;i<n;i++) {
-            p2 = *(c_voidp *)C_DISPLACE(p2,refs[i]);
-        }
-        p2 = C_DISPLACE(p2,refs[n]);
-    } else {
-        p2 = C_DISPLACE(p2,field2->offset);
-    }
 #define _CMP_(t) ((*(t*)p1)<(*(t*)p2)?C_LT:((*(t*)p1)>(*(t*)p2)?C_GT:C_EQ))
 
     switch(field1->kind) {
@@ -701,4 +608,72 @@ c_fieldCompare (
     }
     return result;
 #undef _CMP_
+}
+
+c_size
+c_fieldBlobSize(
+    c_field field,
+    c_object o)
+{
+    void *p;
+    switch(field->kind) {
+    case V_ADDRESS: case V_BOOLEAN: case V_SHORT: case V_LONG:
+    case V_LONGLONG: case V_OCTET: case V_USHORT: case V_ULONG:
+    case V_ULONGLONG: case V_CHAR: case V_WCHAR:
+    case V_FLOAT: case V_DOUBLE:
+        return field->type->size;
+    case V_STRING: case V_WSTRING:
+        if ((p = get_field_address (field, o)) == NULL) {
+            OS_REPORT(OS_ERROR,"c_fieldBlobSize failed",0,
+                      "illegal field reference encountered");
+            assert (FALSE);
+            return 0;
+        } else {
+            return 1 + (c_size) strlen (*((char **) p));
+        }
+    case V_OBJECT: case V_VOIDP: case V_FIXED:
+    case V_UNDEFINED: case V_COUNT:
+        OS_REPORT_1(OS_ERROR,"c_fieldBlobSize failed",0,
+                    "illegal field value kind (%d)", field->kind);
+        assert (FALSE);
+        return 0;
+    }
+    return 0;
+}
+
+c_size
+c_fieldBlobCopy(
+    c_field field,
+    c_object o,
+    void *dst)
+{
+    void *p;
+    c_size sz = 0;
+    if ((p = get_field_address (field, o)) == NULL) {
+        OS_REPORT(OS_ERROR,"c_fieldBlobCopy failed",0,
+                  "illegal field reference encountered");
+        assert (FALSE);
+        return 0;
+    }
+    switch(field->kind) {
+    case V_ADDRESS: case V_BOOLEAN: case V_SHORT: case V_LONG:
+    case V_LONGLONG: case V_OCTET: case V_USHORT: case V_ULONG:
+    case V_ULONGLONG: case V_CHAR: case V_WCHAR:
+    case V_FLOAT: case V_DOUBLE:
+        sz = field->type->size;
+        break;
+    case V_STRING: case V_WSTRING:
+        p = *((char **) p);
+        sz = 1 + (c_size) strlen (p);
+        break;
+    case V_OBJECT: case V_VOIDP: case V_FIXED:
+    case V_UNDEFINED: case V_COUNT:
+        OS_REPORT_1(OS_ERROR,"c_fieldBlobCopy failed",0,
+                    "illegal field value kind (%d)", field->kind);
+        assert(FALSE);
+        sz = 0;
+        break;
+    }
+    memcpy (dst, p, sz);
+    return sz;
 }

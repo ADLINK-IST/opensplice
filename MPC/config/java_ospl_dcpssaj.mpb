@@ -1,0 +1,18 @@
+// -*- MPC -*-
+// $Id:$
+
+project : java_only {
+    requires += ospl_dcpssaj
+}
+
+feature(!src_co) {
+    libpaths += $(OSPL_HOME)<%slash%>jar<%slash%>dcpssaj.jar
+    specific (prop:java) {
+    }
+}
+
+feature(src_co) {
+    libpaths += $(OSPL_HOME_NORMALIZED)<%slash%>jar<%slash%>$(SPLICE_TARGET)<%slash%>dcpssaj.jar
+    specific (prop:java) {
+    }
+}

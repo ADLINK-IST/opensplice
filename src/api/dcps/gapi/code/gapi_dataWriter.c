@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -260,7 +260,7 @@ _DataWriterNew (
         if (status) {
             _TopicDescriptionIncUse(_TopicDescription(topic));
         } else {
-            u_writerFree(U_WRITER_GET(uWriter));
+            u_writerFree(uWriter);
             _EntityDispose(_Entity(newDataWriter));
             newDataWriter = NULL;
         }
@@ -606,7 +606,7 @@ copy_deadline_missed_status(
     to->total_count = from->totalCount;
     to->total_count_change = from->totalChanged;
 
-    result = v_handleClaim(from->instanceHandle, (v_object*)&instance);
+    result = v_handleClaim(from->instanceHandle, (v_object *) &instance);
     if (result == V_HANDLE_OK) {
         to->last_instance_handle = u_instanceHandleNew(v_public(instance));
         result = v_handleRelease(from->instanceHandle);
@@ -878,7 +878,7 @@ gapi_dataWriter_get_matched_subscriptions (
 
 static gapi_returnCode_t
 _DataWriter_get_matched_subscription_data (
-	    gapi_dataWriter _this,
+	    _DataWriter _this,
 	    gapi_subscriptionBuiltinTopicData *subscription_data,
 	    const gapi_instanceHandle_t subscription_handle)
 {

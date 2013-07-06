@@ -1,0 +1,53 @@
+// $Id$
+//
+// Document template variables for templates templates/cdt6cproject.mpd.
+// Please try to keep this alphabetically sorted.
+//
+binary_parsers = List of parsers eclipse uses on binaries for the platform.
+build64bit = Indicator for 64-bit build.
+build_artefact_type = CDT tag indicating whether we're building a shared lib, executable, etc.
+c_compiler_option_superclass = CDT tag for "superclass" for C compiler options.
+c_linker_dynamiclib_superclass = CDT tag for "superclass" for C linker dynamic lib options.
+c_linker_tool_superclass_root = CDT tag for "superclass" for C linker.
+ccflags = (Optional) List of additional flags that should be passed to the C compiler.
+common_defines = Specifies macros that are common to all target types.
+configuration_parent_root = Root of CDT tag used for <configuration> element.
+cpp_compiler_option_superclass = CDT tag for "superclass" for C++ compiler options
+cpp_linker_dynamiclib_superclass = CDT tag for "superclass" for C++ linker dynamic lib options.
+cpp_linker_tool_input_superclass = CDT tag for "superclass" for C++ linker <inputType> element.
+cpp_linker_tool_superclass_root = Root of CDT tag for "superclass" for C++ linker.
+cpu_defines = Macros specific to a particular CPU platform.
+cxxflags = (Optional) List of additional flags that should be passed to the C++ compiler.
+debugging_level = Textual name of debugging level (defined by CDT) used during compilation.
+defines = Macros specific to a particular configuration.
+dll_ext_nodot = Same as dll_ext but with no preceding period/dot.
+envvar_post = Host platform-specific string to be appended to an environment variable in a script/batch file.
+envvar_pre = Host platform-specific string to be prepended to an environment variable in a script/batch file.
+error_parsers = List of parsers eclipse uses on error output for the platform.
+exe_ext_nodot = Same as exe_ext but with no preceding period/dot.
+lib_ext_nodot = Same as lib_ext but with no preceding period/dot.
+libenv = Name of platform environment variable that holds the library path.
+linker_option_superclass = CDT tag for "superclass" for generic linker.
+linkflags64 = Linker flags to be used during a 64-bit build.
+makefile_tmpfile = Name of a temporary file that can be used by a generated makefile.
+mkdir_pre = Host platform-specific test that must precede a mkdir command.
+optimization_level = Textual name of optimization level (defined by CDT) used during compilation.
+outputtype_superclass = CDT tag for "superclass" for the type of output file being produced by a build step.
+pathsep = Host platform-specific separator used between elements of the PATH environment variables.
+platform_defines = Macros specific to a particular platform.
+platform_libs = Libraries specific to a particular platform.
+platform_specializer = Target platform-specific keyword used in some CDT tags (see cdt6platforms.mpt).
+project_element_type_id = Target platform-specific CDT tag used in the <project> element.
+project_type = Target platform-specific string indicating project type.
+project_type_name = Target platform-specific string indicating name associated with project_type.
+quote_echo = Host platform-specific character used to quote arguments to echo in a script/batch file.
+script_hdr = Host platform-specific preamble placed in a script/batch file.
+script_tmpfile = Name of a temporary file that can be used by a generated script.
+setenv = Host platform-specific command used to set an environment variable in a script/batch file.
+shell = Host platform-specific command to invoke a shell on a file.
+targetplatform_superclass = CDT tag for "superclass" for the <targetPlatform> element.
+threadflags = Target platform-specific flags required when building with threading enabled.
+tool_name_prefix = String used in CDT GUI prefixing the names of tools in the toolchain.
+toolchain_internal_builder_root = Root of CDT tag for <toolChain> element's nonInternalBuilderId attribute.
+toolchain_superclass_root = Root of CDT tag for "superclass" of <toolChain> element.
+use_threads = Flag automatically set when feature(threads) is on.

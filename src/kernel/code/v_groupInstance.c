@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,7 +9,7 @@
  *   for full copyright notice and license terms.
  *
  */
-#include "v_groupInstance.h"
+#include "v__groupInstance.h"
 #include "v_groupCache.h"
 #include "v_state.h"
 #include "v_writer.h"
@@ -24,10 +24,6 @@
 #include "v__messageQos.h"
 
 #include "os_report.h"
-#define _EXTENT_
-#ifdef _EXTENT_
-#include "c_extent.h"
-#endif
 
 #if 0
 #define _ABORT_(condition) if (!(condition)) abort()
@@ -130,6 +126,7 @@ v_groupInstanceCheckCount(
 
 #endif
 
+#if 0
 static c_bool
 v_groupInstanceValidateRegistrations(
     v_groupInstance instance)
@@ -194,11 +191,42 @@ v_groupInstanceValidateRegistrations(
     return result;
 }
 
-#if 0
 #define CHECK_REGISTRATIONS(instance) _ABORT_(v_groupInstanceValidateRegistrations(instance))
 #else
 #define CHECK_REGISTRATIONS(instance)
 #endif
+
+static v_groupSampleTemplate
+v_groupInstanceLastTransactionSample(
+    v_groupInstance _this,
+    v_message endOfTransaction)
+{
+    v_groupSampleTemplate found = NULL;
+    v_groupSampleTemplate lastTransactionSample;
+
+    assert(v_stateTest(v_nodeState(endOfTransaction), L_TRANSACTION));
+
+    lastTransactionSample = v_groupInstanceTemplate(_this)->newest;
+
+    while((lastTransactionSample != NULL) && (!found)){
+        /* Same sequence number */
+        if(v_groupSampleMessage(lastTransactionSample)->sequenceNumber == endOfTransaction->sequenceNumber){
+            /* Same transactionId */
+            if(V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(v_groupSampleMessage(lastTransactionSample)->transactionId)
+                == V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(endOfTransaction->transactionId))
+            {
+                /* Same DataWriter */
+                if(v_gidCompare(v_groupSampleMessage(lastTransactionSample)->writerGID,
+                        endOfTransaction->writerGID) == C_EQ)
+                {
+                    found = lastTransactionSample;
+                }
+            }
+        }
+        lastTransactionSample = v_groupSampleTemplate(v_groupSample(lastTransactionSample)->older);
+    }
+    return found;
+}
 
 
 static v_groupInstance
@@ -212,12 +240,7 @@ v_groupAllocInstance(
     assert(C_TYPECHECK(_this,v_group));
 
     if (_this->cachedInstance == NULL) {
-#ifdef _EXTENT_
-        instance = v_groupInstance(c_extentCreate(_this->instanceExtent));
-#else
-        type = c_subType(_this->instances);
-        instance = v_groupInstance(c_new(type));
-#endif
+        instance = v_groupInstance(c_new(_this->instanceType));
         if (instance) {
             _ABORT_(c_refCount(instance) == 1);
             kernel = v_objectKernel(_this);
@@ -309,15 +332,6 @@ v_groupInstanceNew(
     return _this;
 }
 
-static c_bool
-lifespanAdminRemove(
-    v_groupSample sample,
-    c_voidp arg)
-{
-    v_lifespanAdminRemove(v_lifespanAdmin(arg), v_lifespanSample(sample));
-    return TRUE;
-}
-
 void
 v_groupInstanceFree(
     v_groupInstance instance)
@@ -375,6 +389,7 @@ void
 v_groupInstanceDisconnect(
     v_groupInstance instance)
 {
+    OS_UNUSED_ARG(instance);
     assert(C_TYPECHECK(instance,v_groupInstance));
     assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
     assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
@@ -545,12 +560,16 @@ v_groupInstanceRegister (
             result = V_WRITE_SUCCESS;
         }
     } else {
-        /* check writeTime of unregister message and given message.
-           If given message is older, return WRITE_SUCCESS,
+        /* check writeTime of unregister message and given message in case
+           the destination order policy is BY_SOURCE_TIMESTAMP.
+           In that case If given message is older, return WRITE_SUCCESS,
            so no explicit register message is send.
+           If the destination order policy is BY_RECEPTION_TIMESTAMP
+           then a registration must be generated to build the instance
+           pipeline.
         */
-        if (c_timeCompare(found->writeTime,
-                          message->writeTime) == C_GT) {
+        if ( v_messageQos_isBySource(message->qos) &&
+             c_timeCompare(found->writeTime, message->writeTime) == C_GT ) {
             /* reinsert as unregister message */
             found->next = instance->unregistrations;
             instance->unregistrations = found;
@@ -792,11 +811,11 @@ v_groupInstanceUnregister (
     }
     else
     {
-        /* registration not found, should not happen */
-        OS_REPORT(OS_WARNING,
-          "v_groupInstanceUnregister",0,
-          "No registration for unregister message found!");
-
+        /* Registration not found; This may happen during concurrent alignment
+         * and the unregistration by the DataWriter in case that one is still
+         * active at that time. In that case the unregister has already
+         * arrived via the regular path before durability aligns it.
+         */
         result = V_WRITE_SUCCESS;
     }
     if (instance->registrations == NULL)
@@ -909,6 +928,38 @@ v_groupInstanceCreateMessage(
     return message;
 }
 
+v_message
+v_groupInstanceCreateTypedInvalidMessage(
+    v_groupInstance _this,
+    v_message untypedMsg)
+{
+    v_message typedMsg;
+
+    /* Create a message for the invalid sample to carry. */
+    typedMsg = v_groupInstanceCreateMessage(_this);
+    if (typedMsg)
+    {
+        /* Set correct attributes. */
+        v_node(typedMsg)->nodeState = v_node(untypedMsg)->nodeState;
+        typedMsg->writerGID = untypedMsg->writerGID;
+        typedMsg->writeTime = untypedMsg->writeTime;
+        typedMsg->writerInstanceGID = untypedMsg->writerInstanceGID;
+        typedMsg->qos = c_keep(untypedMsg->qos);
+        typedMsg->sequenceNumber = untypedMsg->sequenceNumber;
+        typedMsg->transactionId = untypedMsg->transactionId;    }
+    else
+    {
+        OS_REPORT_2(OS_ERROR,
+                  "v_groupInstance", 0,
+                  "v_groupInstanceCreateTypedInvalidMessage(_this=0x%x, untypedMsg=0x%x)\n"
+                  "        Operation failed to allocate new v_message: result = NULL.",
+                  _this, untypedMsg);
+        assert(FALSE);
+    }
+
+    return typedMsg;
+}
+
 c_bool
 v_groupInstanceWalkSamples (
     v_groupInstance instance,
@@ -916,6 +967,7 @@ v_groupInstanceWalkSamples (
     c_voidp arg)
 {
     v_groupSample sample;
+    v_message endMessage, current;
     c_bool proceed = TRUE;
 
     assert(instance != NULL);
@@ -924,7 +976,58 @@ v_groupInstanceWalkSamples (
 
     sample = v_groupSample(instance->oldest);
     while ((sample != NULL) && (proceed == TRUE)) {
-        proceed = action(sample,arg);
+
+
+        /* The transient store replaces the last sample in a transaction
+         * with the end-marker. This is done for footprint reasons, but also
+         * to keep the logic to implement history depth in the instance
+         * unchanged compared to the situation before transactions were
+         * stored.
+         *
+         * DataReaders however still expect all samples including the last one
+         * before the end-marker before accepting that the transaction is
+         * complete. As the end-marker is an exact copy of the last sample of
+         * the transaction with the L_TRANSACTION bit set, this one can be
+         * used to simulate the original last sample. By doing this in this
+         * walk routine, all possible paths for providing/getting historical
+         * data to readers and the durability service are covered.
+         */
+        if(v_stateTest(v_nodeState(
+                v_groupSampleMessage(sample)), L_TRANSACTION))
+        {
+            /* temporarily store transaction end-marker. */
+            current = v_groupSampleMessage(sample);
+
+            /* clone end-marker */
+            c_cloneIn(v_topicMessageType(
+                    v_group(instance->group)->topic), current,
+                    (c_voidp*)&(endMessage));
+
+            /* clear transaction end-marker in cloned message */
+            v_stateClear(v_nodeState(endMessage), L_TRANSACTION);
+
+            /* override transactionId to only hold the id and not #messages */
+            endMessage->transactionId =
+                    V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(current->transactionId);
+
+            /* temporarily replace end-marker by clone */
+            v_groupSampleTemplate(sample)->message = endMessage;
+
+            /* perform callback with sample that has cloned message */
+            proceed = action(sample,arg);
+
+            /* place the original end-marker back */
+            v_groupSampleTemplate(sample)->message = current;
+            /* free the cloned message */
+            c_free(endMessage);
+
+            /* if proceed, perform callback on original sample */
+            if(proceed){
+                proceed = action(sample,arg);
+            }
+        } else {
+            proceed = action(sample,arg);
+        }
         sample = sample->newer;
     }
     return proceed;
@@ -939,6 +1042,7 @@ v_groupInstanceInsert(
     v_groupSample sample;
     v_groupSample oldest;
     v_groupSample ptr;
+    v_groupSampleTemplate lastTransactionSample;
     v_state state;
     c_equality equality;
     v_topicQos topicQos;
@@ -963,7 +1067,7 @@ v_groupInstanceInsert(
     }
 
     /* Exclusive ownership handling */
-    if (instance->owner.exclusive) {
+    if (message->qos && instance->owner.exclusive) {
         if (!v_messageQos_isExclusive(message->qos)) {
             /* If ownership Qos settings does not match, message should not be inserted */
             return V_WRITE_SUCCESS_NOT_STORED;
@@ -1002,12 +1106,14 @@ v_groupInstanceInsert(
 
     group = v_group(instance->group);
     topicQos = group->topic->qos;
-    sample = v_groupSampleNew(group,message);
-    if (!sample) {
-        return V_WRITE_PRE_NOT_MET;
-    }
 
     if (v_stateTest(instance->state, L_EMPTY)) {
+        sample = v_groupSampleNew(group,message);
+
+        if (!sample) {
+            return V_WRITE_PRE_NOT_MET;
+        }
+
         assert(v_groupInstanceHead(instance) == NULL);
         assert(v_groupInstanceTail(instance) == NULL);
         assert(instance->count == 0);
@@ -1019,6 +1125,30 @@ v_groupInstanceInsert(
         assert(v_groupInstanceHead(instance) != NULL);
         assert(v_groupInstanceTail(instance) != NULL);
         assert(instance->count != 0);
+
+        /* This message marks the end of a transaction. It needs to replace
+         * the last message of the transaction if it still exists in this
+         * instance. If not, it will be stored as a 'normal' message while
+         * taking into account the history depth.
+         */
+        if(v_stateTest(v_nodeState(message), L_TRANSACTION)){
+            /* Look up the last sample in the transaction */
+            lastTransactionSample = v_groupInstanceLastTransactionSample(
+                    instance, message);
+
+            /* If it is found, replace the message and return success.*/
+            if(lastTransactionSample){
+                c_free(lastTransactionSample->message);
+                v_groupSampleSetMessage(lastTransactionSample, message);
+                return V_WRITE_SUCCESS;
+            }
+            /* if it is not found continue business as usual. */
+        }
+        sample = v_groupSampleNew(group,message);
+
+        if (!sample) {
+            return V_WRITE_PRE_NOT_MET;
+        }
 
         /* The transient store history must obey the destination order
          * qos policy of the topic, so put in it the history as the
@@ -1053,6 +1183,7 @@ v_groupInstanceInsert(
         }
     }
     assert(c_refCount(sample) == 2);
+
     if (sample->older != NULL) {
         sample->older->newer = sample;
     } else {
@@ -1068,6 +1199,7 @@ v_groupInstanceInsert(
         if (instance->messageCount < group->depth) {
             instance->count++;
             instance->messageCount++;
+            v_groupSampleCountIncrement(instance->group);
             v_lifespanAdminInsert(group->lifespanAdmin,
                                   v_lifespanSample(sample));
         } else {
@@ -1195,6 +1327,7 @@ v_groupInstanceRemove (
         if (v_stateTest(state, L_WRITE)) {
             instance->count--;
             instance->messageCount--;
+            v_groupSampleCountDecrement(instance->group);
         }
         if (v_stateTest(state, L_DISPOSED)) {
             instance->count--;
@@ -1339,41 +1472,10 @@ v_groupInstancePurgeTimed(
     return;
 }
 
-
-
-v_writeResult
-v_groupInstanceDispose (
-    v_groupInstance instance,
-    c_time timestamp)
-{
-    v_groupSample ptr;
-
-    assert(instance != NULL);
-    assert(C_TYPECHECK(instance,v_groupInstance));
-    assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
-    assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
-    CHECK_COUNT(instance);
-
-/* The following code doesn't insert a dispose sample as what happens when a
- * normal dispose message is received.
- */
-    ptr = v_groupInstanceHead(instance);
-    if ( ptr == NULL
-         || v_timeCompare(timestamp,
-                          v_groupSampleMessage(ptr)->writeTime) == C_GE) {
-       v_stateSet(instance->state, L_DISPOSED);
-    }
-
-    CHECK_COUNT(instance);
-    assert((instance->count == 0) == (v_groupInstanceTail(instance) == NULL));
-    assert((instance->count == 0) == (v_groupInstanceHead(instance) == NULL));
-    return V_WRITE_SUCCESS;
-}
-
-
 /*
  * TODO: The code snippet below can be removed when v_groupUnregisterByGidTemplate
- * starts using the part in the #if 0 clause instead of in its #else clause.
+ * starts using the part in the #if 0 clause instead of in its #else clause as
+ * indicated by scdds2805.
  */
 #if 1
 void
@@ -1381,27 +1483,28 @@ v_groupInstancecleanup(v_groupInstance _this, v_registration registration, c_tim
 {
     v_message unregMsg, disposeMsg;
     v_group group;
+    v_resendScope resendScope = V_RESEND_NONE;
 
     group = v_groupInstanceGroup(_this);
     if (v_messageQos_isAutoDispose(registration->qos)) {
-        unregMsg = v_groupInstanceCreateMessage(_this);
-        if (unregMsg) {
-            v_nodeState(unregMsg) = L_DISPOSED;
-            unregMsg->qos = c_keep(registration->qos); /* since messageQos does not contain refs */
-            unregMsg->writerGID = registration->writerGID; /* pretend this message comes from the original writer! */
-            unregMsg->writeTime = timestamp;
-            v_groupWrite(group, unregMsg, NULL, V_NETWORKID_ANY);
-            c_free(unregMsg);
+        disposeMsg = v_groupInstanceCreateMessage(_this);
+        if (disposeMsg) {
+            v_nodeState(disposeMsg) = L_DISPOSED;
+            disposeMsg->qos = c_keep(registration->qos); /* since messageQos does not contain refs */
+            disposeMsg->writerGID = registration->writerGID; /* pretend this message comes from the original writer! */
+            disposeMsg->writeTime = timestamp;
+            v_groupWrite(group, disposeMsg, NULL, V_NETWORKID_ANY, &resendScope);
+            c_free(disposeMsg);
         }
     }
-    disposeMsg = v_groupInstanceCreateMessage(_this);
-    if (disposeMsg) {
-        v_nodeState(disposeMsg) = L_UNREGISTER;
-        disposeMsg->qos = c_keep(registration->qos); /* since messageQos does not contain refs */
-        disposeMsg->writerGID = registration->writerGID; /* pretend this message comes from the original writer! */
-        disposeMsg->writeTime = timestamp;
-        v_groupWrite(group, disposeMsg, NULL, V_NETWORKID_ANY);
-        c_free(disposeMsg);
+    unregMsg = v_groupInstanceCreateMessage(_this);
+    if (unregMsg) {
+        v_nodeState(unregMsg) = L_UNREGISTER;
+        unregMsg->qos = c_keep(registration->qos); /* since messageQos does not contain refs */
+        unregMsg->writerGID = registration->writerGID; /* pretend this message comes from the original writer! */
+        unregMsg->writeTime = timestamp;
+        v_groupWrite(group, unregMsg, NULL, V_NETWORKID_ANY, &resendScope);
+        c_free(unregMsg);
     }
 }
 #endif

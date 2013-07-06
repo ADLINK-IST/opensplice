@@ -1,7 +1,6 @@
 # included by bld/$(SPLICE_TARGET)/makefile
 
 TARGET_DLIB := $(DDS_SERIALIZATION)
-EXTRACTED_LIB = libddscore
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
@@ -20,6 +19,6 @@ CINCS    += -I$(OSPL_HOME)/src/database/database/code
 
 LDFLAGS += $(SHLDFLAGS)
 LDLIBS  += $(SHLDLIBS)
-LDLIBS  += -l$(DDS_OS) -l$(DDS_DATABASE)
+LDLIBS  += -l$(DDS_OS) -l$(DDS_DATABASE) -l$(DDS_UTIL)
 
 -include $(DEPENDENCIES)

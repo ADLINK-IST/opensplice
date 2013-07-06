@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -818,6 +818,7 @@ sd_deepwalkMetaClass(
         c_constant constant;
         c_string constName;
         c_string *namePtr;
+        c_string** placeHolder;
         c_type stringType;
          
         constant = *((c_constant *)(*objectPtr));
@@ -828,7 +829,8 @@ sd_deepwalkMetaClass(
             SD_CONFIDENCE(c_baseObject(stringType)->kind == M_COLLECTION);
             SD_CONFIDENCE(c_collectionType(stringType)->kind == C_STRING);
             namePtr = &constName;
-            sd_deepwalkMetaType(stringType, name, (c_object *)&namePtr, context);
+            placeHolder = &namePtr;
+            sd_deepwalkMetaType(stringType, name, (c_object *)placeHolder, context);
             SD_RETURN_ON_ERROR(context);
         } else {
             sd_deepwalkMetaContextPre(context, name, c_type(actualClass), objectPtr);
@@ -1199,13 +1201,13 @@ sd_deepwalkMeta(
     c_object *objectPtr,
     sd_deepwalkMetaContext context)
 {
-    c_object *placeHolder;
+    c_object **placeHolder;
 
     if (c_typeIsRef(type)) {
-        placeHolder = (c_object *)&objectPtr;
+        placeHolder = &objectPtr;
     } else {
-        placeHolder = objectPtr;
+        placeHolder = (c_object**)objectPtr;
     }
 
-    sd_deepwalkMetaType(type, name, placeHolder, context);
+    sd_deepwalkMetaType(type, name, (c_object*)placeHolder, context);
 }

@@ -5,7 +5,7 @@
 /**
  * \file durability.odl
  * Defines the protocol messages for the durability service.
- *  
+ *
  */
 module durabilityModule2 {
     typedef c_time   d_timestamp;
@@ -13,61 +13,61 @@ module durabilityModule2 {
     typedef c_string d_name;
     typedef c_string d_partition;
     typedef c_string d_topic;
-   
+
     struct d_networkAddress_s {
         c_ulong systemId;
         c_ulong localId;
         c_ulong lifecycleId;
     };
-    
+
     enum d_serviceState {
-        D_STATE_INIT,   
-        D_STATE_DISCOVER_FELLOWS_GROUPS,  
+        D_STATE_INIT,
+        D_STATE_DISCOVER_FELLOWS_GROUPS,
         D_STATE_DISCOVER_LOCAL_GROUPS,
-        D_STATE_DISCOVER_PERSISTENT_SOURCE, 
-        D_STATE_INJECT_PERSISTENT,  
+        D_STATE_DISCOVER_PERSISTENT_SOURCE,
+        D_STATE_INJECT_PERSISTENT,
         D_STATE_FETCH_INITIAL,
         D_STATE_COMPLETE,
         D_STATE_FETCH,
         D_STATE_ALIGN,
         D_STATE_FETCH_ALIGN,
         D_STATE_TERMINATING,
-        D_STATE_TERMINATED  
+        D_STATE_TERMINATED
     };
-   
+
     enum d_completeness {
         D_GROUP_KNOWLEDGE_UNDEFINED,
-        D_GROUP_UNKNOWN,            
-        D_GROUP_INCOMPLETE,         
-        D_GROUP_COMPLETE            
+        D_GROUP_UNKNOWN,
+        D_GROUP_INCOMPLETE,
+        D_GROUP_COMPLETE
     };
-   
+
     enum d_durabilityKind {
-        D_DURABILITY_VOLATILE,      
+        D_DURABILITY_VOLATILE,
         D_DURABILITY_TRANSIENT_LOCAL,
-        D_DURABILITY_TRANSIENT,      
-        D_DURABILITY_PERSISTENT,     
+        D_DURABILITY_TRANSIENT,
+        D_DURABILITY_PERSISTENT,
         D_DURABILITY_ALL
     };
-   
+
     enum d_alignmentKind {
-        D_ALIGNEE_INITIAL, 
+        D_ALIGNEE_INITIAL,
         D_ALIGNEE_LAZY,
         D_ALIGNEE_ON_REQUEST
     };
 
-	enum d_mergePolicy {
-		D_MERGE_IGNORE,
-		D_MERGE_MERGE,
-		D_MERGE_DELETE,
-		D_MERGE_REPLACE
-	};
-	
-	struct d_mergeState_s {
-	    d_name role;
-	    c_ulong value;
-	};
-   
+    enum d_mergePolicy {
+        D_MERGE_IGNORE,
+        D_MERGE_MERGE,
+        D_MERGE_DELETE,
+        D_MERGE_REPLACE
+    };
+
+    struct d_mergeState_s {
+        d_name role;
+        c_ulong value;
+    };
+
     struct d_message_s {
         d_networkAddress_s addressee;           /* the destination         */
         d_networkAddress_s senderAddress;       /* the source              */
@@ -81,36 +81,36 @@ module durabilityModule2 {
         d_partition        partition;
         d_topic            topic;
     };
-   
+
     struct d_statusRequest_s {
         d_message_s        parentMsg;
     };
-   
+
     struct d_status_s {
         d_message_s        parentMsg;
     };
-   
+
     struct d_nameSpacesRequest_s{
         d_message_s        parentMsg;
     };
-    
+
     struct d_nameSpaces_s{
         d_message_s              parentMsg;
-		c_string		         name;
+        c_string                 name;
         c_string                 partitions;
         d_durabilityKind         durabilityKind;
-		c_bool			         aligner;
+        c_bool                     aligner;
         d_alignmentKind          alignmentKind;
         d_quality                initialQuality;
         c_ulong                  total;
         d_networkAddress_s       master;
         c_bool                   isComplete;
-        c_bool                   masterConfirmed; 
+        c_bool                   masterConfirmed;
         d_mergeState_s           state;
         sequence<d_mergeState_s> mergedStates;
         c_ulong                  mergedStatesCount;
     };
-   
+
     struct d_sampleRequest_s {
         d_message_s        parentMsg;
         d_partition        partition;
@@ -128,7 +128,7 @@ module durabilityModule2 {
         c_long             maxInstances;
         c_long             maxSamplesPerInstance;
     };
-   
+
     struct d_newGroup_s {
         d_message_s       parentMsg;
         d_partition       partition;
@@ -138,17 +138,17 @@ module durabilityModule2 {
         d_quality         quality;
         c_ulong           alignerCount;
     };
-   
+
     struct d_sampleChainBead {
         sequence<c_octet> value;
         c_long            size;
     };
-   
+
     struct d_sampleChainTrailer {
         c_ulong           nrSamples;
         d_completeness    completeness;
     };
-   
+
     struct d_sampleChain_s {
         d_message_s                  parentMsg;
         c_string                     partition;
@@ -157,7 +157,7 @@ module durabilityModule2 {
         sequence<d_networkAddress_s> addressees;
         c_ulong                      addresseesCount;
         d_networkAddress_s           source;
-       
+
         union messageContent switch ( enum content { BEAD, LINK } )
         {
             case BEAD:
@@ -166,7 +166,7 @@ module durabilityModule2 {
                 d_sampleChainTrailer link;
         } msgBody;
     };
-   
+
     struct d_deleteData_s {
         d_message_s        parentMsg;
         d_timestamp        actionTime;
@@ -178,7 +178,7 @@ module durabilityModule2 {
     /*************************************/
     /* For storage in Memory Mapped File */
     /*************************************/
-    
+
     /* Because 'newest' is typed in d_instance c_free will free the
      * newest sample and because 'older' is typed in d_sample, all samples
      * will be freed as well.
@@ -188,7 +188,7 @@ module durabilityModule2 {
         attribute d_sample older;
         attribute c_voidp newer;
     };
-    
+
     class d_sampleTemplate extends d_sample {
         attribute kernelModule::v_message message;
     };
@@ -199,13 +199,13 @@ module durabilityModule2 {
         attribute c_long  count; /* write AND disposed messages */
         attribute c_voidp oldest;
     };
-    
+
     class d_instanceTemplate extends d_instance {
         attribute d_sampleTemplate newest;
     };
 
     class d_storeMMFKernel;
-    
+
     class d_topicInfo {
         attribute c_string                 name;
         attribute c_string                 typeName;
@@ -227,7 +227,7 @@ module durabilityModule2 {
         attribute d_quality quality;
         attribute SET<d_instance> instances;      /* table, keys values as keys */
     };
-    
+
     class d_nameSpaceInfo {
         attribute d_name name;
         attribute c_bool complete;
@@ -241,4 +241,52 @@ module durabilityModule2 {
         attribute SET<d_groupInfo>     backup;  /* table, topic+partition as keys */
     };
 
+    /* d_storeKV wants to have everything serialisable with the same
+       serialisers (but unfortunately, the regular serialiser can't
+       handle c_types, so we need to treat the topic type specially).
+
+       Note: table to integer mapping is
+      V = 0
+      T = 1 TT = 2
+      N = 3 NQ = 4 NC = 5
+      G = 6
+      M = 7
+    We reserve 8 bits, just in case. Note also that this means the
+    version tag is key 0:0:0:0. */
+    enum d_encodingKV {
+        /* encoding of payload; encoding of keys, file format in general
+           is up to the underlying KV store. */
+        D_ENCODINGKV_XML_XML, /* data XML, type XML */
+        D_ENCODINGKV_BIGE_XML, /* data BigE, type XML */
+        D_ENCODINGKV_BIGECDR_XML /* data BigE CDR, type XML */
+    };
+    struct d_versionKV { /* key = V:0:0:0; payload is encoded as CDR BE */
+        c_ulong version;
+    d_encodingKV encoding;
+    };
+    struct d_topicKV { /* key = T:topic_id:0:0 */
+        string name;
+        string typename;
+        string keylist;
+        kernelModule::v_topicQos qos;
+    };
+    struct d_topicTypeKV { /* key = TT:topic_id:0:0; uses a special serialiser => no payload other than type */
+        c_type type;
+    };
+    struct d_namespaceKV { /* key = N:namespace_id:namespace_version:0 */
+        string name;
+    };
+    struct d_namespaceQualityKV { /* key = NQ:namespace_id:namespace_version:0 */
+    d_quality quality;
+    };
+    struct d_namespaceCompletenessKV { /* key = NC:namespace_id:namespace_version:0 */
+    c_bool complete;
+    };
+    struct d_groupKV { /* key = G:group_id:0:0 */
+    c_ulong topic_id;
+    c_ulong namespace_id;
+        c_ulong namespace_version;
+        string partition;
+    string topic;
+    };
 };

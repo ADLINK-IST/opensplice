@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -75,6 +75,12 @@ extern "C" {
 #define V_MESSAGE_HOPDEC(_this)
 #define V_MESSAGE_REPORT(_this,reader)
 #endif
+
+/* The first 24 bits of the transactionId refer to the transaction's sequence number
+ * and the final 8 bits refer to the transaction's unique id : */
+#define V_MESSAGE_SET_TRANSACTION_ID(_id,_count) ((_count << 8)+(_id % 256))
+#define V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(_id) (255 & _id)
+#define V_MESSAGE_GET_TRANSACTION_COUNT(_id) (_id >> 8)
 
 OS_API void
 v_messageSetAllocTime(

@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE stax SYSTEM "stax.dtd">
+<stax>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- Install the defined OSPL on the defined host with the defined licence -->
+    <function name="InstallOSPL" scope="local">
+
+        <!-- Funcstion description -->
+        <function-prolog>
+        <![CDATA[
+            <p>TODO</p>
+        ]]>
+        </function-prolog>
+
+        <function-epilog>
+        <![CDATA[
+            <p>TODO</p>
+        ]]>
+        </function-epilog>
+
+        <!-- Function dependencies -->
+        <function-import file="test_ospl.xml"/>
+
+        <!-- Function arguments -->
+        <function-list-args>
+            <function-required-arg name="source_host">
+                The host where the installation and the license are stored
+            </function-required-arg>
+            <function-required-arg name="target_host">
+                The target host to install the OSPL
+            </function-required-arg>
+            <function-required-arg name="installer_path">
+                The path to the installer of the OSPL on the "source" host
+            </function-required-arg>
+            <function-required-arg name="target_install_dir">
+                The path where the OSPL will be installed on the "target" host
+            </function-required-arg>
+            <function-optional-arg name="license_path" default="None">
+                The path to the license  on the "source" host to use for the installation
+            </function-optional-arg>
+        </function-list-args>
+
+        <!-- Function body -->
+        <sequence>
+            <!-- Check for the params -->
+            <if expr="source_host == None">
+                <throw exception="'OSPLInstallationFailed'">
+                    "InstallOSPL: the source host is not defined (%s)"% source_host
+                </throw>
+            </if>
+            <if expr="target_host == None">
+                <throw exception="'OSPLInstallationFailed'">
+                    "InstallOSPL: the target host is not defined (%s)"% target_host
+                </throw>
+            </if>
+            <if expr="target_install_dir == None or target_install_dir == ''">
+                <throw exception="'OSPLInstallationFailed'">
+                    "InstallOSPL: the location where the OSPL must be installed is not defined (%s)"% target_install_dir
+                </throw>
+            </if>
+            <if expr="installer_path == None or installer_path == ''">
+                <throw exception="'OSPLInstallationFailed'">
+                    "InstallOSPL: the path to the installer is not defined (%s)"% installer_path
+                </throw>
+            </if>
+
+            <!-- All Ok - print log message -->
+            <message>
+                "InstallOSPL: Installing [%s] on [%s] in directory [%s] with the license [%s] from [%s]."%\
+                (installer_path, target_host.get_host_name(), target_install_dir, license_path, source_host.get_host_name())
+            </message>
+
+            <script>
+                # Where the installer is located on the target host:
+                target_installer_path = ""
+
+                # Where the license is located on the target host:
+                target_license_path = ""
+            </script>
+
+            <!-- Copy the installation to the target host -->
+            <call function="'CopyFileFromTo'">[source_host, target_host, installer_path, target_install_dir]</call>
+            <!-- Get the installer path on the target host -->
+            <script>
+                target_installer_path = STAXResult
+            </script>
+            <!-- Check copy process result -->
+            <if expr="target_installer_path == ''">
+                <throw exception="'OSPLInstallationFailed'">
+                    "InstallOSPL: Fail to copy the installer to the target host"
+                </throw>
+            </if>
+
+            <!-- Copy the license file (if set) to the target host -->
+            <if expr="license_path != None">
+                <sequence>
+                    <call function="'CopyFileFromTo'">[source_host, target_host, license_path, target_install_dir]</call>
+                    <script>
+                        target_license_path = STAXResult
+                    </script>
+                    <!-- Check copy process result -->
+                    <if expr="target_license_path == ''">
+                        <throw exception="'OSPLInstallationFailed'">
+                            "InstallOSPL: Fail to copy the license file to the target host"
+                        </throw>
+                    </if>
+                </sequence>
+            </if>
+
+            <!-- Add executable rights for the installer on Linux -->
+            <call function="'ChModForFileOnHost'">[target_host, target_installer_path, "+x"]</call>
+
+            <!-- Set installer arguments -->
+            <script>
+                # Set mode and installer location:
+                installer_args = "--mode unattended --prefix %s"% target_install_dir
+
+                # Set that license already exist:
+                installer_args += " --nw_already_has_license 1"
+
+                # Set license file if avilable:
+                if target_license_path != "":
+                    installer_args += " --providedLicenseFile %s"% target_license_path
+            </script>
+            <!-- Run installer -->
+            <process name="'InstallOSPL::RunInstaller'">
+                <location>
+                    target_host.get_staf_url()
+                </location>
+                <command>
+                    target_installer_path
+                </command>
+                <parms>
+                    installer_args
+                </parms>
+            </process>
+
+            <!-- Check -->
+            <if expr="RC != 0 or STAFResult != None">
+                <throw exception="'OSPLInstallationFailed'">
+                    "InstallOSPL: Fail run the installer on host [%d %s %s]"% (RC, STAFResult, STAXResult)
+                </throw>
+            </if>
+
+            <!-- All Ok - print log message -->
+            <message>
+                "InstallOSPL: Installed successfully on host [%s] in directory [%s]."%\
+                (target_host.get_host_name(), target_install_dir)
+            </message>
+
+            <!-- Return installation path on target host (can be used to call uninstaller) -->
+            <return>target_install_dir</return>
+        </sequence>
+    </function>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- Uninstall the OSPL on the defined host from the defined location -->
+    <function name="UninstallOSPL" scope="local">
+
+        <!-- Funcstion description -->
+        <function-prolog>
+        <![CDATA[
+            <p>TODO</p>
+        ]]>
+        </function-prolog>
+
+        <function-epilog>
+        <![CDATA[
+            <p>TODO</p>
+        ]]>
+        </function-epilog>
+
+        <!-- Function dependencies -->
+        <function-import file="test_ospl.xml"/>
+
+        <!-- Function arguments -->
+        <function-list-args>
+            <function-required-arg name="target_host">
+                The target host to uninstall the OSPL
+            </function-required-arg>
+            <function-required-arg name="target_install_dir">
+                The path where the OSPL is installed on the "target" host
+            </function-required-arg>
+        </function-list-args>
+
+        <!-- Function body -->
+        <sequence>
+            <!-- Check for the params -->
+            <if expr="target_host == None">
+                <throw exception="'OSPLUninstallationFailed'">
+                    "UninstallOSPL: the target host is not defined (%s)"% target_host
+                </throw>
+            </if>
+            <if expr="target_install_dir == None or target_install_dir == ''">
+                <throw exception="'OSPLUninstallationFailed'">
+                    "UninstallOSPL: the location where the OSPL is installed is not defined (%s)"% target_install_dir
+                </throw>
+            </if>
+
+            <!-- All Ok - print log message -->
+            <message>
+                "UninstallOSPL: Uninstalling OSPL on host [%s] from the directory [%s]."%\
+                (target_host.get_host_name(), target_install_dir)
+            </message>
+
+            <script>
+                # Set the uninstaller extension:
+                uninstaller_ext = ""
+                if host.is_windows():
+                    uninstaller_ext = "exe"
+
+                # Set the uninstaller name pattern:
+                uninstaller_name_pattern = "uninstall*"
+            </script>
+
+            <!-- Find OSPL uninstaller -->
+            <if expr="uninstaller_ext == ''">
+                <call function="'STAXUtilListDirectory'">
+                    {"machine"   : host.get_staf_url(),
+                     "directory" : target_install_dir,
+                     "name"      : uninstaller_name_pattern}
+                </call>
+                <else>
+                    <call function="'STAXUtilListDirectory'">
+                        {"machine"   : host.get_staf_url(),
+                         "directory" : target_install_dir,
+                         "name"      : uninstaller_name_pattern,
+                         "ext"       : uninstaller_ext}
+                    </call>
+                </else>
+            </if>
+            
+            <script>[RC, result] = STAXResult</script>
+            <!-- Check -->
+            <if expr="RC != 0">
+                <sequence>
+                    <throw exception="'OSPLUninstallationFailed'">
+                        "UninstallOSPL: Fail find the uninstaller on host [rc=%d STAFResult=%s STAXResult=%s]"% (RC, STAFResult, STAXResult)
+                    </throw>
+                </sequence>
+            </if>
+
+            <!-- Get and check result -->
+            <script>
+                uninstaller_name = result[0]
+            </script>
+            <if expr="not uninstaller_name">
+                <sequence>
+                    <throw exception="'OSPLUninstallationFailed'">
+                        "UninstallOSPL: Fail find the uninstaller on host [rc=%d STAFResult=%s STAXResult=%s]"% (RC, STAFResult, STAXResult)
+                    </throw>
+                </sequence>
+            </if>
+
+            <!-- Set uninstaller arguments and path -->
+            <script>
+                # Set mode:
+                uninstaller_args = "--mode unattended"
+
+                target_uninstaller_path = target_install_dir + host.get_file_sep() + uninstaller_name
+            </script>
+
+            <!-- Run uninstaller -->
+            <process name="'InstallOSPL::RunUninstaller'">
+                <location>
+                    target_host.get_staf_url()
+                </location>
+                <command>
+                    target_uninstaller_path
+                </command>
+                <parms>
+                    uninstaller_args
+                </parms>
+            </process>
+
+            <!-- Check -->
+            <if expr="RC != 0 or STAFResult != None">
+                <throw exception="'OSPLUninstallationFailed'">
+                    "UninstallOSPL: Fail run the uninstaller on host [%d %s %s]"% (RC, STAFResult, STAXResult)
+                </throw>
+            </if>
+
+            <!-- All Ok - print log message -->
+            <message>
+                "UninstallOSPL: Uninstalled successfully on host [%s] from directory [%s]."%\
+                (target_host.get_host_name(), target_install_dir)
+            </message>
+        </sequence>
+    </function>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+</stax>

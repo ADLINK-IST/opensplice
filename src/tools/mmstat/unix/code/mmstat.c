@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -19,6 +19,7 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
+#include <limits.h>
 #include <sys/ioctl.h>
 #ifdef OS_SOLARIS_DEFS_H
 #include <sys/filio.h>
@@ -38,9 +39,9 @@
 static int connection;
 static int port = 2323;
 static int orig_stdout;
-static const char *optflags="p:i:l:f:s:hertTmMa";
+static const char *optflags="p:i:l:f:s:o:n:hertTmMa";
 #else
-static const char *optflags="i:l:f:s:hertTmMa";
+static const char *optflags="i:l:f:s:o:n:hertTmMa";
 #endif
 
 typedef enum
@@ -50,13 +51,14 @@ typedef enum
     objectRefCount
 } monitorMode;
 
+
 static void
 print_usage ()
 {
     printf ("Usage:\n"
         "      mmstat -h\n"
         "      mmstat [-M|m] [-e] [-a] [-i interval] [-s sample_count] [URI]\n"
-        "      mmstat [-t|T] [-i interval] [-s sample_count] [-l limit] [-f filter_expression] [URI]\n");
+        "      mmstat [-t|T] [-i interval] [-s sample_count] [-l limit] [-o C|S|T] [-n nrEntries] [-f filter_expression] [URI]\n");
     printf ("\n");
     printf ("Show the memory statistics of the OpenSplice system identified by the specified URI. "
             "If no URI is specified, the environment variable OSPL_URI will be used. "
@@ -64,28 +66,34 @@ print_usage ()
             "The default display interval is 3 seconds.\n");
     printf ("\n");
     printf ("Mode:\n");
-    printf ("      -m               Show memory statistics (default mode)\n");
-    printf ("      -M               Show memory statistics difference\n");
-    printf ("      -t               Show meta object references\n");
-    printf ("      -T               Show meta object references difference\n");
+    printf ("      -m                   Show memory statistics (default mode)\n");
+    printf ("      -M                   Show memory statistics difference\n");
+    printf ("      -t                   Show meta object references\n");
+    printf ("      -T                   Show meta object references difference\n");
     printf ("\n");
     printf ("Options:\n");
-    printf ("      -h               Show this help\n");
+    printf ("      -h                   Show this help\n");
 #ifdef INTEGRITY
-    printf ("      -p port          Set the portnumber of the telnet port (default %d)\n", port);
+    printf ("      -p port              Set the portnumber of the telnet port (default %d)\n", port);
 #endif
-    printf ("      -e               Extended mode, shows bar for allocated memory\n");
-    printf ("      -a               Show pre-allocated memory as well.\n");
-    printf ("      -i interval      Display interval (in milliseconds)\n");
-    printf ("      -s sample_count  Stop after sample_count samples\n");
-    printf ("      -l limit         Show only object count >= limit\n");
-    printf ("      -f filter_expr   Show only meta objects which name passes the filter expression\n");
+    printf ("      -e                   Extended mode, shows bar for allocated memory\n");
+    printf ("      -a                   Show pre-allocated memory as well.\n");
+    printf ("      -i interval          Display interval (in milliseconds)\n");
+    printf ("      -s sample_count      Stop after sample_count samples\n");
+    printf ("      -l limit             Show only object count >= limit\n");
+    printf ("      -o <C|S|T>           Order by object[C]ount/object[S]ize/[T]otalSize\n");
+    printf ("      -n nrEntries         Display only the top nrEntries items (useful only in combination with ordering)\n");
+    printf ("      -f filter_expr       Show only meta objects which name passes the filter expression\n");
     printf ("\n");
     printf ("Use 'q' to terminate the monitor\n"
             "Use 't' to immediately show statistics\n");
 }
 
-OPENSPLICE_MAIN (ospl_mmstat)
+#ifdef INTEGRITY
+OPENSPLICE_ENTRYPOINT (ospl_mmstat)
+#else
+OPENSPLICE_MAIN ("")
+#endif
 {
     c_bool extended     = FALSE;
     c_bool raw          = FALSE;
@@ -123,6 +131,9 @@ OPENSPLICE_MAIN (ospl_mmstat)
     monitor_ms  ms_data         = NULL;
     monitor_trc trc_data        = NULL;
     monitor_orc orc_data        = NULL;
+
+    orderKind selectedOrdering  = NO_ORDERING;
+    int orderCount = INT_MAX;
 
     while (((opt = getopt (argc, argv, optflags)) != -1) && !errno)
     {
@@ -179,12 +190,49 @@ OPENSPLICE_MAIN (ospl_mmstat)
                 delta = TRUE;
                 break;
             case 'o':
+                if (selectedOrdering  == NO_ORDERING && strlen(optarg) == 1)
+                {
+                    switch (optarg[0])
+                    {
+                        case 'C':
+                            selectedOrdering = ORDER_BY_COUNT;
+                            break;
+                        case 'S':
+                            selectedOrdering = ORDER_BY_SIZE;
+                            break;
+                        case 'T':
+                            selectedOrdering = ORDER_BY_TOTAL;
+                            break;
+                        default:
+                            fprintf(stderr, "mmstat: Unknown ordering kind.\n");
+                            print_usage();
+                            exit(-1);
+                    }
+                }
+                else
+                {
+                    fprintf(stderr, "mmstat: Cannot specify multiple orderings at the same time.\n");
+                    print_usage();
+                    exit(-1);
+                }
+                break;
+            case 'n':
+                if (!(sscanf (optarg, "%d", &orderCount)) > 0)
+                {
+                    fprintf(stderr, "mmstat: Not a valid ordering nrEntries.\n");
+                    print_usage();
+                    exit(-1);
+                }
+                break;
+#ifdef OBJECT_WALK
+            case 'r':
                 selected_action = objectRefCount;
                 break;
-            case 'O':
+            case 'R':
                 selected_action = objectRefCount;
                 delta = TRUE;
                 break;
+#endif
 #ifdef INTEGRITY
             case 'p':
                 if (!(sscanf (optarg, "%d", &port)) > 0)
@@ -325,7 +373,7 @@ OPENSPLICE_MAIN (ospl_mmstat)
                 dup2(connection, fileno(stdout));
             }
 #else
-            if (isatty (fileno(stdin)))
+            if (isatty (fileno(stdin)) && isatty(fileno(stdout)) )
             {
                 sigemptyset (&sigmask);
                 sigaddset (&sigmask, SIGTTOU);
@@ -349,7 +397,7 @@ OPENSPLICE_MAIN (ospl_mmstat)
                     ms_data = monitor_msNew (extended, raw, delta, preallocated);
                     break;
                 case typeRefCount:
-                    trc_data = monitor_trcNew (obj_cnt_limit, filter_expr, delta);
+                    trc_data = monitor_trcNew (obj_cnt_limit, filter_expr, selectedOrdering, orderCount, delta);
                     break;
                 case objectRefCount:
                     orc_data = monitor_orcNew (obj_cnt_limit, filter_expr, delta);
@@ -390,7 +438,7 @@ OPENSPLICE_MAIN (ospl_mmstat)
                 if(ur == U_RESULT_OK)
                 {
 #ifndef INTEGRITY
-                    if (isatty (fileno(stdin)))
+                    if (isatty (fileno(stdin)) && isatty(fileno(stdout)))
                     {
                         count = read (fileno(stdin), &c, 1);
                         /* if count = -1, mmstat is started in background */
@@ -416,7 +464,10 @@ OPENSPLICE_MAIN (ospl_mmstat)
                         count = read (connection, &c, 1);
                         if( count != -1 || errno == EAGAIN  )
 #else
-                        if (ioctl (fileno(stdin), FIONREAD, &count) == 0)
+                           if ( isatty (fileno(stdin)) 
+                                && isatty(fileno(stdout)) 
+                                && (ioctl (fileno(stdin), FIONREAD, &count) == 0) 
+                                && count != 0 )
 #endif
                         {
 #ifndef INTEGRITY
@@ -434,14 +485,13 @@ OPENSPLICE_MAIN (ospl_mmstat)
                                 }
                             }
                         }
+#ifdef INTEGRITY
                         else
                         {
-#ifdef INTEGRITY
                             dup2( orig_stdout, fileno(stdout));
-#endif
                             no_break = 0;
                         }
-#ifndef INTEGRITY
+#else
                     }
 #endif
                     if (no_break && interval)
@@ -464,7 +514,7 @@ OPENSPLICE_MAIN (ospl_mmstat)
             }
 
 #ifndef INTEGRITY
-            if (isatty (fileno(stdin))) 
+            if (isatty (fileno(stdin)) && isatty(fileno(stdout)) ) 
             {
                 count = read (fileno(stdin), &c, 1);
                 if(count != -1)
@@ -473,13 +523,12 @@ OPENSPLICE_MAIN (ospl_mmstat)
                 }
             }
 #endif
-            u_participantFree(participant);
-
             if(lost)
             {
                 printf("\nConnection with domain lost. The OpenSplice system has\n" \
                        "probably been shut down.\n");
             }
+            u_participantFree(participant);
         }
         else
         {
@@ -520,4 +569,3 @@ OPENSPLICE_MAIN (ospl_mmstat)
 
     return 0;
 }
-

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -38,6 +38,7 @@ C_CLASS(c_avlNode);
 C_STRUCT(c_avlNode) {
     c_avlNode left;    /* The element located at the left of the this tree element. */
     c_avlNode right;   /* The element located at the right of the this tree element. */
+    c_avlNode parent;  /* The element located one level up from this tree element. */
     c_short height;    /* The heigth of this element within the tree. */
 };
 
@@ -54,11 +55,16 @@ C_STRUCT(c_avlTree) {
 };
 
 c_avlTree c_avlTreeNew   (c_mm mm, c_long offset);
+c_avlTree c_avlTreeInit  (c_avlTree tree, c_mm mm, c_long offset);
 void      c_avlTreeFree  (c_avlTree tree);
 c_long    c_avlTreeCount (c_avlTree tree);
 void     *c_avlTreeFirst (c_avlTree tree);
 void     *c_avlTreeLast  (c_avlTree tree);
- 
+void 	 *c_avlTreeNext  (c_avlTree tree,
+                          void *node);
+void 	 *c_avlTreePrev  (c_avlTree tree,
+                          void *node);
+
 void     *c_avlTreeInsert (
                c_avlTree    tree,
                void        *node,

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -29,7 +29,7 @@ os_mmfAttrInit (
     assert (mmfAttr != NULL);
     mmfAttr->userCred.uid = 0;
     mmfAttr->userCred.gid = 0;
-    mmfAttr->map_address = 0x80000000;
+    mmfAttr->map_address = (void*)0x80000000;
     return os_resultSuccess;
 }
 

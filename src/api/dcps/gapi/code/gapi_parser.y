@@ -9,9 +9,7 @@
 #define YY_NO_UNISTD_H
 #endif
 
-//#ifdef INTEGRITY
 #define YY_NEVER_INTERACTIVE 1
-//#endif
     
 #define yyin                 gapi_parser_yyin
 #define yyout                gapi_parser_yyout

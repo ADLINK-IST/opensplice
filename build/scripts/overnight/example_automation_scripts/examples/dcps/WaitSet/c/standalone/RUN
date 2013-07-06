@@ -1,0 +1,17 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+startOSPL
+
+echo "=== Launching WaitSet "
+
+./sac_waitset_sub > subResult.txt &
+
+sleep 2
+
+./sac_waitset_pub > pubResult.txt	
+
+waitsetCheckResult
+
+stopOSPL

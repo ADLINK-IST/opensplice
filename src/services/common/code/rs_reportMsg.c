@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "rs_reportMsg.h"
@@ -15,8 +15,10 @@
 #include "os_stdlib.h"
 
 static const char *reportTypeText [] = {
+    "DEBUG",
     "INFO",
     "WARNING",
+    "API_INFO",
     "ERROR",
     "CRITICAL ERROR",
     "FATAL ERROR",
@@ -238,7 +240,7 @@ rs_reportMsgGetDateTime (
 
 void
 rs_reportMsgSetReportType (
-    rs_reportMsg reportMsg, 
+    rs_reportMsg reportMsg,
     const rs_reportType reportType)
 {
     assert (reportMsg);
@@ -248,7 +250,7 @@ rs_reportMsgSetReportType (
 
 void
 rs_reportMsgSetReportContext (
-    rs_reportMsg reportMsg, 
+    rs_reportMsg reportMsg,
     const c_char *reportContext)
 {
     assert (reportMsg);
@@ -262,7 +264,7 @@ rs_reportMsgSetReportContext (
 
 void
 rs_reportMsgSetFileName (
-    rs_reportMsg reportMsg, 
+    rs_reportMsg reportMsg,
     const c_char *fileName)
 {
     assert (reportMsg);
@@ -276,7 +278,7 @@ rs_reportMsgSetFileName (
 
 void
 rs_reportMsgSetLineNo (
-    rs_reportMsg reportMsg, 
+    rs_reportMsg reportMsg,
     c_long lineNo)
 {
     assert (reportMsg);
@@ -286,7 +288,7 @@ rs_reportMsgSetLineNo (
 
 void
 rs_reportMsgSetReportCode (
-    rs_reportMsg reportMsg, 
+    rs_reportMsg reportMsg,
     c_long reportCode)
 {
     assert (reportMsg);
@@ -296,7 +298,7 @@ rs_reportMsgSetReportCode (
 
 void
 rs_reportMsgSetDescription (
-    rs_reportMsg reportMsg, 
+    rs_reportMsg reportMsg,
     const c_char *description)
 {
     assert (reportMsg);
@@ -310,7 +312,7 @@ rs_reportMsgSetDescription (
 
 void
 rs_reportMsgSetDomain (
-    rs_reportMsg reportMsg, 
+    rs_reportMsg reportMsg,
     const c_char *domain)
 {
     assert (reportMsg);
@@ -324,7 +326,7 @@ rs_reportMsgSetDomain (
 
 void
 rs_reportMsgSetNode (
-    rs_reportMsg reportMsg, 
+    rs_reportMsg reportMsg,
     const c_char *node)
 {
     assert (reportMsg);
@@ -338,7 +340,7 @@ rs_reportMsgSetNode (
 
 void
 rs_reportMsgSetProcess (
-    rs_reportMsg reportMsg, 
+    rs_reportMsg reportMsg,
     const c_char *process)
 {
     assert (reportMsg);
@@ -352,7 +354,7 @@ rs_reportMsgSetProcess (
 
 void
 rs_reportMsgSetThread (
-    rs_reportMsg reportMsg, 
+    rs_reportMsg reportMsg,
     const c_char *thread)
 {
     assert (reportMsg);
@@ -366,7 +368,7 @@ rs_reportMsgSetThread (
 
 void
 rs_reportMsgSetDateTime (
-    rs_reportMsg reportMsg, 
+    rs_reportMsg reportMsg,
     c_time dateTime)
 {
     assert (reportMsg);

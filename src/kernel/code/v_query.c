@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -78,6 +78,8 @@ v_queryInit(
     q_expr predicate,
     c_value params[])
 {
+    OS_UNUSED_ARG(predicate);
+    OS_UNUSED_ARG(params);
     assert(C_TYPECHECK(q,v_query));
 
     v_collectionInit(v_collection(q), name, qs, TRUE);
@@ -150,7 +152,9 @@ v_querySource(
 
 c_bool
 v_queryTest(
-    v_query q)
+    v_query q,
+    v_queryAction action,
+    c_voidp args)
 {
     c_bool result = FALSE;
 
@@ -162,40 +166,10 @@ v_queryTest(
 
     switch (v_objectKind(q)) {
     case K_DATAREADERQUERY:
-        result = v_dataReaderQueryTest(v_dataReaderQuery(q));
+        result = v_dataReaderQueryTest(v_dataReaderQuery(q), action, args);
     break;
     case K_DATAVIEWQUERY:
-        result = v_dataViewQueryTest(v_dataViewQuery(q));
-    break;
-    default:
-        OS_REPORT_1(OS_ERROR,
-                    "v_queryTest failed",0,
-                    "illegal query kind (%d) specified",
-                    v_objectKind(q));
-        assert(FALSE);
-    }
-
-    return result;
-}
-
-c_bool
-v_queryTriggerTest(
-    v_query q)
-{
-    c_bool result = FALSE;
-
-    if (q == NULL) {
-        return FALSE;
-    }
-
-    assert(C_TYPECHECK(q,v_query));
-
-    switch (v_objectKind(q)) {
-    case K_DATAREADERQUERY:
-        result = v_dataReaderQueryTriggerTest(v_dataReaderQuery(q));
-    break;
-    case K_DATAVIEWQUERY:
-        result = v_dataViewQueryTest(v_dataViewQuery(q));
+        result = v_dataViewQueryTest(v_dataViewQuery(q), action, args);
     break;
     default:
         OS_REPORT_1(OS_ERROR,
@@ -213,7 +187,7 @@ v_queryReadInternal(
     v_query q,
     v_dataReaderInstance instance,
     c_bool readNext,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg)
 {
     c_bool proceed;
@@ -230,7 +204,7 @@ v_queryReadInternal(
     case K_DATAREADERQUERY:
         drq = v_dataReaderQuery(q);
         if (readNext) {
-	  proceed = v_dataReaderQueryReadNextInstance(
+            proceed = v_dataReaderQueryReadNextInstance(
                         drq,
                         instance,
                         (v_readerSampleAction)action,
@@ -270,8 +244,8 @@ v_queryReadInternal(
     default:
         OS_REPORT_1(OS_ERROR,"v_queryRead failed",0,
                     "illegal query kind (%d) specified",v_objectKind(q));
-        assert(FALSE);
         proceed = FALSE;
+        assert(FALSE);
     }
 
     return proceed;
@@ -280,7 +254,7 @@ v_queryReadInternal(
 c_bool
 v_queryRead(
     v_query q,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg)
 {
     return v_queryReadInternal(q, NULL, FALSE, action, arg);
@@ -291,7 +265,7 @@ v_queryTakeInternal(
     v_query q,
     v_dataReaderInstance instance,
     c_bool readNext,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg)
 {
     c_bool proceed;
@@ -342,8 +316,8 @@ v_queryTakeInternal(
     default:
         OS_REPORT_1(OS_ERROR,"v_queryTake failed",0,
                     "illegal query kind (%d) specified",v_objectKind(q));
-        assert(FALSE);
         proceed = FALSE;
+        assert(FALSE);
     }
 
     return proceed;
@@ -352,7 +326,7 @@ v_queryTakeInternal(
 c_bool
 v_queryTake(
     v_query q,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg)
 {
     return v_queryTakeInternal(q, NULL, FALSE, action, arg);
@@ -364,6 +338,7 @@ v_queryNotify(
     v_event event,
     c_voidp userData)
 {
+    OS_UNUSED_ARG(userData);
     if (q && event) {
         if (event->kind != V_EVENT_DATA_AVAILABLE) {
             OS_REPORT_1(OS_WARNING, "v_query", 0,
@@ -391,13 +366,12 @@ v_queryNotifyDataAvailable(
                      event);
     break;
     default:
-    break;
         OS_REPORT_1(OS_ERROR,
                     "v_queryNotifyDataAvailable failed",0,
                     "illegal query kind (%d) specified",
                     v_objectKind(_this));
-        assert(FALSE);
         result = TRUE;
+        assert(FALSE);
     }
     return result;
 }
@@ -406,7 +380,7 @@ c_bool
 v_queryReadInstance(
     v_query q,
     v_dataReaderInstance instance,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg)
 {
     c_bool result = FALSE;
@@ -421,7 +395,7 @@ c_bool
 v_queryReadNextInstance(
     v_query q,
     v_dataReaderInstance instance,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg)
 {
     c_bool result = FALSE;
@@ -435,7 +409,7 @@ c_bool
 v_queryTakeInstance(
     v_query q,
     v_dataReaderInstance instance,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg)
 {
     c_bool result = FALSE;
@@ -451,7 +425,7 @@ c_bool
 v_queryTakeNextInstance(
     v_query q,
     v_dataReaderInstance instance,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg)
 {
     c_bool result = FALSE;

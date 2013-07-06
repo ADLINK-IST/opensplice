@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -85,7 +85,7 @@ extern "C" {
 
 typedef c_bool
 (*u_participantAction)(
-    v_participant p,
+    u_participant p,
     c_voidp arg);
 
 /** \brief The class constructor.
@@ -499,6 +499,13 @@ OS_API c_bool
 u_participantIsBuiltinSubscriber(
     u_participant _this,
     u_subscriber subscriber);
+
+/** \brief See u_domainFederationSpecificPartitionName. */
+OS_API u_result
+u_participantFederationSpecificPartitionName (
+    u_participant _this,
+    c_char *buf,
+    os_size_t bufsize);
 
 #undef OS_API
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -70,7 +70,7 @@ c_bool              d_readerListenerStart           (d_readerListener listener);
 
 c_bool              d_readerListenerStop            (d_readerListener listener);
 
-c_bool              d_readerListenerCopy            (c_object object,
+v_actionResult      d_readerListenerCopy            (c_object object,
                                                      c_voidp copyArg);
 
 void                d_readerListenerDeinit          (d_object object);

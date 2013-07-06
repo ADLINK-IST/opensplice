@@ -18,7 +18,8 @@ namespace test.sacs
         public static readonly DDS.PartitionQosPolicy defaultPartitionQosPolicy = new DDS.PartitionQosPolicy();
         public static readonly DDS.PresentationQosPolicy defaultPresentationQosPolicy = new DDS.PresentationQosPolicy();
         public static readonly DDS.ReaderDataLifecycleQosPolicy defaultReaderDataLifecycleQosPolicy = new DDS.ReaderDataLifecycleQosPolicy();
-        public static readonly DDS.ReliabilityQosPolicy defaultReliabilityQosPolicy = new DDS.ReliabilityQosPolicy();
+        public static readonly DDS.ReliabilityQosPolicy defaultTopicAndDataReaderReliabilityQosPolicy = new DDS.ReliabilityQosPolicy();
+        public static readonly DDS.ReliabilityQosPolicy defaultDataWriterReliabilityQosPolicy = new DDS.ReliabilityQosPolicy();
         public static readonly DDS.ResourceLimitsQosPolicy defaultResourceLimitsQosPolicy = new DDS.ResourceLimitsQosPolicy();
         public static readonly DDS.TimeBasedFilterQosPolicy defaultTimeBasedFilterQosPolicy = new DDS.TimeBasedFilterQosPolicy();
         public static readonly DDS.TopicDataQosPolicy defaultTopicDataQosPolicy = new DDS.TopicDataQosPolicy();
@@ -73,8 +74,11 @@ namespace test.sacs
             defaultReaderDataLifecycleQosPolicy.AutopurgeNowriterSamplesDelay = DDS.Duration.Infinite;
             defaultReaderDataLifecycleQosPolicy.EnableInvalidSamples = true;
 
-            defaultReliabilityQosPolicy.Kind = DDS.ReliabilityQosPolicyKind.BestEffortReliabilityQos;
-            defaultReliabilityQosPolicy.MaxBlockingTime = new DDS.Duration(0, 100000000);
+            defaultTopicAndDataReaderReliabilityQosPolicy.Kind = DDS.ReliabilityQosPolicyKind.BestEffortReliabilityQos;
+            defaultTopicAndDataReaderReliabilityQosPolicy.MaxBlockingTime = new DDS.Duration(0, 100000000);
+
+            defaultDataWriterReliabilityQosPolicy.Kind = DDS.ReliabilityQosPolicyKind.ReliableReliabilityQos;
+            defaultDataWriterReliabilityQosPolicy.MaxBlockingTime = new DDS.Duration(0, 100000000);
 
             defaultResourceLimitsQosPolicy.MaxInstances = -1;
             defaultResourceLimitsQosPolicy.MaxSamples = -1;
@@ -94,7 +98,7 @@ namespace test.sacs
             defaultDataWriterQos.Deadline = defaultDeadlineQosPolicy;
             defaultDataWriterQos.LatencyBudget = defaultLatencyBudgetQosPolicy;
             defaultDataWriterQos.Liveliness = defaultLivelinessQosPolicy;
-            defaultDataWriterQos.Reliability = defaultReliabilityQosPolicy;
+            defaultDataWriterQos.Reliability = defaultDataWriterReliabilityQosPolicy;
             defaultDataWriterQos.DestinationOrder = defaultDestinationOrderQosPolicy;
             defaultDataWriterQos.History = defaultHistoryQosPolicy;
             defaultDataWriterQos.ResourceLimits = defaultResourceLimitsQosPolicy;
@@ -117,7 +121,7 @@ namespace test.sacs
             defaultDataReaderQos.Deadline = defaultDeadlineQosPolicy;
             defaultDataReaderQos.LatencyBudget = defaultLatencyBudgetQosPolicy;
             defaultDataReaderQos.Liveliness = defaultLivelinessQosPolicy;
-            defaultDataReaderQos.Reliability = defaultReliabilityQosPolicy;
+            defaultDataReaderQos.Reliability = defaultTopicAndDataReaderReliabilityQosPolicy;
             defaultDataReaderQos.DestinationOrder = defaultDestinationOrderQosPolicy;
             defaultDataReaderQos.History = defaultHistoryQosPolicy;
             defaultDataReaderQos.ResourceLimits = defaultResourceLimitsQosPolicy;
@@ -132,7 +136,7 @@ namespace test.sacs
             defaultTopicQos.Deadline = defaultDeadlineQosPolicy;
             defaultTopicQos.LatencyBudget = defaultLatencyBudgetQosPolicy;
             defaultTopicQos.Liveliness = defaultLivelinessQosPolicy;
-            defaultTopicQos.Reliability = defaultReliabilityQosPolicy;
+            defaultTopicQos.Reliability = defaultTopicAndDataReaderReliabilityQosPolicy;
             defaultTopicQos.DestinationOrder = defaultDestinationOrderQosPolicy;
             defaultTopicQos.History = defaultHistoryQosPolicy;
             defaultTopicQos.ResourceLimits = defaultResourceLimitsQosPolicy;

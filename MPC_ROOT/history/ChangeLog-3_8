@@ -1,0 +1,1188 @@
+Wed Feb  2 14:01:25 UTC 2011  Brian Johnson  <johnsonb@ociweb.com>
+
+        * clone_build_tree.pl:
+        
+          Removed explicit "build" directory matching in favor of $expected
+          for preventing clone build directory from being.
+
+Fri Jan 21 20:44:36 UTC 2011  Brian Johnson  <johnsonb@ociweb.com>
+
+        * clone_build_tree.pl:
+
+          Limited core pattern match to just files.
+
+Mon Jan  3 18:08:05 UTC 2011  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * config/lzo2.mpb:
+          Added support for LZO2_INCDIR
+
+Mon Jan  3 15:52:47 UTC 2011  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * config/lzo1.mpb:
+          Added support for LZO1_INCDIR
+
+Wed Dec 22 17:28:56 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        These changes were initially developed on the "rpmspec" branch.
+
+        * modules/RpmSpecProjectCreator.pm:
+        * modules/RpmSpecWorkspaceCreator.pm:
+
+          New type for generating RPM .spec files.
+
+        * modules/Options.pm:
+
+          Don't generate trailing whitespace in the list of types.
+
+        * modules/Creator.pm:
+
+          Extracted the =, +=, -= handling so it can be reused elsewhere.
+
+        * modules/WorkspaceCreator.pm:
+
+          Keep track of aggregated workspaces for use by some particular
+          WorkspaceCreators.  Allow "specific" scopes within workspaces.
+
+        * devtools/document_template.pl:
+
+          Added ability to process templates embedded in Perl modules.
+
+        * docs/USAGE:
+
+          Added new types to the usage info for -type.
+
+        * docs/README:
+        * docs/html/MakeProjectCreator.css:
+        * docs/html/MakeProjectCreator.html:
+        * docs/html/RpmSpec.html:
+        * docs/html/rpmworkflow.dot:
+        * docs/html/rpmworkflow.png:
+        * docs/templates/rpmspec.txt:
+
+          Documented rpmspec type and "specific" scopes in workspaces.
+
+        * modules/mpc_debug.pm:
+
+          New Perl module to assist with debugging MPC.
+
+        * modules/Driver.pm:
+        * modules/Parser.pm:
+        * modules/ProjectCreator.pm:
+        * mwc.pl:
+
+          Use mpc_debug.
+
+Mon Dec 20 18:55:04 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * templates/vc10.mpd:
+
+          Fixed TargetName for static libs -- previously it was blank.
+
+Mon Dec 20 13:40:26 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * docs/html/MakeProjectCreator.html:
+
+          Changed the example to use the current project variable name,
+          'exeout', instead of 'install'.
+
+        * modules/Options.pm:
+
+          Warn the user when they provide a path to -relative that is not a
+          full path.
+
+        * modules/OutputMessage.pm:
+
+          Change new line characters to a newl line plus spaces to make the
+          messages align.
+
+        * modules/ProjectCreator.pm:
+        * modules/StringProcessor.pm:
+
+          Fixed a bug where assignments of values with spaces or $() that
+          ended in a back-slash would result in the removal of one of the
+          surrounding double quotes.
+
+Thu Dec  2 12:57:11 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * docs/README:
+        * docs/html/MakeProjectCreator.html:
+        * modules/ProjectCreator.pm:
+        * templates/vc8.mpd:
+
+          Committing changes provided by Artur Doci <artur at doci dot info>.
+          This provides support for the 'dependent_upon' keyword for use
+          within the scope of Header_Files for C++ projects for vc8 and vc9
+          only.
+
+Thu Dec  2 08:57:38 UTC 2010  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * config/ndds_ts_defaults.mpb:
+          Incremented TAO version to 2.0
+
+Wed Dec  1 00:21:47 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * templates/cdt6platforms.mpt:
+
+          Set the outputtype_superclass so it works for
+          both debug and release.
+
+Tue Nov 30 12:58:03 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * modules/Creator.pm:
+        * modules/MakeProjectCreator.pm:
+        * modules/ProjectCreator.pm:
+        * modules/VC10ProjectCreator.pm:
+        * modules/VC6WorkspaceCreator.pm:
+        * modules/VC7ProjectCreator.pm:
+        * modules/VC7WorkspaceCreator.pm:
+        * modules/VC8ProjectCreator.pm:
+        * modules/VC8WorkspaceCreator.pm:
+        * modules/WixProjectCreator.pm:
+
+          Made modifications to the use of constants within the
+          initialization of file level hash maps.  They need to be called
+          like functions in order to support Perl 5.6.
+
+Fri Nov 12 12:39:55 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * config/mfc.mpb:
+        * config/winapp.mpb:
+
+          Factored out portions that instruct a Windows project to be a
+          GUI.
+
+        * config/wxadvanced.mpb:
+        * config/wxaui.mpb:
+        * config/wxbase.mpb:
+        * config/wxcore.mpb:
+        * config/wxdbgrid.mpb:
+        * config/wxgl.mpb:
+        * config/wxhtml.mpb:
+        * config/wxmedia.mpb:
+        * config/wxnet.mpb:
+        * config/wxodbc.mpb:
+        * config/wxpropertygrid.mpb:
+        * config/wxqa.mpb:
+        * config/wxribbon.mpb:
+        * config/wxrichtext.mpb:
+        * config/wxstc.mpb:
+        * config/wxxml.mpb:
+        * config/wxxrc.mpb:
+
+          Added base projects for the various wxWindows.
+
+        * config/wxmake.mpb:
+        * config/wxmsvs.mpb:
+
+          These base projects are project type specific and designed to work
+          with wxWindows.  The comments inside the files describe their use.
+
+        * modules/BCB2007WorkspaceCreator.pm:
+        * modules/BMakeWorkspaceCreator.pm:
+        * modules/CDT6ProjectCreator.pm:
+        * modules/CDT6WorkspaceCreator.pm:
+        * modules/HTMLWorkspaceCreator.pm:
+        * modules/NMakeWorkspaceCreator.pm:
+        * modules/ProjectCreator.pm:
+        * modules/VC6WorkspaceCreator.pm:
+        * modules/VC7WorkspaceCreator.pm:
+        * modules/VC8WorkspaceCreator.pm:
+        * modules/WB26WorkspaceCreator.pm:
+        * modules/WixWorkspaceCreator.pm:
+        * modules/WorkspaceCreator.pm:
+
+          Use constants to access the 'project_info' arrays instead of magic
+          numbers.  Also, a method from ProjectCreator can be used to pull
+          specific values out of the 'project_info' instead of directly
+          accessing the array.
+
+          ProjectCreator also has a bug fix relating to the use of
+          Modify_Custom in conjunction with a built-in component type (e.g.,
+          Source_Files).  If that is used, files that are generated from
+          other custom definitions were not getting added to the project.
+
+        * templates/makedll.mpt:
+
+          Changed the link flags to use both -shared and -dynamic.  Earlier
+          versions of gcc used -dynamic and later versions use -shared.
+
+Fri Nov 12 08:49:38 UTC 2010  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * modules/TemplateParser.pm:
+          Committed fix from Adam Mitz that fixed problems with dds4ccm and
+          cdt6/cdt7.
+
+Wed Nov 10 02:28:28 UTC 2010  James H. Hill  <hillj at cs dot iupui dot edu>
+
+        * config/splice_ts_defaults.mpb:
+
+          Updated the idlflags statement to include a new location since
+          the location of the IDL files changed in OpenSplice DDS 5.3.
+
+Thu Nov  4 11:38:47 UTC 2010  Charles Calkins  <calkinsc@ociweb.com>
+
+        * modules/WixWorkspaceCreator.pm:
+
+          Fixed fuzz error.
+
+Wed Nov  3 16:42:10 UTC 2010  Charles Calkins  <calkinsc@ociweb.com>
+
+        * modules/CDT6WorkspaceCreator.pm:
+        * modules/NMakeWorkspaceCreator.pm:
+        * modules/TemplateParser.pm:
+        * modules/VC7WorkspaceCreator.pm:
+        * modules/WixWorkspaceCreator.pm:
+
+          Re-enabled the wix "make_group" flag.
+
+Wed Nov  3 15:41:16 UTC 2010  Charles Calkins  <calkinsc@ociweb.com>
+
+        * modules/VC7WorkspaceCreator.pm:
+
+          Temporarily removed wix "make_group" flag.
+
+Wed Nov  3 15:37:12 UTC 2010  Charles Calkins  <calkinsc@ociweb.com>
+
+        * modules/CDT6WorkspaceCreator.pm:
+        * modules/TemplateParser.pm:
+        * modules/WixWorkspaceCreator.pm:
+
+          Temporarily removed wix "make_group" flag.
+
+Wed Nov  3 14:53:37 UTC 2010  Charles Calkins  <calkinsc@ociweb.com>
+
+        * docs/templates/wix.txt:
+        * modules/CDT6WorkspaceCreator.pm:
+        * modules/TemplateParser.pm:
+        * modules/VC7WorkspaceCreator.pm:
+        * modules/WixProjectCreator.pm:
+        * modules/WixWorkspaceCreator.pm:
+        * templates/wix.mpd:
+        * templates/wix.mpt:
+        * templates/wixcs.mpd:
+        * templates/wixcs.mpt:
+
+          Extended the "wix" project type to support C#, decorated names,
+          internationalized .NET resources, and generation of components
+          and groups based on configurations and platforms.
+
+Wed Nov  3 14:31:32 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/StringProcessor.pm:
+        * modules/TemplateInputReader.pm:
+
+          Allow a - character in a template variable scope name.
+
+        * templates/wb30dll.mpt:
+
+          Use the - character in the buildspec scoped names to match
+          the names used by Wind River Workbench.
+
+Mon Nov  1 18:21:59 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/StringProcessor.pm:
+
+          Added a "merge" function for appending non-duplicates onto a list.
+
+        * modules/DirectoryManager.pm:
+        * modules/ProjectCreator.pm:
+
+          Use the StringProcessor::merge() function where applicable.
+          Fixed a bug where the custom type explicit dependencies (<<) were not
+          tracked separately for each type.
+          Added <%pathsep%> as a pseudo-variable (; or :).
+          Added the capability called "combined custom", which (when enabled
+          by the specific project creator) treats input files used by more than
+          one custom type as if they were just in one type, and that type has
+          multiple commands and the combined set of inputs and outputs.  See
+          the HTML documentation for details.
+
+        * modules/CDT6ProjectCreator.pm:
+        * modules/VC10ProjectCreator.pm:
+
+          Enabled combined custom.
+
+        * modules/CDT6WorkspaceCreator.pm:
+        * modules/CDT7ProjectCreator.pm:
+        * modules/CDT7WorkspaceCreator.pm:
+
+          Added the cdt7 type, which builds on cdt6 and therefore doesn't
+          need its own templates.  Eclipse's CDT version 7 comes with the
+          "Helios" (3.6) version of Eclipse.
+
+        * docs/README:
+        * docs/html/MakeProjectCreator.html:
+
+          Documented <%pathsep%> and combined-custom.
+
+        * templates/cdt6cproject.mpd:
+
+          Cleaned up a lot of formatting and simplifed some of the MPC template
+          language constructs, added uses of cdt7-specific variables.
+          Added support for combined custom.
+
+        * templates/cdt6project.mpd:
+
+          Support cdt7.
+
+        * templates/vc10.mpd:
+
+          Added support for combined custom.
+
+Thu Oct 28 11:44:02 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * docs/USAGE:
+        * modules/Options.pm:
+
+          Added information to the -into option description that desribes
+          behavior when a project is referenced via a full path.
+
+        * docs/html/MakeProjectCreator.html:
+
+          Fixed the wording of the -base option description.  And, added
+          information to the -into option description that desribes behavior
+          when a project is referenced via a full path.
+
+        * modules/Creator.pm:
+
+          Added code to warn the user that using the -into option with a
+          project that is referenced via a full path will not work properly.
+
+        * modules/DirectoryManager.pm:
+        * modules/WorkspaceCreator.pm:
+
+          Modified to append a slash to directories that are only a drive
+          letter and colon.
+
+        * mpc.pl:
+        * mwc.pl:
+
+          Modified these scripts to pull in ACE specific modules and config
+          files if the ACE_ROOT environment variable is set and MPC is
+          located underneath the directory to which ACE_ROOT points.
+
+Wed Oct 20 09:18:05 UTC 2010  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * config/nddsmonitor.mpb:
+          New base project for RTI ndds monitor library
+
+Mon Oct 11 20:40:13 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * docs/templates/make.txt:
+        * templates/make.mpd:
+        * templates/makedll.mpt:
+
+          Added support for the 'profile' and 'coverage' template variables.
+          If a compiler has options for profiling and coverage testing, they
+          will be added to the compile and link lines.
+
+        * modules/CommandHelper.pm:
+
+          Added a comment about escaping regular expression special
+          characters.
+
+        * modules/ProjectCreator.pm:
+
+          Fixed a bug where a source file that was explicitly added and ends
+          in _T.cpp would automatically be added as a template file if the
+          template files component was left defaulted.
+
+        * templates/nmake.mpd:
+
+          Added support for the 'profile' template variable.
+
+Mon Oct  4 15:32:05 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/ProjectCreator.pm:
+        * templates/vc8csharp.mpd:
+
+          Added "Embedded_Resource_Files" as a component name for C#.
+          From Charles Calkins (calkinsc at ociweb dot com).
+
+Mon Sep 27 11:44:08 UTC 2010  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * config/wireshark.mpb:
+          vc10 support
+
+Fri Sep 17 11:25:48 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * docs/README:
+        * docs/html/MakeProjectCreator.html:
+        * templates/vc8csharp.mpd:
+
+          Removed trailing whitespace.
+
+        * docs/templates/make.txt:
+        * modules/MakeWorkspaceCreator.pm:
+        * templates/make.mpd:
+        * templates/makedll.mpt:
+
+          Added support for the check-syntax target used by emacs.
+
+        * modules/Options.pm:
+
+          Fixed a typo.
+
+        * modules/ProjectCreator.pm:
+
+          Cleaned up and commented a bit of code.
+
+Tue Sep 14 19:38:30 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * prj_install.pl:
+
+          Fixed a bug in the symlink-detection logic when the same file appears
+          in more than one MPC component list.
+
+Mon Sep 13 21:51:32 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * docs/templates/vc8csharp.txt:
+        * templates/vc8csharp.mpd:
+
+          Added and documented the DisableSpecificWarnings template variable.
+          Thanks to Charles Calkins (calkinsc at ociweb dot com) for this and
+          the previous change.
+
+Mon Sep 13 21:11:20 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * docs/USAGE:
+
+          Fixed a typo.
+
+        * templates/vc10.mpd:
+
+          Removed a redundant \ from the OutDir.
+          Added warning_level settings for "all" and "none", adding to the
+          existing levels of 1-4.
+
+        * docs/templates/vc10.txt:
+
+          Documented warning levels.
+
+Fri Sep 10 15:06:04 UTC 2010  William R. Otte  <wotte@dre.vanderbilt.edu>
+
+        * config/xscdefaults.mpb:
+
+          Added from CIAO.
+
+Tue Aug 31 20:21:25 UTC 2010  Chris Cleeland  <cleeland@ociweb.com>
+
+        * templates/cdt6cproject.mpd:
+
+          Changed announcement message for custom build steps to not
+          include the command.  Putting in the command caused problems for
+          custom types whose command included <%quote%>, and those are
+          sometimes required due to other issues.  When those other issues
+          are resolved, we can put the command back in the announcement
+          message.
+
+Mon Aug 30 19:21:23 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/CDT6ProjectCreator.pm:
+
+          Added the ability to override platform auto-detection using an
+          environment variable.
+
+        * modules/ProjectCreator.pm:
+
+          Added pre_write_output_file() as a hook method that can be overriden
+          by specific ProjectCreators.
+
+        * modules/VC10ProjectCreator.pm:
+
+          Override pre_write_output_file(), but it doesn't do anything yet.
+
+        * templates/nmake.mpd:
+
+          - Normalized start-of-line whitespace to be a tab for all lines that
+            start commands (not inline script files).  Nmake itself doesn't
+            care about the start-of-line whitespace but it helps editors.
+          - Use /GX- to disable /EHsc when managed.
+          - Generate a unique temp file name instead of always using
+            tempfile.bat.  There appears to be a bug with nmake on some
+            machines where it still has an open file handle and it's trying to
+            delete/overwrite the temp file.
+
+Mon Aug 30 15:38:18 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * config/qt4_gui.mpb:
+
+          Some systems with both qt3 and qt4 installed need to run the moc and
+          uic tools as "moc-qt4" and "uic-qt4".  Allow this to be enabled by
+          setting the QT4_SUFFIX environment variable.
+
+Fri Aug 27 21:34:44 UTC 2010  Brian Johnson  <johnsonb@ociweb.com>
+
+        * templates/automake.mpd:
+        * templates/cdt6cproject.mpd:
+        * templates/em3.mpd:
+        * templates/ghs.mpd:
+        * templates/make.mpd:
+        * templates/make.net.mpd:
+        * templates/nmake.mpd:
+        * templates/vc10.mpd:
+        * templates/vc6.mpd:
+        * templates/vc7.mpd:
+        * templates/vc8.mpd:
+
+          Changed to use !need_staticflag to prevent dependent_libs from
+          being generated for static projects.
+
+        * templates/wb26wrmakefile.mpd:
+
+          Added dependent_libs keyword handling to wb26.
+
+Fri Aug 27 18:21:22 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/ProjectCreator.pm:
+
+          Warn if an assignment to 'after' contains an invalid project name.
+
+Fri Aug 27 14:59:06 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * modules/GHSProjectCreator.pm:
+        * modules/ProjectCreator.pm:
+        * modules/VC8ProjectCreator.pm:
+        * modules/WB30ProjectCreator.pm:
+
+          Changed post_file_creation() to return an error status.  Returning
+          undef indicates no error.  A string returned is used as the error
+          message.
+
+          Additionally, a valid_project_name() has been added and the list
+          of invalid project name characters has been expanded to cover most
+          of those that are not allowed by Visual Studio and those that do
+          not work within a makefile.
+
+Thu Aug 26 15:04:04 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/ProjectCreator.pm:
+
+          For types with more than one template, only issue the source_callback
+          for the "visible" template.
+
+        * modules/VC8WorkspaceCreator.pm:
+
+          The "temporary hack" for vc10 is no longer needed due to this fix in
+          ProjectCreator.pm.
+
+Wed Aug 25 20:56:36 UTC 2010  Brian Johnson  <johnsonb@ociweb.com>
+
+        * modules/ProjectCreator.pm:
+
+          Added dependent_libs keyword to indicate dependency on a
+          library.  It is similar to the dependent keyword, but should
+          be used to make sure to rebuild the project when a library
+          needs to be rebuilt for its dependent executable.
+
+        * modules/TemplateParser.pm:
+
+          - keywords was changed to use flag parameters to identify
+          which flags were set for each keyword.  These parameters were
+          also used throughout the module instead of hard-coded values.
+
+          - A new flag was added called get_combined_type which indicates
+          that the types get_xxx function doesn't have an intermediate
+          return value that could be passed back into a doif_xxx function.
+
+          - process_compound_if had functionality added that if there is a
+          single cmd (not nested), there is a doif function for the type,
+          and if the type doesn't have a combined get function, then the
+          cmd is added in a second time into the cmd array, so that the
+          first pass the get_xxx function is called and its returned value
+          is passed to the doif_xxx function.
+
+          - basename keyword was changed to have bits 1-3 set and the
+          appropriate functions were added.
+
+          - dirname was changed to use tp_dirname instead of validated_dirname,
+          so that $(...) and ../ are not removed and so that get_dirname
+          doesn't call doif_dirname and returns the actual dirname.
+
+          - All get_xxx functions that called their doif_xxx function had the
+          get_combined_type bit added, except transdir, which had get_transdir
+          changed to return the actual translated directory string.
+
+        * templates/automake.mpd:
+        * templates/cdt6cproject.mpd:
+        * templates/em3.mpd:
+        * templates/ghs.mpd:
+        * templates/make.mpd:
+        * templates/make.net.mpd:
+        * templates/nmake.mpd:
+        * templates/vc10.mpd:
+        * templates/vc6.mpd:
+        * templates/vc7.mpd:
+        * templates/vc8.mpd:
+
+          Added dependent_libs functionality.
+
+        * templates/nmake.mpd:
+
+          Added dependent_libs functionality.  Added code for handling
+          custom_types for each configuration.
+
+Wed Aug 25 18:36:32 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * docs/templates/vc10.txt:
+
+          Completed all template documenatation for vc10.
+
+        * templates/vc10.mpd:
+
+          Whitespace changes, removed a duplicated section, and changed some
+          values that were <%if(x)%>true<%endif%> because the user may
+          reasonably want to set them to "false" (since they default to true).
+
+        * templates/vc8csharp.mpd:
+
+          Whitespace changes only.
+
+Tue Aug 24 19:45:29 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * docs/templates/vc10.txt:
+        * docs/templates/vc8csharp.txt:
+
+          Documented recent changes that impact template variables.
+          The vc10 file was generated by the script so it still has <none>
+          placeholders for variables that aren't yet documented.  These should
+          be completed before too long.
+
+        * modules/VC10WorkspaceCreator.pm:
+        * modules/VC8WorkspaceCreator.pm:
+        * modules/VC9WorkspaceCreator.pm:
+
+          Account for differences in the way Website projects are listed in
+          the solution files for both vc9 and vc10.
+
+Tue Aug 24 13:57:23 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/WB26WorkspaceCreator.pm:
+
+          Further refinement to the change from
+          Fri Jul  9 21:16:23 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+          the .lst (list) file will now have relative paths, because Perl's
+          Cwd::abs_path() can't be used portably on directories that don't
+          exist yet (which is the case with -into).
+
+Mon Aug 23 22:29:24 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * templates/vc8csharp.mpd:
+
+          Support adding a single .manifest file per project in Source_Files
+          in C# from Visual Studio 2008 and up (vc9+).
+
+Fri Aug 20 21:40:40 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/ProjectCreator.pm:
+
+          Allow template variables to use an "extended attributes" notation,
+          which borrows syntax from what "after" already supports:
+            variables += value:attrname1=attrval1[,attrname2=attrval2]...
+          The "value" part is referenced in the template as
+          <%variable->_default%> and the "attrval" parts are referenced as
+          <%variable->attrname1%>.
+
+        * modules/TemplateParser.pm:
+        * modules/VC7ProjectCreator.pm:
+
+          Changed the GUID generation algorithm for <%guid%> and <%new_guid%>
+          to not use the absoulte path to the workspace.  This allows stable
+          GUID generation among different developers and/or moving the
+          workspace to a different filesystem location.
+
+        * modules/VC8WorkspaceCreator.pm:
+
+          Use Windows slashes for relative paths in project references.
+
+        * templates/vc10.mpd:
+
+          Support TargetExt when setting a non-standard {lib,dll,exe}_ext.
+          OutputFile should not add a \ after $(OutDir) since it already ends
+          in a \.  The double-\ confuses .NET project references.
+          Added comreferences as a template variable to generate the
+          <COMReference> XML element in the vcxproj.  This uses the extended
+          attributes support in ProjectCreator.
+
+        * templates/vc8csharp.mpd:
+
+          RootNamespace is set to the project name.
+          TargetFrameworkProfile supported as a template variable.
+          Added comreference support (similar to vc10.mpd).
+
+Thu Aug 19 21:51:35 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/VC10WorkspaceCreator.pm:
+        * modules/VC8WorkspaceCreator.pm:
+
+          Factored-out the C++ project references from vc8 into a separate
+          method that's overriden in vc10 to get the new syntax.
+
+        * templates/vc10.mpd:
+        * templates/vc10filters.mpd:
+
+          Support for .def, .idl, and .odl files as Source_Files.
+
+          "CLRSupport" removed as a template variable, instead use "managed"
+          which is an MPC keyword and gets special treatment from MPC.
+
+          Added an "EmbedManifest" template variable, if it's not set and there
+          is a "keyfile", default it to false because signed assemblies can't
+          have manifest embedded without invalidating the signature.
+
+          Added project references (filled-in by the WorkspaceCreator).
+
+          Cleaned up the Source_Files section a bit, it was using the
+          grouped_source_file outside of any groups.
+
+Wed Aug 18 21:39:36 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * config/mfc.mpb:
+
+          The "subsystem" template variable is a string for vc10 (not an int).
+
+        * templates/vc10.mpd:
+
+          The pch_header can't be listed separately from the other headers
+          because unlike earlier versions the same file can't appear twice.
+          Added the midl_flags template variable to work like vc8/vc9.
+
+Wed Aug 18 16:10:32 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/ProjectCreator.pm (need_to_write_project):
+
+          Refining the change from Monday
+          Mon Aug 16 19:45:17 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+          so that the exclusion of resource files from the list of files to
+          check only applies to implicitly-created projects.
+
+Tue Aug 17 21:59:04 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * templates/vc10.mpd:
+        * templates/vc10filters.mpd:
+
+          Updated with general cleanup and to better match the settings that
+          VS2010 generates when creating a C++ project from the GUI.
+
+        * templates/vc10dll.mpt:
+        * templates/vc10exe.mpt:
+        * templates/vc10lib.mpt:
+        * templates/vc10libexe.mpt:
+        * templates/vc10platforms.mpt:
+
+          Use EnableIntrinsicFucntions and WholeProgramOptimization for
+          Release configurations.  Also, don't disable GenerateDebugInformation
+          as this is still used in Release configurations.
+
+Mon Aug 16 19:45:17 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/ProjectCreator.pm (need_to_write_project):
+
+          Do not consider a resource file alone enough to create a project,
+          it must have a source or custom-input file.  vc10 requires this
+          because it creates resouce files in the intermediate directories,
+          which would subsequently be found in an -implicit project search.
+
+Tue Aug 10 21:40:07 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * docs/templates/vc10.txt:
+
+          Added the "managed" variable.
+
+        * modules/VC8WorkspaceCreator.pm:
+
+          Projects references were picking up the .filters file for vc10 instead
+          of the normal output file (.vcxproj).  For now this is just a
+          work-around to remove ".filters" from the relative path to the
+          referenced project.
+
+        * templates/vc10.mpd:
+
+          Allow the use of "managed" as a backwards-compatibility synonym for
+          "CLRSupport".
+          Re-order the nested <%foreach%> loops so that 'platforms' appears
+          before 'configurations' (as it does in vc8.mpd).
+          DebugInformationFormat is not supported with CLR/managed.
+          FixedBaseAddress is not supported with CLR/managed.
+          The list of resource files may contain files that are not actually
+          passed to the resource compiler (like icons: .ico).  Exclude those
+          from <ResourceCompile> but they will still be listed in the project.
+
+Fri Aug  6 14:12:30 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * docs/html/WB26.html:
+
+          Added documentation for -type wb26, this was contributed by
+          Johnny Willemsen  <jwillemsen at remedy dot nl>.
+
+        * templates/wb30dll.mpt:
+        * templates/wb30exe.mpt:
+
+          Added dollar-Id-dollar in comments.
+
+Fri Aug  6 00:06:41 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * modules/CDT6ProjectCreator.pm:
+
+          Fixed a bug where the template name, in project_file_name, would
+          default to an invalid name if the template name was not defined.
+
+        * templates/make.mpd:
+
+          Modified to use the C compiler to compile assembler files (instead
+          of the C++ compiler).
+
+Thu Aug  5 19:57:19 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * templates/make.mpd:
+        * templates/makedll.mpt:
+
+          If pchsupport is disabled, don't generate the pch_postrule.
+          Also added some Windows native (non-cygwin, non-msys) compatibility
+          with -value_template platforms=mingw.
+
+Thu Aug  5 17:00:23 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * docs/html/MakeProjectCreator.html:
+        * docs/html/WB30.html:
+        * docs/templates/wb26.txt:
+        * docs/templates/wb26wrmakefile.txt:
+        * docs/templates/wb26wrproject.txt:
+        * modules/CDT6WorkspaceCreator.pm:
+        * modules/TemplateParser.pm:
+        * modules/WB26WorkspaceCreator.pm:
+        * modules/WB30ProjectCreator.pm:
+        * modules/WB30WorkspaceCreator.pm:
+        * templates/wb26.mpd:
+        * templates/wb26dll.mpt:
+        * templates/wb26wrmakefile.mpd:
+        * templates/wb26wrproject.mpd:
+        * templates/wb30cproject.mpd:
+        * templates/wb30dll.mpt:
+        * templates/wb30exe.mpt:
+
+          Merged (reintegrated) the "wb30" branch, which adds -type wb30
+          for Wind River Workbench 3.0.  See WB30.html for details.
+
+          This also effectively reverts the commit in
+          Fri Jul  9 21:16:23 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+          because that change was incorrect (-into shouldn't affect the
+          file's contents).
+
+Thu Aug  5 03:49:19 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * config/glib.mpb:
+        * config/splice_ts_defaults.mpb:
+        * config/splicelib.mpb:
+        * config/xerces.mpb:
+        * docs/html/CDT6.html:
+        * history/ChangeLog-3_7:
+        * modules/Creator.pm:
+        * modules/MakeProjectBase.pm:
+        * modules/MakeProjectCreator.pm:
+        * modules/ProjectCreator.pm:
+        * modules/VC8WorkspaceCreator.pm:
+        * templates/cdt6cproject.mpd:
+        * templates/cdt6platforms.mpt:
+        * templates/wix.mpd:
+
+          Removed trailing whitespace.
+
+        * docs/html/MakeProjectCreator.html:
+
+          Better explained the TemplateParser 'eval' function and documented
+          the new TemplateParser 'set' and 'translate_vars' functions.
+
+        * docs/templates/vc10.txt:
+
+          Started the vc10 template variable documentation.
+
+        * modules/CDT6WorkspaceCreator.pm:
+
+          Use the WorkspaceCreator::create_command_line_string() function
+          instead of printing the "$0 @ARGV" string.
+
+        * modules/TemplateParser.pm:
+
+          Replaced the use of die with setting the 'error_in_handle' data
+          member to bring errors to the users attention and added the 'set'
+          template function.
+
+        * templates/vc10.mpd:
+
+          The OpenMP template variable is interchangable with the
+          OpenMPSupport template variable.  Older versions of Visual Studio
+          used OpenMP.
+
+Wed Aug  4 20:32:14 UTC 2010  Chris Cleeland  <cleeland@ociweb.com>
+
+        Merged out changes from the Eclipse CDT branch to support
+        side-by-side builds from different platforms and configurations
+        and to more fully support cross-platform builds.
+
+        * templates/cdt6cproject.mpd:
+
+          Changed postbuild "installation" scripts so that they put
+          libraries into platform-config specific subdirectories in order to
+          support multiple builds concurrently.
+
+          Added platform-specific lib directory to library paths.
+
+          Omit generation of build information for platforms when a
+          project inherits from crosscompile.mpb.
+
+        * modules/CDT6ProjectCreator.pm: Propagated "nocross" template
+          variable into CDT6 projects via fill_value.
+
+        * modules/CDT6WorkspaceCreator.pm: Minor changes.
+
+        * modules/TemplateParser.pm:
+
+          Added new keyword/function "vars_equal", to compare the values
+          of two template variables for equality.
+
+Wed Aug  4 15:03:50 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * templates/vc10.mpd:
+        * templates/vc10dll.mpt:
+        * templates/vc10exe.mpt:
+        * templates/vc10lib.mpt:
+        * templates/vc10libexe.mpt:
+
+          Default GenerateDebugInformation to "true", Release configurations
+          will override it to "false".  Use the value of the
+          GenerateDebugInformation variable in the template.
+
+Mon Aug  2 15:24:10 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * templates/vc10.mpd:
+        * templates/vc10filters.mpd:
+
+          Use <CustomBuild> instead of <CustomBuildStep> for custom actions
+          that apply to individual input files (as opposed to the custom
+          actions that apply to the project).
+
+Tue Jul 27 15:40:16 UTC 2010  Chris Cleeland  <cleeland@ociweb.com>
+
+        * templates/cdt6cproject.mpd: Added missing space between thread
+        flags and pic flags.
+
+Wed Jul 21 20:34:03 UTC 2010  Chris Cleeland  <cleeland@ociweb.com>
+
+        Merge out the following changes from the eclipse branch:
+
+        * templates/cdt6cproject.mpd:
+        * templates/cdt6dll.mpt:
+        * templates/cdt6platforms.mpt:
+
+          Initial work for supporting a cross-compile platform. Fix for RT
+          14228 related to the lack of -fPIC option.
+
+        * templates/cdt6cproject.mpd, templates/cdt6platforms.mpt:
+
+          Fixed issue where linker exe names could not be overridden.
+
+        * docs/html/CDT6.html:
+
+          Update documentation.
+
+Wed Jul 14 05:00:11 UTC 2010  James H. Hill  <hillj at cs dot iupui dot edu>
+
+        * config/wix.mpb:
+
+          Added a prebuild command to delete the old installer before
+          building the new installer.
+
+Tue Jul 13 16:38:44 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * modules/TemplateParser.pm:
+
+          Removed tabs.
+
+        * modules/VC10ProjectCreator.pm:
+
+          Fixed a bug relating to the get_template() implementation that
+          arose when the language is not C++.
+
+Tue Jul 13 14:37:32 UTC 2010  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * modules/TemplateParser.pm:
+          Added more support for msvc10 by adding new_guid, thanks to Max Zhou
+          <earthdog at 126.com>
+
+Tue Jul 13 14:14:47 UTC 2010  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * modules/VC10ProjectCreator.pm:
+        * templates/vc10dll.mpt:
+        * templates/vc10exe.mpt:
+        * templates/vc10lib.mpt:
+        * templates/vc10libexe.mpt:
+        * templates/vc10platforms.mpt:
+          Added more support for msvc10, thanks to Max Zhou
+          <earthdog at 126.com>
+
+Tue Jul 13 11:33:37 UTC 2010  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * modules/VC10ProjectCreator.pm:
+          Updated for msvc10, thanks to Max Zhou <earthdog at 126.com>
+
+Tue Jul 13 11:20:59 UTC 2010  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * templates/vc10.mpd:
+        * templates/vc10filters.mpd:
+          New files for vc10
+
+Fri Jul  9 21:16:23 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/CDT6WorkspaceCreator.pm:
+        * modules/WB26WorkspaceCreator.pm:
+
+          Account for the -into directory when listing the full path to
+          the project file inside the workspace file.
+
+Tue Jun 29 18:18:56 UTC 2010  Chris Cleeland  <cleeland@ociweb.com>
+
+        * modules/TemplateParser.pm: split_parameters() was returning an
+        empty parameter.  This should fix errant extra whitespace
+        generated in bmake test output.
+
+Tue Jun 29 14:45:21 UTC 2010  Chris Cleeland  <cleeland@ociweb.com>
+
+        * templates/cdt6platforms.mpt:
+        * templates/cdt6dll.mpt:
+        * templates/cdt6lib.mpt:
+        * templates/cdt6exe.mpt:
+
+          Added missing dollar-Id-dollar to correct fuzz errors.
+
+Tue Jun 29 13:41:39 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * devtools/document_template.pl:
+
+          Fixed the usage message.
+
+Mon Jun 28 20:16:54 UTC 2010  Chris Cleeland  <cleeland@ociweb.com>
+
+        * modules/CDT6ProjectCreator.pm:
+        * modules/CDT6WorkspaceCreator.pm:
+        * templates/cdt6platforms.mpt:
+        * templates/cdt6cproject.mpd:
+        * templates/cdt6dll.mpt:
+        * templates/cdt6lib.mpt:
+        * templates/cdt6exe.mpt:
+        * templates/cdt6project.mpd:
+
+          Merged in initial EXPERIMENTAL release of CDT6 project
+          type generation from the "eclipse" branch.
+
+        * docs/html/CDT6.html:
+        * docs/templates/cdt6project.txt:
+        * docs/templates/cdt6cproject.txt:
+
+          Draft documentation on the project type.
+
+        * config/global.mpb:
+
+          Modification to allow specification of threads.
+
+        * devtools/document_template.pl:
+
+          Modified to allow use for generating a stubbed out template
+          variable document.
+
+        * modules/TemplateParser.pm:
+
+          Added functions create_aux_file/end_aux_file, translate_vars,
+          and convert_slashes.
+
+Mon Jun 28 18:01:08 UTC 2010  James H. Hill  <hillj at cs dot iupui dot edu>
+
+        * modules/WorkspaceCreator.pm:
+
+          Reverted change below.
+
+Mon Jun 28 16:26:00 UTC 2010  James H. Hill  <hillj at cs dot iupui dot edu>
+
+        * modules/WorkspaceCreator.pm:
+
+          Bug fix where the negated types in excludes () were not
+          handled correctly.
+
+Mon Jun 28 05:55:54 UTC 2010  James H. Hill  <hillj at cs dot iupui dot edu>
+
+        * templates/wix.mpd:
+
+          The Id attribute for the exename/sharedname was not normalized.
+
+Mon Jun 28 05:42:48 UTC 2010  James H. Hill  <hillj at cs dot iupui dot edu>
+
+        * templates/wix.mpd:
+
+          Bug fix where the generated Id for the File element contained
+          invalid characters.
+
+Mon Jun 28 04:46:49 UTC 2010  James H. Hill  <hillj at cs dot iupui dot edu>
+
+        * templates/wix.mpd:
+
+          Bug fix where the File element used the auto-generated Id
+          attribute, which resulted in duplicate keys in the installer
+          when different project had files with the same name.
+
+Fri Jun 25 21:56:03 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * modules/AutomakeWorkspaceCreator.pm:
+
+          When parsing the .am file, a line with a : is not an explicit target
+          if it's a continuation of the previous line (ending with \).
+
+Wed Jun 23 18:08:17 UTC 2010  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * config/ndds_ts_defaults.mpb:
+          Upgraded TAO version in preparation of the upcoming release
+
+Thu Jun 17 03:32:07 UTC 2010  James H. Hill  <hillj at cs dot iupui dot edu>
+
+        * config/wix.mpb:
+
+          Reverted change below.
+
+Thu Jun 17 03:27:06 UTC 2010  James H. Hill  <hillj at cs dot iupui dot edu>
+
+        * config/wix.mpb:
+
+          Moved the quote tags to a different location.
+
+Mon Jun 14 23:52:33 UTC 2010  James H. Hill  <hillj at cs dot iupui dot edu>
+
+        * templates/wix.mpd:
+
+          Bug fix where invalid Id is generated if the binary's
+          name contained a dash.
+
+          Added support for installing GME decorators.
+
+Mon Jun 14 22:06:56 UTC 2010  Chad Elliott  <elliott_c@ociweb.com>
+
+        * modules/ProjectCreator.pm:
+
+          Only replace psuedo variables on actual keywords during variable
+          modification.  User defined keywords must not have the parameters
+          replaced in order for them to get the correct replacement values
+          later on.
+
+Wed Jun  9 07:35:19 UTC 2010  Johnny Willemsen  <jwillemsen@remedy.nl>
+
+        * templates/vc8.mpd:
+          Added OptimizeReferences and EnableCOMDATFolding to be setting
+          without setting optimize as global flag
+
+Tue Jun  8 16:06:10 UTC 2010  Adam Mitz  <mitza@ociweb.com>
+
+        * MPC version 3.8.0 released.
+
+Local Variables:
+mode: change-log
+add-log-time-format: (lambda () (progn (setq tz (getenv "TZ")) (set-time-zone-rule "UTC") (setq time (format-time-string "%a %b %e %H:%M:%S %Z %Y" (current-time))) (set-time-zone-rule tz) time))
+indent-tabs-mode: nil
+End:

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -655,6 +655,9 @@ _StatusNotifyDataAvailable (
                     callback = _EntityStatus(entity)->callbackInfo.on_data_available;
                     listenerData = _EntityStatus(entity)->callbackInfo.listenerData;
                     e = U_ENTITY_GET(entity);
+                    if (e) {
+                        result = u_entityAction(e, resetDataAvailable, NULL);
+                    }
                     _EntityRelease(entity);
                 } else {
                     OS_REPORT(OS_ERROR,
@@ -668,13 +671,9 @@ _StatusNotifyDataAvailable (
                  */
                 callback = status->callbackInfo.on_data_available;
                 listenerData = status->callbackInfo.listenerData;
-                e = U_ENTITY_GET(status->entity);
             }
             if (callback) {
                 /* A listener will be called and thus reset the data on readers flag. */
-                if (e) {
-                    result = u_entityAction(e, resetDataAvailable, NULL);
-                }
                 if (result == U_RESULT_OK) {
                     /* Temporary unlock status entity and call listener. */
                     _EntitySetBusy(status->entity);

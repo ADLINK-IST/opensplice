@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -24,11 +24,6 @@ public class UserDataPolicy {
      */
     public byte[] value;
     
-    /**
-     * The size of the value.
-     */
-    public int size;
-    
     public static final UserDataPolicy DEFAULT = new UserDataPolicy(null);
     
     /**
@@ -38,12 +33,6 @@ public class UserDataPolicy {
      */
     public UserDataPolicy(byte[] _value){
         value = _value;
-        
-        if(value == null){
-            size = 0;
-        } else {
-            size = value.length;
-        }
     }
     
     /**
@@ -53,12 +42,6 @@ public class UserDataPolicy {
      */
     public void setValue(byte[] value) {
         this.value = value;
-        
-        if(value == null){
-            size = 0;
-        } else {
-            size = value.length;
-        }
     }
     
     /**
@@ -66,21 +49,23 @@ public class UserDataPolicy {
      * 
      * @return The String representation of the policy.
      */
+    @Override
     public String toString(){
         String result = "";
         
         if(value != null){
             if(value.length > 0){
-                result += "[";
-                
-                for(int i=0; i<value.length; i++){
+                StringBuffer buf = new StringBuffer();
+                buf.append("[");
+                for (int i = 0; i < value.length; ++i) {
                     if(i != 0){
-                        result += ", " + value[i];
+                        buf.append(", " + value[i]);
                     } else {
-                        result += value[i];
+                        buf.append(value[i]);
                     }
                 }
-                result += "]";
+                buf.append("]");
+                result = buf.toString();
             }
         } else {
             result = "null";

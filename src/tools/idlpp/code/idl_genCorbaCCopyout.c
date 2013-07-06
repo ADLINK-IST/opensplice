@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -12,7 +12,7 @@
 /**
  * @file
  * This module generates CORBA C CopyOut functions. It handles input types
- * that match the SPLICE-DDS database  format and  writes the data into
+ * that match the OpenSpliceDDS database  format and  writes the data into
  * data types that match the IDL/C mapping as specified by the OMG.
  */
 
@@ -112,7 +112,7 @@ idl_valueFromLabelVal (
 /** @brief callback function called on opening the IDL input file.
  *
  * Generate code to include required include files
- * SPLICE-DDS specific include files:
+ * OpenSpliceDDS specific include files:
  * - dds_dcps_private.h
  *
  * @param scope Current scope (not used)
@@ -1067,7 +1067,7 @@ idl_arrayLoopCopy (
  *
  * @todo When the struct or union does not contain a reference, a plain
  * memory copy could be used because the memory map is the same in CORBA
- * and SPLICE-DDS
+ * and OpenSpliceDDS
  *
  * @param typeArray The type specification for the array which holds
  * the basic type as wel as the size for each dimension. The first dimension
@@ -1243,7 +1243,7 @@ idl_seqIndex (
  *
  * Types that do not contain any reference types, indentified by idl_isContiguous() are copied via
  * a plain memory copy because the sequence elements are located in consecutive
- * memory with the same memory map for C CORBA and SPLICE-DDS.
+ * memory with the same memory map for C CORBA and OpenSpliceDDS.
  *
  * @param typeSpec The specification of the actual type of the sequence
  * @param from Specifies the identification of the source

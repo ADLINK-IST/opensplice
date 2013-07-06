@@ -90,7 +90,7 @@ static char* replace (char* arr)  // swap \ for /
 /*
  * Push a file into the list of files to be processed
  */
-static void DRV_push_file(char *s)
+static void DRV_push_file(const char *s)
 {
    DRV_files[DRV_nfiles++] = s;
 }

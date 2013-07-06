@@ -8,7 +8,7 @@
 # this file will be lost the next time it is generated.
 #
 # MPC Command:
-# f:\worgit\TAO161_0-Windows-vc8-inline-32bit-091104\bin\mwc.pl -type gnuace -include ..\..\MPC\config -noreldefs -template prism
+# /home/dds/INSTALLED_FOR_DDS/TAO161_0-RedHat-ES4-gcc346-inline-32bit-OpenSpliceDDS_v4.1_UNSUPPORTED_091104/bin/mwc.pl -type gnuace -include ../../MPC/config -noreldefs -template prism
 #
 #----------------------------------------------------------------------------
 

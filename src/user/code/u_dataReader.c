@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -338,16 +338,16 @@ u_dataReaderWalkInstances (
 
 
 C_STRUCT(readActionArg) {
-    u_readerAction action;
+    u_dataReaderAction action;
     c_voidp arg;
-    c_bool proceed;
+    v_actionResult result;
 };
 
 C_CLASS(readActionArg);
 
-static c_bool
+static v_actionResult
 readAction(
-    v_readerSample sample,
+    c_object sample,
     c_voidp arg)
 {
     readActionArg a = (readActionArg)arg;
@@ -356,16 +356,16 @@ readAction(
         if (sample == NULL) {
             a->action(sample,a->arg);
         } else {
-            a->proceed = a->action(sample,a->arg);
+            a->result = a->action(sample, a->arg);
         }
     }
-    return a->proceed;
+    return a->result;
 }
 
 u_result
 u_dataReaderRead(
     u_dataReader _this,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg)
 {
     u_result result;
@@ -377,8 +377,9 @@ u_dataReaderRead(
     if (result == U_RESULT_OK) {
         arg.action = action;
         arg.arg = actionArg;
-        arg.proceed = TRUE;
-        v_dataReaderRead(reader,readAction,&arg);
+        arg.result = 0;
+        v_actionResultSet(arg.result, V_PROCEED);
+        v_dataReaderRead(reader, readAction, &arg);
         u_entityRelease(u_entity(_this));
     }
     return result;
@@ -410,7 +411,7 @@ u_dataReaderGetInstanceUserData (
                     *userData_out =
                             v_dataReaderInstanceGetUserData (instance);
                 } else {
-                    result = U_RESULT_PRECONDITION_NOT_MET;
+                    result = U_RESULT_ILL_PARAM;
                 }
                 u_instanceHandleRelease(handle);
             }
@@ -440,7 +441,7 @@ u_dataReaderSetInstanceUserData (
             if (v_dataReaderContainsInstance(reader,instance)) {
                 v_dataReaderInstanceSetUserData (instance, userData);
             } else {
-                result = U_RESULT_PRECONDITION_NOT_MET;
+                result = U_RESULT_ILL_PARAM;
             }
             u_instanceHandleRelease(handle);
         }
@@ -452,7 +453,7 @@ u_dataReaderSetInstanceUserData (
 u_result
 u_dataReaderTake(
     u_dataReader _this,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg)
 {
     u_result result;
@@ -464,8 +465,9 @@ u_dataReaderTake(
     if (result == U_RESULT_OK) {
         arg.action = action;
         arg.arg = actionArg;
-        arg.proceed = TRUE;
-        v_dataReaderTake(reader,readAction,&arg);
+        arg.result = 0;
+        v_actionResultSet(arg.result, V_PROCEED);
+        v_dataReaderTake(reader, readAction, &arg);
         u_entityRelease(u_entity(_this));
     }
     return result;
@@ -481,27 +483,29 @@ C_STRUCT(readListActionArg) {
 
 C_CLASS(readListActionArg);
 
-static c_bool
+static v_actionResult
 readListAction(
-    v_readerSample sample,
+    c_object sample,
     c_voidp arg)
 {
+    v_actionResult result = 0;
     readListActionArg a = (readListActionArg)arg;
 
     if (a->spaceLeft == 0U) {
-        return FALSE;
+        return result;
     }
     if (sample == NULL) {
-        a->result = a->copyAction(NULL,a->iter,a->copyArg);
-        return FALSE;
+        a->result = a->copyAction(NULL, a->iter, a->copyArg);
+        return result;
     }
-    a->iter = c_iterInsert(a->iter,c_keep(sample));
+    a->iter = c_iterInsert(a->iter, c_keep(sample));
     a->spaceLeft--;
     if (a->spaceLeft == 0U) {
-        a->result = a->copyAction(NULL,a->iter,a->copyArg);
-        return FALSE;
+        a->result = a->copyAction(NULL, a->iter, a->copyArg);
+        return result;
     } else {
-        return TRUE;
+        v_actionResultSet(result, V_PROCEED);
+        return result;
     }
 }
 
@@ -532,7 +536,7 @@ u_dataReaderReadList(
         } else {
             arg.spaceLeft = max;
         }
-        v_dataReaderRead(reader,readListAction,(c_voidp)&arg);
+        v_dataReaderRead(reader, readListAction, &arg);
         list = arg.iter;
         object = c_iterTakeFirst(list);
         while (object != NULL) {
@@ -572,7 +576,7 @@ u_dataReaderTakeList(
         } else {
             arg.spaceLeft = max;
         }
-        v_dataReaderTake(reader,readListAction,(c_voidp)&arg);
+        v_dataReaderTake(reader, readListAction, &arg);
         list = arg.iter;
         object = c_iterTakeFirst(list);
         while (object != NULL) {
@@ -591,7 +595,7 @@ u_result
 u_dataReaderReadInstance(
     u_dataReader _this,
     u_instanceHandle handle,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg)
 {
     v_dataReaderInstance instance;
@@ -609,7 +613,7 @@ u_dataReaderReadInstance(
                                          (v_readerSampleAction)action,
                                          actionArg);
             } else {
-                result = U_RESULT_PRECONDITION_NOT_MET;
+                result = U_RESULT_ILL_PARAM;
             }
             u_instanceHandleRelease(handle);
         }
@@ -622,7 +626,7 @@ u_result
 u_dataReaderTakeInstance(
     u_dataReader _this,
     u_instanceHandle handle,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg)
 {
     v_dataReaderInstance instance;
@@ -640,7 +644,7 @@ u_dataReaderTakeInstance(
                                          (v_readerSampleAction)action,
                                          actionArg);
             } else {
-                result = U_RESULT_PRECONDITION_NOT_MET;
+                result = U_RESULT_ILL_PARAM;
             }
             u_instanceHandleRelease(handle);
         }
@@ -653,7 +657,7 @@ u_result
 u_dataReaderReadNextInstance(
     u_dataReader _this,
     u_instanceHandle handle,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg)
 {
     v_dataReaderInstance instance;
@@ -694,7 +698,7 @@ u_dataReaderReadNextInstance(
                                                  (v_readerSampleAction)action,
                                                  actionArg);
                 } else {
-                    result = U_RESULT_PRECONDITION_NOT_MET;
+                    result = U_RESULT_ILL_PARAM;
                 }
                 u_instanceHandleRelease(handle);
             }
@@ -708,7 +712,7 @@ u_result
 u_dataReaderTakeNextInstance(
     u_dataReader _this,
     u_instanceHandle handle,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg)
 {
     v_dataReaderInstance instance;
@@ -749,7 +753,7 @@ u_dataReaderTakeNextInstance(
                                                  (v_readerSampleAction)action,
                                                  actionArg);
                 } else {
-                    result = U_RESULT_PRECONDITION_NOT_MET;
+                    result = U_RESULT_ILL_PARAM;
                 }
                 u_instanceHandleRelease(handle);
             }

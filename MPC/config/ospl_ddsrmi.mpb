@@ -1,0 +1,16 @@
+// -*- MPC -*-
+// $Id:$
+
+project : ospl_dcpssacpp {
+  lit_libs += ddsrmi
+  requires += ospl_ddsrmi
+}
+
+feature(!src_co) {
+  includes += $(OSPL_HOME)/include/rmi
+}
+
+feature(src_co) {
+  includes += $(OSPL_OUTER_HOME_NORMALIZED)/src/services/rmi/cpp/bld/$(SPLICE_TARGET)
+  includes += $(OSPL_OUTER_HOME_NORMALIZED)/src/services/rmi/cpp/include
+}

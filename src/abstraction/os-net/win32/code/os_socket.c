@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -23,6 +23,9 @@
 #include "os_stdlib.h"
 #include <iphlpapi.h>
 #pragma comment(lib, "IPHLPAPI.lib")
+
+#define WORKING_BUFFER_SIZE 15000
+#define MAX_TRIES 3
 
 void
 os_socketModuleInit()
@@ -64,7 +67,7 @@ os_socketModuleExit(void)
     return;
 }
 
-os_sockErrno
+int
 os_sockError(void)
 {
     return WSAGetLastError();
@@ -87,6 +90,21 @@ os_sockBind(
     os_result result = os_resultSuccess;
 
     if (bind(s, (struct sockaddr *)name, namelen) == -1) {
+        result = os_resultFail;
+    }
+    return result;
+}
+
+os_result
+os_sockGetsockname(
+    os_socket s,
+    const struct sockaddr *name,
+    os_uint namelen)
+{
+    os_result result = os_resultSuccess;
+    int len = namelen;
+
+    if (getsockname(s, (struct sockaddr *)name, &len) == -1) {
         result = os_resultFail;
     }
     return result;
@@ -180,6 +198,43 @@ os_sockSetsockopt(
 }
 
 os_result
+os_sockSetNonBlocking(
+    os_socket s,
+    os_boolean nonblock)
+{
+    int result;
+    u_long mode;
+    os_result r;
+
+    assert(nonblock == OS_FALSE || nonblock == OS_TRUE);
+
+    /* If mode = 0, blocking is enabled,
+     * if mode != 0, non-blocking is enabled. */
+    mode = (nonblock == OS_TRUE) ? 1 : 0;
+
+    result = ioctlsocket(s, FIONBIO, &mode);
+    if (result != SOCKET_ERROR){
+        r = os_resultSuccess;
+    } else {
+        switch(WSAGetLastError()){
+            case WSAEINPROGRESS:
+                r = os_resultBusy;
+                break;
+            case WSAENOTSOCK:
+                r = os_resultInvalid;
+                break;
+            case WSANOTINITIALISED:
+                OS_REPORT (OS_FATAL, "os_sockSetNonBlocking", 0, "Socket-module not initialised; ensure os_socketModuleInit is performed before using the socket module.");
+            default:
+                r = os_resultFail;
+                break;
+        }
+    }
+
+    return r;
+}
+
+os_result
 os_sockFree(
     os_socket s)
 {
@@ -209,273 +264,508 @@ os_sockSelect(
     return r;
 }
 
+static unsigned int
+getInterfaceFlags(PIP_ADAPTER_ADDRESSES pAddr)
+{
+    unsigned int flags = 0;
+
+    if (pAddr->OperStatus == IfOperStatusUp) {
+        flags |= IFF_UP;
+    }
+
+    if (pAddr->IfType == IF_TYPE_SOFTWARE_LOOPBACK) {
+        flags |= IFF_LOOPBACK;
+    }
+
+    if (!(pAddr->Flags & IP_ADAPTER_NO_MULTICAST)) {
+        flags |= IFF_MULTICAST;
+    }
+
+    switch (pAddr->IfType) {
+    case IF_TYPE_ETHERNET_CSMACD:
+    case IF_TYPE_IEEE80211:
+    case IF_TYPE_IEEE1394:
+    case IF_TYPE_ISO88025_TOKENRING:
+        flags |= IFF_BROADCAST;
+        break;
+    default:
+        flags |= IFF_POINTTOPOINT;
+        break;
+    }
+
+    return flags;
+}
+
+static os_result
+addressToIndexAndMask(struct sockaddr *addr, unsigned int *ifIndex, struct sockaddr *mask )
+{
+    os_result result = os_resultSuccess;
+    os_boolean found = OS_FALSE;
+    PMIB_IPADDRTABLE pIPAddrTable = NULL;
+    DWORD dwSize = 0;
+    DWORD i;
+    char* errorMessage;
+    int errNo;
+
+    if (GetIpAddrTable(pIPAddrTable, &dwSize, 0) == ERROR_INSUFFICIENT_BUFFER) {
+        pIPAddrTable = (MIB_IPADDRTABLE *) os_malloc(dwSize);
+        if (pIPAddrTable != NULL) {
+            if (GetIpAddrTable(pIPAddrTable, &dwSize, 0) != NO_ERROR) {
+                errNo = os_sockError();
+                errorMessage = os_reportErrnoToString(errNo);
+                os_report(OS_ERROR, "addressToIndexAndMask", __FILE__, __LINE__, 0,
+                      "GetIpAddrTable failed: %d %s", errNo, errorMessage);
+                os_free(errorMessage);
+                result = os_resultFail;
+            }
+        } else {
+            os_report(OS_ERROR, "addressToIndexAndMask", __FILE__, __LINE__, 0,
+                "Failed to allocate %d bytes for IP address table", dwSize);
+            result = os_resultFail;
+        }
+    } else {
+        errNo = os_sockError();
+        errorMessage = os_reportErrnoToString(errNo);
+        os_report(OS_ERROR, "addressToIndexAndMask", __FILE__, __LINE__, 0,
+                    "GetIpAddrTable failed: %d %s", errNo, errorMessage);
+        os_free(errorMessage);
+        result = os_resultFail;
+    }
+
+    if (result == os_resultSuccess) {
+        for (i = 0; !found && i < pIPAddrTable->dwNumEntries; i++ ) {
+            if (((struct sockaddr_in* ) addr )->sin_addr.s_addr == pIPAddrTable->table[i].dwAddr) {
+                *ifIndex = pIPAddrTable->table[i].dwIndex;
+                ((struct sockaddr_in*) mask)->sin_addr.s_addr= pIPAddrTable->table[i].dwMask;
+                found = OS_TRUE;
+            }
+        }
+    }
+
+    if (pIPAddrTable) {
+        os_free(pIPAddrTable);
+    }
+
+    if (!found) {
+        result = os_resultFail;
+    }
+
+    return result;
+}
+
+
+
 #define MAX_INTERFACES 64
 #define INTF_MAX_NAME_LEN 16
 
 os_result
 os_sockQueryInterfaces(
     os_ifAttributes *ifList,
-    os_uint listSize,
-    os_uint *validElements)
+    unsigned int listSize,
+    unsigned int *validElements)
 {
-
     os_result result = os_resultSuccess;
-    os_result addressInfoResult =0;
-    INTERFACE_INFO *allInterfacesBuf;
-    INTERFACE_INFO *intf;
-    unsigned long returnedBytes;
-    unsigned int listIndex;
-    os_socket ifcs;
-    int retVal, done;
-    char* errorMessage;
-    os_sockErrno errNo;
-
+    DWORD filter;
     PIP_ADAPTER_ADDRESSES pAddresses = NULL;
-    PIP_ADAPTER_ADDRESSES pCurrAddresses = NULL;
+    PIP_ADAPTER_ADDRESSES pCurrAddress = NULL;
     PIP_ADAPTER_UNICAST_ADDRESS pUnicast = NULL;
-    unsigned long outBufLen = 0;
-    /* Set the flags to pass to GetAdaptersAddresses*/
-    unsigned long flags = GAA_FLAG_INCLUDE_PREFIX;
-    /* Doesn't matter what value of family you use. WSAIoctl w/ SIO_GET_INTERFACE_LIST
-    only returns IPv4 addresses */
-    unsigned long family = AF_UNSPEC;
-    int i = 0;
+    unsigned long outBufLen = WORKING_BUFFER_SIZE;
+    int retVal;
+    int iterations = 0;
+    int listIndex = 0;
 
-    *validElements = 0;
-    listIndex = 0;
+    filter = GAA_FLAG_INCLUDE_PREFIX | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
 
-    outBufLen = sizeof (IP_ADAPTER_ADDRESSES);
-    pAddresses = (IP_ADAPTER_ADDRESSES *) os_malloc(outBufLen);
-    if (GetAdaptersAddresses(family, flags, NULL, pAddresses, &outBufLen)
-                                == ERROR_BUFFER_OVERFLOW) {
-        os_free(pAddresses);
+    do {
         pAddresses = (IP_ADAPTER_ADDRESSES *) os_malloc(outBufLen);
-    }
-    addressInfoResult = GetAdaptersAddresses(family, flags, NULL, pAddresses, &outBufLen);
-
-    /* List the IPv4 interfaces */
-    ifcs = os_sockNew (AF_INET, SOCK_DGRAM);
-    if (ifcs != INVALID_SOCKET) {
-        allInterfacesBuf = os_malloc(MAX_INTERFACES * sizeof(INTERFACE_INFO));
-        memset(allInterfacesBuf, 0, MAX_INTERFACES * sizeof(INTERFACE_INFO));
-        retVal = WSAIoctl(ifcs, SIO_GET_INTERFACE_LIST, NULL, 0, allInterfacesBuf,
-                     MAX_INTERFACES * sizeof(INTERFACE_INFO), &returnedBytes, 0, 0);
-
-        if (retVal == SOCKET_ERROR && WSAGetLastError() == WSAEFAULT)
-        {
-            /* The buffer wasn't big enough. returnedBytes will now contain the required size
-            so we can reallocate & try again */
-            os_free(allInterfacesBuf);
-            allInterfacesBuf = os_malloc(returnedBytes);
-            memset(allInterfacesBuf, 0, returnedBytes);
-            retVal = WSAIoctl(ifcs, SIO_GET_INTERFACE_LIST, NULL, 0, allInterfacesBuf,
-                     returnedBytes, &returnedBytes, 0, 0);
-        }
-
-        if (retVal == SOCKET_ERROR)
-        {
-            errNo = os_sockError();
-            errorMessage = os_sockErrnoToString(errNo);
+        if (!pAddresses) {
             os_report(OS_ERROR, "os_sockQueryInterfaces", __FILE__, __LINE__, 0,
-                      "Socket error calling WSAIoctl for IPv4 interfaces: %d %s", errNo, errorMessage);
-            os_free(errorMessage);
-            /* @todo Is it right to return a fail here ? Need to check on box w/ no IPv4 interfaces */
-            result = os_resultFail;
+                "Failed to allocate %d bytes for Adapter addresses", outBufLen);
+            return os_resultFail;
         }
-        else
-        {
-            *validElements = returnedBytes/sizeof(INTERFACE_INFO);
+        retVal = GetAdaptersAddresses(AF_INET, filter, NULL, pAddresses, &outBufLen);
+        if (retVal == ERROR_BUFFER_OVERFLOW) {
+            os_free(pAddresses);
+            pAddresses = NULL;
+            outBufLen <<= 1; /* double the buffer just to be save.*/
+        } else {
+            break;
         }
-        while ((listIndex < listSize) && (listIndex < *validElements)) {
-            done = 0;
-            intf = &allInterfacesBuf[listIndex];
+        iterations++;
+    } while ((retVal == ERROR_BUFFER_OVERFLOW) && (iterations < MAX_TRIES));
 
-            if (addressInfoResult == NO_ERROR) {
-                pCurrAddresses = pAddresses;
-                while (pCurrAddresses && !done) {
-                    /* adapter needs to be enabled*/
-                    if (pCurrAddresses->OperStatus == IfOperStatusUp) {
-                        pUnicast = pCurrAddresses->FirstUnicastAddress;
-                        while (pUnicast && !done) {
-                            /* check if interface ip matches adapter ip */
-                            if (os_sockaddrIPAddressEqual((os_sockaddr*) &intf->iiAddress.AddressIn,
-                                                           (os_sockaddr*) pUnicast->Address.lpSockaddr))
-                            {
-                                snprintf(ifList[listIndex].name,
-                                          OS_IFNAMESIZE, "%wS",
-                                          pCurrAddresses->FriendlyName);
-                                ifList[listIndex].interfaceIndexNo =
-                                            (os_uint) pCurrAddresses->Ipv6IfIndex;
-                                done = 1;
-                            }
-                            pUnicast = pUnicast->Next;
-                        }
-                    }
-                    pCurrAddresses = pCurrAddresses->Next;
-                }
+    if (retVal != ERROR_SUCCESS) {
+        if (pAddresses) {
+            os_free(pAddresses);
+            pAddresses = NULL;
+        }
+        os_report(OS_ERROR, "os_sockQueryInterfaces", __FILE__, __LINE__, 0,
+                "Failed to GetAdaptersAddresses");
+        return os_resultFail;
+    }
+
+    for (pCurrAddress = pAddresses; pCurrAddress; pCurrAddress = pCurrAddress->Next) {
+        IP_ADAPTER_PREFIX *firstPrefix = NULL;
+
+        if (pCurrAddress->Length >= sizeof(IP_ADAPTER_ADDRESSES)) {
+            firstPrefix = pCurrAddress->FirstPrefix;
+        }
+
+        if (pCurrAddress->OperStatus != IfOperStatusUp) {
+            continue;
+        }
+
+        for (pUnicast = pCurrAddress->FirstUnicastAddress; pUnicast; pUnicast = pUnicast->Next) {
+            unsigned int ipv4Index;
+            struct sockaddr_in ipv4Netmask;
+
+            if (pUnicast->Address.lpSockaddr->sa_family != AF_INET) {
+                continue;
             }
-            /* if no name is found set this */
-            if (!done) {
-                snprintf(ifList[listIndex].name,
-                          OS_IFNAMESIZE, "0x%x",
-                          ntohl(intf->iiAddress.AddressIn.sin_addr.S_un.S_addr));
-                os_report(OS_WARNING,
-                         "os_sockQueryInterfaces", __FILE__, __LINE__, 0,
-                         "Unable to determine IPv4 adapter name. Setting instead to adapter address %s",
-                         ifList[listIndex].name);
+
+            ipv4Index = 0;
+            memset(&ipv4Netmask, 0, sizeof(ipv4Netmask));
+            if (addressToIndexAndMask((struct sockaddr *) pUnicast->Address.lpSockaddr,
+                        &ipv4Index, (struct sockaddr *) &ipv4Netmask) != os_resultSuccess) {
+                continue;
             }
-            ifList[listIndex].flags = intf->iiFlags;
-            ifList[listIndex].address = *((os_sockaddr_storage*) &intf->iiAddress);
-            ifList[listIndex].broadcast_address = *((os_sockaddr_storage*) &intf->iiBroadcastAddress);
-            ((os_sockaddr_in *)(&(ifList[listIndex].broadcast_address)))->sin_addr.S_un.S_addr =
-                ((os_sockaddr_in *)(&(ifList[listIndex].address)))->sin_addr.S_un.S_addr |
-                    ~(intf->iiNetmask.AddressIn.sin_addr.S_un.S_addr);
-            ifList[listIndex].network_mask = *((os_sockaddr_storage*) &intf->iiNetmask);
+
+            snprintf(ifList[listIndex].name, OS_IFNAMESIZE, "%wS", pCurrAddress->FriendlyName);
+
+            // Get interface flags.
+            ifList[listIndex].flags = getInterfaceFlags(pCurrAddress);
+            ifList[listIndex].interfaceIndexNo = ipv4Index;
+
+            memcpy(&ifList[listIndex].address, pUnicast->Address.lpSockaddr, pUnicast->Address.iSockaddrLength);
+            memcpy(&ifList[listIndex].broadcast_address, pUnicast->Address.lpSockaddr, pUnicast->Address.iSockaddrLength);
+            memcpy(&ifList[listIndex].network_mask, pUnicast->Address.lpSockaddr, pUnicast->Address.iSockaddrLength);
+
+            ((struct sockaddr_in *)(&(ifList[listIndex].broadcast_address)))->sin_addr.s_addr =
+                ((struct sockaddr_in *)(&(ifList[listIndex].address)))->sin_addr.s_addr | ~(ipv4Netmask.sin_addr.s_addr);
+            ((struct sockaddr_in *)&(ifList[listIndex].network_mask))->sin_addr.s_addr = ipv4Netmask.sin_addr.s_addr;
 
             listIndex++;
         }
-        os_sockFree (ifcs);
     }
 
-    if (addressInfoResult == NO_ERROR) {
+    for (pCurrAddress = pAddresses; pCurrAddress; pCurrAddress = pCurrAddress->Next) {
+        if (pCurrAddress->OperStatus != IfOperStatusUp) {
+            snprintf(ifList[listIndex].name, OS_IFNAMESIZE, "%wS", pCurrAddress->FriendlyName);
+
+            // Get interface flags.
+            ifList[listIndex].flags = getInterfaceFlags(pCurrAddress);
+            ifList[listIndex].interfaceIndexNo = 0;
+            memset (&ifList[listIndex].address, 0, sizeof(ifList[listIndex].address));
+            memset (&ifList[listIndex].broadcast_address, 0, sizeof (ifList[listIndex].broadcast_address));
+            memset (&ifList[listIndex].network_mask, 0, sizeof (ifList[listIndex].network_mask));
+
+            listIndex++;
+        }
+    }
+
+    if (pAddresses) {
         os_free(pAddresses);
     }
+
+    *validElements = listIndex;
 
     return result;
 }
 
 os_result
-os_sockQueryIPv6Interfaces(
+os_sockQueryIPv6Interfaces (
     os_ifAttributes *ifList,
-    os_uint32 listSize,
-    os_uint32 *validElements)
+    unsigned int listSize,
+    unsigned int *validElements)
 {
     os_result result = os_resultSuccess;
-    os_result addressInfoResult =0;
-    unsigned long returnedBytes;
-    unsigned int listIndex;
-    os_socket ifcs;
-    int retVal, done;
-    char* errorMessage;
-    os_sockErrno errNo;
-
+    DWORD filter;
     PIP_ADAPTER_ADDRESSES pAddresses = NULL;
-    PIP_ADAPTER_ADDRESSES pCurrAddresses = NULL;
+    PIP_ADAPTER_ADDRESSES pCurrAddress = NULL;
     PIP_ADAPTER_UNICAST_ADDRESS pUnicast = NULL;
-    unsigned long outBufLen = 0;
-    /* Set the flags to pass to GetAdaptersAddresses*/
-    unsigned long flags = GAA_FLAG_INCLUDE_PREFIX;
-    int i = 0;
+    unsigned long outBufLen = WORKING_BUFFER_SIZE;
+    int retVal;
+    int iterations = 0;
+    int listIndex = 0;
 
-    /* IPv6 addition */
-    SOCKET_ADDRESS_LIST* ipv6InterfaceList;
+    filter = GAA_FLAG_INCLUDE_PREFIX | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
 
-    *validElements = 0;
-    listIndex = 0;
-
-    outBufLen = sizeof (IP_ADAPTER_ADDRESSES);
-    pAddresses = (IP_ADAPTER_ADDRESSES *) os_malloc(outBufLen);
-    if (GetAdaptersAddresses(AF_INET6, flags, NULL, pAddresses, &outBufLen)
-                                == ERROR_BUFFER_OVERFLOW) {
-        os_free(pAddresses);
+    do {
         pAddresses = (IP_ADAPTER_ADDRESSES *) os_malloc(outBufLen);
+        if (!pAddresses) {
+            os_report(OS_ERROR, "os_sockQueryIPv6Interfaces", __FILE__, __LINE__, 0,
+                "Failed to allocate %d bytes for Adapter addresses", outBufLen);
+            return os_resultFail;
+        }
+        retVal = GetAdaptersAddresses(AF_INET6, filter, NULL, pAddresses, &outBufLen);
+        if (retVal == ERROR_BUFFER_OVERFLOW) {
+            os_free(pAddresses);
+            pAddresses = NULL;
+            outBufLen <<= 1; /* double the buffer just to be save.*/
+        } else {
+            break;
+        }
+        iterations++;
+    } while ((retVal == ERROR_BUFFER_OVERFLOW) && (iterations < MAX_TRIES));
+
+    if (retVal != ERROR_SUCCESS) {
+        if (pAddresses) {
+            os_free(pAddresses);
+            pAddresses = NULL;
+        }
+        os_report(OS_ERROR, "os_sockQueryIPv6Interfaces", __FILE__, __LINE__, 0,
+                "Failed to GetAdaptersAddresses");
+        return os_resultFail;
     }
-    addressInfoResult = GetAdaptersAddresses(AF_INET6, flags, NULL, pAddresses, &outBufLen);
 
-    /* Now do the IPv6 interfaces */
-    ifcs = os_sockNew (AF_INET6, SOCK_DGRAM);
+    for (pCurrAddress = pAddresses; pCurrAddress; pCurrAddress = pCurrAddress->Next) {
+        DWORD ipv6IfIndex  = 0;
+        IP_ADAPTER_PREFIX *firstPrefix = NULL;
 
-    if (ifcs != INVALID_SOCKET)
-    {
-        /* List returned from this control code query will need to be sized as 1 * SOCKET_ADDRESS_LIST + n * SOCKET_ADDRESS */
-        ipv6InterfaceList = os_malloc(sizeof(SOCKET_ADDRESS_LIST) + ((MAX_INTERFACES - 1) * sizeof(SOCKET_ADDRESS)));
-        memset(ipv6InterfaceList, 0, sizeof(SOCKET_ADDRESS_LIST) + ((MAX_INTERFACES - 1) * sizeof(SOCKET_ADDRESS)));
-        retVal = WSAIoctl(ifcs, SIO_ADDRESS_LIST_QUERY, NULL, 0, ipv6InterfaceList,
-                            sizeof(SOCKET_ADDRESS_LIST) + ((MAX_INTERFACES - 1) * sizeof(SOCKET_ADDRESS)),
-                            &returnedBytes, 0, 0);
-
-        if (retVal == SOCKET_ERROR && WSAGetLastError() == WSAEFAULT)
-        {
-            /* The buffer wasn't big enough. returnedBytes will now contain the required size
-            so we can reallocate & try again */
-            os_free(ipv6InterfaceList);
-            ipv6InterfaceList = os_malloc(returnedBytes);
-            memset(ipv6InterfaceList, 0, returnedBytes);
-            retVal = WSAIoctl(ifcs, SIO_ADDRESS_LIST_QUERY, NULL, 0, ipv6InterfaceList,
-                                returnedBytes, &returnedBytes, 0, 0);
+        if (pCurrAddress->Length >= sizeof(IP_ADAPTER_ADDRESSES)) {
+            ipv6IfIndex = pCurrAddress->Ipv6IfIndex;
+            firstPrefix = pCurrAddress->FirstPrefix;
         }
 
-        if (retVal == SOCKET_ERROR)
-        {
-            errNo = os_sockError();
-            errorMessage = os_sockErrnoToString(errNo);
-            os_report(OS_ERROR, "os_sockQueryInterfaces", __FILE__, __LINE__, 0,
-                      "Socket error calling WSAIoctl for IPv6 interfaces: %d %s", errNo, errorMessage);
-            os_free(errorMessage);
-            /* @todo Is it right to return a fail here ? Need to check on box w/ no IPv6 interfaces */
-            result = os_resultFail;
+        if (((ipv6IfIndex == 1) && (pCurrAddress->IfType != IF_TYPE_SOFTWARE_LOOPBACK)) || (pCurrAddress->IfType == IF_TYPE_TUNNEL)) {
+            continue;
         }
-        else
-        {
-            for (i = 0; i < ipv6InterfaceList->iAddressCount; ++i)
-            {
-                if (ipv6InterfaceList->Address[i].lpSockaddr->sa_family == AF_INET6
-                    && ! (IN6_IS_ADDR_UNSPECIFIED(&((os_sockaddr_in6 *)&ipv6InterfaceList->Address[i].lpSockaddr)->sin6_addr)))
-                {
-                    done = 0;
-                    if (addressInfoResult == NO_ERROR) {
-                        pCurrAddresses = pAddresses;
-                        while (pCurrAddresses && !done) {
-                            /* adapter needs to be enabled*/
-                            if (pCurrAddresses->OperStatus == IfOperStatusUp) {
-                                pUnicast = pCurrAddresses->FirstUnicastAddress;
-                                while (pUnicast && !done) {
-                                    /* check if interface ip matches adapter ip */
-                                    if (os_sockaddrIPAddressEqual((os_sockaddr*) ipv6InterfaceList->Address[i].lpSockaddr,
-                                                                   (os_sockaddr*) pUnicast->Address.lpSockaddr))
-                                    {
-                                        snprintf(ifList[listIndex].name,
-                                                  OS_IFNAMESIZE, "%wS",
-                                                  pCurrAddresses->FriendlyName);
-                                        ifList[listIndex].interfaceIndexNo =
-                                            (os_uint) pCurrAddresses->Ipv6IfIndex;
-                                        done = 1;
-                                    }
-                                    pUnicast = pUnicast->Next;
-                                }
-                            }
-                            pCurrAddresses = pCurrAddresses->Next;
-                        }
-                    }
 
-                    /* if no name was found set this interface name to string
-                    representation of the IPv6 address */
-                    if (!done) {
-                        os_sockaddrAddressToString((os_sockaddr*) ipv6InterfaceList->Address[i].lpSockaddr,
-                                                    ifList[listIndex].name,
-                                                    OS_IFNAMESIZE);
-                        os_report(OS_WARNING,
-                                 "os_sockQueryInterfaces", __FILE__, __LINE__, 0,
-                                 "Unable to determine IPv6 adapter name. Setting instead to adapter address %s",
-                                 ifList[listIndex].name);
-                    }
+        if (pCurrAddress->OperStatus != IfOperStatusUp) {
+            continue;
+        }
 
-                    ifList[listIndex].flags = 0;
-                    ifList[listIndex].address = *((os_sockaddr_storage*) ipv6InterfaceList->Address[i].lpSockaddr);
-                    listIndex++;
-                    ++(*validElements);
+        for (pUnicast = pCurrAddress->FirstUnicastAddress; pUnicast; pUnicast = pUnicast->Next) {
+            IP_ADAPTER_PREFIX *prefix;
+            IN6_ADDR mask;
+            struct sockaddr_in6 *sa6;
+            struct sockaddr_in6 ipv6Netmask;
+
+            if (pUnicast->Address.lpSockaddr->sa_family != AF_INET6) {
+                continue;
+            }
+
+            snprintf(ifList[listIndex].name, OS_IFNAMESIZE, "%wS", pCurrAddress->FriendlyName);
+
+            // Get interface flags.
+            ifList[listIndex].flags = getInterfaceFlags(pCurrAddress);
+            ifList[listIndex].interfaceIndexNo = (os_uint) pCurrAddress->Ipv6IfIndex;
+
+            memcpy(&ifList[listIndex].address, pUnicast->Address.lpSockaddr, pUnicast->Address.iSockaddrLength);
+            memcpy(&ifList[listIndex].broadcast_address, pUnicast->Address.lpSockaddr, pUnicast->Address.iSockaddrLength);
+            memcpy(&ifList[listIndex].network_mask, pUnicast->Address.lpSockaddr, pUnicast->Address.iSockaddrLength);
+
+            sa6 = (struct sockaddr_in6 *)&ifList[listIndex].network_mask;
+            memset(&sa6->sin6_addr.s6_addr, 0xFF, sizeof(sa6->sin6_addr.s6_addr));
+
+            for (prefix = firstPrefix; prefix; prefix = prefix->Next) {
+                unsigned int l, i;
+                if ((prefix->PrefixLength == 0) || (prefix->PrefixLength > 128) ||
+                    (pUnicast->Address.iSockaddrLength != prefix->Address.iSockaddrLength) ||
+                    (memcmp(pUnicast->Address.lpSockaddr, prefix->Address.lpSockaddr, pUnicast->Address.iSockaddrLength) == 0)){
+                    continue;
+                }
+
+                memset(&ipv6Netmask, 0, sizeof(ipv6Netmask));
+                ipv6Netmask.sin6_family = AF_INET6;
+
+                l = prefix->PrefixLength;
+                for (i = 0; l > 0; l -= 8, i++) {
+                    ipv6Netmask.sin6_addr.s6_addr[i] = (l >= 8) ? 0xFF : ((0xFF << (8-l)) & 0xFF);
+                }
+
+                for (i = 0; i < 16; i++) {
+                    mask.s6_addr[i] =
+                        ((struct sockaddr_in6 *)pUnicast->Address.lpSockaddr)->sin6_addr.s6_addr[i] & ipv6Netmask.sin6_addr.s6_addr[i];
+                }
+
+                if (memcmp(((struct sockaddr_in6 *)prefix->Address.lpSockaddr)->sin6_addr.s6_addr,
+                            mask.s6_addr, sizeof(ipv6Netmask.sin6_addr)) == 0) {
+                    memcpy(&sa6->sin6_addr.s6_addr, &ipv6Netmask.sin6_addr.s6_addr, sizeof(sa6->sin6_addr.s6_addr));
                 }
             }
+            listIndex++;
         }
-        os_sockFree (ifcs);
     }
 
-    if (addressInfoResult == NO_ERROR) {
+    for (pCurrAddress = pAddresses; pCurrAddress; pCurrAddress = pCurrAddress->Next) {
+        if (pCurrAddress->OperStatus != IfOperStatusUp) {
+            snprintf(ifList[listIndex].name, OS_IFNAMESIZE, "%wS", pCurrAddress->FriendlyName);
+
+              // Get interface flags.
+              ifList[listIndex].flags = getInterfaceFlags(pCurrAddress);
+              ifList[listIndex].interfaceIndexNo = 0;
+              memset (&ifList[listIndex].address, 0, sizeof(ifList[listIndex].address));
+              memset (&ifList[listIndex].broadcast_address, 0, sizeof (ifList[listIndex].broadcast_address));
+              memset (&ifList[listIndex].network_mask, 0, sizeof (ifList[listIndex].network_mask));
+
+              listIndex++;
+        }
+    }
+
+    if (pAddresses) {
+        os_free(pAddresses);
+    }
+
+    *validElements = listIndex;
+
+    return result;
+}
+
+static os_result
+os_sockGetInterfaceStatus (
+    const char *ifName,
+    os_boolean *status)
+{
+    os_boolean result = os_resultSuccess;
+    PIP_ADAPTER_ADDRESSES pAddresses = NULL;
+    PIP_ADAPTER_ADDRESSES pCurrAddress = NULL;
+    PIP_ADAPTER_UNICAST_ADDRESS pUnicast = NULL;
+    unsigned long outBufLen = WORKING_BUFFER_SIZE;
+    int retVal;
+    int iterations = 0;
+    int listIndex = 0;
+
+    do {
+        pAddresses = (IP_ADAPTER_ADDRESSES *) os_malloc(outBufLen);
+        if (!pAddresses) {
+            os_report(OS_ERROR, "os_sockQueryInterfaces", __FILE__, __LINE__, 0,
+                "Failed to allocate %d bytes for Adapter addresses", outBufLen);
+            return os_resultFail;
+        }
+        retVal = GetAdaptersAddresses(AF_INET, 0, NULL, pAddresses, &outBufLen);
+        if (retVal == ERROR_BUFFER_OVERFLOW) {
+            os_free(pAddresses);
+            pAddresses = NULL;
+            outBufLen <<= 1; /* double the buffer just to be save.*/
+        } else {
+            break;
+        }
+        iterations++;
+    } while ((retVal == ERROR_BUFFER_OVERFLOW) && (iterations < MAX_TRIES));
+
+    for (pCurrAddress = pAddresses; pCurrAddress; pCurrAddress = pCurrAddress->Next) {
+        char buffer[OS_IFNAMESIZE];
+        snprintf(buffer, sizeof(buffer), "%wS", pCurrAddress->FriendlyName);
+        if (strcmp(ifName, buffer) == 0) {
+            if (pCurrAddress->OperStatus == IfOperStatusUp) {
+                *status = OS_TRUE;
+                break;
+            }
+        }
+    }
+
+    if (pAddresses) {
         os_free(pAddresses);
     }
 
     return result;
 }
+
+typedef struct os_sockQueryInterfaceStatusInfo_s {
+    char *ifName;
+    OVERLAPPED overlap;
+} os_sockQueryInterfaceStatusInfo;
+
+
+void
+os_sockQueryInterfaceStatusDeinit(
+    void *handle)
+{
+    os_sockQueryInterfaceStatusInfo *info = (os_sockQueryInterfaceStatusInfo *) handle;
+
+    if (info) {
+        if (info->ifName) {
+            os_free(info->ifName);
+        }
+        CancelIPChangeNotify(&info->overlap);
+        os_free(info);
+    }
+}
+
+static void
+os_sockQueryInterfaceStatusReset(
+    os_sockQueryInterfaceStatusInfo *info)
+{
+    HANDLE hand = NULL;
+    DWORD ret;
+
+    (void)WSAResetEvent(info->overlap.hEvent);
+    (void)CancelIPChangeNotify(&info->overlap);
+    ret = NotifyAddrChange(&hand, &info->overlap);
+    if (ret != NO_ERROR) {
+        if (WSAGetLastError() != WSA_IO_PENDING) {
+            os_report(OS_ERROR, "os_sockQueryInterfaceStatusReset", __FILE__, __LINE__, 0,
+                          "Failed to reset notifications for network interface address changes");
+        }
+    }
+}
+
+void *
+os_sockQueryInterfaceStatusInit(
+    const char *ifName)
+{
+    os_sockQueryInterfaceStatusInfo *info = NULL;
+    HANDLE hand = NULL;
+    DWORD ret;
+
+    info = (os_sockQueryInterfaceStatusInfo *) os_malloc(sizeof(os_sockQueryInterfaceStatusInfo));
+    if (info) {
+        memset(info, 0, sizeof(os_sockQueryInterfaceStatusInfo));
+        info->ifName = os_strdup(ifName);
+        if (!info->ifName) {
+            os_free(info);
+            info = NULL;
+            os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                      "Failed to allocate os_sockQueryInterfaceStatusInfo");
+        }
+    }
+
+    if (info) {
+        info->overlap.hEvent = WSACreateEvent();
+        ret = NotifyAddrChange(&hand, &info->overlap);
+        if (ret != NO_ERROR) {
+            if (WSAGetLastError() != WSA_IO_PENDING) {
+                os_free(info->ifName);
+                os_free(info);
+                info = NULL;
+                os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                          "Failed to administer for network interface address changes");
+            }
+        }
+    }
+
+    return info;
+}
+
+
+os_result
+os_sockQueryInterfaceStatus(
+    void *handle,
+    os_time timeout,
+    os_boolean *status)
+{
+    os_sockQueryInterfaceStatusInfo *info = (os_sockQueryInterfaceStatusInfo *) handle;
+    os_result result = os_resultFail;
+    DWORD t;
+
+    *status = OS_FALSE;
+
+    if (info) {
+        t = timeout.tv_sec;
+        t = t * 1000 + timeout.tv_nsec / 1000000;
+
+        if (WaitForSingleObject(info->overlap.hEvent, t) == WAIT_OBJECT_0) {
+            result = os_sockGetInterfaceStatus(info->ifName, status);
+            os_sockQueryInterfaceStatusReset(info);
+        } else {
+            result = os_resultTimeout;
+        }
+    }
+
+    return result;
+}
+
 
 
 /* We need this on windows to make sure the main thread of MFC applications

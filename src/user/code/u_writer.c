@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -271,6 +271,9 @@ u_resultFromKernelWriteResult (
     break;
     case V_WRITE_TIMEOUT:
         result = U_RESULT_TIMEOUT;
+    break;
+    case V_WRITE_OUT_OF_RESOURCES:
+        result = U_RESULT_OUT_OF_RESOURCES;
     break;
     case V_WRITE_PRE_NOT_MET:
         result = U_RESULT_PRECONDITION_NOT_MET;

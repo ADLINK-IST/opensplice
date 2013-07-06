@@ -12,22 +12,22 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <h1> EXAMPLES </h1>
 <ul>
   <li><a href ="../README.html">Summary</a></li>
-
+  <li><a href ="../PingPong/README.html">PingPong </a></li>
+  <li><a href ="../Tutorial/README.html">Tutorial </a></li>
   <li><a href ="../HelloWorld/README.html">HelloWorld </a></li>
   <li><a href ="../WaitSet/README.html">WaitSet </a></li>
   <li><a href ="../Listener/README.html">Listener </a></li>
-  <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
-  <li><a href ="../QueryCondition/README.html">QueryCondition </a></li> 
-  <li> <a href ="../Lifecycle/README.html">Lifecycle</a></li> 
+  <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic</a></li>
+  <li><a href ="../QueryCondition/README.html">QueryCondition</a></li>
+  <li><a href ="../Durability/README.html">Lifecycle</a></li>
   <li>Durability</li>
-  <li> <a href ="../Ownership/README.html">Ownership</a></li>
-  <li> <a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
+  <li><a href ="../Ownership/README.html">Ownership<a></li>
+  <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
 </ul>
-<h2> Durability </h2>
+<h2> Durability</h2>
 
 <ul>
-  <li><a href ="#STANDALONE">Building/Running of examples in Standalone Mode</a></li>
-  <li><a href ="#CORBA">Building/Running of examples in CORBA Cohabitation Mode</a></li>
+  <li><a href ="#STANDALONE">Running of examples in Standalone Mode</a></li>
 </ul>
 
 <h3>1) Description</h3>
@@ -81,13 +81,13 @@ receive the samples even when the Publisher application is terminated.
 receive the samples even when the Publisher application is terminated
 and the middleware OpenSplice stopped and restarted.</li></ul>
 
-
-<h2><balise id="STANDALONE">Building/Running of examples in Standalone Mode</balise></h2>
+<h2><balise id="STANDALONE">Running of examples in Standalone Mode</balise></h2>
 <ul>
-  <li><a href ="#Posix">Building/Running examples in Posix </a></li>
-  <li><a href ="#VS">Building/Running examples in Visual Studio 2005/2008</a></li>
+  <li><a href ="#Posix">Running examples in Posix </a></li>
+  <li><a href ="#VS">Running examples in Visual Studio</a></li>
 </ul>
-<h3><balise id="Posix">Building the examples in a Posix environment</balise></h3>
+
+<h3><balise id="Posix">Running the examples in a Posix environment</balise></h3>
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
@@ -98,177 +98,254 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
   <li><a href ="#C_C++">C/C++ Examples </a></li>
   <li><a href ="#Java">Java examples</a></li>
 </ul>
-<h4><balise id="C_C++">Building the C/C++ Examples</balise></h4>
-<ul><li>Open a terminal.
-</li><li>Navigate to the C or C++ <b>Posix</b> directory on the example folder that you wish to build the example for, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Durability/C++/Standalone/Posix</b>.
-</li><li>type <i>make</i>.
-</li></ul>
-<p>Two executables are generated in the <b>exec</b> folder when the example 
-is built:</p>
 
-		<ul><li>DurabilityDataPublisher </li>
-			<li>DurabilityDataSubscriber </li>
+<h4><balise id="C_C++">C and C++ Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables and a library are generated in the <b>standalone</b> directory when the example is built:</p>
+<p>For C++</p>
+		<ul><li>sacpp_durability_pub </li>
+			<li>sacpp_durability_sub </li>
+            <li>libsacpp_durability_types.so</li>
 		</ul>
-		
-<h4><balise id = "Java">Building the Java examples</balise></h4>
-<ul><li>Open a terminal and make sure the OpenSpliceDDS environment is setup.
-</li><li>Navigate to the Java <b>Posix</b> directory for the example for, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Durability/Java/Standalone/Posix</b>.
-</li><li>Execute the script <i>BUILD</i>.
-</li></ul>
-<p>Two jars are generated in the <b>exec</b> folder when the example 
-is built:</p>
 
-		<ul><li>DurabilityDataPublisher.jar </li>
-			<li>DurabilityDataSubscriber.jar </li>
+<p>For C</p>
+		<ul><li>sac_durability_pub </li>
+			<li>sac_durability_sub </li>
+            <li>libsac_durability_types.so</li>
 		</ul>
-<h4>Running the C/C++/Java example</h4>
- <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new terminal used.</p>
- <p>The following steps describe how to run the examples you have just built:
-   <ul><li> Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
 
-	<li> Navigate to the <b>sh</b> directory for the C/C++/Java example you have just built, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Durability/C++/Standalone/Posix/sh</b></li>
-	</ul>
-	<p> It is recommended that you run the startSubscriber and startPublisher scripts in seperate terminals to avoid mixing the output.</p>
+<h4><balise id = "Java">Java executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a>
+<p>Two jars are generated in the <b>standalone</b> directory when the example is built:</p>
+
+		<ul><li>saj_durability_app.jar </li>
+			<li>saj_durability.jar </li>
+		</ul>
+
+<h4>Running the example</h4>
+ <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new terminal used.  If running the C or C++ examples ensure that
+    . is added to the LD_LIBRARY_PATH.  If running the Java example ensure that . is added to the CLASSPATH</p>
+ <p>It is recommended that you run the subscriber and publisher in separate terminals to avoid mixing the output</p>
+
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <ul>
+     <li>OpenSpliceDDS is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 terminals. Setup the environment and go to directory <b>standalone</b> as described above</li>
+   </ul>
+
+   <p><b>Running in multiple process shared memory configuration</b></p>
+   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>  
+    <ul>	
+          <li>Open 2 terminals.  In each terminal:</li>
+          <li>Setup the environment and go to directory <b>standalone</b> as described above</li>
+          <li>Set the required configuraton file e.g. <i>OSPL_URI=file://$OSPL_HOME/etc/config/ospl_shmem_ddsi.xml</i></li>
+          <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+    </ul>
+
+   <p><b>Running the subscriber and publisher</b></p>
+
         <h5>Usage :</h5>
-        <ul><li> startPublisher.sh durability_kind autodispose_flag automatic_flag 
+        <ul><li>The publisher takes 3 input parameters - durability_kind autodispose_flag automatic_flag, where 
             <ul><li>durability_kind = transient | persistent </li>
                 <li>autodispose_flag = false | true</li>
                 <li>automatic_flag = false | true  <br/>indicates if the publisher is run in interactive or automatic mode</li></ul></li>
-        <li> startSubscriber.sh durability_kind
+        <li>The subscriber takes 1 parameter - durability_kind, where
             <ul><li>durability_kind = transient | persistent </li></ul></li>
         </ul>
    	<h5>Scenario 3.1 :</h5>
-	<ul><li> Run the Publisher Application,in a console goto folder <b>sh</b> and enter : startPublisher.sh transient true false</li>
-	<li> Run the Subscriber Application, in a console goto folder <b>sh</b> and enter : startSubscriber.sh transient</li>
+	<ul>
+	<li> Run the Subscriber Application, in a console go to the <b>standalone</b> directory and start the subscriber
+          <ul> 
+             <li><b><i>sac_durability_sub transient </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub transient </i></b> for C++</li>
+             <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes DurabilityDataSubscriber transient </i></b> for Java</li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the <b>standalone</b> directory and start the publisher
+         <ul> 
+             <li><b><i>sac_durability_pub transient true false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub transient true false</i></b> for C++</li>
+             <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes DurabilityDataPublisher transient true false</i></b> for Java</li>
+          </ul>
+    </li>
 	<li> Check that the Subscriber receives the samples</li>
 	<li> Stop the Publisher and the subscriber</li></ul>
 	<h5>Scenario 3.2 :</h5>
-	<ul><li> Run the Publisher Application, in a console goto folder <b>sh</b> and enter : startPublisher.sh transient false false
-	</li><li> Run the Subscriber Application, in a console goto folder <b>sh</b> and enter : startSubscriber.sh transient
+	<li> Run the Subscriber Application, in a console go to the <b>standalone</b> directory and start the subscriber
+          <ul> 
+             <li><b><i>sac_durability_sub transient </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub transient </i></b> for C++</li>
+             <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes DurabilityDataSubscriber transient </i></b> for Java</li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the <b>standalone</b> directory and start the publisher
+         <ul> 
+             <li><b><i>sac_durability_pub transient false false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub transient false false</i></b> for C++</li>
+             <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes DurabilityDataPublisher transient false false</i></b> for Java</li>
+          </ul>
+    </li>
 	</li><li> Stop the Publisher Application
-	</li><li> Run another instance of Subscriber Application and check that it
+	</li><li> Run another instance of Subscriber Application as described above and check that it
 	  receives the samples.
 	</li><li> Stop the subscribers</li></ul>
 	<h5>Scenario 3.3 :</h5>
 	
-	<p>(We need to stop/start openSplice as we will change the topic durability
+	<p>(If running in Shared Memory deployment we need to stop/start openSplice as we will change the topic durability
 	 kind from Transient (in scenario 3.2) to Persistent. Otherwise we won't be
 	 able to create the topic)</p>
-	<ul><li> Stop OpenSplice
-	</li><li> Start OpenSplice
-	</li><li> Run the Publisher Application, in a console goto folder <b>sh</b> and enter : startPublisher.sh persistent false false
-	</li><li> Run the Subscriber Application, in a console goto folder <b>sh</b> and enter : startSubscriber.sh persistent
+	<ul><li> Stop OpenSplice if running in Shared Memory deployment
+	</li><li> Start OpenSplice if running in Shared Memory deployment
+	<li> Run the Subscriber Application, in a console go to the <b>standalone</b> directory and start the subscriber
+          <ul> 
+             <li><b><i>sac_durability_sub persistent </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub persistent </i></b> for C++</li>
+             <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes DurabilityDataSubscriber persistent </i></b> for Java</li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the <b>standalone</b> directory and start the publisher
+         <ul> 
+             <li><b><i>sac_durability_pub persistent false false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub persistent false false</i></b> for C++</li>
+             <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes DurabilityDataPublisher persistent true false</i></b> for Java</li>
+          </ul>
+    </li>
 	</li><li> Stop the Publisher Application
-	</li><li> Stop OpenSplice
-	</li><li> Start OpenSplice
-	</li><li> Run a new instance of the Subscriber Application and check that
+	</li><li> Stop OpenSplice if running in Shared Memory deployment
+	</li><li> Start OpenSplice if running in Shared Memory deployment
+	</li><li> Run a new instance of the Subscriber Application as described above and check that
 	  it receives the samples.</li>
 	</ul>
 
-<h3><balise id="VS">Building/Running C/C++/C#/Java examples in Visual Studio 2005/2008</balise></h3>
+<h3><balise id="VS">Running C/C++/C#/Java examples on Windows</balise></h3>
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
-<p>The OpenSpliceDDS environment variables must be set in order for the examples to build/run correctly.
-To do this, open a terminal and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution</p>
+<p>The OpenSpliceDDS environment variables must be set in order for the examples to run correctly.
+To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the enviroment variables for OpenSpliceDDS automatically.  The <i>OpenSpliceDDS Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
 
 <ul>
   <li><a href ="#C_C++_CS_Win">C/C++/C# Examples </a></li>
   <li><a href ="#Java_Win">Java examples</a></li>
 </ul>
 
-<h4><balise id="C_C++_CS_Win">Building the C/C++/C# Examples</balise></h4>
-
-	<ul><li>Visual Studio Solution Files are provided for each of the examples:<br/>
-	The OSPL environment variables need to be set before you can build your application. If these variables have been set by the installer, you can start VS directly 
-to open the solution <i>Durability.sln</i> This can be found in <b><i>OpenSplice_install_dir</i>/examples/dcps/Durability/C++/Standalone/VS2005<br/></b>
-Otherwise you need to run the batch file <i>OpenSplice_install_dir\release.bat</i> before opening the VS solution <i>Durability.sln</i>. <br/>
-		</li>
-		<li> Build the example using the "Build Solution" option<br/>	Two executables are generated when the example is built: 
-		<ul><li>DurabilityDataPublisher.exe </li>
-			<li>DurabilityDataSubscriber.exe </li>
+<h4><balise id="C_C++_CS_Win">C/C++/C# Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables are generated in the <b>standalone</b> directory when the example is built: 
+<p>For C</p>
+		<ul><li>sac_durability_sub.exe </li>
+			<li>sac_durability_pub.exe </li>
 		</ul>
-	</ul>
 
-<h4><balise id="Java_Win">Building the Java Example</balise></h4>
-<ul><li>Open a terminal and make sure the OpenSpliceDDS environment is setup.
-</li><li>Navigate to the <b>Windows</b> directory for the Java example for, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Durability/Java/Standalone/Windows</b>.
-</li><li>Execute the batch file <i>BUILD.bat</i>.
-</li></ul>
-<p>Two jars are generated in the <b>exec</b> folder when the example 
-is built:</p>
+<p>For C++</p>
+		<ul><li>sacpp_durability_sub.exe </li>
+			<li>sacpp_durability_pub.exe </li>
+		</ul>
+	
 
-		<ul><li>DurabilityDataPublisher.jar </li>
-			<li>DurabilityDataSubscriber.jar </li>
+<h4><balise id="Java_Win">Java Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>The subscriber and publisher classes are generated in the <b>standalone</b> directory when the example is built:</p>
+
+		<ul><li>DurabilityDataPublisher.class</li>
+			<li>DurabilityDataSubscriber.class </li>
 		</ul>
 		
-<h4>Run the C/C++/C#/Java examples</h4>
-    <ul><li> Start OpenSplice</li>
-	<li> Open a console. Goto the <b>Bat</b> directory for the C/C++/C#/Java example you just built <b><i>OpenSplice_install_dir</i>/examples/dcps/Durability/C++/Standalone/VS2005/Bat</li></b></ul>
+<h4><balise id="C_C++_CS_Java_Win">Running the C/C++/C#/Java Examples</balise></h4>
+   <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new command prompt used.</p>
+   <p>The following steps describe how to run the examples:</p>
 
-	<p> It is recommended that you run the startSubscriber and startPublisher scripts in seperate terminals to avoid mixing the output.</p>
- 
-      <h5>Usage :</h5>
-        <ul><li> startPublisher.bat durability_kind autodispose_flag automatic_flag 
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <ul>
+     <li>OpenSpliceDDS is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 OpenSpliceDDS Command Prompts and go to directory <b>standalone</b> as described above</li>
+   </ul>
+
+   <p><b>Running in multiple process shared memory configuration</b></p>
+   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>  
+    <ul>	
+          <li>Open 2 OpenSpliceDDS Command Prompts.  In each window:</li>
+          <li>Go to directory <b>standalone</b> as described above</li>
+          <li>Set the required configuraton file e.g. <i>set OSPL_URI="file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml"</i></li>
+          <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+    </ul>
+
+
+  <p><b>Running the subscriber and publisher</b></p>
+
+        <h5>Usage :</h5>
+        <ul><li>The publisher takes 3 input parameters - durability_kind autodispose_flag automatic_flag, where 
             <ul><li>durability_kind = transient | persistent </li>
                 <li>autodispose_flag = false | true</li>
-                <li>automatic_flag = false | true <br/>indicates if the publisher is run in interactive or automatic mode </li></ul></li>
-        <li> startSubscriber.bat durability_kind
+                <li>automatic_flag = false | true  <br/>indicates if the publisher is run in interactive or automatic mode</li></ul></li>
+        <li>The subscriber takes 1 parameter - durability_kind, where
             <ul><li>durability_kind = transient | persistent </li></ul></li>
         </ul>
-  	
    	<h5>Scenario 3.1 :</h5>
-	<ul><li> Run the Publisher Application,in a console goto folder <b>Bat</b> and enter : startPublisher.bat transient true false</li>
-	<li> Run the Subscriber Application, in a console goto folder <b>Bat</b> and enter : startSubscriber.bat transient</li>
+	<ul>
+	<li> Run the Subscriber Application, in a console go to the <b>standalone</b> directory and start the subscriber
+          <ul> 
+             <li><b><i>sac_durability_sub transient </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub transient </i></b> for C++</li>
+             <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes DurabilityDataSubscriber transient </i></b> for Java</li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the <b>standalone</b> directory and start the publisher
+         <ul> 
+             <li><b><i>sac_durability_pub transient true false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub transient true false</i></b> for C++</li>
+             <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes DurabilityDataPublisher transient true false</i></b> for Java</li>
+          </ul>
+    </li>
 	<li> Check that the Subscriber receives the samples</li>
 	<li> Stop the Publisher and the subscriber</li></ul>
 	<h5>Scenario 3.2 :</h5>
-	<ul><li> Run the Publisher Application, in a console goto folder <b>Bat</b> and enter : startPublisher.bat transient false false
-	</li><li> Run the Subscriber Application, in a console goto folder <b>Bat</b> and enter : startSubscriber.bat transient
+	<li> Run the Subscriber Application, in a console go to the <b>standalone</b> directory and start the subscriber
+          <ul> 
+             <li><b><i>sac_durability_sub transient </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub transient </i></b> for C++</li>
+             <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes DurabilityDataSubscriber transient </i></b> for Java</li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the <b>standalone</b> directory and start the publisher
+         <ul> 
+             <li><b><i>sac_durability_pub transient false false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub transient false false</i></b> for C++</li>
+             <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes DurabilityDataPublisher transient false false</i></b> for Java</li>
+          </ul>
+    </li>
 	</li><li> Stop the Publisher Application
-	</li><li> Run another instance of Subscriber Application and check that it
+	</li><li> Run another instance of Subscriber Application as described above and check that it
 	  receives the samples.
 	</li><li> Stop the subscribers</li></ul>
 	<h5>Scenario 3.3 :</h5>
 	
-	<p>(We need to stop/start openSplice as we will change the topic durability
+	<p>(If running in Shared Memory deployment we need to stop/start openSplice as we will change the topic durability
 	 kind from Transient (in scenario 3.2) to Persistent. Otherwise we won't be
 	 able to create the topic)</p>
-	<ul><li> Stop OpenSplice
-	</li><li> Start OpenSplice
-	</li><li> Run the Publisher Application, in a console goto folder <b>Bat</b> and enter : startPublisher.bat persistent false false
-	</li><li> Run the Subscriber Application, in a console goto folder <b>Bat</b> and enter : startSubscriber.bat persistent
+	<ul><li> Stop OpenSplice if running in Shared Memory deployment
+	</li><li> Start OpenSplice if running in Shared Memory deployment
+	<li> Run the Subscriber Application, in a console go to the <b>standalone</b> directory and start the subscriber
+          <ul> 
+             <li><b><i>sac_durability_sub persistent </i></b> for C</li>
+             <li><b><i>sacpp_durability_sub persistent </i></b> for C++</li>
+             <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes DurabilityDataSubscriber persistent </i></b> for Java</li>
+          </ul>
+    </li>
+    <li> Run the Publisher Application,in a console go to the <b>standalone</b> directory and start the publisher
+         <ul> 
+             <li><b><i>sac_durability_pub persistent false false</i></b> for C</li>
+             <li><b><i>sacpp_durability_pub persistent false false</i></b> for C++</li>
+             <li><b><i>java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes DurabilityDataPublisher persistent true false</i></b> for Java</li>
+          </ul>
+    </li>
 	</li><li> Stop the Publisher Application
-	</li><li> Stop OpenSplice
-	</li><li> Start OpenSplice
-	</li><li> Run a new instance of the Subscriber Application and check that
-	  it receives the samples.</li></ul>
-	  
-<h2><balise id="CORBA">Building/Running in CORBA Cohabitation Mode</balise></h2>
-<p>Doing the substitution and additionnal setups described below, everything previously said for Standalone Mode can be applied to CORBA Cohabitation Mode.</p>
-<h4>Environment Setup</h4>
- <p>Besides OpenSplice environment variables, we need to set</p>
- <ul><li>C/C++</li>
-        <ul><li>The TAO environment variable TAO_ROOT to point to the Tao installation directory.</li></ul>
-     <li>Java</li>
-        <ul><li>The JacORB environment variable JACORB_HOME to point to the JacORB installation directory.</li></ul>
- </ul>
- <h4>Substitution</h4>
-	<ul><li>Posix platform</li> 
-		<ul>
-			<li>C/C++ Standalone is replaced by Corba/OpenFusion</li>
-			<li>Java  Standalone is replaced by Corba/JacORB</li>
-		</ul>
-		<li>Windows platform</li>
-        <ul>
-			<li>C/C++ Standalone is replaced by Corba\OpenFusion</li>
-			<li>Java  Standalone is replaced by Corba\JacORB</li>
-		</ul>
+	</li><li> Stop OpenSplice if running in Shared Memory deployment
+	</li><li> Start OpenSplice if running in Shared Memory deployment
+	</li><li> Run a new instance of the Subscriber Application as described above and check that
+	  it receives the samples.</li>
 	</ul>
 </body>
 </html>
-
-
-
-
-

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,6 +15,7 @@
 #include "c_stringSupport.h"
 
 #include "os.h"
+#include "os_report.h"
 
 /**************************************************************
  * Private functions
@@ -30,30 +31,57 @@
 v_partitionPolicy
 v_partitionPolicyAdd(
     v_partitionPolicy p,
-    const c_char *expr,
+    const c_char* expr,
     c_base base)
 {
-    v_partitionPolicy newPolicy;
-    c_char *str;
+    c_iter list;
+    c_char *str, *partition;
     c_long size;
+    c_bool isIn;
+    v_partitionPolicy newPolicy;
 
     newPolicy = NULL;
-    if ((p != NULL) &&
-        (strstr(p, expr) == NULL)) /* not in partitionPolicy yet */
-    {
-        size = strlen(p) + 1 + strlen(expr) + 1;
-        str = os_malloc(size);
-        if (str != NULL) {
-            os_strncpy(str, p, size);
-            str = os_strcat(str, ",");
-            str = os_strcat(str, expr);
-            newPolicy = c_stringNew(base, str);
-            os_free(str);
+
+    assert(expr);
+
+    if(p){
+        isIn = FALSE;
+
+        list = v_partitionPolicySplit(p);
+        partition = c_iterTakeFirst(list);
+    
+        while(partition){
+            if(strcmp(partition, expr) == 0){
+               isIn = TRUE;
+           }
+           os_free(partition);
+           partition = c_iterTakeFirst(list);
+        }
+        c_iterFree(list);
+
+        if(isIn){
+            /* It's already in there, so return the current value */
+            newPolicy = c_stringNew(base, p);
+        } else {
+            /* It's not in there, so add it to the existing one */
+            size = strlen(p) + 1 + strlen(expr) + 1;
+            str = os_malloc(size);
+
+            if (str) {
+                os_strncpy(str, p, size);
+                str = os_strcat(str, ",");
+                str = os_strcat(str, expr);
+                newPolicy = c_stringNew(base, str);
+                os_free(str);
+            } else {
+                /* failed to allocate, so report error and return NULL */
+                OS_REPORT(OS_ERROR, "v_partitionPolicyAdd", 0, "Failed to allocate partitionPolicy");
+            }
         }
     } else {
+        /* No policy exists yet, so make the expr the new policy */
         newPolicy = c_stringNew(base, expr);
     }
-
     return newPolicy;
 }
 

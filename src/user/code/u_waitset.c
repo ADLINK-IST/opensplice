@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -302,6 +302,7 @@ collectEvents(
     v_waitsetEventHistoryDelete evd;
     v_waitsetEventHistoryRequest evr;
     v_waitsetEventPersistentSnapshot evps;
+    v_waitsetEventConnectWriter ecw;
     list = (c_iter *)arg;
 
     if(e->kind == V_EVENT_HISTORY_DELETE){
@@ -329,6 +330,13 @@ collectEvents(
              evps->request->partitionExpr,
              evps->request->topicExpr,
              evps->request->uri);
+    }else if(e->kind == V_EVENT_CONNECT_WRITER) {
+        ecw = (v_waitsetEventConnectWriter)e;
+        ev = u_waitsetConnectWriterEventNew(
+             u_entity(e->userData),
+             e->kind,
+             e->source,
+             ecw->group);
     } else {
         ev = u_waitsetEventNew(u_entity(e->userData), e->kind);
     }

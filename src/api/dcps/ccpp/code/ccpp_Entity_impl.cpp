@@ -1,16 +1,16 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-#include "gapi.h"
 #include "ccpp_Entity_impl.h"
+#include "gapi.h"
 #include "ccpp_Utils.h"
 #include "ccpp_StatusCondition_impl.h"
 #include "os_report.h"
@@ -75,9 +75,9 @@ DDS::StatusCondition_ptr DDS::Entity_impl::get_statuscondition (
           if (scUD)
           {
             ccpp_UserData_ptr ownUD;
-            
+
             gapi_object_set_user_data(handle, (CORBA::Object *)scUD,
-                                      DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                      ccpp_CallBack_DeleteUserData,NULL);
             ownUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
             ownUD->ccpp_statusconditiondata = scUD;
           }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -55,17 +55,14 @@ v_deliveryServiceEntryWrite(
     v_deliveryInfoTemplate ackMsg;
     v_writeResult result = V_WRITE_REJECTED;
     v_reader reader;
-    v_state state;
-    v_kernel kernel;
 
+    OS_UNUSED_ARG(instancePtr);
     assert(C_TYPECHECK(_this,v_deliveryServiceEntry));
     assert(message != NULL);
 
     /* Only write if the message is not produced by an incompatible writer. */
     reader = v_entryReader(_this);
     v_observerLock(v_observer(reader));
-
-    state = v_nodeState(message);
 
     /* Filter-out all QoS-incompatible messages. */
     if (!v_messageQos_isReaderCompatible(message->qos,reader)) {
@@ -75,7 +72,6 @@ v_deliveryServiceEntryWrite(
 
     /* If Alive then claim instance and trigger with sample event.
      */
-    kernel = v_objectKernel(_this);
     ackMsg = (v_deliveryInfoTemplate)message;
 
     result = v_deliveryServiceWrite(v_deliveryService(reader),ackMsg);

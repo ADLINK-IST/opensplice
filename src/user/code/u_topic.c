@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -342,4 +342,36 @@ u_topicContentFilterValidate (
         c_free(filter);
     }
     return result;
+}
+
+c_type
+u_topicGetUserType (
+    u_topic _this)
+{
+    v_topic topic;
+    c_type type = NULL;
+    u_result uResult = u_entityReadClaim(u_entity(_this), (v_entity*)(&topic));
+    if (uResult == U_RESULT_OK) {
+        assert(topic);
+        type = v_topicGetUserType(topic);
+        c_keep(type);
+        u_entityRelease(u_entity(_this));
+    }
+    return type;
+}
+
+c_string
+u_topicGetTopicKeys (
+    u_topic _this)
+{
+    v_topic topic;
+    c_string keys = NULL;
+    u_result uResult = u_entityReadClaim(u_entity(_this), (v_entity*)(&topic));
+    if (uResult == U_RESULT_OK) {
+        assert(topic);
+        keys = v_topicKeyExpr(topic);
+        c_keep(keys);
+        u_entityRelease(u_entity(_this));
+    }
+    return keys;
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -178,6 +178,14 @@ OS_API char *
 os_ctime_r(
     os_time *t,
     char *buf);
+
+/** \brief Change the clock to use a user-defined function instead of the system clock
+ *
+ */
+OS_API void
+os_timeSetUserClock (
+    os_time (*userClock)(void));
+
 
 #undef OS_API
 

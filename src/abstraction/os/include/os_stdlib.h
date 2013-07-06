@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /****************************************************************
@@ -20,9 +20,6 @@
 #ifndef OS_STDLIB_H
 #define OS_STDLIB_H
 
-#if defined (__cplusplus)
-extern "C" {
-#endif
 
 #include "os_defs.h"
 #include "os_time.h" /* needed for os_stat */
@@ -31,13 +28,17 @@ extern "C" {
 #include "include/os_stdlib.h"
 #include "os_if.h"
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
-                                                                                                                            
+
 /** \brief Get host or processor name
  *
  * Possible Results:
@@ -80,10 +81,29 @@ os_getenv(
  * - returns os_resultFail if
  *     environment variable could not be set according the
  *     variable_definition
+ * @deprecated This function is a thin, bordering on anorexic, wrapper to
+ * putenv. putenv behaviour varies from unsafe to leaky across different
+ * platforms. Use ::os_setenv instead.
  */
 OS_API os_result
 os_putenv(
     char *variable_definition);
+
+/** \brief Set an environment variable definition
+ * Possible Results:
+ * - assertion failure: name or value are null.
+ * @param name variable name to be set
+ * @param value the value to set it to
+ * @return os_resultSuccess if
+ *     environment variable is set according the variable_definition or
+ * os_resultFail if
+ *     environment variable could not be set according the
+ *     variable_definition
+ */
+OS_API os_result
+os_setenv(
+    const char *name, const char *value);
+
 
 /** \brief Get file seperator
  *
@@ -105,8 +125,9 @@ os_pathSep(void);
 
 #define OS_PATHSEPCHAR OS_OS_PATHSEPCHAR
 #define OS_EXESUFFIX   OS_OS_EXESUFFIX
+#define OS_LIB_LOAD_PATH_VAR OS_OS_LIB_LOAD_PATH_VAR
 
-/** \brief Check user's permissions for a file 
+/** \brief Check user's permissions for a file
  *
  * Precondition:
  * - permission is a mask of:
@@ -159,7 +180,7 @@ os_locate(
  *   None
  *
  * Possible results:
- * - return 0 if 
+ * - return 0 if
  *     requested dir is created
  * - return -1 if
  *     requested dir could not be created
@@ -178,12 +199,30 @@ os_mkdir(
  *   None
  *
  * Possible results:
- * - return NULL if 
+ * - return NULL if
  *     char c is not found in string s
  * - return address of last occurance of c in s
  */
 OS_API char *
 os_rindex(
+    const char *s,
+    int c);
+
+/** \brief index wrapper
+ *
+ * because not all operating systems have
+ * interfaces to index a wrapper is made
+ *
+ * Precondition:
+ *   None
+ *
+ * Possible results:
+ * - return NULL if
+ *     char c is not found in string s
+ * - return address of first occurance of c in s
+ */
+OS_API char *
+os_index(
     const char *s,
     int c);
 
@@ -198,7 +237,7 @@ os_rindex(
  *   The allocated string must be freed using os_free
  *
  * Possible results:
- * - return NULL if 
+ * - return NULL if
  *     all resources are depleted
  * - return duplicate of the string s1 allocated via
  *     os_malloc
@@ -297,7 +336,7 @@ os_strncpy(
  * Possible results:
  * - return as strnlen
  */
-OS_API size_t 
+OS_API size_t
 os_strnlen(
    char *ptr,
    size_t maxlen);
@@ -455,6 +494,19 @@ os_strncasecmp(
     const char *s2,
     os_uint32 n);
 
+/** \brief strtok_r wrapper
+ *
+ * Tokenise strings based on delim
+ *
+ * Precondition:
+ *   none
+ *
+ * Possible results:
+ * - return ptr to next token or NULL if there are no tokens left.
+ */
+OS_API char *
+os_strtok_r(char *str, const char *delim, char **saveptr);
+
 struct os_stat {
 /* The mode_t macro's (like OS_ISDIR) are defined in the platform specific header files! */
 /* NEVER name these fields identical to the POSIX standard! Since e.g. the Linux implementation
@@ -467,7 +519,7 @@ struct os_stat {
    };
    This results in the fact that our definition is also changed, causing compilation errors!
 */
-  os_mode_t stat_mode; 
+  os_mode_t stat_mode;
   os_size_t stat_size;
   os_time   stat_mtime;
 };
@@ -492,7 +544,7 @@ struct os_dirent {
  *
  * Possible results:
  * - return os_resultSuccess if directory 'name' is opened
- * - os_resultFail if the filre 'name' could not 
+ * - os_resultFail if the filre 'name' could not
  *     be found or is not a directory.
  */
 OS_API os_result
@@ -566,10 +618,10 @@ os_fileNormalize(
 
 /**
  * \brief Flushes the internal buffers associated with the file handle to disk
- * 
+ *
  * Precondition:
  *   The file should be open.
- * 
+ *
  * Possible results:
  * - os_resultSuccess if function succeeded
  * - os_resultFail    if function failed
@@ -594,22 +646,8 @@ OS_API char *
 os_getTempDir();
 
 /**
- * \brief return string describing error number.
- * 
- *
- * Precondition:
- *   none
- *
- * Possible results:
- * - char * of the string description of the errnum passed in
- * if no string is associated then a string containing the errnum is returned
- */
-OS_API char *
-os_strerror(int errnum, char *buf, size_t n);
-
-/**
  * \brief writes up to count bytes from the buffer pointed buf to the file referred to by the file descriptor fd.
- * 
+ *
  *
  * Precondition:
  *   none
@@ -619,8 +657,24 @@ os_strerror(int errnum, char *buf, size_t n);
  * nothing was written). On error, -1 is returned
  *
  */
-OS_API ssize_t 
+OS_API os_ssize_t
 os_write(int fd, const void *buf, size_t count);
+
+/**
+ * \brief binary search algorithm on an already sorted list.
+ *
+ *
+ * Precondition:
+ *   list must be sorted in ascending order
+ *
+ * Possible results:
+ * - On success, the number the matching item is returned.  When the item
+ * does not exist, NULL is returned.
+ *
+ */
+OS_API void *
+os_bsearch(const void *key, const void *base, size_t nmemb, size_t size,
+    int (*compar) (const void *, const void *));
 
 #undef OS_API
 

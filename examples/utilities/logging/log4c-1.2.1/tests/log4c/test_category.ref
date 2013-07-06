@@ -1,0 +1,107 @@
+=> test #0 :
+factory[log4c_category_factory]:
+{ name:'root' priority:NOTICE additive:1 appender:'(nil)' parent:'(nil)' }
+{ name:'sub1' priority:NOTSET additive:1 appender:'(nil)' parent:'root' }
+{ name:'sub1.sub2' priority:NOTSET additive:1 appender:'(nil)' parent:'sub1' }
+
+factory[log4c_appender_factory]:
+{ name:'syslog' type:'syslog' layout:'basic' isopen:0 udata:(nil)}
+{ name:'stderr' type:'stream' layout:'dated' isopen:0 udata:0x42127480}
+{ name:'stdout' type:'stream' layout:'basic' isopen:0 udata:0x42127320}
+
+factory[log4c_layout_factory]:
+{ name:'basic' type:'basic' udata:(nil) }
+{ name:'dated' type:'dated' udata:(nil) }
+
+=> test #0 :  passed
+=> test #1 :
+=> test #1 :  passed
+=> test #2 :
+factory[log4c_category_factory]:
+{ name:'root' priority:ERROR additive:1 appender:'test_category' parent:'(nil)' }
+{ name:'a category' priority:NOTSET additive:1 appender:'(nil)' parent:'root' }
+{ name:'sub1' priority:NOTSET additive:1 appender:'appender1' parent:'root' }
+{ name:'sub1.sub2' priority:NOTSET additive:1 appender:'appender2' parent:'sub1' }
+
+factory[log4c_appender_factory]:
+{ name:'syslog' type:'syslog' layout:'basic' isopen:0 udata:(nil)}
+{ name:'stderr' type:'stream' layout:'dated' isopen:0 udata:0x42127480}
+{ name:'stdout' type:'stream' layout:'basic' isopen:0 udata:0x42127320}
+{ name:'appender1' type:'test' layout:'layout1' isopen:0 udata:0x804dd08}
+{ name:'test_category' type:'stream' layout:'basic' isopen:0 udata:0x804dd08}
+{ name:'appender2' type:'test' layout:'layout2' isopen:0 udata:0x804dd08}
+
+factory[log4c_layout_factory]:
+{ name:'layout1' type:'test' udata:(nil) }
+{ name:'layout2' type:'test' udata:(nil) }
+{ name:'basic' type:'basic' udata:(nil) }
+{ name:'dated' type:'dated' udata:(nil) }
+
+=> test #2 :  passed
+=> test #3 :
+
+# root error (priority = ERROR)
+[test_category] ERROR    root - root error
+
+# root warn (priority = ERROR)
+
+# sub1 error (priority = NOTSET)
+[appender1] logging 10 bytes.
+[test_category] ERROR    sub1 - sub1 error
+
+# sub1 warn (priority = NOTSET)
+
+# sun1sub2 error (priority = NOTSET)
+[appender2] logging 14 bytes.
+[appender1] logging 14 bytes.
+[test_category] ERROR    sub1.sub2 - sun1sub2 error
+
+# sun1sub2 warn (priority = NOTSET)
+=> test #3 :  passed
+=> test #4 :
+
+# root error (priority = ERROR)
+[test_category] ERROR    root - root error
+
+# root warn (priority = ERROR)
+
+# sub1 error (priority = INFO)
+[appender1] logging 10 bytes.
+[test_category] ERROR    sub1 - sub1 error
+
+# sub1 warn (priority = INFO)
+[appender1] logging 9 bytes.
+[test_category] WARN     sub1 - sub1 warn
+
+# sun1sub2 error (priority = NOTSET)
+[appender2] logging 14 bytes.
+[appender1] logging 14 bytes.
+[test_category] ERROR    sub1.sub2 - sun1sub2 error
+
+# sun1sub2 warn (priority = NOTSET)
+[appender2] logging 13 bytes.
+[appender1] logging 13 bytes.
+[test_category] WARN     sub1.sub2 - sun1sub2 warn
+=> test #4 :  passed
+=> test #5 :
+
+# root trace (priority = TRACE)
+[test_category] TRACE    root - test4() at /home/legoater/cimai/lab/src/log4c/tests/log4c/test_category.c:126
+root trace
+
+# root warn (priority = TRACE)
+[test_category] WARN     root - root warn
+
+# sub1 trace (priority = INFO)
+
+# sub1 warn (priority = INFO)
+[appender1] logging 9 bytes.
+[test_category] WARN     sub1 - sub1 warn
+
+# sun1sub2 trace (priority = NOTSET)
+
+# sun1sub2 warn (priority = NOTSET)
+[appender2] logging 13 bytes.
+[appender1] logging 13 bytes.
+[test_category] WARN     sub1.sub2 - sun1sub2 warn
+=> test #5 :  passed

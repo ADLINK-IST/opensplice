@@ -1,0 +1,9 @@
+// $Id$
+project: wxodbc, wxadvanced {
+  specific(prop:windows) {                                  
+    Debug::lit_libs   += wx$(WX_PORT)$(WX_VERSION)$(WX_UNICODE)d_dbgrid
+    Release::lit_libs += wx$(WX_PORT)$(WX_VERSION)$(WX_UNICODE)_dbgrid
+  } else {
+    lit_libs += wx_$(WX_PORT)$(WX_UNICODE)_dbgrid$(WX_VERSION)
+  }
+}

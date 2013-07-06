@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -16,6 +16,7 @@
 
 #include "d_storeXML.h"
 #include "d_storeMMF.h"
+#include "d_storeKV.h"
 
 #include "d_misc.h"
 #include "d_actionQueue.h"
@@ -60,6 +61,9 @@ d_storePrintState(
             case D_STORE_TYPE_MEM_MAPPED_FILE:
                 state = "MEMORY MAPPED FILE";
                 break;
+            case D_STORE_TYPE_KV:
+                state = "KV";
+                break;
             default:
                 state = "<<UNKNOWN>>";
                 break;
@@ -93,6 +97,7 @@ void
 d_storeDeinit(
     d_object object)
 {
+    OS_UNUSED_ARG(object);
     return;
 }
 
@@ -120,13 +125,18 @@ d_storeOpen(
 
     switch(storeType){
         case D_STORE_TYPE_XML:
-            store = d_store(d_storeNewXML());
+            store = d_store(d_storeNewXML(u_participant(d_durabilityGetService(durability))));
             break;
         case D_STORE_TYPE_BIG_ENDIAN:
             store = NULL;
             break;
         case D_STORE_TYPE_MEM_MAPPED_FILE:
-            store = d_store(d_storeNewMMF());
+            OS_REPORT(OS_WARNING, "durability", 0,
+                "The use of the durability MMF persistency store is deprecated. See deployment guide for alternative options");
+            store = d_store(d_storeNewMMF(u_participant(d_durabilityGetService(durability))));
+            break;
+        case D_STORE_TYPE_KV:
+            store = d_store(d_storeNewKV(u_participant(d_durabilityGetService(durability))));
             break;
         default:
             OS_REPORT(OS_ERROR, "durability", 0,
@@ -153,6 +163,10 @@ d_storeOpen(
                         break;
                     case D_STORE_TYPE_MEM_MAPPED_FILE:
                         d_storeFreeMMF(d_storeMMF(store));
+                        store = NULL;
+                        break;
+                    case D_STORE_TYPE_KV:
+                        d_storeFreeKV(d_storeKV(store));
                         store = NULL;
                         break;
                     default:
@@ -186,6 +200,10 @@ d_storeClose(
                         break;
                     case D_STORE_TYPE_MEM_MAPPED_FILE:
                         d_storeFreeMMF(d_storeMMF(store));
+                        store = NULL;
+                        break;
+                    case D_STORE_TYPE_KV:
+                        result = d_storeFreeKV(d_storeKV(store));
                         store = NULL;
                         break;
                     default:
@@ -256,6 +274,23 @@ d_storeGroupsRead(
     return result;
 }
 
+/* A temporal fix to solve the memory leak when reading the groups from the KV store */
+d_storeResult
+d_storeGroupListFree(
+     const d_store store,
+     d_groupList list)
+{
+    if (store->type == D_STORE_TYPE_KV) {
+        d_groupList next = list;
+        while (next) {
+            list = list->next;
+            os_free(next);
+            next = list;
+        }
+    }
+
+    return D_STORE_RESULT_OK;
+}
 d_storeResult
 d_storeGroupInject(
     const d_store store,
@@ -340,79 +375,79 @@ d_storeBackup(
 /* Check if namespace is complete */
 d_storeResult
 d_storeNsIsComplete (
-		const d_store store,
-		const d_nameSpace nameSpace,
-		c_bool* isComplete)
+                const d_store store,
+                const d_nameSpace nameSpace,
+                c_bool* isComplete)
 {
-	d_storeResult result;
+        d_storeResult result;
 
-	if (store){
-		if(store->nsIsCompleteFunc){
-			result = store->nsIsCompleteFunc (store, nameSpace, isComplete);
-		}else
-		{
-			result = D_STORE_RESULT_UNSUPPORTED;
-		}
-	}else
-	{
-		result = D_STORE_RESULT_ILL_PARAM;
-	}
+        if (store){
+                if(store->nsIsCompleteFunc){
+                        result = store->nsIsCompleteFunc (store, nameSpace, isComplete);
+                }else
+                {
+                        result = D_STORE_RESULT_UNSUPPORTED;
+                }
+        }else
+        {
+                result = D_STORE_RESULT_ILL_PARAM;
+        }
 
-	return result;
+        return result;
 }
 
 /* Mark namespace incomplete or complete */
 d_storeResult
 d_storeNsMarkComplete (
-		const d_store store,
-		const d_nameSpace nameSpace,
-		c_bool isComplete)
+                const d_store store,
+                const d_nameSpace nameSpace,
+                c_bool isComplete)
 {
-	d_storeResult result;
+        d_storeResult result;
 
-	if (store){
-		if(store->nsMarkCompleteFunc){
-			result = store->nsMarkCompleteFunc (store, nameSpace, isComplete);
-		}else
-		{
-			result = D_STORE_RESULT_UNSUPPORTED;
-		}
-	}else
-	{
-		result = D_STORE_RESULT_ILL_PARAM;
-	}
+        if (store){
+                if(store->nsMarkCompleteFunc){
+                        result = store->nsMarkCompleteFunc (store, nameSpace, isComplete);
+                }else
+                {
+                        result = D_STORE_RESULT_UNSUPPORTED;
+                }
+        }else
+        {
+                result = D_STORE_RESULT_ILL_PARAM;
+        }
 
-	return result;
+        return result;
 }
 
 /* Restore previously stored namespace */
 d_storeResult
 d_storeRestoreBackup(
-		const d_store store,
-		const d_nameSpace nameSpace)
+                const d_store store,
+                const d_nameSpace nameSpace)
 {
-	d_storeResult result;
+        d_storeResult result;
 
-	if (store)
-	{
-		if (store->restoreBackupFunc)
-		{
-			result = store->restoreBackupFunc(store, nameSpace);
-			if (result == D_STORE_RESULT_OK)
-			{
-				/* After restoring, mark namespace as complete */
-				result = d_storeNsMarkComplete (store, nameSpace, TRUE);
-			}
-		}else
-		{
-			result = D_STORE_RESULT_UNSUPPORTED;
-		}
-	}else
-	{
-		result = D_STORE_RESULT_ILL_PARAM;
-	}
+        if (store)
+        {
+                if (store->restoreBackupFunc)
+                {
+                        result = store->restoreBackupFunc(store, nameSpace);
+                        if (result == D_STORE_RESULT_OK)
+                        {
+                                /* After restoring, mark namespace as complete */
+                                result = d_storeNsMarkComplete (store, nameSpace, TRUE);
+                        }
+                }else
+                {
+                        result = D_STORE_RESULT_UNSUPPORTED;
+                }
+        }else
+        {
+                result = D_STORE_RESULT_ILL_PARAM;
+        }
 
-	return result;
+        return result;
 }
 
 d_storeResult

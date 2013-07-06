@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,10 +14,6 @@
 #include "v_writerSample.h"
 #include "v_writer.h"
 #include "os_report.h"
-#define _EXTENT_
-#ifdef _EXTENT_
-#include "c_extent.h"
-#endif
 
 #define v_sample(s) ((v_sample)(s))
 
@@ -45,11 +41,7 @@ _v_writerSampleNew(
     assert(message);
     assert(C_TYPECHECK(message,v_message));
 
-#ifdef _EXTENT_
-    sample = v_writerSample(c_extentCreate(writer->sampleExtent));
-#else
-    sample = v_writerSample(c_new(writer->sampleField->type));
-#endif
+    sample = v_writerSample(c_new(writer->sampleType));
 
     if (sample) {
         v_writerSampleTemplate(sample)->message = c_keep(message);
@@ -134,7 +126,7 @@ _v_writerSampleResend (
     assert(C_TYPECHECK(sample,v_writerSample));
 
     sample->resend = TRUE;
-    sample->resendScope |= resendScope;
+    sample->resendScope = resendScope;
 }
 
 void

@@ -1,15 +1,15 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
- 
+
 #include "cmx__qos.h"
 #include "cmx__entity.h"
 #include "cmx__factory.h"
@@ -27,7 +27,7 @@ cmx_qosNew(
     v_qos qos;
 
     assert(xmlQos != NULL);
-    
+
     *xmlQos = NULL;
 
     qos = v_entityGetQos(e);
@@ -50,15 +50,15 @@ cmx_qosKernelQos(
     u_entity ue;
     struct cmx_qosArg args;
     u_result ur;
-        
+
     vqos = NULL;
-    
+
     if( (qos != NULL) && (entity != NULL) ){
         ue = cmx_entityUserEntity(entity);
-        
+
         if(ue != NULL){
             ur = u_entityAction(ue, cmx_qosAction, &args);
-            
+
             if(ur == U_RESULT_OK) {
                 vqos = cmx_qosKernelQosFromKind(qos, args.kind, args.base);
             }
@@ -78,12 +78,12 @@ cmx_qosKernelQosFromKind(
     sd_serializedData data;
     sd_validationResult valResult;
     v_qos vqos;
-    
+
     vqos = NULL;
     qosType = NULL;
-    
-    if(qos == NULL){} 
-    else if(strcmp(qos, "") == 0){} 
+
+    if(qos == NULL){}
+    else if(strcmp(qos, "") == 0){}
     else{
         switch(entityKind){
             case K_NETWORKING:
@@ -91,6 +91,8 @@ cmx_qosKernelQosFromKind(
             case K_DURABILITY:
             /*fallthrough intentionally.*/
             case K_CMSOAP:
+            /*fallthrough intentionally.*/
+            case K_RNR:
             /*fallthrough intentionally.*/
             case K_SPLICED:
             /*fallthrough intentionally.*/
@@ -120,15 +122,15 @@ cmx_qosKernelQosFromKind(
             default:
             break;
         }
-        
+
         if(qosType != NULL){
             ser = sd_serializerXMLNewTyped(qosType);
             data = sd_serializerFromString(ser, qos);
             vqos = (v_qos)(sd_serializerDeserializeValidated(ser, data));
             valResult = sd_serializerLastValidationResult(ser);
-                
+
             if(valResult != SD_VAL_SUCCESS){
-                OS_REPORT_2(OS_ERROR, CM_XML_CONTEXT, 0, 
+                OS_REPORT_2(OS_ERROR, CM_XML_CONTEXT, 0,
                             "Creation of qos failed.\nReason: %s\nError: %s\n",
                             sd_serializerLastValidationMessage(ser),
                             sd_serializerLastValidationLocation(ser));
@@ -147,7 +149,7 @@ cmx_qosAction(
     c_voidp args)
 {
     struct cmx_qosArg* arg;
-    
+
     arg = (struct cmx_qosArg*)args;
     arg->kind = v_object(entity)->kind;
     arg->base = c_getBase(c_object(entity));

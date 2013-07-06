@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -498,7 +498,7 @@ idl_structureMemberOpenClose (
     switch (idl_typeSpecType(typeSpec)) {
     case idl_tbasic:
         if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
-            snprintf(arg->buffer,MAX_BUFFER,"DDS::String_mgr %s;\n", memberName);
+            snprintf(arg->buffer,MAX_BUFFER,"::DDS::String_mgr %s;\n", memberName);
         } else {
             snprintf(arg->buffer,MAX_BUFFER,"%s %s;\n",
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
@@ -717,7 +717,7 @@ idl_unionCaseOpenClose(
     switch (idl_typeSpecType(typeSpec)) {
     case idl_tbasic:
         if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
-            snprintf(arg->buffer,MAX_BUFFER,"DDS::String_mgr %s;\n", name);
+            snprintf(arg->buffer,MAX_BUFFER,"::DDS::String_mgr %s;\n", name);
         } else {
             snprintf(arg->buffer,MAX_BUFFER,"%s %s;\n",
             idl_corbaCxxTypeFromTypeSpec(typeSpec),
@@ -809,8 +809,8 @@ idl_enumerationClose (
 {
     struct idl_genSACPPData *arg = (struct idl_genSACPPData *)userData;
 
-//    idl_printIndent(arg->indent_level);
-//    idl_fileOutPrintf(idl_fileCur(), "EORB_FORCE_ENUM32(__%s)\n", name);
+/*    idl_printIndent(arg->indent_level);
+      idl_fileOutPrintf(idl_fileCur(), "EORB_FORCE_ENUM32(__%s)\n", name);*/
     arg->indent_level--;
     idl_printIndent(arg->indent_level);
     idl_fileOutPrintf(idl_fileCur(), "};\n");
@@ -885,12 +885,12 @@ idl_typedefOpenClose(
     case idl_tbasic:
         if (idl_typeBasicType(idl_typeBasic(actualType)) == idl_string) {
             idl_printIndent(arg->indent_level);
-            idl_fileOutPrintf(idl_fileCur(),"typedef DDS::String_mgr %s;\n", name);
+            idl_fileOutPrintf(idl_fileCur(),"typedef ::DDS::String_mgr %s;\n", name);
             /* also generate code for _var and _out types */
             idl_printIndent(arg->indent_level);
-            idl_fileOutPrintf(idl_fileCur(),"typedef DDS::String_var %s_var;\n", name);
+            idl_fileOutPrintf(idl_fileCur(),"typedef ::DDS::String_var %s_var;\n", name);
             idl_printIndent(arg->indent_level);
-            idl_fileOutPrintf(idl_fileCur(),"typedef DDS::String_out %s_out;\n", name);
+            idl_fileOutPrintf(idl_fileCur(),"typedef ::DDS::String_out %s_out;\n", name);
         } else {
             idl_printIndent(arg->indent_level);
             idl_fileOutPrintf(idl_fileCur(),"typedef %s %s;\n",

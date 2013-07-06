@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef SD_STRINGSXML_H
@@ -19,11 +19,20 @@
 c_char *sd_getTagName(
             const c_char *name,
             c_type type);
-            
+
+c_char *sd_getTypeAttributeFromOpenTag(
+            const c_char *openTag);
+
+void    sd_strEscapeXML(
+            c_char** src);
+
+void    sd_strUnescapeXML(
+            c_char* const* src);
+
 void    sd_strSkipChars(
             c_char **str,
             const c_char *chars);
-            
+
 c_char *sd_strGetChars(
             c_char **str,
             const c_char *chars);

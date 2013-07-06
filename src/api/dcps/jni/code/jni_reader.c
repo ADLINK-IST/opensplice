@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -29,7 +29,7 @@
 #include "os.h"
 #include "os_heap.h"
 
-static c_bool jni_readerSerializeData(c_object o, c_voidp copyArg);
+static v_actionResult jni_readerSerializeData(c_object o, c_voidp copyArg);
 
 jni_reader
 jni_readerNew(
@@ -200,7 +200,7 @@ jni_readerSetQuery(
     return r;
 }
 
-static c_bool
+static v_actionResult
 jni_readerSerializeData(
     c_object o,
     c_voidp copyArg)
@@ -219,5 +219,5 @@ jni_readerSerializeData(
         sd_serializedDataFree(data);
         sd_serializerFree(ser);
     }
-    return FALSE;
+    return 0;
 }

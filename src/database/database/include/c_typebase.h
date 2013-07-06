@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -35,7 +35,7 @@ extern "C" {
 #define C_ADDRESS(ptr)  ((c_address)(ptr))
 
 #define C_ALIGNMENT(t) \
-        ((c_ulong)(&((struct {c_char d;t a;}*)(void *)0)->a))
+        ((c_ulong)(c_address)(&((struct {c_char d;t a;}*)(void *)0)->a))
 
 #define C_MAXALIGNMENT \
         (C_ALIGNMENT(c_value))
@@ -57,20 +57,16 @@ extern "C" {
 
 C_CLASS(c_base);
 
-/** \todo to be moved to abstraction layer */
-#if !defined FALSE || (FALSE != 0)
-#undef FALSE
-#define FALSE              (0)
-#endif
-#if !defined TRUE || (TRUE != (!FALSE))
-#undef TRUE
-#define TRUE               (!FALSE)
-#endif
-
 #define OS_ALIGNMENT       (8)
 
+/** @def NULL
+ * @bug OSPL-2272 */
+/* VERSION is the deprecated form of OSPL_VERSION
+ * This is only defined when building OpenSplice itself */
+#if defined (VERSION) || defined (OSPL_VERSION)
 #undef NULL
 #define NULL (0)
+#endif
 
 typedef os_address          c_address;
 typedef c_address           c_size;

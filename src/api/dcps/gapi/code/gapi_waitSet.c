@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -40,7 +40,7 @@ C_STRUCT(_ConditionEntry) {
 static gapi_returnCode_t
 getConditionDomainId(
     _Condition condition,
-    gapi_domainId_t *id);
+    gapi_domainName_t *id);
 
 static gapi_equality
 domainCompare(
@@ -494,6 +494,7 @@ gapi_waitSet_wait(
                         break;
                         case U_RESULT_ILL_PARAM:
                         case U_RESULT_DETACHING:
+                        case U_RESULT_ALREADY_DELETED:
                             result = GAPI_RETCODE_ALREADY_DELETED;
                             ready = TRUE;
                         break;
@@ -565,7 +566,7 @@ compareDomainId (
     c_voidp arg)
 {
     _WaitSetDomainEntry entry = (_WaitSetDomainEntry)o;
-    gapi_domainId_t *id = (gapi_domainId_t *)arg;
+    gapi_domainName_t *id = (gapi_domainName_t *)arg;
     c_equality result;
 
     if (entry->domainId == *id) {
@@ -585,7 +586,7 @@ gapi_waitSet_attach_condition(
     gapi_waitSet _this,
     const gapi_condition cond)
 {
-    gapi_domainId_t DomainId;
+    gapi_domainName_t DomainId;
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     _WaitSetDomainEntry wsdEntry = NULL;
     _WaitSet waitset;
@@ -706,7 +707,7 @@ gapi_waitSet_detach_condition(
     _ConditionEntry entry, prev;
     _WaitSetDomainEntry wsdEntry = NULL;
     gapi_returnCode_t result = GAPI_RETCODE_OK;
-    gapi_domainId_t DomainId;
+    gapi_domainName_t DomainId;
 
     waitset = gapi_waitSetClaim(_this, &result);
     if (waitset != NULL) {
@@ -810,7 +811,7 @@ gapi_waitSet_get_conditions(
 static gapi_returnCode_t
 getConditionDomainId(
     _Condition condition,
-    gapi_domainId_t *id)
+    gapi_domainName_t *id)
 {
     _DomainParticipant participant;
     _Entity entity = _ConditionEntity(condition);

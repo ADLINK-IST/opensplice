@@ -1,0 +1,21 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+startOSPL
+
+echo "=== Launching Subscriber "
+./sac_listener_sub > subResult.txt &
+
+sleep 5
+
+echo "=== Launching Publisher "
+
+./sac_listener_pub > pubResult.txt
+
+#We need to wait for the file to be written
+sleep 15
+
+listenerCheckResult
+
+stopOSPL

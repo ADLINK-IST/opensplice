@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -25,6 +25,11 @@ d_networkAddressNew(
     if(addr){
         addr->systemId    = systemId;
         addr->localId     = localId;
+
+        /* Lifecycle is explicitly not used. A scan on where lifecycleId is used reveals that there is no
+         * logic depending on the lifecycle, other than comparision operations. It could therefore be
+         * removed as attribute, although this would mean a change in protocol. */
+        OS_UNUSED_ARG(lifecycleId);
         addr->lifecycleId = 0;
     }
     return addr;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -65,6 +65,7 @@ C_STRUCT(d_persistentDataListener){
     d_table groups;
     c_ulong optimizeUpdateInterval;
     d_storeResult lastResult;
+    c_bool logStatistics;
 };
 
 void        d_persistentDataListenerInit                (d_persistentDataListener listener,

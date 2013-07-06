@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -129,13 +129,6 @@ idl_fileOpen(
     /* QAC EXPECT 2006; overview does not get better with one exit */
 }
 
-//static void
-//idl_fileClose(
-//    void *userData)
-//{
-//    idl_fileOutPrintf(idl_fileCur(), "#endif\n");
-//}
-
 static idl_action
 idl_moduleOpen(
     idl_scope scope,
@@ -145,7 +138,7 @@ idl_moduleOpen(
     char *moduleName;
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
 
-    moduleName = idl_CsharpId(name, csUserData->customPSM);
+    moduleName = idl_CsharpId(name, csUserData->customPSM, FALSE);
     idl_printIndent(idlpp_indent_level);
     idl_fileOutPrintf(idl_fileCur(), "namespace %s\n", moduleName);
     idl_printIndent(idlpp_indent_level);
@@ -179,8 +172,9 @@ idl_structureOpen(
         SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
         char *scopeName = idl_CsharpId(
                 idl_scopeElementName(idl_scopeCur(scope)),
-                csUserData->customPSM);
-        char *structName = idl_CsharpId(name, csUserData->customPSM);
+                csUserData->customPSM,
+                FALSE);
+        char *structName = idl_CsharpId(name, csUserData->customPSM, FALSE);
 
         /* keylist has been defined for this struct, so it acts as topic. */
         te = idl_tmplExpNew(idlpp_macroSet);
@@ -224,8 +218,9 @@ idl_unionOpen(
         SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
         char *scopeName = idl_CsharpId(
                 idl_scopeElementName(idl_scopeCur(scope)),
-                csUserData->customPSM);
-        char *unionName = idl_CsharpId(name, csUserData->customPSM);
+                csUserData->customPSM,
+                FALSE);
+        char *unionName = idl_CsharpId(name, csUserData->customPSM, FALSE);
 
     /* keylist defined for this union */
         te = idl_tmplExpNew(idlpp_macroSet);

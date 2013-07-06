@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,10 +20,16 @@
 #include "os_heap.h"
 #include "os_report.h"
 #include "os_stdlib.h"
+#include "os_init.h"
+#include "os_time.h"
 
 #include <sys/types.h>
+#ifndef OSPL_NO_VMEM
 #include <sys/mman.h>
+#endif
+#ifndef PIKEOS_POSIX
 #include <sys/wait.h>
+#endif
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,28 +44,43 @@
 #include <pthread.h>
 #endif
 
+static char* processName = NULL;
 /** \brief pointer to environment variables */
+#ifdef __APPLE__
+#include <crt_externs.h>
+#else
 extern char **environ;
+#endif
 static os_procTerminationHandler _ospl_termHandler   = (os_procTerminationHandler)0;
 
 #ifndef INTEGRITY
+#ifndef VXWORKS_RTP
 #define _SIGNALVECTOR_(sig) _ospl_oldSignalVector##sig
 static struct sigaction _SIGNALVECTOR_(SIGINT);
 static struct sigaction _SIGNALVECTOR_(SIGQUIT);
 static struct sigaction _SIGNALVECTOR_(SIGHUP);
 static struct sigaction _SIGNALVECTOR_(SIGTERM);
 
+#ifdef __APPLE__
+#define CATCH_EXCEPTIONS 0
+#else
+#define CATCH_EXCEPTIONS 1
+#endif
+
+#if CATCH_EXCEPTIONS
 static struct sigaction _SIGNALVECTOR_(SIGILL);
 static struct sigaction _SIGNALVECTOR_(SIGABRT);
 static struct sigaction _SIGNALVECTOR_(SIGFPE);
 static struct sigaction _SIGNALVECTOR_(SIGSEGV);
+#endif
+
 static struct sigaction _SIGNALVECTOR_(SIGPIPE);
 static struct sigaction _SIGNALVECTOR_(SIGALRM);
 static struct sigaction _SIGNALVECTOR_(SIGUSR1);
 static struct sigaction _SIGNALVECTOR_(SIGUSR2);
-static struct sigaction _SIGNALVECTOR_(SIGTSTOP);
+/*static struct sigaction _SIGNALVECTOR_(SIGTSTOP); -- ignore for now */
 static struct sigaction _SIGNALVECTOR_(SIGTTIN);
-static struct sigaction _SIGNALVECTOR_(SIGTTOUT);
+/*static struct sigaction _SIGNALVECTOR_(SIGTTOUT); -- ignore for now */
 
 
 #define OSPL_SIGNALHANDLERTHREAD_TERMINATE 1 /* Instruct thread to terminate */
@@ -67,10 +88,12 @@ static struct sigaction _SIGNALVECTOR_(SIGTTOUT);
 
 static pthread_t _ospl_signalHandlerThreadId;
 static int _ospl_signalHandlerThreadTerminate = 0;
-static int _ospl_signalpipe[2] = { 0, 0};
+#endif
 static int installSignalHandler = 1;
+static int _ospl_signalpipe[2] = { 0, 0};
 
 /* private functions */
+#if !defined VXWORKS_RTP && !defined PIKEOS_POSIX
 static int
 isSignallingSafe(
     int reportReason)
@@ -96,18 +119,23 @@ signalHandler(
     os_int32 terminate;
     os_terminationType reason;
     int result;
+    (void)info;
+    (void)arg;
+
+    OS_UNUSED_ARG(info);
+    OS_UNUSED_ARG(arg);
 
     if (_ospl_termHandler) {
         switch (sig) {
-		case SIGINT:
-		case SIGQUIT:
-		case SIGHUP:
-		case SIGTERM:
-            reason = OS_TERMINATION_NORMAL;
-		break;
-        default:
-			reason = OS_TERMINATION_ERROR;
-        break;
+            case SIGINT:
+            case SIGQUIT:
+            case SIGHUP:
+            case SIGTERM:
+                reason = OS_TERMINATION_NORMAL;
+            break;
+            default:
+                reason = OS_TERMINATION_ERROR;
+            break;
         }
         terminate = _ospl_termHandler(reason);
     } else {
@@ -133,6 +161,9 @@ signalHandlerThread(
     sigset_t sigset;
     int sig;
     int result;
+    (void)arg;
+
+    OS_UNUSED_ARG(arg);
 
     sigemptyset(&sigset);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
@@ -141,7 +172,7 @@ signalHandlerThread(
     while (result == -1) {
         result = read(_ospl_signalpipe[0], &sig, sizeof(int));
     }
-    /* first call previous signal handler, iff not default */
+    /* first call previous signal handler, if not default */
     switch (sig) {
     case -1: /* used for terminating this thread! */
         assert(_ospl_signalHandlerThreadTerminate != OSPL_SIGNALHANDLERTHREAD_EXIT);
@@ -170,6 +201,7 @@ signalHandlerThread(
             _SIGNALVECTOR_(SIGTERM).sa_handler(SIGTERM);
         }
     break;
+#if CATCH_EXCEPTIONS
     case SIGILL:
         if ((_SIGNALVECTOR_(SIGILL).sa_handler != SIG_DFL) &&
             (_SIGNALVECTOR_(SIGILL).sa_handler != SIG_IGN)) {
@@ -194,6 +226,7 @@ signalHandlerThread(
             _SIGNALVECTOR_(SIGSEGV).sa_handler(SIGSEGV);
         }
     break;
+#endif
     case SIGPIPE:
         if ((_SIGNALVECTOR_(SIGPIPE).sa_handler != SIG_DFL) &&
             (_SIGNALVECTOR_(SIGPIPE).sa_handler != SIG_IGN)) {
@@ -242,7 +275,13 @@ signalHandlerThread(
         assert(0);
     }
     if (_ospl_signalHandlerThreadTerminate == OSPL_SIGNALHANDLERTHREAD_EXIT) {
-        exit(0);
+        if(!os_serviceGetSingleProcess())
+        {
+            exit(0);
+        } else
+        {
+            _exit(0);
+        }
     }
     return NULL;
 }
@@ -250,18 +289,18 @@ signalHandlerThread(
 #define _SIGACTION_(sig) sigaction(sig,&action,&_ospl_oldSignalVector##sig)
 #define _SIGCURRENTACTION_(sig) sigaction(sig, NULL, &_ospl_oldSignalVector##sig)
 #endif
+#endif
 
 /* protected functions */
 void
 os_processModuleInit(void)
 {
-#if !defined INTEGRITY && !defined VXWORKS_RTP
+#if !defined INTEGRITY && !defined VXWORKS_RTP && !defined PIKEOS_POSIX
     struct sigaction action;
     pthread_attr_t      thrAttr;
     int result;
 
-     result = pipe(_ospl_signalpipe);
-
+    result = pipe(_ospl_signalpipe);
     pthread_attr_init(&thrAttr);
     pthread_attr_setstacksize(&thrAttr, 4*1024*1024); /* 4MB */
     pthread_create(&_ospl_signalHandlerThreadId, &thrAttr, signalHandlerThread, (void*)0);
@@ -306,6 +345,7 @@ os_processModuleInit(void)
     }
 
     if(isSignallingSafe(1)){
+#if CATCH_EXCEPTIONS
         _SIGCURRENTACTION_(SIGILL);
 
         if ((_SIGNALVECTOR_(SIGILL).sa_handler == SIG_DFL) ||
@@ -330,6 +370,7 @@ os_processModuleInit(void)
             (_SIGNALVECTOR_(SIGSEGV).sa_handler == SIG_IGN)) {
             _SIGACTION_(SIGSEGV);
         }
+#endif
         _SIGCURRENTACTION_(SIGPIPE);
 
         if ((_SIGNALVECTOR_(SIGPIPE).sa_handler == SIG_DFL) ||
@@ -380,7 +421,7 @@ os_processModuleInit(void)
 void
 os_processModuleExit(void)
 {
-#if !defined INTEGRITY && !defined VXWORKS_RTP
+#if !defined INTEGRITY && !defined VXWORKS_RTP && !defined PIKEOS_POSIX
     int sig = -1;
     void *thread_result;
 
@@ -392,10 +433,12 @@ os_processModuleExit(void)
 
 
     if(isSignallingSafe(0)){
+#if CATCH_EXCEPTIONS
         _SIGACTION_(SIGILL);
         _SIGACTION_(SIGABRT);
         _SIGACTION_(SIGFPE);
         _SIGACTION_(SIGSEGV);
+#endif
         _SIGACTION_(SIGPIPE);
         _SIGACTION_(SIGALRM);
         _SIGACTION_(SIGUSR1);
@@ -408,10 +451,16 @@ os_processModuleExit(void)
         pthread_join(_ospl_signalHandlerThreadId, &thread_result);
     }
 #endif
+    if(processName) {
+        os_free(processName);
+    }
 }
 #undef _SIGACTION_
 
 /* public functions */
+
+
+
 os_procTerminationHandler
 os_procSetTerminationHandler(
     os_procTerminationHandler handler)
@@ -431,14 +480,28 @@ os_procSetTerminationHandler(
  * The standard POSIX implementation guarantees the
  * required order of execution of the exit handlers.
  */
-void
+
+#ifndef PIKEOS_POSIX
+os_result
 os_procAtExit(
     void (*function)(void))
 {
+    int result;
+    os_result osResult;
+
     assert (function != NULL);
-    atexit (function);
-    return;
+
+    result = atexit (function);
+    if(!result)
+    {
+        osResult = os_resultSuccess;
+    } else
+    {
+        osResult = os_resultFail;
+    }
+    return osResult;
 }
+#endif
 
 void
 os_procSetSignalHandlingEnabled(
@@ -458,6 +521,7 @@ os_procSetSignalHandlingEnabled(
  *
  * \b os_procExit terminates the process by calling \b exit.
  */
+#ifndef PIKEOS_POSIX
 void
 os_procExit(
     os_exitStatus status)
@@ -466,8 +530,9 @@ os_procExit(
     exit((signed int)status);
     return;
 }
+#endif
 
-#ifndef VXWORKS_RTP
+#if !defined VXWORKS_RTP
 /** \brief Create a process that is an instantiation of a program
  *
  * First an argument list is built from \b arguments.
@@ -496,7 +561,7 @@ os_procCreate(
     os_procId *procId)
 {
     os_result rv = os_resultSuccess;
-#ifndef INTEGRITY
+#if !defined INTEGRITY && !defined PIKEOS_POSIX
     pid_t pid;
     char *argv[64];
     int argc = 1;
@@ -507,9 +572,8 @@ os_procCreate(
     int dq_open = 0;
     int dq_close = 0;
     char *argin;
-    struct sched_param sched_param;
+    struct sched_param sched_param, sched_current;
     int sched_policy;
-
     char environment[512];
 
     assert(executable_file != NULL);
@@ -536,9 +600,9 @@ os_procCreate(
             name);
     }
     if (access(executable_file, X_OK) != 0) {
-	rv = os_resultInvalid;
+        rv = os_resultInvalid;
     } else {
-	/* first translate the input string into an argv structured list */
+        /* first translate the input string into an argv structured list */
         argin = os_malloc(strlen(arguments) + 1);
         os_strcpy(argin, arguments);
         argv[0] = os_malloc(strlen(name) + 1);
@@ -595,55 +659,60 @@ os_procCreate(
         }
         argv [argc] = NULL;
         if ((pid = fork()) == -1) {
-	    OS_REPORT_3(OS_WARNING, "os_procCreate", 1,
+            OS_REPORT_3(OS_WARNING, "os_procCreate", 1,
                         "fork failed with error %d (%s, %s)", errno, executable_file, name);
-	    rv = os_resultFail;
+            rv = os_resultFail;
         } else if (pid == 0) {
-	    /* child process */
-	    if (procAttr->schedClass == OS_SCHED_REALTIME) {
-	        if (getuid() == 0 || geteuid() == 0) {
-		    sched_param.sched_priority = procAttr->schedPriority;
-		    if (sched_setscheduler(pid, SCHED_FIFO, &sched_param) == -1) {
-			OS_REPORT_2(OS_WARNING, "os_procCreate", 1,
-                                    "sched_setscheduler failed with error %d (%s)", errno, name);
-		    }
-	        } else {
-		    OS_REPORT_1(OS_WARNING, "os_procCreate", 2,
-                                "scheduling policy can not be set because of privilege problems (%s)", name);
-	        }
-	    } else {
-	        sched_param.sched_priority = procAttr->schedPriority;
-	        if (sched_setscheduler(pid, SCHED_OTHER, &sched_param) == -1) {
-		    OS_REPORT_2(OS_WARNING, "os_procCreate", 1,
-                                "sched_setscheduler failed with error %d (%s)", errno, name);
-	        }
-	    }
-	    if (getuid() == 0) {
-	        /* first set the gid */
-	        if (procAttr->userCred.gid) {
-	            setgid(procAttr->userCred.gid);
-	        }
-	        /* then set the uid */
-	        if (procAttr->userCred.uid) {
-	            setuid(procAttr->userCred.uid);
-	        }
-	    }
-	    /* Set the process name via environment variable SPLICE_PROCNAME */
-	    snprintf(environment, sizeof(environment), "SPLICE_PROCNAME=%s", name);
-	    putenv(environment);
-	    /* exec executable file */
-	    if (execve(executable_file, argv, environ) == -1) {
-		OS_REPORT_2(OS_WARNING, "os_procCreate", 1, "execve failed with error %d (%s)", errno, executable_file);
-	    }
-	    /* if executing this, something has gone wrong */
-	    rv = os_resultFail; /* Just to fool QAC */
-	    os_procExit(OS_EXIT_FAILURE);
+            /* child process */
+            if (procAttr->schedClass == OS_SCHED_REALTIME) {
+                sched_param.sched_priority = procAttr->schedPriority;
+
+                if (sched_setscheduler(pid, SCHED_FIFO, &sched_param) == -1) {
+                    OS_REPORT_3(OS_WARNING, "os_procCreate", 1,
+                            "sched_setscheduler failed with error %d (%s) for process '%s'",
+                            errno, strerror(errno), name);
+                }
+            } else {
+                    sched_getparam (0, &sched_current);
+                    if (sched_current.sched_priority != procAttr->schedPriority) {
+                        sched_param.sched_priority = procAttr->schedPriority;
+                        if (sched_setscheduler(pid, SCHED_OTHER, &sched_param) == -1) {
+                            OS_REPORT_4(OS_WARNING, "os_procCreate", 1,
+                                        "sched_setscheduler failed with error %d (%s). Requested priority was %d, current is %d",
+                                        errno, name, procAttr->schedPriority,
+                                        sched_current.sched_priority);
+                    }
+                }
+            }
+            if (getuid() == 0) {
+                /* first set the gid */
+                if (procAttr->userCred.gid) {
+                    setgid(procAttr->userCred.gid);
+                }
+                /* then set the uid */
+                if (procAttr->userCred.uid) {
+                    setuid(procAttr->userCred.uid);
+                }
+            }
+            /* Set the process name via environment variable SPLICE_PROCNAME */
+            snprintf(environment, sizeof(environment), "SPLICE_PROCNAME=%s", name);
+            putenv(environment);
+            /* exec executable file */
+#if __APPLE__
+            char **environ = *_NSGetEnviron ();
+#endif
+            if (execve(executable_file, argv, environ) == -1) {
+                OS_REPORT_2(OS_WARNING, "os_procCreate", 1, "execve failed with error %d (%s)", errno, executable_file);
+            }
+            /* if executing this, something has gone wrong */
+            rv = os_resultFail; /* Just to fool QAC */
+            os_procExit(OS_EXIT_FAILURE);
         } else {
-	    /* parent process */
-	    os_free(argv[0]);
-	    os_free(argin);
+            /* parent process */
+            os_free(argv[0]);
+            os_free(argin);
             *procId = pid;
-	    rv = os_resultSuccess;
+            rv = os_resultSuccess;
         }
     }
 #endif
@@ -665,7 +734,7 @@ os_procCreate(
  *   os_resultUnavailable is returned.
  * - On any other return from \b waitpid, \b os_resultFail is returned.
  */
-#ifndef INTEGRITY
+#if !defined INTEGRITY && !defined PIKEOS_POSIX
 os_result
 os_procCheckStatus(
     os_procId procId,
@@ -677,16 +746,16 @@ os_procCheckStatus(
 
     result = waitpid(procId, &les, WNOHANG);
     if (result == procId) {
-	if (WIFEXITED(les)) {
-	    *status = WEXITSTATUS(les);
-	} else {
-	    *status = OS_EXIT_FAILURE;
-	}
-	rv = os_resultSuccess;
+        if (WIFEXITED(les)) {
+            *status = WEXITSTATUS(les);
+        } else {
+            *status = OS_EXIT_FAILURE;
+        }
+        rv = os_resultSuccess;
     } else if (result == 0) {
-	rv = os_resultBusy;
+        rv = os_resultBusy;
     } else if ((result == -1) && (errno == ECHILD)) {
-	rv = os_resultUnavailable;
+        rv = os_resultUnavailable;
     } else {
         rv = os_resultFail;
     }
@@ -721,6 +790,7 @@ os_procIdSelf(void)
  * able default is 20 */
 #define _OS_PROCESS_DEFAULT_CMDLINE_LEN_ (20)
 #define _OS_PROCESS_PROCFS_PATH_FMT_     "/proc/%d/cmdline"
+#define _OS_PROCESS_DEFAULT_NAME_LEN_ (512)
 
 /** \brief Figure out the identity of the current process
  *
@@ -743,84 +813,228 @@ os_procFigureIdentity(
     char *procIdentity,
     os_uint32 procIdentitySize)
 {
-    os_int32 size = 0;
-    char *process_name;
-    size_t r = 0;
-    int missingBytes = 0;
+    int size = 0;
+    char process_name[_OS_PROCESS_DEFAULT_NAME_LEN_];
 
-    process_name = os_getenv("SPLICE_PROCNAME");
-    if (process_name != NULL) {
+    size = os_procGetProcessName(process_name,_OS_PROCESS_DEFAULT_NAME_LEN_);
+    if (size > 0) {
         size = snprintf(procIdentity, procIdentitySize, "%s <%d>",
                         process_name, os_procIdToInteger(os_procIdSelf()));
-    } else {
-        char *procPath;
-
-        procPath = (char*) os_malloc(_OS_PROCESS_DEFAULT_CMDLINE_LEN_);
-        if (procPath) {
-            size = snprintf(procPath, _OS_PROCESS_DEFAULT_CMDLINE_LEN_,
-                    _OS_PROCESS_PROCFS_PATH_FMT_, os_procIdToInteger(os_procIdSelf()));
-            if (size >= _OS_PROCESS_DEFAULT_CMDLINE_LEN_) { /* pid is apparently longer */
-                char *tmp = (char*) os_realloc(procPath, size + 1);
-                if (tmp) {
-                    procPath = tmp;
-                    size = snprintf(procPath, size + 1, _OS_PROCESS_PROCFS_PATH_FMT_,
-                            os_procIdToInteger(os_procIdSelf()));
-                } else {
-                    /* Memory-claim failed, revert to default (just pid) */
-                    size = 0;
-                }
-            }
-            /* procPath is set */
-            if (size > 0) {
-               if (os_access(procPath, OS_ROK) == os_resultSuccess) {
-                  FILE *proc = fopen(procPath, "r");
-                  if (proc) {
-                     do {
-                        r += fread((void*)&procIdentity[r], 1L, procIdentitySize-r,proc);
-                     } while( ferror(proc) && errno == EINTR );
-                     
-                     /* Only count characters till the first null */
-                     r = os_strnlen( procIdentity, r );
-                     if ( r == procIdentitySize )
-                     {
-                        char altbuffer[16];
-                        int usefullRead;
-
-                        /* Buffer is full null terminate it */
-                        procIdentity[r-1] = '\0';
-                        /* There may be more bytes - count them*/
-                        do {
-                           int p=0;
-                           do {
-                              p += fread((void*)&altbuffer, 1L, 
-                                         sizeof(altbuffer)-p,proc);
-                           } while( ferror(proc) && errno == EINTR );
-                           usefullRead=os_strnlen(&altbuffer[0], sizeof(altbuffer));
-                           missingBytes+=usefullRead;
-                        } while ( usefullRead == sizeof(altbuffer) );
-                        /* Account for space before pid */
-                        missingBytes++;
-                     }
-                     else if ( r > 1 ) {
-                        /* Add a space before the pid */
-                        procIdentity[r++] = ' ';
-                     }
-                     fclose(proc);
-                  }
-               }
-            }
-            os_free(procPath);
-        }
-        size = snprintf(&procIdentity[r], procIdentitySize-r,
-                        "<%d>", os_procIdToInteger(os_procIdSelf()));
-        size = size+r+missingBytes;
     }
-
-    return size;
+    else {
+         /* No processname could be determined, so default to PID */
+         size = snprintf(procIdentity, procIdentitySize, "<%d>",
+                 os_procIdToInteger(os_procIdSelf()));
+     }
+    return (os_int32)size;
 }
 
 #undef _OS_PROCESS_DEFAULT_CMDLINE_LEN_
 #undef _OS_PROCESS_PROCFS_PATH_FMT_
+#undef _OS_PROCESS_DEFAULT_NAME_LEN_
+
+#if !defined (VXWORKS_RTP)
+
+/* os_procServiceDestroy will need an alternative for VXWORKS when ospl
+ * extended to include VXWORKS - function not called by 'old' (vxworks) ospl
+ */
+
+/** \brief Terminate process \b pid by progressive use of stronger kill
+ * signals followed by \b checkcount cycles of status tests to confirm
+ * action of kill signal. Checkcount cycles are 100ms long.
+ * Blocking state is passed via \b isblocking
+ *
+ * \b returns appropriate \b os_resultSuccess or Fail following final
+ * status check
+ */
+
+os_result
+os_procServiceDestroy(
+    os_int32 pid,
+    os_boolean isblocking,
+    os_int32 checkcount)
+{
+    int killResult;
+    os_result osr = os_resultFail;
+    os_time sleepTime;
+    int waitPid;
+    int exitStatus;
+    os_int32 sleepCount = 0;
+    os_procId pidgrp;
+
+    /* Send the TERM signal to the spliced, which should cause the spliced  and
+     * its own services to terminate cleanly.  To check spliced has terminated
+     * call the waitForProcess function (up to the serviceTerminatePeriod limit).
+     * If it has not terminated, we take more evasive action by sending the
+     * KILL  signal and then perform the same test.  The results of that are then
+     * reported.
+     */
+
+    printf("Wait %.1f seconds for all processes to terminate\n", checkcount/10.0f);
+    pidgrp = getpgid(pid); /* in case needed by killgrp and avoids reading from file */
+
+    killResult = kill (pid, SIGTERM);
+
+    /* wait for process */
+
+    /* use 10th of a second sleep periods */
+    sleepTime.tv_sec  = 0;
+    sleepTime.tv_nsec = 100000000;
+    sleepCount = checkcount;
+
+    while (sleepCount > 0)
+    {
+        if (isblocking)
+        {
+            /* Unless it has been waited for with wait or waitpid, a child process
+             * that terminates becomes a "zombie".   That is the case in blocking
+             * mode : we cannot just do the kill (pid, 0) test, since the 0 signal
+             * will always be delivered to the zombie.
+             * Instead, we have to do the waitpid test, and if it returns successfully,
+             * record its exit status.
+             */
+            waitPid = waitpid(pid, &exitStatus, WNOHANG);
+            if(waitPid > 0)
+            {
+                /* the process has now terminated, obtain its exit status */
+
+                OS_REPORT_3(OS_INFO, "setExitStatus", 0,
+                    "Process spliced <%d> %s %d",
+                    pid,
+                    WIFEXITED(exitStatus) ? "exited normally, exit status:" : (
+                        WIFSIGNALED(exitStatus) ? "terminated due to an unhandled signal:" : "stopped with an unknown status"),
+                        WIFEXITED(exitStatus) ? WEXITSTATUS(exitStatus) : (
+                        WIFSIGNALED(exitStatus) ? WTERMSIG(exitStatus) : -1));
+
+                osr = os_resultSuccess;
+                break;
+            }
+            else if (waitPid == -1 && errno == ECHILD)
+            {
+                /* already gone, no exit status information available */
+                osr = os_resultSuccess;
+                break;
+            }
+        }
+        else if (kill(pid, 0) == -1)
+        {
+            /* unable to send signal to the process so it must have terminated */
+            osr = os_resultSuccess;
+            break;
+        }
+
+        if (sleepCount % 10 == 0)
+        {
+           /* Only print 1 . per second */
+            printf (".");
+            fflush(stdout);
+        }
+        os_nanoSleep(sleepTime);    /* shutdown attempt interval */
+        sleepCount--;
+
+    }
+
+    /* since (unlike windows) associated processes are not killed explictly
+     * need to attempt killgrp before escalating kill signal */
+
+    if(killpg(pidgrp, 0) == 0)     /* is this ok for blocking? */
+    {
+        killResult = killpg (pidgrp, SIGKILL);
+        OS_REPORT_2(OS_INFO, "removeProcesses", 0, "Sent KILL signal to pg %d - killpg returned %d", pidgrp, killResult);
+        if (killResult == 0)
+        {
+            osr = os_resultSuccess;
+        }
+        else
+        {
+            osr = os_resultFail;
+        }
+    }
+
+    if (osr != os_resultSuccess)
+    {
+        killResult = kill (pid, SIGKILL);   /* escalate kill signal */
+
+        /* wait for process */
+
+        sleepCount = checkcount;
+        osr = os_resultFail;
+
+        while (sleepCount > 0)
+        {
+            if (isblocking)
+            {
+                /* Unless it has been waited for with wait or waitpid, a child process
+                 * that terminates becomes a "zombie".   That is the case in blocking
+                 * mode : we cannot just do the kill (pid, 0) test, since the 0 signal
+                 * will always be delivered to the zombie.
+                 * Instead, we have to do the waitpid test, and if it returns successfully,
+                 * record its exit status.
+                 */
+                waitPid = waitpid(pid, &exitStatus, WNOHANG);
+                if(waitPid > 0)
+                {
+                    /* the process has now terminated, obtain its exit status */
+
+                    OS_REPORT_3(OS_INFO, "setExitStatus", 0,
+                        "Process spliced <%d> %s %d",
+                        pid,
+                        WIFEXITED(exitStatus) ? "exited normally, exit status:" : (
+                            WIFSIGNALED(exitStatus) ? "terminated due to an unhandled signal:" : "stopped with an unknown status"),
+                            WIFEXITED(exitStatus) ? WEXITSTATUS(exitStatus) : (
+                            WIFSIGNALED(exitStatus) ? WTERMSIG(exitStatus) : -1));
+
+                    osr = os_resultSuccess;
+                    break;
+                }
+                else if (waitPid == -1 && errno == ECHILD)
+                {
+                    /* already gone, no exit status information available */
+                    osr = os_resultSuccess;
+                    break;
+                }
+            }
+            else if (kill(pid, 0) == -1)
+            {
+                /* unable to send signal to the process so it must have terminated */
+                osr = os_resultSuccess;
+                break;
+            }
+
+            if (sleepCount % 10 == 0)
+            {
+               /* Only print 1 . per second */
+                printf (".");
+                fflush(stdout);
+            }
+
+            os_nanoSleep(sleepTime);  /* shutdown attempt interval */
+            sleepCount--;
+
+        }
+
+        if(killpg(pidgrp, 0) == 0)     /* is this ok for blocking? */
+        {
+            killResult = killpg (pidgrp, SIGKILL);
+            OS_REPORT_2(OS_INFO, "removeProcesses", 0, "Sent KILL signal to pg %d - killpg returned %d", pidgrp, killResult);
+            if (killResult == 0)
+            {
+                osr = os_resultSuccess;
+            }
+            else
+            {
+                osr = os_resultFail;
+            }
+        }
+    }
+
+    printf ("\n");
+    fflush(stdout);
+
+    return osr;
+}
+
+#endif
 
 /** \brief Send a signal to the identified process
  *
@@ -847,12 +1061,12 @@ os_procDestroy(
     os_result rv;
 
     if (kill(procId, signal) == -1) {
-	if (errno == EINVAL) {
-	    rv = os_resultInvalid;
-	} else if (errno == ESRCH) {
-	    rv = os_resultUnavailable;
-	} else {
-	    rv = os_resultFail;
+        if (errno == EINVAL) {
+            rv = os_resultInvalid;
+        } else if (errno == ESRCH) {
+            rv = os_resultUnavailable;
+        } else {
+            rv = os_resultFail;
         }
     } else {
         rv = os_resultSuccess;
@@ -860,8 +1074,8 @@ os_procDestroy(
     return rv;
 }
 
-#ifndef VXWORKS_RTP
 
+#if !defined VXWORKS_RTP && !defined OS_RTEMS_DEFS_H  && !defined PIKEOS_POSIX
 /** \brief Get the process effective scheduling class
  *
  * Possible Results:
@@ -920,7 +1134,7 @@ os_procAttrGetPriority(void)
 }
 #endif
 
-#ifndef _POSIX_MEMLOCK
+#if !defined ( OSPL_NO_VMEM ) && !defined(_POSIX_MEMLOCK)
 #error "Error: the posix implementation on this platform does not support page locking!"
 #endif
 
@@ -928,6 +1142,7 @@ os_result
 os_procMLockAll(
     os_uint flags)
 {
+#ifndef OSPL_NO_VMEM
     int f;
     int r;
     os_result result;
@@ -957,9 +1172,12 @@ os_procMLockAll(
     }
 
     return result;
+#else
+    return os_resultSuccess;
+#endif
 }
 
-#ifndef _POSIX_MEMLOCK_RANGE
+#if !defined( OSPL_NO_VMEM ) && ! defined( _POSIX_MEMLOCK_RANGE )
 #error "Error: the posix implementation on this platform does not support page range locking!"
 #endif
 
@@ -968,6 +1186,7 @@ os_procMLock(
     const void *addr,
     os_address length)
 {
+#ifndef OSPL_NO_VMEM
     int r;
     os_result result;
 
@@ -987,6 +1206,9 @@ os_procMLock(
         result = os_resultFail;
     }
     return result;
+#else
+    return os_resultSuccess;
+#endif
 }
 
 os_result
@@ -994,6 +1216,7 @@ os_procMUnlock(
     const void *addr,
     os_address length)
 {
+#ifndef OSPL_NO_VMEM
     int r;
     os_result result;
 
@@ -1013,6 +1236,9 @@ os_procMUnlock(
         result = os_resultFail;
     }
     return result;
+#else
+    return os_resultSuccess;
+#endif
 }
 
 /** \brief  re-enable paging for calling process.
@@ -1023,6 +1249,7 @@ os_procMUnlock(
 os_result
 os_procMUnlockAll(void)
 {
+#ifndef OSPL_NO_VMEM
     int r;
     os_result result;
 
@@ -1033,6 +1260,9 @@ os_procMUnlockAll(void)
         result = os_resultFail;
     }
     return result;
+#else
+    return os_resultSuccess;
+#endif
 }
 
 #endif

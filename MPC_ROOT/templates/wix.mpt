@@ -1,0 +1,16 @@
+// -*- MPC -*-
+// $Id$
+
+conditional_include "common"
+conditional_include "windowscommon"
+
+configurations     = Debug Release
+
+conditional_include "vc10platforms"
+
+Release {
+}
+
+Debug {
+    debug_prj        = 1
+}

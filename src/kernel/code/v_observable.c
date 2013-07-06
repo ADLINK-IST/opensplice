@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -138,12 +138,6 @@ v_observableFree(
 {
     v_proxy found;
 
-    C_STRUCT(v_event) e;
-
-    e.kind = V_EVENT_OBJECT_DESTROYED;
-    e.source = v_publicHandle(v_public(o));
-    e.userData = NULL;
-
     assert(o != NULL);
     assert(C_TYPECHECK(o,v_observable));
 
@@ -179,10 +173,12 @@ v_proxyNotify(
     v_proxy p = v_proxy(proxy);
     struct proxyNotifyArg *a = (struct proxyNotifyArg *)arg;
     v_observer o;
+    v_observer* oPtr;
 #ifdef _USE_HANDLE_
     v_handleResult r;
 
-    r = v_handleClaim(p->source,(v_object *)&o);
+    oPtr = &o;
+    r = v_handleClaim(p->source,(v_object *)oPtr);
     if (r == V_HANDLE_OK) {
 #else
         o = p->source2;

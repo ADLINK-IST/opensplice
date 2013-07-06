@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -41,10 +41,10 @@ typedef struct c_time {
     c_ulong nanoseconds;
 } c_time;
 
-static const c_time C_TIME_ZERO         = {0,0};
-static const c_time C_TIME_INFINITE     = {0x7fffffff,0x7fffffffU};
-static const c_time C_TIME_MIN_INFINITE = {-0x7fffffff,0x7fffffffU};
-static const c_time C_TIME_INVALID      = {-1, 0xffffffffU};
+OS_API extern const c_time C_TIME_ZERO;
+OS_API extern const c_time C_TIME_INFINITE;
+OS_API extern const c_time C_TIME_MIN_INFINITE;
+OS_API extern const c_time C_TIME_INVALID;
 
 OS_API c_time      c_timeNormalize(c_time t);
 OS_API c_equality  c_timeCompare (c_time t1, c_time t2);

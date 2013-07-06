@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -273,9 +273,10 @@ gapi_dataReaderQosDefault = {
         },
         /* gapi_readerDataLifecycleQosPolicy reader_data_lifecycle */
         {
-            GAPI_DURATION_INFINITE, /* gapi_duration_t autopurge_nowriter_samples_delay */
-            GAPI_DURATION_INFINITE, /* gapi_duration_t autopurge_disposed_samples_delay */
-            TRUE /* enable_invalid_samples */
+            GAPI_DURATION_INFINITE,             /* gapi_duration_t autopurge_nowriter_samples_delay */
+            GAPI_DURATION_INFINITE,             /* gapi_duration_t autopurge_disposed_samples_delay */
+            TRUE,                               /* enable_invalid_samples */
+            { GAPI_MINIMUM_INVALID_SAMPLES }    /* invalid_sample_visibility */
         },
         /* gapi_subscriptionKeyQosPolicy partition */
         {
@@ -338,7 +339,7 @@ gapi_dataWriterQosDefault = {
         },
         /* gapi_reliabilityQosPolicy reliability */
         {
-            GAPI_BEST_EFFORT_RELIABILITY_QOS, /* gapi_reliabilityQosPolicyKind kind */
+            GAPI_RELIABLE_RELIABILITY_QOS, /* gapi_reliabilityQosPolicyKind kind */
             DEFAULT_MAX_BLOCKING_TIME, /* gapi_duration_t max_blocking_time */
             FALSE                      /* gapi_boolean synchronous */
         },
@@ -780,6 +781,19 @@ validHistoryQosPolicy (
 }
 
 static gapi_boolean
+validInvalidSampleVisibilityQosPolicy(
+    const gapi_invalidSampleVisibilityQosPolicy *policy)
+{
+    gapi_boolean valid = TRUE;
+    if ((policy->kind != GAPI_ALL_INVALID_SAMPLES) &&
+        (policy->kind != GAPI_MINIMUM_INVALID_SAMPLES) &&
+        (policy->kind != GAPI_NO_INVALID_SAMPLES)) {
+        valid = FALSE;
+    }
+    return valid;
+}
+
+static gapi_boolean
 validWriterDataLifecycleQosPolicy (
     const gapi_writerDataLifecycleQosPolicy *policy,
     const gapi_context                      *context,
@@ -829,6 +843,15 @@ validReaderDataLifecycleQosPolicy (
                                    GAPI_ERRORCODE_INVALID_VALUE);
         valid = FALSE;
     }
+
+    if (!validInvalidSampleVisibilityQosPolicy(&policy->invalid_sample_visibility)) {
+        gapi_errorInvalidQosPolicy(context, qosId,
+                                   GAPI_READERDATALIFECYCLE_QOS_POLICY_ID,
+                                   GAPI_QOS_POLICY_ATTRIBUTE_INVALID_SAMPLE_VISIBILITY_ID,
+                                   GAPI_ERRORCODE_INVALID_VALUE);
+        valid = FALSE;
+    }
+
     return valid;
 }
 
@@ -1410,12 +1433,44 @@ gapi_dataReaderQosIsConsistent (
         }
     }
 
-    if ( qos->time_based_filter.minimum_separation.sec     != GAPI_DURATION_ZERO_SEC ||
-         qos->time_based_filter.minimum_separation.nanosec != GAPI_DURATION_ZERO_NSEC ) {
+    if (qos->reader_data_lifecycle.enable_invalid_samples == FALSE) {
+        gapi_errorDeprecatedQosPolicy(context,
+                                      GAPI_QOS_DATAREADER_ID,
+                                      GAPI_READERDATALIFECYCLE_QOS_POLICY_ID,
+                                      GAPI_QOS_POLICY_ATTRIBUTE_ENABLE_INVALID_SAMPLES_ID,
+                                      GAPI_QOS_DATAREADER_ID,
+                                      GAPI_READERDATALIFECYCLE_QOS_POLICY_ID,
+                                      GAPI_QOS_POLICY_ATTRIBUTE_INVALID_SAMPLE_VISIBILITY_ID);
+        if (qos->reader_data_lifecycle.invalid_sample_visibility.kind != GAPI_MINIMUM_INVALID_SAMPLES) {
+            gapi_errorInconsistentQosPolicy(context,
+                                            GAPI_QOS_DATAREADER_ID,
+                                            GAPI_READERDATALIFECYCLE_QOS_POLICY_ID,
+                                            GAPI_QOS_POLICY_ATTRIBUTE_ENABLE_INVALID_SAMPLES_ID,
+                                            GAPI_READERDATALIFECYCLE_QOS_POLICY_ID,
+                                            GAPI_QOS_POLICY_ATTRIBUTE_INVALID_SAMPLE_VISIBILITY_ID,
+                                            GAPI_ERRORCODE_INCONSISTENT_VALUE);
+            return GAPI_RETCODE_INCONSISTENT_POLICY;
+        }
+    }
+
+    if ((qos->deadline.period.sec < qos->time_based_filter.minimum_separation.sec) ||
+        ((qos->deadline.period.sec == qos->time_based_filter.minimum_separation.sec) &&
+         (qos->deadline.period.nanosec < qos->time_based_filter.minimum_separation.nanosec))) {
+        gapi_errorInconsistentQosPolicy(context,
+                                        GAPI_QOS_DATAREADER_ID,
+                                        GAPI_DEADLINE_QOS_POLICY_ID,
+                                        GAPI_QOS_POLICY_ATTRIBUTE_PERIOD_ID,
+                                        GAPI_TIMEBASEDFILTER_QOS_POLICY_ID,
+                                        GAPI_QOS_POLICY_ATTRIBUTE_MINIMUM_SEPARATION_ID,
+                                        GAPI_ERRORCODE_INCONSISTENT_VALUE);
+        return GAPI_RETCODE_INCONSISTENT_POLICY;
+    }
+
+    if (qos->reader_data_lifecycle.invalid_sample_visibility.kind == GAPI_ALL_INVALID_SAMPLES) {
         gapi_errorUnsupportedQosPolicy(context,
                                        GAPI_QOS_DATAREADER_ID,
-                                       GAPI_TIMEBASEDFILTER_QOS_POLICY_ID,
-                                       GAPI_QOS_POLICY_ATTRIBUTE_MINIMUM_SEPARATION_ID,
+                                       GAPI_READERDATALIFECYCLE_QOS_POLICY_ID,
+                                       GAPI_QOS_POLICY_ATTRIBUTE_INVALID_SAMPLE_VISIBILITY_ID,
                                        GAPI_ERRORCODE_UNSUPPORTED_VALUE);
         return GAPI_RETCODE_UNSUPPORTED;
     }

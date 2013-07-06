@@ -8,3 +8,6 @@ analyse:
 
 clean:
 	@rm -rf bld/$(SPLICE_TARGET)
+
+osplconf osplconf-update: bld/$(SPLICE_TARGET)/makefile
+	@$(MAKE) -C bld/$(SPLICE_TARGET) $@

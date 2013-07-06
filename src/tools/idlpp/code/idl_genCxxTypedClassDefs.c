@@ -1,18 +1,19 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl_program.h"
 #include "idl_scope.h"
 #include "idl_genCxxTypedClassDefs.h"
 #include "idl_genCxxHelper.h"
+#include "idl_genLanguageHelper.h"
 #include "idl_genSplHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_keyDef.h"
@@ -21,6 +22,7 @@
 #include "os_heap.h"
 #include "os_stdlib.h"
 #include "c_typebase.h"
+#include <ctype.h>
 
 static idl_macroAttrib idlpp_macroAttrib;
 static idl_streamIn idlpp_inStream;
@@ -47,6 +49,9 @@ idl_fileOpen(
     struct os_stat tmplStat;
     unsigned int nRead;
 
+    (void) scope; /* Unused */
+    (void) userData; /* Unused */
+
     tmplPath = os_getenv("OSPL_TMPL_PATH");
     orbPath = os_getenv("OSPL_ORB_PATH");
     if (tmplPath == NULL) {
@@ -59,7 +64,14 @@ idl_fileOpen(
     }
 
     /* Prepare file header template */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ccorbaCxxClassSpecHeader", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
+    if (idl_getIsISOCpp())
+    {
+        snprintf(tmplFileName, sizeof(tmplFileName), "%s%c%s%cISOCxxClassSpecHeader", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
+    }
+    else
+    {
+        snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ccorbaCxxClassSpecHeader", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
+    }
     /* QAC EXPECT 3416; No side effects here */
     if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -113,6 +125,24 @@ static void
 idl_fileClose(
     void *userData)
 {
+    idl_macro macro;
+    os_char* tmpName;
+    size_t i;
+    (void) userData;
+    if (idl_getIsISOCpp())
+    {
+        macro = idl_macroSetGet (idlpp_macroSet, "basename");
+        if (macro)
+        {
+            tmpName = os_strdup(idl_macroValue(macro));
+            for(i = 0; i < strlen(tmpName); i++)
+            {
+                tmpName[i] = toupper (tmpName[i]);
+            }
+            idl_fileOutPrintf(idl_fileCur(), "#define %s_DCPS_TYPESUPPORT_DEFINED\n", tmpName);
+            os_free(tmpName);
+        }
+    }
     idl_fileOutPrintf(idl_fileCur(), "#endif\n");
 }
 
@@ -122,6 +152,9 @@ idl_moduleOpen(
     const char *name,
     void *userData)
 {
+    (void) scope; /* Unused */
+    (void) userData; /* Unused */
+
     idl_printIndent(idlpp_indent_level);
     idl_fileOutPrintf(idl_fileCur(), "namespace %s {\n", idl_cxxId(name));
     idl_fileOutPrintf(idl_fileCur(), "\n");
@@ -133,6 +166,8 @@ static void
 idl_moduleClose(
     void *userData)
 {
+    (void) userData; /* Unused */
+
     idlpp_indent_level--;
     idl_printIndent(idlpp_indent_level);
     idl_fileOutPrintf(idl_fileCur(), "}\n");
@@ -148,6 +183,9 @@ idl_structureOpen(
 {
     c_char spaces[20];
     idl_tmplExp te;
+
+    (void) structSpec; /* Unused */
+    (void) userData; /* Unused */
 
     /* QAC EXPECT 3416; No side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
@@ -176,6 +214,9 @@ idl_unionOpen(
     c_char spaces[20];
     idl_tmplExp te;
 
+    (void) unionSpec; /* Unused */
+    (void) userData; /* Unused */
+
     /* QAC EXPECT 3416; No side effects here */
     if (idl_keyResolve(idl_keyDefDefGet(), scope, name) != NULL) {
 	/* keylist defined for this union */
@@ -202,6 +243,8 @@ idl_typedefOpenClose(
 {
     c_char spaces[20];
     idl_tmplExp te;
+
+    (void) userData; /* Unused */
 
     if ((idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tstruct ||
         idl_typeSpecType(idl_typeDefRefered(defSpec)) == idl_tunion) &&

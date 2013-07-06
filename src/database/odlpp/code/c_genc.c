@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -177,7 +177,7 @@ c_getObjectState(
 {
     c_objectState found;
 
-    found = c_iterResolve(context->processing,c_collectCompare,o);
+    found = c_iterResolve(context->processing,(c_iterResolveCompare)c_collectCompare,o);
     if (found == NULL) {
         return G_UNKNOWN;
     }
@@ -192,7 +192,7 @@ c_setObjectState(
 {
     c_objectState template,found;
 
-    found = c_iterResolve(context->processing,c_collectCompare,o);
+    found = c_iterResolve(context->processing,(c_iterResolveCompare)c_collectCompare,o);
     if (found != NULL) {
         found->kind = kind;
     } else {
@@ -224,7 +224,7 @@ c_genDependancies(
     }
     switch(o->kind) {
     case M_MODULE:
-        c_metaWalk(c_metaObject(o), c_genDependancies, context);
+        c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_genDependancies, context);
     break;
     case M_ATTRIBUTE:
     case M_RELATION:
@@ -252,7 +252,7 @@ c_genDependancies(
                 _TYPEGEN_(c_interface(o)->inherits[i]);
             }
         }
-        c_metaWalk(c_metaObject(o), c_genDependancies, context);
+        c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_genDependancies, context);
     break;
     case M_INTERFACE:
         if (c_interface(o)->inherits != NULL) {
@@ -260,7 +260,7 @@ c_genDependancies(
                 _TYPEGEN_(c_interface(o)->inherits[i]);
             }
         }
-        c_metaWalk(c_metaObject(o), c_genDependancies, context);
+        c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_genDependancies, context);
     break;
     case M_COLLECTION:
         _TYPEGEN_(c_collectionType(o)->subType);
@@ -391,7 +391,7 @@ c_genObjectSpec(
         module = c_metaModule(context->scope);
     }
 
-	/* Get the module that contains the processed object. */
+        /* Get the module that contains the processed object. */
     scope = c_metaModule(o);
 
     /* Check if this meta object is a c_base type, if true then skip
@@ -410,7 +410,7 @@ c_genObjectSpec(
         /* If this scope is not processed before then include it */
         if (c_getObjectState(context,scope) == G_UNKNOWN) {
             /* Do not output here, this has been done in c_genIncludesSpec */
-            
+
             if (c_baseObject(o)->kind == M_MODULE) {
                 defIn = o->definedIn;
                 while (defIn && (defIn != context->scope)) {
@@ -487,7 +487,7 @@ c_genObjectBody(
     } else {
         module = c_metaModule(context->scope);
     }
-	/* Get the module that contains the processed object. */
+        /* Get the module that contains the processed object. */
     scope = c_metaModule(o);
 
     /* Check if this meta object is a c_base type, if true then skip
@@ -495,7 +495,7 @@ c_genObjectBody(
     if (scope == NULL) {
         return;
     }
-    
+
     name = c_metaName(scope);
     if (name == NULL) { /* top-level module */
         return;
@@ -621,8 +621,6 @@ c_specifierSpec(
         case M_TYPEDEF:
         case M_CLASS:
         case M_INTERFACE:
-        case M_EXTENT:
-        case M_EXTENTSYNC:
             c_out(context,"%s%s",typeName,newName);
         break;
         case M_ENUMERATION:
@@ -712,11 +710,11 @@ c_gen_C(
 
     context.processing = c_iterNew(NULL);
     context.action = c_genObjectSpec;
-    c_metaWalk(c_metaObject(topLevel), c_moduleSpec, &context);
+    c_metaWalk(c_metaObject(topLevel), (c_metaWalkAction)c_moduleSpec, &context);
 
     context.processing = c_iterNew(NULL);
     context.action = c_genObjectBody;
-    c_metaWalk(c_metaObject(topLevel), c_moduleBody, &context);
+    c_metaWalk(c_metaObject(topLevel), (c_metaWalkAction)c_moduleBody, &context);
 }
 
 void
@@ -800,12 +798,12 @@ c_moduleSpec(
     newContext.processing = context->processing;
     newContext.action = c_genObjectSpec;
 
-    c_metaWalk(c_metaObject(o), c_genObjectSpec, &newContext);
+    c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_genObjectSpec, &newContext);
 
     c_outi(&newContext,0,"c_bool\n");
     c_outi(&newContext,0,"load%s(\n",moduleName);
     c_outi(&newContext,1,"c_base base);\n\n");
-    
+
     c_outi(&newContext,0,"\n#endif /* MODULE_%s_HEADER */\n\n",moduleName);
 
     fclose(newContext.stream);
@@ -865,7 +863,7 @@ c_moduleBody(
            moduleName);
     c_outi(&newContext,1,"scope = module;\n");
 
-    c_metaWalk(c_metaObject(o), c_genObjectBody, &newContext);
+    c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_genObjectBody, &newContext);
 
     c_outi(&newContext,1,"result = TRUE;\n");
     c_outi(&newContext,1,"c_free(module);\n");
@@ -1394,7 +1392,7 @@ c_classBody(
         for (i=0; i<c_arraySize(o->keys); i++) {
         }
     }
-    c_metaWalk(c_metaObject(o), c_propertyBody, context);
+    c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_propertyBody, context);
     context->scope = scope;
     context->level--;
     c_outi(context,1,"c_metaFinalize(scope);\n");
@@ -1464,7 +1462,7 @@ c_classSpec(
     }
 
     iter = c_iterNew(NULL);
-    c_metaWalk(c_metaObject(o),getProperties,iter);
+    c_metaWalk(c_metaObject(o),(c_metaWalkAction)getProperties,iter);
     length = c_iterLength(iter);
     if (length > 0) {
         properties = (c_property *)os_malloc(sizeof(c_property) * length);
@@ -1481,7 +1479,7 @@ c_classSpec(
     context->level--;
     c_outi(context,0,"};\n\n");
 
-    c_metaWalk(c_metaObject(o), c_operationSpec, context);
+    c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_operationSpec, context);
     context->scope = scope;
 }
 
@@ -1506,10 +1504,10 @@ c_interfaceSpec(
 
     c_outi(context,0,"C_STRUCT(%s) {\n", name);
     context->level++;
-    c_metaWalk(c_metaObject(o), c_propertySpec, context);
+    c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_propertySpec, context);
     context->level--;
     c_outi(context,0,"};\n\n");
-    c_metaWalk(c_metaObject(o), c_operationSpec, context);
+    c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_operationSpec, context);
 }
 
 void

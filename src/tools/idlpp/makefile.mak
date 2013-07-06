@@ -5,8 +5,8 @@ TARGET_EXEC	:= idlpp
 
 include	$(OSPL_HOME)/setup/makefiles/target.mak
 
-LDLIBS += -l$(DDS_CPP) -l$(DDS_UTIL) -l$(DDS_SERIALIZATION)
-LDLIBS += -l$(DDS_DATABASE) -l$(DDS_OS)
+LDLIBS += -l$(DDS_CPP) -l$(DDS_SERIALIZATION)
+LDLIBS += -l$(DDS_DATABASE) -l$(DDS_UTIL) -l$(DDS_OS)
 
 CINCS += -I$(OSPL_HOME)/src/database/database/include
 CINCS += -I$(OSPL_HOME)/src/database/serialization/include
@@ -37,6 +37,9 @@ $(OPENFUSION_1_5_1_TMPLS): $(CCPP_TEMPLATES)
 
 $(OPENFUSION_1_6_1_TMPLS): $(CCPP_TEMPLATES)
 	cp $(CCPP_TEMPLATES) $(CCPP_TMPL_PATH)/DDS_OpenFusion_1_6_1
+
+$(DDS_ACE_TAO_5_6_6_TMPLS): $(CCPP_TEMPLATES)
+	cp $(CCPP_TEMPLATES) $(CCPP_TMPL_PATH)/DDS_ACE_TAO_5_6_6
 
 $(SACPP_TMPLS): $(CCPP_TEMPLATES)
 	cp $(CCPP_TEMPLATES) $(SACPP_TMPL_PATH)

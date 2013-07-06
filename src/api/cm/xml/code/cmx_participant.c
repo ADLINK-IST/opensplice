@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "cmx__participant.h"
@@ -42,8 +42,28 @@ cmx_participantNew(
     u_result ur;
     v_participantQos pqos;
     cmx_entityKernelArg kernelArg;
+    os_int32 domainId = -1;
+    c_char *tempUri = NULL;
+    c_char buf[100] = {0};
+
+    if (strstr(uri,"file://") == uri) {
+        /* uri starts with file:// so valid */
+    } else if (sscanf (uri,"%d%s",&domainId,buf) != 0) {
+        /* uri contains an integer, convert to valid string uri*/
+        if (buf[0]) {
+            /* string after integer no valid integer domain */
+        } else {
+            tempUri = u_userDomainIdToDomainName(domainId);
+            if (tempUri) {
+               uri = tempUri;
+            }
+        }
+    } /* else uri is a name */
 
     p = u_participantNew(uri, timeout, name, NULL, TRUE);
+    if (tempUri) {
+        os_free(tempUri);
+    }
     result = NULL;
 
     if(p != NULL){
@@ -84,13 +104,9 @@ c_char*
 cmx_participantInit(
     v_participant entity)
 {
-    char buf[512];
-    v_participant participant;
+    assert(C_TYPECHECK(entity, v_participant));
 
-    participant = v_participant(entity);
-    os_sprintf(buf, "<kind>PARTICIPANT</kind>");
-
-    return (c_char*)(os_strdup(buf));
+    return (c_char*)(os_strdup("<kind>PARTICIPANT</kind>"));
 }
 
 c_char*

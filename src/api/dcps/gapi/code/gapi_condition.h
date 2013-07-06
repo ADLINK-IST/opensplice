@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef GAPI_CONDITION_H
@@ -59,10 +59,10 @@
         (_ReadCondition(gapi_objectPeek(h,OBJECT_KIND_READCONDITION)))
 
 #define gapi_queryConditionClaim(h,r) \
-        (_QueryCondition(gapi_objectClaim(h,OBJECT_KIND_QUERYCONDITION,r))) 
+        (_QueryCondition(gapi_objectClaim(h,OBJECT_KIND_QUERYCONDITION,r)))
 
 #define gapi_queryConditionClaimNB(h,r) \
-        (_QueryCondition(gapi_objectClaimNB(h,OBJECT_KIND_QUERYCONDITION,r))) 
+        (_QueryCondition(gapi_objectClaimNB(h,OBJECT_KIND_QUERYCONDITION,r)))
 
 
 #define _GuardConditionAlloc() \
@@ -156,15 +156,6 @@ _ConditionRemoveWaitset (
 _GuardCondition
 _GuardConditionNew (
     void);
-
-gapi_returnCode_t
-_ReadConditionInit (
-    _ReadCondition readCondition,
-    const gapi_sampleStateMask sample_states,
-    const gapi_viewStateMask view_states,
-    const gapi_instanceStateMask instance_states,
-    _DataReader datareader,
-    _DataReaderView datareaderview);
 
 void
 _ReadConditionDispose (

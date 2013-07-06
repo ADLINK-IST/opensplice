@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -93,7 +93,7 @@ v_networkReaderNew(
         reader->ignoreReliabilityQoS = ignoreReliabilityQoS;
         reader->queueCache = c_arrayNew(queueType, 2*NW_MAX_QUEUE_CACHE_PRIO);
         for( i= 0; i < 2*NW_MAX_QUEUE_CACHE_PRIO; i++) {
-            reader->queueCache[i] = NULL;    
+            reader->queueCache[i] = NULL;
         }
         c_free(queueType);
         /* Add to subscriber */
@@ -136,13 +136,15 @@ v_networkReaderCreateQueue(
     v_networkChannelStatistics ncs;
     v_kernel kernel;
     v_networking n;
+    v_participant p;
     kernel = v_objectKernel(reader);
 
 
 
     if (reader->nofQueues < NW_MAX_NOF_QUEUES) {
+        p = v_participant(v_subscriber(v_reader(reader)->subscriber)->participant);
 
-        if (v_isEnabledStatistics(kernel, V_STATCAT_NETWORKING)) {
+        if ((v_objectKind(p) == K_NETWORKING) && (v_isEnabledStatistics(kernel, V_STATCAT_NETWORKING))) {
             nqs = v_networkQueueStatisticsNew(kernel,name);
             ncs = v_networkChannelStatisticsNew(kernel,name);
         } else {
@@ -175,7 +177,7 @@ v_networkReaderCreateQueue(
 
             if (ncs != NULL) {
                 /* add channel to the networking statistics also */
-                n = v_networking(v_subscriber(v_reader(reader)->subscriber)->participant);
+                n = v_networking(p);
                 nws = (v_networkingStatistics)v_entity(n)->statistics;
                 nws->channels[nws->channelsCount]=ncs;
                 nws->channelsCount++;
@@ -282,7 +284,7 @@ v_networkReaderSelectBestQueueByReliability(
             bestQueue = reader->defaultQueue;
         }
         if (prio < NW_MAX_QUEUE_CACHE_PRIO) {
-            /* Store found bestQueue in the cache, while maintaining 
+            /* Store found bestQueue in the cache, while maintaining
              * correct reference counts on the Queues
              */
             if (reliable) {
@@ -517,47 +519,6 @@ v_networkReaderFree(
 
 
 /* ------------------------ Subscription/Unsubscription --------------------- */
-
-static void
-v_networkReaderEntrySubscribe(
-    c_object o,
-    c_voidp arg)
-{
-    /* Note: function is left here for historical reasons only. It should not
-     * be used anymore; subscription should be done by networking daemon.
-     * Remove the function at the moment you are sure that you will never
-     * need it anymore */
-    assert(FALSE);
-}
-
-
-c_bool
-v_networkReaderSubscribe(
-    v_networkReader reader,
-    v_partition partition)
-{
-    /* Note: function is left here for historical reasons only. It should not
-     * be used anymore; subscription should be done by networking daemon
-     * Remove the function at the moment you are sure that you will never
-     * need it anymore */
-    assert(FALSE);
-
-    return TRUE;
-}
-
-
-c_bool
-v_networkReaderSubscribeGroup(
-    v_networkReader reader,
-    v_group group)
-{
-    assert(C_TYPECHECK(reader, v_networkReader));
-    assert(C_TYPECHECK(group, v_group));
-
-    v_networkReaderEntrySubscribe(group, reader);
-
-    return TRUE;
-}
 
 static c_bool
 v_networkReaderEntryUnSubscribe(

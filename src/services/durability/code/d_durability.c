@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -18,7 +18,6 @@
 #include "d_table.h"
 #include "d_misc.h"
 #include "d_status.h"
-#include "d_statusRequest.h"
 #include "d_group.h"
 #include "d_fellow.h"
 #include "d_actionQueue.h"
@@ -38,6 +37,8 @@
 #include "os_heap.h"
 #include "os_time.h"
 #include "d_store.h"
+#include "os.h"
+#include "c_iterator.h"
 
 #ifdef INTEGRITY
 #include "include/os_getRSObjects.h"
@@ -132,7 +133,7 @@ d_durabilityWatchSpliceDaemon(
                     addr = d_networkAddressUnaddressed();
                     publisher = d_adminGetPublisher(durability->admin);
                     status = d_statusNew(durability->admin);
-                    d_message(status)->senderState = D_STATE_TERMINATING;
+                    d_durabilitySetState(durability, D_STATE_TERMINATING);
                     d_publisherStatusWrite(publisher, status, addr);
                     d_statusFree(status);
                     d_networkAddressFree(addr);
@@ -155,13 +156,10 @@ d_durabilityUpdateLease(
     d_durability durability;
     os_time sleepTime;
     v_duration expiryTime;
-
     durability = d_durability(args);
-
 
     if(d_objectIsValid(d_object(durability), D_DURABILITY) == TRUE){
         sleepTime = durability->configuration->livelinessUpdateInterval;
-
         while(durability->splicedRunning){
             u_serviceRenewLease(durability->service,
                             durability->configuration->livelinessExpiryTime);
@@ -235,6 +233,13 @@ d_durabilityRegisterNameSpaces(
     c_iterWalk (nameSpaces, durabilityRegisterNsWalk, durability);
 }
 
+void
+ospl_durabilityAtExit(
+    void)
+{
+    u_userExit();
+}
+
 d_durability
 d_durabilityNew(
     const c_char* uri,
@@ -270,15 +275,20 @@ d_durabilityNew(
             durability->serviceManager  = u_serviceManagerNew(u_participant(durability->service));
 
             d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Loading durability module...\n");
-            u_entityAction(u_entity(durability->service), d_durabilityLoadModule, NULL);
-
-            d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Reading configuration...\n");
-            durability->configuration = d_configurationNew(durability, serviceName, domainId);
-
-            d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Starting splicedaemon listener...\n");
-            result = u_serviceWatchSpliceDaemon(durability->service, d_durabilityWatchSpliceDaemon, durability);
+            result = u_entityWriteAction(u_entity(durability->service), d_durabilityLoadModule, NULL);
 
             if(result == U_RESULT_OK){
+                d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Reading configuration...\n");
+                if (!(durability->configuration = d_configurationNew(durability, serviceName, domainId))) {
+                    /* Error occured in loading configuration. */
+                    result = U_RESULT_UNDEFINED;
+                }else {
+                    d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Starting splicedaemon listener...\n");
+                    result = u_serviceWatchSpliceDaemon(durability->service, d_durabilityWatchSpliceDaemon, durability);
+                }
+            }
+
+            if((result == U_RESULT_OK) && durability->configuration){
                 durability->admin = d_adminNew(durability);
 
                 if(durability->admin){
@@ -290,11 +300,6 @@ d_durabilityNew(
 
                     /* Initialize listeners */
                     d_durabilityInit(durability);
-
-                    if(durability->splicedRunning == FALSE){
-                        d_durabilityFree(durability);
-                        durability = NULL;
-                    }
                 } else {
                     d_durabilityFree(durability);
                     durability = NULL;
@@ -338,11 +343,7 @@ d_durabilityInit(
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing nameSpacesRequestListener...\n");
         d_subscriberInitNameSpacesRequestListener(subscriber);
     }
-    if(durability->splicedRunning == TRUE){
-        d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing statusRequestListener...\n");
-        d_subscriberInitStatusRequestListener(subscriber);
-    }
-    if(durability->splicedRunning == TRUE){
+   if(durability->splicedRunning == TRUE){
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing statusListener...\n");
         d_subscriberInitStatusListener(subscriber);
     }
@@ -358,12 +359,7 @@ d_durabilityInit(
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing deleteDataListener...\n");
         d_subscriberInitDeleteDataListener(subscriber);
     }
-    if(durability->splicedRunning == TRUE){
-        d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Starting statusRequestListener...\n");
-        result = d_subscriberSetStatusRequestListenerEnabled(subscriber, TRUE);
-        assert(result == TRUE);
-    }
-    if(durability->splicedRunning == TRUE){
+   if(durability->splicedRunning == TRUE){
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Starting groupsRequestListener...\n");
         result = d_subscriberSetGroupsRequestListenerEnabled(subscriber, TRUE);
         assert(result == TRUE);
@@ -456,7 +452,7 @@ d_durabilityDetermineConnectivity(
     if(durability->splicedRunning == TRUE){
 	    myAddr = d_adminGetMyAddress(durability->admin);
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "My address is: '%u'\n", myAddr->systemId);
-        OS_REPORT_1(OS_INFO, D_SERVICE_NAME, 0, "Durability identification is: %u", myAddr->systemId);
+        OS_REPORT_1(OS_INFO, D_SERVICE_NAME, 0, "The durability service can by identified by ID: %u", myAddr->systemId);
         d_networkAddressFree(myAddr);
 
         addr = d_networkAddressUnaddressed();
@@ -632,6 +628,84 @@ determineNameSpaceCompleteness(
 	}
 }
 
+static c_bool
+collectNameSpaces(
+    d_nameSpace nameSpace,
+    void* userData)
+{
+    c_iter nameSpaces;
+
+    nameSpaces = (c_iter)userData;
+    nameSpaces = c_iterInsert(nameSpaces, d_objectKeep(d_object(nameSpace)));
+
+    return TRUE;
+}
+
+static c_bool
+collectFellows(
+    d_fellow fellow,
+    void* userData)
+{
+    c_iter fellows;
+
+    fellows = (c_iter)userData;
+    fellows = c_iterInsert(fellows, d_objectKeep(d_object(fellow)));
+
+    return TRUE;
+}
+
+static void
+doInitialMerge(
+    d_durability durability)
+{
+    c_iter fellows, nameSpaces;
+    d_fellow fellow;
+    d_name fellowRole;
+    d_nameSpace nameSpace;
+    d_networkAddress fellowAddress, fellowMasterAddress;
+
+    fellows = c_iterNew(NULL);
+    d_adminFellowWalk(durability->admin, collectFellows, fellows);
+
+    fellow = d_fellow(c_iterTakeFirst(fellows));
+
+    while(fellow){
+        fellowRole = d_fellowGetRole(fellow);
+        if(d_fellowGetCommunicationState(fellow) == D_COMMUNICATION_STATE_APPROVED) {
+            if(strcmp(durability->configuration->role, fellowRole) != 0){
+                fellowAddress = d_fellowGetAddress(fellow);
+
+                nameSpaces = c_iterNew(NULL);
+                d_fellowNameSpaceWalk(fellow, collectNameSpaces, nameSpaces);
+
+                nameSpace = d_nameSpace(c_iterTakeFirst(nameSpaces));
+
+                while(nameSpace){
+                    fellowMasterAddress = d_nameSpaceGetMaster(nameSpace);
+
+                    if(d_networkAddressEquals(fellowAddress, fellowMasterAddress)){
+                        d_printTimedEvent(durability, D_LEVEL_FINE, D_THREAD_MAIN,
+                            "Investigating initial merge with fellow %d in role %s for nameSpace %s.\n",
+                            fellowAddress->systemId, fellowRole,
+                            d_nameSpaceGetName(nameSpace));
+
+                        d_adminReportMaster(durability->admin, fellow, nameSpace, NULL);
+                    }
+                    d_networkAddressFree(fellowMasterAddress);
+                    d_nameSpaceFree(nameSpace);
+                    nameSpace = d_nameSpace(c_iterTakeFirst(nameSpaces));
+                }
+                c_iterFree(nameSpaces);
+
+                d_networkAddressFree(fellowAddress);
+            }
+            d_fellowFree(fellow);
+            fellow = d_fellow(c_iterTakeFirst(fellows));
+        }
+    }
+    c_iterFree(fellows);
+}
+
 void
 d_durabilityHandleInitialAlignment(
     d_durability durability)
@@ -694,14 +768,14 @@ d_durabilityHandleInitialAlignment(
 
     /* Durability service has finished initial alignment */
     if(durability->splicedRunning == TRUE){
-
     	determineNameSpaceCompleteness (durability, subscriber);
 
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Local groups are complete now.\n");
         d_durabilitySetState(durability, D_STATE_COMPLETE);
         u_serviceChangeState(durability->service, STATE_OPERATIONAL);
-
         d_printTimedEvent(durability, D_LEVEL_INFO, D_THREAD_MAIN, "Durability service up and fully operational.\n");
+
+        doInitialMerge(durability);
     }
 }
 
@@ -779,6 +853,7 @@ d_durabilityLoadModule(
     c_base       base;
     c_bool       loaded;
 
+    OS_UNUSED_ARG(args);
     assert(!args);
     base = c_getBase((c_object)entity);
     loaded = loaddurabilityModule2(base);
@@ -798,14 +873,7 @@ d_durabilityGetConfiguration(
     return config;
 }
 
-#ifdef OSPL_ENV_SHMT
-int
-ospl_main(
-    int argc,
-    char* argv[])
-#else
-OPENSPLICE_MAIN (ospl_durability)
-#endif
+OPENSPLICE_ENTRYPOINT (ospl_durability)
 {
     c_char *uri;
     c_char *serviceName;
@@ -841,6 +909,13 @@ OPENSPLICE_MAIN (ospl_durability)
         tryCount = 0;
         domainId = 1;
 
+#ifdef EVAL_V
+        OS_REPORT(OS_INFO,"d_durability", 0,
+                  "+++++++++++++++++++++++++++++++++++" OS_REPORT_NL
+                  "++ durability EVALUATION VERSION ++" OS_REPORT_NL
+                  "+++++++++++++++++++++++++++++++++++\n");
+#endif
+
         while((stop == FALSE) && (tryCount < maxTries) ){
             stop = TRUE;
             tryCount++;
@@ -856,7 +931,6 @@ OPENSPLICE_MAIN (ospl_durability)
                     /* 200 ms */
                     time.tv_sec = 0;
                     time.tv_nsec = 200000000;
-
                     while(durability->splicedRunning == TRUE){
                         os_nanoSleep(time);
                     }
@@ -933,6 +1007,9 @@ d_durabilityTerminate(
 {
     assert(d_objectIsValid(d_object(durability), D_DURABILITY) == TRUE);
 
+    d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
+            "Unrecoverable error occurred; terminating and reporting as died.");
+    u_serviceChangeState(durability->service, STATE_DIED);
     durability->splicedRunning = FALSE;
 }
 
@@ -1046,6 +1123,7 @@ d_durabilityWaitForAttachToGroup(
     } else {
         result = TRUE;
     }
+
     return result;
 
 }

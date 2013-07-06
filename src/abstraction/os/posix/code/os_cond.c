@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,10 +17,13 @@
  * is mapped onto the posix condition variable
  */
 
+#include <time.h>
 #include "os_cond.h"
 #include <assert.h>
 #include <errno.h>
 #include "os_signature.h"
+#include "os_init.h"
+#include "os_report.h"
 
 /** \brief Initialize the condition variable taking the condition
  *         attributes into account
@@ -31,6 +34,11 @@
  * In case the scope attribute is \b OS_SCOPE_SHARED, the posix
  * condition variable "pshared" attribute is set to \b PTHREAD_PROCESS_SHARED
  * otherwise it is set to \b PTHREAD_PROCESS_PRIVATE.
+ *
+ * When in single process mode, a request for a SHARED variable will
+ * implictly create a PRIVATE equivalent.  This is an optimisation
+ * because there is no need for "shared" multi process variables in
+ * single process mode.
  */
 os_result
 os_condInit (
@@ -41,6 +49,7 @@ os_condInit (
     pthread_condattr_t mattr;
     int result = 0;
     os_result rv;
+    OS_UNUSED_ARG(dummymtx);
 
     assert (cond != NULL);
     assert (condAttr != NULL);
@@ -50,11 +59,16 @@ os_condInit (
 #endif
 
     pthread_condattr_init (&mattr);
-    if (condAttr->scopeAttr == OS_SCOPE_SHARED) {
+
+#ifndef OS_OMIT_PROCESS_SHARED_COND_SETUP
+    /* In single process mode only "private" variables are required */
+    if (condAttr->scopeAttr == OS_SCOPE_SHARED && !os_serviceGetSingleProcess ()) {
         result = pthread_condattr_setpshared (&mattr, PTHREAD_PROCESS_SHARED);
     } else {
         result = pthread_condattr_setpshared (&mattr, PTHREAD_PROCESS_PRIVATE);
     }
+#endif
+
     if (result == 0) {
 #ifdef OSPL_STRICT_MEM
        result = pthread_cond_init (&cond->cond, &mattr);
@@ -197,6 +211,18 @@ os_condTimedWait (
     } else if (result == ETIMEDOUT) {
 	rv = os_resultTimeout;
     } else {
+#if ! defined (OSPL_VXWORKS653) 
+        OS_REPORT_2(OS_ERROR,"os_condTimedWait",0,
+                    "Operation failed: cond 0x%x, result = %s",
+                    cond,
+                    strerror(result));
+#else
+        OS_REPORT_2(OS_ERROR,"os_condTimedWait",0,
+                    "Operation failed: cond 0x%x, result = %d",
+                    cond,
+                    result);
+#endif
+        assert(OS_FALSE);
         rv = os_resultFail;
     }
     return rv;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -16,8 +16,9 @@
 /* Implementation */
 #include "os_if.h"
 #include "os_stdlib.h"
-#include "c_base.h"
+#include "os_heap.h"
 #include "c_metabase.h"
+#include "c_base.h"
 
 
 static c_char *
@@ -100,7 +101,7 @@ c_getScopedTypeName(
         ((scopeWhen == C_SCOPE_ALWAYS) ||
          ((scopeWhen == C_SCOPE_SMART) && (scope != module)))) {
         /* the type is defined within another module */
-        result = (c_char *)malloc(strlen(moduleName)+
+        result = (c_char *)os_malloc(strlen(moduleName)+
                                   strlen(typeName)+
                                   strlen(separator)+
                                   1 /* '0' */);

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -108,24 +108,33 @@ fileFromShm(
     os_result result;
     FILE *outFile;
     void *address;
+    os_address size;
     size_t written;
+    
+    written = 0;
     r = 0;
     os_sharedAttrInit(&shmAttr);
-    shm = os_sharedCreateHandle(args->shmName, &shmAttr);
+    shm = os_sharedCreateHandle(args->shmName, &shmAttr, 0);
     if (shm != NULL) {
         result = os_sharedMemoryAttach(shm);
         if (result == os_resultSuccess) {
             address = os_sharedAddress(shm);
-            outFile = fopen(args->fileName, "w");
-            if (outFile != NULL) {
-                written = fwrite(address, (size_t)args->size, (size_t)1, outFile);
-                fclose(outFile);
+            result = os_sharedSize(shm, &size);
+            if (result == os_resultSuccess && (os_uint32)size >= args->size) {
+                outFile = fopen(args->fileName, "w");
+                if (outFile != NULL) {
+                    written = fwrite(address, (size_t)args->size, (size_t)1, outFile);
+                    fclose(outFile);
+                } else {
+                    printf("ERROR: Failed to open file: %s\n", args->fileName);
+                    r = -1;
+                }
+                if (written != (size_t)1) {
+                    printf("ERROR: Copy did not complete.\n");
+                    r = -1;
+                }
             } else {
-                printf("ERROR: Failed to open file: %s\n", args->fileName);
-                r = -1;
-            }
-            if (written != (size_t)1) {
-                printf("ERROR: Copy did not complete.\n");
+                printf("ERROR: Copy did not complete. The size is invalid.\n");
                 r = -1;
             }
             os_sharedMemoryDetach(shm);
@@ -159,9 +168,10 @@ shmFromFile(
     void *address;
     size_t read;
 
+    read = 0;
     r = 0;
     os_sharedAttrInit(&shmAttr);
-    shm = os_sharedCreateHandle(args->shmName, &shmAttr);
+    shm = os_sharedCreateHandle(args->shmName, &shmAttr, 0);
     if (shm != NULL) {
         result = os_sharedMemoryCreate(shm, args->size);
         if (result == os_resultSuccess) {
@@ -208,10 +218,9 @@ shmFromFile(
 }
 
 #ifdef INTEGRITY
-int shmdump_main (int argc,
-	      char * argv[])
+OPENSPLICE_ENTRYPOINT (ospl_shmdump)
 #else
-OPENSPLICE_MAIN(ospl_shmdump)
+OPENSPLICE_MAIN (ospl_shmdump)
 #endif
 {
     struct arguments args;
@@ -221,6 +230,8 @@ OPENSPLICE_MAIN(ospl_shmdump)
      * Usage: shmdump -shmsize size -shm name [-o file] [-i file]
      */
     result = getArguments(argc, argv, &args);
+
+    os_osInit();
 
     if (result == 0) {
         switch (args.dest) {

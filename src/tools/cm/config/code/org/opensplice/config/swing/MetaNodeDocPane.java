@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,10 +19,11 @@ import org.opensplice.config.meta.MetaAttribute;
 import org.opensplice.config.meta.MetaElement;
 import org.opensplice.config.meta.MetaNode;
 
+@SuppressWarnings("serial")
 public class MetaNodeDocPane extends JEditorPane {
     private boolean showElementName;
     private boolean showChildrenAttributes;
-    private final String fontStyle = "font-family:Sans-serif";
+    private static final String fontStyle = "font-family:Sans-serif";
     
     public MetaNodeDocPane(){
         super("text/html", "No selection");
@@ -68,7 +69,7 @@ public class MetaNodeDocPane extends JEditorPane {
                     writer.write("<h1>" + ((MetaElement)node).getName());
                     writer.write(" <font size=\"-1\">(" + occ + ")</font></h1>");
                 }
-                writer.write("<font style=\"" + this.fontStyle + "\">" + doc + "</font>");
+                writer.write("<font style=\"" + MetaNodeDocPane.fontStyle + "\">" + doc + "</font>");
                 children = ((MetaElement)node).getChildren();
                 
                 for(MetaNode mn: children){
@@ -101,9 +102,9 @@ public class MetaNodeDocPane extends JEditorPane {
                         writer.write("optional)</h1> - ");
                     }
                 }
-                writer.write("<font style=\"" + this.fontStyle + "\">" + doc + "</font>");
+                writer.write("<font style=\"" + MetaNodeDocPane.fontStyle + "\">" + doc + "</font>");
             } else {
-                writer.write("<font style=\"" + this.fontStyle + "\">" + doc + "</font>");
+                writer.write("<font style=\"" + MetaNodeDocPane.fontStyle + "\">" + doc + "</font>");
             }
         }
         this.setText(writer.toString());
@@ -131,7 +132,7 @@ public class MetaNodeDocPane extends JEditorPane {
             }
         }
         doc = this.layoutDoc(node.getDoc());
-        writer.write("<font style=\"" + this.fontStyle + "\">" + doc + "</font>");
+        writer.write("<font style=\"" + MetaNodeDocPane.fontStyle + "\">" + doc + "</font>");
     }
     
     private String layoutDoc(String doc){

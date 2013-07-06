@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,6 +20,7 @@
 #include "u_writer.h"
 #include "u_reader.h"
 #include "u_dispatcher.h"
+#include "u_serviceTerminationThread.h"
 
 /*#define PROFILER*/
 #ifdef PROFILER
@@ -153,6 +154,7 @@ C_STRUCT(u_service) {
     C_EXTENDS(u_participant);
     c_voidp privateData;
     u_serviceKind serviceKind;
+    u_serviceTerminationThread stt;
 };
 
 C_STRUCT(u_spliced) {
@@ -172,6 +174,7 @@ C_STRUCT(u_domain) {
     c_char          *name;
     os_lockPolicy   lockPolicy;
     os_uint32       protectCount;
+    os_int32        id;
 };
 
 #endif

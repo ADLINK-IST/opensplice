@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,11 +14,21 @@
 
 #include "s_types.h"
 #include "u_user.h"
-#include "sr_serviceInfo.h"
+#include "sr_componentInfo.h"
+#include "os.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
+
+#include "os_if.h"
+
+#ifdef OSPL_BUILD_SPLICED
+#define OS_API OS_API_EXPORT
+#else
+#define OS_API OS_API_IMPORT
+#endif
+/* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 #define spliced(o) ((spliced)o)
 
@@ -29,9 +39,16 @@ extern "C" {
  */
 #define SPLICED_EXIT_CODE_OK 0
 
-#define SPLICED_EXIT_CODE_RECOVERABLE_ERROR -1
+#define SPLICED_EXIT_CODE_RECOVERABLE_ERROR 1
 
-#define SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR -2
+#define SPLICED_EXIT_CODE_UNRECOVERABLE_ERROR 2
+
+OS_API OPENSPLICE_ENTRYPOINT_DECL(ospl_spliced);
+
+OS_API void
+ospl_splicedAtExit(
+    void);
+
 
 s_configuration
 splicedGetConfiguration(
@@ -41,19 +58,24 @@ u_spliced
 splicedGetService(
     spliced spliceDaemon);
 
+os_char*
+splicedGetDomainName(
+    void);
+
 u_serviceManager
 splicedGetServiceManager(
     spliced spliceDaemon);
 
 void
 splicedDoSystemHalt(
-    spliced spliceDaemon,
     int code);
 
-sr_serviceInfo
+sr_componentInfo
 splicedGetServiceInfo(
     spliced spliceDaemon,
     const c_char *name);
+
+#undef OS_API
 
 #if defined (__cplusplus)
 }

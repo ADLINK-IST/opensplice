@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -65,7 +65,7 @@ DDS::Listener_ptr DDS::Listener::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::Listener::_local_id))
    {
       result = dynamic_cast<DDS::Listener_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -74,7 +74,7 @@ DDS::Listener_ptr DDS::Listener::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::Listener_ptr result;
    result = dynamic_cast<DDS::Listener_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -109,7 +109,7 @@ DDS::TopicListener_ptr DDS::TopicListener::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::TopicListener::_local_id))
    {
       result = dynamic_cast<DDS::TopicListener_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -118,7 +118,7 @@ DDS::TopicListener_ptr DDS::TopicListener::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::TopicListener_ptr result;
    result = dynamic_cast<DDS::TopicListener_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -153,7 +153,7 @@ DDS::ExtTopicListener_ptr DDS::ExtTopicListener::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::ExtTopicListener::_local_id))
    {
       result = dynamic_cast<DDS::ExtTopicListener_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -162,7 +162,7 @@ DDS::ExtTopicListener_ptr DDS::ExtTopicListener::_unchecked_narrow (DDS::Object_
 {
    DDS::ExtTopicListener_ptr result;
    result = dynamic_cast<DDS::ExtTopicListener_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -197,7 +197,7 @@ DDS::DataWriterListener_ptr DDS::DataWriterListener::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::DataWriterListener::_local_id))
    {
       result = dynamic_cast<DDS::DataWriterListener_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -206,7 +206,7 @@ DDS::DataWriterListener_ptr DDS::DataWriterListener::_unchecked_narrow (DDS::Obj
 {
    DDS::DataWriterListener_ptr result;
    result = dynamic_cast<DDS::DataWriterListener_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -241,7 +241,7 @@ DDS::PublisherListener_ptr DDS::PublisherListener::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::PublisherListener::_local_id))
    {
       result = dynamic_cast<DDS::PublisherListener_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -250,7 +250,7 @@ DDS::PublisherListener_ptr DDS::PublisherListener::_unchecked_narrow (DDS::Objec
 {
    DDS::PublisherListener_ptr result;
    result = dynamic_cast<DDS::PublisherListener_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -285,7 +285,7 @@ DDS::DataReaderListener_ptr DDS::DataReaderListener::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::DataReaderListener::_local_id))
    {
       result = dynamic_cast<DDS::DataReaderListener_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -294,7 +294,7 @@ DDS::DataReaderListener_ptr DDS::DataReaderListener::_unchecked_narrow (DDS::Obj
 {
    DDS::DataReaderListener_ptr result;
    result = dynamic_cast<DDS::DataReaderListener_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -329,7 +329,7 @@ DDS::SubscriberListener_ptr DDS::SubscriberListener::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::SubscriberListener::_local_id))
    {
       result = dynamic_cast<DDS::SubscriberListener_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -338,7 +338,7 @@ DDS::SubscriberListener_ptr DDS::SubscriberListener::_unchecked_narrow (DDS::Obj
 {
    DDS::SubscriberListener_ptr result;
    result = dynamic_cast<DDS::SubscriberListener_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -387,7 +387,7 @@ DDS::DomainParticipantListener_ptr DDS::DomainParticipantListener::_narrow (DDS:
    if (p && p->_is_a (DDS::DomainParticipantListener::_local_id))
    {
       result = dynamic_cast<DDS::DomainParticipantListener_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -396,7 +396,7 @@ DDS::DomainParticipantListener_ptr DDS::DomainParticipantListener::_unchecked_na
 {
    DDS::DomainParticipantListener_ptr result;
    result = dynamic_cast<DDS::DomainParticipantListener_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -438,7 +438,7 @@ DDS::ExtDomainParticipantListener_ptr DDS::ExtDomainParticipantListener::_narrow
    if (p && p->_is_a (DDS::ExtDomainParticipantListener::_local_id))
    {
       result = dynamic_cast<DDS::ExtDomainParticipantListener_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -447,7 +447,7 @@ DDS::ExtDomainParticipantListener_ptr DDS::ExtDomainParticipantListener::_unchec
 {
    DDS::ExtDomainParticipantListener_ptr result;
    result = dynamic_cast<DDS::ExtDomainParticipantListener_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -475,7 +475,7 @@ DDS::Condition_ptr DDS::Condition::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::Condition::_local_id))
    {
       result = dynamic_cast<DDS::Condition_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -484,7 +484,7 @@ DDS::Condition_ptr DDS::Condition::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::Condition_ptr result;
    result = dynamic_cast<DDS::Condition_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -512,7 +512,7 @@ DDS::WaitSetInterface_ptr DDS::WaitSetInterface::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::WaitSetInterface::_local_id))
    {
       result = dynamic_cast<DDS::WaitSetInterface_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -521,7 +521,7 @@ DDS::WaitSetInterface_ptr DDS::WaitSetInterface::_unchecked_narrow (DDS::Object_
 {
    DDS::WaitSetInterface_ptr result;
    result = dynamic_cast<DDS::WaitSetInterface_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -556,7 +556,7 @@ DDS::GuardConditionInterface_ptr DDS::GuardConditionInterface::_narrow (DDS::Obj
    if (p && p->_is_a (DDS::GuardConditionInterface::_local_id))
    {
       result = dynamic_cast<DDS::GuardConditionInterface_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -565,7 +565,7 @@ DDS::GuardConditionInterface_ptr DDS::GuardConditionInterface::_unchecked_narrow
 {
    DDS::GuardConditionInterface_ptr result;
    result = dynamic_cast<DDS::GuardConditionInterface_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -600,7 +600,7 @@ DDS::StatusCondition_ptr DDS::StatusCondition::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::StatusCondition::_local_id))
    {
       result = dynamic_cast<DDS::StatusCondition_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -609,7 +609,7 @@ DDS::StatusCondition_ptr DDS::StatusCondition::_unchecked_narrow (DDS::Object_pt
 {
    DDS::StatusCondition_ptr result;
    result = dynamic_cast<DDS::StatusCondition_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -644,7 +644,7 @@ DDS::ReadCondition_ptr DDS::ReadCondition::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::ReadCondition::_local_id))
    {
       result = dynamic_cast<DDS::ReadCondition_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -653,7 +653,7 @@ DDS::ReadCondition_ptr DDS::ReadCondition::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::ReadCondition_ptr result;
    result = dynamic_cast<DDS::ReadCondition_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -688,7 +688,7 @@ DDS::QueryCondition_ptr DDS::QueryCondition::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::QueryCondition::_local_id))
    {
       result = dynamic_cast<DDS::QueryCondition_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -697,7 +697,7 @@ DDS::QueryCondition_ptr DDS::QueryCondition::_unchecked_narrow (DDS::Object_ptr 
 {
    DDS::QueryCondition_ptr result;
    result = dynamic_cast<DDS::QueryCondition_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -725,7 +725,7 @@ DDS::Entity_ptr DDS::Entity::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::Entity::_local_id))
    {
       result = dynamic_cast<DDS::Entity_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -734,7 +734,7 @@ DDS::Entity_ptr DDS::Entity::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::Entity_ptr result;
    result = dynamic_cast<DDS::Entity_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -762,7 +762,7 @@ DDS::Domain_ptr DDS::Domain::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::Domain::_local_id))
    {
       result = dynamic_cast<DDS::Domain_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -771,7 +771,7 @@ DDS::Domain_ptr DDS::Domain::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::Domain_ptr result;
    result = dynamic_cast<DDS::Domain_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -806,7 +806,7 @@ DDS::DomainParticipant_ptr DDS::DomainParticipant::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::DomainParticipant::_local_id))
    {
       result = dynamic_cast<DDS::DomainParticipant_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -815,7 +815,7 @@ DDS::DomainParticipant_ptr DDS::DomainParticipant::_unchecked_narrow (DDS::Objec
 {
    DDS::DomainParticipant_ptr result;
    result = dynamic_cast<DDS::DomainParticipant_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -843,7 +843,7 @@ DDS::DomainParticipantFactoryInterface_ptr DDS::DomainParticipantFactoryInterfac
    if (p && p->_is_a (DDS::DomainParticipantFactoryInterface::_local_id))
    {
       result = dynamic_cast<DDS::DomainParticipantFactoryInterface_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -852,7 +852,7 @@ DDS::DomainParticipantFactoryInterface_ptr DDS::DomainParticipantFactoryInterfac
 {
    DDS::DomainParticipantFactoryInterface_ptr result;
    result = dynamic_cast<DDS::DomainParticipantFactoryInterface_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -880,7 +880,7 @@ DDS::TypeSupport_ptr DDS::TypeSupport::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::TypeSupport::_local_id))
    {
       result = dynamic_cast<DDS::TypeSupport_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -889,7 +889,7 @@ DDS::TypeSupport_ptr DDS::TypeSupport::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::TypeSupport_ptr result;
    result = dynamic_cast<DDS::TypeSupport_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -917,7 +917,7 @@ DDS::TypeSupportFactory_ptr DDS::TypeSupportFactory::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::TypeSupportFactory::_local_id))
    {
       result = dynamic_cast<DDS::TypeSupportFactory_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -926,7 +926,7 @@ DDS::TypeSupportFactory_ptr DDS::TypeSupportFactory::_unchecked_narrow (DDS::Obj
 {
    DDS::TypeSupportFactory_ptr result;
    result = dynamic_cast<DDS::TypeSupportFactory_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -954,7 +954,7 @@ DDS::TopicDescription_ptr DDS::TopicDescription::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::TopicDescription::_local_id))
    {
       result = dynamic_cast<DDS::TopicDescription_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -963,7 +963,7 @@ DDS::TopicDescription_ptr DDS::TopicDescription::_unchecked_narrow (DDS::Object_
 {
    DDS::TopicDescription_ptr result;
    result = dynamic_cast<DDS::TopicDescription_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -1005,7 +1005,7 @@ DDS::Topic_ptr DDS::Topic::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::Topic::_local_id))
    {
       result = dynamic_cast<DDS::Topic_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -1014,7 +1014,7 @@ DDS::Topic_ptr DDS::Topic::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::Topic_ptr result;
    result = dynamic_cast<DDS::Topic_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -1049,7 +1049,7 @@ DDS::ContentFilteredTopic_ptr DDS::ContentFilteredTopic::_narrow (DDS::Object_pt
    if (p && p->_is_a (DDS::ContentFilteredTopic::_local_id))
    {
       result = dynamic_cast<DDS::ContentFilteredTopic_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -1058,7 +1058,7 @@ DDS::ContentFilteredTopic_ptr DDS::ContentFilteredTopic::_unchecked_narrow (DDS:
 {
    DDS::ContentFilteredTopic_ptr result;
    result = dynamic_cast<DDS::ContentFilteredTopic_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -1093,7 +1093,7 @@ DDS::MultiTopic_ptr DDS::MultiTopic::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::MultiTopic::_local_id))
    {
       result = dynamic_cast<DDS::MultiTopic_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -1102,7 +1102,7 @@ DDS::MultiTopic_ptr DDS::MultiTopic::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::MultiTopic_ptr result;
    result = dynamic_cast<DDS::MultiTopic_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -1137,7 +1137,7 @@ DDS::Publisher_ptr DDS::Publisher::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::Publisher::_local_id))
    {
       result = dynamic_cast<DDS::Publisher_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -1146,7 +1146,7 @@ DDS::Publisher_ptr DDS::Publisher::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::Publisher_ptr result;
    result = dynamic_cast<DDS::Publisher_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -1181,7 +1181,7 @@ DDS::DataWriter_ptr DDS::DataWriter::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::DataWriter::_local_id))
    {
       result = dynamic_cast<DDS::DataWriter_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -1190,7 +1190,7 @@ DDS::DataWriter_ptr DDS::DataWriter::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::DataWriter_ptr result;
    result = dynamic_cast<DDS::DataWriter_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -1225,7 +1225,7 @@ DDS::Subscriber_ptr DDS::Subscriber::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::Subscriber::_local_id))
    {
       result = dynamic_cast<DDS::Subscriber_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -1234,7 +1234,44 @@ DDS::Subscriber_ptr DDS::Subscriber::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::Subscriber_ptr result;
    result = dynamic_cast<DDS::Subscriber_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
+   return result;
+}
+
+const char * DDS::PropertyInterface::_local_id = "IDL:DDS/PropertyInterface:1.0";
+
+DDS::PropertyInterface_ptr DDS::PropertyInterface::_duplicate (DDS::PropertyInterface_ptr p)
+{
+   if (p) p->m_count++;
+   return p;
+}
+
+DDS::Boolean DDS::PropertyInterface::_local_is_a (const char * _id)
+{
+   if (strcmp (_id, DDS::PropertyInterface::_local_id) == 0)
+   {
+      return TRUE;
+   }
+
+   return FALSE;
+}
+
+DDS::PropertyInterface_ptr DDS::PropertyInterface::_narrow (DDS::Object_ptr p)
+{
+   DDS::PropertyInterface_ptr result = NULL;
+   if (p && p->_is_a (DDS::PropertyInterface::_local_id))
+   {
+      result = dynamic_cast<DDS::PropertyInterface_ptr> (p);
+      if (result) result->m_count++;
+   }
+   return result;
+}
+
+DDS::PropertyInterface_ptr DDS::PropertyInterface::_unchecked_narrow (DDS::Object_ptr p)
+{
+   DDS::PropertyInterface_ptr result;
+   result = dynamic_cast<DDS::PropertyInterface_ptr> (p);
+   if (result) result->m_count++;
    return result;
 }
 
@@ -1269,7 +1306,7 @@ DDS::DataReader_ptr DDS::DataReader::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::DataReader::_local_id))
    {
       result = dynamic_cast<DDS::DataReader_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -1278,7 +1315,7 @@ DDS::DataReader_ptr DDS::DataReader::_unchecked_narrow (DDS::Object_ptr p)
 {
    DDS::DataReader_ptr result;
    result = dynamic_cast<DDS::DataReader_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -1313,7 +1350,7 @@ DDS::DataReaderView_ptr DDS::DataReaderView::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::DataReaderView::_local_id))
    {
       result = dynamic_cast<DDS::DataReaderView_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -1322,7 +1359,7 @@ DDS::DataReaderView_ptr DDS::DataReaderView::_unchecked_narrow (DDS::Object_ptr 
 {
    DDS::DataReaderView_ptr result;
    result = dynamic_cast<DDS::DataReaderView_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 
@@ -1350,7 +1387,7 @@ DDS::ErrorInfoInterface_ptr DDS::ErrorInfoInterface::_narrow (DDS::Object_ptr p)
    if (p && p->_is_a (DDS::ErrorInfoInterface::_local_id))
    {
       result = dynamic_cast<DDS::ErrorInfoInterface_ptr> (p);
-      result->m_count++;
+      if (result) result->m_count++;
    }
    return result;
 }
@@ -1359,7 +1396,7 @@ DDS::ErrorInfoInterface_ptr DDS::ErrorInfoInterface::_unchecked_narrow (DDS::Obj
 {
    DDS::ErrorInfoInterface_ptr result;
    result = dynamic_cast<DDS::ErrorInfoInterface_ptr> (p);
-   result->m_count++;
+   if (result) result->m_count++;
    return result;
 }
 

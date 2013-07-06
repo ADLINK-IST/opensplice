@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -89,24 +89,46 @@ static void
 doCleanupPublication(
     v_spliced spliced,
     struct v_publicationInfo *oInfo,
-    c_time *cleanTime);
+    c_time *cleanTime,
+    c_bool isValid);
 
 /**************************************************************
  * Private functions
  **************************************************************/
-static c_bool
-readerAction(
-    v_readerSample s,
+static v_actionResult
+readerTakeAction(
+    c_object s,
     c_voidp arg)
 {
+    v_actionResult result = 0;
     c_iter *samples = (c_iter *)arg;
 
-    if ((s != NULL) && v_stateTest(s->sampleState, L_VALIDDATA)) {
-/* use append, since the oldest message is given first to this copy routine! */
+    if ((s != NULL) && v_dataReaderSampleStateTest(s, L_VALIDDATA)) {
+        /* use append, since the oldest message is given first to this copy routine! */
         *samples = c_iterAppend(*samples, c_keep(s));
     } /* else last sample is read */
 
-    return TRUE;
+    v_actionResultSet(result, V_PROCEED);
+    return result;
+}
+
+/* The read action also reads the invalid samples, unlike the readerTakeAction
+ */
+static v_actionResult
+readerReadAction(
+    c_object s,
+    c_voidp arg)
+{
+    v_actionResult result = 0;
+    c_iter *samples = (c_iter *)arg;
+
+    if (s != NULL) {
+        /* use append, since the oldest message is given first to this copy routine! */
+        *samples = c_iterAppend(*samples, c_keep(s));
+    } /* else last sample is read */
+
+    v_actionResultSet(result, V_PROCEED);
+    return result;
 }
 
 static c_bool
@@ -123,16 +145,16 @@ lookupAction(
     return TRUE;
 }
 
-static c_bool
+static v_actionResult
 takeOne(
-    v_readerSample s,
+    c_object s,
     c_voidp arg)
 {
     v_readerSample *sample = (v_readerSample *)arg;
-    c_bool result;
+    v_actionResult result = 0;
 
     if (s != NULL) {
-        result = TRUE;
+        v_actionResultSet(result, V_PROCEED);
         if (v_dataReaderSampleStateTest(s, L_VALIDDATA) ||
                 v_dataReaderSampleInstanceStateTest(s, L_DISPOSED)) {
             /* Keep both the sample and its instance.
@@ -143,10 +165,8 @@ takeOne(
              */
             *sample = c_keep(s);
             c_keep(v_dataReaderSampleInstance(s));
-            result = FALSE;
+            v_actionResultClear(result, V_PROCEED);
         }
-    } else { /* last sample */
-        result = FALSE;
     }
 
     return result;
@@ -168,7 +188,8 @@ partitionNotMatched(
     c_value expr;
     c_long i;
 
-    if (v_objectKind(o) == K_DOMAIN) {
+    /* Don't re-evaluate if a matching partition has already been found */
+    if (!matchArg->matched && v_objectKind(o) == K_DOMAIN) {
         match.kind = V_BOOLEAN;
         match.is.Boolean = FALSE;
         i = 0;
@@ -481,7 +502,7 @@ defineTopic(
 
     if (topicType != NULL) {
         qos = createTopicQos(kernel, info);
-        newTopic = v_topicNew(kernel, info->name, info->type_name, info->key_list, qos);
+        newTopic = v__topicNew(kernel, info->name, info->type_name, info->key_list, qos, FALSE);
         if (newTopic != NULL) {
             result = TRUE;
         }
@@ -789,7 +810,6 @@ v_splicedProcessSubscriptionInfo(
     v_policyId id;
     enum v_statusLiveliness newLivState = V_STATUSLIVELINESS_UNKNOWN;
     enum v_statusLiveliness oldLivState;
-    v_state state;
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
@@ -814,7 +834,6 @@ v_splicedProcessSubscriptionInfo(
         notifyCoherentReaders(kernel, rSample);
         msg = v_dataReaderSampleMessage(rSample);
         rInfo = v_builtinSubscriptionInfoData(kernel->builtin,msg);
-        state = v_readerSample(rSample)->sampleState;
 
         if (v_stateTest(v_readerSample(rSample)->sampleState, L_DISPOSED)) {
             /* The subscription is disposed so the following
@@ -985,7 +1004,7 @@ v_splicedProcessPublicationInfo
     v_message oldMsg;
     struct v_subscriptionInfo *rInfo;
     struct v_publicationInfo *oInfo;
-    struct v_publicationInfo *oldInfo;
+    struct v_publicationInfo *oldInfo = NULL;
     v_kernel kernel;
     v_writer w;
     v_dataReader r;
@@ -993,12 +1012,11 @@ v_splicedProcessPublicationInfo
     v_policyId id;
     enum v_statusLiveliness newLivState = V_STATUSLIVELINESS_UNKNOWN;
     enum v_statusLiveliness oldLivState;
-    c_time curTime;
+    c_bool rwMatch;
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
 
-    curTime = v_timeGet();
     kernel = v_objectKernel(spliced);
 
     oSample = NULL;
@@ -1019,76 +1037,90 @@ v_splicedProcessPublicationInfo
         msg = v_dataReaderSampleMessage(oSample);
         oInfo = v_builtinPublicationInfoData(kernel->builtin,msg);
 
-
         if (v_dataReaderSampleInstanceStateTest(oSample, L_DISPOSED)) {
             oldMsg = c_remove(spliced->builtinData[V_PUBLICATIONINFO_ID],
                               msg, NULL, NULL);
+            /* If there is no predecessor but the sample is valid, then interpret the sample itself.
+             * (This is for example the case when the builtin topics have been disabled, in which
+             * case only the dispose message will be transmitted as a VOLATILE sample.)
+             */
+            if (oldMsg == NULL && v_dataReaderSampleStateTest(oSample, L_VALIDDATA)) {
+                oldMsg = msg;
+            }
+
             if (oldMsg != NULL) {
                 oldInfo = v_builtinPublicationInfoData(kernel->builtin,oldMsg);
 
-                if (oldInfo != NULL) {
-                    requestedMessages = lookupMatchingReadersByTopic(spliced, oldInfo);
-                    reqMsg = c_iterTakeFirst(requestedMessages);
+                /* the resulting readers are not matched on partition so the readers that do not belong
+                 * to the required partition need to be filtered out later on.
+                 * This is because of the partition field being an internal sequence so no expression
+                 * can be done on it*/
+                requestedMessages = lookupMatchingReadersByTopic(spliced, oldInfo);
+                reqMsg = c_iterTakeFirst(requestedMessages);
 
-                    while (reqMsg != NULL) {
-                        rInfo = v_builtinSubscriptionInfoData(kernel->builtin,reqMsg);
-                        r = v_dataReader(v_gidClaim(rInfo->key, kernel));
+                while (reqMsg != NULL) {
+                    rInfo = v_builtinSubscriptionInfoData(kernel->builtin,reqMsg);
+                    r = v_dataReader(v_gidClaim(rInfo->key, kernel));
+                    /* Filter out readers that do not match the required partition see dds3483*/
+                    rwMatch = readerWriterMatch(rInfo, r, oInfo, NULL);
 
-                        /* if r == NULL in this context, this method returns FALSE */
-                        if (r != NULL && readerWriterMatch(rInfo, r, oldInfo, NULL) == TRUE) {
-                            newLivState = V_STATUSLIVELINESS_DELETED;
+                    /* if r == NULL in this context, this method returns FALSE */
+                    if (r != NULL && rwMatch && readerWriterMatch(rInfo, r, oldInfo, NULL) == TRUE) {
+                        newLivState = V_STATUSLIVELINESS_DELETED;
 
-                            if (checkOfferedRequested(oldInfo, rInfo, compatible) == TRUE) {
-                                /* Notify the reader that a matching publication disappeared */
-                                v_dataReaderNotifySubscriptionMatched(r, oInfo->key, TRUE);
-                            }
+                        if (checkOfferedRequested(oldInfo, rInfo, compatible) == TRUE) {
+                            /* Notify the reader that a matching publication disappeared */
+                            v_dataReaderNotifySubscriptionMatched(r, oInfo->key, TRUE);
                         }
+                    }
 
-                        if (r != NULL) {
+                    if (r != NULL) {
+                        if (rwMatch) {
                             /* Determine old liveliness state.
                              * Pretend w == NULL, so match is entirely determined by
                              * the old writer partition information!
                              * We need to determine the previous state!
                              */
-                            if (oldInfo != NULL) {
-                                if (readerWriterMatch(rInfo, r, oldInfo, NULL)) {
-                                    if (checkOfferedRequested(oldInfo, rInfo, compatible) == TRUE) {
-                                        oldLivState = (oldInfo->alive?V_STATUSLIVELINESS_ALIVE:V_STATUSLIVELINESS_NOTALIVE);
-                                    } else {
-                                        oldLivState = V_STATUSLIVELINESS_DELETED;
-                                    }
+                            if (readerWriterMatch(rInfo, r, oldInfo, NULL)) {
+                                if (checkOfferedRequested(oldInfo, rInfo, compatible) == TRUE) {
+                                    oldLivState = (oldInfo->alive?V_STATUSLIVELINESS_ALIVE:V_STATUSLIVELINESS_NOTALIVE);
                                 } else {
                                     oldLivState = V_STATUSLIVELINESS_DELETED;
                                 }
                             } else {
-                                oldLivState = V_STATUSLIVELINESS_UNKNOWN;
+                                oldLivState = V_STATUSLIVELINESS_DELETED;
                             }
                             v_dataReaderNotifyLivelinessChanged(r, oInfo->key,
                                                                 oldLivState, newLivState,
                                                                 msg);
-                            v_gidRelease(rInfo->key, kernel);
                         }
-
-                        c_free(reqMsg);
-                        reqMsg = c_iterTakeFirst(requestedMessages);
+                        v_gidRelease(rInfo->key, kernel);
                     }
-                    c_iterFree(requestedMessages);
-
-                    if(oInfo->key.systemId != kernel->GID.systemId) {
-                       /* If the message is disposed, the writer is no longer alive,
-                        * so cleanup all resources taken by this writer. But only if this
-                        * writer is a remote writer!
-                        * DO NOT USE local time, but use the production time of the
-                        * builtin topic! This is needed, since the time might not be
-                        * aligned properly!
-                        */
-                       doCleanupPublication(spliced, oldInfo, &msg->writeTime);
-                    }
+                    c_free(reqMsg);
+                    reqMsg = c_iterTakeFirst(requestedMessages);
                 }
+                c_iterFree(requestedMessages);
+
+                if(oInfo->key.systemId != kernel->GID.systemId) {
+                   /* If the message is disposed, the writer is no longer alive,
+                    * so cleanup all resources taken by this writer. But only if this
+                    * writer is a remote writer!
+                    * DO NOT USE local time, but use the production time of the
+                    * builtin topic! This is needed, since the time might not be
+                    * aligned properly!
+                    */
+                   doCleanupPublication(spliced, oldInfo, &msg->writeTime, TRUE);
+                }
+            } else {
+                /* There is no old message and the dispose in received as an invalid-sample. So we cannot
+                 * select matching readers because the partition-name in the publication-info isn't present (non-key field).
+                 */
+                /* This cannot occur for local writers */
+                assert(oInfo->key.systemId != kernel->GID.systemId);
+                doCleanupPublication(spliced, oInfo, &msg->writeTime, FALSE);
             }
         } else {
             w = v_writer(v_gidClaim(oInfo->key, kernel));
-
             oldMsg = c_replace(spliced->builtinData[V_PUBLICATIONINFO_ID],
                                msg, NULL, NULL);
             /* Do not free oldMsg yet!
@@ -1102,14 +1134,19 @@ v_splicedProcessPublicationInfo
                 oldInfo = NULL;
             }
             assert(v_dataReaderSampleStateTest(oSample, L_VALIDDATA));
+            /* the resulting readers are not matched on partition so the readers that do not belong
+             * to the required partition need to be filtered out later on.
+             * This is because of the partition field being an internal sequence so no expression
+             * can be done on it*/
             requestedMessages = lookupMatchingReadersByTopic(spliced, oInfo);
-
             reqMsg = c_iterTakeFirst(requestedMessages);
             while (reqMsg != NULL) {
                 rInfo = v_builtinSubscriptionInfoData(kernel->builtin,reqMsg);
                 r = v_dataReader(v_gidClaim(rInfo->key, kernel));
+                /* Filter out readers that do not match the required partition see dds3483*/
+                rwMatch = readerWriterMatch(rInfo, r, oInfo, NULL);
 
-                if (readerWriterMatch(rInfo, r, oInfo, w) == TRUE) {
+                if (readerWriterMatch(rInfo, r, oInfo, w) == TRUE && rwMatch) {
                     if (checkOfferedRequested(oInfo, rInfo, compatible) == FALSE) {
                         for (id = 0; id < V_POLICY_ID_COUNT; id++) {
                             if (compatible[id] == FALSE) {
@@ -1145,30 +1182,32 @@ v_splicedProcessPublicationInfo
                 }
 
                 if (r != NULL) {
-                    /* Determine old liveliness state.
-                     * Pretend w == NULL, so match is entirely determined by
-                     * the old writer partition information!
-                     * We need to determine the previous state!
-                     */
-                    if (oldInfo != NULL) {
-                        if (readerWriterMatch(rInfo, r, oldInfo, NULL)) {
-                            if (checkOfferedRequested(oldInfo, rInfo, compatible) == TRUE) {
-                                oldLivState = (oldInfo->alive?V_STATUSLIVELINESS_ALIVE:V_STATUSLIVELINESS_NOTALIVE);
+                    if (rwMatch) {
+                        /* Determine old liveliness state.
+                         * Pretend w == NULL, so match is entirely determined by
+                         * the old writer partition information!
+                         * We need to determine the previous state!
+                         */
+                        if (oldInfo != NULL) {
+                            if (readerWriterMatch(rInfo, r, oldInfo, NULL)) {
+                                if (checkOfferedRequested(oldInfo, rInfo, compatible) == TRUE) {
+                                    oldLivState = (oldInfo->alive?V_STATUSLIVELINESS_ALIVE:V_STATUSLIVELINESS_NOTALIVE);
+                                } else {
+                                    oldLivState = V_STATUSLIVELINESS_DELETED;
+                                }
                             } else {
                                 oldLivState = V_STATUSLIVELINESS_DELETED;
                             }
                         } else {
-                            oldLivState = V_STATUSLIVELINESS_DELETED;
+                            oldLivState = V_STATUSLIVELINESS_UNKNOWN;
                         }
-                    } else {
-                        oldLivState = V_STATUSLIVELINESS_UNKNOWN;
+
+                        v_dataReaderNotifyLivelinessChanged(r, oInfo->key,
+                                                            oldLivState, newLivState,
+                                                            msg);
                     }
-                    v_dataReaderNotifyLivelinessChanged(r, oInfo->key,
-                                                        oldLivState, newLivState,
-                                                        msg);
                     v_gidRelease(rInfo->key, kernel);
                 }
-
                 c_free(reqMsg);
                 reqMsg = c_iterTakeFirst(requestedMessages);
             }
@@ -1212,7 +1251,7 @@ v_splicedProcessTopicInfo(
 
     samples = NULL;
     proceed = v_dataReaderTake(spliced->readers[V_TOPICINFO_ID],
-                               readerAction, &samples);
+                               readerTakeAction, &samples);
     if (proceed) {
     	proceed = FALSE;
 
@@ -1266,29 +1305,144 @@ v_splicedProcessTopicInfo(
     }
 }
 
-/* We are not interested in participant information at the moment, so
-   just take the data away to prevent the reader cache from growing
-   indefinately.
-*/
-/* returns 0, when no DCPSParticipantInfo sample was available. Otherwise 1 is returned */
+struct matchHeartbeatHelper {
+        c_ulong systemId; /* systemId from key of participantInfo sample */
+        v_builtin builtin;
+};
+
+static v_actionResult
+matchHeartbeatAction(
+    c_object o,
+    c_voidp arg)
+{
+    v_actionResult result = 0;
+    struct matchHeartbeatHelper *helper;
+    struct v_heartbeatInfo *hbInfo;
+
+    assert(arg);
+    helper = (struct matchHeartbeatHelper*)arg;
+
+    if (o) {
+        hbInfo = v_builtinHeartbeatInfoData(helper->builtin, v_dataReaderSampleMessage(o));
+
+        if (helper->systemId != v_gidSystemId(hbInfo->id)) {
+            v_actionResultSet(result, V_PROCEED); /* Proceed when no match is found */
+        } /* else a match is found, so do not proceed */
+        /* Ensure this routine does not influence sample state at all */
+        v_actionResultSet(result, V_SKIP);
+    }
+    return result;
+}
+
 int
 v_splicedProcessParticipantInfo(
     v_spliced spliced)
 {
     c_iter samples;
-    v_dataReaderSample s;
+    v_dataReaderSample sample;
+    v_kernel kernel;
+    v_message msg, hbMsg;
+    v_group group;
+    struct v_participantInfo *pInfo;
+    struct v_heartbeatInfo *hbInfo;
+    c_bool notFound;
+    v_resendScope resendScope = V_RESEND_NONE;
+    v_writeResult wres;
+    v_writer hbWriter;
+    struct matchHeartbeatHelper helper;
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
 
     if (spliced->readers[V_PARTICIPANTINFO_ID] != NULL) {
         samples = NULL;
+        kernel = v_objectKernel(spliced);
+        helper.builtin = kernel->builtin;
+        hbWriter = v_builtinWriterLookup(kernel->builtin, V_HEARTBEATINFO_ID);
+        assert(hbWriter);
+
         v_dataReaderTake(spliced->readers[V_PARTICIPANTINFO_ID],
-                         readerAction, &samples);
-        s = v_dataReaderSample(c_iterTakeFirst(samples));
-        while (s != NULL) {
-            c_free(s);
-            s = v_dataReaderSample(c_iterTakeFirst(samples));
+                         readerTakeAction, &samples);
+
+        sample = v_dataReaderSample(c_iterTakeFirst(samples));
+        while (sample != NULL) {
+            /* Only process this instance if it isn't seen before */
+            if (v_dataReaderSampleStateTest(sample, L_NEW)) {
+                msg = v_dataReaderSampleMessage(sample);
+                pInfo = v_builtinParticipantInfoData(kernel->builtin, msg);
+                notFound = TRUE;
+                helper.systemId = v_gidSystemId(pInfo->key);
+                /* Lookup heartbeat with matching systemId */
+                assert(spliced->readers[V_HEARTBEATINFO_ID]);
+                notFound = v_dataReaderRead(spliced->readers[V_HEARTBEATINFO_ID], matchHeartbeatAction, &(helper));
+
+                if (notFound) {
+                    /* If no matching heartbeat found, create it and publish locally */
+                    group = v_groupSetGet(kernel->groupSet, V_BUILTIN_PARTITION, V_HEARTBEATINFO_NAME);
+                    assert(group);
+                    hbMsg = v_topicMessageNew(v_builtinTopicLookup(kernel->builtin, V_HEARTBEATINFO_ID));
+                    if (hbMsg) {
+                        /* Create a 'fake' heartbeat message */
+                        v_nodeState(hbMsg) = L_WRITE;
+                        hbMsg->allocTime = v_timeGet();
+                        hbMsg->qos = c_keep(hbWriter->relQos);
+                        hbMsg->sequenceNumber = 0;
+                        hbMsg->transactionId = 0;
+                        hbMsg->writeTime = hbMsg->allocTime;
+                        hbMsg->writerGID = v_publicGid(v_public(hbWriter));
+                        hbMsg->writerInstanceGID = v_publicGid(NULL);
+
+                        hbInfo = v_builtinHeartbeatInfoData(kernel->builtin, hbMsg);
+                        hbInfo->period = spliced->hb.period;
+                        hbInfo->id.systemId = v_gidSystemId(pInfo->key); /* Fake sender */
+                        hbInfo->id.localId = v_gidLocalId(spliced->hb.id); /* Builtin-writer localId's are identical on all nodes */
+                        hbInfo->id.serial = v_gidLifecycleId(spliced->hb.id);
+
+                        wres = v_groupWrite(group, hbMsg, NULL, V_NETWORKID_ANY, &resendScope);
+                        OS_REPORT_2(OS_INFO, "v_splicedProcessParticipantInfo", 0,
+                            "Simulating heartbeat from node %u (result: %s) to ensure historical "\
+                            "data from that node is cleaned up properly in any situation.",
+                            hbInfo->id.systemId, v_writeResultString(wres));
+                        assert(wres == V_WRITE_SUCCESS);
+
+                        c_free(hbMsg);
+
+                        hbMsg = v_topicMessageNew(v_builtinTopicLookup(kernel->builtin, V_HEARTBEATINFO_ID));
+                        if (hbMsg) {
+                            v_nodeState(hbMsg) = L_UNREGISTER;
+                            hbMsg->allocTime = v_timeGet();
+                            hbMsg->qos = c_keep(hbWriter->relQos);
+                            hbMsg->sequenceNumber = 1;
+                            hbMsg->transactionId = 0;
+                            hbMsg->writeTime = hbMsg->allocTime;
+                            hbMsg->writerGID = v_publicGid(v_public(hbWriter));
+                            hbMsg->writerInstanceGID = v_publicGid(NULL);
+
+                            hbInfo = v_builtinHeartbeatInfoData(kernel->builtin, hbMsg);
+                            hbInfo->id.systemId = v_gidSystemId(pInfo->key); /* Fake sender */
+                            hbInfo->id.localId = v_gidLocalId(spliced->hb.id); /* Builtin-writer localId's are identical on all nodes */
+                            hbInfo->id.serial = v_gidLifecycleId(spliced->hb.id);
+
+                            resendScope = V_RESEND_NONE;
+
+                            wres = v_groupWrite(group, hbMsg, NULL, V_NETWORKID_ANY, &resendScope);
+                            OS_REPORT_2(OS_INFO, "v_splicedProcessParticipantInfo", 0,
+                                "Unregistered fake heartbeat for node %u (result: %s)",
+                                hbInfo->id.systemId, v_writeResultString(wres));
+                            assert(wres == V_WRITE_SUCCESS);
+                            c_free(hbMsg);
+                        } else {
+                            OS_REPORT(OS_ERROR, "v_splicedProcessParticipantInfo", 0,
+                                "Failed to allocate heartbeat unregister message");
+                        }
+                    } else {
+                        OS_REPORT(OS_ERROR, "v_splicedProcessParticipantInfo", 0,
+                            "Failed to allocate heartbeat message");
+                    }
+                }
+            }
+            c_free(sample);
+            sample = v_dataReaderSample(c_iterTakeFirst(samples));
         }
         c_iterFree(samples);
     }
@@ -1678,16 +1832,15 @@ v_splicedManageKernel(
     rQos->history.kind = V_HISTORY_KEEPLAST;
     rQos->history.depth = 1;
 
-    if (kernel->qos->builtin.enabled) {
-        spliced->builtinData[V_PARTICIPANTINFO_ID] = NULL;
-
-        _INIT_BUILTIN_DATA_(V_SUBSCRIPTIONINFO_ID, V_SUBSCRIPTIONINFO_NAME);
-        _INIT_BUILTIN_DATA_(V_PUBLICATIONINFO_ID, V_PUBLICATIONINFO_NAME);
-    }
-
     _INIT_BUILTIN_DATA_(V_TOPICINFO_ID, V_TOPICINFO_NAME);
 
-    v_readerQosFree(rQos);
+    if (kernel->qos->builtin.enabled) {
+        _INIT_BUILTIN_DATA_(V_SUBSCRIPTIONINFO_ID, V_SUBSCRIPTIONINFO_NAME);
+        _INIT_BUILTIN_DATA_(V_PUBLICATIONINFO_ID, V_PUBLICATIONINFO_NAME);
+    } else {
+        rQos->durability.kind = V_DURABILITY_VOLATILE;
+        _INIT_BUILTIN_DATA_(V_PUBLICATIONINFO_ID, V_PUBLICATIONINFO_NAME);
+    }
 
     kernel->deliveryService = v_deliveryServiceNew(
                                       spliced->builtinSubscriber,
@@ -1708,29 +1861,41 @@ v_splicedManageKernel(
     spliced->hbCheck = NULL;
     spliced->hbUpdate = NULL;
 
-    expr = q_parse(HB_VIEW_EXPR);
+    expr = q_parse("select * from " V_HEARTBEATINFO_NAME " where id.systemId != %0;");
     params[0] = c_ulongValue(v_gidSystemId(spliced->hb.id));
 
     spliced->readers[V_HEARTBEATINFO_ID] =
                 v_dataReaderNew(spliced->builtinSubscriber,
-                                HB_READER_NAME,
+                                V_HEARTBEATINFO_NAME "Reader",
                                 expr, params,
                                 NULL, TRUE);
-
-
     q_dispose(expr);
     topic = v_builtinTopicLookup(kernel->builtin, V_HEARTBEATINFO_ID);
     str = messageKeyExpr(topic);
     spliced->missedHB = c_tableNew(v_topicMessageType(topic), str);
     os_free(str);
 
+    /* Setup ParticipantInfo reader */
+    expr = q_parse("select * from " V_PARTICIPANTINFO_NAME " where _key.systemId != %0;");
+    spliced->readers[V_PARTICIPANTINFO_ID] =
+                v_dataReaderNew(spliced->builtinSubscriber,
+                                V_PARTICIPANTINFO_NAME "Reader",
+                                expr, params,
+                                rQos, TRUE);
+    v_readerQosFree(rQos);
+    q_dispose(expr);
 
+    /* Setup CandM Command reader */
     expr = q_parse("select * from " V_C_AND_M_COMMAND_NAME);
+    rQos = v_readerQosNew(kernel, NULL);
+    rQos->history.kind = V_HISTORY_KEEPALL;
+    rQos->history.depth = V_LENGTH_UNLIMITED;
     spliced->readers[V_C_AND_M_COMMAND_ID] =
                 v_dataReaderNew(spliced->builtinSubscriber,
                                 C_AND_M_READER_NAME,
                                 expr, params,
-                                NULL, TRUE);
+                                rQos, TRUE);
+    v_readerQosFree(rQos);
     q_dispose(expr);
 
 }
@@ -1829,8 +1994,6 @@ v_splicedFree(
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
 
-    v_waitsetFree(spliced->cAndMCommandWaitSet);
-
     kernel = v_objectKernel(spliced);
     /* set builtin writer to NULL, to prevent
        using those writers while publishing builtin topic information
@@ -1839,7 +2002,7 @@ v_splicedFree(
 
     /* Stop heartbeats */
     v_serviceFree(v_service(spliced));
-    v_kernel(v_object(spliced)->kernel)->splicedRunning = FALSE;
+    kernel->splicedRunning = FALSE;
 }
 
 void
@@ -1849,7 +2012,7 @@ v_splicedDeinit(
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
 
-    v_waitsetDeinit(spliced->cAndMCommandWaitSet);
+    v_waitsetFree(spliced->cAndMCommandWaitSet);
 
     /* prevent that the kernel lease manager is destroyed */
     c_free(v_participant(spliced)->leaseManager);
@@ -1889,7 +2052,16 @@ v_splicedHeartbeat(
     }
 }
 
-static c_bool alwaysTrue (v_readerSample sample, c_voidp arg) { return TRUE; }
+static v_actionResult
+alwaysProceed (
+    c_object sample, c_voidp arg)
+{
+    v_actionResult result = 0;
+    v_actionResultSet(result, V_PROCEED);
+    OS_UNUSED_ARG(sample);
+    OS_UNUSED_ARG(arg);
+    return result;
+}
 
 void
 v_splicedCheckHeartbeats(
@@ -1921,10 +2093,19 @@ v_splicedCheckHeartbeats(
     samples = NULL;
     if (spliced->readers[V_HEARTBEATINFO_ID] != NULL) {
         v_dataReaderRead(spliced->readers[V_HEARTBEATINFO_ID],
-                         readerAction, &samples);
+                         readerReadAction, &samples);
         s = v_dataReaderSample(c_iterTakeFirst(samples));
         while (s != NULL) {
-            checkHeartbeat(s, &arg);
+            /* If heartbeat is disposed, it is added to the missed set and when it is alive
+             * checkHeartbeat is called.
+             * Due to local simulation of remote heartbeats, an unregister may occur directly after
+             * a write potentially leading to an invalid sample that is not_alive_no_writers.
+             * In that case no action is needed */
+            if (v_dataReaderSampleStateTest(s, L_DISPOSED)) {
+                arg.missed = c_iterInsert(arg.missed, c_keep(s));
+            } else if (v_dataReaderSampleStateTest(s, L_VALIDDATA)) {
+                checkHeartbeat(s, &arg);
+            }
             c_free(s);
             s = v_dataReaderSample(c_iterTakeFirst(samples));
         }
@@ -1941,9 +2122,11 @@ v_splicedCheckHeartbeats(
         while (s != NULL) {
             v_dataReaderTakeInstance(spliced->readers[V_HEARTBEATINFO_ID],
                             v_dataReaderInstance(v_readerSample(s)->instance),
-                            alwaysTrue, NULL);
-
-            c_insert(spliced->missedHB, v_dataReaderSampleMessage(s));
+                            alwaysProceed, NULL);
+            if(v_dataReaderSampleStateTest(s, L_VALIDDATA))
+            {
+                c_insert(spliced->missedHB, v_dataReaderSampleMessage(s));
+            }
             c_free(s);
             s = v_dataReaderSample(c_iterTakeFirst(arg.missed));
         }
@@ -1973,10 +2156,10 @@ v_splicedKernelManager(
         if (dataProcessed != 0) { /* sleep and process again */
             os_nanoSleep(delay);
         }
+        dataProcessed += v_splicedProcessPublicationInfo(spliced);
         if (builtinEnabled && (dataProcessed == 0)) {
             dataProcessed = v_splicedProcessSubscriptionInfo(spliced);
             dataProcessed += v_splicedProcessParticipantInfo(spliced);
-            dataProcessed += v_splicedProcessPublicationInfo(spliced);
         }
         if (dataProcessed == 0) {
             v_waitsetWait(spliced->ws, NULL, NULL);
@@ -1999,36 +2182,36 @@ v_splicedCAndMCommandDispatcherQuit(
     v_spliced spliced)
 {
    assert(C_TYPECHECK(spliced,v_spliced));
-
    c_mutexLock(&spliced->cAndMCommandMutex);
    spliced->cAndMCommandDispatcherQuit = TRUE;
    /* Wakeup the C&M command dispatcher thread to take notice and terminate.
     * Waitset mask must be set sensitive to V_EVENT_TRIGGER. */
    v_waitsetTrigger(spliced->cAndMCommandWaitSet, NULL);
    OS_REPORT(OS_INFO,
-             "v_splicedCAndMCommandDispatcherQuit", 0,
+             "v_splicedCAndMCommandDispatcherQuit", 1,
              "The C&M Service thread is notified to terminate.");
    c_mutexUnlock(&spliced->cAndMCommandMutex);
 }
 
 static void v_splicedTakeCandMCommand(v_spliced spliced);
 
-static void dispatchCandMCommandAction(v_waitsetEvent e, c_voidp arg)
+static void
+dispatchCandMCommandAction(
+    v_waitsetEvent e,
+    c_voidp arg)
 {
-   v_spliced spliced = (v_spliced)arg;
-   v_splicedTakeCandMCommand(spliced);
+    v_spliced spliced = (v_spliced)arg;
+    v_splicedTakeCandMCommand(spliced);
+    OS_UNUSED_ARG(e);
 }
 
 void
 v_splicedBuiltinCAndMCommandDispatcher(
     v_spliced spliced)
 {
-   v_kernel k;
    v_result res ;
    c_bool boolRes;
    v_dataReader reader;
-
-   k = v_objectKernel(spliced);
 
    c_mutexLock(&spliced->cAndMCommandMutex);
    reader = spliced->readers[V_C_AND_M_COMMAND_ID];
@@ -2041,7 +2224,7 @@ v_splicedBuiltinCAndMCommandDispatcher(
                             V_EVENT_DATA_AVAILABLE | V_EVENT_TRIGGER);
    assert( boolRes );
    OS_REPORT(OS_INFO,
-             "v_splicedBuiltinCAndMCommandDispatcher", 0,
+             "v_splicedBuiltinCAndMCommandDispatcher", 1,
              "The C&M Service thread is started.");
    while (!spliced->cAndMCommandDispatcherQuit)
    {
@@ -2058,7 +2241,7 @@ v_splicedBuiltinCAndMCommandDispatcher(
                               v_observable(reader));
    /* FIXME Do we need this? Fails on exit if I assert( boolRes ); */
    OS_REPORT(OS_INFO,
-             "v_splicedBuiltinCAndMCommandDispatcher", 0,
+             "v_splicedBuiltinCAndMCommandDispatcher", 1,
              "The C&M Service thread is stopped.");
 }
 
@@ -2090,29 +2273,40 @@ static void
 doCleanupPublication(
     v_spliced spliced,
     struct v_publicationInfo *oInfo,
-    c_time *cleanTime)
+    c_time *cleanTime,
+    c_bool isValid)
 {
     v_kernel kernel;
     int i, len;
     v_group group;
+    c_iter groups;
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
     assert(oInfo != NULL);
 
     kernel = v_objectKernel(spliced);
-    /* now for every partition in the partition info find the group and notify
-     * the group that all instances of the writer must be unregistered
-     */
-    len = c_arraySize(oInfo->partition.name);
-    for (i = 0; i < len; i++)
-    {
-        group = v_groupSetGet(kernel->groupSet,
-            oInfo->partition.name[i],
-            oInfo->topic_name);
-        /* A group does not necessarily have to exist locally! */
-        if (group != NULL)
+
+    if (isValid) {
+        /* Publication-info is from a valid sample: now for every partition
+         * in the partition info find the group and notify the group that all
+         * instances of the writer must be unregistered
+         */
+        len = c_arraySize(oInfo->partition.name);
+        for (i = 0; i < len; i++)
         {
+            groups = v_groupSetLookup(kernel->groupSet, oInfo->partition.name[i], oInfo->topic_name);
+            while ((group = c_iterTakeFirst(groups)) != NULL) {
+                v_groupDisconnectWriter(group, oInfo, *cleanTime);
+                c_free(group);
+            }
+        }
+    } else {
+        /* Publication-info is from invalid sample so only key-fields may be interpreted.
+         * Select all groups to check if any instances of the writer must be unregistered
+         */
+        groups = v_groupSetSelectAll(kernel->groupSet);
+        while ((group = c_iterTakeFirst(groups)) != NULL) {
             v_groupDisconnectWriter(group, oInfo, *cleanTime);
             c_free(group);
         }
@@ -2133,6 +2327,7 @@ v_spliced spliced)
     c_long length;
     v_group g;
     os_time delay = {GC_DELAY_SEC, GC_DELAY_NSEC};
+    c_bool pubComplete;
 
     assert(spliced != NULL);
     assert(C_TYPECHECK(spliced,v_spliced));
@@ -2158,24 +2353,54 @@ v_spliced spliced)
         if (missedHBMsg)
         {
             missedHB = v_builtinHeartbeatInfoData(kernel->builtin, missedHBMsg);
-            OS_REPORT_1(OS_WARNING, "v_spliced", 0,
-                    "Missed heartbeat for node %d", v_gidSystemId(missedHB->id));
 
-            /* If a heartbeat is missed, identify the node in question and
-             * walk over all builtin DCPSPublication instances. */
-            g = v_groupSetGet(kernel->groupSet, V_BUILTIN_PARTITION, V_PUBLICATIONINFO_NAME);
-            /* A group does not necessarily have to exist locally! */
-            if (g != NULL)
+            /* Wait for alignment of DCPSPublication topic */
+            pubComplete = v_readerWaitForHistoricalData(
+                v_reader(spliced->readers[V_PUBLICATIONINFO_ID]), C_TIME_ZERO);
+
+            OS_REPORT_2(OS_WARNING, "v_spliced", 0,
+                "Missed heartbeat for node %d. (DCPSPublication state %d)",
+                v_gidSystemId(missedHB->id), pubComplete);
+
+            if (kernel->builtin->kernelQos->builtin.enabled && pubComplete)
             {
-                /* Disconnect all the node's registrations from this group. Note
-                 * that the heartbeat's period is an effectively cleanup time.
+                /* In case the builtin topics are enabled, we only need to remove the
+                 * DCPSPublication samples that originate from the disconnected node.
+                 * The v_splicedProcessPublicationInfo() function will then take it
+                 * from there.
                  */
-                v_groupDisconnectNode(g, missedHB);
-                os_nanoSleep(delay);
-                c_free(g);
-                g = NULL;
+                g = v_groupSetGet(kernel->groupSet, V_BUILTIN_PARTITION, V_PUBLICATIONINFO_NAME);
+                /* A group does not necessarily have to exist locally! */
+                if (g != NULL)
+                {
+                    /* Disconnect all the node's registrations from this group. Note
+                     * that the heartbeat's period is an effectively cleanup time.
+                     */
+                    v_groupDisconnectNode(g, missedHB);
+                    os_nanoSleep(delay);
+                    c_free(g);
+                    g = NULL;
+                }
+            }
+            else
+            {
+                /* In case the builtin topics are disabled, we need to walk over all
+                 * available groups and remove everything that originates from the
+                 * disconnected node. This is also the case if DCPSPublication
+                 * is not complete.
+                 */
+                groups = v_groupSetSelectAll(kernel->groupSet);
+                g = v_group(c_iterTakeFirst(groups));
+                while ((g != NULL) && (!spliced->quit))
+                {
+                    v_groupDisconnectNode(g, missedHB);
+                    os_nanoSleep(delay);
+                    c_free(g);
+                    g = v_group(c_iterTakeFirst(groups));
+                }
             }
             c_free(missedHBMsg);
+
         }
         else
         {
@@ -2242,6 +2467,11 @@ v_splicedStartHeartbeat(
 
     kernel = v_objectKernel(spliced);
     spliced->hb.period = period;
+    /* The check for heartbeats should be performed at least once every
+     * MIN(RemoteSpliced_0_ExpiryTime, ..., RemoteSpliced_n_ExpiryTime). Neither
+     * period nor renewal are correct here. Because renewal is shorter, chances
+     * that it satisfies the above are greater, but still not correct. See also
+     * dds2898 */
     spliced->hbCheck = v_leaseNew(kernel, renewal);
     if(spliced->hbCheck)
     {
@@ -2345,9 +2575,6 @@ disposeAllDataCandMCommand(
                 OS_REPORT(OS_WARNING, "spliced", 0,
                           "Dispose All Data failed due to internal error.");
              }
-             v_participantDeleteHistoricalData( v_participant(spliced),
-                                                disposeCmd->partitionExpr,
-                                                disposeCmd->topicExpr );
 
              topic = v_groupTopic( group );
 
@@ -2408,9 +2635,6 @@ disposeAllDataCandMCommand(
           }
           c_mutexUnlock(&kernel->pendingDisposeListMutex);
        }
-       v_participantDeleteHistoricalData( v_participant(spliced),
-                                          disposeCmd->partitionExpr,
-                                          disposeCmd->topicExpr );
    }
    c_iterFree(list);
 }
@@ -2466,7 +2690,7 @@ static void v_splicedTakeCandMCommand(v_spliced spliced)
     samples = NULL;
     if ( (reader = spliced->readers[V_C_AND_M_COMMAND_ID]) != NULL )
     {
-        v_dataReaderTake(reader, readerAction, &samples);
+        v_dataReaderTake(reader, readerTakeAction, &samples);
         while ( (s = v_dataReaderSample(c_iterTakeFirst(samples))) != NULL )
         {
            timestamp = v_dataReaderSample(s)->insertTime;

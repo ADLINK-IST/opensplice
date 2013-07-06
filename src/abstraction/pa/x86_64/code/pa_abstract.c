@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -36,7 +36,7 @@ pa_decrement(
     os_uint32 *count)
 {
     os_uint32 value;
-#if 1
+
     __asm__ __volatile__ (
             "movl $-1, %0\n\t"
             "lock\n\t"
@@ -45,9 +45,6 @@ pa_decrement(
     :       "=&r" (value), "=m" (*count)
     :       "m" (*count)
     :       "memory");
-#else
-    *count--;
-    value = *count;
-#endif
+
     return value;
 }

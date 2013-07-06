@@ -1,18 +1,18 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
+#include "mm_metakindNames.h"
 #include "u_user.h"
 #include "c_base.h"
 #include "c__base.h"
-#include "c__extent.h"
 #include "c_avltree.h"
 #include "ut_collection.h"
 #include "os_stdlib.h"
@@ -63,7 +63,7 @@ C_STRUCT(monitor_orc) {
    char *filterExpression;
    ut_collection refTree;
    int totalObjectCount;
-   int totalSizeCount;
+   os_address totalSizeCount;
    c_bool delta;
 };
 
@@ -74,48 +74,6 @@ C_STRUCT(refLeaf) {
    c_type tr;
    unsigned int rc;
    unsigned int prc;
-};
-
-static char *baseKind [] = {
-   "M_UNDEFINED",
-   "M_ATTRIBUTE",
-   "M_CLASS",
-   "M_COLLECTION",
-   "M_CONSTANT",
-   "M_CONSTOPERAND",
-   "M_ENUMERATION",
-   "M_EXCEPTION",
-   "M_EXPRESSION",
-   "M_INTERFACE",
-   "M_LITERAL",
-   "M_MEMBER",
-   "M_MODULE",
-   "M_OPERATION",
-   "M_PARAMETER",
-   "M_PRIMITIVE",
-   "M_RELATION",
-   "M_BASE",
-   "M_STRUCTURE",
-   "M_TYPEDEF",
-   "M_UNION",
-   "M_UNIONCASE",
-   "M_COUNT"
-};
-
-static char *collectionKind [] = {
-   "C_UNDEFINED",
-   "C_LIST",
-   "C_ARRAY",
-   "C_BAG",
-   "C_SET",
-   "C_MAP",
-   "C_DICTIONARY",
-   "C_SEQUENCE",
-   "C_STRING",
-   "C_WSTRING",
-   "C_QUERY",
-   "C_SCOPE",
-   "C_COUNT"
 };
 
 static c_type nullType = (c_type)0xffffffff;
@@ -153,18 +111,22 @@ monitor_orcNew (
 {
    monitor_orc o = malloc (C_SIZEOF(monitor_orc));
 
-   if (o) {
+   if (o)
+   {
       o->extendCountLimit = extendCountLimit;
+      if (filterExpression)
+      {
+         o->filterExpression = os_strdup(filterExpression);
+      }
+      else
+      {
+	 o->filterExpression = NULL;
+      }
+      o->refTree = ut_tableNew (compareLeafs, NULL);
+      o->totalSizeCount = 0;
+      o->totalObjectCount = 0;
+      o->delta = delta;
    }
-   if (filterExpression) {
-      o->filterExpression = os_strdup(filterExpression);
-   } else {
-      o->filterExpression = NULL;
-   }
-   o->refTree = ut_tableNew (compareLeafs, NULL);
-   o->totalSizeCount = 0;
-   o->totalObjectCount = 0;
-   o->delta = delta;
 
    return o;
 }
@@ -278,7 +240,7 @@ display_orc (
                   printf ("::%s\r\n", c_metaObject(ord->tr)->name);
                   trace->totalSizeCount += c_type(ord->tr)->size * (ord->rc - ord->prc);
                   trace->totalObjectCount += ord->rc - ord->prc;
-	            }
+                    }
             } else {
                if (ord->rc >= trace->extendCountLimit) {
                   if (trace->filterExpression) {
@@ -296,7 +258,7 @@ display_orc (
                   printf ("::%s\r\n", c_metaObject(ord->tr)->name);
                   trace->totalSizeCount += c_type(ord->tr)->size * ord->rc;
                   trace->totalObjectCount += ord->rc;
-	            }
+                    }
             }
             break;
          }
@@ -309,8 +271,6 @@ display_orc (
       case M_INTERFACE:
       case M_CLASS:
       case M_EXCEPTION:
-      case M_EXTENT:
-      case M_EXTENTSYNC:
          if (trace->delta) {
             if (abs(ord->rc - ord->prc) >= trace->extendCountLimit) {
                if (trace->filterExpression) {
@@ -324,9 +284,9 @@ display_orc (
                        (int)c_type(ord->tr)->size,
                        (int)(c_type(ord->tr)->size * (ord->rc - ord->prc)),
                        baseKind[c_baseObject(ord->tr)->kind]);
-	            printf ("                ");
+                    printf ("                ");
                printScope (c_metaObject(ord->tr)->definedIn);
-	            printf ("::%s\r\n", c_metaObject(ord->tr)->name);
+                    printf ("::%s\r\n", c_metaObject(ord->tr)->name);
                trace->totalSizeCount += c_type(ord->tr)->size * (ord->rc - ord->prc);
                trace->totalObjectCount += ord->rc - ord->prc;
             }
@@ -342,9 +302,9 @@ display_orc (
                        (int)c_type(ord->tr)->size,
                        (int)(c_type(ord->tr)->size * ord->rc),
                        baseKind[c_baseObject(ord->tr)->kind]);
-	            printf ("                ");
+                    printf ("                ");
                printScope (c_metaObject(ord->tr)->definedIn);
-	            printf ("::%s\r\n", c_metaObject(ord->tr)->name);
+                    printf ("::%s\r\n", c_metaObject(ord->tr)->name);
                trace->totalSizeCount += c_type(ord->tr)->size * ord->rc;
                trace->totalObjectCount += ord->rc;
             }
@@ -384,7 +344,7 @@ monitor_orcAction (
    monitor_orc trace = monitor_orc(args);
    time_t t;
    int count = 0;
-   int totalSize;
+   os_address totalSize;
 
    time (&t);
    base = c_getBase(entity);

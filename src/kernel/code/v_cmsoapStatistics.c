@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -47,6 +47,7 @@ void v_cmsoapStatisticsDeinit(v_cmsoapStatistics cs)
 {
     assert(cs!=NULL);
     assert(C_TYPECHECK(cs, v_cmsoapStatistics));
+    OS_UNUSED_ARG(cs);
 }
 
 c_bool v_cmsoapStatisticsReset(v_cmsoapStatistics cs, const c_char* fieldName)

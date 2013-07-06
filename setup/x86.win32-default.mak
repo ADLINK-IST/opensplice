@@ -1,12 +1,13 @@
+include  $(OSPL_HOME)/setup/vcpp.mak
+
 # target context in platform specific config.mak
 
 WINCMD = $(OSPL_HOME)/bin/ospl_wincmd
-WINCSC = sh $(OSPL_HOME)/bin/ospl_wincsc
 
 # Set name context of used tooling
 CC  = $(WINCMD) cl
 CXX = $(WINCMD) cl
-CSC = $(WINCSC) Csc
+CSC = $(WINCMD) Csc
 
 # Binary used for filtering: in the future must be empty
 FILTER =
@@ -39,18 +40,25 @@ GCPP  	 = $(CXX)
 GCOV		 = gcov
 
 	#Javac
-JCC              = javac
+JCC              = $(WINCMD) javac
+JCFLAGS_JACORB   = -endorseddirs "$(JACORB_HOME)/lib/endorsed"
+JACORB_INC       =
+
+ifdef JAVA_COMPATJAR
+ifneq (,$(JAVA_COMPATJAR))
+JCFLAGS_COMPAT   = -source 1.6 -target 1.6 -bootclasspath "$(JAVA_COMPATJAR)"
+endif
+endif
 
 	#JAR
 JAR		 = jar
 
 #JAVAH
-JAVAH            = javah
+JAVAH            = $(WINCMD) javah
 JAVAH_FLAGS      = -force
 
 	#Java
-JAVA		 = java
-JAVA_SRCPATH_SEP = ;
+JAVA		 = $(WINCMD) java
 JAVA_LDFLAGS	= -L"$(JAVA_HOME)/lib"
 JAVA_INCLUDE	= -I"$(JAVA_HOME)/include"
 JAVA_INCLUDE	+= -I"$(JAVA_HOME)/include/win32"
@@ -75,12 +83,12 @@ ifeq ("$(VS_VER)","14")
    VS_LIB_FLAGS += -L"$(VS_HOME)/VC/PlatformSDK/lib"
 endif
 
-ifeq ("$(VS_VER)","15")
+ifneq (,$(or $(findstring 15,$(VS_VER)),$(findstring 16,$(VS_VER))))
    VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
-   VS_INCLUDE += -I"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/Include"  -I"$(WINDOWSSDKDIR)/Include"
+   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include"
 
    VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib"
-   VS_LIB_FLAGS += -L"$(VS_HOME)/../Microsoft SDKs/Windows/v6.0A/lib" -L"$(WINDOWSSDKDIR)/lib"
+   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib"
 endif
 
 # Set compiler options for single threaded process
@@ -89,8 +97,9 @@ CFLAGS	= -TC $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
 CXXFLAGS	= -EHsc -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 CSFLAGS	= -noconfig -nowarn:1701,1702 -errorreport:prompt -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
+
 # Set CPP flags
-CPPFLAGS	 = -nologo -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_USE_32BIT_TIME_T -DVERSION="\"$(PACKAGE_VERSION)\"" $(VS_INCLUDE)
+CPPFLAGS	 = -nologo -DOSPL_ENV_$(SPECIAL) -DWIN32 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -D_USE_32BIT_TIME_T $(VS_INCLUDE)
 
 # Set compiler options for multi threaded process
 # notify usage of posix threads
@@ -120,9 +129,15 @@ LDLIBS_OS = -lkernel32 -lAdvapi32
 LDLIBS_CMS = -lws2_32
 LDLIBS_JAVA = -ljvm
 LDLIBS_ODBC= -lodbc32
+
+ifndef OSPL_NO_ZLIB
 LDLIBS_ZLIB = -lzlib
 LDFLAGS_ZLIB = "-L$(ZLIB_HOME)"
 CINCS_ZLIB = "-I$(ZLIB_HOME)"
+else
+CFLAGS += -DOSPL_NO_ZLIB
+CPPFLAGS += -DOSPL_NO_ZLIB
+endif
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .obj

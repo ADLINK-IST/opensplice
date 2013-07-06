@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -37,7 +37,18 @@
               ((state) == L_EMPTY) ||                               \
               ((state) == L_DISPOSED) ||                            \
               ((state) == L_STATECHANGED) ||                        \
+              ((state) == L_TRIGGER) ||                             \
               ((state) == L_NOWRITERS) ) );                         \
+    v_stateSet(v_dataReaderInstanceState(instance), (state))
+
+#define v_dataReaderInstanceStateSetMask(instance, state)           \
+    assert( ((instance) != NULL ) &&                                \
+            ( ((state) & ~(L_NEW |                                  \
+                           L_EMPTY |                                \
+                           L_DISPOSED |                             \
+                           L_STATECHANGED |                         \
+                           L_TRIGGER |                              \
+                           L_NOWRITERS)) == 0 ) );                  \
     v_stateSet(v_dataReaderInstanceState(instance), (state))
 
 #define v_dataReaderInstanceStateClear(instance, state)             \
@@ -46,17 +57,25 @@
               ((state) == L_EMPTY) ||                               \
               ((state) == L_DISPOSED) ||                            \
               ((state) == L_STATECHANGED) ||                        \
-              ((state) == L_NOWRITERS) ) );                         \
+              ((state) == L_TRIGGER) ||                             \
+              ((state) == L_NOWRITERS) ||                           \
+              ((state) == L_REMOVED) ) );                           \
     v_stateClear(v_dataReaderInstanceState(instance), (state))
 
 #define v_dataReaderInstanceInNotEmptyList(_this) \
         (v_dataReaderInstance(_this)->inNotEmptyList)
 
-#define v_dataReaderInstanceRegisterSource(_this,item) \
-        v_groupCacheInsert(v_dataReaderInstance(_this)->sourceCache,item)
+/**
+ * This macro determines if the reader contains VALID samples that are available for
+ * consumption. Not all valid samples are available for consumption, since some of them
+ * may belong to an unfinished transaction. The sampleCount of the dataReaderInstance
+ * is primarily used for determining whether there are enough resource limits to
+ * accommodate any further samples, and so incorporates both transactional and
+ * non-transactional samples.
+ */
 
-#define v_dataReaderInstanceDisconnect(_this) \
-        v_groupCacheDeinit(v_dataReaderInstance(_this)->sourceCache)
+#define hasValidSampleAccessible(_this) \
+        (_this->accessibleCount > 0)
 
 v_dataReaderInstance
 v_dataReaderInstanceNew(
@@ -67,15 +86,6 @@ void
 v_dataReaderInstanceInit(
     v_dataReaderInstance _this,
     v_message message);
-
-#if 1
-void
-v_dataReaderInstanceFree(
-    v_dataReaderInstance _this);
-#else
-#define v_dataReaderInstanceFree(_this) \
-        c_free(_this)
-#endif
 
 void
 v_dataReaderInstanceDeinit(
@@ -105,11 +115,21 @@ v_dataReaderInstanceTakeSamples(
     v_readerSampleAction action,
     c_voidp arg);
 
-c_bool
+v_actionResult
 v_dataReaderInstanceWalkSamples(
     v_dataReaderInstance _this,
     v_readerSampleAction action,
     c_voidp arg);
+
+void
+v_dataReaderInstanceSampleRemove(
+    v_dataReaderInstance _this,
+    v_dataReaderSample sample);
+
+c_bool
+v_dataReaderInstanceContainsSample(
+    v_dataReaderInstance _this,
+    v_dataReaderSample sample);
 
 void
 v_dataReaderInstancePurge(
@@ -120,7 +140,9 @@ v_dataReaderInstancePurge(
 c_bool
 v_dataReaderInstanceTest(
     v_dataReaderInstance _this,
-    c_query query);
+    c_query query,
+    v_queryAction action,
+    c_voidp args);
 
 void
 v_dataReaderInstanceSetEpoch (

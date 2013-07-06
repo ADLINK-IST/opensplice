@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -25,7 +25,15 @@
 #include <ioLib.h>
 #endif
 
-os_sockErrno
+#if !defined(OS_NO_NETLINK) && defined(__gnu_linux__)
+#include <asm/types.h>
+#include <netinet/in.h>
+#include <linux/netlink.h>
+#include <linux/rtnetlink.h>
+#include <net/if.h>
+#endif
+
+int
 os_sockError(void)
 {
     return errno;
@@ -53,6 +61,22 @@ os_sockBind(
     return result;
 }
 
+os_result
+os_sockGetsockname(
+    os_socket s,
+    const struct sockaddr *name,
+    os_uint32 namelen)
+{
+    os_result result = os_resultSuccess;
+    socklen_t len = namelen;
+
+
+    if (getsockname(s, (struct sockaddr *)name, &len) == -1) {
+        result = os_resultFail;
+    }
+    return result;
+}
+
 os_int32
 os_sockSendto(
     os_socket s,
@@ -73,7 +97,7 @@ os_sockRecvfrom(
     os_uint32 *fromlen)
 {
    int res;
-   socklen_t fl = *fromlen;;
+   socklen_t fl = *fromlen;
    res = recvfrom(s, buf, (os_uint)len, 0, from, &fl);
    *fromlen=fl;
    return (os_int32)res;
@@ -107,8 +131,19 @@ os_sockSetsockopt(
     if (setsockopt(s, level, optname, optval, optlen) == -1) {
         result = os_resultFail;
     }
+#ifdef OS_NEEDS_SO_REUSEPORT
+    if (result == os_resultSuccess && level == SOL_SOCKET && optname == SO_REUSEADDR)
+    {
+       if (setsockopt(s, level, SO_REUSEPORT, optval, optlen) == -1)
+       {
+          result = os_resultFail;
+       }
+    }
+#endif
     return result;
 }
+
+#include "os_socket_nb.c"
 
 os_result
 os_sockFree(
@@ -160,17 +195,21 @@ os_queryInterfaceAttributes(
 
     os_strncpy (ifElement->name, ifr->ifr_name, OS_IFNAMESIZE);
 
-    memcpy(&ifElement->address, &ifr->ifr_addr,
-            ifr->ifr_addr.sa_family == AF_INET6 ? sizeof(os_sockaddr_in6) : sizeof(os_sockaddr_in));
     if (ifr->ifr_addr.sa_family == AF_INET6)
     {
+#if (OS_SOCKET_HAS_IPV6 == 1)
+        memcpy(&ifElement->address, &ifr->ifr_addr, sizeof(os_sockaddr_in6));
         /* Just zero these fileds for IPv6 */
-        ifElement->flags = 0;
+        ifElement->flags = ifr->ifr_flags;
         memset (&ifElement->broadcast_address, 0, sizeof (ifElement->broadcast_address));
         memset (&ifElement->network_mask, 0, sizeof (&ifElement->network_mask));
+#else
+        result = os_resultFail;
+#endif
     }
     else
     {
+        memcpy(&ifElement->address, &ifr->ifr_addr, sizeof(os_sockaddr_in));
         ifAttr = *ifr;
 #ifdef INTEGRITY
         if ( !strcmp("lo0", ifAttr.ifr_name) )
@@ -183,7 +222,7 @@ os_queryInterfaceAttributes(
         }
 #else
         retVal = ioctl (s, SIOCGIFFLAGS, &ifAttr);
-        if (retVal == 0) {
+        if (retVal != -1) {
             ifElement->flags = ifAttr.ifr_flags;
         } else {
             result = os_resultFail;
@@ -193,7 +232,7 @@ os_queryInterfaceAttributes(
         {
             ifAttr = *ifr;
             retVal = ioctl (s, SIOCGIFBRDADDR, &ifAttr);
-            if (retVal == 0) {
+            if (retVal != -1) {
                 memcpy(&ifElement->broadcast_address, &ifAttr.ifr_broadaddr, sizeof(os_sockaddr_in));
             } else {
                 result = os_resultFail;
@@ -205,7 +244,7 @@ os_queryInterfaceAttributes(
         }
         ifAttr = *ifr;
         retVal = ioctl (s, SIOCGIFNETMASK, &ifAttr);
-        if (retVal == 0) {
+        if (retVal != -1) {
             memcpy(&ifElement->network_mask, &ifAttr.ifr_addr, sizeof(os_sockaddr_in));
         } else {
             result = os_resultFail;
@@ -222,7 +261,7 @@ os_queryInterfaceAttributes(
     /* Get the interface index number */
     ifAttr = *ifr;
     retVal = ioctl (s, SIOCGIFINDEX, &ifAttr);
-    if (retVal == 0)
+    if (retVal  != -1)
     {
         ifElement->interfaceIndexNo = (os_uint) ifAttr.ifr_ifindex;
     } else {
@@ -270,6 +309,13 @@ os_sockQueryInterfacesBase(
                 while ((listIndex < listSize) &&
                       ((char *)ifr < ((char *)ifc.ifc_buf + ifc.ifc_len)) &&
                       (result == os_resultSuccess)) {
+#if (OS_SOCKET_HAS_FREEBSD_STACK == 1)
+                    ifrLen = sizeof(struct ifreq);
+                    if (ifr->ifr_addr.sa_len)
+                    {
+                       ifrLen += ifr->ifr_addr.sa_len - sizeof(struct sockaddr);
+                    }
+#else
                     ifrLen = (unsigned int)sizeof(ifr->ifr_name);
 #if (OS_SOCKET_HAS_SA_LEN == 1)
                     if (sizeof(struct sockaddr) > ifr->ifr_addr.sa_len) {
@@ -281,8 +327,11 @@ os_sockQueryInterfacesBase(
 
                     if (ifr->ifr_addr.sa_family == AF_INET) {
                         ifrLen += sizeof(struct sockaddr_in);
+#if (OS_SOCKET_HAS_IPV6 == 1)
                     } else if (ifr->ifr_addr.sa_family == AF_INET6) {
                         ifrLen += sizeof(os_sockaddr_in6);
+
+#endif
                     } else {
                         ifrLen += (unsigned int)sizeof(struct sockaddr);
                     }
@@ -294,6 +343,7 @@ os_sockQueryInterfacesBase(
                    if (ifrLen < sizeof(struct ifreq)) {
                       ifrLen = sizeof(struct ifreq);
                    }
+#endif
 
                    if (ifr->ifr_addr.sa_family == addressFamily) {
                         /* Get other interface attributes */
@@ -322,7 +372,7 @@ os_sockQueryInterfacesBase(
 }
 
 os_result
-os_sockQueryInterfaces(
+os_sockQueryInterfacesx(
     os_ifAttributes *ifList,
     os_uint32 listSize,
     os_uint32 *validElements)
@@ -330,12 +380,106 @@ os_sockQueryInterfaces(
     return os_sockQueryInterfacesBase(ifList, listSize, validElements, AF_INET);
 }
 
+
+
+os_result
+os_sockQueryInterfaces(
+    os_ifAttributes *ifList,
+    os_uint32 listSize,
+    os_uint32 *validElements)
+{
+#ifdef OS_NO_GETIFADDRS
+    /* If getifaddrs isn't available fall back to ioctl. Might work... */
+    return os_sockQueryInterfacesBase(ifList, listSize, validElements, AF_INET);
+#else
+    struct ifaddrs* interfaceList = NULL;
+    struct ifaddrs* nextInterface = NULL;
+    unsigned int listIndex = 0;
+    unsigned int i;
+
+    *validElements = 0;
+
+    if (getifaddrs (&interfaceList) != 0)
+    {
+        return os_resultFail;
+    }
+
+    nextInterface = interfaceList;
+
+    while (nextInterface != NULL && listIndex < listSize)
+    {
+        if (nextInterface->ifa_addr &&
+            nextInterface->ifa_addr->sa_family == AF_INET)
+        {
+            os_strncpy(ifList[listIndex].name, nextInterface->ifa_name, OS_IFNAMESIZE);
+            memcpy(&ifList[listIndex].address, nextInterface->ifa_addr, sizeof(os_sockaddr_in));
+            ifList[listIndex].flags = nextInterface->ifa_flags;
+
+            if (nextInterface->ifa_flags & IFF_BROADCAST)
+            {
+                memcpy(&ifList[listIndex].broadcast_address, nextInterface->ifa_broadaddr, sizeof(os_sockaddr_in));
+            }
+            else
+            {
+                memset (&ifList[listIndex].broadcast_address, 0, sizeof (ifList[listIndex].broadcast_address));
+            }
+
+            memcpy(&ifList[listIndex].network_mask, nextInterface->ifa_addr, sizeof(os_sockaddr_in));
+
+            ifList[listIndex].interfaceIndexNo = (os_uint) if_nametoindex(nextInterface->ifa_name);
+            ++listIndex;
+        }
+        nextInterface = nextInterface->ifa_next;
+    }
+
+    nextInterface = interfaceList;
+
+    /* Walk list again to find interfaces which are not connected.
+     * Note that these interfaces have only an entry for the address family AF_PACKET.
+     * The status in the corresponding flag field is set to IFF_DOWN.
+     */
+    while (nextInterface != NULL && listIndex < listSize)
+    {
+        if (nextInterface->ifa_addr &&
+            nextInterface->ifa_addr->sa_family == AF_PACKET)
+        {
+            for (i = 0; i < listIndex; i++) {
+                if (strcmp(ifList[i].name, nextInterface->ifa_name) == 0) {
+                    break;
+                }
+            }
+
+            if (i == listIndex) {
+                os_strncpy(ifList[listIndex].name, nextInterface->ifa_name, OS_IFNAMESIZE);
+                memset (&ifList[listIndex].address, 0, sizeof(ifList[listIndex].address));
+                ifList[listIndex].flags = 0;
+                memset (&ifList[listIndex].broadcast_address, 0, sizeof (ifList[listIndex].broadcast_address));
+                memset (&ifList[listIndex].network_mask, 0, sizeof (ifList[listIndex].network_mask));
+                ifList[listIndex].interfaceIndexNo = 0;
+                ++listIndex;
+            }
+        }
+        nextInterface = nextInterface->ifa_next;
+    }
+
+
+    *validElements = listIndex;
+    freeifaddrs(interfaceList);
+    return os_resultSuccess;
+#endif /*OS_NO_GETIFADDRS */
+
+    return os_resultFail;
+}
+
+
+
 os_result
 os_sockQueryIPv6Interfaces(
     os_ifAttributes *ifList,
     os_uint32 listSize,
     os_uint32 *validElements)
 {
+#if (OS_SOCKET_HAS_IPV6 == 1)
 #ifdef OS_NO_GETIFADDRS
     /* If getifaddrs isn't available fall back to ioctl. Might work... */
     return os_sockQueryInterfacesBase(ifList, listSize, validElements, AF_INET6);
@@ -368,7 +512,7 @@ os_sockQueryIPv6Interfaces(
             {
                 os_strncpy(ifList[listIndex].name, nextInterface->ifa_name, OS_IFNAMESIZE);
                 memcpy(&ifList[listIndex].address, v6Address, sizeof (os_sockaddr_in6));
-                ifList[listIndex].flags = 0;
+                ifList[listIndex].flags = nextInterface->ifa_flags;
                 memset(&ifList[listIndex].broadcast_address, 0, sizeof (ifList[listIndex].broadcast_address));
                 memset(&ifList[listIndex].network_mask, 0, sizeof (&ifList[listIndex].network_mask));
                 ifList[listIndex].interfaceIndexNo = (os_uint) if_nametoindex(nextInterface->ifa_name);
@@ -382,4 +526,185 @@ os_sockQueryIPv6Interfaces(
     freeifaddrs(interfaceList);
     return os_resultSuccess;
 #endif /*OS_NO_GETIFADDRS */
+#else
+    return os_resultFail;
+#endif /* OS_SOCKET_HAS_IPV6 */
 }
+
+
+#if !defined(OS_NO_NETLINK) && defined(__gnu_linux__)
+typedef struct os_sockQueryInterfaceStatusInfo_s {
+    char *ifName;
+    int sock;
+} os_sockQueryInterfaceStatusInfo;
+
+void
+os_sockQueryInterfaceStatusDeinit(
+    void *handle)
+{
+    os_sockQueryInterfaceStatusInfo *info = (os_sockQueryInterfaceStatusInfo *) handle;
+
+    if (info) {
+        if (info->ifName) {
+            os_free(info->ifName);
+        }
+        if (info->sock >= 0) {
+            close(info->sock);
+        }
+        os_free(info);
+    }
+}
+
+void *
+os_sockQueryInterfaceStatusInit(
+    const char *ifName)
+{
+    os_sockQueryInterfaceStatusInfo *info = NULL;
+    struct sockaddr_nl addr;
+    int sock;
+
+    sock = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+    if (sock >= 0) {
+        memset(&addr, 0, sizeof(addr));
+        addr.nl_family = AF_NETLINK;
+        addr.nl_groups = RTMGRP_IPV4_IFADDR;
+
+        if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
+            if(close(sock) == -1){
+                os_report(OS_WARNING, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                        "Failed to close socket; close(%d) failed with error: %s",
+                        sock, strerror(errno));
+            }
+            sock = -1;
+            os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                      "Failed to bind to NETLINK socket");
+        }
+    } else {
+        os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                  "Failed to create NETLINK socket");
+    }
+
+    if (sock >= 0) {
+        info = (os_sockQueryInterfaceStatusInfo *) os_malloc(sizeof(os_sockQueryInterfaceStatusInfo));
+        if (info) {
+            info->sock = sock;
+            info->ifName = os_strdup(ifName);
+            if (!info->ifName) {
+                os_sockQueryInterfaceStatusDeinit(info);
+                info = NULL;
+                os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                          "Out of resources. Failed to allocate %d bytes for string '%s'",
+                          strlen(ifName), ifName);
+            }
+        } else {
+            if(close(sock) == -1){
+                os_report(OS_WARNING, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                        "Failed to close socket; close(%d) failed with error: %s",
+                        sock, strerror(errno));
+            }
+            os_report(OS_ERROR, "os_sockQueryInterfaceStatusInit", __FILE__, __LINE__, 0,
+                    "Out of resources. Failed to allocate %d bytes for os_sockQueryInterfaceStatusInfo",
+                    sizeof(*info));
+        }
+    }
+
+    return info;
+}
+
+
+os_result
+os_sockQueryInterfaceStatus(
+    void *handle,
+    os_time timeout,
+    os_boolean *status)
+{
+    os_sockQueryInterfaceStatusInfo *info = (os_sockQueryInterfaceStatusInfo *) handle;
+    os_result result = os_resultFail;
+    os_uint len;
+    char buffer[1024];
+    struct nlmsghdr *nlh;
+    fd_set fdset;
+    int r;
+    struct timeval t;
+
+    *status = OS_FALSE;
+
+    if (info && info->sock >= 0) {
+
+        FD_ZERO(&fdset);
+        FD_SET(info->sock, &fdset);
+
+        t.tv_sec = timeout.tv_sec;
+        t.tv_usec = timeout.tv_nsec / 1000;
+
+        r = select(info->sock + 1, &fdset, NULL, NULL, &t);
+        if (r > 0) {
+            nlh = (struct nlmsghdr *)buffer;
+            while ((result != os_resultSuccess) && (len = recv(info->sock, nlh, sizeof(buffer), 0)) > 0) {
+                while ((result != os_resultSuccess) && (NLMSG_OK(nlh, len)) && (nlh->nlmsg_type != NLMSG_DONE)) {
+                    char name[IFNAMSIZ];
+                    struct ifaddrmsg *ifa;
+                    struct rtattr *rth;
+                    int rtl;
+
+                    if ((nlh->nlmsg_type == RTM_NEWADDR) ||
+                        (nlh->nlmsg_type == RTM_DELADDR)) {
+                        ifa = (struct ifaddrmsg *) NLMSG_DATA(nlh);
+                        rth = IFA_RTA(ifa);
+                        rtl = IFA_PAYLOAD(nlh);
+
+                        while ((result != os_resultSuccess) && rtl && RTA_OK(rth, rtl)) {
+                            if (rth->rta_type == IFA_LOCAL) {
+                                if (if_indextoname(ifa->ifa_index, name) != NULL) {
+                                    if (strncmp(info->ifName, name, IFNAMSIZ) == 0) {
+                                        if (nlh->nlmsg_type == RTM_NEWADDR) {
+                                            *status = 1;
+                                        }
+                                        result = os_resultSuccess;
+                                    }
+                                }
+                            }
+                            rth = RTA_NEXT(rth, rtl);
+                        }
+                    }
+                }
+                nlh = NLMSG_NEXT(nlh, len);
+            }
+        } else if (r == 0) {
+            result = os_resultTimeout;
+        } else {
+            result = os_resultFail;
+        }
+    }
+
+    return result;
+}
+#else
+
+void
+os_sockQueryInterfaceStatusDeinit(
+    void *handle)
+{
+
+}
+
+void *
+os_sockQueryInterfaceStatusInit(
+    const char *ifName)
+{
+    return NULL;
+}
+
+os_result
+os_sockQueryInterfaceStatus(
+    void *handle,
+    os_time timeout,
+    os_boolean *status)
+{
+    *status = OS_FALSE;
+
+    return os_resultFail;
+}
+
+
+#endif

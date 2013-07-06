@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os.h"
@@ -14,6 +14,7 @@
 #include "c__base.h"
 #include "c__metabase.h"
 #include "c_mmbase.h"
+#include "c__mmbase.h"
 #include "c_avltree.h"
 #include "c_stringSupport.h"
 
@@ -60,9 +61,12 @@ c_scopeNew(
     c_base base)
 {
     c_scope o;
+    c_type scopeType;
 
-    o = c_scope(c_new(c_resolve(base,"c_scope")));
-    if (o) {
+    scopeType = c_resolve(base,"c_scope");
+    o = c_scope(c_new(scopeType));
+    c_free(scopeType);
+    if(o){
         c_scopeInit(o);
     }
 
@@ -75,6 +79,7 @@ c_scopeInit(
 {
     assert(s != NULL);
 
+    c_avlTreeInit (c_avlTree(s), c_baseMM(c_getBase(s)), 0);
     s->headInsOrder = NULL;
     s->tailInsOrder = NULL;
 }
@@ -280,6 +285,7 @@ c_scopeResolve(
     } else {
         o = c_scopeLookup(scope, name, metaFilter);
     }
+
     return c_baseObject(o);
 }
 

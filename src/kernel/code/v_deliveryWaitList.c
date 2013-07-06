@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -185,6 +185,7 @@ v_deliveryWaitListNew(
 {
     v_deliveryWaitList waitlist = NULL;
     v_deliveryWaitList found;
+    c_syncResult sr;
     c_type type;
 
     assert(C_TYPECHECK(_this,v_deliveryGuard));
@@ -201,14 +202,29 @@ v_deliveryWaitListNew(
             waitlist->guard = _this;
             c_mutexInit(&waitlist->mutex, SHARED_MUTEX);
             c_condInit(&waitlist->cv, &waitlist->mutex, SHARED_COND);
-            found = c_tableInsert(_this->waitlists, waitlist);
-            if (found != waitlist) {
-                /* This should not happen! */
-                OS_REPORT(OS_ERROR,
-                          "v_deliveryWaitListNew",0,
-                          "detected inconsistent waitlist admin.");
-                c_free(waitlist);
+            /* When modifying the contents of the WaitList collection in the deliveryGuard,
+             * we must first acquire its lock. */
+            sr = c_mutexLock(&_this->mutex);
+            if (sr == SYNC_RESULT_SUCCESS)
+            {
+                found = c_tableInsert(_this->waitlists, waitlist);
+                sr = c_mutexUnlock(&_this->mutex);
+            }
+            if (sr == SYNC_RESULT_SUCCESS) {
+                if (found != waitlist) {
+                    /* This should not happen! */
+                    OS_REPORT(OS_ERROR,
+                              "v_deliveryWaitListNew",0,
+                              "detected inconsistent waitlist admin.");
+                    c_free(waitlist);
+                    waitlist = NULL;
+                }
+            } else {
                 waitlist = NULL;
+                OS_REPORT_2(OS_ERROR,
+                          "v_deliveryWaitListNew",0,
+                          "Failed to claim/release mutex; _this = 0x%x, msg = 0x%x.",
+                          _this, msg);
             }
         } else {
             OS_REPORT(OS_ERROR,
@@ -229,19 +245,36 @@ v_deliveryWaitListFree(
     v_deliveryWaitList _this)
 {
     v_deliveryWaitList found;
+    v_deliveryGuard guard;
+    c_syncResult sr;
     v_result result;
 
     assert(C_TYPECHECK(_this,v_deliveryWaitList));
 
+    /* lookup or create a writer specific admin.
+     */
     if (_this) {
-        /* lookup or create a writer specific admin.
-         */
-        found = c_remove(v_deliveryGuard(_this->guard)->waitlists, _this, NULL, NULL);
-        assert(found == _this);
-        assert(c_refCount(found) == 2);
-        c_free(found);
-        c_free(_this);
-        result = V_RESULT_OK;
+        /* When modifying the contents of the WaitList collection in the deliveryGuard,
+         * we must first acquire the lock of its guard. */
+        guard = v_deliveryGuard(_this->guard);
+        sr = c_mutexLock(&guard->mutex);
+        if (sr == SYNC_RESULT_SUCCESS)
+        {
+            found = c_remove(guard->waitlists, _this, NULL, NULL);
+            sr = c_mutexUnlock(&guard->mutex);
+        }
+        if (sr == SYNC_RESULT_SUCCESS) {
+            assert(found == _this);
+            assert(c_refCount(found) == 2);
+            c_free(found);
+            c_free(_this);
+            result = V_RESULT_OK;
+        } else {
+            result = V_RESULT_INTERNAL_ERROR;
+            OS_REPORT_1(OS_ERROR,
+                      "v_deliveryWaitListFree",0,
+                      "Failed to claim/release mutex; _this = 0x%x.", _this);
+        }
     } else {
         result = V_RESULT_ILL_PARAM;
     }

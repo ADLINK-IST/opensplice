@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -23,7 +23,6 @@ import javax.swing.JFrame;
  * @date Jan 6, 2005 
  */
 public class MainWindowOpener implements ActionListener {
-    private JFrame view = null;
     private JFrame parent = null;
     
     /**
@@ -32,10 +31,10 @@ public class MainWindowOpener implements ActionListener {
      * @param _view The child window.
      * @param _parent The parent window.
      */
-    public MainWindowOpener(JFrame _view, JFrame _parent){
-        view = _view;
+    public MainWindowOpener(JFrame _parent) {
         parent = _parent;
     }
+    @Override
     public void actionPerformed(ActionEvent e) {
         String command = e.getActionCommand();
         

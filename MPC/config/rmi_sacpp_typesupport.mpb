@@ -1,0 +1,53 @@
+// -*- MPC -*-
+// $Id:$
+
+project : ospl_ddsrmi, ospl_dcpssacpp {
+  includes += .
+}
+
+feature(!src_co) {
+  Define_Custom(RMITypes) {
+    automatic_in              = 1
+    automatic_out             = 1
+    command                   = <%quote%>$(OSPL_HOME)<%slash%>bin<%slash%>rmipp<%quote%>
+    libpath                   = $(OSPL_HOME)<%slash%>bin<%pathsep%>$(OSPL_HOME)<%slash%>lib
+    inputext                  = .idl
+    source_pre_extension  =  _InterfaceProxy
+    source_outputext      = .cpp
+    header_pre_extension  = _InterfaceProxy
+    header_outputext      = .h
+    generic_pre_extension = _Topics
+    generic_outputext     = .idl
+    keyword rmi_types_flags = commandflags
+    output_follows_input = 0
+  }
+  rmi_types_flags += \
+    -l cpp
+}
+
+feature(!src_co, cross_compile) {
+  Modify_Custom(RMITypes) {
+    libpath               = $(OSPL_HOME)<%slash%>bin<%pathsep%>$(OSPL_HOME)<%slash%>host<%slash%>lib
+  }
+}
+
+feature(src_co) {
+  Define_Custom(RMITypes) {
+    automatic_in              = 1
+    automatic_out             = 1
+    command                   = <%quote%>$(OSPL_HOME_NORMALIZED)/exec/$(SPLICE_HOST)/rmipp<%quote%>
+    libpath                   = $(OSPL_HOME_NORMALIZED)/exec/$(SPLICE_HOST)<%pathsep%>$(OSPL_HOME_NORMALIZED)/lib/$(SPLICE_HOST)
+    inputext                  = .idl
+    source_pre_extension  =  _InterfaceProxy
+    source_outputext      = .cpp
+    header_pre_extension  = _InterfaceProxy
+    header_outputext      = .h
+    generic_pre_extension = _Topics
+    generic_outputext     = .idl
+    keyword rmi_types_flags = commandflags
+    output_follows_input = 0
+  }
+
+  rmi_types_flags += \
+    -I <%quote%>$(OSPL_OUTER_HOME_NORMALIZED)/src/services/rmi/idl<%quote%> -l cpp
+}

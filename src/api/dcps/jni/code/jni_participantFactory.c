@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,6 +15,8 @@
 #include "jni_nameService.h"
 #include "jni_misc.h"
 #include "os_heap.h"
+#include "os_stdlib.h"
+#include "os_signalHandler.h"
 
 static jni_participantFactory participantFactory = NULL;
 
@@ -22,8 +24,18 @@ jni_participantFactory
 jni_getParticipantFactoryInstance()
 {
     jni_nameService ns;
+    char* ldPreload;
     
     if(participantFactory == NULL){
+        ldPreload = os_getenv("LD_PRELOAD");
+
+        if(ldPreload){
+            if(strstr(ldPreload, "jsig") == NULL){
+                os_signalHandlerSetEnabled(0);
+            }
+        } else {
+            os_signalHandlerSetEnabled(0);
+        }
         ns = jni_nameServiceNew();
         
         if(ns != NULL){

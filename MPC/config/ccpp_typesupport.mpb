@@ -1,27 +1,29 @@
 // -*- MPC -*-
 // $Id:$
 
-project : taoidldefaults {
+feature(!ospl_dcpsccpp) {
+    requires = dummy_label
+}
 
+feature(no_tao) {
+    requires = dummy_label
+}
 
-  Define_Custom(TypeSupport) {
-    automatic             = 1
-    command               = <%quote%>$(OSPL_HOME)/bin/idlpp<%quote%>
-    // dependent             = <%quote%>$(OSPL_HOME)/bin/idlpp<%quote%>
-    source_pre_extension  = SplDcps, Dcps_impl
-    source_outputext      = .cpp
-    header_pre_extension  = SplDcps, Dcps_impl
-    header_outputext      = .h
-    generic_pre_extension = Dcps
-    generic_outputext     = .idl
-    template_pre_filename = ccpp_
-    template_outputext    = .h
-    keyword splice_ts_flags = commandflags
-  }
+feature(ospl_dcpsccpp, !no_tao) : taoidldefaults, taolib, dcps_typesupport_base, ospl_dcpsccpp {
 
   splice_ts_flags += \
-    -I <%quote%>$(OSPL_HOME)/etc/idl<%quote%> \
-    -C -l cpp -b CCPP/$(SPLICE_ORB)
+    -C -l cpp -b CCPP<%slash%>$(SPLICE_ORB)
 
-  idlflags += -I <%quote%>$(OSPL_HOME)/etc/idl<%quote%>
+  Modify_Custom(TypeSupport) {
+        generic_pre_extension = Dcps
+        generic_outputext     = .idl
+  }
+}
+
+feature(!src_co, !no_tao) {
+  idlflags += -I <%quote%>$(OSPL_HOME)<%slash%>etc<%slash%>idl<%quote%>
+}
+
+feature(src_co, !no_tao) {
+  idlflags += -I <%quote%>$(OSPL_HOME_NORMALIZED)<%slash%>etc<%slash%>idl<%quote%>
 }

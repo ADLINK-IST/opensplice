@@ -104,9 +104,11 @@ namespace DDS.OpenSplice
                             mask);
                     if (gapiPtr != IntPtr.Zero)
                     {
-                        TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
-                                as OpenSplice.TypeSupport;
-                        dataWriter = typeSupport.CreateDataWriter(gapiPtr);
+                        DDS.OpenSplice.DomainParticipant participantImpl;
+                    
+                        participantImpl = topic.Participant as DDS.OpenSplice.DomainParticipant;
+                        TypeSupportFactory tsFactory = participantImpl.GetTypeSupportFactory(topic.TypeName);
+                        dataWriter = tsFactory.CreateDataWriter(gapiPtr);
                         dataWriter.SetListener(listenerHelper);
                     }
                 }
@@ -121,9 +123,11 @@ namespace DDS.OpenSplice
                             mask);
                 if (gapiPtr != IntPtr.Zero)
                 {
-                    TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
-                            as OpenSplice.TypeSupport;
-                    dataWriter = typeSupport.CreateDataWriter(gapiPtr);
+                    DDS.OpenSplice.DomainParticipant participantImpl;
+                    
+                    participantImpl = topic.Participant as DDS.OpenSplice.DomainParticipant;
+                    TypeSupportFactory tsFactory = participantImpl.GetTypeSupportFactory(topic.TypeName);
+                    dataWriter = tsFactory.CreateDataWriter(gapiPtr);
                 }
             }
 
@@ -181,9 +185,11 @@ namespace DDS.OpenSplice
                                     mask);
                             if (gapiPtr != IntPtr.Zero)
                             {
-                                TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
-                                        as OpenSplice.TypeSupport;
-                                dataWriter = typeSupport.CreateDataWriter(gapiPtr);
+                                DDS.OpenSplice.DomainParticipant participantImpl;
+                    
+                                participantImpl = topic.Participant as DDS.OpenSplice.DomainParticipant;
+                                TypeSupportFactory tsFactory = participantImpl.GetTypeSupportFactory(topic.TypeName);
+                                dataWriter = tsFactory.CreateDataWriter(gapiPtr);
                                 dataWriter.SetListener(listenerHelper);
                             }
                         }
@@ -199,9 +205,11 @@ namespace DDS.OpenSplice
                                 mask);
                         if (gapiPtr != IntPtr.Zero)
                         {
-                            TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
-                                    as OpenSplice.TypeSupport;
-                            dataWriter = typeSupport.CreateDataWriter(gapiPtr);
+                            DDS.OpenSplice.DomainParticipant participantImpl;
+                
+                            participantImpl = topic.Participant as DDS.OpenSplice.DomainParticipant;
+                            TypeSupportFactory tsFactory = participantImpl.GetTypeSupportFactory(topic.TypeName);
+                            dataWriter = tsFactory.CreateDataWriter(gapiPtr);
                         }
                     }
                 }

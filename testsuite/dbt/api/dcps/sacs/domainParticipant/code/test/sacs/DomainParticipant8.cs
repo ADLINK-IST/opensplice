@@ -18,8 +18,8 @@ namespace test.sacs
             DDS.ReturnCode returnCode;
             DDS.IStatusCondition sc;
             DDS.IStatusCondition sc2;
-            string domainId;
-            string domainId2;
+            int domainId;
+            int domainId2;
             DDS.IDomainParticipant participant;
             DDS.IDomainParticipant participant2;
             DDS.DomainParticipantFactory factory;
@@ -58,26 +58,14 @@ namespace test.sacs
             }
             domainId = participant.DomainId;
             domainId2 = participant.DomainId;
-            if (domainId != null)
+           
+            if (domainId != domainId2)
             {
-                if (!(domainId.Equals(domainId2)))
-                {
-                    result.Result = "Get domain id does not match 2nd domain id.";
-                    return result;
-                }
+                result.Result = "Get domain id does not match 2nd domain id.";
+                return result;
             }
-            else
-            {
-                if (domainId2 != null)
-                {
-                    if (!(domainId2.Equals(domainId)))
-                    {
-                        result.Result = "Get domain id does not match 2nd domain id.";
-                        return result;
-                    }
-                }
-            }
-            participant2 = factory.CreateParticipant(string.Empty, qos);//, null, 0);
+           
+            participant2 = factory.CreateParticipant(DDS.DomainId.Default, qos);//, null, 0);
             if (participant2 == null)
             {
                 result.Result = "Create DomainParticipant failed.";

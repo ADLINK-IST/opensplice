@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,6 +19,14 @@ extern "C" {
 #include <sys/types.h>
 #include <stdint.h>
 
+#define OS_SOCKET_USE_FCNTL 1
+#define OS_SOCKET_USE_IOCTL 0
+#define OS_HAS_UCONTEXT_T
+
+#ifdef OS_ELINOS42
+#define OSPL_STACK_MAX 2097152
+#endif
+
 typedef char               os_os_char;      /* 1 byte   signed integer*/
 typedef uint8_t            os_os_uchar;     /* 1 byte unsigned integer*/
 typedef int16_t            os_os_short;     /* 2 byte   signed integer */
@@ -29,12 +37,10 @@ typedef int64_t            os_os_int64;     /* 8 byte   signed integer */
 typedef uint64_t           os_os_uint64;    /* 8 byte unsigned integer */
 typedef float              os_os_float;     /* 4 byte float */
 typedef double             os_os_double;    /* 8 byte float */
-
-#ifdef __x86_64__
-typedef unsigned long long os_os_address;   /* word length of the platform */
-#else
 typedef unsigned long      os_os_address;   /* word length of the platform */
-#endif
+typedef long               os_os_saddress;  /* signed version of os_os_address */
+
+#include "os_formatspec_ilp32_i32lp64.h" /* common printf format specifiers */
 
 typedef double os_os_timeReal;
 typedef int os_os_timeSec;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -79,8 +79,7 @@ v_topicFree(
 
 OS_API v_result
 v_topicEnable(
-    v_topic topic,
-    v_topic* found_topic);
+    v_topic topic);
 
 OS_API void
 v_topicAnnounce(
@@ -122,6 +121,10 @@ v_topicGetAllDataDisposedStatus(
    c_bool reset,
    v_statusAction action,
    c_voidp arg);
+
+OS_API c_type
+v_topicGetUserType (
+    v_topic topic);
 
 #undef OS_API
 

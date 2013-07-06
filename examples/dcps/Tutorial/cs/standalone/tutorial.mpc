@@ -1,0 +1,49 @@
+// -*- MPC -*-
+// $Id:$
+
+// project (sacs*types) : _repetitive_sacs_example_types {
+//}
+
+project(sacs*chatter) :  sacs_typesupport {
+    specific {
+        output_dir = .
+    }
+    Source_Files {
+        ../src/Chatter.cs
+        ../src/ErrorHandler.cs
+    }
+    exename = *
+    TypeSupport_Files {
+        ../../idl
+    }
+}
+
+project(sacs*message_board) :  sacs_typesupport {
+    specific {
+        output_dir = .
+    }
+    Source_Files {
+        ../src/MessageBoard.cs
+        ../src/ExtDomainParticipant.cs
+        ../src/DataReaderListenerImpl.cs
+        ../src/ErrorHandler.cs
+    }
+    exename = *
+    TypeSupport_Files {
+        ../../idl
+    }
+}
+
+project(sacs*user_load) :  sacs_typesupport {
+    specific {
+        output_dir = .
+    }
+    Source_Files {
+        ../src/UserLoad.cs
+        ../src/ErrorHandler.cs
+    }
+    exename = *
+    TypeSupport_Files {
+        ../../idl
+    }
+}

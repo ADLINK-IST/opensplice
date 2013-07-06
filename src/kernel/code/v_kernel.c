@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,6 +20,7 @@
 #include "v_partition.h"
 #include "v_publisher.h"
 #include "v_subscriber.h"
+#include "v_cfElement.h"
 #include "v__writer.h"
 #include "v_reader.h"
 #include "v_entry.h"
@@ -49,6 +50,8 @@
 #include "os_report.h"
 #include "v__policy.h"
 #include "v__partition.h"
+
+#include "os.h"
 
 #define __ERROR(m) printf(m); printf("\n");
 
@@ -143,32 +146,29 @@ v_kernelAttach(
                   "Failed to lookup kernel, specified kernel name = <NULL>");
     } else {
         kernel = c_lookup(base,name);
-        if (kernel == NULL) {
-            OS_REPORT_1(OS_ERROR,
-                        "v_kernelAttach",0,
-                        "Failed to lookup kernel '%s' in Database",
-                        name);
-        } else if (c_checkType(kernel,"v_kernel") != kernel) {
-            c_free(kernel);
-            kernel = NULL;
-            OS_REPORT_1(OS_ERROR,
-                        "v_kernelAttach",0,
-                        "Object '%s' is apparently not of type 'v_kernel'",
-                        name);
-        } else {
-            attachCount = pa_increment(&kernel->userCount);
-            if(attachCount == 1){
-                /* Result of the attach may NEVER be 1, as that would mean that an
-                 * attach to an unreferenced kernel succeeded. If it happens, undo
-                 * increment and free reference to returned kernel. */
-                pa_decrement(&kernel->userCount);
+        if (kernel != NULL) {
+            if (c_checkType(kernel,"v_kernel") != kernel) {
                 c_free(kernel);
                 kernel = NULL;
                 OS_REPORT_1(OS_ERROR,
                             "v_kernelAttach",0,
-                            "Operation aborted: Object '%s' is apparently an "
-                            "unreferenced kernel object.",
+                            "Object '%s' is apparently not of type 'v_kernel'",
                             name);
+            } else {
+                attachCount = pa_increment(&kernel->userCount);
+                if(attachCount == 1){
+                    /* Result of the attach may NEVER be 1, as that would mean that an
+                     * attach to an unreferenced kernel succeeded. If it happens, undo
+                     * increment and free reference to returned kernel. */
+                    pa_decrement(&kernel->userCount);
+                    c_free(kernel);
+                    kernel = NULL;
+                    OS_REPORT_1(OS_ERROR,
+                                "v_kernelAttach",0,
+                                "Operation aborted: Object '%s' is apparently an "
+                                "unreferenced kernel object.",
+                                name);
+                }
             }
         }
     }
@@ -196,6 +196,277 @@ v_kernelUserCount(
     assert(C_TYPECHECK(k,v_kernel));
     return k->userCount;
 }
+
+/*
+ * v_kernelNetworkCount is used to request the number of network services
+ * that the kernel's configuration expects.  Currently this value is
+ * determined once during kernel initialisation, but could be extended to
+ * support the concept of dynamically started/stopped/restarted services,
+ * This would allow the node to adapt to the changes in the configuration.
+ */
+c_long
+v_kernelNetworkCount(
+    v_kernel k)
+{
+    assert(C_TYPECHECK(k,v_kernel));
+    return k->networkServiceCount;
+}
+
+void
+v_kernelSetNetworkCount(
+    v_kernel k,
+    c_long count)
+{
+    assert(C_TYPECHECK(k,v_kernel));
+    k->networkServiceCount = count;
+}
+
+c_bool
+isServiceRequestedServiceKind(
+    c_char * serviceDefinitionToSearch,
+    c_char * requestedServiceName,
+    v_configuration config
+)
+{
+    c_iter iter;
+    v_cfElement root;
+    v_cfElement serviceElement;
+    c_value serviceNameValue;
+
+    c_bool result = FALSE;
+
+    assert(config != NULL);
+    assert(C_TYPECHECK(config,v_configuration));
+
+    root = v_configurationGetRoot(config);
+    iter = v_cfElementXPath(root, serviceDefinitionToSearch);
+
+    while(c_iterLength(iter) > 0)
+    {
+        serviceElement = v_cfElement(c_iterTakeFirst(iter));
+        if (serviceElement)
+        {
+            serviceNameValue = v_cfElementAttributeValue(serviceElement, "name");
+            if(serviceNameValue.kind == V_STRING)
+            {
+               if (strcmp (serviceNameValue.is.String, requestedServiceName) == 0)
+               {
+                   result = TRUE;
+                   break;
+               }
+            }
+        }
+    }
+
+    if(iter)
+    {
+        c_iterFree(iter);
+    }
+    if(root)
+    {
+        c_free(root);
+    }
+
+    return result;
+}
+
+void
+v_loadNetworkCount(
+    v_kernel kernel,
+    v_configuration config)
+{
+    c_iter iter;
+    v_cfElement root;
+    v_cfElement serviceElement;
+    c_value serviceNameValue;
+    c_value serviceEnabledValue;
+
+    c_long networkServiceCount = 0;
+
+    assert(kernel != NULL);
+    assert(C_TYPECHECK(kernel,v_kernel));
+    assert(config != NULL);
+    assert(C_TYPECHECK(config,v_configuration));
+
+    /* For each of Service instantiations in the XML configuration, obtain
+     * the "name" attribute.  Then search through each of the networking
+     * service definitions checking each "name" attribute.  If these match,
+     * then the service IS a networking service and the networkServiceCount
+     * can be incremented.
+     */
+
+    root = v_configurationGetRoot(config);
+    iter = v_cfElementXPath(root, "Domain/Service");
+
+    while(c_iterLength(iter) > 0)
+    {
+        serviceElement = v_cfElement(c_iterTakeFirst(iter));
+        if (serviceElement)
+        {
+            /* Only consider 'enabled' services */
+            serviceEnabledValue = v_cfElementAttributeValue(serviceElement, "enabled");
+            if(serviceEnabledValue.kind == V_STRING)
+            {
+                if(os_strcasecmp (serviceEnabledValue.is.String, "false") == 0)
+                {
+                    /* if the service is disabled continue to the next one */
+                    continue;
+                }
+            }
+
+            serviceNameValue = v_cfElementAttributeValue(serviceElement, "name");
+            if(serviceNameValue.kind == V_STRING)
+            {
+                /* now need to match this service name to one of the service definition blocks,
+                 * and if ddsi2 or native networking then it is a "networking" service
+                 */
+                if (isServiceRequestedServiceKind ("DDSI2Service", serviceNameValue.is.String, config) ||
+                    isServiceRequestedServiceKind ("DDSI2EService", serviceNameValue.is.String, config) ||
+                    isServiceRequestedServiceKind ("NetworkService", serviceNameValue.is.String, config) ||
+                    isServiceRequestedServiceKind ("SNetworkService", serviceNameValue.is.String, config) ||
+                    /* RnR is not really a networkingservice but it uses a networkReader (see OSPL-1142) */
+                    isServiceRequestedServiceKind ("RnRService", serviceNameValue.is.String, config))
+                {
+                    networkServiceCount++;
+                }
+            }
+        }
+    }
+
+    if(iter)
+    {
+        c_iterFree(iter);
+    }
+    if(root)
+    {
+        c_free(root);
+    }
+
+    v_kernelSetNetworkCount (kernel, networkServiceCount);
+}
+
+
+static c_iter
+getDurabilityServiceNames(
+    v_kernel _this)
+{
+    c_iter services, iter;
+    v_cfElement root;
+    v_cfElement serviceElement;
+    c_value serviceNameValue;
+    c_value serviceEnabledValue;
+
+    root = v_configurationGetRoot(_this->configuration);
+    iter = v_cfElementXPath(root, "Domain/Service");
+    services = c_iterNew(NULL);
+
+    while(c_iterLength(iter) > 0){
+        serviceElement = v_cfElement(c_iterTakeFirst(iter));
+
+        if (serviceElement){
+            /* Only consider 'enabled' services */
+            serviceEnabledValue = v_cfElementAttributeValue(serviceElement, "enabled");
+
+            if(serviceEnabledValue.kind == V_STRING){
+                if(os_strcasecmp (serviceEnabledValue.is.String, "false") == 0){
+                    /* if the service is disabled continue to the next one */
+                    continue;
+                }
+            }
+            serviceNameValue = v_cfElementAttributeValue(serviceElement, "name");
+
+            if(serviceNameValue.kind == V_STRING){
+                /* now need to match this service name to one of the service
+                 * definition blocks, and if it is a durability service
+                 */
+                if (isServiceRequestedServiceKind("DurabilityService",
+                        serviceNameValue.is.String, _this->configuration)){
+                    services = c_iterAppend(
+                            services, serviceNameValue.is.String);
+                }
+            }
+        }
+    }
+
+    if(iter){
+        c_iterFree(iter);
+    }
+    if(root){
+        c_free(root);
+    }
+    return services;
+}
+
+v_result
+v_kernelWaitForDurabilityAvailability(
+    v_kernel _this,
+    c_time timeout)
+{
+    c_iter durabilityServices;
+    c_string serviceName;
+    v_serviceManager serviceManager;
+    c_time expiryTime;
+    v_serviceStateKind state;
+    v_result result;
+    c_time sleepTime;
+
+    expiryTime = c_timeAdd(v_timeGet(), timeout);
+
+    /* Set sleepTime to 100 ms, unless provided timeout is less than that.*/
+    sleepTime.seconds = 0;
+    sleepTime.nanoseconds = 100 * 1000 * 1000; /*100ms*/
+
+    if(c_timeCompare(timeout, sleepTime) == C_LT){
+        sleepTime = timeout;
+    }
+    serviceManager = v_getServiceManager(_this);
+    durabilityServices = getDurabilityServiceNames(_this);
+    serviceName = (c_string)c_iterTakeFirst(durabilityServices);
+
+    /* If no durability services have been configured, return pre-condition
+     * not met.
+     */
+    if(!serviceName){
+        result = V_RESULT_PRECONDITION_NOT_MET;
+    } else {
+        result = V_RESULT_OK;
+    }
+
+    while(serviceName && (result == V_RESULT_OK)){
+        state = v_serviceManagerGetServiceStateKind(serviceManager, serviceName);
+
+        switch(state){
+        case STATE_NONE:
+            /* Fall-through on purpose */
+        case STATE_INITIALISING:
+            /* Wait some time if still within timeout. */
+            if(c_timeCompare(expiryTime, v_timeGet()) == C_GT){
+                c_timeNanoSleep(sleepTime);
+            } else {
+                result = V_RESULT_TIMEOUT;
+            }
+            break;
+        case STATE_OPERATIONAL:
+            /*Result is ok, move on to next durability service. */
+            break;
+        case STATE_DIED:
+            /*Fall-through on purpose */
+        case STATE_TERMINATING:
+            /*Fall-through on purpose */
+        case STATE_TERMINATED:
+            result = V_RESULT_PRECONDITION_NOT_MET;
+            break;
+        }
+        /* Only if operational, move on to the next service. */
+        if(state == STATE_OPERATIONAL){
+            serviceName = (c_string)c_iterTakeFirst(durabilityServices);
+        }
+    }
+    c_iterFree(durabilityServices);
+
+    return result;
+}
+
 
 v_kernel
 v_kernelNew(
@@ -291,6 +562,7 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_networking,         K_NETWORKING);
     INITTYPE(kernel,kernelModule::v_durability,         K_DURABILITY);
     INITTYPE(kernel,kernelModule::v_cmsoap,             K_CMSOAP);
+    INITTYPE(kernel,kernelModule::v_rnr,                K_RNR);
     INITTYPE(kernel,kernelModule::v_leaseManager,       K_LEASEMANAGER);
     INITTYPE(kernel,kernelModule::v_groupSet,           K_GROUPSET);
     INITTYPE(kernel,kernelModule::v_proxy,              K_PROXY);
@@ -298,6 +570,7 @@ v_kernelNew(
     INITTYPE(kernel,kernelModule::v_waitsetEventHistoryDelete,  K_WAITSETEVENTHISTORYDELETE);
     INITTYPE(kernel,kernelModule::v_waitsetEventHistoryRequest, K_WAITSETEVENTHISTORYREQUEST);
     INITTYPE(kernel,kernelModule::v_waitsetEventPersistentSnapshot, K_WAITSETEVENTPERSISTENTSNAPSHOT);
+    INITTYPE(kernel,kernelModule::v_waitsetEventConnectWriter, K_WAITSETEVENTCONNECTWRITER);
     INITTYPE(kernel,kernelModule::v_writerSample,       K_WRITERSAMPLE);
     INITTYPE(kernel,kernelModule::v_writerInstance,     K_WRITERINSTANCE);
     INITTYPE(kernel,kernelModule::v_writerInstanceTemplate, K_WRITERINSTANCETEMPLATE);
@@ -345,6 +618,7 @@ v_kernelNew(
     kernel->livelinessLM = v_leaseManagerNew(kernel);
     kernel->configuration = NULL;
     kernel->userCount = 1;
+    kernel->networkServiceCount = 0;
     kernel->transactionCount = 0;
     kernel->splicedRunning = TRUE;
     kernel->maxSamplesWarnLevel = V_KERNEL_MAX_SAMPLES_WARN_LEVEL_DEF;
@@ -369,7 +643,7 @@ v_kernelNew(
     c_free(sd);
 
 
-    c_bind(kernel,name);
+    ospl_c_bind(kernel,name);
 
     return kernel;
 }
@@ -579,7 +853,7 @@ v_resolveShare(
     q = c_queryNew(kernel->shares,expr,params);
     q_dispose(expr);
     v_lockShares(kernel);
-    list = c_select(q,0);
+    list = ospl_c_select(q,0);
     v_unlockShares(kernel);
     c_free(q);
     return list;
@@ -604,7 +878,7 @@ v_resolveParticipants(
     q = c_queryNew(kernel->participants,expr,params);
     q_dispose(expr);
     c_lockRead(&kernel->lock);
-    list = c_select(q,0);
+    list = ospl_c_select(q,0);
     c_lockUnlock(&kernel->lock);
     c_free(q);
     return list;
@@ -628,7 +902,7 @@ v_resolvePartitions (
     q = c_queryNew(kernel->partitions,expr,params);
     q_dispose(expr);
     c_lockRead(&kernel->lock);
-    list = c_select(q,0);
+    list = ospl_c_select(q,0);
     c_lockUnlock(&kernel->lock);
     c_free(q);
     return list;
@@ -652,7 +926,7 @@ v_resolveTopics(
     q = c_queryNew(kernel->topics,expr,params);
     q_dispose(expr);
     c_lockRead(&kernel->lock);
-    list = c_select(q,0);
+    list = ospl_c_select(q,0);
     c_lockUnlock(&kernel->lock);
     c_free(q);
     return list;
@@ -667,6 +941,7 @@ alwaysFalse(
 {
     v_topic *topicFound = (v_topic *)arg;
 
+    OS_UNUSED_ARG(requested);
     assert(topicFound != NULL);
     assert(*topicFound == NULL); /* Out param */
 
@@ -734,6 +1009,7 @@ v_setConfiguration(
     kernel->configuration = config;
     c_keep(kernel->configuration);
     v_loadWarningLevels(kernel, config);
+    v_loadNetworkCount(kernel, config);
 
     if (old != NULL) {
         c_free(old);
@@ -944,13 +1220,6 @@ v_statisticsCategoryNew(
     return result;
 }
 
-static void
-v_statisticsCategoryFree(
-    v_statisticsCategory category)
-{
-    c_free(category);
-}
-
 static c_bool
 v_statisticsCategoryCompareAction(
     c_object o,
@@ -1024,6 +1293,8 @@ v_disableStatistics(
     /* Here, we will have to walk over all entities and forward the disable
      * request. The entity itself has to switch off the corresponding
      * statistics admin */
+    OS_UNUSED_ARG(k);
+    OS_UNUSED_ARG(categoryName);
 }
 
 c_bool
@@ -1100,11 +1371,14 @@ v_kernelGetTransactionId (
     v_kernel _this)
 {
     c_ulong id = pa_increment(&_this->transactionCount);
-    if (id == 0) {
-        /* the value '0' is reserved to specify 'no-transaction' */
+    while ((id % 256) == 0) {
+        /* the value '0' is reserved to specify 'no-transaction' and
+         * the transactionId should not exceed 256. The statement
+         * id % 256 covers both these cases.
+         */
         id = pa_increment(&_this->transactionCount);
     }
-    return id;
+    return (id % 256);
 }
 
 /*

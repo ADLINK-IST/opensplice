@@ -1,0 +1,42 @@
+
+project (cj*types) : cj_typesupport, java_only, java_example, java_ospl_dcpscj {
+
+    TypeSupport_Files {
+        ../../idl/HelloWorldData.idl
+    }
+
+    dcps_orb_compile += -I../../idl
+    JavaORBTypes_Files {
+        HelloWorldDataDcps.idl >> HelloWorldData/*.java
+    }
+}
+
+project (cj*sub) : java_only, java_example, java_ospl_dcpscj {
+    after += cj*types
+    libs += cj*types.jar
+
+    specific {
+        compile_flags += -sourcepath ..<%slash%>src
+        obj_dir_flat = 1
+    }
+    Source_Files {
+       ../src/HelloWorldDataSubscriber.java
+       ../src/DDSEntityManager.java
+       ../src/ErrorHandler.java
+    }
+}
+
+project (cj*pub) : java_only, java_example, java_ospl_dcpscj {
+    after += cj*types
+    libs += cj*types.jar
+
+    specific {
+        compile_flags += -sourcepath ..<%slash%>src
+        obj_dir_flat = 1
+    }
+    Source_Files {
+        ../src/HelloWorldDataPublisher.java
+        ../src/DDSEntityManager.java
+        ../src/ErrorHandler.java
+    }
+}

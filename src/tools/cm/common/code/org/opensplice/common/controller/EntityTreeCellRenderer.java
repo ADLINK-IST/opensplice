@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -32,8 +32,8 @@ import org.opensplice.common.view.entity.tree.EntityTreeNode;
  * @date Nov 18, 2004 
  */
 public class EntityTreeCellRenderer extends DefaultTreeCellRenderer {
-    private Color hideRelationsColor = Config.getInactiveColor();
-    private Color showRelationsColor = Config.getActiveColor();
+    private final Color hideRelationsColor = Config.getInactiveColor();
+    private final Color showRelationsColor = Config.getActiveColor();
     /**
      * Constructs a new EntityTreeCellRenderer.
      *
@@ -56,6 +56,7 @@ public class EntityTreeCellRenderer extends DefaultTreeCellRenderer {
      * @param row The row of the node in the tree.
      * @param focus Whether or not the node has the focus.
      */
+    @Override
     public Component getTreeCellRendererComponent(
             JTree tree, 
             Object value, 
@@ -70,10 +71,8 @@ public class EntityTreeCellRenderer extends DefaultTreeCellRenderer {
                                     expanded, leaf, row, focus);
         
         
-        if((result instanceof JLabel) &&
-           (value instanceof EntityTreeNode))
+        if ((result instanceof JLabel) && (value instanceof EntityTreeNode))
         {
-            EntityTree eTree = (EntityTree)tree;
             String str = null;
             Entity e = (Entity)((EntityTreeNode)value).getUserObject();
             
@@ -88,12 +87,14 @@ public class EntityTreeCellRenderer extends DefaultTreeCellRenderer {
                     label.setFont(label.getFont().deriveFont(Font.ITALIC));
                 }
             }
-            
-            if(eTree.getChildrenVisible() != ((EntityTreeNode)value).getChildrenVisible()){
-                if(eTree.getChildrenVisible()){
-                    ((JLabel)result).setForeground(hideRelationsColor);
-                } else {
-                    ((JLabel)result).setForeground(showRelationsColor);
+            if (tree instanceof EntityTree) {
+                EntityTree eTree = (EntityTree) tree;
+                if (eTree.getChildrenVisible() != ((EntityTreeNode) value).getChildrenVisible()) {
+                    if (eTree.getChildrenVisible()) {
+                        ((JLabel) result).setForeground(hideRelationsColor);
+                    } else {
+                        ((JLabel) result).setForeground(showRelationsColor);
+                    }
                 }
             }
         }

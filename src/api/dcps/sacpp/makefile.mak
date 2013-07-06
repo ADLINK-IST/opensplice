@@ -25,7 +25,7 @@ CPP_FILES 	:= $(notdir $(wildcard $(CODE_DIR)/*.cpp)) $(SACPP_CODE)
 IDLPP       = $(WINCMD) idlpp
 IDL_INC_FLAGS= -I$(IDL_DIR)
 IDLPPFLAGS  := $(IDL_INC_FLAGS) -l cpp -S
-ifneq (,$(findstring win32,$(SPLICE_HOST)))
+ifneq (,$(or $(findstring win32,$(SPLICE_HOST)), $(findstring win64,$(SPLICE_HOST))))
 IDLPPFLAGS  += -P$(DECL_PREFIX),$(DECL_INCLUDE)
 endif
 

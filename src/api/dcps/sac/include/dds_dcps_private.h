@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -28,10 +28,6 @@
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 typedef void *(*bufferAllocatorType)(DDS_unsigned_long len);
-
-OS_API DDS_char *
-DDS_string_dup (
-    DDS_char *src);
 
 OS_API void *
 DDS__malloc (
@@ -61,7 +57,7 @@ DDS_string_alloc (
 
 OS_API DDS_char *
 DDS_string_dup (
-    DDS_char *src);
+    const DDS_char *src);
 
 OS_API void
 DDS_string_clean (

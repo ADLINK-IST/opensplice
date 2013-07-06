@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -17,11 +17,11 @@
 #include "os_mutex.h"
 #include "os_cond.h"
 
-#define OS_SERVICE_ENTITY_NAME_MAX       32
-#define OS_SERVICE_SEM_NAME_PREFIX       "osplSem"
-#define OS_SERVICE_EVENT_NAME_PREFIX     "osplEv"
-#define OS_SERVICE_MUTEX_NAME_PREFIX     "osplMTX"
-#define OS_SERVICE_GLOBAL_NAME_PREFIX "Global\\"
+#define OS_SERVICE_ENTITY_NAME_MAX      32
+#define OS_SERVICE_SEM_NAME_PREFIX      "osplSem"
+#define OS_SERVICE_EVENT_NAME_PREFIX    "osplEv"
+#define OS_SERVICE_MUTEX_NAME_PREFIX    "osplMTX"
+#define OS_SERVICE_GLOBAL_NAME_PREFIX   "Global\\"
 
 enum os_servicemsg_kind {
     OS_SRVMSG_UNDEFINED,

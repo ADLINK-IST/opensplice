@@ -1,0 +1,190 @@
+/**
+@mainpage Log4c : Logging for C Library
+
+@htmlonly
+<center>
+<a href="#summary">Summary</a>
+<a href="#requirements">Requirements</a>
+<a href="#installation">Installation</a>
+<a href="#config">Configuration</a>
+<a href="#custom">Customization</a>
+<a href="#thanks">Thanks</a>
+<a href="#copyright">Copyright</a>
+</center>
+@endhtmlonly
+
+@section summary Summary
+
+Log4c is a library of C for flexible logging to files, syslog and other
+destinations. It is modeled after the Log for Java library
+(http://jakarta.apache.org/log4j/), staying as close to their API as is
+reasonable. Here is a <a href="http://jakarta.apache.org/log4j/docs/manual.html">short
+introduction</a> to Log4j which describes the API, and design rationale.
+
+Mark Mendel started a parallel log4c projet with a different
+philosophy. The design is macro oriented, so much lighter and faster
+which perfect for kernel development.
+
+Log4c is also available from SourceForge
+(http://www.sourceforge.net/projects/log4c/). This is work in progress.
+
+@section requirements Requirements
+ 
+@subsection platforms Platforms
+
+log4c was successfully compiled and run on the following platforms :
+
+@li HP-UX release 11.00
+@li Tru 64 release 4.0F and 5.1
+@li Red Hat Linux Intel release 7.x, 8, 9
+@li Red Hat Enterprise Linux 3, 4
+@li Solaris Intel release 8, 9, 10
+@li FreeBSD 6.1-RELEASE
+@li AIX 5.3 (witk xlc compiler)
+@li Mac OS X
+@li Windows X
+
+
+log4c should compile and run on the following platforms :
+
+@li The BSD family
+@li Other Linux distributions
+
+@subsection software Software
+ 
+The following softwares are needed to generate log4c:
+
+@li <a href="http://gcc.gnu.org">GCC</a> 3.0.1+, to generate log4c,
+but hopefully not to use it. 
+@li <a href="http://www.stack.nl/~dimitri/doxygen/index.html">doxygen</a>
+1.2.13+, a documentation system for C/C++ needed to generate the
+documentation.
+@li <a href="http://www.graphviz.org/">graphviz</a>, the AT&T Graph
+Visualization Tools also needed to generate the documentation.
+
+For the moment, log4c uses specific GCC extensions, like @c __attribute__,
+so you will need GCC to compile it. This will probably change one day. 
+
+@section installation Installation
+ 
+@subsection installation_tarballs Building from source tarballs
+
+on SourceForge:
+@li <a href="http://prdownloads.sourceforge.net/log4c/log4c-@VERSION@.tar.gz">log4c-@VERSION@.tar.gz</a>
+
+The log4c package uses the GNU autotools compilation and installation
+framework. The following commands should build log4c on the supported
+platforms:
+
+@code
+
+$ gzip -dc log4c-@VERSION@.tar.gz | tar tvf -
+$ cd log4c-@VERSION@/
+$ ./configure --prefix=/path/of/installation
+$ make
+$ make install
+
+@endcode
+
+Checkout the @c INSTALL file for installation and the generated doxygen
+documentation for more information.
+
+@subsection installation_rpm Using RPMs
+
+FC7 RPMs on SourceForge:
+@li <a href="http://prdownloads.sourceforge.net/log4c/log4c-@VERSION@-1.i386.rpm">log4c-@VERSION@-1.i386.rpm</a>
+@li <a href="http://prdownloads.sourceforge.net/log4c/log4c-devel-@VERSION@-1.i386.rpm">log4c-devel-@VERSION@-1.i386.rpm</a>
+@li <a href="http://prdownloads.sourceforge.net/log4c/log4c-doc-@VERSION@-1.i386.rpm">log4c-doc-@VERSION@-1.i386.rpm</a>
+
+The following command install the log4c RPMs :
+
+@code
+
+$ sudo rpm -Uvh log4c-@VERSION@.i386.rpm log4c-devel-@VERSION@.i386.rpm
+
+@endcode
+
+@section config Configuration
+
+@subsection conf_files Configuration files
+
+log4c searches the folloging files to load its configuration:
+
+@li @c ${LOG4C_RCPATH}/log4crc
+@li @c ${HOME}/.log4crc
+@li @c ./log4crc
+
+The environment variable @c LOG4C_RCPATH holds the prefix used for
+installation.
+
+@subsection conf_syntax Configuration syntax
+
+The @c log4crc configuration file uses an XML syntax. The root element is
+@c <log4c> and it can be used to control the configuration file version
+interface with the attribute @c "version". The following 4 elements are
+supported: @c <config>, @c <category>, @c <appender> and @c <layout>.
+
+@li The @c <config> element controls the global log4c configuration. It has
+3 sub elements. The @c <nocleanup> flag inhibits the log4c destructors
+routines. The @c <bufsize> element sets the buffer size used to format
+log4c_logging_event_t objects. If is set to 0, the allocation is
+dynamic (the @c <debug> element is currently unused).
+
+@li The @c <category> element has 3 possible attributes: the category @c
+"name", the category @c "priority" and the category @c "appender". Future
+versions will handle multple appenders per category.
+
+@li The @c <appender> element has 3 possible attributes: the appender @c
+"name", the appender @c "type", and the appender @c "layout".
+
+@li The @c <layout> element has 2 possible attributes: the layout @c "name" and
+the layout @c "type".
+
+Here's the default @c log4crc configuration file:
+
+@include log4crc
+
+This initial version of the log4c configuration file syntax is quite
+different from log4j. XML seemed the best choice to keep the log4j
+configuration power in a C API.
+
+@subsection env Environment variables
+
+@li @c LOG4C_RCPATH holds the path to the main @c log4crc configuration
+file
+@li @c LOG4C_PRIORITY holds the @c "root" category priority
+@li @c LOG4C_APPENDER holds the @c "root" category appender
+
+@section custom Customization
+
+This section will, one day, briefly describe how to define custom appenders
+and custom layouts. Be patient or checkout the source.
+
+@section thanks Thanks
+
+Mark Mendel for his work on a previous version of log4c.
+
+This project would not have existed without Ceki Gulcu,
+the creator and maintainer of <a
+href="http://jakarta.apache.org/log4j">Log4j</a>, nor without
+Bastiaan Bakker, who intiated me with <a
+href="http://log4cpp.sourceforge.net/">Log4Cpp</a>.
+
+Many thanks to 
+
+@li Joel Schaubert for many contributions
+@li Robert Byrne for Windows port and also many contributions
+@li Olger Warnier for the Mac OS X port 
+@li Jeff Smith for writing a primer on <a
+href="http://jefficus.usask.ca/article.php?story=20040613140849924">how
+to use Log4c effectively</a>
+
+@section copyright Copyright
+
+All software in this package is Copyright (C) 2003-2004 Meiosys
+http://www.meiosys.com and Cedric Le Goater and is
+distributed under the <a
+href="http://www.gnu.org/licenses/lgpl.html">LGPL</a> License. See the @c
+COPYING file for full legal details.
+
+*/

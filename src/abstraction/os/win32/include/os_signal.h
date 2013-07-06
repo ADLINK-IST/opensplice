@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef OS_WIN32_SIGNAL_H
@@ -27,6 +27,7 @@ typedef int os_os_sigaction;
 #define OS_SIGTERM      SIGTERM
 #define OS_SIGINT       SIGINT
 #define OS_SIGHUP       0
+#define OS_SIGCHLD	    0
 #define OS_SIGKILL      1000
 #define OS_SIGPIPE      0
 #define OS_SIGALRM      0

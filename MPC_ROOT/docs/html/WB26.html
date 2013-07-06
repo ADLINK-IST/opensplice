@@ -1,0 +1,133 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta name="id" content=
+  "$Id$">
+  <link rel="STYLESHEET" href="MakeProjectCreator.css" charset="ISO-8859-1"
+  type="text/css">
+
+  <title>MPC: WB26 Project Type</title>
+</head>
+
+<body>
+<div>
+  <h1 class="Head1">WB26 Project Type documentation</h1>
+
+  <div>
+<p>
+Starting with ACE/TAO x.6.3 it is possible to generate project files
+for the WindRiver Workbench version 2.6 (VxWorks 6.4). We have validated
+the MPC support for the ACE lib, TAO libs and the TAO tests.
+</p>
+<p>With VxWorks we have to do a cross build. The first step is to setup a host
+build, from this host build we use the gperf and TAO_IDL tools
+in the cross build.
+</p>
+<p>The Workbench is using eclipse as framework and then has several
+WindRiver specific extensions. Part of the generation done by
+MPC is then specifically for the WindRiver tools, part is for the
+eclipse environment. The Workbench uses the fixed project filenames
+<code>.project</code>, <code>.wrproject</code>, and <code>.wrmakefile</code>.
+In the <code>.project</code> file the files in the project are listed,
+in the <code>.wrproject</code> the compiler and linker flags are
+defined, and in the <code>.wrmakefile</code> the custom build rules
+are defined, like triggering the IDL compiler.</p>
+<p>By default the files are generated in the same directory as the MPC file.
+When you have multiple projects in one directory you have to add
+<code>-make_coexistence</code> to the invocation of <code>mwc.pl</code>
+Then for each project a new subdirectory will be created to
+store the files the workbench needs. If you run <code>mwc.pl -make_coexistence</code> from the
+ACE_wrappers directory you will get a lot of subdirectories in your tree.
+</p>
+By default we generate for the flexible build support, when you want to use
+standard build use <code>-value_template standard_build=1</code>.
+</p>
+<p>
+To get a project with all dependencies create a new workspace file, f.e. vxworks.mwc
+<pre>
+workspace(vxworks) {
+  ace
+  TAO/tao
+  TAO/tests/Hello
+}
+</pre>
+</p>
+<p>
+You should generate the project files
+from a VxWorks development shell or should have executed the wrenv script. With x.6.4 or newer
+you do execute:
+<pre>
+set ACE_ROOT=your_path
+cd %ACE_ROOT%
+perl %ACE_ROOT%\bin\mwc.pl vxworks.mwc -type wb26 -make_coexistence
+</pre>
+</p>
+<p>
+After you have generated the project files you have to import them
+into your current Workbench workspace with the following steps
+<itemize>
+<item>Open the workbench</item>
+<item>Select File, Import, General, Existing Projects into Workspace</item>
+<item>Select your ACE_ROOT directory and let the Workbench search for projects</item>
+<item>Select now the projects you want to import in the Projects list and select Finish</item>
+<item>After importing close the workbench</item>
+<item>Copy the prefs file to its location, see below</item>
+<item>Start the workbench again</item>
+</itemize>
+</p>
+<p>The build order of the projects is stored in an eclipse file that
+is generated as workspace by the <code>wb26</code> generator. After
+you have imported the projects into the Workbench close it and then
+copy the generated <code>org.eclipse.core.resources.prefs</code> file to
+the <code>.metadata\.plugins\org.eclipse.core.runtime\.settings</code>
+directory of the Workbench and then restart the workbench again. Do note
+that the build order can only be generated for the projects that are listed
+in the MPC workspace. The other option is to use subprojects to which
+you can enable with <code>-value_template enable_subprojects=1</code>. There is a bug
+in Workbench 2.6/3.0 related to the build order, it is ignored if you use
+<code>wrws_update</code> to build the workspace from the commandline.</p>
+<p>When compiling TAO you need to have tao_idl and gperf available. You can copy tao_idl and
+gperf manually to the ACE_wrappers\bin directory of your target build or you can specify an
+alternative tao_idl when generating the workspace like below.
+<pre>
+perl %ACE_ROOT%\bin\mwc.pl vxworks.mwc -type wb26 -value_template tao_idl=$(HOST_TAO_IDL)
+perl %ACE_ROOT%\bin\mwc.pl vxworks.mwc -type wb26 -value_template tao_idl=c:\tmp\tao_idl
+</pre>
+</p>
+<p>When using the <code>-expand_vars</code> by default only the environment variables which match
+the wildcard <code>*_ROOT</code> are expanded. If you want to get other environment variables expanded (like <code>WIND_BASE</code>)
+you can specify these through the <code>-relative</code> argument or use a file that you specify with <code>
+-relative_file</code>. For example you can use the following relative_file which expands the environment variables
+listed.
+<pre>
+*_ROOT
+TAO_ROOT,  $ACE_ROOT/TAO
+CIAO_ROOT, $TAO_ROOT/CIAO
+*_BASE
+</pre>
+</p>
+<p>
+We do have some limitations at this moment because of restrictions in MPC or the Workbench. We are working
+on resolving the MPC restrictions, the Workbench restrictions have been reported to WindRiver and are already
+converted to enhancement requests. It is important to get these enhancement requests implemented by
+WindRiver. As user you can have impact on the importancy of these enhancement requests, create a new TSR
+for WindRiver and ask WindRiver to implement these enhancement requests. Pleas let us know that you have
+done this so that we can inform our local WindRiver contacts. We also have a large list of POSIX enhancement
+requests, if you are interested in more POSIX compliance contact us to get this list.
+<itemize>
+<item>You need to close the workbench when generating the project files. The WB doesn't detect that the .project/.wrproject/org.eclipse.core.resources.prefs files got changed on disk (WIND00116553)</item>
+<item>You need to import, close, and then change the build order file (WIND00116553)</item>
+<item>When using includes/recursive_includes do not use . as path, but an environment variable which can be expanded to a full path (combined WB/MPC restriction)</item>
+<item>We need to generate full paths in the .project file because WB doesn't support relative files like ../MyHeader.h (WIND00116641)</item>
+<item>There is no dependency between the IDL file and the resulting *C.{h,cpp,inl} and *S.{h,cpp,inl} files. This is because the IDL compiler
+can't be integrated a real build tool because a custom clean step can't be defined (WIND00117037)</item>
+</itemize>
+</p>
+
+</div>
+<hr>
+
+</body> </html>

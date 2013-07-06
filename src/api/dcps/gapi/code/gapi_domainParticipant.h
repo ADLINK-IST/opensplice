@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -46,7 +46,7 @@ extern "C" {
 
 _DomainParticipant
 _DomainParticipantNew (
-    gapi_domainId_t domainId,
+    gapi_domainName_t domainId,
     const gapi_domainParticipantQos *qos,
     const struct gapi_domainParticipantListener *listener,
     const gapi_statusMask mask,
@@ -54,7 +54,9 @@ _DomainParticipantNew (
     gapi_listenerThreadAction threadStartAction,
     gapi_listenerThreadAction threadStopAction,
     void *actionArg,
-    const gapi_context *context
+    const gapi_context *context,
+    gapi_domainId_int_t dId,
+    const char *name
 );
 
 gapi_returnCode_t
@@ -83,12 +85,6 @@ _DomainParticipantRegisterType (
     _DomainParticipant _this,
     _TypeSupport type_support,
     const gapi_char *registry_name);
-
-/* precondition: participant must be locked */
-_TypeSupport
-_DomainParticipantFindTypeSupport (
-    _DomainParticipant _this,
-    const gapi_char *type_name);
 
 /* precondition: participant must be locked */
 gapi_boolean
@@ -124,7 +120,7 @@ _DomainParticipantSetListenerInterestOnChildren (
     _DomainParticipant    _this,
     _ListenerInterestInfo info);
 
-gapi_domainId_t
+gapi_domainName_t
 _DomainParticipantGetDomainId (
     _DomainParticipant _this);
 

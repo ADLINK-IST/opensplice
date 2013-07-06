@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -25,9 +25,10 @@ extern "C" {
 
 C_STRUCT(d_configuration){
     C_EXTENDS(d_object);
-    v_duration    livelinessExpiryTime;
-    c_float       livelinessExpiry;
-    os_time       livelinessUpdateInterval;
+    c_bool        builtinTopicsEnabled;
+    v_duration    livelinessExpiryTime;      /* ExpiryTime (duration */
+    c_float       livelinessExpiry;          /* ExpiryTime (float) */
+    os_time       livelinessUpdateInterval;  /* ExpiryTime * update_factor */
     os_threadAttr livelinessScheduling;      /* Not implemented yet.*/
     os_time       heartbeatUpdateInterval;
     os_time       heartbeatExpiryTime;
@@ -50,12 +51,14 @@ C_STRUCT(d_configuration){
     d_level       tracingVerbosityLevel;
     c_char*       persistentStoreDirectory;
     d_storeType   persistentStoreMode;
+    c_char*       persistentKVStoreStorageType;
+    c_char*       persistentKVStoreStorageParameters;
     os_time       persistentStoreSleepTime;
     os_time       persistentStoreSessionTime;
     c_ulong       persistentQueueSize;
     os_threadAttr persistentScheduling;
-    c_address	  persistentMMFStoreAddress;
-    os_size_t	  persistentMMFStoreSize;
+    c_address     persistentMMFStoreAddress;
+    c_size        persistentMMFStoreSize;
     c_iter        nameSpaces;
     c_iter        policies;
     os_time       startTime;
@@ -106,7 +109,6 @@ void            d_configurationFree                 (d_configuration configurati
 c_bool          d_configurationInNameSpace              (d_nameSpace ns,
                                                          d_partition partition,
                                                          d_topic topic,
-                                                         d_durabilityKind kind,
                                                          c_bool aligner);
 
 #if defined (__cplusplus)

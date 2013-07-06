@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -38,21 +38,6 @@ extern "C" {
 #define OS_API OS_API_IMPORT
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
-
-typedef enum {
-    V_DATAREADER_INSERTED,
-    V_DATAREADER_OUTDATED,
-    V_DATAREADER_NOT_OWNER,
-    V_DATAREADER_MAX_SAMPLES,
-    V_DATAREADER_MAX_INSTANCES,
-    V_DATAREADER_INSTANCE_FULL,
-    V_DATAREADER_SAMPLE_LOST,
-    V_DATAREADER_DUPLICATE_SAMPLE,
-    V_DATAREADER_OUT_OF_MEMORY,
-    V_DATAREADER_INTERNAL_ERROR,
-    V_DATAREADER_UNDETERMINED,
-    V_DATAREADER_COUNT
-} v_dataReaderResult;
 
 typedef c_bool (*v_dataReaderInstanceAction)(v_dataReaderInstance instance, c_voidp arg);
 OS_API const char*

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file os/common/code/os_sharedmem_heap.c
@@ -15,24 +15,48 @@
  * Implements shared memory management on heap
  */
 
-#include <sys/types.h>
+#ifdef OS_SHAREDMEM_HEAP_DISABLE
 
-#if !defined (VXWORKS_RTP) && !defined (__INTEGRITY)
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#endif
+os_result 
+os_heap_sharedMemoryAttach (
+    const char *name,
+    const os_sharedAttr *sharedAttr,
+    void **mapped_address)
+{
+    return os_resultFail;
+}
 
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <stdio.h>
-#include <unistd.h>
+os_result os_heap_sharedMemoryDestroy (const char *name)
+{
+    return os_resultFail;
+}
+
+os_result
+os_heap_sharedMemoryCreate (
+    const char *name,
+    os_sharedAttr *sharedAttr,
+    os_address size)
+{
+    return os_resultFail;
+}
+
+os_result os_heap_sharedMemoryDetach (const char *name, void *address)
+{
+    return os_resultFail;
+}
+
+os_result os_heap_sharedSize (const char *name, os_address *size)
+{
+    return os_resultFail;
+}
+
+#else
 
 #include "os_mutex.h"
 #include "os_heap.h"
 #include "os_report.h"
+#include "os_init.h"
+#include "os_stdlib.h"
 
 /** \brief Structure providing linked list for keeping
  *         shared memory data
@@ -50,6 +74,8 @@ typedef struct os_sm {
     os_uint32           size;
     /** Number of attachments to the shared memory */
     os_int32            nattach;
+    /** Id of the shared memory */
+    os_int32            id;
 } os_sm;
 
 /** Mutex for locking the shared memory data */
@@ -68,6 +94,7 @@ os_heap_sharedMemoryInit(void)
     os_mutexAttr mutexAttr;
 
     os_mutexAttrInit(&mutexAttr);
+    mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
     os_mutexInit(&os_smAdminLock, &mutexAttr);
     return;
 }
@@ -105,6 +132,57 @@ os_heap_search_entry(
         if (strcmp(sm->name, name) == 0) {
             rv = sm;
             sm = NULL;
+        } else {
+            sm = sm->next;
+        }
+    }
+    return rv;
+}
+
+/** \brief Search an entry by name and id in the linked list
+ *
+ * Search an entry in the linked list of created named
+ * shared memory entries by \b name and id. If found return the
+ * address of the element else return \b NULL;
+ *
+ * It is assumed that the \b os_smAdminLock mutex is claimed
+ * by the calling thread.
+ */
+static os_sm *
+os_heap_search_entry_name_and_id(
+    const char *name,
+    const os_int32 id)
+{
+    os_sm *sm;
+    os_sm *rv = NULL;
+
+    sm = os_smAdmin;
+    while (sm != NULL) {
+        if ((strcmp(sm->name, name) == 0) && sm->id == id) {
+            rv = sm;
+            sm = NULL;
+        } else {
+            sm = sm->next;
+        }
+    }
+    return rv;
+}
+
+os_result
+os_heap_sharedMemoryGetNameFromId(
+    os_int32 id,
+    char **name)
+{
+
+    os_sm *sm;
+    os_result rv = os_resultFail;
+    sm = os_smAdmin;
+    *name = NULL;
+    while (sm != NULL) {
+        if (sm->id == id) {
+            *name =  os_strdup(sm->name);
+            rv = os_resultSuccess;
+	    break;
         } else {
             sm = sm->next;
         }
@@ -200,19 +278,24 @@ os_result
 os_heap_sharedMemoryCreate(
     const char *name,
     const os_sharedAttr *sharedAttr,
-    os_address size)
+    os_address size,
+    const os_int32 id)
 {
     os_sm *sm;
     os_result rv = os_resultFail;
+    (void)sharedAttr;
+
+    OS_UNUSED_ARG(sharedAttr);
 
     os_mutexLock(&os_smAdminLock);
-    sm = os_heap_search_entry(name);
+    sm = os_heap_search_entry_name_and_id(name,id);
     if (sm == NULL) {
         sm = (os_sm *)os_malloc(sizeof(os_sm));
         if (sm != NULL) {
             sm->nattach = 0;
             sm->size = size;
             sm->name = os_malloc((unsigned int)(strlen (name) + 1));
+            sm->id = id;
             if (sm->name) {
                 os_strcpy(sm->name, name);
                 sm->address = os_malloc(size);
@@ -339,6 +422,9 @@ os_heap_sharedMemoryDetach(
 {
     os_sm *sm;
     os_result rv;
+    (void)address;
+
+    OS_UNUSED_ARG(address);
 
     os_mutexLock(&os_smAdminLock);
     sm = os_heap_search_entry(name);
@@ -360,20 +446,35 @@ os_heap_sharedSize(
     os_address *size)
 {
     os_sm *sm;
-    os_result rv;
+    os_result rv = os_resultSuccess;
 
-    os_mutexLock(&os_smAdminLock);
-    sm = os_heap_search_entry(name);
-    if (sm == NULL) {
-        os_mutexUnlock(&os_smAdminLock);
-        rv = os_resultFail;
-        OS_REPORT_1(OS_ERROR, "os_heap_sharedSize", 2, "Entry not found by name (%s)", name);
+    /* The os_sharedmem_heap abstraction is not used exclusively for single
+     * process deployments, as some operating systems may use this as their
+     * default memory configuration despite not being explicitly configured as
+     * a single process deployment.
+     */
+
+    if (os_serviceGetSingleProcess()) {
+#ifdef __x86_64__
+        *size = 0xFFFFFFFFFFFFFFFF; /* maximal address on 64bit systems */
+#else
+        *size = 0xFFFFFFFF; /* maximal address on 32bit systems */
+#endif
     } else {
-        *size = sm->size;
-        os_mutexUnlock(&os_smAdminLock);
-        rv = os_resultSuccess;
+        os_mutexLock(&os_smAdminLock);
+        sm = os_heap_search_entry(name);
+        if (sm == NULL) {
+            os_mutexUnlock(&os_smAdminLock);
+            rv = os_resultFail;
+            OS_REPORT_1(OS_ERROR, "os_heap_sharedSize", 2, "Entry not found by name (%s)", name);
+        } else {
+            *size = sm->size;
+            os_mutexUnlock(&os_smAdminLock);
+            rv = os_resultSuccess;
+        }
     }
-    return rv;
 
+    return rv;
 }
 
+#endif /* OS_SHAREDMEM_HEAP_DISABLE */

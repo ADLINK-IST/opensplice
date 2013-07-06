@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <assert.h>
@@ -48,7 +48,7 @@
  *
  * left and right are references to left and right elements within the tree.
  * height represents the height of the node seen from the bottom of the tree.
- **/ 
+ **/
 
 #define TONODE(t,d) ((ut_avlNode)(((os_address)(d))+(t)->offset))
 #define TODATA(t,n) ((void *)(((os_address)(n))-(t)->offset))
@@ -331,7 +331,7 @@ ut_avlTreeRemove (
     }
     nodeplace_to_delete = nodeplace;
 
-    
+
 
     if (node_to_delete->left == NULL) {
         *nodeplace_to_delete = node_to_delete->right;
@@ -373,7 +373,7 @@ ut_avlTreeRemove (
  *    this function is preserved.
  * History :
  * Algorithm  :
- *    1st : find node by a itterative tree walk.
+ *    1st : find node by an iterative tree walk.
  *    2nd : return reference to the found node.
  * Bugs :
  *
@@ -703,7 +703,7 @@ ut_avlTreeRangeWalk (
     }
 
     nodeplace = (ut_avlNode *)&this->root;
-    
+
     if (endTemplate != NULL) {
         if (endInclude) {
             endSpec = OS_LE;
@@ -756,7 +756,7 @@ ut_avlTreeRangeWalk (
                     nodeplace = &node->right;
                 }
             } else {
-	        if (startInclude) break;
+                if (startInclude) break;
                 if (node->right != NULL) {
                     node = node->right;
                     for (;;) {
@@ -985,9 +985,11 @@ ut_avlTreeNew (
     ut_avlTree tree;
 
     tree = (ut_avlTree)os_malloc(OS_SIZEOF(ut_avlTree));
-    tree->root = NULL;
-    tree->offset = offset;
-    tree->size = 0;
+    if(tree){
+        tree->root = NULL;
+        tree->offset = offset;
+        tree->size = 0;
+    }
     return tree;
 }
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -19,6 +19,7 @@
 
 static IDL_LANGUAGE lang = IDL_LANG_UNKNOWN;
 static IDL_CORBA_MODE corba_mode = IDL_MODE_UNKNOWN;
+static os_boolean is_isocpp = OS_FALSE;
 /* columns are the IDL_MODE attributes
    rows are the IDL_LANG attributes
 */
@@ -127,7 +128,7 @@ idl_languageId(
         id = idl_cxxId (identifier);
     break;
     case IDL_LANG_CS:
-        id = idl_CsharpId (identifier, FALSE);
+        id = idl_CsharpId (identifier, FALSE, FALSE);
     break;
     case IDL_LANG_JAVA:
         id = idl_javaId (identifier);
@@ -214,4 +215,16 @@ idl_genLanguageConstGetter(void)
     }
 
     return getter;
+}
+
+void
+idl_setIsISOCpp(os_boolean itIs)
+{
+    is_isocpp = itIs;
+}
+
+os_boolean
+idl_getIsISOCpp()
+{
+    return is_isocpp;
 }

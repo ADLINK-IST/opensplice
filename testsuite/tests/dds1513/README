@@ -1,0 +1,14 @@
+Prerequisites, assumptions, constraints:
+
+    dds1513 test application is situated in osplo/testsuite/rbt/ccpp/multiDomain-domainBridge.
+    It must be built before running this test.
+
+HOWTO RUN:
+    Using STAXMon tool:
+        1. Start STAXMon.
+        2. Select to execute the "dds1513\dds1513_run_test.xml" script.
+
+    From command line:
+        1. Source STAF environment varibale script (STAFEnv).
+	2. Set var values in dds1513\run_test.sh.
+        3. Run the "dds1513\run_test.sh" script.

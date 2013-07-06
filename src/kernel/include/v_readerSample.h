@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -52,9 +52,69 @@
 #define v_readerSampleInstance(_this) \
         (v_readerSample(_this)->instance)
 
-typedef c_bool
+/* Mask definitions for results of a v_readerSampleAction routine. */
+typedef c_ulong v_actionResult;
+
+#define V_PROCEED          (0x0001U << 0) /* 1 */
+#define V_SKIP             (0x0001U << 1) /* 2 */
+
+/*
+ * Sets all bits in actionResult that are set in mask.
+ *
+ * Example:
+ *      actionResult = 101101;
+ *      v_actionResultSet(actionResult, 000011);
+ *      actionResult == 101111;
+ *
+ */
+#define v_actionResultSet(actionResult,mask)    ((actionResult)|=(mask))
+
+/*
+ * Clears all bits in actionResult that are set in mask.
+ *
+ * Example:
+ *      actionResult = 101111;
+ *      v_actionResultClear(actionResult, 000011);
+ *      actionResult == 101100;
+ *
+ */
+#define v_actionResultClear(actionResult,mask)  ((actionResult)&=(~mask))
+
+/*
+ * Tests whether the supplied mask is set. If all bits in the mask are set in
+ * the actionResult, then the result is TRUE.
+ *
+ * Example:
+ *      v_actionResultTest(101001, 000101) == FALSE
+ *      v_actionResultTest(101001, 001001) == TRUE
+ *      v_actionResultTest(101001, 101001) == TRUE
+ */
+#define v_actionResultTest(actionResult,mask)   (((actionResult)&(mask))==(mask))
+
+/*
+ * Tests whether the supplied mask is NOT set. If all bits in the mask are not
+ * set in the actionResult, then the result is TRUE.
+ *
+ * Example:
+ *      v_actionResultTestNot(101001, 000110) == TRUE
+ *      v_actionResultTestNot(101001, 000010) == TRUE
+ *      v_actionResultTestNot(101001, 001110) == FALSE
+ *
+ * Note that this is different than calling v_actionResultTest with a negated mask:
+ *      v_actionResultTest(101001, ~000110) == FALSE
+ *      v_actionResultTestNot(101001, 000110) == TRUE
+ * Or negating the output of v_actionResultTest:
+ *      !v_actionResultTest(101001, 001110) == TRUE
+ *      v_actionResultTestNot(101001, 001110) == FALSE
+ * Or negating the output of v_actionResultTest with a negated mask:
+ *      !v_actionResultTest(101001, ~001110) == TRUE
+ *      v_actionResultTestNot(101001, 001110) == FALSE
+ */
+#define v_actionResultTestNot(state,mask)(((state)&(~mask))==(state))
+
+typedef v_actionResult
 (*v_readerSampleAction)(
-    v_readerSample _this,
+    c_object _this,
     c_voidp arg);
 
 #undef OS_API

@@ -1,5 +1,4 @@
-#
-include $(OSPL_HOME)/setup/makefiles/makefile.mak
+-include $(OSPL_HOME)/setup/makefiles/makefile.mak
 
 all compile link gcov qac: bld/$(SPLICE_TARGET)/makefile
 	@$(MAKE) -C bld/$(SPLICE_TARGET) $@

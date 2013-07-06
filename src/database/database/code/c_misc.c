@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,6 +13,8 @@
 #include "c__base.h"
 #include "c_collection.h"
 #include "os_report.h"
+#include "c__metabase.h"
+
 
 c_object
 c_checkType (
@@ -74,9 +76,58 @@ c_checkType (
     return o;
 }
 
+
+c_bool
+c_instanceOf (
+    c_object o,
+    const c_char *name)
+{
+    c_type type;
+    c_string str;
+    c_bool found = FALSE;
+    c_bool stop = FALSE;
+
+    if (o != NULL) {
+        c_assertValidDatabaseObject(o);
+        assert(c_refCount(o) > 0);
+        assert(name != NULL);
+        type = c__getType(o);
+
+        while (!found && !stop) {
+            str = c_metaObject(type)->name;
+            if (str == NULL) {
+                found = TRUE; /** assume TRUE **/
+            } else if (strcmp(str,name) != 0) {
+                switch (c_baseObject(type)->kind) {
+                case M_CLASS:
+                    type = c_type(c_class(type)->extends);
+                    if (type == NULL) {
+                        if ((strcmp(str,"c_base") == 0) && (strcmp(name,"c_module") == 0)) {
+                            found = TRUE;
+                        }
+                        stop = TRUE;
+                    }
+                break;
+                case M_TYPEDEF:
+                    type = c_typeDef(type)->alias;
+                    if (type == NULL) {
+                        stop = TRUE;
+                    }
+                break;
+                default:
+                  stop = TRUE;
+                }
+            } else {
+                found = TRUE;
+            }
+        }
+    }
+    return found;
+}
+
 static void
 copyReferences(
-    c_type type,
+    c_type module,
     c_voidp dest,
     c_voidp data);
 
@@ -99,6 +150,7 @@ copyStructReferences(
         switch (c_baseObject(type)->kind) {
         case M_CLASS:
         case M_INTERFACE:
+        case M_ANNOTATION:
         case M_COLLECTION:
         case M_BASE:
             ref = C_DISPLACE(dest,member->offset);
@@ -138,6 +190,7 @@ copyInterfaceReferences(
         switch (c_baseObject(type)->kind) {
         case M_CLASS:
         case M_INTERFACE:
+        case M_ANNOTATION:
         case M_COLLECTION:
         case M_BASE:
             ref = C_DISPLACE(dest,property->offset);
@@ -158,21 +211,22 @@ copyInterfaceReferences(
 
 static void
 copyReferences(
-    c_type type,
+    c_type module,
     c_voidp dest,
     c_voidp data)
 {
-    switch (c_baseObject(type)->kind) {
+    switch (c_baseObject(module)->kind) {
     case M_STRUCTURE:
     case M_EXCEPTION:
-        copyStructReferences(c_structure(type),dest,data);
+        copyStructReferences(c_structure(module),dest,data);
     break;
     case M_CLASS:
-        if (c_class(type)->extends != NULL) {
-            copyReferences(c_type(c_class(type)->extends),dest,data);
+        if (c_class(module)->extends != NULL) {
+            copyReferences(c_type(c_class(module)->extends),dest,data);
         }
+    case M_ANNOTATION:
     case M_INTERFACE:
-        copyInterfaceReferences(c_interface(type),dest,data);
+        copyInterfaceReferences(c_interface(module),dest,data);
     break;
     case M_UNION:
     break;
@@ -273,11 +327,11 @@ c_copyIn (
 
 
 
-static c_bool c__cloneReferences (c_type type, c_voidp data, c_voidp dest);
+static c_bool c__cloneReferences (c_type module, c_voidp data, c_voidp dest);
 
 static c_bool
 _cloneReference (
-	c_type type,
+    c_type type,
     c_voidp data,
     c_voidp dest)
 {
@@ -292,6 +346,7 @@ _cloneReference (
     switch (c_baseObject(t)->kind) {
     case M_CLASS:
     case M_INTERFACE:
+    case M_ANNOTATION:
         c_cloneIn(t, C_REFGET(data, 0), (c_voidp *) dest);
     break;
     case M_BASE:
@@ -306,11 +361,7 @@ _cloneReference (
     case M_EXCEPTION:
     case M_STRUCTURE:
     case M_UNION:
-    	c__cloneReferences(t, data, dest);
-    break;
-    case M_EXTENT:
-    case M_EXTENTSYNC:
-        c_cloneIn(t, C_REFGET(data, 0), (c_voidp *) dest);
+        c__cloneReferences(t, data, dest);
     break;
     default:
         OS_REPORT(OS_ERROR,
@@ -326,7 +377,7 @@ _cloneReference (
 
 static c_bool
 c__cloneReferences (
-    c_type type,
+    c_type module,
     c_voidp data,
     c_voidp dest)
 {
@@ -340,45 +391,46 @@ c__cloneReferences (
     c_long nrOfRefs,nrOfLabs;
     c_value v;
 
-    switch (c_baseObject(type)->kind) {
+    switch (c_baseObject(module)->kind) {
     case M_CLASS:
-		cls = c_class(type);
-		while (cls) {
-			length = c_arraySize(c_interface(cls)->references);
-			for (i=0;i<length;i++) {
-				property = c_property(c_interface(cls)->references[i]);
-				refType = property->type;
-				_cloneReference(refType,
-						C_DISPLACE(data, property->offset),
-						C_DISPLACE(dest, property->offset));
-			}
-			cls = cls->extends;
-		}
+        cls = c_class(module);
+        while (cls) {
+            length = c_arraySize(c_interface(cls)->references);
+            for (i=0;i<length;i++) {
+                property = c_property(c_interface(cls)->references[i]);
+                refType = property->type;
+                _cloneReference(refType,
+                        C_DISPLACE(data, property->offset),
+                        C_DISPLACE(dest, property->offset));
+            }
+            cls = cls->extends;
+        }
     break;
+    case M_ANNOTATION:
     case M_INTERFACE:
-        length = c_arraySize(c_interface(type)->references);
+        length = c_arraySize(c_interface(module)->references);
         for (i=0;i<length;i++) {
-            property = c_property(c_interface(type)->references[i]);
+            property = c_property(c_interface(module)->references[i]);
             refType = property->type;
-			_cloneReference(refType,
-					C_DISPLACE(data, property->offset),
-					C_DISPLACE(dest, property->offset));
+            _cloneReference(refType,
+                    C_DISPLACE(data, property->offset),
+                    C_DISPLACE(dest, property->offset));
         }
     break;
     case M_EXCEPTION:
     case M_STRUCTURE:
-        length = c_arraySize(c_structure(type)->references);
+        length = c_arraySize(c_structure(module)->references);
         for (i=0;i<length;i++) {
-            member = c_member(c_structure(type)->references[i]);
+            member = c_member(c_structure(module)->references[i]);
             refType = c_specifier(member)->type;
-			_cloneReference(refType,
-					C_DISPLACE(data, member->offset),
-					C_DISPLACE(dest, member->offset));
+            _cloneReference(refType,
+                    C_DISPLACE(data, member->offset),
+                    C_DISPLACE(dest, member->offset));
         }
     break;
     case M_UNION:
 #define _CASE_(k,t) case k: v = t##Value(*((t *)data)); break
-        switch (c_metaValueKind(c_metaObject(c_union(type)->switchType))) {
+        switch (c_metaValueKind(c_metaObject(c_union(module)->switchType))) {
         _CASE_(V_BOOLEAN,   c_bool);
         _CASE_(V_OCTET,     c_octet);
         _CASE_(V_SHORT,     c_short);
@@ -398,7 +450,7 @@ c__cloneReferences (
         break;
         }
 #undef _CASE_
-        references = c_union(type)->references;
+        references = c_union(module)->references;
         if (references != NULL) {
             i=0; refType=NULL;
             nrOfRefs = c_arraySize(references);
@@ -409,8 +461,8 @@ c__cloneReferences (
                 while ((j<nrOfLabs) && (refType == NULL)) {
                     if (c_valueCompare(v,c_literal(labels[j])->value) == C_EQ) {
                         c__cloneReferences(c_type(references[i]),
-                                           C_DISPLACE(data, c_type(type)->alignment),
-                                           C_DISPLACE(dest, c_type(type)->alignment));
+                                           C_DISPLACE(data, c_type(module)->alignment),
+                                           C_DISPLACE(dest, c_type(module)->alignment));
                         refType = c_specifier(references[i])->type;
                     }
                     j++;
@@ -420,12 +472,12 @@ c__cloneReferences (
         }
     break;
     case M_COLLECTION:
-        refType = c_typeActualType(c_collectionType(type)->subType);
-        switch (c_collectionType(type)->kind) {
+        refType = c_typeActualType(c_collectionType(module)->subType);
+        switch (c_collectionType(module)->kind) {
         case C_ARRAY:
             ar = c_array(data);
             destar = c_array(dest);
-            length = c_collectionType(type)->maxSize;
+            length = c_collectionType(module)->maxSize;
             if (length == 0) {
                 length = c_arraySize(ar);
             }
@@ -469,23 +521,23 @@ c__cloneReferences (
     case M_BASE:
     break;
     case M_TYPEDEF:
-        c__cloneReferences(c_type(c_typeDef(type)->alias), data, dest);
+        c__cloneReferences(c_type(c_typeDef(module)->alias), data, dest);
     break;
     case M_ATTRIBUTE:
     case M_RELATION:
-        refType = c_typeActualType(c_property(type)->type);
+        refType = c_typeActualType(c_property(module)->type);
         _cloneReference(refType,
-        		C_DISPLACE(data, c_property(type)->offset),
-        		C_DISPLACE(dest, c_property(type)->offset));
+                C_DISPLACE(data, c_property(module)->offset),
+                C_DISPLACE(dest, c_property(module)->offset));
     break;
     case M_MEMBER:
-        refType = c_typeActualType(c_specifier(type)->type);
+        refType = c_typeActualType(c_specifier(module)->type);
         _cloneReference(refType,
-        		C_DISPLACE(data, c_member(type)->offset),
-        		C_DISPLACE(dest, c_member(type)->offset));
+                C_DISPLACE(data, c_member(module)->offset),
+                C_DISPLACE(dest, c_member(module)->offset));
     break;
     case M_UNIONCASE:
-        refType = c_typeActualType(c_specifier(type)->type);
+        refType = c_typeActualType(c_specifier(module)->type);
         _cloneReference(refType, data, dest);
     break;
     case M_MODULE:
@@ -494,8 +546,6 @@ c__cloneReferences (
     case M_PRIMITIVE:
         /* Do nothing */
     break;
-    case M_EXTENT:
-    case M_EXTENTSYNC:
     default:
         OS_REPORT(OS_ERROR,
                   "c__cloneReferences",0,
@@ -539,23 +589,23 @@ c_cloneIn (
             subSize = c_collectionType(t)->subType->size;
             size = c_collectionType(t)->maxSize;
             if (size == 0) {
-            	size = c_arraySize(data);
+                size = c_arraySize(data);
                 *dest = c_newArray(c_collectionType(t), size);
             }
             if (size > 0) {
                 memcpy(*dest, data, size * subSize);
                 /* Find indirections */
-                c__cloneReferences(t, data, dest);
+                c__cloneReferences(t, data, *dest);
             }
             break;
         case C_SEQUENCE:
             subSize = c_collectionType(t)->subType->size;
             size = c_sequenceSize(data);
+            *dest = c_newSequence(c_collectionType(t), size);
             if (size > 0) {
-                *dest = c_newSequence(c_collectionType(t), size);
                 memcpy(*dest, data, size * subSize);
                 /* Find indirections */
-                c__cloneReferences(t, data, dest);
+                c__cloneReferences(t, data, *dest);
             }
             break;
         break;
@@ -581,8 +631,8 @@ c_cloneIn (
 
 static void
 extractReferences(
-    c_type type,
-    c_object o,
+    c_type module,
+    c_object srcObj,
     void *data);
 
 static void
@@ -607,6 +657,7 @@ extractStructReferences(
         switch (c_baseObject(type)->kind) {
         case M_CLASS:
         case M_INTERFACE:
+        case M_ANNOTATION:
         case M_COLLECTION:
         case M_BASE:
             ref = C_DISPLACE(data,member->offset);
@@ -646,6 +697,7 @@ extractInterfaceReferences(
         switch (c_baseObject(type)->kind) {
         case M_CLASS:
         case M_INTERFACE:
+        case M_ANNOTATION:
         case M_COLLECTION:
         case M_BASE:
             ref = C_DISPLACE(data,property->offset);
@@ -667,21 +719,22 @@ extractInterfaceReferences(
 
 static void
 extractReferences(
-    c_type type,
-    c_object o,
+    c_type module,
+    c_object srcObj,
     c_voidp data)
 {
-    switch (c_baseObject(type)->kind) {
+    switch (c_baseObject(module)->kind) {
     case M_STRUCTURE:
     case M_EXCEPTION:
-        extractStructReferences(c_structure(type),o,data);
+        extractStructReferences(c_structure(module),srcObj,data);
     break;
     case M_CLASS:
-        if (c_class(type)->extends != NULL) {
-            extractReferences(c_type(c_class(type)->extends),o,data);
+        if (c_class(module)->extends != NULL) {
+            extractReferences(c_type(c_class(module)->extends),srcObj,data);
         }
+    case M_ANNOTATION:
     case M_INTERFACE:
-        extractInterfaceReferences(c_interface(type),o,data);
+        extractInterfaceReferences(c_interface(module),srcObj,data);
     break;
     case M_UNION:
     break;

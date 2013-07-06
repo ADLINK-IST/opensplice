@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -41,6 +41,73 @@
 /* value to represent the platform dependent default */
 #define GAPI_DEFAULT_LISTENER_STACKSIZE 0
 
+/*
+ * Within a domain participant a type support can be registered. The type support can be uniquely identified by a
+  * typename (the idl type name) or an alias (user defined name). But the type support should be findable by both names
+  * This leads to a typesupport to be stored within a keyed map within the domain participant. But this map will have
+  * 2 keys, the alias name and the typename.
+  * The combination of these two keys does _not_ make a type support unique, one of them is enough as a unique identifier.
+  */
+C_CLASS(TypeSupportMapKey);
+C_STRUCT(TypeSupportMapKey)
+{
+    gapi_char* typeAliasName;
+    gapi_char* typeName;
+};
+
+
+/*
+ * This operation is used as the compare operation for the map of type supports of the participant. This operation
+ * will return EQUAL if a key in the map can be matched to the 'searchKey'. These keys are considered equal if:
+ * key.typeName equals searchKey.typeName OR
+ * key.typeName equals searchKey.typeAliasName OR
+ * key.typeAliasName equals searchKey.typeName OR
+ * key.typeAliasName equals searchKey.typeAliasName
+ *
+ * So equality here does NOT mean that both the typeName AND typeAliasName must be equal. See explaination regarding
+ * TypeSupportMapKey for more info
+ */
+gapi_equality
+gapi_typeSupportCompare (
+    TypeSupportMapKey key,
+    TypeSupportMapKey searchKey)
+{
+    gapi_equality eq;
+
+    /* equality is reached when the typeName or the typeAliasName of the
+     * searchKey matches either the typeName or typeAliasName of the key.
+     */
+    if(searchKey->typeName)
+    {
+        /* Check if the type name being searched for matches the typeName of the
+         * key or if it matches the typeAliasName of the key.
+         */
+        eq = gapi_stringCompare(searchKey->typeName, key->typeName);
+        if(eq != GAPI_EQ)
+        {
+            eq = gapi_stringCompare(searchKey->typeName, key->typeAliasName);
+        }
+    } else
+    {
+        eq = GAPI_NE;
+    }
+    /* if a typeAliasName was used in the search and we have not yet matched the
+     * typeName of the searchKey, then compare the typeAliasName of the
+     * searchKey too
+     */
+    if(searchKey->typeAliasName && eq != GAPI_EQ)
+    {
+        /* Check if the type alias name being searched for matches the typeName
+         * of the key or if it matches the typeAliasName of the key.
+         */
+        eq = gapi_stringCompare(searchKey->typeAliasName, key->typeName);
+        if(eq != GAPI_EQ)
+        {
+            eq = gapi_stringCompare(searchKey->typeAliasName, key->typeAliasName);
+        }
+    }/* else the 'eq' value of the searchKey->typeName remains the truth */
+    return eq;
+}
 
 typedef struct DeleteActionInfo_s {
     gapi_deleteEntityAction action;
@@ -70,7 +137,7 @@ typedef struct ListenerThreadInfo_s {
 
 C_STRUCT(_DomainParticipant) {
     C_EXTENDS(_Entity);
-    gapi_domainId_t                        _DomainId;
+    gapi_domainName_t                        _DomainId;
     gapi_publisherQos                      _defPublisherQos;
     gapi_subscriberQos                     _defSubscriberQos;
     gapi_topicQos                          _defTopicQos;
@@ -84,6 +151,7 @@ C_STRUCT(_DomainParticipant) {
     gapi_schedulingQosPolicy                watchdogScheduling;
     /* temporary attribute until user layer support becomes available. */
     c_iter                                  contentFilteredTopics;
+    gapi_domainId_int_t                     _dId;
 };
 
 typedef struct {
@@ -176,13 +244,10 @@ allocateParticipant (
     _DomainParticipant _this = _DomainParticipantAlloc();
 
     if ( _this != NULL ) {
-        _this->typeSupportMap = gapi_mapNew (gapi_stringCompare, TRUE, FALSE);
+        _this->typeSupportMap = gapi_mapNew (gapi_typeSupportCompare, FALSE, FALSE);
         _this->builtinSubscriber = _Subscriber (0);
 
         if (_this->typeSupportMap == NULL) {
-            if ( _this->typeSupportMap != NULL ) {
-                gapi_mapFree(_this->typeSupportMap);
-            }
             _EntityDelete(_this);
             _this = NULL;
         }
@@ -378,7 +443,7 @@ determineProcIdentity (
 
 _DomainParticipant
 _DomainParticipantNew (
-    gapi_domainId_t                              domainId,
+    gapi_domainName_t                              domainId,
     const gapi_domainParticipantQos             *qos,
     const struct gapi_domainParticipantListener *a_listener,
     const gapi_statusMask                        mask,
@@ -386,7 +451,9 @@ _DomainParticipantNew (
     gapi_listenerThreadAction                    startAction,
     gapi_listenerThreadAction                    stopAction,
     void                                        *actionArg,
-    const gapi_context                          *context)
+    const gapi_context                          *context,
+    gapi_domainId_int_t                          dId,
+    const char                                  *name)
 {
     _DomainParticipant newParticipant;
     v_participantQos participantQos = NULL;
@@ -400,6 +467,7 @@ _DomainParticipantNew (
         _EntityInit (_Entity(newParticipant), NULL);
 
         newParticipant->_DomainId = gapi_strdup(domainId);
+        newParticipant->_dId = dId;
         memset (&newParticipant->_defTopicQos, 0,
                 sizeof(newParticipant->_defTopicQos));
         gapi_topicQosCopy (&gapi_topicQosDefault,
@@ -438,32 +506,35 @@ _DomainParticipantNew (
     }
 
     if (newParticipant != NULL) {
-        procIdentity = determineProcIdentity(context);
-        if(procIdentity && procIdentity[0] != '\0'){
-            if (procIdentity[0] != '<') {
-                /* A name was found, so use that as an identifier */
-                snprintf(participantId, sizeof(participantId), "%s",
-                        procIdentity);
+        if (name == NULL) {
+            procIdentity = determineProcIdentity(context);
+            if(procIdentity && procIdentity[0] != '\0'){
+                if (procIdentity[0] != '<') {
+                    /* A name was found, so use that as an identifier */
+                    snprintf(participantId, sizeof(participantId), "%s",
+                            procIdentity);
+                } else {
+                    /* Only PID was returned, decorate with some extra info */
+                    snprintf(participantId, sizeof(participantId),
+                             "DCPS Appl %s "PA_ADDRFMT"_"PA_ADDRFMT, procIdentity,
+                             os_threadIdToInteger(os_threadIdSelf()),
+                             (PA_ADDRCAST) newParticipant);
+                }
             } else {
-                /* Only PID was returned, decorate with some extra info */
+                /* Memory claim failed or empty string, fill in something useful */
                 snprintf(participantId, sizeof(participantId),
-                         "DCPS Appl %s "PA_ADDRFMT"_"PA_ADDRFMT, procIdentity,
+                         "DCPS Appl <%d> "PA_ADDRFMT"_"PA_ADDRFMT,
+                         os_procIdToInteger(os_procIdSelf()),
                          os_threadIdToInteger(os_threadIdSelf()),
                          (PA_ADDRCAST) newParticipant);
             }
-        } else {
-            /* Memory claim failed or empty string, fill in something useful */
-            snprintf(participantId, sizeof(participantId),
-                     "DCPS Appl <%d> "PA_ADDRFMT"_"PA_ADDRFMT,
-                     os_procIdToInteger(os_procIdSelf()),
-                     os_threadIdToInteger(os_threadIdSelf()),
-                     (PA_ADDRCAST) newParticipant);
+            if(procIdentity){
+                os_free(procIdentity);
+            }
         }
-        if(procIdentity){
-            os_free(procIdentity);
-        }
+
         uParticipant = u_participantNew (domainId, 1,
-                                         participantId,
+                                         name ? name : participantId,
                                          (v_qos)participantQos,
                                          FALSE);
         if ( uParticipant != NULL ) {
@@ -521,10 +592,14 @@ _DomainParticipantFree (
     _DomainParticipant _this)
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
-    gapi_mapIter iterMap;
     _Status status;
     u_participant p;
     gapi_typeSupport handle;
+    c_long tsMapLength;
+    c_long i;
+    gapi_mapIter iter;
+    TypeSupportMapKey key;
+    _TypeSupport ts;
 
     assert (_this);
 
@@ -534,14 +609,28 @@ _DomainParticipantFree (
     _EntityClaim(status);
     _StatusDeinit(status);
 
-    iterMap = gapi_mapFirst (_this->typeSupportMap);
-    while (gapi_mapIterObject(iterMap)) {
-        _TypeSupport ts = (_TypeSupport)gapi_mapIterObject(iterMap);
+    tsMapLength = gapi_mapLength(_this->typeSupportMap);
+    for(i = 0; i < tsMapLength; i++)
+    {
+        /* get the first entry of the map, a little later we will remove the
+         * found entry which will in turn ensure the next loop another iter
+         * object will be first.
+         */
+        iter = gapi_mapFirst(_this->typeSupportMap);
+        assert(iter); /* should be ok, as it should match the length */
+        key = (TypeSupportMapKey)gapi_mapIterKey(iter);
+        ts = (_TypeSupport)gapi_mapIterObject(iter);
+        /* remove the entry from the map */
+        gapi_mapRemove(_this->typeSupportMap, (gapi_object)key);
+        /* Free all key related memory */
+        os_free(key->typeAliasName);
+        os_free(key->typeName);
+        os_free(key);
+        /* Free the type support handle */
         handle = _EntityHandle(ts);
         gapi_free(handle);
-        gapi_mapIterRemove(iterMap);
+        os_free(iter);
     }
-    gapi_mapIterFree (iterMap);
 
     stopListenerEventThread(_this);
     deinitListenerThreadInfo(&_this->listenerThreadInfo);
@@ -663,36 +752,17 @@ _DomainParticipantFindType (
 {
     _TypeSupport typeSupport = NULL;
     gapi_mapIter iter;
-    char *name;
+    C_STRUCT(TypeSupportMapKey) key;
 
     assert(_this);
     assert(registry_name);
 
-    iter = gapi_mapFind (_this->typeSupportMap, (gapi_object)registry_name);
+    key.typeAliasName = (gapi_char*)registry_name;
+    key.typeName = NULL;
+    iter = gapi_mapFind (_this->typeSupportMap, (gapi_object)&key);
     if (iter) {
         typeSupport = (_TypeSupport)gapi_mapIterObject (iter);
         gapi_mapIterFree (iter);
-    }
-    if (!typeSupport) {
-        /* check if we are looking for builtin Topic type support. */
-        if (strcmp(registry_name, "kernelModule::v_participantInfo") == 0) {
-            name = "DDS::ParticipantBuiltinTopicData";
-        } else if (strcmp(registry_name, "kernelModule::v_topicInfo") == 0) {
-            name = "DDS::TopicBuiltinTopicData";
-        } else if (strcmp(registry_name, "kernelModule::v_publicationInfo") == 0) {
-            name = "DDS::PublicationBuiltinTopicData";
-        } else if (strcmp(registry_name, "kernelModule::v_subscriptionInfo") == 0) {
-            name = "DDS::SubscriptionBuiltinTopicData";
-        } else {
-            name = NULL;
-        }
-        if (name) {
-            iter = gapi_mapFind (_this->typeSupportMap, (gapi_object)name);
-            if (iter) {
-                typeSupport = (_TypeSupport)gapi_mapIterObject (iter);
-                gapi_mapIterFree (iter);
-            }
-        }
     }
     return typeSupport;
 }
@@ -761,50 +831,60 @@ _DomainParticipantRegisterType (
 {
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     gapi_context context;
+    TypeSupportMapKey key;
 
     assert(_this);
     assert(typeSupport);
     assert(registryName);
 
     GAPI_CONTEXT_SET(context, _EntityHandle(_this), GAPI_METHOD_REGISTER_TYPE);
-    result = gapi_mapAdd(_this->typeSupportMap,
-                        (gapi_object)gapi_strdup(registryName),
-                        (gapi_object)typeSupport);
-    return result;
-}
-
-/* precondition: participant must be locked */
-_TypeSupport
-_DomainParticipantFindTypeSupport (
-    _DomainParticipant _this,
-    const gapi_char *type_name)
-{
-    gapi_mapIter iter;
-    _TypeSupport typeSupport = NULL;
-    char *typeSupportTypeName = NULL;
-
-    assert(_this);
-    assert(type_name);
-
-    iter = gapi_mapFirst (_this->typeSupportMap);
-    if (iter) {
-        typeSupport = _TypeSupport(gapi_mapIterObject (iter));
-        if (typeSupport) {
-            typeSupportTypeName = _TypeSupportTypeName (typeSupport);
-        }
-        while (typeSupport &&
-               typeSupportTypeName &&
-               (strcmp(type_name, typeSupportTypeName) != 0))
+    key = os_malloc(C_SIZEOF(TypeSupportMapKey));
+    if(key)
+    {
+        key->typeAliasName = gapi_strdup(registryName);
+        if(key->typeAliasName)
         {
-            gapi_mapIterNext (iter);
-            typeSupport = _TypeSupport(gapi_mapIterObject (iter));
-            if (typeSupport) {
-                typeSupportTypeName = _TypeSupportTypeName (_TypeSupport(typeSupport));
+            key->typeName = gapi_strdup(_TypeSupportTypeName(typeSupport));
+            if(key->typeName)
+            {
+                result = gapi_mapAdd(_this->typeSupportMap,
+                            (gapi_object)key,
+                            (gapi_object)typeSupport);
+                if(result != GAPI_RETCODE_OK)
+                {
+                    os_free(key->typeName);
+                    os_free(key->typeAliasName);
+                    os_free(key);
+                }
+            } else
+            {
+                os_free(key->typeAliasName);
+                os_free(key);
+                result = GAPI_RETCODE_OUT_OF_RESOURCES;
+                OS_REPORT(OS_ERROR,
+                    "_DomainParticipantRegisterType", 0,
+                    "Unable to duplicate the type name of the typesupport. "
+                    "Not enough heap memory available.");
             }
+        } else
+        {
+            os_free(key);
+            result = GAPI_RETCODE_OUT_OF_RESOURCES;
+            OS_REPORT(OS_ERROR,
+                    "_DomainParticipantRegisterType", 0,
+                    "Unable to duplicate the registry name of the typesupport. "
+                    "Not enough heap memory available.");
         }
-        gapi_mapIterFree(iter);
+    } else
+    {
+        result = GAPI_RETCODE_OUT_OF_RESOURCES;
+        OS_REPORT(OS_ERROR,
+                    "_DomainParticipantRegisterType", 0,
+                    "Unable to allocate a key holder struct to insert the "
+                    "typesupport in the map of typesupports. Not enough heap "
+                    "memory available.");
     }
-    return typeSupport;
+    return result;
 }
 
 gapi_boolean
@@ -871,13 +951,15 @@ _DomainParticipantGetRegisteredTypeName (
     gapi_mapIter iter;
     _TypeSupport t;
     const gapi_char *name = NULL;
+    TypeSupportMapKey key;
 
     iter = gapi_mapFirst(_this->typeSupportMap);
     if ( iter ) {
         t = (_TypeSupport)gapi_mapIterObject(iter);
         while ( !name && t ) {
             if ( t == typeSupport ) {
-                name = (const gapi_char *) gapi_mapIterKey(iter);
+                key = (TypeSupportMapKey) gapi_mapIterKey(iter);
+                name = key->typeAliasName;
             } else {
                 gapi_mapIterNext(iter);
                 t = (_TypeSupport)gapi_mapIterObject(iter);
@@ -935,11 +1017,13 @@ _DomainParticipantFindTopicDescription (
 
 static c_equality
 compareTopicName (
-    _TopicDescription topicDescription,
-    const gapi_char *topic_name)
+    c_voidp o,
+    c_iterResolveCompareArg arg)
 {
     gapi_string name;
     c_equality equality = C_NE;
+    _TopicDescription topicDescription = (_TopicDescription) o;
+    const gapi_char *topic_name = (const gapi_char *) arg;
 
     name = _TopicDescriptionGetName(topicDescription);
     if (name && topic_name) {
@@ -947,6 +1031,7 @@ compareTopicName (
             equality = C_EQ;
         }
     }
+    gapi_free(name);
     return equality;
 }
 
@@ -964,9 +1049,10 @@ _DomainParticipantLookupTopicDescription (
     assert(_this);
     assert(topic_name);
 
-    topicDescription = c_iterResolve(_this->contentFilteredTopics,
-                                     compareTopicName,
-                                     (c_voidp)topic_name);
+    topicDescription = (_TopicDescription) c_iterResolve(
+            _this->contentFilteredTopics,
+            compareTopicName,
+            (void *) topic_name);
     if (topicDescription == NULL) {
         topics = u_participantLookupTopics(U_PARTICIPANT_GET(_this),
                                            topic_name);
@@ -1451,8 +1537,8 @@ gapi_domainParticipant_find_topic (
     v_duration vDuration;
     u_topic uTopic = NULL;
     char *typeName = NULL;
-    _TypeSupport typeSupport = NULL;
     gapi_context context;
+    u_participant uParticipant;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_FIND_TOPIC);
 
@@ -1468,8 +1554,11 @@ gapi_domainParticipant_find_topic (
     if ( result == GAPI_RETCODE_OK ) {
          if (_EntityEnabled(participant)) {
             kernelCopyInDuration(timeout, &vDuration);
-
-            topicList = u_participantFindTopic (U_PARTICIPANT_GET(participant),
+            uParticipant = _DomainParticipantUparticipant(participant);
+            /* release the participant lock because with an infinite timeout not releasing
+             * the participant results in a deadlock because no other thread can access the participant object */
+            _EntityRelease(participant);
+            topicList = u_participantFindTopic (uParticipant,
                                                 topic_name, vDuration);
 
             if (topicList) {
@@ -1486,14 +1575,21 @@ gapi_domainParticipant_find_topic (
             if (uTopic) {
                 typeName = (char *)u_topicTypeName(uTopic);
             }
-
-            if (uTopic && typeName) {
-                topic = _TopicFromKernelTopic(uTopic, topic_name,
-                                              typeName,
-                                              participant, &context);
-                if ( !topic ) {
-                    u_topicFree(uTopic);
+            participant = gapi_domainParticipantClaim(_this, &result);
+            if ( result == GAPI_RETCODE_OK ) {
+                if (uTopic && typeName) {
+                    topic = _TopicFromKernelTopic(uTopic, topic_name,
+                                                  typeName,
+                                                  participant, &context);
+                    if ( !topic ) {
+                        u_topicFree(uTopic);
+                    }
                 }
+            }  else {
+                 OS_REPORT_1(OS_WARNING,
+                             "gapi_domainParticipant_find_topic", 0,
+                             "Given DomainParticipant is invalid: result = %s",
+                             gapi_retcode_image(result));
             }
             if ( topic ) {
                 _ENTITY_REGISTER_OBJECT(_Entity(participant),
@@ -1598,9 +1694,9 @@ gapi_domainParticipant_create_contentfilteredtopic (
 
     p = gapi_domainParticipantClaim(_this, &result);
     if ( p != NULL ) {
-        found = c_iterResolve(p->contentFilteredTopics,
-                              compareTopicName,
-                              (c_voidp)name);
+        found = (_Topic) c_iterResolve(p->contentFilteredTopics,
+                                       compareTopicName,
+                                       (void *) name);
         if (found == NULL) {
             topics = u_participantLookupTopics(U_PARTICIPANT_GET(p), name);
             topic = c_iterTakeFirst(topics);
@@ -2276,15 +2372,52 @@ gapi_domainParticipant_ignore_subscription (
     return result;
 }
 
-/*     DomainId_t
- *     get_domain_id();
+/*     gapi_domainId_int_t
+ *     get_domain_id_w_id();
  */
-gapi_domainId_t
+gapi_domainId_int_t
 gapi_domainParticipant_get_domain_id (
     gapi_domainParticipant _this)
 {
     _DomainParticipant participant;
-    gapi_domainId_t domainId = NULL;
+    gapi_domainId_int_t domainId = INVALID_DOMAIN_ID;
+    gapi_returnCode_t result = GAPI_RETCODE_OK;
+
+    participant = gapi_domainParticipantClaim(_this, &result);
+
+    if ( participant != NULL) {
+        if (_EntityEnabled(participant)) {
+            if (participant->_dId == INVALID_DOMAIN_ID) {
+                domainId = u_userGetDomainIdFromEnvUri();
+            } else {
+                domainId = participant->_dId;
+            }
+        } else {
+            OS_REPORT(OS_WARNING,
+                      "gapi_domainParticipant_get_domain_id", 0,
+                      "Given DomainParticipant is not enabled.");
+        }
+        _EntityRelease(participant);
+    } else {
+        OS_REPORT_1(OS_WARNING,
+                    "gapi_domainParticipant_get_domain_id", 0,
+                    "Given DomainParticipant is invalid: result = %s",
+                    gapi_retcode_image(result));
+    }
+    return domainId;
+}
+
+/*     DomainId_t
+ *     get_domain_id_as_str();
+ *
+ *     Note : the caller must free the returned value
+ */
+gapi_domainName_t
+gapi_domainParticipant_get_domain_id_as_str (
+    gapi_domainParticipant _this)
+{
+    _DomainParticipant participant;
+    gapi_domainName_t domainId = NULL;
     gapi_returnCode_t result = GAPI_RETCODE_OK;
 
     participant = gapi_domainParticipantClaim(_this, &result);
@@ -2296,13 +2429,13 @@ gapi_domainParticipant_get_domain_id (
             }
         } else {
             OS_REPORT(OS_WARNING,
-                      "gapi_domainParticipant_get_domain_id", 0,
+                      "gapi_domainParticipant_get_domain_id_as_str", 0,
                       "Given DomainParticipant is not enabled.");
         }
         _EntityRelease(participant);
     } else {
         OS_REPORT_1(OS_WARNING,
-                    "gapi_domainParticipant_get_domain_id", 0,
+                    "gapi_domainParticipant_get_domain_id_as_str", 0,
                     "Given DomainParticipant is invalid: result = %s",
                     gapi_retcode_image(result));
     }
@@ -2561,7 +2694,7 @@ gapi_domainParticipant_get_default_topic_qos (
     return result;
 }
 
-gapi_domainId_t
+gapi_domainName_t
 _DomainParticipantGetDomainId (
     _DomainParticipant _this)
 {
@@ -2569,6 +2702,8 @@ _DomainParticipantGetDomainId (
 
     return _this->_DomainId;
 }
+
+
 
 typedef struct {
     c_base base;
@@ -2723,6 +2858,7 @@ listenerEventThread (
     ListenerThreadInfo *info = (ListenerThreadInfo *) arg;
     c_iter list = NULL;
     gapi_object handle;
+    u_result result;
 
     if ( info->startAction ) {
         info->startAction(info->actionArg);
@@ -2764,21 +2900,30 @@ listenerEventThread (
         }
         os_mutexUnlock(&info->mutex);
 
-        u_waitsetWaitEvents(info->waitset,&list);
-        if ( list ) {
-            u_waitsetEvent event = u_waitsetEvent(c_iterTakeFirst(list));
-            while ( event) {
-                if(!(event->events & V_EVENT_TRIGGER))
-                {
-                    u_entity uEntity = event->entity;
-                    gapi_entity source = (gapi_entity)(u_entityGetUserData(uEntity));
-                    gapi_entityNotifyEvent(source, event->events);
+        result = u_waitsetWaitEvents(info->waitset,&list);
+        if(result == U_RESULT_OK || result == U_RESULT_TIMEOUT)
+        {
+            if ( list ) {
+                u_waitsetEvent event = u_waitsetEvent(c_iterTakeFirst(list));
+                while ( event) {
+                    if(!(event->events & V_EVENT_TRIGGER))
+                    {
+                        u_entity uEntity = event->entity;
+                        gapi_entity source = (gapi_entity)(u_entityGetUserData(uEntity));
+                        gapi_entityNotifyEvent(source, event->events);
+                    }
+                    u_waitsetEventFree(event);
+                    event = u_waitsetEvent(c_iterTakeFirst(list));
                 }
-                u_waitsetEventFree(event);
-                event = u_waitsetEvent(c_iterTakeFirst(list));
+                c_iterFree(list);
+                list = NULL;
             }
-            c_iterFree(list);
-            list = NULL;
+        } else
+        {
+            OS_REPORT_1(OS_ERROR,
+                      "listenerEventThread", 0,
+                      "u_waitsetWaitEvents failed with result code %d", result);
+            info->threadState = STOPPING;
         }
         os_mutexLock(&info->mutex);
     }
@@ -3060,13 +3205,14 @@ struct copyDiscoveredDataArg
     gapi_readerAction action;
 };
 
-static c_bool
+static v_actionResult
 copyDiscoveredData(
     c_object from,
     c_voidp to)
 {
     v_message msg;
     c_voidp sample;
+    v_actionResult result = 0;
     struct copyDiscoveredDataArg *arg = (struct copyDiscoveredDataArg *) to;
 
     if (from) {
@@ -3074,7 +3220,7 @@ copyDiscoveredData(
         sample = C_DISPLACE(msg, arg->reader->userdataOffset);
         arg->action(sample, arg->to);
     }
-    return FALSE;
+    return result;
 }
 
 
@@ -3212,13 +3358,14 @@ struct copyDiscoveredTopicDataArg
     gapi_readerAction action;
 };
 
-static c_bool
+static v_actionResult
 copyDiscoveredTopicData(
     c_object from,
     c_voidp to)
 {
     v_message msg;
     c_voidp sample;
+    v_actionResult result = 0;
     struct copyDiscoveredTopicDataArg *arg = (struct copyDiscoveredTopicDataArg *) to;
 
     if (from) {
@@ -3226,7 +3373,7 @@ copyDiscoveredTopicData(
         sample = C_DISPLACE(msg, arg->reader->userdataOffset);
         arg->action(sample, arg->to);
     }
-    return FALSE;
+    return result;
 }
 /*     ReturnCode_t
  *     get_discovered_topic_data (
@@ -3447,12 +3594,26 @@ void
 _DomainParticipantCleanup (
     _DomainParticipant _this)
 {
+    u_result uResult;
+
     assert(_this);
 
     _EntityClaimNotBusy(_this);
-
-    _DomainParticipantDeleteContainedEntitiesNoClaim(_this);
-
+    if(!os_serviceGetSingleProcess())
+    {
+        _DomainParticipantDeleteContainedEntitiesNoClaim(_this);
+    } else
+    {
+        uResult = u_participantDeleteContainedEntities(U_PARTICIPANT_GET(_this));
+        if(uResult != U_RESULT_OK)
+        {
+            OS_REPORT_1(OS_WARNING,
+                        "_DomainParticipantCleanup", 0,
+                        "Failed to delete the user layer participant. Result = %s.",
+                        gapi_retcode_image(kernelResultToApiResult(uResult)));
+        }
+    }
     _DomainParticipantFree(_this);
+
 }
 

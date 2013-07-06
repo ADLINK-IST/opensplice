@@ -1,0 +1,109 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE 
+ *
+ *   for full copyright notice and license terms. 
+ *
+ */
+
+module pingpong
+{
+
+    struct PP_min_msg
+    {
+        unsigned long       block;
+        unsigned long       count;
+    };
+#pragma keylist PP_min_msg block     
+    
+    typedef sequence<char>  seq_char;
+
+    struct PP_seq_msg
+    {
+        unsigned long       block;
+        unsigned long       count;
+        seq_char            payload;
+    };
+#pragma keylist PP_seq_msg block     
+    
+    struct PP_string_msg
+    {
+        unsigned long       block;
+        unsigned long       count;
+        string              a_string;
+    };
+#pragma keylist PP_string_msg block     
+    
+    typedef string<40> string_40;
+    
+    struct PP_fixed_msg
+    {
+        unsigned long       block;
+        unsigned long       count;
+        
+        char                a_char;
+        octet               a_octet;
+        short               a_short;
+        unsigned short      a_ushort;
+        long                a_long;
+        unsigned long       a_ulong;
+        long long           a_longlong;
+        unsigned long long  a_ulonglong;
+        float               a_float;
+        double              a_double;
+        boolean             a_boolean;
+        string_40           a_bstring;
+    };
+#pragma keylist PP_fixed_msg block
+
+    struct PP_array_msg
+    {
+        unsigned long       block;
+        unsigned long       count;
+        
+        char                str_arr_char[10];
+        octet               str_arr_octet[10];
+        short               str_arr_short[10];
+        unsigned short      str_arr_ushort[10];
+        long                str_arr_long[10];
+        unsigned long       str_arr_ulong[10];
+        long long           str_arr_longlong[10];
+        unsigned long long  str_arr_ulonglong[10];
+        float               str_arr_float[10];
+        double              str_arr_double[10];
+        boolean             str_arr_boolean[11];
+    };
+
+#pragma keylist PP_array_msg block
+
+    struct PP_bseq_msg
+    {
+       unsigned long       block;
+       unsigned long       count;
+       
+       sequence<char, 10>               seq_char;
+       sequence<octet, 10>              seq_octets;
+       sequence<short, 10>              seq_short;
+       sequence<unsigned short, 10>     seq_ushort;
+       sequence<long, 10>               seq_long;
+       sequence<unsigned long, 10>      seq_ulong;
+       sequence<long long, 10>          seq_longlong;
+       sequence<unsigned long long, 10> seq_ulonglong;
+       sequence<float, 10>              seq_float;
+       sequence<double, 10>             seq_double;
+       sequence<boolean, 10>            seq_boolean;
+    };
+
+#pragma keylist PP_bseq_msg block
+
+    struct PP_quit_msg
+    {
+	boolean		    quit;
+    };
+#pragma keylist PP_quit_msg
+
+};

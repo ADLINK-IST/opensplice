@@ -86,14 +86,13 @@ extractAttributeValue(
 {
     c_char *result;
     c_char *attrValue;
-    int i;
+    int i, length;
 
-    /* skip first '"' */
-    for (i = 1; value[i] != '"'; i++);
+    length = strlen(value) - 2; /* Subtract start and end quotes */
     result = cfg_memoryClaimListAdd(cfg_mcl,
-        os_malloc(i), os_free); /* no +1, since already covered by '"' */
-    os_strncpy(result, value + 1, i - 1);
-    result[i - 1] = 0;
+        os_malloc(length + 1), os_free); /* malloc length + 1 for '\0' */
+    os_strncpy(result, value + 1, length);
+    result[length] = '\0';
 
     attrValue = expandEnvironment(result);
     cfg_memoryClaimListRemove(cfg_mcl, result);
@@ -108,7 +107,7 @@ extractEndTag(
 {
     c_char *result;
     int i;
-    
+
     /* skip '</' */
     for (i = 2; i < yyleng && endTag[i] != '>'; i++);
     if (i < yyleng) {
@@ -163,37 +162,37 @@ pidata          [^?]*
 %%
 <INITIAL,ST_ELEMENT,ST_PI,ST_PISPLICE>{whitespace}      { plc(); /* skip */ }
 
-<ST_ELEMENT>"/>"{whitespace}?               { 
+<ST_ELEMENT>"/>"{whitespace}?               {
                                               plc();
                                               cfg_curState = yy_top_state();
-                                              yy_pop_state(); 
+                                              yy_pop_state();
                                               return TOK_EMPTYCLOSE;
                                             }
-<ST_ELEMENT,ST_PI,ST_PISPLICE>"="           { 
-                                              plc(); 
+<ST_ELEMENT,ST_PI,ST_PISPLICE>"="           {
+                                              plc();
                                               return TOK_EQUAL;
                                             }
-<ST_ELEMENT>">"{whitespace}?                { 
+<ST_ELEMENT>">"{whitespace}?                {
                                               plc();
                                               yy_push_state(cfg_curState);
                                               cfg_curState = ST_ELCONTENT;
                                               BEGIN(ST_ELCONTENT);
                                               return TOK_CLOSE;
                                             }
-<ST_ELEMENT,ST_PI,ST_PISPLICE>{name}        { 
+<ST_ELEMENT,ST_PI,ST_PISPLICE>{name}        {
                                               plc();
                                               yylval.str = cfg_memoryClaimListAdd(cfg_mcl,
                                                   os_malloc(strlen(yytext) + 1), os_free);
                                               os_strcpy(yylval.str, yytext);
                                               return TOK_NAME;
                                             }
-<ST_ELEMENT,ST_PISPLICE>{attributevalue}    { 
+<ST_ELEMENT,ST_PISPLICE>{attributevalue}    {
                                               plc();
                                               yylval.str = extractAttributeValue(yytext);
                                               return TOK_VALUE;
                                             }
 
-<INITIAL,ST_ELCONTENT>"<"{name}             { 
+<INITIAL,ST_ELCONTENT>"<"{name}             {
                                               plc();
                                               yy_push_state(cfg_curState);
                                               cfg_curState = ST_ELEMENT;
@@ -203,7 +202,7 @@ pidata          [^?]*
                                               os_strcpy(yylval.str, yytext + 1);
                                               return TOK_START;
                                             }
-<ST_ELCONTENT>"</"{name}">"{whitespace}?    { 
+<ST_ELCONTENT>"</"{name}">"{whitespace}?    {
                                               plc();
                                               yy_pop_state(); /* ST_ELEMENT, since element
                                                                  has finished */
@@ -212,7 +211,7 @@ pidata          [^?]*
                                               yylval.str = extractEndTag(yytext);
                                               return TOK_END;
                                             }
-<INITIAL,ST_ELCONTENT>{comment}             { 
+<INITIAL,ST_ELCONTENT>{comment}             {
                                               plc();
                                               yylval.str = cfg_memoryClaimListAdd(cfg_mcl,
                                                   os_malloc(strlen(yytext) + 1), os_free);
@@ -220,13 +219,13 @@ pidata          [^?]*
                                               return TOK_COMMENT;
                                             }
 
-<ST_ELCONTENT>{data}                        { 
+<ST_ELCONTENT>{data}                        {
                                               plc();
                                               yylval.str = extractData(yytext);
                                               return TOK_DATA;
                                             }
 
-<INITIAL,ST_ELCONTENT>"<?"{name}            { 
+<INITIAL,ST_ELCONTENT>"<?"{name}            {
                                               plc();
                                               yylval.str = cfg_memoryClaimListAdd(cfg_mcl,
                                                   os_malloc(strlen(yytext + 2) + 1), os_free);
@@ -256,8 +255,5 @@ pidata          [^?]*
                                               return TOK_PIEND;
                                             }
 
-.                                           { 
-                                              OS_REPORT_3(OS_ERROR, "configuration parser",
-                                                  0, "%d:%d !ERROR(%s)\n", 
-                                                  cfg_lineno, cfg_column, yytext);
+.                                           {
                                             }

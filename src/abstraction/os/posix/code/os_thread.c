@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file os/posix/code/os_thread.c
@@ -27,11 +27,17 @@
 #include <assert.h>
 #include <errno.h>
 #include <unistd.h>
+#ifndef PIKEOS_POSIX
 #include <strings.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 #ifndef INTEGRITY
 #include <signal.h>
+#ifndef OS_HAS_NO_SET_NAME_PRCTL /* Define in os_defs.h iff there's no prctl()
+                                    on this platform or PR_SET_NAME does not exist */
+#include <sys/prctl.h>
+#endif
 #endif
 #include <limits.h>
 
@@ -78,7 +84,7 @@ os_threadMemInit (
 
     pthreadMemArray = os_malloc (sizeof(void *) * OS_THREAD_MEM_ARRAY_SIZE);
     if (pthreadMemArray != NULL) {
-        bzero (pthreadMemArray, sizeof(void *) * OS_THREAD_MEM_ARRAY_SIZE);
+        memset (pthreadMemArray, 0, sizeof(void *) * OS_THREAD_MEM_ARRAY_SIZE);
         if (pthread_setspecific (os_threadMemKey, pthreadMemArray) == EINVAL) {
             OS_REPORT_1 (OS_ERROR, "os_threadMemInit", 4, "pthread_setspecific failed with error %d", EINVAL);
         }
@@ -128,6 +134,8 @@ os_threadStartCallback(
     os_threadId id,
     void *arg)
 {
+    OS_UNUSED_ARG(id);
+    OS_UNUSED_ARG(arg);
     return 0;
 }
 
@@ -136,6 +144,8 @@ os_threadStopCallback(
     os_threadId id,
     void *arg)
 {
+    OS_UNUSED_ARG(id);
+    OS_UNUSED_ARG(arg);
     return 0;
 }
 
@@ -171,9 +181,9 @@ os_threadModuleInit (
 #ifndef INTEGRITY
     sigfillset(&os_threadBlockAllMask);
 #endif
-    
+
     os_threadMemInit();
-    
+
     os_threadHookInit();
 
 }
@@ -259,8 +269,14 @@ os_startRoutineWrapper (
     void *resultValue;
     os_threadId id;
 
+    resultValue = NULL;
+
 #ifdef INTEGRITY
     SetTaskName(CurrentTask(), context->threadName, strlen(context->threadName));
+#else
+#ifndef OS_HAS_NO_SET_NAME_PRCTL
+    prctl(PR_SET_NAME, context->threadName);
+#endif
 #endif
 
     /* store the thread name with the thread via thread specific data */
@@ -316,7 +332,7 @@ os_threadCreate (
     os_result rv = os_resultSuccess;
     os_threadContext *threadContext;
     os_threadAttr tattr;
-    int result;
+    int result, create_ret;
     int policy;
 
     assert (threadId != NULL);
@@ -324,85 +340,150 @@ os_threadCreate (
     assert (threadAttr != NULL);
     assert (start_routine != NULL);
     tattr = *threadAttr;
+
     if (tattr.schedClass == OS_SCHED_DEFAULT) {
+#ifndef PIKEOS_POSIX
 #ifndef VXWORKS_RTP
-	tattr.schedClass = os_procAttrGetClass ();
+        tattr.schedClass = os_procAttrGetClass ();
 #endif
-	tattr.schedPriority = os_procAttrGetPriority ();
-    }
-    if (pthread_attr_init (&attr) != 0 ||
-        pthread_getschedparam(pthread_self(), &policy, &sched_param) != 0 ||
-	pthread_attr_setscope (&attr, PTHREAD_SCOPE_SYSTEM) != 0 ||
-	pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_JOINABLE) != 0 ||
-	pthread_attr_setinheritsched (&attr, PTHREAD_EXPLICIT_SCHED) != 0) {
-	rv = os_resultFail;
-    }
-
-    if (rv == os_resultSuccess && tattr.stackSize != 0) {
-        if ( tattr.stackSize < PTHREAD_STACK_MIN ) {
-	    tattr.stackSize = PTHREAD_STACK_MIN;
-	}
-	if (pthread_attr_setstacksize (&attr, tattr.stackSize) != 0) {
-	    rv = os_resultFail;
-	}
-    }
-
-    if (rv == os_resultSuccess) {
-        if (tattr.schedClass == OS_SCHED_REALTIME) {
-#if !defined (VXWORKS_RTP) && !defined (__INTEGRITY)
-	    if (getuid() == 0 || geteuid() == 0) {
+        tattr.schedPriority = os_procAttrGetPriority ();
 #endif
-                result = pthread_attr_setschedpolicy (&attr, SCHED_FIFO);
-                if (result != 0) {
-		    OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2, "pthread_attr_setschedpolicy failed with error %d (%s)", result, name);
-	        }
-#if !defined (VXWORKS_RTP) && !defined (__INTEGRITY)
-	    } else {
-		OS_REPORT_1 (OS_WARNING, "os_threadCreate", 2, "scheduling policy can not be set because of privilege problems (%s)", name);
-		result = pthread_attr_setschedpolicy (&attr, SCHED_OTHER);
-                if (result != 0) {
-		    OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2, "pthread_attr_setschedpolicy failed with error %d (%s)", result, name);
-	        }
-	    }
+    }
+    if (pthread_attr_init (&attr) != 0)
+    {
+       rv = os_resultFail;
+    }
+    else
+    {
+       if (pthread_getschedparam(pthread_self(), &policy, &sched_param) != 0 ||
+#if !defined (OS_RTEMS_DEFS_H) && !defined (PIKEOS_POSIX)
+           pthread_attr_setscope (&attr, PTHREAD_SCOPE_SYSTEM) != 0 ||
 #endif
-        } else {
-	    result = pthread_attr_setschedpolicy (&attr, SCHED_OTHER);
-            if (result != 0) {
-		OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2, "pthread_attr_setschedpolicy failed with error %d (%s)", result, name);
-	    }
-	}
-	pthread_attr_getschedpolicy(&attr, &policy);
-	if ((tattr.schedPriority < sched_get_priority_min(policy)) ||
-	    (tattr.schedPriority > sched_get_priority_max(policy))) {
-	    OS_REPORT_1 (OS_WARNING, "os_threadCreate", 2,
-	        "scheduling priority outside valid range for the policy reverted to valid value (%s)", name);
-	    sched_param.sched_priority = (sched_get_priority_min(policy) + sched_get_priority_max(policy)) / 2;
-	} else {
-            sched_param.sched_priority = tattr.schedPriority;
-	}
-	/* Take over the thread context: name, start routine and argument */
-	threadContext = os_malloc (sizeof (os_threadContext));
-	threadContext->threadName = os_malloc (strlen (name)+1);
-	os_strncpy (threadContext->threadName, name, strlen (name)+1);
-	threadContext->startRoutine = start_routine;
-	threadContext->arguments = arg;
-	/* start the thread */
-        result = pthread_attr_setschedparam (&attr, &sched_param);
-        if (result != 0) {
-	    OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2, "pthread_attr_setschedparam failed with error %d (%s)", result, name);
-	} else {
-            result = pthread_create(threadId, &attr, os_startRoutineWrapper, threadContext);
-            if (result != 0) {
-                os_free (threadContext->threadName);
-                os_free (threadContext);
-                OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2, "pthread_create failed with error %d (%s)", result, name);
+           pthread_attr_setdetachstate (&attr, PTHREAD_CREATE_JOINABLE) != 0 ||
+           pthread_attr_setinheritsched (&attr, PTHREAD_EXPLICIT_SCHED) != 0)
+       {
+          rv = os_resultFail;
+       }
+       else
+       {
+          if (tattr.stackSize != 0) {
+#ifdef PTHREAD_STACK_MIN
+             if ( tattr.stackSize < PTHREAD_STACK_MIN ) {
+                tattr.stackSize = PTHREAD_STACK_MIN;
+             }
+#endif
+#ifdef OSPL_STACK_MAX
+             if ( tattr.stackSize > OSPL_STACK_MAX ) {
+                tattr.stackSize = OSPL_STACK_MAX;
+             }
+#endif
+             if (pthread_attr_setstacksize (&attr, tattr.stackSize) != 0) {
                 rv = os_resultFail;
-            } else {
-                rv = os_resultSuccess;
-            }
-	}
+             }
+          }
+       }
+
+       if (rv == os_resultSuccess) {
+          if (tattr.schedClass == OS_SCHED_REALTIME) {
+             result = pthread_attr_setschedpolicy (&attr, SCHED_FIFO);
+
+             if (result != 0) {
+                OS_REPORT_3 (OS_WARNING, "os_threadCreate", 2,
+                             "pthread_attr_setschedpolicy failed for SCHED_FIFO with "\
+                             "error %d (%s) for thread '%s', reverting to SCHED_OTHER.",
+                             result, strerror(result), name);
+
+                result = pthread_attr_setschedpolicy (&attr, SCHED_OTHER);
+                if (result != 0) {
+                   OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2, "pthread_attr_setschedpolicy failed with error %d (%s)", result, name);
+                }
+             }
+          } else {
+             result = pthread_attr_setschedpolicy (&attr, SCHED_OTHER);
+
+             if (result != 0) {
+                OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2,
+                             "pthread_attr_setschedpolicy failed with error %d (%s)",
+                             result, name);
+             }
+          }
+          pthread_attr_getschedpolicy(&attr, &policy);
+
+          if ((tattr.schedPriority < sched_get_priority_min(policy)) ||
+              (tattr.schedPriority > sched_get_priority_max(policy))) {
+             OS_REPORT_1 (OS_WARNING, "os_threadCreate", 2,
+                          "scheduling priority outside valid range for the policy "\
+                          "reverted to valid value (%s)", name);
+             sched_param.sched_priority = (sched_get_priority_min(policy) +
+                                           sched_get_priority_max(policy)) / 2;
+          } else {
+             sched_param.sched_priority = tattr.schedPriority;
+          }
+          /* Take over the thread context: name, start routine and argument */
+          threadContext = os_malloc (sizeof (os_threadContext));
+          threadContext->threadName = os_malloc (strlen (name)+1);
+          os_strncpy (threadContext->threadName, name, strlen (name)+1);
+          threadContext->startRoutine = start_routine;
+          threadContext->arguments = arg;
+
+          /* start the thread */
+          result = pthread_attr_setschedparam (&attr, &sched_param);
+          if (result != 0) {
+             OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2,
+                          "pthread_attr_setschedparam failed with error %d (%s)",
+                          result, name);
+          } 
+
+          create_ret = pthread_create(threadId, &attr, os_startRoutineWrapper,
+                                      threadContext);
+          if (create_ret != 0) {
+             /* In case real-time thread creation failed due to a lack
+              * of permissions, try reverting to time-sharing and continue.
+              */
+             if((create_ret == EPERM) && (tattr.schedClass == OS_SCHED_REALTIME))
+             {
+                OS_REPORT_1 (OS_WARNING, "os_threadCreate", 2,
+                             "pthread_create failed with SCHED_FIFO "     \
+                             "for thread '%s', reverting to SCHED_OTHER.",
+                             name);
+                pthread_attr_setschedpolicy (&attr, SCHED_OTHER);
+                pthread_attr_getschedpolicy(&attr, &policy);
+              
+                if ((tattr.schedPriority < sched_get_priority_min(policy)) ||
+                    (tattr.schedPriority > sched_get_priority_max(policy)))
+                {
+                   OS_REPORT_1 (OS_WARNING, "os_threadCreate", 2,
+                                "scheduling priority outside valid range for the " \
+                                "policy reverted to valid value (%s)", name);
+                   sched_param.sched_priority =
+                   (sched_get_priority_min(policy) +
+                    sched_get_priority_max(policy)) / 2;
+                } else {
+                   sched_param.sched_priority = tattr.schedPriority;
+                }
+
+                result = pthread_attr_setschedparam (&attr, &sched_param);
+                if (result != 0) {
+                   OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2,
+                                "pthread_attr_setschedparam failed "      \
+                                "with error %d (%s)", result, name);
+                } else {
+                   create_ret = pthread_create(threadId, &attr,
+                                               os_startRoutineWrapper, threadContext);
+                }
+             }
+          } else {
+             rv = os_resultSuccess;
+          }
+          if(create_ret != 0){
+             os_free (threadContext->threadName);
+             os_free (threadContext);
+             OS_REPORT_2 (OS_WARNING, "os_threadCreate", 2, "pthread_create failed with error %d (%s)", create_ret, name);
+             rv = os_resultFail;
+          }
+       }
+       pthread_attr_destroy (&attr);
     }
-    pthread_attr_destroy (&attr);
     return rv;
 }
 
@@ -495,14 +576,14 @@ os_threadWaitExit (
  *     no sufficient memory is available on heap
  * - returns NULL if
  *     os_threadMemGet (index) returns != NULL
- * - returns reference to allocated heap memory 
+ * - returns reference to allocated heap memory
  *     of the requested size if
  *     memory is successfully allocated
  */
 void *
 os_threadMemMalloc (
     os_int32 index,
-    os_int32 size)
+    os_size_t size)
 {
     void **pthreadMemArray;
     void *threadMemLoc = NULL;
@@ -618,7 +699,7 @@ os_threadUnprotect(void)
 {
     os_result result;
     os_threadProtectInfo *pi;
-    
+
     pi = os_threadMemGet(OS_THREAD_PROTECT);
     if (pi) {
         pi->protectCount--;
@@ -638,6 +719,6 @@ os_threadUnprotect(void)
     } else {
         result = os_resultFail;
     }
-    
+
     return result;
 }

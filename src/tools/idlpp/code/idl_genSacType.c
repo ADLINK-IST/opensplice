@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /*
@@ -101,7 +101,7 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "#ifndef %s\n", idl_macroFromBasename(name, "DCPS_H"));
     idl_fileOutPrintf(idl_fileCur(), "#define %s\n", idl_macroFromBasename(name, "DCPS_H"));
     idl_fileOutPrintf(idl_fileCur(), "\n");
-    /* Generate inclusion of standard SPLICE-DDS type definition files */
+    /* Generate inclusion of standard OpenSpliceDDS type definition files */
     idl_fileOutPrintf(idl_fileCur(), "#include <dds_dcps.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "\n");
     /* Generate code for inclusion of application specific include files */
@@ -191,10 +191,10 @@ idl_structureOpen(
     idl_fileOutPrintf(idl_fileCur(), "#define _%s_defined\n",
 	idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf(idl_fileCur(), "#ifdef __cplusplus\n");
-    idl_printIndent(indent_level); 
+    idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "struct %s;\n", idl_scopeStack(scope, "_", name));
     idl_fileOutPrintf(idl_fileCur(), "#else /* __cplusplus */\n");
-    idl_printIndent(indent_level); 
+    idl_printIndent(indent_level);
     idl_fileOutPrintf(
         idl_fileCur(),
         "typedef struct %s %s;\n",
@@ -641,7 +641,7 @@ idl_arrayDimensions(
     idl_typeArray typeArray)
 {
     idl_fileOutPrintf(idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
-    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {	
+    if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray) {
         idl_arrayDimensions(idl_typeArray(idl_typeArrayType(typeArray)));
     }
 }
@@ -658,7 +658,7 @@ idl_arraySliceDimensions(
     idl_typeArray typeArray)
 {
     if (idl_typeSpecType(idl_typeArrayType(typeArray)) == idl_tarray &&
-        idl_typeSpecType(idl_typeArrayType(idl_typeArray(idl_typeArrayType(typeArray)))) == idl_tarray) {	
+        idl_typeSpecType(idl_typeArrayType(idl_typeArray(idl_typeArrayType(typeArray)))) == idl_tarray) {
         idl_arraySliceDimensions(idl_typeArray(idl_typeArrayType(typeArray)));
     }
     idl_fileOutPrintf(idl_fileCur(), "[%d]", idl_typeArraySize(typeArray));
@@ -838,7 +838,7 @@ idl_sequenceOpenClose(
              idl_fileCur(),
              "#define _%s_defined\n",
              idl_scopedSacTypeIdent(idl_typeSeqType(typeSeq)));
-          idl_printIndent(indent_level); 
+          idl_printIndent(indent_level);
           idl_fileOutPrintf(
              idl_fileCur(),
              "typedef struct %s %s;\n",

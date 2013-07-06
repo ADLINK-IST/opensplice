@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -98,7 +98,7 @@ v_deadLineInstanceListSetDuration(
                     list->deadlineLease,
                     list->actionId,
                     v_public(list->actionObject),
-                    TRUE /* repeat lease if expired */);
+                    FALSE /* do not repeat lease if expired because of a periodic nature */);
                 if(result != V_RESULT_OK)
                 {
                     c_free(list->deadlineLease);
@@ -144,7 +144,7 @@ v_deadLineInstanceListInsertInstance(
                     list->deadlineLease,
                     list->actionId,
                     v_public(list->actionObject),
-                    TRUE /* repeat lease if expired */);
+                    FALSE /* do not repeat lease if expired because of a periodic nature */);
                 if(result != V_RESULT_OK)
                 {
                     c_free(list->deadlineLease);
@@ -210,12 +210,12 @@ v_deadLineInstanceListUpdate(
 c_iter
 v_deadLineInstanceListCheckDeadlineMissed(
     v_deadLineInstanceList list,
-    v_duration deadlineTime,
+    v_duration deadlineDuration,
     c_time now)
 {
-    c_time expiryTime;
     v_instance listItem;
     c_iter missed;
+    v_result result;
 
     assert(C_TYPECHECK(list,v_deadLineInstanceList));
 
@@ -226,31 +226,48 @@ v_deadLineInstanceListCheckDeadlineMissed(
         c_free(list->deadlineLease);
         list->deadlineLease = NULL;
     } else {
-        listItem = v_instance(list)->prev;
-        expiryTime = c_timeSub(now, deadlineTime);
-        while ((listItem != NULL) &&
-               (v_objectKind(listItem) != K_DEADLINEINSTANCE)  &&
-               (c_timeCompare(expiryTime, listItem->lastCheckTime) != C_LT)) {
-            missed = c_iterInsert(missed, listItem);
-            listItem->lastCheckTime = now;
-            listItem = listItem->prev;
-        }
-        /* determine next wake-up time */
-        if (v_objectKind(listItem) == K_DEADLINEINSTANCE) {
-            /* listItem is the deadline list itself, so if there
-             * were instances all instances have been missed. Just
-             * set the new check to be in 'deadlineTime'.
-             */
-            expiryTime = deadlineTime;
-        } else {
-            /*
-             * The new lease duration can be calculated:
-             * lastCheckTime + deadlineTime = next expiry time
-             * next expiry time - now = lease duration
-             */
-            expiryTime = c_timeAdd(listItem->lastCheckTime, deadlineTime);
-            expiryTime = c_timeSub(expiryTime, now);
-            v_leaseRenew(list->deadlineLease, &expiryTime);
+        if (list->deadlineLease != NULL) {
+            c_time nextExpiration;
+            c_time latestExpired = c_timeSub(now, deadlineDuration);
+            listItem = v_instance(list)->prev;
+            while ((listItem != v_instance(list)) && /* One full cycle */
+                   (c_timeCompare(latestExpired, listItem->lastDeadlineResetTime) != C_LT)) {
+                missed = c_iterInsert(missed, listItem);
+                /* A deadline can be missed for an instance since the last update on
+                 * the instance OR since the last notification of a missed deadline
+                 * on that instance, i.e., =each deadline period= for each instance
+                 * for which data was not received a deadline is missed. */
+                listItem->lastDeadlineResetTime = now;
+                listItem = listItem->prev;
+            }
+            /* determine next wake-up time */
+            if (listItem != v_instance(list)) {
+                /* The new lease duration can be calculated:
+                 * lastDeadlineResetTime + deadlineTime = next expiry time
+                 * next expiry time - now = lease duration */
+                nextExpiration = c_timeAdd(listItem->lastDeadlineResetTime, deadlineDuration);
+                nextExpiration = c_timeSub(nextExpiration, now); /* make relative */
+            } else {
+                /* listItem is the deadline list itself, so if there
+                 * were instances all instance-deadlines have been missed. Just
+                 * renew the lease with deadlineDuration. NOTE: while the lease is
+                 * normally automatically repeated with the current lease-duration,
+                 * that duration can be too short (due to condition above), so it
+                 * has to be reset explicitly here. */
+                nextExpiration = deadlineDuration;
+            }
+
+            result = v_leaseManagerRegister(list->leaseManager,list->deadlineLease, list->actionId,v_public(list->actionObject),FALSE);
+            if(result != V_RESULT_OK)
+            {
+                c_free(list->deadlineLease);
+                list->deadlineLease = NULL;
+                OS_REPORT_1(OS_ERROR, "v_deadLineInstanceList", 0,
+                    "A fatal error was detected when trying to register the deadline lease."
+                    "The result code was %d.", result);
+            } else {
+                v_leaseRenew(list->deadlineLease, &nextExpiration);
+            }
         }
     }
     return missed;

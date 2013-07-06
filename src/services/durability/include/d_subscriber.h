@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -54,11 +54,6 @@ void            d_subscriberInitGroupsRequestListener           (d_subscriber su
 c_bool          d_subscriberSetGroupsRequestListenerEnabled     (d_subscriber subscriber,
                                                                  c_bool enable);
 
-void            d_subscriberInitStatusRequestListener           (d_subscriber subscriber);
-
-c_bool          d_subscriberSetStatusRequestListenerEnabled     (d_subscriber subscriber,
-                                                                 c_bool enable);
-
 void            d_subscriberInitSampleRequestListener           (d_subscriber subscriber);
 
 c_bool          d_subscriberSetSampleRequestListenerEnabled     (d_subscriber subscriber,
@@ -78,7 +73,7 @@ void            d_subscriberInitNameSpacesListener              (d_subscriber su
 
 c_bool          d_subscriberSetNameSpacesListenerEnabled        (d_subscriber subscriber,
                                                                  c_bool enable);
-                                                                 
+
 void            d_subscriberInitPersistentDataListener          (d_subscriber subscriber);
 
 c_bool          d_subscriberSetPersistentDataListenerEnabled    (d_subscriber subscriber,

@@ -1,0 +1,30 @@
+//  -*- MPC -*-
+// $Id$
+
+project(*lib) : ospl_ddsos, c_or_cplusplus, c_or_cplusplus_example {
+  includes += ../log4c-1.2.1/src
+  libpaths += ../lib
+  libout = ../lib
+  lit_libs += log4c
+  after += log4c
+  dynamicflags += LOG4CPLUGIN_BUILD_DLL
+  requires += ospl_dcpssaccp
+  avoids += ospl_os_wince
+  Source_Files {
+    log4cpluginlib.c
+  }
+  Header_Files {
+        LOG4CPLUGIN_Export.h
+  }
+
+}
+
+project(*exe) : ospl_dcpssac, c_or_cplusplus, c_or_cplusplus_example {
+    includes += ../log4c-1.2.1/src
+    after += *lib
+    exeout = .
+    Source_Files {
+        main.c
+    }
+}
+

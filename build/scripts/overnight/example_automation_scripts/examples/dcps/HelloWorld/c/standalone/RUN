@@ -1,0 +1,18 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+startOSPL
+
+echo "=== Launching HelloWorld "
+./sac_helloworld_sub  > subResult.txt&
+
+sleep 5
+
+./sac_helloworld_pub > pubResult.txt 
+
+sleep 15
+
+helloworldCheckResult
+
+stopOSPL

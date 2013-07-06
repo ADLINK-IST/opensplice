@@ -1,26 +1,23 @@
 # default values for directory and idl-files to process
-ifeq (,$(findstring win32,$(SPLICE_TARGET)))
+ifeq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
   ifdef IDL_DIR
     IDL_INC_FLAGS = -I$(IDL_DIR)
   endif
   IDL_INC_FLAGS += -I$(OSPL_HOME)/etc/idl
-  DELIM=:
 else
   ifdef IDL_DIR
     TMP_IDL_DIR_INC_FLAG  =-I'$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(IDL_DIR))'
   endif
   TMP_IDL_CCPP_INC_FLAG +=-I'$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)/etc/idl)'
   IDL_INC_FLAGS = $(TMP_IDL_DIR_INC_FLAG) $(TMP_IDL_CCPP_INC_FLAG)
-  DELIM=;
 endif
 
-ifdef OSPL_OUTER_HOME
-   ifeq (,$(findstring win32,$(SPLICE_TARGET)))
-      IDL_INC_FLAGS += -I$(OSPL_OUTER_HOME)/src/api/dlrl/ccpp/idl
-   else
-      IDL_INC_FLAGS += -I'$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_OUTER_HOME)/src/api/dlrl/ccpp/idl)'
-   endif
+ifeq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
+  IDL_INC_FLAGS += -I$(OSPL_HOME)/src/api/dlrl/ccpp/idl
+else
+  IDL_INC_FLAGS += -I'$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)/src/api/dlrl/ccpp/idl)'
 endif
+
 
 vpath %.idl	$(IDL_DIR)
 
@@ -38,12 +35,9 @@ IDLPP_OBJ   = $(IDLPP_CPP:%.cpp=%$(OBJ_POSTFIX))
 JAR_INC_DIR =$(OSPL_HOME)/jar/$(SPLICE_TARGET)
 OUTER_HOME_PATH =`$(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_OUTER_HOME)`
 
-T1=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(JAR_INC_DIR)/ospldcg.jar)
-T2=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)/jar/flexlm.jar)
-T3=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)/jar/EccpressoAll.jar)
-JAR_DIR =$(T1)$(DELIM)$(T2)$(DELIM)$(T3)
+JAR_DIR =$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(JAR_INC_DIR)/ospldcg.jar)
 
-OSPLDCG =java "-DPTECH_LICENSE_FILE=$(LM_LICENSE_FILE)" "-DOSPL_OUTER_HOME=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_OUTER_HOME))" -classpath "$(JAR_DIR)" DCG.Control.DCGStarter
+OSPLDCG =java "-DOSPL_HOME=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME))" -classpath "$(JAR_DIR)" DCG.Control.DCGStarter
 OSPLDCGFLAGS +=  -l SACPP $(IDL_INC_FLAGS)
 
 # ospldcg output

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -171,95 +171,80 @@ d_groupRemoteListenerAction(
                                             "Received remote group %s.%s which is locally unknown.\n",
                                             remote->partition, remote->topic);
 
-                    /* Group unknown locally, check if it is in the alignee namespace.
+                    group = d_groupNew(remote->partition, remote->topic,
+                                       remote->durabilityKind,
+                                       remote->completeness, remote->quality);
+                    added = d_fellowAddGroup(fellow, group);
+                    d_fellowSetExpectedGroupCount(fellow, remote->alignerCount);
+
+                    if(added == FALSE){
+                        d_groupFree(group);
+                        group = d_fellowGetGroup(fellow, remote->partition,
+                                                 remote->topic,
+                                                 remote->durabilityKind);
+
+                        if(group){
+                            d_groupUpdate(group, remote->completeness,
+                                          remote->quality);
+                            d_groupFree(group);
+                        }
+                    }
+                    /* Group unknown locally, check if it should be aligned
+                     * initially.
                      */
-                    createLocally = d_adminGroupInAligneeNS(
+                    createLocally = d_adminGroupInInitialAligneeNS(
                                                 admin, remote->partition,
-                                                remote->topic,
-                                                remote->durabilityKind);
+                                                remote->topic);
 
                     if(createLocally == TRUE){
-                        group = d_groupNew(remote->partition, remote->topic,
-                                           remote->durabilityKind,
-                                           remote->completeness, remote->quality);
-                        added = d_fellowAddGroup(fellow, group);
-                        d_fellowSetExpectedGroupCount(fellow, remote->alignerCount);
-
-                        if(added == FALSE){
-                            d_groupFree(group);
-                            group = d_fellowGetGroup(fellow, remote->partition,
-                                                     remote->topic,
-                                                     remote->durabilityKind);
-
-                            if(group){
-                                d_groupUpdate(group, remote->completeness,
-                                              remote->quality);
-                                d_groupFree(group);
-                            }
-                        }
-                        /* Group unknown locally, check if it should be aligned
-                         * initially.
-                         */
-                        createLocally = d_adminGroupInInitialAligneeNS(
-                                                    admin, remote->partition,
-                                                    remote->topic,
-                                                    remote->durabilityKind);
-
-                        if(createLocally == TRUE){
-                            d_printTimedEvent(durability, D_LEVEL_FINE,
-                                                D_THREAD_GROUP_REMOTE_LISTENER,
-                                                "Remote group %s.%s in initial alignee namespace.\n",
-                                                remote->partition, remote->topic);
-
-                            duration.seconds = 0;
-                            duration.nanoseconds = 10000000;
-
-                            ugroup = u_groupNew(
-                                    u_participant(d_durabilityGetService(durability)),
-                                    remote->partition, remote->topic, duration);
-
-                            if(ugroup){
-                                d_printTimedEvent(durability, D_LEVEL_FINE,
-                                                D_THREAD_GROUP_REMOTE_LISTENER,
-                                                "Remote group %s.%s with quality %d created locally.\n",
-                                                remote->partition, remote->topic, remote->quality.seconds);
-                                u_entityFree(u_entity(ugroup));
-                            } else {
-                                d_printTimedEvent(durability, D_LEVEL_WARNING,
-                                    D_THREAD_GROUP_REMOTE_LISTENER,
-                                    "Remote group %s.%s with quality %d could NOT be created locally.\n",
-                                    remote->partition, remote->topic, remote->quality.seconds);
-                                /**
-                                 * TODO: quality must not be taken over
-                                 * from remote.
-                                 */
-                                group2 = d_groupNew(remote->partition, remote->topic,
-                                               remote->durabilityKind,
-                                               D_GROUP_INCOMPLETE,
-                                               remote->quality);
-                                result = d_groupCreationQueueAdd(
-                                    d_groupRemoteListener(listener)->groupCreationQueue,
-                                    group2);
-
-                                if(result == FALSE){
-                                    d_printTimedEvent(durability, D_LEVEL_FINER,
+                        d_printTimedEvent(durability, D_LEVEL_FINE,
                                             D_THREAD_GROUP_REMOTE_LISTENER,
-                                            "Remote group %s.%s already in creation queue. Skipping this one.\n",
+                                            "Remote group %s.%s in initial alignee namespace.\n",
                                             remote->partition, remote->topic);
-                                    d_groupFree(group2);
-                                }
-                            }
+
+                        duration.seconds = 0;
+                        duration.nanoseconds = 10000000;
+
+                        ugroup = u_groupNew(
+                                u_participant(d_durabilityGetService(durability)),
+                                remote->partition, remote->topic, duration);
+
+                        if(ugroup){
+                            d_printTimedEvent(durability, D_LEVEL_FINE,
+                                            D_THREAD_GROUP_REMOTE_LISTENER,
+                                            "Remote group %s.%s with quality %d created locally.\n",
+                                            remote->partition, remote->topic, remote->quality.seconds);
+                            u_entityFree(u_entity(ugroup));
                         } else {
-                            d_printTimedEvent(durability, D_LEVEL_FINE,
-                                            D_THREAD_GROUP_REMOTE_LISTENER,
-                                            "Remote group %s.%s in alignee namespace, but not initial.\n",
-                                            remote->partition, remote->topic);
+                            d_printTimedEvent(durability, D_LEVEL_WARNING,
+                                D_THREAD_GROUP_REMOTE_LISTENER,
+                                "Remote group %s.%s with quality %d could NOT be created locally.\n",
+                                remote->partition, remote->topic, remote->quality.seconds);
+                            /**
+                             * TODO: quality must not be taken over
+                             * from remote.
+                             */
+                            group2 = d_groupNew(remote->partition, remote->topic,
+                                           remote->durabilityKind,
+                                           D_GROUP_INCOMPLETE,
+                                           remote->quality);
+                            result = d_groupCreationQueueAdd(
+                                d_groupRemoteListener(listener)->groupCreationQueue,
+                                group2);
+
+                            if(result == FALSE){
+                                d_printTimedEvent(durability, D_LEVEL_FINER,
+                                        D_THREAD_GROUP_REMOTE_LISTENER,
+                                        "Remote group %s.%s already in creation queue. Skipping this one.\n",
+                                        remote->partition, remote->topic);
+                                d_groupFree(group2);
+                            }
                         }
                     } else {
-                        d_printTimedEvent(durability, D_LEVEL_INFO,
-                            D_THREAD_GROUP_REMOTE_LISTENER,
-                            "Remote group '%s.%s' is not in alignee namespace.\n",
-                            remote->partition, remote->topic);
+                        d_printTimedEvent(durability, D_LEVEL_FINE,
+                                        D_THREAD_GROUP_REMOTE_LISTENER,
+                                        "Remote group %s.%s in alignee namespace, but not initial.\n",
+                                        remote->partition, remote->topic);
                     }
                 } else {
                     localCompleteness = d_groupGetCompleteness(group);
@@ -274,7 +259,7 @@ d_groupRemoteListenerAction(
                               D_THREAD_GROUP_REMOTE_LISTENER,
                               "Updating remote group '%s.%s' completeness: '%d'.\n",
                               remote->partition, remote->topic, remote->completeness);
-						d_groupFree(group);
+                        d_groupFree(group);
                     } else if(localCompleteness != D_GROUP_COMPLETE){
                         group = d_groupNew(remote->partition, remote->topic,
                                            remote->durabilityKind,

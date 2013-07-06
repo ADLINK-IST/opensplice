@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -248,28 +248,31 @@ d_statusListenerAction(
     fellow     = d_adminGetFellow(admin, sender);
 
     if(!fellow){
-        d_printTimedEvent (durability, D_LEVEL_FINE,
+        if((message->senderState != D_STATE_TERMINATING) &&
+           (message->senderState != D_STATE_TERMINATED)){
+            d_printTimedEvent (durability, D_LEVEL_FINE,
                            D_THREAD_STATUS_LISTENER,
                            "Fellow %d unknown, administrating it.\n",
                            message->senderAddress.systemId);
-        fellow = d_fellowNew(sender, message->senderState);
-        d_fellowUpdateStatus(fellow, message->senderState, receptionTime);
-        added = d_adminAddFellow(admin, fellow);
-
-        if(added == FALSE){
-            d_fellowFree(fellow);
-            fellow = d_adminGetFellow(admin, sender);
+            fellow = d_fellowNew(sender, message->senderState);
             d_fellowUpdateStatus(fellow, message->senderState, receptionTime);
-            assert(fellow);
-        } else {
-            fellow = d_adminGetFellow(admin, sender); /* This allows free at the end in all cases */
-            assert(fellow);
-            request = d_nameSpacesRequestNew(admin);
-            d_messageSetAddressee(d_message(request), sender);
-            d_publisherNameSpacesRequestWrite(publisher, request, sender);
-            d_nameSpacesRequestFree(request);
+            added = d_adminAddFellow(admin, fellow);
+
+            if(added == FALSE){
+                d_fellowFree(fellow);
+                fellow = d_adminGetFellow(admin, sender);
+                d_fellowUpdateStatus(fellow, message->senderState, receptionTime);
+                assert(fellow);
+            } else {
+                fellow = d_adminGetFellow(admin, sender); /* This allows free at the end in all cases */
+                assert(fellow);
+                request = d_nameSpacesRequestNew(admin);
+                d_messageSetAddressee(d_message(request), sender);
+                d_publisherNameSpacesRequestWrite(publisher, request, sender);
+                d_nameSpacesRequestFree(request);
+            }
+            d_fellowFree(fellow);
         }
-        d_fellowFree(fellow);
     } else {
         /* Update fellow state, or remove if it terminates */
         switch(message->senderState){

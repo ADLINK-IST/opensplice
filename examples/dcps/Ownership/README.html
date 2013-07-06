@@ -12,27 +12,30 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <h1> EXAMPLES </h1>
 <ul>
   <li><a href ="../README.html">Summary</a></li>
-
+  <li><a href ="../PingPong/README.html">PingPong </a></li>
+  <li><a href ="../Tutorial/README.html">Tutorial </a></li>
   <li><a href ="../HelloWorld/README.html">HelloWorld </a></li>
-  <li><a href ="../WaitSet/README.html">WaitSet </a></li>
+  <li><a href ="../WaitSet/README.html">WaitSet</li>
   <li><a href ="../Listener/README.html">Listener </a></li>
-  <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>  
-  <li><a href ="../QueryCondition/README.html">QueryCondition </a></li> 
-  <li> <a href ="../Lifecycle/README.html">Lifecycle</a></li> 
+  <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
+  <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
+  <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
   <li><a href ="../Durability/README.html">Durability </a></li>
   <li>Ownership</li>
-  <li> <a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
+  <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
+  <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
 </ul>
-<h2> Ownership </h2>
+<h2> Ownershipt</h2>
 
 <ul>
-  <li><a href ="#STANDALONE">Building/Running of examples in Standalone Mode</a></li>
-  <li><a href ="#CORBA">Building/Running of examples in CORBA Cohabitation Mode</a></li>
+  <li><a href ="#STANDALONE">Running of examples in Standalone Mode</a></li>
 </ul>
 
 <h3>1) Description</h3>
+
 <p>The ownership example is used to illustrate the concept of Shared Ownership, controlled
 through QoS, in DDS.</p>
+
 
 <h3>2) Design</h3>
 <p>It consists of 4 units :</p>
@@ -48,8 +51,7 @@ In this example :</p>
 	<ul><li> a publisher "pub1" having an ownership strength set to 5 sends periodically 20
 StockQuotes at a period of 200ms.
 	</li><li> after 2 seconds a second publisher "pub2" with a higher strength (10) sends 5
-StockQuotes at a period of 200ms.
-When receiving a topic, the subscriber will display the :
+StockQuotes at a period of 200ms. When receiving a topic, the subscriber will display the :
 	</li><li> the key field (always "MSFT")
 	</li><li> the price field
 	</li><li> the publisher name ("pub1" or "pub2")
@@ -59,12 +61,13 @@ The publisher will receive :
 	</li><li> then from "pub1" again when "pub2" stops.</li></ul>
 
 
-<h2><balise id="STANDALONE">Building/Running of examples in Standalone Mode</balise></h2>
+<h2><balise id="STANDALONE">Running of examples in Standalone Mode</balise></h2>
 <ul>
-  <li><a href ="#Posix">Building/Running examples in Posix </a></li>
-  <li><a href ="#VS">Building/Running examples in Visual Studio 2005/2008</a></li>
+  <li><a href ="#Posix">Running examples in Posix </a></li>
+  <li><a href ="#VS">Running examples in Visual Studio</a></li>
 </ul>
-<h3><balise id="Posix">Building the examples in a Posix environment</balise></h3>
+
+<h3><balise id="Posix">Running the examples in a Posix environment</balise></h3>
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
@@ -75,127 +78,169 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
   <li><a href ="#C_C++">C/C++ Examples </a></li>
   <li><a href ="#Java">Java examples</a></li>
 </ul>
-<h4><balise id="C_C++">Building the C/C++ examples</balise></h4>
-<ul><li>Open a terminal.
-</li><li>Navigate to the C or C++ <b>Posix</b> directory on the example folder that you wish to build the example for, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Ownership/C++/Standalone/Posix</b>.
-</li><li>type <i>make</i>.
-</li></ul>
-<p>Two executables are generated in the <b>exec</b> folder when the example 
-is built:</p>
 
-		<ul><li>OwnershipDataPublisher </li>
-			<li>OwnershipDataSubscriber </li>
-		</ul>
-<h4><balise id = "Java">Building the Java examples</balise></h4>
-<ul><li>Open a terminal and make sure the OpenSpliceDDS environment is setup.
-</li><li>Navigate to the Java <b>Posix</b> directory for the example for, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Ownership/Java/Standalone/Posix</b>.
-</li><li>Execute the script <i>BUILD</i>.
-</li></ul>
-<p>Two jars are generated in the <b>exec</b> folder when the example 
-is built:</p>
-
-		<ul><li>OwnershipDataPublisher.jar </li>
-			<li>OwnershipDataSubscriber.jar </li>
+<h4><balise id="C_C++">C and C++ Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables and a library are generated in the <b>standalone</b> directory when the example is built:</p>
+<p>For C++</p>
+		<ul><li>sacpp_ownership_pub </li>
+			<li>sacpp_ownership_sub </li>
+            <li>libsacpp_ownership_types.so</li>
 		</ul>
 
-<h4>Running the C/C++/Java example</h4>
- <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new terminal used.</p>
- <p>The following steps describe how to run the examples you have just built:
-   <ul><li> Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+<p>For C</p>
+		<ul><li>sac_ownership_pub </li>
+			<li>sac_ownership_sub </li>
+            <li>libsac_ownership_types.so</li>
+		</ul>
 
-	<li> Navigate to the <b>sh</b> directory for the C/C++/Java example you have just built, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Ownership/C++/Standalone/Posix/sh</b></li>
-	<li> It is recommended that you run the startSubscriber and startPublisher scripts in seperate terminals to avoid mixing the output</li>
-	<li> Open a terminal. Setup the environment and go to directory <b>sh</b> as described above and type: <i>startSubscriber.sh</i>.</li>
-	<li> Open a terminal. Setup the environment and go to directory <b>sh</b> as described above and type: <i>startPublisher<b>s</b>.sh</i>.</li>
-	</ul>
-<h5> Note</h5>
-     <p>You can also use the startPublisher.sh script to launch a publisher</p>
-     <ul><li>startPublisher.sh publisher_name ownership_strength nb_iterations stop_subscriber_flag
-     <ul><li>publisher_name</li>
-     <li>ownership_strength</li>
-     <li>nb_iterations : number of sending message iterations</li>
-     <li>stop_subscriber_flag : indicates if the publisher has to sent a message to tell the subscriber to stop</li></ul></li>
-     </ul>
-<h3><balise id="VS">Building/Running C/C++/C#/Java examples in Visual Studio 2005/2008</balise></h3>
+<h4><balise id = "Java">Java executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a>
+<p>Two jars are generated in the <b>standalone</b> directory when the example is built:</p>
+
+		<ul><li>saj_ownership_app.jar </li>
+			<li>saj_ownership.jar </li>
+		</ul>
+
+<h4>Running the example</h4>
+ <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new terminal used.  If running the C or C++ examples ensure that
+    . is added to the LD_LIBRARY_PATH.</p>
+ <p>It is recommended that you run the subscriber and publisher in separate terminals to avoid mixing the output</p>
+
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <ul>
+     <li>OpenSpliceDDS is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 or more terminals. Setup the environment and go to directory <b>standalone</b> as described above</li>
+   </ul>
+
+   <p><b>Running in multiple process shared memory configuration</b></p>
+   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>  
+    <ul>	
+          <li>Open 2 or more terminals.  In each terminal:</li>
+          <li>Setup the environment and go to directory <b>standalone</b> as described above</li>
+          <li>Set the required configuraton file e.g. <i>OSPL_URI=file://$OSPL_HOME/etc/config/ospl_shmem_ddsi.xml</i></li>
+          <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+    </ul>
+
+   <p><b>Starting the subscriber and publisher</b></p>
+
+   <ul>
+     <li> In the first terminal start the subscriber by running either
+        <ul>
+          <li><b><i>sac_ownership_sub</i></b> for C OR  </li>
+          <li><b><i>sacpp_ownership_sub</i></b> for C++ OR </li>
+          <li><b><i>java-classpath $OSPL_HOME/jar/dcpssaj.jar:classes  OwnershipDataSubscriber</i></b> for Java </li>
+        </ul>
+    </li>
+     <li> In a second terminal start the publisher by running either
+       <ul>
+          <li><b><i>sac_ownership_pub pub1 5 40 1</i></b> for C OR  </li>
+          <li><b><i>sacpp_ownership_pub pub1 5 40 1</i></b> for C++ OR </li>
+          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes OwnershipDataPublisher pub1 5 40 1</i></b> for Java </li></ul>
+	   </ul>
+    </ul></li>
+     <li> In another terminal start the publisher by running either
+       <ul>
+          <li><b><i>sac_ownership_pub pub2 10 5 0</i></b> for C OR  </li>
+          <li><b><i>sacpp_ownership_pub pub2 10 5 0</i></b> for C++ OR </li>
+          <li><b><i>java -classpath $OSPL_HOME/jar/dcpssaj.jar:classes OwnershipDataPublisher pub2 10 5 0</i></b> for Java </li></ul>
+	   </ul>
+    </ul></li>
+
+    <pre>Publisher usage, e.g.:
+      sac_ownership_pub [publisher_name] [ownership_strength] [nb_iterations] [stop_subscriber_flag]
+        publisher_name
+        ownership_strength
+        nb_iterations : number of sending message iterations
+        stop_subscriber_flag : indicates if the publisher has to sent a message to tell the subscriber to stop
+    </pre>
+
+<h3><balise id="VS">Running C/C++/C#/Java examples on Windows</balise></h3>
 
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
-<p>The OpenSpliceDDS environment variables must be set in order for the examples to build/run correctly.
-To do this, open a terminal and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution</p>
+<p>The OpenSpliceDDS environment variables must be set in order for the examples to run correctly.
+To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the enviroment variables for OpenSpliceDDS automatically.  The <i>OpenSpliceDDS Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
 
 <ul>
   <li><a href ="#C_C++_CS_Win">C/C++/C# Examples </a></li>
   <li><a href ="#Java_Win">Java examples</a></li>
 </ul>
-<h4><balise id="C_C++_CS_Win">Building the C/C++/C# examples</balise></h4>
-	<ul><li>Visual Studio Solution Files are provided for each of the examples:<br/>
-	The OSPL environment variables need to be set before you can build your application. If these variables have been set by the installer, you can start VS directly 
-to open the solution <i>Ownership.sln</i> This can be found in <b><i>OpenSplice_install_dir</i>/examples/dcps/Ownership/C++/Standalone/VS2005<br/></b>
-Otherwise you need to run the batch file <i>OpenSplice_install_dir\release.bat</i> before opening the VS solution <i>Ownership.sln</i>. <br/>
 
-		</li>
-		<li> Build the example using the "Build Solution" option<br/>	Two executables are generated when the example is built: 
-		<ul><li>OwnershipDataPublisher.exe </li>
-			<li>OwnershipDataSubscriber.exe </li>
+<h4><balise id="C_C++_CS_Win">C/C++/C# Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables are generated in the <b>standalone</b> directory when the example is built: 
+<p>For C</p>
+		<ul><li>sac_ownership_sub.exe </li>
+			<li>sac_ownership_pub.exe </li>
 		</ul>
-	</ul>
 
-<h4><balise id="Java_Win">Building the Java example</balise></h4>
-<ul><li>Open a terminal and make sure the OpenSpliceDDS environment is setup.
-</li><li>Navigate to the <b>Windows</b> directory for the Java example for, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Ownership/Java/Standalone/Windows</b>.
-</li><li>Execute the batch file <i>BUILD.bat</i>.
-</li></ul>
-<p>Two jars are generated in the <b>exec</b> folder when the example 
-is built:</p>
+<p>For C++</p>
+		<ul><li>sacpp_ownership_sub.exe </li>
+			<li>sacpp_ownership_pub.exe </li>
+		</ul>
+	
 
-		<ul><li>OwnershipDataPublisher.jar </li>
-			<li>OwnershipDataSubscriber.jar </li>
+<h4><balise id="Java_Win">Java Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>The subscriber and publisher classes are generated in the <b>standalone</b> directory when the example is built:</p>
+
+		<ul><li>OwnershipDataPublisher.class</li>
+			<li>OwnershipDataSubscriber.class </li>
 		</ul>
 		
-<h4>Running the C/C++/C#/Java examples</h4>
- <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new terminal used.</p>
- <p>The following steps describe how to run the examples you have just built:
-   <ul><li> Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+<h4><balise id="C_C++_CS_Java_Win">Running the C/C++/C#/Java Examples</balise></h4>
+   <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new command prompt used.</p>
+   <p>The following steps describe how to run the examples:</p>
 
-	<li> Navigate to the <b>Bat</b> directory for the C/C++/C#/Java example you have just built, eg: <b><i>OpenSplice_install_dir</i>/examples/dcps/Ownership/C++/Standalone/Windows/Bat</b></li>
-	<li> It is recommended that you run the startSubscriber and startPublisher scripts in seperate terminals to avoid mixing the output</li>
-	<li> Open a terminal. Setup the environment and go to directory <b>Bat</b> as described above and type: <i>startSubscriber.bat</i>.</li>
-	<li> Open a terminal. Setup the environment and go to directory <b>Bat</b> as described above and type: <i>startPublisher<b>s</b>.bat</i>.</li>
-	</ul>
-<h5> Note</h5>
-     <p>You can also use the startPublisher.bat script to launch a publisher</p>
-     <ul><li>startPublisher.bat publisher_name ownership_strength nb_iterations stop_subscriber_flag
-     <ul><li>publisher_name</li>
-     <li>ownership_strength</li>
-     <li>nb_iterations : number of sending message iterations</li>
-     <li>stop_subscriber_flag : indicates if the publisher has to sent a message to tell the subscriber to stop</li></ul></li>
-     </ul>
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <ul>
+     <li>OpenSpliceDDS is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 or more OpenSpliceDDS Command Prompts and go to directory <b>standalone</b> as described above</li>
+   </ul>
 
-<h2><balise id="CORBA">Building/Running in CORBA Cohabitation Mode</balise></h2>
-<p>Doing the substitution and additionnal setups described below, everything previously said for Standalone Mode can be applied to CORBA Cohabitation Mode.</p>
-<h4>Environment Setup</h4>
- <p>Besides OpenSplice environment variables, we need to set</p>
- <ul><li>C/C++</li>
-        <ul><li>The TAO environment variable TAO_ROOT to point to the Tao installation directory.</li></ul>
-     <li>Java</li>
-        <ul><li>The JacORB environment variable JACORB_HOME to point to the JacORB installation directory.</li></ul>
- </ul>
- <h4>Substitution</h4>
-	<ul><li>Posix platform</li> 
-		<ul>
-			<li>C/C++ Standalone is replaced by Corba/OpenFusion</li>
-			<li>Java  Standalone is replaced by Corba/JacORB</li>
-		</ul>
-		<li>Windows platform</li>
+   <p><b>Running in multiple process shared memory configuration</b></p>
+   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>  
+    <ul>	
+          <li>Open 2 or more OpenSpliceDDS Command Prompts.  In each window:</li>
+          <li>Go to directory <b>standalone</b> as described above</li>
+          <li>Set the required configuraton file e.g. <i>set OSPL_URI="file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml"</i></li>
+          <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+    </ul>
+
+   <p><b>Starting the subscriber and publisher</b></p>
+
+   <ul>
+     <li> In the first terminal start the subscriber by running either
         <ul>
-			<li>C/C++ Standalone is replaced by Corba\OpenFusion</li>
-			<li>Java  Standalone is replaced by Corba\JacORB</li>
-		</ul>
-	</ul>
+          <li><b><i>sac_ownership_sub</i></b> for C OR  </li>
+          <li><b><i>sacpp_ownership_sub</i></b> for C++ OR </li>
+          <li><b><i>java  -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes OwnershipDataSubscriber</i></b> for Java </li>
+        </ul>
+    </li>
+     <li> In a second terminal start the publisher by running either
+       <ul>
+          <li><b><i>sac_ownership_pub pub1 5 40 1</i></b> for C OR  </li>
+          <li><b><i>sacpp_ownership_pub pub1 5 40 1</i></b> for C++ OR </li>
+          <li><b><i>java  -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes OwnershipDataPublisher pub1 5 40 1</i></b> for Java </li></ul>
+	   </ul>
+    </ul></li>
+     <li> In another terminal start the publisher by running either
+       <ul>
+          <li><b><i>sac_ownership_pub pub2 10 5 0</i></b> for C OR  </li>
+          <li><b><i>sacpp_ownership_pub pub2 10 5 0</i></b> for C++ OR </li>
+          <li><b><i>java  -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes OwnershipDataPublisher pub2 10 5 0</i></b> for Java </li></ul>
+	   </ul>
+    </ul></li>
+
+    <pre>Publisher usage, e.g.:
+      sac_ownership_pub [publisher_name] [ownership_strength] [nb_iterations] [stop_subscriber_flag]
+        publisher_name
+        ownership_strength
+        nb_iterations : number of sending message iterations
+        stop_subscriber_flag : indicates if the publisher has to sent a message to tell the subscriber to stop
+    </pre>
 </body>
 </html>
-
-
-
-
-

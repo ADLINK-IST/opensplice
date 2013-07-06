@@ -35,6 +35,14 @@ GCOV             = gcov
 
 #Javac
 JCC              = javac
+JCFLAGS_JACORB   = -endorseddirs "$(JACORB_HOME)/lib/endorsed"
+JACORB_INC       =
+
+ifdef JAVA_COMPATJAR
+ifneq (,$(JAVA_COMPATJAR))
+JCFLAGS_COMPAT   = -source 1.6 -target 1.6 -bootclasspath "$(JAVA_COMPATJAR)"
+endif
+endif
 
 #JAR
 JAR              = jar
@@ -45,7 +53,6 @@ JAVAH_FLAGS      = -force
 
 #Java
 JAVA             = java
-JAVA_SRCPATH_SEP = :
 JAVA_LDFLAGS     = -L$(JAVA_HOME)/jre/lib/sparc
 JAVA_LDFLAGS     += -L$(JAVA_HOME)/jre/lib/sprc/client
 JAVA_LDFLAGS     += -L$(JAVA_HOME)/jre/lib/sparc/native_threads
@@ -61,15 +68,16 @@ SHCFLAGS         = -fPIC
 # Values of compiler flags can be overruled
 CFLAGS_OPT       = -O0 -DNDEBUG
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
-CFLAGS_STRICT    = -Wall -W -pedantic
+CFLAGS_STRICT    = -Wall -W -Wno-long-long -pedantic
 
 # Set compiler options for single threaded process
-CFLAGS           = -DVERSION="\\\"$(PACKAGE_VERSION)\\\"" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS         = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CFLAGS           =  $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
+CXXFLAGS         =  $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 CSFLAGS          = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
+
 # Set CPP flags
-CPPFLAGS         = -pipe -DOSPL_ENV_$(SPECIAL) -D__EXTENSIONS__
+CPPFLAGS         = -mcpu=v9 -pipe -DOSPL_ENV_$(SPECIAL) -D__EXTENSIONS__
 
 # Set compiler options for multi threaded process
 # notify usage of posix threads
@@ -82,16 +90,16 @@ LDFLAGS          = -static-libgcc -L$(SPLICE_LIBRARY_PATH)
 SHLDFLAGS        = -shared -fPIC
 
 # Set library context
-LDLIBS           = -lc -lm -lpthread -lnsl -lsocket
+LDLIBS           = -lc -lm -lpthread -lnsl -lsocket -lrt
 
 # Set library context for building shared libraries
-SHLDLIBS         = 
+SHLDLIBS         =
 
 # Set component specific libraries that are platform dependent
 LDLIBS_CXX       = -lstdc++
-LDLIBS_NW        = 
+LDLIBS_NW        =
 LDLIBS_OS        = -lrt -lpthread -ldl
-LDLIBS_CMS       = 
+LDLIBS_CMS       =
 LDLIBS_JAVA      = -ljvm -ljava -lverify -lhpi
 LDLIBS_ODBC      = -lodbc
 LDLIBS_ZLIB      = -lz
@@ -104,7 +112,7 @@ SLIB_PREFIX         = lib
 SLIB_POSTFIX        = .a
 DLIB_PREFIX         = lib
 DLIB_POSTFIX        = .so
-EXEC_PREFIX         = 
+EXEC_PREFIX         =
 EXEC_POSTFIX        =
 EXEC_LD_POSTFIX     =
 INLINESRC_POSTFIX   = .i

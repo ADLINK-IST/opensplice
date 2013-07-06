@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "ut_crc.h"
@@ -15,8 +15,8 @@
 #define UT_CRC_TABLE_SIZE 256 /* for every possible byte value */
 
 OS_STRUCT(ut_crc) {
-	os_uint32 key;
-	os_uint32 table[UT_CRC_TABLE_SIZE];
+    os_uint32 key;
+    os_uint32 table[UT_CRC_TABLE_SIZE];
 };
 
 
@@ -29,9 +29,9 @@ ut_crcInit(
     ut_crc crc,
     os_uint32 key)
 {
-	os_uint32 i;
-	os_uint32 j;
-	os_uint32 reg;
+    os_uint32 i;
+    os_uint32 j;
+    os_uint32 reg;
     int topBit;
 
     assert(crc);
@@ -59,7 +59,7 @@ ut_crcInit(
  **************************************************************/
 ut_crc
 ut_crcNew(
-	os_uint32 key)
+    os_uint32 key)
 {
     ut_crc crc;
 
@@ -67,10 +67,17 @@ ut_crcNew(
 
     crc = os_malloc(sizeof(OS_STRUCT(ut_crc)));
     if (crc) {
-    	ut_crcInit(crc,key);
+        ut_crcInit(crc,key);
     }
 
     return crc;
+}
+
+void
+ut_crcFree(
+    ut_crc _this)
+{
+    os_free (_this);
 }
 
 os_uint32
@@ -79,10 +86,10 @@ ut_crcCalculate(
     void *buf,
     os_uint32 length)
 {
-	os_uint32 i;
-	os_uchar top;
-	os_uint32 reg;
-	os_uchar *vptr = (os_uchar*)buf;
+    os_uint32 i;
+    os_uchar top;
+    os_uint32 reg;
+    os_uchar *vptr = (os_uchar*)buf;
 
     assert(crc);
     assert(buf);

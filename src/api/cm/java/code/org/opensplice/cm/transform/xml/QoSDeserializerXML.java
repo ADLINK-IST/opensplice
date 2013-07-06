@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -20,17 +20,56 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.opensplice.cm.Time;
+import org.opensplice.cm.qos.DeadlinePolicy;
+import org.opensplice.cm.qos.DurabilityKind;
+import org.opensplice.cm.qos.DurabilityPolicy;
+import org.opensplice.cm.qos.DurabilityServicePolicy;
+import org.opensplice.cm.qos.EntityFactoryPolicy;
+import org.opensplice.cm.qos.GroupDataPolicy;
+import org.opensplice.cm.qos.HistoryPolicy;
+import org.opensplice.cm.qos.HistoryQosKind;
+import org.opensplice.cm.qos.LatencyPolicy;
+import org.opensplice.cm.qos.LifespanPolicy;
+import org.opensplice.cm.qos.LivelinessKind;
+import org.opensplice.cm.qos.LivelinessPolicy;
+import org.opensplice.cm.qos.OrderbyKind;
+import org.opensplice.cm.qos.OrderbyPolicy;
+import org.opensplice.cm.qos.OwnershipKind;
+import org.opensplice.cm.qos.OwnershipPolicy;
+import org.opensplice.cm.qos.PacingPolicy;
+import org.opensplice.cm.qos.ParticipantQoS;
+import org.opensplice.cm.qos.PresentationKind;
+import org.opensplice.cm.qos.PresentationPolicy;
+import org.opensplice.cm.qos.PublisherQoS;
+import org.opensplice.cm.qos.QoS;
+import org.opensplice.cm.qos.ReaderLifecyclePolicy;
+import org.opensplice.cm.qos.ReaderLifespanPolicy;
+import org.opensplice.cm.qos.ReaderQoS;
+import org.opensplice.cm.qos.ReliabilityKind;
+import org.opensplice.cm.qos.ReliabilityPolicy;
+import org.opensplice.cm.qos.ResourcePolicy;
+import org.opensplice.cm.qos.ScheduleKind;
+import org.opensplice.cm.qos.SchedulePolicy;
+import org.opensplice.cm.qos.SchedulePriorityKind;
+import org.opensplice.cm.qos.SharePolicy;
+import org.opensplice.cm.qos.StrengthPolicy;
+import org.opensplice.cm.qos.SubscriberQoS;
+import org.opensplice.cm.qos.TopicDataPolicy;
+import org.opensplice.cm.qos.TopicQoS;
+import org.opensplice.cm.qos.TransportPolicy;
+import org.opensplice.cm.qos.UserDataPolicy;
+import org.opensplice.cm.qos.UserKeyPolicy;
+import org.opensplice.cm.qos.WriterLifecyclePolicy;
+import org.opensplice.cm.qos.WriterQoS;
+import org.opensplice.cm.transform.QoSDeserializer;
+import org.opensplice.cm.transform.TransformationException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
-import org.opensplice.cm.Time;
-import org.opensplice.cm.qos.*;
-import org.opensplice.cm.transform.QoSDeserializer;
-import org.opensplice.cm.transform.TransformationException;
 
 /**
  * The XML implementation of an QoSDeserializer. It is capable of 
@@ -57,6 +96,7 @@ public class QoSDeserializerXML implements QoSDeserializer {
         logger = Logger.getLogger("com.thales.splice.api.cm.transform.xml");
     }
     
+    @Override
     public QoS deserializeQoS(Object qos) throws TransformationException{
         QoS result = null;
         Document document = null;
@@ -592,8 +632,9 @@ public class QoSDeserializerXML implements QoSDeserializer {
             kind = ReliabilityKind.from_string(el.getFirstChild().getNodeValue());
             t = this.parseTime("max_blocking_time", e);
             child = this.getChildNode(e, "synchronous");
-            synchronous = new Boolean(child.getFirstChild().getNodeValue()).booleanValue();
-            
+            if (child != null) {
+                synchronous = new Boolean(child.getFirstChild().getNodeValue());
+            }
             result = new ReliabilityPolicy(kind, t, synchronous);
         }
         return result;
@@ -874,7 +915,7 @@ public class QoSDeserializerXML implements QoSDeserializer {
         
         if(child == null){
             result = null;
-        } else if(child.equals("&lt;NULL&gt;")){ 
+        } else if (child.getNodeValue().equals("&lt;NULL&gt;")) {
             result = null;
         } else {
             result = child.getNodeValue();

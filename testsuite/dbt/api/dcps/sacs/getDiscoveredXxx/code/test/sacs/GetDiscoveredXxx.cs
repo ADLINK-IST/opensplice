@@ -72,7 +72,7 @@ namespace test.sacs
             
             dpQos.UserData.Value = encoding.GetBytes("dp1");
             
-            dp1 = dpf.CreateParticipant (string.Empty, dpQos, null, 0);
+            dp1 = dpf.CreateParticipant (DDS.DomainId.Default, dpQos, null, 0);
 	        if (dp1 == null) {
 	              result = new Test.Framework.TestResult(expResult, "Test case failed. Failed to create dp1 participant"
                     , expVerdict, Test.Framework.TestVerdict.Fail);
@@ -81,7 +81,7 @@ namespace test.sacs
 	        
 	        dpQos.UserData.Value = encoding.GetBytes("dp2");
             
-            dp2 = dpf.CreateParticipant (string.Empty, dpQos, null, 0);
+            dp2 = dpf.CreateParticipant (DDS.DomainId.Default, dpQos, null, 0);
             if (dp2 == null) {
                   result = new Test.Framework.TestResult(expResult, "Test case failed. Failed to create dp2 participant"
                     , expVerdict, Test.Framework.TestVerdict.Fail);
@@ -90,7 +90,7 @@ namespace test.sacs
             
             dpQos.UserData.Value = encoding.GetBytes("dp3");
             
-            dp3 = dpf.CreateParticipant (string.Empty, dpQos, null, 0);
+            dp3 = dpf.CreateParticipant (DDS.DomainId.Default, dpQos, null, 0);
             if (dp3 == null) {
                   result = new Test.Framework.TestResult(expResult, "Test case failed. Failed to create dp3 participant"
                     , expVerdict, Test.Framework.TestVerdict.Fail);
@@ -184,8 +184,8 @@ namespace test.sacs
     
     
             } else {
-		        if (sequence1.Length != 9) {
-	                result = new Test.Framework.TestResult(expResult, "get_discovered_topics failed found: "+sequence1.Length+" expected 9"
+		        if (sequence1.Length != 10) {
+	                result = new Test.Framework.TestResult(expResult, "get_discovered_topics failed found: "+sequence1.Length+" expected 10"
 	                    , expVerdict, Test.Framework.TestVerdict.Fail);
 	                return result;
 	            }

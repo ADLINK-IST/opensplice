@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -98,13 +98,9 @@ c_char*
 cmx_dataReaderInit(
     v_dataReader entity)
 {
-    char buf[512];
-    v_dataReader dr;
+    assert(C_TYPECHECK(entity, v_dataReader));
 
-    dr = v_dataReader(entity);
-    snprintf(buf, 24, "<kind>DATAREADER</kind>");
-
-    return (c_char*)(os_strdup(buf));
+    return (c_char*)(os_strdup("<kind>DATAREADER</kind>"));
 }
 
 const c_char*

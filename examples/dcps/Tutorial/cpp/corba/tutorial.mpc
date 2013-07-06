@@ -1,0 +1,38 @@
+// -*- MPC -*-
+// $Id:$
+
+project (ccpp*types) : _repetitive_ccpp_example_types {
+}
+
+project(ccpp*messageboard): c_or_cplusplus_example, ospl_dcpsccpp, tao_example  {
+  after += ccpp*types
+  libs += ccpp*types
+  includes += .
+  Source_Files {
+      ../src/MessageBoard.cpp
+      ../src/CheckStatus.cpp
+      ../src/multitopic.cpp
+  }
+}
+
+project(ccpp*chatter): c_or_cplusplus_example, ospl_dcpsccpp, tao_example {
+  after += ccpp*types
+  libs += ccpp*types
+  includes += .
+  Source_Files {
+      ../src/Chatter.cpp
+      ../src/CheckStatus.cpp
+      ../src/multitopic.cpp
+  }
+}
+
+project(ccpp*userload): c_or_cplusplus_example, ospl_dcpsccpp, tao_example {
+  after += ccpp*types
+  libs += ccpp*types
+  includes += .
+  Source_Files {
+      ../src/UserLoad.cpp
+      ../src/CheckStatus.cpp
+      ../src/multitopic.cpp
+  }
+}

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,6 +15,7 @@
 #include "u_types.h"
 #include "u_reader.h"
 #include "v_readerQos.h"
+#include "v_dataReaderSample.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -30,6 +31,9 @@ extern "C" {
 
 #define u_dataReader(o) \
         ((u_dataReader)u_entityCheckType(u_entity(o), U_READER))
+
+typedef v_actionResult u_actionResult;
+typedef u_actionResult (*u_dataReaderAction)(c_object o, c_voidp arg);
 
 typedef void (*u_copyIn)(c_type type, void *data, void *to);
 
@@ -63,13 +67,13 @@ u_dataReaderSubscriber(
 OS_API u_result
 u_dataReaderRead(
     u_dataReader _this,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg);
 
 OS_API u_result
 u_dataReaderTake(
     u_dataReader _this,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg);
 
 OS_API void *
@@ -90,28 +94,28 @@ OS_API u_result
 u_dataReaderReadInstance(
     u_dataReader _this,
     u_instanceHandle handle,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg);
 
 OS_API u_result
 u_dataReaderTakeInstance(
     u_dataReader _this,
     u_instanceHandle handle,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg);
 
 OS_API u_result
 u_dataReaderReadNextInstance(
     u_dataReader _this,
     u_instanceHandle handle,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg);
 
 OS_API u_result
 u_dataReaderTakeNextInstance(
     u_dataReader _this,
     u_instanceHandle handle,
-    u_readerAction action,
+    u_dataReaderAction action,
     c_voidp actionArg);
 
 OS_API u_result

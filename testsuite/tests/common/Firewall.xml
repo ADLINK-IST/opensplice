@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "../../stax/stax.dtd">
+
+<stax>
+    <function name="DeployFwTool">
+        <function-list-args>
+            <function-required-arg name="host">TestHost</function-required-arg>
+            <function-optional-arg name="purge" default="0">Overwrite existing files</function-optional-arg>
+            <function-optional-arg name="keep" default="0">Remove files after tests</function-optional-arg>
+        </function-list-args>
+        <sequence>
+            <script>
+                base_path = os.path.dirname(STAXCurrentXMLFile) + file_sep + '..' + file_sep + 'durability' + file_sep + 'common'
+                src_path = base_path + file_sep + 'fwctrl' + file_sep + 'bld' + file_sep + host.get_target()
+                dest_path = host.get_basedir() + host.get_filesep() + 'fwctrl'
+            </script>
+            <try>
+                <sequence>
+                <call-with-map function="'FileCopy'">
+                    <call-map-arg name="'src_path'">src_path</call-map-arg>
+                    <call-map-arg name="'dest_host'">host</call-map-arg>
+                    <call-map-arg name="'dest_path'">dest_path</call-map-arg>
+                    <call-map-arg name="'overwrite'">2</call-map-arg>
+                </call-with-map>
+                <if expr="STAXResult == STAFRC.Ok">
+                    <sequence>
+                        <script>
+                            path = '%s%c%s' % (host.get_env('PATH'), host.get_pathsep(), dest_path)
+                            host.set_env('PATH', path);
+                        </script>
+                        <log message="STAXMessageLog" level="'debug'">'DeployFwTool: Firewall tool deployed on %s' % host.get_hostname()</log>
+                    </sequence>
+                </if>
+                </sequence>
+                <catch exception="'FileCopy'" var="eInfo">
+                    <log message="STAXMessageLog" level="'error'">'DeployFwTool: Failed to deploy firewall tool on %s (%s)' % (host.get_hostname(), eInfo)</log>
+                </catch>
+            </try>
+        </sequence>
+    </function>
+
+    <function name="Firewall">
+        <function-map-args>
+            <function-required-arg name="host">TestHost on which firewall is manipulated</function-required-arg>
+            <function-required-arg name="src_host">TestHost to block incoming traffic from</function-required-arg>
+            <function-required-arg name="action">Open (accept) or close (drop) traffic</function-required-arg>
+            <function-required-arg name="portStr">Comma-seperated ports</function-required-arg>
+            <function-optional-arg name="protocol" default="'udp'">Protocol</function-optional-arg>
+        </function-map-args>
+        <sequence>
+            <script>
+                proc = 'fwctrl %s %s %s %s' % (src_host.get_hostname(), protocol, portStr, action);
+                host.set_process(proc);
+            </script>
+            <log message="0" level="'debug'">'Running FwCtrl on %s:\n%s' % (host.get_hostname(), host.get_process())</log>
+            <process name="'FwCtrl'">
+                <location>host.get_staf_url()</location>
+                <command mode="'shell'">host.get_process()</command>
+                <envs>host.get_process_envs()</envs>
+                <stderr mode="'stdout'"/>
+                <returnstdout/>
+            </process>
+            <if expr="RC != STAFRC.Ok">
+                <sequence>
+                    <if expr="STAXResult[0][0] == 0">
+                        <script>
+                            output = ''.join(STAXResult[0][1]).strip()
+                            msg = 'Failed to modify firewall on %s:\n%s' % ( host.get_hostname(), output)
+                        </script>
+                        <else>
+                            <script>msg = 'Failed to modify firewall on %s (RC: %s)' % (host.get_hostname(), RC)</script>
+                        </else>
+                    </if>
+                    <log message="STAXMessageLog" level="'debug'">'%s' % STAXResult[0][1]</log>
+                    <throw exception="'TestCase.Firewall'">msg</throw>
+                </sequence>
+            </if>
+        </sequence>
+    </function>
+</stax>

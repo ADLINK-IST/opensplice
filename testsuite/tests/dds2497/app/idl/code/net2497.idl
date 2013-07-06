@@ -1,0 +1,54 @@
+module net2497
+{
+    struct payload
+    {
+        unsigned long long1;
+        unsigned long long2;
+        unsigned long long3;
+        unsigned long long4;
+        unsigned long long5;
+        unsigned long long6;
+        unsigned long long7;
+        unsigned long long8;
+        unsigned long long9;
+        unsigned long long10;
+    };
+    
+    struct payloadfloat
+    {
+        float float1;
+        float float2;
+        float float3;
+        float float4;
+        float float5;
+        float float6;
+        float float7;
+        float float8;
+        float float9;
+        float float10;
+    };
+    
+    struct payloaddouble
+    {
+        double double1;
+        double double2;
+        double double3;
+        double double4;
+        double double5;
+        double double6;
+        double double7;
+        double double8;
+        double double9;
+        double double10;
+    };
+    
+    struct topic2497
+    {
+    unsigned long index;
+	sequence<payload>   seq_payload;
+	sequence<payloadfloat>   seq_payloadfloat;
+	sequence<payloaddouble>   seq_payloaddouble;
+
+    };
+#pragma keylist topic2497 index
+};

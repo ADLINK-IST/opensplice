@@ -1,17 +1,17 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-#include "gapi.h"
 #include "ccpp_WaitSet.h"
-#include "ccpp_Condition_impl.h" 
+#include "gapi.h"
+#include "ccpp_Condition_impl.h"
 #include "ccpp_Utils.h"
 #include "os_report.h"
 
@@ -21,20 +21,20 @@ DDS::WaitSet::WaitSet( )
   _gapi_self = gapi_waitSet__alloc();
   if (_gapi_self)
   {
-    myUD = new DDS::ccpp_UserData(this);
-    /* remove the count of the reference to the object 
-       such that it is deleted when the user releases it. 
+    myUD = new DDS::ccpp_UserData(this, NULL, NULL, true);
+    /* remove the count of the reference to the object
+       such that it is deleted when the user releases it.
      */
     if (myUD)
     {
-      gapi_object_set_user_data(_gapi_self, (CORBA::Object *)myUD,
-                                DDS::ccpp_CallBack_DeleteUserData, NULL);
+      CORBA::Object_ptr parent = dynamic_cast<CORBA::Object_ptr>(myUD);
+      gapi_object_set_user_data(_gapi_self, static_cast<void *>(parent),
+                                ccpp_CallBack_DeleteUserData, NULL);
     }
     else
     {
       OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
     }
-    CORBA::release(this);
   }
 }
 
@@ -46,10 +46,6 @@ DDS::WaitSet::~WaitSet()
   {
   /* avoid another last release of the reference to this WaitSet */
     myUD->ccpp_object = NULL;
-  }
-  else
-  {
-    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
   }
   gapi__free(_gapi_self);
 }
@@ -99,12 +95,12 @@ DDS::ReturnCode_t DDS::WaitSet::wait (
 DDS::ReturnCode_t DDS::WaitSet::attach_condition (
   DDS::Condition_ptr cond
 ) THROW_ORB_EXCEPTIONS
-{ 
+{
   DDS::Condition_impl *cond_impl;
   DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
- 
+
   cond_impl = dynamic_cast<DDS::Condition_impl *>(cond);
-  if (cond_impl) 
+  if (cond_impl)
   {
     result = gapi_waitSet_attach_condition(_gapi_self, cond_impl->_gapi_self);
   }
@@ -148,7 +144,7 @@ DDS::ReturnCode_t DDS::WaitSet::get_conditions (
           if (myUD)
           {
             attached_conditions[i] = dynamic_cast<DDS::Condition_ptr>(myUD->ccpp_object);
-            
+
             if (attached_conditions[i])
             {
               DDS::Condition::_duplicate(attached_conditions[i]);

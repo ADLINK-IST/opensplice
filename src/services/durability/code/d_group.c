@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -24,9 +24,8 @@ d_groupNew(
     d_quality quality)
 {
     d_group group;
-    
     group = NULL;
-    
+
     if(topic && partition){
         group = d_group(os_malloc(C_SIZEOF(d_group)));
         d_objectInit(d_object(group), D_GROUP, d_groupDeinit);
@@ -52,7 +51,7 @@ d_groupSetKernelGroup(
 {
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
     assert(vgroup);
-    
+
     if(group){
         group->vgroup = c_keep(vgroup);
     }
@@ -63,9 +62,9 @@ d_groupGetKernelGroup(
     d_group group)
 {
     v_group result = NULL;
-    
+
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-    
+
     if(group){
         result = c_keep(group->vgroup);
     }
@@ -77,14 +76,14 @@ d_groupDeinit(
     d_object object)
 {
     d_group group;
-    
+
     assert(d_objectIsValid(object, D_GROUP) == TRUE);
-        
+
     if(object){
         group = d_group(object);
         os_free(group->topic);
         os_free(group->partition);
-        
+
         if(group->vgroup){
             c_free(group->vgroup);
         }
@@ -96,10 +95,10 @@ d_groupFree(
     d_group group)
 {
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-    
+
     if(group){
         d_objectFree(d_object(group), D_GROUP);
-    }   
+    }
 }
 
 d_completeness
@@ -108,7 +107,7 @@ d_groupGetCompleteness(
 {
     d_completeness result;
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-    
+
     if(group){
         result = group->completeness;
     } else {
@@ -124,7 +123,7 @@ d_groupUpdate(
     d_quality quality)
 {
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-    
+
     if(group){
         group->completeness        = completeness;
         group->quality.seconds     = quality.seconds;
@@ -137,14 +136,43 @@ d_groupSetComplete(
     d_group group)
 {
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-    
+
     if(group){
         group->quality.seconds = D_MAX_QUALITY;
         group->quality.nanoseconds = 0;
         group->completeness = D_GROUP_COMPLETE;
-        
+
         if(group->vgroup) {
             v_groupCompleteSet(group->vgroup, TRUE);
+        }
+    }
+}
+
+void
+d_groupSetUnaligned(
+    d_group group)
+{
+    assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
+
+    if(group){
+        group->quality.seconds = 0;
+        group->quality.nanoseconds = 0;
+        group->completeness = D_GROUP_UNKNOWN;
+    }
+}
+
+void d_groupSetIncomplete(
+    d_group group)
+{
+    assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
+
+    if(group){
+        group->quality.seconds = 0;
+        group->quality.nanoseconds = 0;
+        group->completeness = D_GROUP_INCOMPLETE;
+
+        if(group->vgroup) {
+            v_groupCompleteSet(group->vgroup, FALSE);
         }
     }
 }
@@ -157,10 +185,10 @@ d_groupCompare(
     int result;
 
     result = 0;
-    
+
     if (group1 != group2) {
         result = strcmp(group1->topic, group2->topic);
-        
+
         if (result == 0) {
             result = strcmp(group1->partition, group2->partition);
         }
@@ -173,10 +201,10 @@ d_groupGetPartition(
     d_group group)
 {
     d_partition p;
-    
+
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
     p = NULL;
-    
+
     if(group){
         p = os_strdup(group->partition);
     }
@@ -188,10 +216,10 @@ d_groupGetTopic(
     d_group group)
 {
     d_topic t;
-    
+
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
     t = NULL;
-    
+
     if(group){
         t = os_strdup(group->topic);
     }
@@ -203,9 +231,9 @@ d_groupGetKind(
     d_group group)
 {
     d_durabilityKind k;
-    
+
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-    
+
     if(group){
         k = group->kind;
     } else {
@@ -219,9 +247,9 @@ d_groupGetQuality(
     d_group group)
 {
     d_quality q;
-    
+
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-    
+
     if(group){
         q.seconds = group->quality.seconds;
         q.nanoseconds = group->quality.nanoseconds;
@@ -238,9 +266,9 @@ d_groupIsBuiltinGroup(
     d_group group)
 {
     c_bool result = FALSE;
-    
+
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-    
+
     if(group){
         if(strcmp(group->partition, V_BUILTIN_PARTITION) == 0){
             if( (strcmp(group->topic, V_PARTICIPANTINFO_NAME) == 0) ||
@@ -261,7 +289,7 @@ d_groupSetPrivate(
     c_bool isPrivate)
 {
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-        
+
     if(group){
         group->private = isPrivate;
     }
@@ -273,9 +301,9 @@ d_groupIsPrivate(
     d_group group)
 {
     c_bool result;
-    
+
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-        
+
     if(group){
         result = group->private;
     } else {

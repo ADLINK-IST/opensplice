@@ -1,0 +1,255 @@
+$sp($(spaces))typedef sequence<$(typename)> $(typename)Seq;
+
+$sp($(spaces))local interface $(typename)TypeSupportInterface : ::DDS::TypeSupport { };
+
+$sp($(spaces))local interface $(typename)DataWriter : ::DDS::DataWriter {
+$sp($(spaces))    ::DDS::InstanceHandle_t register_instance(
+$sp($(spaces))      in $(typename) instance_data);
+
+$sp($(spaces))    ::DDS::InstanceHandle_t register_instance_w_timestamp(
+$sp($(spaces))      in $(typename) instance_data,
+$sp($(spaces))      in ::DDS::Time_t source_timestamp);
+
+$sp($(spaces))    ::DDS::ReturnCode_t unregister_instance(
+$sp($(spaces))      in $(typename) instance_data,
+$sp($(spaces))      in ::DDS::InstanceHandle_t handle);
+
+$sp($(spaces))    ::DDS::ReturnCode_t unregister_instance_w_timestamp(
+$sp($(spaces))      in $(typename) instance_data,
+$sp($(spaces))      in ::DDS::InstanceHandle_t handle,
+$sp($(spaces))      in ::DDS::Time_t source_timestamp);
+
+$sp($(spaces))    ::DDS::ReturnCode_t write(
+$sp($(spaces))      in $(typename) instance_data,
+$sp($(spaces))      in ::DDS::InstanceHandle_t handle);
+
+$sp($(spaces))    ::DDS::ReturnCode_t write_w_timestamp(
+$sp($(spaces))      in $(typename) instance_data,
+$sp($(spaces))      in ::DDS::InstanceHandle_t handle,
+$sp($(spaces))      in ::DDS::Time_t source_timestamp);
+
+$sp($(spaces))    ::DDS::ReturnCode_t dispose(
+$sp($(spaces))      in $(typename) instance_data,
+$sp($(spaces))      in ::DDS::InstanceHandle_t handle);
+
+$sp($(spaces))    ::DDS::ReturnCode_t dispose_w_timestamp(
+$sp($(spaces))      in $(typename) instance_data,
+$sp($(spaces))      in ::DDS::InstanceHandle_t handle,
+$sp($(spaces))      in ::DDS::Time_t source_timestamp);
+
+$sp($(spaces))    ::DDS::ReturnCode_t writedispose(
+$sp($(spaces))      in $(typename) instance_data,
+$sp($(spaces))      in ::DDS::InstanceHandle_t handle);
+
+$sp($(spaces))    ::DDS::ReturnCode_t writedispose_w_timestamp(
+$sp($(spaces))      in $(typename) instance_data,
+$sp($(spaces))      in ::DDS::InstanceHandle_t handle,
+$sp($(spaces))      in ::DDS::Time_t source_timestamp);
+
+$sp($(spaces))    ::DDS::ReturnCode_t get_key_value(
+$sp($(spaces))      inout $(typename) key_holder,
+$sp($(spaces))      in ::DDS::InstanceHandle_t handle);
+
+$sp($(spaces))    ::DDS::InstanceHandle_t lookup_instance(
+$sp($(spaces))      in $(typename) instance_data);
+
+$sp($(spaces))};
+
+$sp($(spaces))local interface $(typename)DataReader : ::DDS::DataReader {
+$sp($(spaces))    ::DDS::ReturnCode_t read(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t read_w_condition(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::ReadCondition a_condition);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take_w_condition(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::ReadCondition a_condition);
+
+$sp($(spaces))    ::DDS::ReturnCode_t read_next_sample(
+$sp($(spaces))      inout $(typename) received_data,
+$sp($(spaces))      inout ::DDS::SampleInfo sample_info);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take_next_sample(
+$sp($(spaces))      inout $(typename) received_data,
+$sp($(spaces))      inout ::DDS::SampleInfo sample_info);
+
+$sp($(spaces))    ::DDS::ReturnCode_t read_instance(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take_instance(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t read_next_instance(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take_next_instance(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t read_next_instance_w_condition(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::ReadCondition a_condition);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take_next_instance_w_condition(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::ReadCondition a_condition);
+
+$sp($(spaces))    ::DDS::ReturnCode_t return_loan(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq);
+
+$sp($(spaces))    ::DDS::ReturnCode_t get_key_value(
+$sp($(spaces))      inout $(typename) key_holder,
+$sp($(spaces))      in ::DDS::InstanceHandle_t handle);
+
+$sp($(spaces))    ::DDS::InstanceHandle_t lookup_instance(
+$sp($(spaces))      in $(typename) instance);
+
+$sp($(spaces))};
+
+$sp($(spaces))local interface $(typename)DataReaderView : ::DDS::DataReaderView {
+$sp($(spaces))    ::DDS::ReturnCode_t read(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t read_w_condition(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::ReadCondition a_condition);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take_w_condition(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::ReadCondition a_condition);
+
+$sp($(spaces))    ::DDS::ReturnCode_t read_next_sample(
+$sp($(spaces))      inout $(typename) received_data,
+$sp($(spaces))      inout ::DDS::SampleInfo sample_info);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take_next_sample(
+$sp($(spaces))      inout $(typename) received_data,
+$sp($(spaces))      inout ::DDS::SampleInfo sample_info);
+
+$sp($(spaces))    ::DDS::ReturnCode_t read_instance(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take_instance(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t read_next_instance(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take_next_instance(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::SampleStateMask sample_states,
+$sp($(spaces))      in ::DDS::ViewStateMask view_states,
+$sp($(spaces))      in ::DDS::InstanceStateMask instance_states);
+
+$sp($(spaces))    ::DDS::ReturnCode_t read_next_instance_w_condition(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::ReadCondition a_condition);
+
+$sp($(spaces))    ::DDS::ReturnCode_t take_next_instance_w_condition(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq,
+$sp($(spaces))      in long max_samples,
+$sp($(spaces))      in ::DDS::InstanceHandle_t a_handle,
+$sp($(spaces))      in ::DDS::ReadCondition a_condition);
+
+$sp($(spaces))    ::DDS::ReturnCode_t return_loan(
+$sp($(spaces))      inout $(typename)Seq received_data,
+$sp($(spaces))      inout ::DDS::SampleInfoSeq info_seq);
+
+$sp($(spaces))    ::DDS::ReturnCode_t get_key_value(
+$sp($(spaces))      inout $(typename) key_holder,
+$sp($(spaces))      in ::DDS::InstanceHandle_t handle);
+
+$sp($(spaces))    ::DDS::InstanceHandle_t lookup_instance(
+$sp($(spaces))      in $(typename) instance);
+$sp($(spaces))};

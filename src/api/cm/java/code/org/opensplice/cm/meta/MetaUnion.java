@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -101,6 +101,7 @@ public class MetaUnion extends MetaField{
         return (MetaUnionCase)(cases.get(cases.size()-1));   
     }
     
+    @Override
     public MetaField[] getFields(){
         MetaField[] result = new MetaField[cases.size() + 1];
         
@@ -112,16 +113,18 @@ public class MetaUnion extends MetaField{
         return result;
     }
     
+    @Override
     public String toString(){
-        String s = super.toString();
-        s += "\ndiscriminator: " + discriminator.toString();
-        
-        for(int i=0; i<cases.size(); i++){
-            s += "\ncase: " + cases.get(i).toString(); 
+        StringBuffer buf = new StringBuffer();
+        buf.append(super.toString());
+        buf.append("\ndiscriminator: " + discriminator.toString());
+        for (int i = 0; i < cases.size(); i++) {
+            buf.append("\ncase: " + cases.get(i).toString());
         }
-        return s;
+        return buf.toString();
     }
     
+    @Override
     public MetaField getField(String fieldName){
         MetaUnionCase result;
         
@@ -138,6 +141,7 @@ public class MetaUnion extends MetaField{
         return null;
     }
     
+    @Override
     public ArrayList getFieldNames(){
         MetaField field;
         ArrayList result = new ArrayList();
@@ -180,11 +184,11 @@ public class MetaUnion extends MetaField{
     /**
      * The discriminator of the union.
      */
-    private MetaField discriminator;
+    private final MetaField discriminator;
     
     /**
      * The cases of the union.(<MetaUnionCase>)
      * 
      */
-    private ArrayList cases;
+    private final ArrayList cases;
 }

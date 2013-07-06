@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -31,13 +31,14 @@ extern "C" {
 #define u_waitsetHistoryDeleteEvent(e)  ((u_waitsetHistoryDeleteEvent)e)
 #define u_waitsetHistoryRequestEvent(e) ((u_waitsetHistoryRequestEvent)e)
 #define u_waitsetPersistentSnapshotEvent(e) ((u_waitsetPersistentSnapshotEvent)e)
-
+#define u_waitsetConnectWriterEvent(e) ((u_waitsetConnectWriterEvent)e)
 
 typedef enum u_waitsetEventKind_s {
     U_WAITSET_EVENT,
     U_WAITSET_EVENT_HISTORY_DELETE,
     U_WAITSET_EVENT_HISTORY_REQUEST,
-    U_WAITSET_EVENT_PERSISTENT_SNAPSHOT
+    U_WAITSET_EVENT_PERSISTENT_SNAPSHOT,
+    U_WAITSET_EVENT_CONNECT_WRITER
 } u_waitsetEventKind;
 
 C_STRUCT(u_waitsetEvent) {
@@ -72,6 +73,12 @@ C_STRUCT(u_waitsetPersistentSnapshotEvent) {
     c_char* uri;
 };
 
+C_STRUCT(u_waitsetConnectWriterEvent) {
+    C_EXTENDS(u_waitsetEvent);
+    v_handle source;
+    v_group group;
+};
+
 OS_API u_waitsetEvent
 u_waitsetEventNew(
     u_entity e, c_ulong k);
@@ -103,6 +110,13 @@ u_waitsetPersistentSnapshotEventNew(
     const c_char* partitionExpr,
     const c_char* topicExpr,
     const c_char* uri);
+
+OS_API u_waitsetEvent
+u_waitsetConnectWriterEventNew(
+    u_entity e,
+    c_ulong k,
+    v_handle source,
+    v_group group);
 
 OS_API void
 u_waitsetEventFree(

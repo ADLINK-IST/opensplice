@@ -1,13 +1,8 @@
 $sp($(spaces))#region $(typename)DataReader
 $sp($(spaces))public class $(typename)DataReader : DDS.OpenSplice.DataReader, I$(typename)DataReader
 $sp($(spaces)){
-$sp($(spaces))    private $(typename)TypeSupport typeSupport;
-
-$sp($(spaces))    public $(typename)DataReader($(typename)TypeSupport ts, IntPtr gapiPtr)
-$sp($(spaces))        : base(gapiPtr)
-$sp($(spaces))    {
-$sp($(spaces))        typeSupport = ts;
-$sp($(spaces))    }
+$sp($(spaces))    public $(typename)DataReader(IntPtr gapiPtr)
+$sp($(spaces))        : base(gapiPtr) { }
 
 $sp($(spaces))    public ReturnCode Read(
 $sp($(spaces))        ref $(typename)[] dataValues,
@@ -495,13 +490,8 @@ $sp($(spaces))
 $sp($(spaces))#region $(typename)DataWriter
 $sp($(spaces))public class $(typename)DataWriter : DDS.OpenSplice.DataWriter, I$(typename)DataWriter
 $sp($(spaces)){
-$sp($(spaces))    private $(typename)TypeSupport typeSupport;
-
-$sp($(spaces))    public $(typename)DataWriter($(typename)TypeSupport ts, IntPtr gapiPtr)
-$sp($(spaces))        : base(gapiPtr)
-$sp($(spaces))    {
-$sp($(spaces))        typeSupport = ts;
-$sp($(spaces))    }
+$sp($(spaces))    public $(typename)DataWriter(IntPtr gapiPtr)
+$sp($(spaces))        : base(gapiPtr) { }
 
 $sp($(spaces))    public InstanceHandle RegisterInstance(
 $sp($(spaces))            $(typename) instanceData)
@@ -663,10 +653,10 @@ $sp($(spaces))public class $(typename)TypeSupport : DDS.OpenSplice.TypeSupport
 $sp($(spaces)){
 $sp($(spaces))    private const string typeName = "$(scoped-meta-type-name)";
 $sp($(spaces))    private const string keyList = "$(key-list)";
-$sp($(spaces))    private const string metaDescriptor = "$(meta-descriptor)";
+$sp($(spaces))    private readonly string[] metaDescriptor = {"$(meta-descriptor)"};
 
 $sp($(spaces))    public $(typename)TypeSupport()
-$sp($(spaces))        : base(typeof($(typename)))
+$sp($(spaces))        : base(typeof($(typename)), new $(typename)TypeSupportFactory())
 $sp($(spaces))    { }
 
 $sp($(spaces))    public override string TypeName
@@ -677,7 +667,7 @@ $sp($(spaces))            return typeName;
 $sp($(spaces))        }
 $sp($(spaces))    }
 
-$sp($(spaces))    public override string Description
+$sp($(spaces))    public override string[] Description
 $sp($(spaces))    {
 $sp($(spaces))        get
 $sp($(spaces))        {
@@ -697,15 +687,21 @@ $sp($(spaces))    public override ReturnCode RegisterType(IDomainParticipant par
 $sp($(spaces))    {
 $sp($(spaces))        return RegisterType(participant, typeName, new $(typename)Marshaler());
 $sp($(spaces))    }
+$sp($(spaces))}
+$sp($(spaces))#endregion
 
+$sp($(spaces))#region $(typename)TypeSupportFactory
+$sp($(spaces))public class $(typename)TypeSupportFactory : DDS.OpenSplice.TypeSupportFactory
+$sp($(spaces)){
 $sp($(spaces))    public override DDS.OpenSplice.DataWriter CreateDataWriter(IntPtr gapiPtr)
 $sp($(spaces))    {
-$sp($(spaces))        return new $(typename)DataWriter(this, gapiPtr);
+$sp($(spaces))        return new $(typename)DataWriter(gapiPtr);
 $sp($(spaces))    }
 
 $sp($(spaces))    public override DDS.OpenSplice.DataReader CreateDataReader(IntPtr gapiPtr)
 $sp($(spaces))    {
-$sp($(spaces))        return new $(typename)DataReader(this, gapiPtr);
+$sp($(spaces))        return new $(typename)DataReader(gapiPtr);
 $sp($(spaces))    }
 $sp($(spaces))}
 $sp($(spaces))#endregion
+

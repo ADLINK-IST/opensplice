@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -52,6 +52,14 @@ u_topicName (
 
 OS_API c_char *
 u_topicTypeName (
+    u_topic _this);
+
+OS_API c_type
+u_topicGetUserType (
+    u_topic _this);
+
+OS_API c_string
+u_topicGetTopicKeys (
     u_topic _this);
 
 OS_API u_result

@@ -1,0 +1,207 @@
+<HTML>
+<HEAD>
+<TITLE>pingpong_test_functions.xml</TITLE>
+</HEAD>
+<BODY>
+
+<TABLE BORDER="0" WIDTH="100%" CELLPADDING="1" CELLSPACING="0">
+<TR>
+<TD BGCOLOR="#EEEEFF">
+<TABLE BORDER="0" CELLPADDING="0" CELLSPACING="3">
+<TR ALIGN="center" VALIGN="top">
+<TD>&nbsp;<A HREF="../overview-summary.html"><B>Overview</B></A>&nbsp;</TD>
+<TD>&nbsp;<A HREF="package-overview.html"><B>Package</B>&nbsp;</TD>
+<TD BGCOLOR="#00008B">&nbsp;<FONT color="EEEEFF"><B>&nbsp;File&nbsp;</B></FONT>&nbsp;</TD>
+</TR>
+</TABLE>
+
+</TD>
+<TD ALIGN="right"><FONT size="-1"><I><B>generated with<br>STAXDoc v1.0.4</B></I></FONT></TD>
+</TR>
+</TABLE>
+<HR>
+
+<H1>pingpong_test_functions.xml</H1>
+<TABLE BORDER="1" CELLPADDING="3" CELLSPACING="0" WIDTH="100%">
+<TR BGCOLOR="#CCCCFF">
+<TD COLSPAN="2"><FONT SIZE="+2"><B>Function Summary</B></FONT></TD>
+</TR>  
+
+  
+<TR>
+<TD style="vertical-align: top;"><CODE><B><A HREF="#CreateTestLogDirectory">CreateTestLogDirectory</A></B></CODE></TD><TD>
+      
+		Creation of loging directory for tests by time
+      
+    </TD>
+</TR>
+	
+	
+<TR>
+<TD style="vertical-align: top;"><CODE><B><A HREF="#AnalyzeTestLog">AnalyzeTestLog</A></B></CODE></TD><TD>
+      
+		Analyze of ping and pong test logs for compliance of expected results.
+      
+    </TD>
+</TR>
+
+	
+<TR>
+<TD style="vertical-align: top;"><CODE><B><A HREF="#MoveSysLogToHost">MoveSysLogToHost</A></B></CODE></TD><TD>
+			
+				Moving ospl process's logs (ospl-info and ospl-error) to destination host.
+			
+		</TD>
+</TR>
+
+  
+</TABLE><BR><BR>
+<TABLE BORDER="1" CELLPADDING="3" CELLSPACING="0" WIDTH="100%">
+<TR BGCOLOR="#CCCCFF">
+<TD COLSPAN="2"><FONT SIZE="+2"><B>STAX Function Details</B></FONT></TD>
+</TR>
+</TABLE>  
+
+  <A NAME="CreateTestLogDirectory"></A><h2>
+<u>CreateTestLogDirectory</u>
+</h2><p>
+      
+		Creation of loging directory for tests by time
+      
+    </p><p>
+<table BORDER="1" CELLPADDING="3" CELLSPACING="0" WIDTH="100%">
+<thead>
+<tr>
+<th COLSPAN="6"><b>This function takes a list of arguments</b></th>
+</tr>
+<tr>
+<th><b>Name</b></th><th><b>Description</b></th><th><b>Required</b></th><th><b>Private</b></th><th><b>Default</b></th><th><b>Properties</b></th>
+</tr>
+</thead>
+<tbody>
+      
+<tr>
+<td style="vertical-align: top;">the_host</td><td>
+<p>
+        The host for creation loging directory
+      </p>
+</td><td>Yes</td><td>No</td><td>N/A</td><td></td>
+</tr>
+	  
+<tr>
+<td style="vertical-align: top;">test_name</td><td>
+<p>
+        The test name 
+      </p>
+</td><td>Yes</td><td>No</td><td>N/A</td><td></td>
+</tr>
+    
+</tbody>
+</table>
+</p><p>
+      
+		Creation of loging directory for tests by time
+      
+    </p><hr WIDTH="100%">
+	
+	<A NAME="AnalyzeTestLog"></A><h2>
+<u>AnalyzeTestLog</u>
+</h2><p>
+      
+		Analyze of ping and pong test logs for compliance of expected results.
+      
+    </p><p>
+<table BORDER="1" CELLPADDING="3" CELLSPACING="0" WIDTH="100%">
+<thead>
+<tr>
+<th COLSPAN="6"><b>This function takes a list of arguments</b></th>
+</tr>
+<tr>
+<th><b>Name</b></th><th><b>Description</b></th><th><b>Required</b></th><th><b>Private</b></th><th><b>Default</b></th><th><b>Properties</b></th>
+</tr>
+</thead>
+<tbody>
+		 
+<tr>
+<td style="vertical-align: top;">full_path_to_log_dir</td><td>
+<p>
+			The full path to loging directory
+		</p>
+</td><td>Yes</td><td>No</td><td>N/A</td><td></td>
+</tr>
+		
+<tr>
+<td style="vertical-align: top;">array_of_test_results</td><td>
+<p>
+			The array of test result entities
+		</p>
+</td><td>Yes</td><td>No</td><td>N/A</td><td></td>
+</tr>
+		
+<tr>
+<td style="vertical-align: top;">quantity_of_blocks</td><td>
+<p>
+			The quantity of blocks for ping test 
+		</p>
+</td><td>Yes</td><td>No</td><td>N/A</td><td></td>
+</tr>
+    
+</tbody>
+</table>
+</p><p>
+      
+		Create output analyze.log file with quantity of passed or failed tests.
+      
+    </p><hr WIDTH="100%">
+
+	<A NAME="MoveSysLogToHost"></A><h2>
+<u>MoveSysLogToHost</u>
+</h2><p>
+			
+				Moving ospl process's logs (ospl-info and ospl-error) to destination host.
+			
+		</p><p>
+<table BORDER="1" CELLPADDING="3" CELLSPACING="0" WIDTH="100%">
+<thead>
+<tr>
+<th COLSPAN="6"><b>This function takes a list of arguments</b></th>
+</tr>
+<tr>
+<th><b>Name</b></th><th><b>Description</b></th><th><b>Required</b></th><th><b>Private</b></th><th><b>Default</b></th><th><b>Properties</b></th>
+</tr>
+</thead>
+<tbody>
+			
+<tr>
+<td style="vertical-align: top;">source_host</td><td>
+<p>
+				The host instance with the process.
+			</p>
+</td><td>Yes</td><td>No</td><td>N/A</td><td></td>
+</tr>
+			
+<tr>
+<td style="vertical-align: top;">dest_host</td><td>
+<p>
+				The host instance where log will be copied.
+			</p>
+</td><td>Yes</td><td>No</td><td>N/A</td><td></td>
+</tr>
+			
+<tr>
+<td style="vertical-align: top;">dest_folder</td><td>
+<p>
+				Where process log will be stored on the local host.
+			</p>
+</td><td>Yes</td><td>No</td><td>N/A</td><td></td>
+</tr>
+		
+</tbody>
+</table>
+</p><p>
+			
+				Moving ospl process's logs (ospl-info and ospl-error) to destination host and adding source host name.
+		
+		</p><hr WIDTH="100%">
+
+  </body></html>

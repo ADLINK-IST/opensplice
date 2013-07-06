@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -272,6 +272,8 @@ countElements (
 {
     c_ulong *count = (c_ulong *) arg;
 
+    OS_UNUSED_ARG(obj);
+
     (*count)++;
 
     return TRUE;
@@ -327,6 +329,8 @@ sd_listFindObject (
 {
     compareObjectArg argument;
 
+    assert(list);
+
     argument.compare = NULL;
     argument.arg     = object;
     argument.result  = NULL;
@@ -343,6 +347,9 @@ sd_listFind (
     void *arg)
 {
     compareObjectArg argument;
+
+    assert(list);
+    assert(compare);
 
     argument.compare = compare;
     argument.arg     = arg;
@@ -362,6 +369,8 @@ sd_listAt (
     c_ulong      i      = 0;
     sd_listNode  node;
     
+    assert(list);
+
     node = sd_listNode(list)->next;
     while ( node->object && (i < index) ) {
         node = node->next;
@@ -369,4 +378,110 @@ sd_listAt (
     }
 
     return node->object;
+}
+
+c_ulong
+sd_listIndexOf (
+    sd_list list,
+    void *obj)
+{
+    c_long      i      = 0;
+    sd_listNode  node;
+
+    assert(list);
+
+    node = sd_listNode(list)->next; /* first node has no object, so is not part of the list */
+    while ( node->object && node->object != obj ) {
+        node = node->next;
+        i++;
+    }
+
+    return i;
+}
+/*
+ * Inserts 'object' at index 'index', which causes all elements from index 'index' and higher
+ * to move one higher in the list.
+ */
+void
+sd_listInsertAt(
+    sd_list list,
+    void *object,
+    c_ulong index)
+{
+    c_ulong i = 0;
+    sd_listNode node;
+    sd_listNode after;
+
+    assert(list);
+    assert(index < sd_listSize(list));
+
+    after = ((sd_listNode)list)->next;  /* the first node is not part of the list */
+
+    for(i = 0; i < index; i++){
+        after = after->next;
+    }
+
+    node = (sd_listNode)os_malloc(C_SIZEOF(sd_listNode));
+    if ( node ) {
+        node->object = object;
+        node->prev = after->prev;
+        node->next = after;
+        after->prev->next = node;
+        after->prev = node;
+    }
+
+}
+
+/*
+ * This method inserts 'object' before 'beforeObject'.
+ *
+ * Precondition: 'beforeObject' is in the list.
+ * Postcondition: 'object' is in the list, before 'beforeObject'.
+ *
+ * example:
+ * L = {1, 4, 7, 3}
+ *
+ * insert(L, 100, 7)
+ *
+ * L = {1, 4, 100, 7, 3}
+ *
+ */
+void
+sd_listInsertBefore(
+    sd_list list,
+    void *object,
+    void *beforeObject)
+{
+    sd_listNode node, insert;
+
+    assert(list);
+    assert(object);
+    assert(beforeObject);
+
+    node = (sd_listNode)list;
+
+    if(node->object == beforeObject){
+        sd_listInsert(list, object);
+    } else {
+        node = node->next;
+        while(node->object != beforeObject && node != (sd_listNode)list){
+            node = node->next;
+        }
+
+        /* assert that object 'beforeObject' is in the list */
+        assert(node != (sd_listNode)list);
+
+        if(node == (sd_listNode)list){
+            sd_listInsert(list, object);
+        } else {
+            insert = (sd_listNode)os_malloc(C_SIZEOF(sd_listNode));
+            if ( insert ) {
+                insert->object = object;
+                insert->prev = node->prev;
+                insert->next = node;
+                node->prev->next = insert;
+                node->prev = insert;
+            }
+        }
+    }
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,7 +13,7 @@
  * @file
  * This module generates CORBA C CopyIn functions. It handles input types
  * that match the IDL/C mapping as specified by the OMG and writes the
- * data into data types as applicable for the SPLICE-DDS database.
+ * data into data types as applicable for the OpenSpliceDDS database.
  */
 
 #include "idl_program.h"
@@ -29,6 +29,8 @@
 
 #include "c_typebase.h"
 #include "os_stdlib.h"
+#include "os_heap.h"
+
         /** Base variable for array dimension */
 #define BOUNDSCHECK ("OSPL_BOUNDS_CHECK")
 #define DEBUG_INFO idl_fileOutPrintf(idl_fileCur(), "/* Code generated in file: %s at line: %d */\n", __FILE__, __LINE__);
@@ -39,6 +41,7 @@
 static c_long loopIndent;
         /** Index for array loop variables, incremented for each array dimension */
 static c_long varIndex;
+
 
 static void
 idl_arrayDimensions(
@@ -57,7 +60,7 @@ idl_arrayElements(
     os_boolean catsRequested);
 
 static void idl_seqElements(idl_scope scope, const char *name, idl_typeSeq typeSeq, c_long indent);
-static void idl_seqLoopCopy(idl_typeSpec typeSpec, const char *from, const char *to, c_long loop_index, c_long indent);
+static void idl_seqLoopCopy(idl_typeSpec typeSpec, const char *from, const char *to, c_long loop_index, c_long indent, idl_scope scope, const c_char* name);
 
 /** @brief Generate a string representaion the literal value of a label
  * in metadata terms.
@@ -117,7 +120,7 @@ idl_valueFromLabelVal(
 /** @brief callback function called on opening the IDL input file.
  *
  * Generate code to include standard include files as well as
- * SPLICE-DDS specific include files:
+ * OpenSpliceDDS specific include files:
  * - v_kernel.h
  * - v_topic.h
  * - string.h
@@ -136,6 +139,7 @@ idl_fileOpen(
     fileOut(file,"#include <v_kernel.h>\n");
     fileOut(file,"#include <v_topic.h>\n");
     fileOut(file,"#include <string.h>\n");
+    fileOut(file,"#include <os_report.h>\n");
     fileOut(file,"\n");
 
     return idl_explore;
@@ -238,6 +242,7 @@ idl_structureClose(
     void *userData)
 {
     DEBUG_INFO
+    fileOut(file,"    (void) base;\n");
     fileOut(file,"    return result;\n");
     fileOut(file,"}\n");
     fileOut(file,"\n");
@@ -311,6 +316,9 @@ idl_basicMemberType(
                 fileOut(file,"            %s%s = c_stringNew(base, %s%s);\n", to_id, cid, from_id, cid);
             }
             fileOut(file,"        } else {\n");
+            fileOut(file,"            ");
+            idl_boundsCheckFail(MEMBER, scope, (idl_typeSpec)typeBasic, name);
+
             fileOut(file,"            result = FALSE;\n");
             fileOut(file,"        }\n");
         } else {
@@ -318,6 +326,8 @@ idl_basicMemberType(
             fileOut(file,"        %s%s = c_stringNew(base, %s%s);\n", to_id, cid, from_id, cid);
         }
         fileOut(file,"    } else {\n");
+        fileOut(file,"        ");
+        idl_boundsCheckFailNull(MEMBER, scope, (idl_typeSpec)typeBasic, name);
         fileOut(file,"        result = FALSE;\n");
         fileOut(file,"    }\n");
         fileOut(file,"#else\n");
@@ -398,6 +408,8 @@ idl_basicCaseType(
             fileOut(file,"        if(((unsigned int)strlen(%s%s)) <= %d){\n", from_id, cid, maxlen);
             fileOut(file,"            %s%s = c_stringNew(base, %s%s);\n", to_id, cid, from_id, cid);
             fileOut(file,"        } else {\n");
+            fileOut(file,"            ");
+            idl_boundsCheckFail(CASE, scope, (idl_typeSpec)typeBasic, name);
             fileOut(file,"            result = FALSE;\n");
             fileOut(file,"        }\n");
         } else {
@@ -405,6 +417,8 @@ idl_basicCaseType(
             fileOut(file,"        %s%s = c_stringNew(base, %s%s);\n", to_id, cid, from_id, cid);
         }
         fileOut(file,"    } else {\n");
+        fileOut(file,"        ");
+        idl_boundsCheckFailNull(CASE, scope, (idl_typeSpec)typeBasic, name);
         fileOut(file,"        result = FALSE;\n");
         fileOut(file,"    }\n");
         fileOut(file,"#else\n");
@@ -535,6 +549,8 @@ idl_structureMemberOpenClose(
         fileOut(file,"    if((((c_long)from->%s) >= 0) && (((c_long)from->%s) < %d) ){\n", cid, cid, maxlen);
         fileOut(file,"        to->%s = (%s)from->%s;\n", cid, scopedName, cid);
         fileOut(file,"    } else {\n");
+        fileOut(file,"        ");
+        idl_boundsCheckFail(MEMBER, scope, (idl_typeSpec)typeSpec, name);
         fileOut(file,"        result = FALSE;\n");
         fileOut(file,"    }\n");
         fileOut(file,"#else\n");
@@ -645,12 +661,14 @@ idl_structureMemberOpenClose(
             idl_printIndent(3);
             fileOut(file,"if (length0 > %d) {\n", maxlen);
             idl_printIndent(3);
+            idl_boundsCheckFail(MEMBER, scope, (idl_typeSpec)typeSpec, name);
+            idl_printIndent(3);
             fileOut(file,"    result = FALSE;\n");
             idl_printIndent(3);
             fileOut(file,"} else {\n");
             idl_printIndent(3);
             fileOut(file,"    dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
-                idl_seqLoopCopy(nextType, "*src", "dst0", 1, 4);
+                idl_seqLoopCopy(nextType, "*src", "dst0", 1, 4, scope, name);
             idl_printIndent(3);
             fileOut(file,"    to->%s = (c_sequence)dst0;\n", cid);
             idl_printIndent(3);
@@ -659,14 +677,14 @@ idl_structureMemberOpenClose(
             DEBUG_INFO
             idl_printIndent(3);
             fileOut(file,"dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
-                idl_seqLoopCopy(nextType, "*src", "dst0", 1, 3);
+                idl_seqLoopCopy(nextType, "*src", "dst0", 1, 3, scope, name);
             idl_printIndent(3);
             fileOut(file,"to->%s = (c_sequence)dst0;\n", cid);
         }
         fileOut(file,"#else\n");
         idl_printIndent(1);
         fileOut(file,"        dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
-        idl_seqLoopCopy(nextType, "*src", "dst0", 1, 2);
+        idl_seqLoopCopy(nextType, "*src", "dst0", 1, 2, scope, name);
         fileOut(file,"        to->%s = (c_sequence)dst0;\n", cid);
         fileOut(file,"#endif\n");
         idl_printIndent(1);
@@ -984,74 +1002,86 @@ idl_arrayLoopCopyBody(
                     DEBUG_INFO
                     fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
                     idl_printIndent(loopIndent + indent);
-                    fileOut(file,   "    if(result && %s", from);
+                    fileOut(file,   "if(result){\n");
+                    indent++;
+                    idl_printIndent(loopIndent + indent);
+                    fileOut(file,   "if(%s", from);
                     idl_arrayLoopCopyIndex(typeArray);
                     fileOut(file,   "){\n");
                     idl_printIndent(loopIndent + indent);
                     if(maxlen != 0){
                         DEBUG_INFO
                         idl_printIndent(loopIndent + indent);
-                        fileOut(file,"        if(((unsigned int)strlen(%s", from);
+                        fileOut(file,"    if(((unsigned int)strlen(%s", from);
                         idl_arrayLoopCopyIndex(typeArray);
                         fileOut(file,")) <= %d){\n", maxlen);
                         idl_printIndent(loopIndent + indent);
                         if(stacRequested)
                         {
-                            fileOut(file,"            strncpy((*%s", to);
+                            fileOut(file,"        strncpy((*%s", to);
                             idl_arrayLoopCopyIndex(typeArray);
                             fileOut(file,"), (%s", from);
                             idl_arrayLoopCopyIndex(typeArray);
                             fileOut(file,"), %d);\n", (maxlen+1));
                         } else
                         {
-                            fileOut(file,"            *%s", to);
+                            fileOut(file,"        *%s", to);
                             idl_arrayLoopCopyIndex(typeArray);
                             fileOut(file," = c_stringNew(base, %s", from);
                             idl_arrayLoopCopyIndex(typeArray);
                             fileOut(file,");\n");
                         }
                         idl_printIndent(loopIndent + indent);
-                        fileOut(file,"        } else {\n");
+                        fileOut(file,"    } else {\n");
                         idl_printIndent(loopIndent + indent);
-                        fileOut(file,"            result = FALSE;\n");
+                        fileOut(file,"        ");
+                        idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
                         idl_printIndent(loopIndent + indent);
-                        fileOut(file,"        }\n");
+                        fileOut(file,"        result = FALSE;\n");
+                        idl_printIndent(loopIndent + indent);
+                        fileOut(file,"    }\n");
                     } else {
                         DEBUG_INFO
                         idl_printIndent(loopIndent + indent);
-                        fileOut(file,"        *%s", to);
+                        fileOut(file,"    *%s", to);
                         idl_arrayLoopCopyIndex(typeArray);
                         fileOut(file," = c_stringNew(base, %s", from);
                         idl_arrayLoopCopyIndex(typeArray);
                         fileOut(file,");\n");
                     }
                     idl_printIndent(loopIndent + indent);
-                    fileOut(file,"    } else {\n");
+                    fileOut(file,"} else {\n");
                     idl_printIndent(loopIndent + indent);
-                    fileOut(file,"        result = FALSE;\n");
+                    fileOut(file,"    ");
+                    idl_boundsCheckFailNull(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
                     idl_printIndent(loopIndent + indent);
-                    fileOut(file,"    }\n");
+                    fileOut(file,"    result = FALSE;\n");
+                    idl_printIndent(loopIndent + indent);
+                    fileOut(file,"}\n");
+                    indent--;
+                    idl_printIndent(loopIndent + indent);
+                    fileOut(file,"}\n");
                     fileOut(file,"#else\n");
                     idl_printIndent(loopIndent + indent);
-                    fileOut(file,"    if(result){\n");
+                    fileOut(file,"if(result){\n");
                     idl_printIndent(loopIndent + indent);
                     if(stacRequested)
                     {
-                        fileOut(file,"        strncpy((*%s", to);
+                        fileOut(file,"    strncpy((*%s", to);
                         idl_arrayLoopCopyIndex(typeArray);
                         fileOut(file,"), (%s", from);
                         idl_arrayLoopCopyIndex(typeArray);
                         fileOut(file,"), %d);\n", (maxlen+1));
                     } else
                     {
-                        fileOut(file,"        *%s", to);
+                        fileOut(file,"    *%s", to);
                         idl_arrayLoopCopyIndex(typeArray);
                         fileOut(file," = c_stringNew(base, %s", from);
                         idl_arrayLoopCopyIndex(typeArray);
                         fileOut(file,");\n");
                     }
                     idl_printIndent(loopIndent + indent);
-                    fileOut(file,"    }\n");
+                    fileOut(file,"}\n");
                     fileOut(file,"#endif\n");
                 } else {
                     DEBUG_INFO
@@ -1074,6 +1104,9 @@ idl_arrayLoopCopyBody(
                 fileOut(file,"        %s = %s;\n", to, from);
                 idl_printIndent(loopIndent + indent);
                 fileOut(file,"    } else {\n");
+                idl_printIndent(loopIndent + indent);
+                fileOut(file,"        ");
+                idl_boundsCheckFail(MEMBER, scope, (idl_typeSpec)typeSpec, name);
                 idl_printIndent(loopIndent + indent);
                 fileOut(file,"        result = FALSE;\n");
                 idl_printIndent(loopIndent + indent);
@@ -1129,6 +1162,8 @@ idl_arrayLoopCopyBody(
                 idl_printIndent (loopIndent + indent + 1);
                 fileOut(file,"} else {\n");
                 idl_printIndent (loopIndent + indent + 1);
+                idl_boundsCheckFail(MEMBER, scope, (idl_typeSpec)typeSpec, name);
+                idl_printIndent (loopIndent + indent + 1);
                 fileOut(file,"    result = FALSE;\n");
                 idl_printIndent (loopIndent + indent + 1);
                 fileOut(file,"}\n");
@@ -1143,8 +1178,10 @@ idl_arrayLoopCopyBody(
             }
             idl_printIndent (loopIndent + indent);
             fileOut(file,"} else {\n");
-            idl_printIndent (loopIndent + indent);
-            fileOut(file,"    result = FALSE;\n");
+            idl_printIndent (loopIndent + indent + 1);
+            idl_boundsCheckFailNull(MEMBER, scope, (idl_typeSpec)typeSpec, name);
+            idl_printIndent (loopIndent + indent + 1);
+            fileOut(file,"result = FALSE;\n");
             idl_printIndent (loopIndent + indent);
             fileOut(file,"}\n");
             fileOut(file,"#else\n");
@@ -1230,12 +1267,15 @@ idl_arrayLoopCopyBody(
             DEBUG_INFO
             fileOut(file,"        if(length0 > %d){\n", maxlen);
             idl_printIndent(total_indent);
+            fileOut(file,"            ");
+            idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
+            idl_printIndent(total_indent);
             fileOut(file,"            result = FALSE;\n");
             idl_printIndent(total_indent);
             fileOut(file,"        } else {\n");
             idl_printIndent(total_indent);
             fileOut(file,"            dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
-                idl_seqLoopCopy(nextType, "*src", "dst0", 1, total_indent+3);
+                idl_seqLoopCopy(nextType, "*src", "dst0", 1, total_indent+3, scope, name);
             idl_printIndent(total_indent);
             fileOut(file,"            %s = (c_sequence)dst0;\n", destin);
             fileOut(file,"        }\n");
@@ -1243,12 +1283,15 @@ idl_arrayLoopCopyBody(
             DEBUG_INFO
             idl_printIndent(total_indent);
             fileOut(file,"        dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
-                idl_seqLoopCopy(nextType, "*src", "dst0", 1, total_indent+2);
+                idl_seqLoopCopy(nextType, "*src", "dst0", 1, total_indent+2, scope, name);
             idl_printIndent(total_indent);
             fileOut(file,"        %s = (c_sequence)dst0;\n", destin);
         }
         idl_printIndent(total_indent);
         fileOut(file,"    } else {\n");
+        idl_printIndent(total_indent);
+        fileOut(file,"        ");
+        idl_boundsCheckFailNull(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
         idl_printIndent(total_indent);
         fileOut(file,"        result = FALSE;\n");
         idl_printIndent(total_indent);
@@ -1258,7 +1301,7 @@ idl_arrayLoopCopyBody(
         fileOut(file,"        length0 = (c_long)(*src0)._length;\n");
         idl_printIndent(total_indent);
         fileOut(file,"        dst0 = (%s *)c_newSequence(c_collectionType(type0), length0);\n", scopedName);
-            idl_seqLoopCopy(nextType, "*src", "dst0", 1, total_indent+2);
+            idl_seqLoopCopy(nextType, "*src", "dst0", 1, total_indent+2, scope, name);
         idl_printIndent(total_indent);
         fileOut(file,"        %s = (c_sequence)dst0;\n", destin);
         fileOut(file,"#endif\n");
@@ -1380,7 +1423,7 @@ idl_arrayLoopCopy(
  *
  * @todo When the struct or union does not contain a reference, a plain
  * memory copy could be used because the memory map is the same in CORBA
- * and SPLICE-DDS
+ * and OpenSpliceDDS
  *
  * @todo Add bounds checking for enums. See issue dss#175. Grep this issue id in source.
  *
@@ -1588,7 +1631,7 @@ idl_seqIndex(
  *
  * Types that do not contain any reference types are copied via
  * a plain memory copy because the sequence elements are located in consequtive
- * memory with the same memory map for C CORBA as well as SPLICE-DDS.
+ * memory with the same memory map for C CORBA as well as OpenSpliceDDS.
  * These types are identified by idl_isContiguous().
  *
  * @todo Add bounds checking for enums. See issue dss#175. Grep this issue id in source.
@@ -1606,7 +1649,9 @@ idl_seqLoopCopy(
     const char *from,
     const char *to,
     c_long loop_index,
-    c_long indent)
+    c_long indent,
+    idl_scope scope,
+    const c_char* name)
 {
     c_char destin[32];
     idl_typeSpec nextType;
@@ -1639,6 +1684,8 @@ idl_seqLoopCopy(
 
     DEBUG_INFO
     idl_printIndent(indent);
+    fileOut(file,"if((%s%d)._buffer)\n",from, loop_index - 1);
+    idl_printIndent(indent);
     fileOut(file,"{\n");
     idl_printIndent(indent);
     fileOut(file,"    unsigned int i%d;\n", loop_index-1);
@@ -1660,6 +1707,9 @@ idl_seqLoopCopy(
             to, loop_index-1, idl_scopedSplTypeName(typeSpec), from, loop_index-1, loop_index-1);
         idl_printIndent (indent);
         fileOut(file,"    } else {\n");
+        idl_printIndent (indent);
+        fileOut(file,"        ");
+        idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
         idl_printIndent (indent);
         fileOut(file,"        result = FALSE;\n");
         idl_printIndent (indent);
@@ -1691,6 +1741,9 @@ idl_seqLoopCopy(
                 idl_printIndent (indent + 1);
                 fileOut(file,"        } else {\n");
                 idl_printIndent (indent + 1);
+                fileOut(file,"            ");
+                idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
+                idl_printIndent (indent + 1);
                 fileOut(file,"            result = FALSE;\n");
                 idl_printIndent (indent + 1);
                 fileOut(file,"        }\n");
@@ -1703,6 +1756,9 @@ idl_seqLoopCopy(
             }
             idl_printIndent (indent);
             fileOut(file,"        } else {\n");
+            idl_printIndent (indent);
+            fileOut(file,"            ");
+            idl_boundsCheckFailNull(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
             idl_printIndent (indent);
             fileOut(file,"            result = FALSE;\n");
             idl_printIndent (indent);
@@ -1770,6 +1826,9 @@ idl_seqLoopCopy(
                     idl_printIndent (indent + 1);
                     fileOut(file,"        } else {\n");
                     idl_printIndent (indent + 1);
+                    fileOut(file,"            ");
+                    idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
+                    idl_printIndent (indent + 1);
                     fileOut(file,"            result = FALSE;\n");
                     idl_printIndent (indent + 1);
                     fileOut(file,"        }\n");
@@ -1782,6 +1841,9 @@ idl_seqLoopCopy(
                 }
                 idl_printIndent (indent);
                 fileOut(file,"        } else {\n");
+                idl_printIndent (indent);
+                fileOut(file,"            ");
+                idl_boundsCheckFailNull(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
                 idl_printIndent (indent);
                 fileOut(file,"            result = FALSE;\n");
                 idl_printIndent (indent);
@@ -1814,6 +1876,9 @@ idl_seqLoopCopy(
                 to, loop_index-1, idl_scopedSplTypeName(typeSpec), from, loop_index-1, loop_index-1);
             idl_printIndent (indent);
             fileOut(file,"    } else {\n");
+            idl_printIndent (indent);
+            fileOut(file,"        ");
+            idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
             idl_printIndent (indent);
             fileOut(file,"        result = FALSE;\n");
             idl_printIndent (indent);
@@ -1885,6 +1950,9 @@ idl_seqLoopCopy(
             fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
             idl_printIndent(indent);
             fileOut(file,"        if(length%d > %d){\n", loop_index, maxlen);
+            idl_printIndent (indent);
+            fileOut(file,"            ");
+            idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
             idl_printIndent(indent);
             fileOut(file,"            result = FALSE;\n");
             idl_printIndent(indent);
@@ -1893,7 +1961,7 @@ idl_seqLoopCopy(
             fileOut(file,"            dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n",
                 loop_index, idl_scopedSplTypeIdent(nextType), loop_index, loop_index);
             snprintf(destin, (size_t)sizeof(destin), "dst%d", loop_index);
-            idl_seqLoopCopy(nextType, from, destin, loop_index+1, indent+3);
+            idl_seqLoopCopy(nextType, from, destin, loop_index+1, indent+3, scope, name);
             idl_printIndent(indent);
             fileOut(file,"            dst%d[i%d] = (c_sequence)dst%d;\n",
                     loop_index-1, loop_index-1, loop_index);
@@ -1904,7 +1972,7 @@ idl_seqLoopCopy(
             fileOut(file,"        dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n",
                 loop_index, idl_scopedSplTypeIdent(nextType), loop_index, loop_index);
                 snprintf(destin, (size_t)sizeof(destin), "dst%d", loop_index);
-                idl_seqLoopCopy(nextType, from, destin, loop_index+1, indent+2);
+                idl_seqLoopCopy(nextType, from, destin, loop_index+1, indent+2, scope, name);
             idl_printIndent(indent);
             fileOut(file,"        dst%d[i%d] = (c_sequence)dst%d;\n",
                     loop_index-1, loop_index-1, loop_index);
@@ -1915,7 +1983,7 @@ idl_seqLoopCopy(
             fileOut(file,"        dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n",
                     loop_index, idl_scopedSplTypeIdent(nextType), loop_index, loop_index);
                 snprintf(destin, (size_t)sizeof(destin), "dst%d", loop_index);
-                idl_seqLoopCopy(nextType, from, destin, loop_index+1, indent+2);
+                idl_seqLoopCopy(nextType, from, destin, loop_index+1, indent+2, scope, name);
             idl_printIndent(indent);
             fileOut(file,"        dst%d[i%d] = (c_sequence)dst%d;\n",
                     loop_index-1, loop_index-1, loop_index);
@@ -1927,6 +1995,16 @@ idl_seqLoopCopy(
     }
     idl_printIndent(indent);
     fileOut(file,"    }\n");
+    idl_printIndent(indent);
+    fileOut(file,"} else if(length%d) {\n", loop_index-1);
+    indent++;
+    idl_printIndent(indent);
+    fileOut(file,"/* Report an error! */\n");
+    idl_printIndent(indent);
+    idl_boundsCheckFail(ELEMENT, scope, (idl_typeSpec)typeSpec, name);
+    idl_printIndent(indent);
+    fileOut(file,"result = FALSE;\n");
+    indent--;
     idl_printIndent(indent);
     fileOut(file,"}\n");
 }
@@ -1997,23 +2075,25 @@ idl_seqElements(
     if (maxlen != 0) {
         DEBUG_INFO
         fileOut(file,"    if(length%d > %d){\n", indent, maxlen);
+        fileOut(file,"        ");
+        idl_boundsCheckFail(MEMBER, scope, (idl_typeSpec)typeSeq, name);
         fileOut(file,"        result = FALSE;\n");
         fileOut(file,"    } else {\n");
 
         fileOut(file,"        dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n", indent, scopedName, indent, indent);
-        idl_seqLoopCopy(nextType, "*from", destin, 1, indent+2);
+        idl_seqLoopCopy(nextType, "*from", destin, 1, indent+2, scope, name);
         fileOut(file,"        *to = (_%s)dst%d;\n", idl_scopeStack(scope, "_", name), indent);
 
         fileOut(file,"    }\n");
     } else {
         DEBUG_INFO
         fileOut(file,"    dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n", indent, scopedName, indent, indent);
-        idl_seqLoopCopy(nextType, "*from", destin, 1, indent+1);
+        idl_seqLoopCopy(nextType, "*from", destin, 1, indent+1, scope, name);
         fileOut(file,"    *to = (_%s)dst%d;\n", idl_scopeStack(scope, "_", name), indent);
     }
     fileOut(file,"#else\n");
     fileOut(file,"    dst%d = (%s *)c_newSequence(c_collectionType(type%d),length%d);\n", indent, scopedName, indent, indent);
-        idl_seqLoopCopy(nextType, "*from", destin, 1, indent+1);
+        idl_seqLoopCopy(nextType, "*from", destin, 1, indent+1, scope, name);
     fileOut(file,"    *to = (_%s)dst%d;\n", idl_scopeStack(scope, "_", name), indent);
     fileOut(file,"#endif\n");
 }
@@ -2088,6 +2168,7 @@ idl_typedefOpenClose(
             idl_scopeStack(scope, "_", name),
             idl_scopeStack(scope, "_", name));
         idl_arrayElements(scope, name, idl_typeArray(idl_typeDefActual(defSpec)), "*from", "to", 0, OS_FALSE, OS_FALSE);
+        fileOut(file,"    (void) base;\n");
         fileOut(file,"    return result;\n");
         fileOut(file,"}\n");
         fileOut(file,"\n");
@@ -2106,6 +2187,7 @@ idl_typedefOpenClose(
                 idl_scopeStack(scope, "_", name),
                 idl_scopeStack(scope, "_", name));
         idl_seqElements(scope, name, idl_typeSeq(idl_typeDefActual(defSpec)), 0);
+        fileOut(file,"    (void) base;\n");
         fileOut(file,"    return result;\n");
         fileOut(file,"}\n");
         fileOut(file,"\n");
@@ -2188,6 +2270,7 @@ idl_unionOpen(
         idl_scopeStack(scope, "_", name),
         idl_scopeStack(scope, "_", name));
     /* QAC EXPECT 3416; No side effect here */
+    fileOut(file,"    (void) base;\n");
     if (idl_typeSpecType(idl_typeUnionSwitchKind(unionSpec)) == idl_tbasic) {
         /* String is not allowed here */
         DEBUG_INFO
@@ -2203,6 +2286,8 @@ idl_unionOpen(
         fileOut(file,"        to->_d = (%s)from->_d;\n",
             idl_scopedSplTypeName(idl_typeUnionSwitchKind(unionSpec)));
         fileOut(file,"    } else {\n");
+        fileOut(file,"        ");
+        idl_boundsCheckFail(DISCRIMINATOR, scope, (idl_typeSpec)unionSpec, name);
         fileOut(file,"        result = FALSE;\n");
         fileOut(file,"    }\n");
         fileOut(file,"#else\n");
@@ -2225,6 +2310,8 @@ idl_unionOpen(
         fileOut(file,"        to->_d = (%s)from->_d;\n",
                 idl_scopedSplTypeName(idl_typeDefActual(idl_typeDef(idl_typeUnionSwitchKind(unionSpec)))));
         fileOut(file,"    } else {\n");
+        fileOut(file,"        ");
+        idl_boundsCheckFail(DISCRIMINATOR, scope, (idl_typeSpec)unionSpec, name);
         fileOut(file,"        result = FALSE;\n");
         fileOut(file,"    }\n");
         fileOut(file,"#else\n");
@@ -2333,6 +2420,8 @@ idl_unionCaseOpenClose(
                 fileOut(file,"            if(((unsigned int)(strlen(from->_u.%s))) <= %d){\n", cid, maxlen);
                 fileOut(file,"                to->_u.%s = c_stringNew(base, from->_u.%s);\n", cid, cid);
                 fileOut(file,"            } else {\n");
+                fileOut(file,"                ");
+                idl_boundsCheckFail(CASE, scope, (idl_typeSpec)typeSpec, name);
                 fileOut(file,"                result = FALSE;\n");
                 fileOut(file,"            }\n");
             } else {
@@ -2340,6 +2429,8 @@ idl_unionCaseOpenClose(
                 fileOut(file,"            to->_u.%s = c_stringNew(base, from->_u.%s);\n", cid, cid);
             }
             fileOut(file,"        } else {\n");
+            fileOut(file,"            ");
+            idl_boundsCheckFailNull(CASE, scope, (idl_typeSpec)typeSpec, name);
             fileOut(file,"            result = FALSE;\n");
             fileOut(file,"        }\n");
             fileOut(file,"#else\n");
@@ -2387,6 +2478,8 @@ idl_unionCaseOpenClose(
         fileOut(file,"        if((((c_long)(from->_u.%s)) >= 0) && (((c_long)(from->_u.%s)) < %d)){\n", cid, cid, maxlen);
         fileOut(file,"            to->_u.%s = (%s)from->_u.%s;\n", cid, idl_scopedSplTypeName(typeSpec), cid);
         fileOut(file,"        } else {\n");
+        fileOut(file,"            ");
+        idl_boundsCheckFail(CASE, scope, (idl_typeSpec)typeSpec, name);
         fileOut(file,"            result = FALSE;\n");
         fileOut(file,"        }\n");
         fileOut(file,"#else\n");
@@ -2473,21 +2566,23 @@ idl_unionCaseOpenClose(
             DEBUG_INFO
             fileOut(file,"#ifdef %s\n", BOUNDSCHECK);
             fileOut(file,"            if(length0 > %d){\n", maxlen);
+            fileOut(file,"                ");
+            idl_boundsCheckFail(CASE, scope, (idl_typeSpec)typeSpec, name);
             fileOut(file,"                result = FALSE;\n");
             fileOut(file,"            } else {\n");
             fileOut(file,"                dst0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
-                idl_seqLoopCopy(nextType, "*src", "dst0", 1, 4);
+                idl_seqLoopCopy(nextType, "*src", "dst0", 1, 4, scope, name);
             fileOut(file,"                to->_u.%s = (c_sequence)dst0;\n", cid);
             fileOut(file,"            }\n");
             fileOut(file,"#else\n");
             fileOut(file,"                dst0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
-                idl_seqLoopCopy(nextType, "*src", "dst0", 1, 3);
+                idl_seqLoopCopy(nextType, "*src", "dst0", 1, 3, scope, name);
             fileOut(file,"            to->_u.%s = (c_sequence)dst0;\n", cid);
             fileOut(file,"#endif\n");
         } else {
             DEBUG_INFO
             fileOut(file,"            dst0 = (%s *)c_newSequence(c_collectionType(type0),length0);\n", scopedName);
-                idl_seqLoopCopy(nextType, "*src", "dst0", 1, 3);
+                idl_seqLoopCopy(nextType, "*src", "dst0", 1, 3, scope, name);
             fileOut(file,"            to->_u.%s = (c_sequence)dst0;\n", cid);
         }
         fileOut(file,"        } else {\n");

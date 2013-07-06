@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -42,28 +42,31 @@ public class StatisticsTableController implements MouseListener, ActionListener 
         this.view = view;
     }
     
+    @Override
     public void actionPerformed(ActionEvent e) {
         String command = e.getActionCommand();
         
         if("reset".equals(command)){
             
             Runnable worker = new Runnable(){
+                @Override
                 public void run(){
                     boolean result = ((StatisticsTableModel)view.getModel()).reset(view.getSelectedRow(), true);
                     
-                    if(result == false){
-                        view.notifyListener("entity_freed");
+                    if (result == false) {
+                        view.notifyListener("reset_failed");
                     }
                 }
             };
             SwingUtilities.invokeLater(worker);
         } else if("reset_all".equals(command)){
             Runnable worker = new Runnable(){
+                @Override
                 public void run(){
                     boolean result = ((StatisticsTableModel)view.getModel()).reset(true);
                     
-                    if(result == false){
-                        view.notifyListener("entity_freed");
+                    if (result == false) {
+                        view.notifyListener("reset_all_failed");
                     }
                 }
             };
@@ -71,6 +74,7 @@ public class StatisticsTableController implements MouseListener, ActionListener 
         }
     }
 
+    @Override
     public void mouseClicked(MouseEvent e) {
         if((e.getButton() == MouseEvent.BUTTON3) && (e.getClickCount() == 1)) {
             int row = view.rowAtPoint(e.getPoint());
@@ -79,12 +83,16 @@ public class StatisticsTableController implements MouseListener, ActionListener 
         }
     }
 
+    @Override
     public void mouseEntered(MouseEvent e) {}
 
+    @Override
     public void mouseExited(MouseEvent e) {}
 
+    @Override
     public void mousePressed(MouseEvent e) {}
 
+    @Override
     public void mouseReleased(MouseEvent e) {}
 
 }

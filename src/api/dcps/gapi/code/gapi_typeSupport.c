@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -229,7 +229,7 @@ registerTypeUsingDescriptor (
         if ( sd_serializerLastValidationResult(serializer) == SD_VAL_SUCCESS ) {
             result = GAPI_RETCODE_OK;
         } else {
-            result = GAPI_RETCODE_BAD_PARAMETER;
+            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
         }
 
         sd_serializedDataFree(serData);
@@ -250,7 +250,7 @@ registerTypeUsingLoadFunction (
     register_typeActionArg arg;
 
     arg.load_function = typeSupport->type_load;
-    if ( u_entityAction(u_entity(_DomainParticipantUparticipant(participant)),
+    if ( u_entityWriteAction(u_entity(_DomainParticipantUparticipant(participant)),
                         register_type_action, (c_voidp)&arg) == U_RESULT_OK ) {
         if ( arg.typeSpec ) {
             typeSupport->typeSpec = arg.typeSpec;
@@ -305,10 +305,10 @@ gapi_typeSupport_register_type (
 #if 1
         if ( !typeSupport->type_def && !typeSupport->type_load ) {
             if ( !builtinInfo ) {
-                result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+                result = GAPI_RETCODE_ERROR;
             }
         } else if ( typeSupport->type_def && typeSupport->type_load ) {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+            result = GAPI_RETCODE_ERROR;
         }
 #else
         if ( !typeSupport->type_def && !builtinInfo ) {
@@ -331,7 +331,7 @@ gapi_typeSupport_register_type (
             regName = typeSupport->type_name;
         }
         if ( !regName ) {
-            result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+            result = GAPI_RETCODE_BAD_PARAMETER;
         }
     }
 
@@ -340,7 +340,20 @@ gapi_typeSupport_register_type (
         if ( oldTypeSupport ) {
             /* registry type name is used before */
             if ( strcmp (typeSupport->type_name, oldTypeSupport->type_name) == 0 ) {
-                typeExists = TRUE;
+                /* check if the definition matches */
+                if ( typeSupport->type_def ) {
+                    result = registerTypeUsingDescriptor(typeSupport, participant);
+                } else if ( typeSupport->type_load ) {
+                    result = registerTypeUsingLoadFunction(typeSupport, participant);
+                } else {
+                    /* nothing to do */
+                }
+                if (result == GAPI_RETCODE_OK ) {
+                    typeExists = TRUE;
+                } else {
+                    /* different type definition for the same registry name, this is not allowed */
+                    result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+                }
             } else {
                 /* different type supports will be registered with the same
                    registry name, this is not allowed */

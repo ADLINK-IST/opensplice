@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -200,6 +200,8 @@ v_dataViewQueryNew (
     query->sampleMask   = q_exprGetSampleState(predicate);
     query->viewMask     = q_exprGetViewState(predicate);
     query->triggerValue = NULL;
+    query->walkRequired = TRUE;
+    query->updateCnt    = 0;
 
 #if PRINT_QUERY
     printf("v_datyaReaderQueryNew\n");
@@ -316,6 +318,8 @@ v_dataViewQueryDeinit (
 C_STRUCT(testActionArg) {
     c_query query;
     c_bool result;
+    v_queryAction *action;
+    c_voidp args;
 };
 
 C_CLASS(testActionArg);
@@ -328,22 +332,23 @@ testAction(
     v_dataViewInstance inst = v_dataViewInstance(o);
     testActionArg a = (testActionArg)arg;
 
-    a->result = v_dataViewInstanceTest(inst,a->query);
-    if (a->result == TRUE) {
-        return FALSE;
-    } else {
-        return TRUE;
-    }
+    a->result = v_dataViewInstanceTest(inst,a->query, a->action, a->args);
+    return (!a->result);
 }
 
 c_bool
 v_dataViewQueryTest(
-    v_dataViewQuery _this)
+    v_dataViewQuery _this,
+    v_queryAction action,
+    c_voidp args)
 {
     v_collection src;
     v_dataView v;
     c_long len,i;
     C_STRUCT(testActionArg) argument;
+    c_table instanceSet;
+    c_bool pass = FALSE;
+    v_dataViewInstance instance;
 
     assert(C_TYPECHECK(_this,v_dataViewQuery));
 
@@ -356,18 +361,112 @@ v_dataViewQueryTest(
             v_dataViewLock(v);
             v_dataReaderUpdatePurgeLists(v_dataReader(v->reader));
 
-            len = c_arraySize(_this->instanceQ);
-            i = 0;
-            while ((i<len) && (argument.result == FALSE)) {
-                argument.query = _this->sampleQ[i];
-                if (_this->instanceQ[i] != NULL) {
-                    c_readAction(_this->instanceQ[i],testAction,&argument);
-                } else {
-                    c_readAction(v->instances,testAction,&argument);
+            instanceSet = v->instances;
+            if (c_tableCount(instanceSet) > 0)
+            {
+                if (_this->triggerValue)
+                {
+                    /* The trigger value still correctly represents the query's trigger state
+                     * if it still belongs to its former instance.
+                     */
+                    if (!v_dataViewSampleTestState(_this->triggerValue, L_REMOVED))
+                    {
+                        instance = v_dataViewInstance(v_readerSample(_this->triggerValue)->instance);
+
+                        /* This part should be moved to the notify method
+                         * as part of the producer query evaluation.
+                         */
+                        len = c_arraySize(_this->instanceQ);
+
+                        /* Walk over the individual terms of the query
+                         * that together make up the logical OR of the
+                         * original SQL expression.
+                         * The individual terms are separated in the terms
+                         * that apply on key-values (instanceQ) and the terms
+                         * that apply on non key-values (sampleQ). The indexes
+                         * in both term lists should always correspond to the
+                         * same term.
+                         * TODO: Check whether masks are evaluated correctly.
+                         */
+                        for (i=0; (i<len) && !pass; i++)
+                        {
+                            pass = TRUE;
+                            if (_this->instanceQ[i] != NULL)
+                            {
+                                pass = c_queryEval(_this->instanceQ[i],instance);
+                            }
+                            if (pass && (_this->sampleQ[i] != NULL)) {
+                                v_dataViewSample firstSample;
+                                firstSample = v_dataViewInstanceTemplate(instance)->sample;
+                                if (_this->triggerValue != firstSample) {
+                                    v_dataViewInstanceTemplate(instance)->sample = _this->triggerValue;
+                                }
+                                pass = c_queryEval(_this->sampleQ[i],instance);
+                                if (_this->triggerValue != firstSample) {
+                                    v_dataViewInstanceTemplate(instance)->sample = firstSample;
+                                }
+                            }
+                        }
+
+
+                        /* If the sample passed the query, then check whether
+                         * it passes the action routine as well.
+                         * Note: this action routine is used by the gapi to
+                         * match the sample and instance state with the masks
+                         * provided.
+                         */
+                        if (pass)
+                        {
+                            pass = action(_this->triggerValue, args);
+                        }
+                        if (!pass)
+                        {
+                            /* The trigger_value no longer satisfies the Query.
+                             * It can therefore be reset.
+                             */
+                            v_dataViewTriggerValueFree(_this->triggerValue);
+                            _this->triggerValue = NULL;
+                        }
+                    }
+                    else
+                    {
+                        /* The trigger value is no longer available in the DataReader.
+                         * It can therefore be reset.
+                         */
+                        v_dataViewTriggerValueFree(_this->triggerValue);
+                        _this->triggerValue = NULL;
+                    }
                 }
-                i++;
+                /* If the trigger value does not satisfy the Query, but other
+                 * available samples could, then walk over all available samples
+                 * until one is found that does satisfy the Query.
+                 */
+                if (_this->triggerValue == NULL && _this->walkRequired) {
+                    argument.result = FALSE;
+                    argument.action = action;
+                    argument.args = args;
+                    len = c_arraySize(_this->instanceQ);
+                    i = 0;
+                    while ((i<len) && (pass == FALSE)) {
+                        argument.query = _this->sampleQ[i];
+                        if (_this->instanceQ[i] != NULL) {
+                            c_readAction(_this->instanceQ[i],testAction,&argument);
+                        } else {
+                            c_readAction(instanceSet,testAction,&argument);
+                        }
+                        pass = argument.result;
+                        i++;
+                    }
+                    if (!pass) {
+                        /* None of the available samples satisfy the Query.
+                         * That means the next query evaluation no longer
+                         * requires us to walk over all samples.
+                         */
+                        _this->walkRequired = FALSE;
+                    }
+                }
             }
-            if ( !argument.result ) {
+            if ( !pass ) {
                 _this->state = V_STATE_INITIAL;
             }
             v_dataViewUnlock(v);
@@ -382,7 +481,7 @@ v_dataViewQueryTest(
                   "v_dataViewQueryTest failed", 0,
                   "no source");
     }
-    return argument.result;
+    return pass;
 }
 
 C_STRUCT(walkQueryArg) {
@@ -427,24 +526,41 @@ v_dataViewQueryRead (
     if (src != NULL) {
         assert(v_objectKind(src) == K_DATAVIEW);
         if (v_objectKind(src) == K_DATAVIEW) {
-
-            argument.action = action;
-            argument.arg = arg;
-
             v = v_dataView(src);
             v_dataViewLock(v);
-            v_dataReaderUpdatePurgeLists(v_dataReader(v->reader));
-            len = c_arraySize(_this->instanceQ);
-            for (i=0;(i<len) && proceed;i++) {
-                argument.query = _this->sampleQ[i];
-                if (_this->instanceQ[i] != NULL) {
-                    proceed = c_walk(_this->instanceQ[i],
-                                     (c_action)instanceReadSamples,
-                                     &argument);
+            if (_this->walkRequired == FALSE) {
+                if (_this->triggerValue != NULL) {
+                   if (!v_dataViewSampleTestState(_this->triggerValue, L_REMOVED)) {
+                       proceed = v_actionResultTest(v_dataViewSampleReadTake(_this->triggerValue,action,arg, FALSE), V_PROCEED);
+                   } else {
+                       proceed = FALSE;
+                   }
+                   /* The trigger_value no longer satisfies the Query or
+                    * has been taken. It can therefore be reset.
+                    */
+                   v_dataViewTriggerValueFree(_this->triggerValue);
+                   _this->triggerValue = NULL;
+
                 } else {
-                    proceed = c_tableWalk(v->instances,
-                                          (c_action)instanceReadSamples,
-                                          &argument);
+                    proceed = FALSE;
+                }
+            } else {
+                argument.action = action;
+                argument.arg = arg;
+
+                v_dataReaderUpdatePurgeLists(v_dataReader(v->reader));
+                len = c_arraySize(_this->instanceQ);
+                for (i=0;(i<len) && proceed;i++) {
+                    argument.query = _this->sampleQ[i];
+                    if (_this->instanceQ[i] != NULL) {
+                        proceed = c_walk(_this->instanceQ[i],
+                                         (c_action)instanceReadSamples,
+                                         &argument);
+                    } else {
+                        proceed = c_tableWalk(v->instances,
+                                              (c_action)instanceReadSamples,
+                                              &argument);
+                    }
                 }
             }
             /* This triggers the action routine that the last sample is read.
@@ -551,14 +667,16 @@ struct nextInstanceActionArg {
     c_bool hasData;
 };
 
-static c_bool
+static v_actionResult
 nextInstanceAction(
-    v_readerSample sample,
+    c_object sample,
     c_voidp arg)
 {
     struct nextInstanceActionArg *a = (struct nextInstanceActionArg *)arg;
-    a->hasData = TRUE;
-    return a->action(sample,a->arg);
+    v_actionResult result;
+    result = a->action(sample,a->arg);
+    a->hasData = v_actionResultTestNot(result, V_SKIP);
+    return result;
 }
 
 c_bool
@@ -685,34 +803,52 @@ v_dataViewQueryTake(
             v_dataViewLock(v);
             v_dataReaderUpdatePurgeLists(v_dataReader(v->reader));
 
-            argument.dataView = v;
-            argument.action = action;
-            argument.arg = arg;
-            argument.emptyList = NULL;
+            if (_this->walkRequired == FALSE) {
+                if (_this->triggerValue != NULL) {
+                   if (!v_dataViewSampleTestState(_this->triggerValue, L_REMOVED)) {
+                       proceed = v_actionResultTest(v_dataViewSampleReadTake(_this->triggerValue,action,arg, TRUE), V_PROCEED);
+                   } else {
+                       proceed = FALSE;
+                   }
+                   /* The trigger_value no longer satisfies the Query or
+                    * has been taken. It can therefore be reset.
+                    */
+                   v_dataViewTriggerValueFree(_this->triggerValue);
+                   _this->triggerValue = NULL;
 
-            len = c_arraySize(_this->instanceQ);
-            for (i=0;(i<len) && proceed;i++) {
-                argument.query = _this->sampleQ[i];
-                if (_this->instanceQ[i] != NULL) {
-                    proceed = c_walk(_this->instanceQ[i],
-                                     (c_action)instanceTakeSamples,
-                                     &argument);
                 } else {
-                    proceed = c_tableWalk(v->instances,
-                                          (c_action)instanceTakeSamples,
-                                          &argument);
+                    proceed = FALSE;
                 }
-            }
-            if (argument.emptyList != NULL) {
-                emptyInstance = c_iterTakeFirst(argument.emptyList);
-                while (emptyInstance != NULL) {
-                    found = c_remove(v->instances,emptyInstance,NULL,NULL);
-                    assert(found == emptyInstance);
-                    v_publicFree(v_public(found));
-                    c_free(found);
+            } else {
+                argument.dataView = v;
+                argument.action = action;
+                argument.arg = arg;
+                argument.emptyList = NULL;
+
+                len = c_arraySize(_this->instanceQ);
+                for (i=0;(i<len) && proceed;i++) {
+                    argument.query = _this->sampleQ[i];
+                    if (_this->instanceQ[i] != NULL) {
+                        proceed = c_walk(_this->instanceQ[i],
+                                         (c_action)instanceTakeSamples,
+                                         &argument);
+                    } else {
+                        proceed = c_tableWalk(v->instances,
+                                              (c_action)instanceTakeSamples,
+                                              &argument);
+                    }
+                }
+                if (argument.emptyList != NULL) {
                     emptyInstance = c_iterTakeFirst(argument.emptyList);
+                    while (emptyInstance != NULL) {
+                        found = c_remove(v->instances,emptyInstance,NULL,NULL);
+                        assert(found == emptyInstance);
+                        v_publicFree(v_public(found));
+                        c_free(found);
+                        emptyInstance = c_iterTakeFirst(argument.emptyList);
+                    }
+                    c_iterFree(argument.emptyList);
                 }
-                c_iterFree(argument.emptyList);
             }
             /* This triggers the action routine that the last sample is read.
              */
@@ -926,7 +1062,9 @@ v_dataViewQueryNotifyDataAvailable(
 
         if (e->userData) {
             if (_this->triggerValue == NULL) {
-                _this->triggerValue = v_dataReaderTriggerValueKeep(e->userData);
+                _this->triggerValue = v_dataViewTriggerValueKeep(e->userData);
+            } else {
+                _this->walkRequired = TRUE;
             }
             _this->state |= V_STATE_DATA_AVAILABLE;
 

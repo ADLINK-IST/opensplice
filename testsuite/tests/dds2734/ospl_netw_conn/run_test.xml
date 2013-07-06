@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "../../stax/stax.dtd">
+<stax>
+    <!-- Define default function to execute -->
+    <defaultcall function="dds2734_main"/>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- Function runs the "dds2734_main" test -->
+    <function name="dds2734_main" scope="local">
+    
+        <!-- Function description -->
+        <function-epilog>
+            <![CDATA[
+            ]]>
+        </function-epilog>
+        <!-- Function dependencies -->
+        <function-import file="../../stax/test_ospl.xml"/>
+        <function-import file="mixed_empty/run_test.xml"/>
+        <function-import file="mixed_empty2/run_test.xml"/>
+        <function-import file="mixed_full/run_test.xml"/>
+        <function-import file="mixed_single/run_test.xml"/>
+        <function-import file="multi_full/run_test.xml"/>
+        <function-import file="multi_none/run_test.xml"/>
+        <function-import file="multi_part/run_test.xml"/>
+        <function-import file="uni_full/run_test.xml"/>
+        <function-import file="uni_single/run_test.xml"/>
+        <!-- Function arguments -->
+        <function-list-args>
+            <function-required-arg name="host_ip1">
+                The IP address of the 1st host for the test:
+            </function-required-arg>
+            <function-required-arg name="host_ip2">
+                The IP address of the 2nd host for the test:
+            </function-required-arg>
+            <function-required-arg name="host_ip3">
+                The IP address of the 3rd host for the test:
+            </function-required-arg>
+
+            <function-required-arg name="ospl_home1">
+                OSPL_HOME value of the OSPL installed on the 1st host
+            </function-required-arg>
+            <function-required-arg name="ospl_home2">
+                OSPL_HOME value of the OSPL installed on the 2nd host
+            </function-required-arg>
+            <function-required-arg name="ospl_home3">
+                OSPL_HOME value of the OSPL installed on the 3rd host
+            </function-required-arg>
+
+            <function-optional-arg name="staf_port1" default="6500">
+                Staf port for the 1st host
+            </function-optional-arg>
+            <function-optional-arg name="staf_port2" default="6500">
+                Staf port for the 2nd host
+            </function-optional-arg>
+            <function-optional-arg name="staf_port3" default="6500">
+                Staf port for the 3rd host
+            </function-optional-arg>
+        </function-list-args>
+        <!-- Function body begin -->
+        <sequence>
+            <script>
+                import os
+                import sys
+                from time import *
+
+                # Get starting test time:
+                start_time = time()
+
+                # Get time stamp to compose the folder name:
+                time_stamp = strftime("%d-%m-%Y-%H-%M-%S", localtime())
+
+                this_xml_dir = STAXCurrentXMLFile[:STAXCurrentXMLFile.rfind(os.sep)]
+
+                sys.path.append(this_xml_dir + os.sep + "..")
+                sys.path.append(this_xml_dir + os.sep + ".."   +\
+                                               os.sep + ".."   +\
+                                               os.sep + "stax" +\
+                                               os.sep + "python")
+
+                from host               import Host
+                from base_test_scenario import BaseTestScenario
+
+                # Define the scenario:
+                test_scenario = BaseTestScenario("dds2734", "These tests test the discovery process of the configured networking service")
+
+                localhost = Host()
+                local_fs = localhost.get_file_sep()
+                localhost.set_log_dir(this_xml_dir + local_fs + "log" + local_fs + time_stamp)
+
+                # Create local directory:
+                os.makedirs(localhost.get_log_dir())
+
+                # Set test case result log file:
+                test_scenario.set_result_file(localhost.get_log_dir()  + local_fs +\
+                                              test_scenario.get_name() + "_result.log")
+            </script>
+
+            <!-- 1 -->
+            <call function="'multi_full_main'">[host_ip1, host_ip2, host_ip3, ospl_home1, ospl_home2, ospl_home3, staf_port1, staf_port2, staf_port3]</call>
+            <if expr="STAXResult != 1">
+                <script>
+                    test_scenario.fail()
+                    test_scenario.errors.append("MULTI_FULL test case IS NOT PASSED")
+                </script>
+            </if>
+            <call function="'CopyDirFromTo'">
+                [localhost,
+                localhost,
+                localhost.get_log_dir(),
+                this_xml_dir + local_fs + "log" + local_fs + "multi_full"]
+            </call>
+
+            <!-- 2 -->
+            <call function="'multi_part_main'">[host_ip1, host_ip2, host_ip3, ospl_home1, ospl_home2, ospl_home3, staf_port1, staf_port2, staf_port3]</call>
+            <if expr="STAXResult != 1">
+                <script>
+                    test_scenario.fail()
+                    test_scenario.errors.append("MULTI_PART test case IS NOT PASSED")
+                </script>
+            </if>
+            <call function="'CopyDirFromTo'">
+                [localhost,
+                localhost,
+                localhost.get_log_dir(),
+                this_xml_dir + local_fs + "log" + local_fs + "multi_part"]
+            </call>
+
+            <!-- 3 -->
+            <call function="'multi_none_main'">[host_ip1, host_ip2, host_ip3, ospl_home1, ospl_home2, ospl_home3, staf_port1, staf_port2, staf_port3]</call>
+            <if expr="STAXResult != 1">
+                <script>
+                    test_scenario.fail()
+                    test_scenario.errors.append("MULTI_NONE test case IS NOT PASSED")
+                </script>
+            </if>
+            <call function="'CopyDirFromTo'">
+                [localhost,
+                localhost,
+                localhost.get_log_dir(),
+                this_xml_dir + local_fs + "log" + local_fs + "multi_none"]
+            </call>
+
+            <!-- 4 -->
+            <call function="'uni_full_main'">[host_ip1, host_ip2, host_ip3, ospl_home1, ospl_home2, ospl_home3, staf_port1, staf_port2, staf_port3]</call>
+            <if expr="STAXResult != 1">
+                <script>
+                    test_scenario.fail()
+                    test_scenario.errors.append("UNI_FULL test case IS NOT PASSED")
+                </script>
+            </if>
+            <call function="'CopyDirFromTo'">
+                [localhost,
+                localhost,
+                localhost.get_log_dir(),
+                this_xml_dir + local_fs + "log" + local_fs + "uni_full"]
+            </call>
+
+            <!-- 5 -->
+            <call function="'uni_single_main'">[host_ip1, host_ip2, host_ip3, ospl_home1, ospl_home2, ospl_home3, staf_port1, staf_port2, staf_port3]</call>
+            <if expr="STAXResult != 1">
+                <script>
+                    test_scenario.fail()
+                    test_scenario.errors.append("UNI_SINGLE test case IS NOT PASSED")
+                </script>
+            </if>
+            <call function="'CopyDirFromTo'">
+                [localhost,
+                localhost,
+                localhost.get_log_dir(),
+                this_xml_dir + local_fs + "log" + local_fs + "uni_single"]
+            </call>
+
+            <!-- 6 -->
+            <call function="'mixed_full_main'">[host_ip1, host_ip2, host_ip3, ospl_home1, ospl_home2, ospl_home3, staf_port1, staf_port2, staf_port3]</call>
+            <if expr="STAXResult != 1">
+                <script>
+                    test_scenario.fail()
+                    test_scenario.errors.append("MIXED_FULL test case IS NOT PASSED")
+                </script>
+            </if>
+            <call function="'CopyDirFromTo'">
+                [localhost,
+                localhost,
+                localhost.get_log_dir(),
+                this_xml_dir + local_fs + "log" + local_fs + "mixed_full"]
+            </call>
+
+            <!-- 7 -->
+            <call function="'mixed_single_main'">[host_ip1, host_ip2, host_ip3, ospl_home1, ospl_home2, ospl_home3, staf_port1, staf_port2, staf_port3]</call>
+            <if expr="STAXResult != 1">
+                <script>
+                    test_scenario.fail()
+                    test_scenario.errors.append("MIXED_SINGLE test case IS NOT PASSED")
+                </script>
+            </if>
+            <call function="'CopyDirFromTo'">
+                [localhost,
+                localhost,
+                localhost.get_log_dir(),
+                this_xml_dir + local_fs + "log" + local_fs + "mixed_single"]
+            </call>
+
+            <!-- 8 -->
+            <call function="'mixed_empty_main'">[host_ip1, host_ip2, host_ip3, ospl_home1, ospl_home2, ospl_home3, staf_port1, staf_port2, staf_port3]</call>
+            <if expr="STAXResult != 1">
+                <script>
+                    test_scenario.fail()
+                    test_scenario.errors.append("MIXED_EMPTY test case IS NOT PASSED")
+                </script>
+            </if>
+            <call function="'CopyDirFromTo'">
+                [localhost,
+                localhost,
+                localhost.get_log_dir(),
+                this_xml_dir + local_fs + "log" + local_fs + "mixed_empty"]
+            </call>
+
+            <!-- 9 -->
+            <call function="'mixed_empty2_main'">[host_ip1, host_ip2, host_ip3, ospl_home1, ospl_home2, ospl_home3, staf_port1, staf_port2, staf_port3]</call>
+            <if expr="STAXResult != 1">
+                <script>
+                    test_scenario.fail()
+                    test_scenario.errors.append("MIXED_EMPTY2 test case IS NOT PASSED")
+                </script>
+            </if>
+            <call function="'CopyDirFromTo'">
+                [localhost,
+                localhost,
+                localhost.get_log_dir(),
+                this_xml_dir + local_fs + "log" + local_fs + "mixed_empty2"]
+            </call>
+
+            <!-- Test case end -->
+            <script>
+                # Get stopping test time:
+                stop_time    = time()
+                # Calc the difference:
+                elapsed_secs = stop_time - start_time
+
+                test_scenario.analyze()
+            </script>
+            <message>"Test complete - ran for [%d] seconds."% elapsed_secs</message>
+            <if expr="test_scenario.is_passed()">
+                <message>"Test is PASSED."</message>
+            </if>
+            <if expr="test_scenario.is_failed()">
+                <message>"Test is FAILED see [%s] log for details."% test_scenario.get_result_file()</message>
+            </if>
+            <if expr="test_scenario.is_not_tested()">
+                <message>"Test is NOT TESTED see [%s] log for details."% test_scenario.get_result_file()</message>
+            </if>
+            <return>test_scenario.is_passed()</return>
+        </sequence>
+        <!-- Function body end -->
+    </function>
+    <!-- function: dds2734_main -->
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+</stax>

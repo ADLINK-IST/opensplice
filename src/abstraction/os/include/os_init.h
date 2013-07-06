@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -79,6 +79,17 @@ os_versionString(void);
 OS_API void
 os_createPipeNameFromDomainName(const char *name);
 
+/**
+ * Inform the os layer that this is a single process configuration
+ */
+OS_API void
+os_serviceSetSingleProcess (void);
+
+/**
+ * Ask the os layer whether this is a single process configuration
+ */
+OS_API os_boolean
+os_serviceGetSingleProcess (void);
 
 #undef OS_API
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -43,40 +43,40 @@ extern "C" {
     struct sockaddr_in
 */
 
-#define IFF_POINTOPOINT		IFF_POINTTOPOINT
+#define IFF_POINTOPOINT     IFF_POINTTOPOINT
 
   /* temporary typedef until networking is using abstraction layer */
 typedef unsigned long in_addr_t;
-
-/* Type for socket error numbers */
-typedef int os_sockErrno;
 
 /* Windows specific usage of the os_socket API: os_sockBind() should be called
  * before multicast options are set with os_sockSetsockopt() */
 #define OS_SOCKET_BIND_FOR_MULTICAST 1
 
-
-#define OS_IFNAMESIZE        	128
-#define OS_SOCKET_HAS_SA_LEN 	0
+#define OS_IFNAMESIZE           128
+#define OS_SOCKET_HAS_SA_LEN    0
+#define OS_SOCKET_HAS_IPV6      1
+#define DO_HOST_BY_NAME
 
 /* List of socket error numbers */
-#define os_sockENOMEM		WSABASEERR
-#define os_sockENOSR		WSABASEERR
-#define os_sockENOENT		WSABASEERR
-#define os_sockEPERM		WSABASEERR
-#define os_sockEINTR		WSAEINTR
-#define os_sockEBADF		WSAEBADF
-#define os_sockEACCESS		WSAEACCES
-#define os_sockEINVAL		WSAEINVAL
-#define os_sockEMFILE		WSAEMFILE
-#define os_sockENOTSOCK		WSAENOTSOCK
-#define os_sockEMSGSIZE		WSAEMSGSIZE
-#define os_sockENOPROTOOPT	WSAENOPROTOOPT
-#define os_sockEPROTONOSUPPORT	WSAEPROTONOSUPPORT
-#define os_sockEADDRINUSE	WSAEADDRINUSE
-#define os_sockEADDRNOTAVAIL	WSAEADDRNOTAVAIL
-#define os_sockEHOSTUNREACH	WSAEHOSTUNREACH
-#define os_sockENOBUFS		WSAENOBUFS
+#define os_sockEAGAIN       WSAEWOULDBLOCK /* Operation would block, or a timeout expired before operation succeeded */
+#define os_sockEWOULDBLOCK  WSAEWOULDBLOCK /* Operation would block */
+#define os_sockENOMEM       WSABASEERR
+#define os_sockENOSR        WSABASEERR
+#define os_sockENOENT       WSABASEERR
+#define os_sockEPERM        WSABASEERR
+#define os_sockEINTR        WSAEINTR
+#define os_sockEBADF        WSAEBADF
+#define os_sockEACCES       WSAEACCES
+#define os_sockEINVAL       WSAEINVAL
+#define os_sockEMFILE       WSAEMFILE
+#define os_sockENOTSOCK     WSAENOTSOCK
+#define os_sockEMSGSIZE     WSAEMSGSIZE
+#define os_sockENOPROTOOPT  WSAENOPROTOOPT
+#define os_sockEPROTONOSUPPORT  WSAEPROTONOSUPPORT
+#define os_sockEADDRINUSE   WSAEADDRINUSE
+#define os_sockEADDRNOTAVAIL    WSAEADDRNOTAVAIL
+#define os_sockEHOSTUNREACH WSAEHOSTUNREACH
+#define os_sockENOBUFS      WSAENOBUFS
 
 #if defined (__cplusplus)
 }

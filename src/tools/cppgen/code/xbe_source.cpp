@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,6 +9,7 @@
  *   for full copyright notice and license terms.
  *
  */
+#include "os_version.h"
 #include "idl.h"
 #include <ctype.h>
 #include "idl_extern.h"
@@ -18,6 +19,9 @@
 #include "Std.h"
 #include "cppgen_iostream.h"
 #include "xbe_time.h"
+#ifdef __APPLE__
+#include <sys/time.h>
+#endif
 
 // ----------------------------------------------------------
 //  DDSSource_Time IMPLEMENTATION
@@ -34,7 +38,11 @@ public:
    DDSSource_Time();
    DDSSource_Time(unsigned long secs, unsigned long usec);
    DDSSource_Time(unsigned long timeValue);
+#ifdef __APPLE__
+   DDSSource_Time(const timeval &nativeTimeValue);
+#else
    DDSSource_Time(const timespec &nativeTimeValue);
+#endif
 
    ~DDSSource_Time();
 
@@ -66,11 +74,19 @@ DDSSource_Time::DDSSource_Time(unsigned long timeValue)
    m_usec = (unsigned long) (timeValue % secsInUsec);
 }
 
+#ifdef __APPLE__
+DDSSource_Time::DDSSource_Time(const timeval &timeValue)
+{
+   m_secs = timeValue.tv_sec + (timeValue.tv_usec / secsInUsec);
+   m_usec = timeValue.tv_usec;
+}
+#else
 DDSSource_Time::DDSSource_Time(const timespec &timeValue)
 {
    m_secs = timeValue.tv_sec + (timeValue.tv_nsec / secsInNsec);
    m_usec = (timeValue.tv_nsec % secsInNsec) /1000;
 }
+#endif
 
 DDSSource_Time::~DDSSource_Time()
 {}
@@ -96,9 +112,13 @@ DDSSource_Time
 DDSSource_Time::get_time_of_day()
 {
 #if !defined(_WIN32)
+#ifdef __APPLE__
+   timeval tval;
+   gettimeofday(&tval, NULL);
+#else
    timespec tval;
-
    clock_gettime(CLOCK_REALTIME, &tval);
+#endif /* __APPLE__ */
    return DDSSource_Time(tval);
 #else
 
@@ -238,20 +258,20 @@ pbbool be_ClientHeader::Open (const DDS_StdString& mainFilename)
          << "//  File name: " << BE_Globals::ClientHeaderFilename << "\n"
          << "//  Source: " << idl_global->main_filename()->get_string() << "\n"
          << "//  Generated: " << CreationTime() << "\n"
-         << "//  OpenSplice " << VERSION << "\n"
+         << "//  OpenSplice " << OSPL_VERSION_STR << "\n"
          << "//  \n"
          << "//******************************************************************\n";
 
       ndefname = Ifndefize(BE_Globals::ClientHeaderFilename);
       os << "#ifndef " << (const char*) ndefname << nl;
       os << "#define " << (const char*) ndefname << nl << nl;
+      os << "#include \"sacpp_mapping.h\"" << nl;
+      os << "#include \"sacpp_DDS_DCPS.h\"" << nl;
       if (BE_Globals::UserDLL != (const char *)"" &&
           BE_Globals::UserDLLHeader != (const char *)"" )
       {
         os << "#include \"" << BE_Globals::UserDLLHeader << "\"" << nl;
       }
-      os << "#include \"sacpp_mapping.h\"" << nl;
-      os << "#include \"sacpp_DDS_DCPS.h\"" << nl;
 
       GenerateSecondaryIncludes (os);
 
@@ -333,7 +353,7 @@ pbbool be_ClientImplementation::Open(const DDS_StdString& mainFilename)
          << "//  File name: " << BE_Globals::ClientImplFilename << "\n"
          << "//  Source: " << idl_global->main_filename()->get_string() << "\n"
          << "//  Generated: " << CreationTime() << "\n"
-         << "//  OpenSplice " << VERSION << "\n"
+         << "//  OpenSplice " << OSPL_VERSION_STR << "\n"
          << "//  \n"
          << "//******************************************************************\n";
       os << nl;
@@ -404,7 +424,7 @@ pbbool be_ServerHeader::Open(const DDS_StdString& mainFilename)
          << "//  File name: " << BE_Globals::ServerHeaderFilename << "\n"
          << "//  Source: " << idl_global->main_filename()->get_string() << "\n"
          << "//  Generated: " << CreationTime() << "\n"
-         << "//  OpenFusion V" << VERSION << "\n"
+         << "//  OpenFusion V" << OSPL_VERSION_STR << "\n"
          << "//  \n"
          << "//******************************************************************\n";
       }
@@ -479,7 +499,7 @@ pbbool be_ServerImplementation::Open (const DDS_StdString & mainFilename)
       << "//  File name: " << BE_Globals::ServerImplFilename << "\n"
       << "//  Source: " << idl_global->main_filename()->get_string() << "\n"
       << "//  Generated: " << CreationTime() << "\n"
-      << "//  OpenFusion V" << VERSION << "\n"
+      << "//  OpenFusion V" << OSPL_VERSION_STR << "\n"
       << "//  \n"
       << "//******************************************************************\n";
 
@@ -527,7 +547,7 @@ be_ServerTieHeader::Open(const DDS_StdString& mainFilename)
       << "//  File name: " << filename << "\n"
       << "//  Source: " << idl_global->main_filename()->get_string() << "\n"
       << "//  Generated: " << CreationTime() << "\n"
-      << "//  OpenFusion V" << VERSION << "\n"
+      << "//  OpenFusion V" << OSPL_VERSION_STR << "\n"
       << "//  \n"
       << "//******************************************************************\n";
 

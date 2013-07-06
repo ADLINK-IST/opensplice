@@ -1,6 +1,10 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_ddsutil_incl, ospl_ddsos, ospl_base {
+project : ospl_ddsos, ospl_base {
   lit_libs += ddsutil
+}
+
+feature(src_co) {
+  includes += $(OSPL_HOME_NORMALIZED)/src/utilities/include
 }

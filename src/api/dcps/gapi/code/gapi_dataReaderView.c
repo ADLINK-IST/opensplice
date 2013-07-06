@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -67,35 +67,6 @@ copyReaderViewQosOut (
     return copied;
 }
 
-static gapi_boolean
-initViewQuery (
-    _DataReaderView dataReaderView)
-{
-    gapi_boolean result = FALSE;
-    gapi_expression expr;
-    u_dataView uReaderView;
-    
-    dataReaderView->reader_mask.sampleStateMask   = (c_long)0;
-    dataReaderView->reader_mask.viewStateMask     = (c_long)0;
-    dataReaderView->reader_mask.instanceStateMask = (c_long)0;
-    
-    uReaderView = u_dataView(U_DATAREADERVIEW_GET(dataReaderView));
-    expr = gapi_createReadExpression(u_entity(uReaderView),
-                                     &dataReaderView->reader_mask);
-    if ( expr != NULL ) {
-        dataReaderView->uQuery = gapi_expressionCreateQuery(expr,
-                                                            u_reader(uReaderView),
-                                                            NULL,
-                                                            NULL);
-        gapi_expressionFree(expr);
-        if ( dataReaderView->uQuery ) {
-            result = TRUE;
-        }
-    }
-    return result;
-}
-    
-
 _DataReaderView
 _DataReaderViewNew (
     const gapi_dataReaderViewQos * qos,
@@ -107,18 +78,18 @@ _DataReaderViewNew (
     _TypeSupport typeSupport;
 
     _this = _DataReaderViewAlloc();
-        
+
     if ( _this != NULL ) {
         _EntityInit(_Entity(_this),
                           _Entity(datareader));
-         
+
         typeSupport = _TopicDescriptionGetTypeSupport(datareader->topicDescription);
 
         assert(typeSupport);
         _this->datareader = datareader;
         ViewQos = u_dataViewQosNew(NULL);
         if ( ViewQos != NULL ) {
-            if ( !copyReaderViewQosIn(qos, ViewQos) ) { 
+            if ( !copyReaderViewQosIn(qos, ViewQos) ) {
                 u_dataViewQosFree(ViewQos);
                 _EntityDispose(_Entity(_this));
                 _this = NULL;
@@ -143,15 +114,8 @@ _DataReaderViewNew (
     }
 
     if ( _this != NULL ) {
-        if ( !initViewQuery(_this) ) {
-            u_dataViewFree(uReaderView);
-            _EntityDispose(_Entity(_this));
-            _this = NULL;
-        }
-    }
-    if ( _this != NULL ) {
         _EntityStatus(_this) = _Entity(datareader)->status;
-    }       
+    }
 
     return _this;
 
@@ -164,9 +128,7 @@ _DataReaderViewFree (
     gapi_returnCode_t result = GAPI_RETCODE_OK;
     u_dataView v;
     assert(dataReaderView);
-    
-    u_queryFree(dataReaderView->uQuery);
-    
+
     gapi_loanRegistry_free(dataReaderView->loanRegistry);
 
     v = U_DATAREADERVIEW_GET(dataReaderView);
@@ -190,7 +152,7 @@ _DataReaderViewPrepareDelete (
         gapi_errorReport(context, GAPI_ERRORCODE_CONTAINS_CONDITIONS);
         result = FALSE;
     }
-    
+
     if ( !gapi_loanRegistry_is_empty(dataReaderView->loanRegistry) ) {
         gapi_errorReport(context, GAPI_ERRORCODE_CONTAINS_LOANS);
         result = FALSE;
@@ -210,9 +172,9 @@ _DataReaderViewDataReader (
     _DataReaderView dataReaderView)
 {
     _DataReader datareader;
- 
+
     datareader = dataReaderView->datareader;
-    _EntityClaim(datareader);   
+    _EntityClaim(datareader);
     return datareader;
 }
 
@@ -223,11 +185,11 @@ _DataReaderViewGetQos (
 {
     v_dataViewQos dataViewQos;
     u_dataView uDataView;
-    
+
     assert(dataReaderView);
 
     uDataView = u_dataView(U_DATAREADERVIEW_GET(dataReaderView));
-        
+
     if ( u_entityQoS(u_entity(uDataView), (v_qos*)&dataViewQos) == U_RESULT_OK ) {
         copyReaderViewQosOut(dataViewQos,  qos);
         u_dataViewQosFree(dataViewQos);
@@ -240,7 +202,7 @@ _DataReaderViewGetQos (
  *     set_qos(
  *         in DataReaderViewQos qos);
  *
- * Function will operate indepenedent of the enable flag
+ * Function will operate independent of the enable flag
  */
 gapi_returnCode_t
 gapi_dataReaderView_set_qos (
@@ -254,7 +216,7 @@ gapi_dataReaderView_set_qos (
     gapi_context context;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_SET_QOS);
-    
+
     dataReaderView = gapi_dataReaderViewClaim(_this, &result);
 
     if (dataReaderView != NULL) {
@@ -263,14 +225,14 @@ gapi_dataReaderView_set_qos (
         } else {
             result = GAPI_RETCODE_BAD_PARAMETER;
         }
-        
+
         if ( result == GAPI_RETCODE_OK ) {
             gapi_dataReaderViewQos * existing_qos = gapi_dataReaderViewQos__alloc();
 
             result = gapi_dataReaderViewQosCheckMutability(qos, _DataReaderViewGetQos(dataReaderView, existing_qos), &context);
             gapi_free(existing_qos);
         }
-    
+
         if ( result == GAPI_RETCODE_OK ) {
             dataReaderViewQos = u_dataViewQosNew(NULL);
             if (dataReaderViewQos) {
@@ -301,7 +263,7 @@ gapi_dataReaderView_get_statuscondition(
 
 gapi_statusMask
 gapi_dataReaderView_get_status_changes(
-    gapi_dataReaderView _this) 
+    gapi_dataReaderView _this)
 {
     gapi_statusMask result = GAPI_STATUS_KIND_NULL;
     _DataReaderView dataReaderView;
@@ -309,14 +271,14 @@ gapi_dataReaderView_get_status_changes(
 
     dataReaderView = gapi_dataReaderViewClaim(_this, NULL);
 
-    if ( dataReaderView != NULL ) { 
+    if ( dataReaderView != NULL ) {
         dataReader = _DataReaderViewDataReader(dataReaderView);
 
         if (dataReader != NULL) {
             result = _StatusGetCurrentStatus(_Entity(dataReader)->status);
             _EntityRelease(dataReader);
         }
- 
+
         _EntityRelease(dataReaderView);
     }
     return result;
@@ -335,7 +297,7 @@ gapi_dataReaderView_get_qos (
 {
     _DataReaderView dataReaderView;
     gapi_returnCode_t result;
-    
+
     dataReaderView = gapi_dataReaderViewClaim(_this, &result);
     if ( dataReaderView && qos ) {
         _DataReaderViewGetQos(dataReaderView, qos);
@@ -357,12 +319,12 @@ gapi_dataReaderView_get_datareader(
 
     dataReaderView = gapi_dataReaderViewClaim(_this, NULL);
 
-    if ( dataReaderView != NULL ) { 
+    if ( dataReaderView != NULL ) {
         datareader = _DataReaderViewDataReader(dataReaderView);
     }
 
     _EntityRelease(dataReaderView);
-    
+
     return (gapi_dataReader)_EntityRelease(datareader);
 }
 
@@ -384,7 +346,7 @@ gapi_dataReaderView_create_readcondition (
 
     datareaderview = gapi_dataReaderViewClaim(_this, NULL);
 
-    if ( datareaderview && _EntityEnabled(datareaderview) && 
+    if ( datareaderview && _EntityEnabled(datareaderview) &&
          gapi_stateMasksValid(sample_states, view_states, instance_states) ) {
 
         _DataReader datareader;
@@ -392,21 +354,21 @@ gapi_dataReaderView_create_readcondition (
         datareader = _DataReaderViewDataReader(datareaderview);
         readCondition = _ReadConditionNew ( sample_states,
                                             view_states,
-                                            instance_states, 
+                                            instance_states,
                                             datareader,
                                             datareaderview);
         _EntityRelease(datareader);
         if ( readCondition != NULL ) {
             gapi_deleteEntityAction deleteAction;
             void *actionArg;
-            
+
             if ( _ObjectGetDeleteAction(_Object(readCondition),
                                         &deleteAction, &actionArg) ) {
                 _ObjectSetDeleteAction(_Object(readCondition),
                                        deleteAction,
                                        actionArg);
             }
-            
+
             _ENTITY_REGISTER_OBJECT(_Entity(datareaderview),
                                     (_Object)readCondition);
         }
@@ -436,7 +398,7 @@ gapi_dataReaderView_create_querycondition (
 {
     _DataReaderView datareaderview;
     _QueryCondition queryCondition = NULL;
-    
+
     datareaderview = gapi_dataReaderViewClaim(_this, NULL);
 
     if ( datareaderview && _EntityEnabled(datareaderview) &&
@@ -461,7 +423,7 @@ gapi_dataReaderView_create_querycondition (
     }
 
     _EntityRelease(datareaderview);
-    
+
     return (gapi_queryCondition)_EntityRelease(queryCondition);
 }
 
@@ -520,7 +482,6 @@ gapi_dataReaderView_delete_contained_entities (
     _Condition condition = NULL;
     c_iter entities;
     u_entity e;
-    u_result ur;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_DELETE_CONTAINED_ENTITIES);
 
@@ -538,18 +499,8 @@ gapi_dataReaderView_delete_contained_entities (
                         _ObjectReadClaimNotBusy(_Object(condition));
                         _ConditionFree(condition);
                     } else {
-                        if (e == u_entity(datareaderview->uQuery)) {
-                            datareaderview->uQuery = NULL;
-                            ur = u_queryFree(u_query(e));
-                            if (ur == U_RESULT_OK) {
-                                result = GAPI_RETCODE_OK;
-                            } else {
-                                result = GAPI_RETCODE_BAD_PARAMETER;
-                            }
-                        } else {
-                            assert(condition);
-                            result = GAPI_RETCODE_BAD_PARAMETER;
-                        }
+                        assert(condition);
+                        result = GAPI_RETCODE_BAD_PARAMETER;
                     }
                     e = c_iterTakeFirst(entities);
                 }

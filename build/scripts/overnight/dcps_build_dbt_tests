@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . buildsys/functions
 
@@ -32,12 +32,12 @@ echo "BUILD/DBT=RUNNING" >> $RESFILE
 ArchiveLogs
 
 cd testsuite/dbt ||
-{ 
-    echo "ERROR: could not cd to testsuite/dbt dir - dcps_build_dbt_tests"; 
-    exit 4; 
+{
+    echo "ERROR: could not cd to testsuite/dbt dir - dcps_build_dbt_tests";
+    exit 4;
 }
-make
-if [ $? = 0 ] 
+make -k VERBOSE=yes
+if [ $? = 0 ]
 then
     exit 0
 else

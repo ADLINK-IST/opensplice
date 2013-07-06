@@ -1,0 +1,21 @@
+// -*- MPC -*-
+// $Id:$
+
+project (sac*types) : _repetitive_sac_example_types {
+    Source_Files {
+    }
+}
+
+project(sac*pub): _repetitive_sac_example_pub {
+  after += sac*types
+  libs += sac*types
+}
+
+project(sac*sub): _repetitive_sac_example_sub {
+  after += sac*types
+  libs += sac*types
+  Source_Files {
+      ../src/ListenerDataListener.c
+  }
+}
+

@@ -1,0 +1,6 @@
+// $Id$
+feature(openmp) {
+  verbatim(gnuace, top) {
+    openmp ?= 1
+  }
+}

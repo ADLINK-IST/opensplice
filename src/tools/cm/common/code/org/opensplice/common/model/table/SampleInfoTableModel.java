@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -189,11 +189,13 @@ public class SampleInfoTableModel extends DefaultTableModel{
                     sec--;
                     
                     String strNsec = Long.toString(nsec);
-                    String strOne = "1";
-                    
-                    for(int i=0; i<(strNsec.length()-1); i++){
-                        strOne += "0";
+                    StringBuffer buf = new StringBuffer();
+                    buf.append("1");
+                    for (int i = 0; i < (strNsec.length() - 1); i++) {
+                        buf.append("0");
                     }
+                    String strOne = buf.toString();
+
                     long one = Long.parseLong(strOne);
                     
                     /*Add up, because nsec is negative.*/
@@ -257,6 +259,7 @@ public class SampleInfoTableModel extends DefaultTableModel{
      * @param row The row that wants to be edited.
      * @param column The column that wants to be edited.
      */
+    @Override
     public boolean isCellEditable(int row, int column){
         return false;
     }

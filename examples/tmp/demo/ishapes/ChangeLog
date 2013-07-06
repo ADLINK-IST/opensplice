@@ -1,0 +1,458 @@
+2011-07-06  Angelo Corsaro  <angelo@icorsaro.net>
+
+* CMakeLists.txt: Updated the SimD version number, v0.10.
+
+2011-07-04  Angelo Corsaro  <angelo@icorsaro.net>
+
+* RELEASE_NOTES: Added a short descriptions of the changes made for
+v0.10.
+
+* demo/tweet/CMakeLists.txt: Fixed Boost include dependency which
+was causing some compilation errors.
+
+
+2011-06-21  Angelo Corsaro  <angelo@icorsaro.net>
+
+* demo/ishapes/config.hpp:
+* demo/ishapes/ShapesDialog.cpp
+* demo/ishapes/ReaderQosDialog.cpp
+* demo/ishapes/ShapesDialog.hpp
+* demo/ishapes/WriterQosDialog.cpp
+* demo/ishapes/macos/iShapesForm-small.ui
+* demo/ishapes/macos/writerQosForm.ui
+* demo/ishapes/macos/readerQosForm.ui
+* demo/ishapes/topic-traits.hpp
+* demo/ishapes/DDSShapeDynamics.hpp
+* demo/ishapes/CMakeLists.txt
+* demo/ishapes/ShapeDynamics.hpp
+* demo/ishapes/Shape.hpp
+* demo/ishapes/Circle.hpp
+* demo/ishapes/config.hpp
+* demo/ishapes/README
+* demo/ishapes/BouncingShapeDynamics.hpp
+
+Update the iShapes demo to properly allow the generation of the
+executable for testing interoperability and for BlendBox testing.
+
+
+2011-05-11  Angelo Corsaro  <angelo@icorsaro.net>
+
+* demo/ishapes/ShapesDialog.cpp: Added macros to switch between
+the settings required by the B2 vs. the seetings required for the
+interoperability demo.
+
+
+2011-05-06  Angelo Corsaro  <angelo@icorsaro.net>
+
+* demo/ishapes/CMakeLists.txt: Removed dependency from ishapes.qrc
+as the resource system is not completely in place yet.
+
+2011-05-05  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/boost: removed entire directory since the upcoming version of
+OpenSplice will be running on library mode and we don't need to
+start the daemon any-more.
+
+* src/dds/peer/runtime_impl.cpp: Removed automatic OpenSplice startup.
+
+* demo/ishapes/ShapesWidget.cpp: Enabled Anti-aliased rendering.
+
+* demo/ishapes/ishape.idl: Enclosed ShapeType into the
+org::opensplice::demo module to make it work smoothly with the
+BlendBox (B2) demo.
+
+* demo/ishapes/ShapesWidget.cpp:
+Added AntiAlialsing rendering for better graphics.
+
+2011-02-01  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/dds/peer/reader_impl.hpp:
+* src/dds/reader.hpp:
+Fixed issue with the read(std::vector<T>, std::vector<SampleInfo>);
+
+* src/dds/writer.hpp: Added operator << for std::vectors of samples.
+
+* README: Updated README to better specify the BOOST requirements.
+
+
+2010-12-10  Angelo Corsaro  <acorsaro@icorsaro.net>
+
+* src/dds/qos.hpp:
+
+- Changed the <set_transient_local> to really set
+TRANSIENT_LOCAL durability.
+
+- Added support for history on the DataWriterQos class.
+
+
+2010-11-22  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/dds/writer.hpp: Added support for writing using stream operators.
+
+* demo/ishapes/ishape.idl: Moved color to be the first attribute
+in the structure.
+
+2010-10-19  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/dds/types.hpp:
+Added type-defs for dds::Duration and dds::Time.
+
+* src/dds/runtime.hpp:
+* src/dds/runtime.cpp:
+* src/dds/peer/runtime_impl.cpp:
+Refactored ctors to have now the default partition as a default value.
+
+* src/dds/reader.hpp:
+* src/dds/peer/reader_impl.hpp:
+* src/dds/peer/writer_impl.hpp: Added support for explicitely
+setting the Publisher/Subscriber when creating the
+DataReader/DataWriter. This allows now to have
+DataReader/DataWriter connceted to different partitions than those
+used by the SimD runtime.
+
+* demo/tweet/CMakeLists.txt:
+* demo/hello/hello-sub.cpp:
+* demo/hello/hello-pub.cpp:
+
+Expanded example to show the use of the extended
+DataReader/DataWriter ctor to set Publisher/Subscriber.
+
+* demo/ddj-series/03/CMakeLists.txt:
+* demo/ddj-series/02/CMakeLists.txt:
+* demo/ddj-series/01/CMakeLists.txt:
+Updated to reflect the use of the CMake built-in FindBoost.
+
+2010-10-13  Angelo Corsaro  <angelo@icorsaro.net>
+* SimD v0.9 Release
+
+* demo/latency/latency-pub.cpp:
+* demo/latency/latency-sub.cpp:
+
+Remove use of C++0x auto keyword.
+
+2010-10-12  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/dds/reader.hpp:
+* src/dds/peer/reader_impl.hpp:
+Fixed issue #20
+* demo/ping/ping-sub.cpp:
+* cmake/osmacros.cmake:
+
+Removed dependency from C++0x extensions.
+
+2010-10-11  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/dds/peer/reader_impl.hpp:
+* src/dds/reader.hpp:
+Fixed issue #20
+
+* src/dds/peer/reader_impl.hpp: Fixed issue #18.
+
+* demo/ishapes/ShapesDialog.cpp: Extended support for filtering to
+include the inside as well as the outsize of the filtering
+rectangle.
+
+* demo/latency: Added latency test for SimD.
+
+* demo/ping/ping-asub.cpp: added catch for InterruptedException.
+
+* src/dds/waitset.hpp:
+* src/dds/waitset.cpp: Wait did not exit when issuing Ctrl-C from
+the keyboard. This has been fixed and when an external catchable
+signal is sent while in the wait-state an InterruptedException is
+raised
+
+2010-07-28  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/dds/runtime.*pp:
+* src/dds/subscriber.*pp:
+* src/dds/publisher.*pp:
+
+Added support for specifiying multiple partition when creating the
+runtime.
+
+
+
+2010-06-18  Angelo Corsaro  <angelo@icorsaro.net>
+
+* v0.8 Released see RELEASE_NOTES to detailed changes/additions.
+
+* src/dds/waitset.cpp: Fixed issue #10
+
+* src/dds/peer/runtime_impl.cpp: Fixed issue #11
+
+* src/dds/types.hpp: New file mapping types from DDS => dds
+* src/dds/*: Homogenized public types to belong to the "dds" namespace.
+
+2010-03-31  Angelo Corsaro  <angelo@icorsaro.net>
+
+
+* cppcheck: Run cppcheck over SimD and detected a few small
+issues, such as some missing "&" here and there. The detected
+issues have all been fixed as noted below.
+
+* src/dds/peer/topic_impl.hpp:
+* src/dds/topic.hpp:
+
+Added missing "&" from ctor and init method.
+
+* src/dds/signals.hpp: New file defining DDS-related events.
+
+* src/dds/peer/reader_impl.hpp:
+* src/dds/reader.hpp:
+
+- Refactored the signal-handling to use a templetized connect
+method to connects signals to slots. The implementation now should
+not be simpler to read and the slight API change should also
+improve the user experience. The downside is that existing
+applications will have to change the slot-registration call.
+
+NOTE: for those folks that are already using GCC 4.5, you can use
+lambdas to connect slots to SimD defined signals.
+
+- Added iterator-based read/take
+
+* src/dds/peer/instance_writer_impl.hpp: Refeactored the instance
+data writer so to move the implementation under the peer folder.
+
+
+* demo/ping/ping-sub.cpp:
+* demo/ping/ping-asub.cpp:
+
+Updated the demo to reflect the changes in the signal/slog API
+and to take advantage of the new Iterator-based read/take.
+
+* cmake/osmacros.cmake: Added -std=c++0x option to allow some
+C++0x extensions that are supported by both GCC and MS compilers.
+
+* demo/ishapes/Circle.cpp:
+* demo/ishapes/Circle.hpp:
+* demo/ishapes/DDSShapeDynamics.cpp
+* demo/ishapes/Shape.cpp
+* demo/ishapes/Shape.hpp
+* demo/ishapes/Square.cpp
+* demo/ishapes/Square.hpp
+* demo/ishapes/Triangle.cpp
+* demo/ishapes/Triangle.hpp
+
+New graphics.
+
+* demo/ishapes/ShapesDialog.cpp
+* demo/ishapes/ShapesDialog.hpp
+* demo/ishapes/ShapesWidget.cpp
+* demo/ishapes/ShapesWidget.hpp
+* demo/ishapes/FilterDialog.cpp:
+* demo/ishapes/FilterDialog.hpp:
+
+Dialog that allow to set-up a content filter in the shapes demo.
+
+NOTE: The support for content-filtering in the demo is not
+complete yet.
+
+2010-03-25  Angelo Corsaro  <angelo@icorsaro.net>
+
+* CMakeLists.txt: Changed order for doc documentation
+
+* README, INSTALL: Updated to reflect CMake build system
+
+2010-03-02  Angelo Corsaro  <angelo@icorsaro.net>
+* src/dds/qos.hpp: Fixed typo in the set_reliable(DDS::Duration_t timeout).
+
+2010-02-12  Angelo Corsaro  <angelo@icorsaro.net>
+
+* Changed build system to CMake. This will allow to build SimD on
+Linux, Windows and MacOS.
+
+* Added support for content filtered topics
+
+* src/dds/*.hpp: Added export macro required by microsoft compilers.
+
+* src/dds/runtime.hpp/cpp: Removed start/stop method from the
+Runtime class as this were not exception safe. Now your code
+has simply to create a Runtime object whose constructor will call
+"start" and distructor will call the "stop".
+
+
+2009-12-23  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/dds/instance_writer.hpp: Fixed dispose method to properly
+pass key + instance handle.
+
+* src/dds/assertion.hpp (dds): Fixed mispelling "poscondition" ->
+"postcondition"
+
+* src/dds/writer.hpp (DataWriter): Fixed mispelling in the
+forwarding of the write with timestamp method.
+
+* src/dds/peer/writer_impl.hpp (DataWriterImpl): Fixed method that
+writes data with time-stamp to call the legacy API
+write_w_timestamp.
+
+2009-12-05  Angelo Corsaro  <angelo@icorsaro.net>
+
+* Updated:
+- namespace from "simd" to "dds"
+
+- updated internal implementation of the API to being to use
+consistently the pimpl idiom while keeping the implementation in
+a separate directory
+
+- updated ishapes demo
+
+
+2009-10-06  Angelo Corsaro  <angelo@icorsaro.net>
+
+* demo/ishapes:
+
+Added OpenSplice DDS ishapes demo which allows you to visually
+play with pub/sub. Notice that the demo does not allow yet to
+configure QoS (although a QoS button exist on the GUI).
+
+* configure:
+
+Removed generation of -l for BOOST libraries.
+
+Fixed erroneous hard-coded path included in the file
+
+* config/lib/BOOST.MACROS.GNU:
+
+This file includes defaults BOOST libraries include. Customize
+it if needed (esp. if using BOOST < 1.40).
+
+
+2009-09-15  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/simd/traits.hpp: Moved handle_body_traits here from condition.hpp
+
+* src/simd/topic.hpp: Now owns reference to DomainParticipant
+
+* src/simd/runtime.hpp: * src/simd/runtime.cpp: Added finalization
+method and changed <init> to <start>.
+
+* src/simd/qos.hpp:
+* src/simd/qos.cpp:
+
+Reformatting.
+
+* demo/ping/ping-sub.cpp:
+* demo/ping/ping-pub.cpp:
+* demo/ping/ping-asub.cpp:
+
+* demo/hello/hello-sub.cpp:
+* demo/hello/hello-pub.cpp:
+
+Updated demos to reflect changes into the Runtime API.
+
+* src/simd/reader.hpp:
+* src/simd/config.hpp:
+* src/simd/condition.hpp:
+* src/simd/condition.cpp:
+
+Updated condition to simplify their creation and allow for safe
+downcasting when needed (e.g. when getting conditions out of a
+WaitSet).
+
+* src/simd/instance_writer.hpp: Removed some warning due to some
+missing return vals.
+
+* demo/ping/ping-sub.cpp: Updated to show the use of the extended
+Condition API.
+
+2009-09-08  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/simd/runtime.hpp:
+* src/simd/memory.hpp:
+Removed OpenSplice DDS includes
+
+* src/simd/instance_writer.hpp:
+* src/simd/writer.hpp:
+Removed explicit dependency from boost::shared_ptr.
+
+* src/simd/config.hpp: Added OpenSplice DDS specific includes.
+
+2009-08-31  Angelo Corsaro  <angelo@icorsaro.net>
+
+* demo/ping/ping-sub.cpp:
+* demo/ping/ping-pub.cpp:
+* demo/ping/ping-asub.cpp:
+
+* demo/hello/hello-sub.cpp:
+* demo/hello/hello-pub.cpp:
+
+Updated demo examples to reflect API changes described below.
+
+
+
+* src/simd/writer.hpp:
+
+* src/simd/waitset.hpp:
+* src/simd/waitset.cpp:
+
+* src/simd/topic.hpp:
+
+* src/simd/runtime.hpp:
+
+* src/simd/reader.hpp:
+
+* src/simd/memory.cpp:
+
+* src/simd/condition.hpp:
+* src/simd/condition.cpp:
+
+Made Topic(s)/DataReader(s)/DataWriter(s) as reference
+objects. Now in the API the boost::shared_ptr is no more
+visible, this is used internally yet the user gets reference
+sematics for all the DDS entities. Othern than making the API
+simpler, this also makes it safer.
+
+
+2009-08-25  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/simd/condition.hpp:
+* src/simd/waitset.hpp: Fixed implementation for ExecutableConditions.
+
+2009-08-21  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/simd/simd.hpp:
+* src/simd/simd.cpp: Main header file that application need to include.
+
+* src/simd/waitset.hpp:
+* src/simd/waitset.cpp: Implemented SimD executable waitset.
+
+* src/simd/reader.hpp: Added registration logic for listener events.
+
+2009-08-17  Angelo Corsaro  <angelocorsaro@gmail.com>
+
+* demo/ping/ping-*.cpp: updated to reflect changes in the SimD API.
+
+2009-08-16  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/simd/condition.cpp:
+* src/simd/condition.hpp:
+* src/simd/reader.hpp
+
+Added support for waitset and conditions. SimD also provides a
+new kind of Condition which can dispatch call to a specified
+functor.
+
+2009-08-12  Angelo Corsaro  <angelo@icorsaro.net>
+
+* src/simd/*.hpp: removed forward declaration of classes within
+the simd namespace to work around some parsing issues that were
+preventing proper code-aid in NetBeans.
+
+* configure: Now also adds required BOOST libraries from what
+installed on the target machien (previously BOOST 1.39.0 was
+assumed)
+
+* README: Removed reference to the SWATCH project.
+
+* src/simd/writer.hpp: addedd missing "return" on write methods.
+* src/simd/reader.hpp: removed scope qualifier to address compilation
+issues with gcc 4.2.
+
+Thanks to Reynald Bourtembourg for catchings this.
+
+2009-07-20  Angelo Corsaro  <angelo@icorsaro.net>
+
+* Release SimD v0.1-alpha

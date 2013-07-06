@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,12 +11,18 @@
  */
 package org.opensplice.cm.data;
 
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 
-import org.opensplice.cm.meta.*;
-
+import org.opensplice.cm.meta.MetaCollection;
+import org.opensplice.cm.meta.MetaField;
+import org.opensplice.cm.meta.MetaStruct;
+import org.opensplice.cm.meta.MetaType;
+import org.opensplice.cm.meta.MetaUnion;
+import org.opensplice.cm.meta.MetaUnionCase;
 /**
  * Represents Splice userData
  * 
@@ -31,7 +37,7 @@ public class UserData {
      * @param _type The type of the userdata.
      */
     public UserData(MetaType _type){
-        data = new LinkedHashMap();
+        data = new LinkedHashMap<String, String>();
         type = _type;
     }
     
@@ -46,6 +52,119 @@ public class UserData {
         data.put(fieldName, fieldValue);
     }
     
+    public boolean isUnboundedSequence(String name) {
+        name = name.replaceAll("[\\[0-9]*]", "");
+        boolean result = false;
+        if (name != null) {
+            MetaField f;
+            f = type.getField(name);
+
+            /** Yes it is a collection!! */
+            if ((f != null) && (!("c_string".equals(f.getTypeName())))) {
+                /** This check should not be necessary */
+                if (f instanceof MetaCollection) {
+                    MetaCollection mc = (MetaCollection) f;
+                    int size = mc.getMaxSize();
+                    if (size == 0) {
+                        result = true;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    
+    public boolean isStringCollection(String name) {
+        name = name.replaceAll("[\\[0-9]*]", "");
+        boolean result = false;
+        MetaField f = type.getField(name);
+        if (f != null) {
+            String typeName = f.getTypeName();
+            if (typeName.startsWith("C_SEQUENCE<c_string")) {
+                result = true;
+            }
+            if (typeName.startsWith("C_STRING<")) {
+                result = true;
+            }
+        }
+        return result;
+    }
+
+    public boolean isCollection(String name) {
+        name = name.replaceAll("[\\[0-9]*]", "");
+        boolean result = false;
+
+        MetaField f;
+        f = type.getField(name);
+         
+        /**Yes it is a collection!!*/
+        if( (f != null) && (!("c_string".equals(f.getTypeName()))) ){
+            /**This check should not be necessary */ 
+            if(f instanceof MetaCollection){
+                MetaCollection mc = (MetaCollection) f;
+                /* check if it is not an recursive type */
+                if(mc.getMaxSize() != -1){
+                    result = true;
+                }
+            } else if(f instanceof MetaStruct){
+                result = true;
+            }
+        }
+
+        return result;
+    }
+    
+    public boolean isUnboundedArray(String name) {
+        name = name.replaceAll("[\\[0-9]*]", "");
+        boolean result = false;
+        if (name != null) {
+            MetaField f;
+            f = type.getField(name);
+             
+            /**Yes it is a collection!!*/
+            if( (f != null) && (!("c_string".equals(f.getTypeName()))) ){
+                /**This check should not be necessary */ 
+                if(f instanceof MetaCollection){
+                    if (f.getTypeName().startsWith("C_ARRAY")) {
+                        result = true;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    
+    public boolean isStructure(String name) {
+        name = name.replaceAll("[\\[0-9]*]", "");
+        boolean result = false;
+        if (name != null) {
+            MetaField f;
+            f = type.getField(name);
+             
+            /**Yes it is a collection!!*/
+            if( (f != null) && (!("c_string".equals(f.getTypeName()))) ){
+                /**This check should not be necessary */ 
+                if(f instanceof MetaStruct){
+                    result = true;  
+                }
+            }
+        }
+        return result;
+    }
+    
+    public boolean isUnion(String name) {
+        name = name.replaceAll("[\\[0-9]*]", "");
+        boolean result = false;
+        if (name != null) {
+            MetaField f;
+            f = type.getField(name);
+            if (f instanceof MetaUnion) {
+                result = true;
+            }
+        }
+        return result;
+    }
+
     /**
      * Collects the value of a collection field in this userdata.
      @verbatim
@@ -88,34 +207,33 @@ public class UserData {
         {
             subTypeIsString = true;
         }
-        
-        
-        
+
         if(subType instanceof MetaCollection){
             String actualName;
             
             if((size == 0) && (subTypeIsString)){ //unbounded sequence with unbounded strings
-                Iterator iter = data.keySet().iterator();
-                
+                Iterator<String> iter = data.keySet().iterator();
+                StringBuffer buf = new StringBuffer(value);
                 while(iter.hasNext()){
-                    fieldName = (String)iter.next();
+                    fieldName = iter.next();
                     
                     if( (fieldName.startsWith(name)) && 
                         (fieldName.charAt(name.length()) == '['))
                     {
                         if(first){
-                            value += (String)data.get(fieldName);
+                            buf.append(data.get(fieldName));
                             first = false;
                         } 
                         else{
-                            value += "," + (String)data.get(fieldName);    
+                            buf.append("," + data.get(fieldName));
                         }
                     }
                 }
+                value = buf.toString();
             }
             else{
                 int index;
-                
+                StringBuffer buf = new StringBuffer(value);
                 for(int i=0; i<size; i++){
                     index = name.indexOf('[');
                     
@@ -127,14 +245,13 @@ public class UserData {
                     }
                 
                     if(i == (size - 1)){ //last, no comma before, no comma after
-                        value += this.getCollectionFieldValue(
-                                (MetaCollection)subType, actualName);
+                        buf.append(this.getCollectionFieldValue((MetaCollection) subType, actualName));
                     }
                     else{//otherwise; comma after
-                        value += this.getCollectionFieldValue(
-                                (MetaCollection)subType, actualName)  + ",";
+                        buf.append(this.getCollectionFieldValue((MetaCollection) subType, actualName) + ",");
                     }
                 }
+                value = buf.toString();
             }
         }
         else{
@@ -157,7 +274,7 @@ public class UserData {
              * added to the result. 
              * 
              */
-            Iterator iter = data.keySet().iterator();
+            Iterator<String> iter = data.keySet().iterator();
             int index;
             String fieldNameStripped, nameStripped, fieldNameHooks, nameHooks;
             
@@ -171,9 +288,9 @@ public class UserData {
                 nameStripped = name;
                 nameHooks = null;
             }
-            
+            StringBuffer buf = new StringBuffer(value);
             while(iter.hasNext()){
-                fieldName = (String)iter.next();
+                fieldName = iter.next();
                 index = fieldName.indexOf("[");
                 
                 if(index != -1){
@@ -191,15 +308,16 @@ public class UserData {
                         (fieldNameHooks.endsWith(nameHooks))){
                             
                         if(first){
-                            value += (String)data.get(fieldName);
+                            buf.append(data.get(fieldName));
                             first = false;
                         } 
                         else{
-                            value += "," + (String)data.get(fieldName);    
+                            buf.append("," + data.get(fieldName));
                         }
                     }    
                 }
             }
+            value = buf.toString();
         }
         
         if(!typeIsString){
@@ -222,8 +340,8 @@ public class UserData {
      * @param fieldName The nested fieldName ('.' separated)
      * @return The value of the field.
      */   
-    public String getFieldValue(String fieldName){
-        String value = (String)(data.get(fieldName));
+    public String getFieldValue(String fieldName){        
+        String value = (data.get(fieldName));
         
         /**Maybe it is a collection type.*/
         if(value == null){
@@ -241,13 +359,51 @@ public class UserData {
         return value;
     }
     
+    public String getFieldSwitchValue(String fieldName, String switchValue) {
+        String value = (data.get(fieldName));
+
+        /** Maybe it is a collection type. */
+        if (value == null) {
+            MetaField f;
+            f = type.getField(fieldName);
+
+            /** Yes it is a collection!! */
+            if ((f != null) && (!("c_string".equals(f.getTypeName())))) {
+                /** This check should not be necessary */
+                if (f instanceof MetaCollection) {
+                    f = ((MetaCollection) f).getSubType();
+                }
+
+                if (f instanceof MetaStruct) {
+                    MetaField[] mf = ((MetaStruct) f).getFields();
+                    MetaUnionCase muc = null;
+                    for (int i = 0; i < mf.length && muc == null; i++) {
+                        if (mf[i] instanceof MetaUnion) {
+                            muc = ((MetaUnion) mf[i]).getCase(switchValue);
+                            if (muc != null) {
+                                value = muc.getName();
+                            }
+                        }
+                    }
+                } else if (f instanceof MetaUnion) {
+                    MetaUnionCase muc = null;
+                    muc = ((MetaUnion) f).getCase(switchValue);
+                    if (muc != null) {
+                        value = muc.getName();
+                    }
+                }
+            }
+        }
+        return value;
+    }
+
     /**
      * Provides access to all nested fieldnames in the data.
      * 
      * @return An ordered set of fields in the data.
      */  
-    public LinkedHashSet getFieldNames(){
-        return new LinkedHashSet(data.keySet());
+    public LinkedHashSet<String> getFieldNames() {
+        return new LinkedHashSet<String>(data.keySet());
     }
     
     /**
@@ -255,25 +411,26 @@ public class UserData {
      * 
      * @return An ordered set of field values.
      */
-    public LinkedHashSet getFieldValues(){
-        return new LinkedHashSet(data.values());
+    public LinkedHashSet<String> getFieldValues() {
+        return new LinkedHashSet<String>(data.values());
     }
     
+    @Override
     public String toString(){
-        String result, key, value;
-        LinkedHashSet s;
-        Iterator i;
+        String key, value;
+        StringBuffer buf = new StringBuffer("");
         
-        s = new LinkedHashSet(data.keySet());
-        i =  s.iterator();
-        result = "";
-        
-        while(i.hasNext()){
-            key   = (String)(i.next());
-            value = (String)(data.get(key));
-            result += "" + key + ": " + value + "\n";
+        for (Iterator<Entry<String, String>> it = data.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<String, String> entry = it.next();
+            key = entry.getKey();
+            value = entry.getValue();
+            buf.append("" + key + ": " + value + "\n");
         }
-        return result;
+        return buf.toString();
+    }
+    
+    public LinkedHashMap<String, String> getUserData() {
+        return data;
     }
     
     /**
@@ -289,10 +446,10 @@ public class UserData {
      * Map with userdata fields and their values. 
      * <String fieldName, String fieldValue>
      */
-    private LinkedHashMap data;
+    private final LinkedHashMap<String, String> data;
     
     /**
      * The type of the userdata.
      */ 
-    private MetaType type;
+    private final MetaType type;
 }

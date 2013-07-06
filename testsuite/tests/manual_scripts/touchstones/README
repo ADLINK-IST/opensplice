@@ -1,0 +1,28 @@
+* First read ../README.common.
+
+
+* In order to build TouchStones run getNpatchNbuild.sh. It requires the
+following tools:
+  patch   - must be on the path
+  svn     - must be on the path
+  make    - must be on the path (On Linux)
+  cl      - must be on the path (On Windows)
+  link    - must be on the path (On Windows. Note: this has to be a VS
+            linker not a GNU tool with the same name located at /bin/link.
+            The easiest way to achieve the later is to copy link executable
+            from VS installation to $HOME/bin and uncomment lines that add
+            this path to PATH env variable in .bash_profile.)
+
+Details about building TouchStones can be found here:
+https://scarab.prismtech.com/twiki/bin/view/DDS/TouchstoneTesting
+
+
+* Run run_TouchstonesMN.sh for MultiNode test and run_TouchstonesSN.sh for
+SingleNode test. This will take quite some time. The script's log is redirected
+to screen.log. A short way to run the touchstones is the following:
+./run_TouchstonesSN.sh --clean-logs && ./savelogsSN.sh && ./run_TouchstonesMN.sh --clean-logs && ./savelogsMN.sh
+
+
+* After the tests are done run savelogsSN.sh and savelogMN.sh. They will save
+all logs in a file touchstones_results(S|M)N_YYYY-MM-DD_SSSSSSSSSS.tgz in the
+current directory.

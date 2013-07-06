@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -144,8 +144,8 @@ namespace DDS
         ::DDS::InstanceHandle_t handle
       ) THROW_ORB_EXCEPTIONS;
 
-      virtual char * get_domain_id (
-      ) THROW_ORB_EXCEPTIONS;
+      virtual ::DDS::DomainId_t get_domain_id (
+       ) THROW_ORB_EXCEPTIONS;
 
       virtual ::DDS::ReturnCode_t assert_liveliness (
       ) THROW_ORB_EXCEPTIONS;

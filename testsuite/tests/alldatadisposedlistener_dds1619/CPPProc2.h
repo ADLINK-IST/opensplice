@@ -35,7 +35,7 @@ class CPPProc2
             = ::DDS::DomainParticipantFactory::get_instance ();
 
         ::DDS::DomainParticipant_var domain_participant
-                = factory->create_participant (this->default_domain_id_.in (),
+                = factory->create_participant (this->default_domain_id_,
                                               PARTICIPANT_QOS_DEFAULT,
                                               dpl,
                                               DDS::STATUS_MASK_ANY_V1_2 | DDS::ALL_DATA_DISPOSED_TOPIC_STATUS);

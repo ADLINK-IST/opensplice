@@ -10,12 +10,15 @@ setupBuildInfo()
    echo "REPOSITORY_URL=$REPOSITORY_URL" >> $LOGDIR/BUILDINFO
    echo "SETUP_TYPE=$SETUP_TYPE" >> $LOGDIR/BUILDINFO
    echo "BUILD_DIST=$BUILD_DIST" >> $LOGDIR/BUILDINFO
+   echo "BUILD_SRC=$BUILD_SRC" >> $LOGDIR/BUILDINFO
    echo "KEEP_DIST=$KEEP_DIST" >> $LOGDIR/BUILDINFO
    echo "BUILD_DBT=$BUILD_DBT" >> $LOGDIR/BUILDINFO
    echo "BUILD_RBT=$BUILD_RBT" >> $LOGDIR/BUILDINFO
    echo "RUN_DBT=$RUN_DBT" >> $LOGDIR/BUILDINFO
-   echo "RUN_RBT=$RUN_RBT" >> $LOGDIR/BUILDINFO
-   echo "RUN_EXAMPLES=$RUN_EXAMPLES" >> $LOGDIR/BUILDINFO
+   echo "RUN_RBT_SHM=$RUN_RBT_SHM" >> $LOGDIR/BUILDINFO
+   echo "RUN_RBT_SP=$RUN_RBT_SP" >> $LOGDIR/BUILDINFO
+   echo "RUN_EXAMPLES_SHM=$RUN_EXAMPLES_SHM" >> $LOGDIR/BUILDINFO
+   echo "RUN_EXAMPLES_SP=$RUN_EXAMPLES_SP" >> $LOGDIR/BUILDINFO
    echo "VALGRIND=$VALGRIND" >> $LOGDIR/BUILDINFO
    echo "REV=$REV" >> $LOGDIR/BUILDINFO
    echo "VER=$VER" >> $LOGDIR/BUILDINFO
@@ -40,8 +43,21 @@ test_build ()
 {
     test_configure $*
     T_BUILD_1=$?
-    test $2 = 0 -a $T_BUILD_1 != 0 
+    pushd `dirname $1` > /dev/null
+    perl $IBSDIR/../../../bin/process_build_logs.pl -f $1
+    T_BUILD_2=$?
+    popd > /dev/null
+    test $2 = 0 -a $T_BUILD_1 != 0 -a $T_BUILD_2 = 0
     return $?
+}
+
+test_example_build ()
+{
+    pushd $1 > /dev/null
+    perl $IBSDIR/../../../bin/process_build_logs.pl -e $1
+    T_BUILD_1=$?
+    popd > /dev/null
+    return $T_BUILD_1
 }
 
 create_valgrind_summary ()
@@ -60,7 +76,7 @@ create_valgrind_summary ()
     echo "</HEAD>" >> $SUMMARY_FILE
     echo "<BODY bgcolor=white >" >> $SUMMARY_FILE
     echo "<font face=\"monospace\">" >> $SUMMARY_FILE
-    
+
     HERE=`pwd`
     cd $VG_ROOT_DIR || ( echo "Unable to cd to $VG_ROOT_DIR"; return 1 )
 
@@ -83,7 +99,7 @@ create_valgrind_summary ()
                     LEAK_SUMMARY=`awk 'FS="" $0~/( LEAK SUMMARY:)/{ found = 1 }; \
                                      $0~/^(==[0-9]*== [^A-Za-z0-9])/{ if ( found == 1 ) { { new = gensub( "^(==[0-9]*== )", "", 1 ) }; print new "</br>" ; }; }; \
                                      $0~/(suppressed:)/{ found = 0 }' < $j | sed 's/ /\&nbsp;/g' | sed 's/\&nbsp;0\&nbsp;bytes\&nbsp;/<font COLOR="green">\&nbsp;0<\/font>\&nbsp;bytes\&nbsp;/g' \
-                                     | sed '/\&nbsp;0\&nbsp;bytes\&nbsp;/!s@^\(.*\)\(\&nbsp;[0-9,]*\&nbsp;\)\(bytes\&nbsp;.*\)@\1<font COLOR="red"><b>\2<\/b><\/font>\3@g'` 
+                                     | sed '/\&nbsp;0\&nbsp;bytes\&nbsp;/!s@^\(.*\)\(\&nbsp;[0-9,]*\&nbsp;\)\(bytes\&nbsp;.*\)@\1<font COLOR="red"><b>\2<\/b><\/font>\3@g'`
                     if [ "$status" != 1 ]
                     then
                         if [ "`echo $ERROR_SUMMARY | grep -v \" 0 errors\"`" != "" ]
@@ -132,30 +148,24 @@ create_valgrind_summary ()
 
 test_build_dist ()
 {
-    grep 'No such file or directory' $1 > /dev/null 2>&1
+    pushd `dirname $1` > /dev/null
+    perl $IBSDIR/../../../bin/process_build_logs.pl -f $1
     T_BUILD_DIST_1=$?
-    grep ' ## ' $1 > /dev/null 2>&1
-    T_BUILD_DIST_2=$?
-    grep 'Could not load project file' $1 > /dev/null 2>&1
-    T_BUILD_DIST_3=$?
+    popd > /dev/null
     test_configure $*
-    T_BUILD_DIST_4=$?
-    grep 'command not found' $1 > /dev/null 2>&1
-    T_BUILD_DIST_5=$?
-    grep 'syntax error' $1 > /dev/null 2>&1
-    T_BUILD_DIST_6=$?
-    grep 'Permission denied' $1 > /dev/null 2>&1
-    T_BUILD_DIST_7=$?
-    grep 'cannot create' $1 > /dev/null 2>&1
-    T_BUILD_DIST_8=$?
-    grep ': is a directory' $1 > /dev/null 2>&1
-    T_BUILD_DIST_9=$?
+    T_BUILD_DIST_2=$?
 
-    test $2 = 0 -a $T_BUILD_DIST_1 != 0 -a $T_BUILD_DIST_2 != 0 -a $T_BUILD_DIST_3 != 0 -a $T_BUILD_DIST_4 != 0 -a $T_BUILD_DIST_5 != 0 -a $T_BUILD_DIST_6 != 0 -a $T_BUILD_DIST_7 != 0 -a $T_BUILD_DIST_8 != 0 -a $T_BUILD_DIST_9 != 0 
+    test 0 = $2 -a $T_BUILD_DIST_1 = 0 -a $T_BUILD_DIST_2 != 0
     return $?
-}   
+}
 
 test_archive_dist ()
+{
+    test $2 = 0
+    return $?
+}
+
+test_create_source ()
 {
     test $2 = 0
     return $?
@@ -167,8 +177,11 @@ test_build_dbt_tests()
     T_BUILD_DBT_1=$?
     test_configure $*
     T_BUILD_DBT_2=$?
-
-    test $2 = 0 -a $T_BUILD_DBT_1 != 0 -a $T_BUILD_DBT_2 != 0 
+    pushd `dirname $1` > /dev/null
+    perl $IBSDIR/../../../bin/process_build_logs.pl -f $1
+    T_BUILD_DBT_3=$?
+    popd > /dev/null
+    test $2 = 0 -a $T_BUILD_DBT_1 != 0 -a $T_BUILD_DBT_2 != 0 -a $T_BUILD_DBT_3 = 0
     return $?
 }
 
@@ -185,22 +198,23 @@ test_perform_dbt_tests ()
     fi
 
     PASS=`grep 'DBT PASS count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
-    FAIL=`grep 'DBT FAIL count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`    
-    XPASS=`grep 'DBT XPASS count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`    
+    FAIL=`grep 'DBT FAIL count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
+    XPASS=`grep 'DBT XPASS count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
     MISSING=`grep 'DBT missing testcases' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
+    CORES=`grep 'DBT Core dumps' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
     if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" ]
     then
         test_configure $2
         T_PERFORM_DBT_1=$?
         if [ "$3" = 0 -a "$T_PERFORM_DBT_1" != 0 ]
-	then
+    then
            return 0
         else
            DBT_INFO="RUN/DBT=FAIL"
            return 1
         fi
     else
-        DBT_TMP_INFO="P:${PASS}_XP:${XPASS}_F:${FAIL}_M:${MISSING}"
+        DBT_TMP_INFO="P:${PASS}_XP:${XPASS}_F:${FAIL}_M:${MISSING}_C:${CORES}"
         DBT_INFO=`echo $DBT_TMP_INFO | tr -d ' '`
         return 1
     fi
@@ -210,7 +224,11 @@ test_build_rbt_tests ()
 {
     test_configure $*
     T_BUILD_RBT_1=$?
-    test $2 = 0 -a $T_BUILD_RBT_1 != 0 
+    pushd `dirname $1` > /dev/null
+    perl $IBSDIR/../../../bin/process_build_logs.pl -f $1
+    T_BUILD_RBT_2=$?
+    popd > /dev/null
+    test $2 = 0 -a $T_BUILD_RBT_1 != 0 -a $T_BUILD_RBT_2 = 0
     return $?
 }
 
@@ -228,22 +246,23 @@ test_perform_rbt_tests ()
     fi
 
     PASS=`grep 'RBT PASS' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`
-    FAIL=`grep 'RBT FAIL' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`    
-    XPASS=`grep 'RBT XPASS' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`    
+    FAIL=`grep 'RBT FAIL' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`
+    XPASS=`grep 'RBT XPASS' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`
     MISSING=`grep 'Crashed tests amount' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`
+    CORES=`grep 'Core dumps' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`
     if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" ]
     then
         test_configure $2
         T_PERFORM_RBT_1=$?
         if [ "$3" = 0 -a "$T_PERFORM_RBT_1" != 0 ]
-	then
+    then
            return 0
         else
-           RBT_INFO="RUN/RBT=FAIL"
+           RBT_INFO="FAIL"
            return 1
         fi
     else
-        RBT_TMP_INFO="P:${PASS}_XP:${XPASS}_F:${FAIL}_M:${MISSING}"
+        RBT_TMP_INFO="P:${PASS}_XP:${XPASS}_F:${FAIL}_M:${MISSING}_C:${CORES}"
         RBT_INFO=`echo $RBT_TMP_INFO | tr -d ' '`
         return 1
     fi

@@ -1,0 +1,13 @@
+// -*- MPC -*-
+// $Id:$
+
+project : sacs_typesupport {
+    custom_only = 1
+    TypeSupport_Files {
+        ../../idl
+    }
+
+    Documentation_Files {
+        ../../.
+    }
+}

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,6 +19,7 @@ import org.opensplice.cm.EntityFilter;
 import org.opensplice.cm.Reader;
 import org.opensplice.cm.Topic;
 import org.opensplice.cm.data.Sample;
+import org.opensplice.cm.data.UserData;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.SampleModelSizeException;
 import org.opensplice.common.model.ModelRegister;
@@ -175,6 +176,34 @@ public abstract class SampleModel extends ModelRegister{
         return s;
     }
     
+    /* check if the given name is an collection */
+    public boolean isCollection(String name, int index) {
+        boolean result = false;
+        UserData data = this.getUserDataModel().getDataAt(index).getMessage().getUserData();
+        if (data != null) {
+            result = data.isCollection(name);
+        }
+        return result;
+    }
+    
+    /* check if the given name is an unboundedSequence */
+    public boolean isUnboundedSequence(String name, int index) {
+        boolean result = false;
+        UserData data = this.getUserDataModel().getDataAt(index).getMessage().getUserData();
+        if (data != null) {
+            result = data.isUnboundedSequence(name);
+        }
+        return result;
+    }
+    
+    public void initiateToBeWrittenUserData(UserData data) {
+        toBeWrittenUserData = data;
+    }
+    
+    public UserData getToBeWrittenUserData() {
+        return toBeWrittenUserData;
+    }
+    
     /**
      * Provides access to singleUserDataModel.
      * 
@@ -240,6 +269,24 @@ public abstract class SampleModel extends ModelRegister{
         return added;
     }
     
+    /**
+     * Adds a Sample to the model.
+     * 
+     * @param s The Sample to add.
+     * @return true if it was added and is visible (not filtered out by a
+     *         UserDataFilter), false otherwise.
+     */
+    protected boolean addSample(Sample s, String struct){
+        boolean added = userDataModel.setData(s,struct);
+        
+        if(added){
+            singleUserDataModel.setData(s,struct);
+            sampleInfoModel.setData(s);
+            lastReadSample = s;
+        }
+        return added;
+    }
+    
     protected String getPartitions(Reader reader){
         String partitions = null;
         Entity entity;
@@ -288,4 +335,6 @@ public abstract class SampleModel extends ModelRegister{
     protected SampleInfoTableModel sampleInfoModel;
     
     protected Sample lastReadSample = null;
+
+    protected UserData toBeWrittenUserData = null;
 }

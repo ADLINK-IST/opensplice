@@ -1,0 +1,9 @@
+// $Id$
+project: wxcore {
+  specific(prop:windows) {                                  
+    Debug::lit_libs   += wx$(WX_PORT)$(WX_VERSION)$(WX_UNICODE)d_gl
+    Release::lit_libs += wx$(WX_PORT)$(WX_VERSION)$(WX_UNICODE)_gl
+  } else {
+    lit_libs += wx_$(WX_PORT)$(WX_UNICODE)_gl$(WX_VERSION)
+  }
+}

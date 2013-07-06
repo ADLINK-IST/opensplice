@@ -1,5 +1,4 @@
 TARGET_DLIB		:= $(DDS_USER)
-EXTRACTED_LIB = libddscore
 
 include		$(OSPL_HOME)/setup/makefiles/target.mak
 
@@ -16,10 +15,11 @@ CINCS		+= -I$(OSPL_HOME)/src/database/database/include
 CINCS		+= -I$(OSPL_HOME)/src/kernel/include
 CINCS		+= -I$(OSPL_HOME)/src/configuration/config/include
 CINCS		+= -I$(OSPL_HOME)/src/configuration/parser/include
+CINCS		+= -I$(OSPL_HOME)/src/utilities/include
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS   += $(SHLDLIBS)
-LDLIBS   += -l$(DDS_OS) -l$(DDS_DATABASE) -l$(DDS_KERNEL) 
+LDLIBS   += -l$(DDS_OS) -l$(DDS_UTIL) -l$(DDS_DATABASE) -l$(DDS_KERNEL)
 LDLIBS   += -l$(DDS_CONF) -l$(DDS_CONFPARSER)
 
 -include $(DEPENDENCIES)

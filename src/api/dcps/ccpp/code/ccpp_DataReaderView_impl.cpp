@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi.h"
@@ -57,7 +57,7 @@ DDS::ReadCondition_ptr DDS::DataReaderView_impl::create_readcondition (
       if (myUD)
       {
         gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                  DDS::ccpp_CallBack_DeleteUserData, NULL);
+                                  ccpp_CallBack_DeleteUserData, NULL);
       }
       else
       {
@@ -107,8 +107,8 @@ DDS::QueryCondition_ptr DDS::DataReaderView_impl::create_querycondition (
         myUD = new DDS::ccpp_UserData(queryCondition);
         if (myUD)
         {
-	       gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                         DDS::ccpp_CallBack_DeleteUserData, NULL);
+           gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
+                                         ccpp_CallBack_DeleteUserData, NULL);
         }
         else
         {
@@ -145,12 +145,8 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::delete_readcondition (
     if (os_mutexLock(&(readCondition->rc_mutex)) == os_resultSuccess)
     {
       result =  gapi_dataReaderView_delete_readcondition(_gapi_self, handle);
-      if (result == DDS::RETCODE_OK)
+      if (result != DDS::RETCODE_OK)
       {
-      }
-      else
-      {
-          result = DDS::RETCODE_ERROR;
           OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to delete readcondition");
       }
       if (os_mutexUnlock(&(readCondition->rc_mutex)) != os_resultSuccess)
@@ -180,7 +176,7 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::set_qos (
 {
   DDS::ReturnCode_t result;
 
-  if (&qos == DDS::DefaultQos::DataReaderViewQosDefault)
+  if (&qos == &DDS::DefaultQos::DataReaderViewQosDefault.in())
   {
     result = gapi_dataReaderView_set_qos(_gapi_self, GAPI_DATAVIEW_QOS_DEFAULT);
   }
@@ -236,9 +232,10 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::read (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
     return gapi_fooDataReaderView_read(
                 _gapi_self,
-                data_values,
+                &ctx,
                 &info_seq,
                 max_samples,
                 sample_states,
@@ -255,9 +252,10 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::take (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
     return gapi_fooDataReaderView_take(
                 _gapi_self,
-                data_values,
+                &ctx,
                 &info_seq,
                 max_samples,
                 sample_states,
@@ -278,9 +276,10 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::read_w_condition (
   readCondition = dynamic_cast<DDS::ReadCondition_impl_ptr>(a_condition);
   if (readCondition)
   {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
     result = gapi_fooDataReaderView_read_w_condition(
                 _gapi_self,
-                data_values,
+                &ctx,
                 &info_seq,
                 max_samples,
                 readCondition->_gapi_self);
@@ -301,9 +300,10 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::take_w_condition (
   readCondition = dynamic_cast<DDS::ReadCondition_impl_ptr>(a_condition);
   if (readCondition)
   {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
     result = gapi_fooDataReaderView_take_w_condition(
                 _gapi_self,
-                data_values,
+                &ctx,
                 &info_seq,
                 max_samples,
                 readCondition->_gapi_self);
@@ -318,10 +318,11 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::read_next_sample (
 {
   gapi_sampleInfo gapi_info;
   DDS::ReturnCode_t result;
+  ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
 
   result = gapi_fooDataReaderView_read_next_sample(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                static_cast<gapi_foo *>((void*)&ctx),
                 &gapi_info);
 
   if (result == DDS::RETCODE_OK)
@@ -338,10 +339,11 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::take_next_sample (
 {
   gapi_sampleInfo gapi_info;
   DDS::ReturnCode_t result;
+  ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
 
   result = gapi_fooDataReaderView_take_next_sample(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                static_cast<gapi_foo*>((void*)&ctx),
                 &gapi_info);
 
   if (result == DDS::RETCODE_OK)
@@ -361,9 +363,10 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::read_instance (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
     return gapi_fooDataReaderView_read_instance(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,
@@ -382,9 +385,10 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::take_instance (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
     return gapi_fooDataReaderView_take_instance(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,
@@ -403,9 +407,10 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::read_next_instance (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
     return gapi_fooDataReaderView_read_next_instance(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,
@@ -424,9 +429,10 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::take_next_instance (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
     return gapi_fooDataReaderView_take_next_instance(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,
@@ -449,9 +455,10 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::read_next_instance_w_condition (
   readCondition = dynamic_cast<DDS::ReadCondition_impl_ptr>(a_condition);
   if (readCondition)
   {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
     result = gapi_fooDataReaderView_read_next_instance_w_condition(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,
@@ -474,9 +481,10 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::take_next_instance_w_condition (
   readCondition = dynamic_cast<DDS::ReadCondition_impl_ptr>(a_condition);
   if (readCondition)
   {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, NULL};
     result = gapi_fooDataReaderView_take_next_instance_w_condition(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,

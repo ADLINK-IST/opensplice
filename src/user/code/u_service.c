@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -24,10 +24,12 @@
 #include "u_dispatcher.h"
 #include "u_service.h"
 
+
 #include "v_service.h"
 #include "v_networking.h"
 #include "v_durability.h"
 #include "v_cmsoap.h"
+#include "v_rnr.h"
 #include "v_configuration.h"
 #include "v_entity.h"
 #include "v_event.h"
@@ -48,14 +50,14 @@ serviceTermHandler(os_terminationType reason)
 {
     os_int32 result = 0;
 
-	if (reason == OS_TERMINATION_NORMAL){
+    if (reason == OS_TERMINATION_NORMAL){
         OS_REPORT_1(OS_WARNING, "serviceTermHandler", 0,
                     "Caught termination request: %d. Please use 'ospl stop' for termination.",
                     reason);
-		result = 0;  /* stop termination process */
-	} else {   /* OS_TERMINATION_ERROR */
-	    result = 1;  /* continue termination process */
-	}
+        result = 0;  /* stop termination process */
+    } else {   /* OS_TERMINATION_ERROR */
+        result = 1;  /* continue termination process */
+    }
     return result;
 }
 
@@ -123,9 +125,6 @@ lockPages(
                         OS_REPORT_1(OS_WARNING,"lockPages", 0,
                             "Failed to retrieve Locking for service '%s': Locking disabled", name);
                     }
-                } else {
-                    OS_REPORT_1(OS_INFO,"lockPages", 0,
-                        "service '%s': Locking disabled", name);
                 }
             } else if (iterLength > 1) {
                 OS_REPORT_2(OS_WARNING,"lockPages", 0,
@@ -165,15 +164,15 @@ u_serviceNew(
     u_service s;
     u_result r;
     os_result osr;
+    c_bool serviceTermHandlerRequired = FALSE;
 
     ks = NULL;
-    domain = u_domainOpen(uri, timeout);
-    if (domain == NULL) {
-        OS_REPORT(OS_ERROR,"u_serviceNew",0,
-                  "Failure to open the kernel");
+    r = u_domainOpen(&domain, uri, timeout);
+    if (r != U_RESULT_OK) {
+        OS_REPORT_1(OS_ERROR,"u_serviceNew",0,
+                  "Failure to open the kernel - return code %d", r);
         return NULL;
     }
-
 
     s = NULL;
     if (domain != NULL) {
@@ -191,29 +190,38 @@ u_serviceNew(
                 if (osr == os_resultSuccess) {
 #endif
                     switch(kind){
+                    case U_SERVICE_DDSI:
+                    case U_SERVICE_DDSIE:
                     case U_SERVICE_NETWORKING:
                         ks = v_service(v_networkingNew(sm, name,
                                                        extendedStateName,
                                                        (v_participantQos)qos));
-                        os_procSetTerminationHandler(serviceTermHandler);
+                        serviceTermHandlerRequired = TRUE;
                     break;
                     case U_SERVICE_DURABILITY:
                         ks = v_service(v_durabilityNew(sm, name,
                                                        extendedStateName,
                                                        (v_participantQos)qos));
-                        os_procSetTerminationHandler(serviceTermHandler);
+                        serviceTermHandlerRequired = TRUE;
                     break;
                     case U_SERVICE_CMSOAP:
                         ks = v_service(v_cmsoapNew(sm, name,
                                                    extendedStateName,
                                                    (v_participantQos)qos));
-                        os_procSetTerminationHandler(serviceTermHandler);
+                        serviceTermHandlerRequired = TRUE;
                     break;
+                    case U_SERVICE_RNR:
+                        ks = v_service(v_rnrNew(sm, name,
+                                                extendedStateName,
+                                                (v_participantQos)qos));
+                        serviceTermHandlerRequired = TRUE;
+                    break;
+                    case U_SERVICE_DBMSCONNECT:
                     case U_SERVICE_INCOGNITO:
                         ks = v_serviceNew(sm, name,
                                           extendedStateName,
                                           (v_participantQos)qos, NULL);
-                        os_procSetTerminationHandler(serviceTermHandler);
+                        serviceTermHandlerRequired = TRUE;
                     break;
                     case U_SERVICE_SPLICED:
                     break;
@@ -226,6 +234,14 @@ u_serviceNew(
                     OS_REPORT(OS_ERROR,"u_serviceNew",0,
                               "Failed to lock memory pages for current process");
                 }
+
+                /* Install the service signal handlers if spliced is not within this
+                 * same process.  i.e. only do this if each service is in its own
+                 * process so signal handlers won't interfere */
+                if (serviceTermHandlerRequired && !u_splicedInProcess()) {
+                    os_procSetTerminationHandler(serviceTermHandler);
+                }
+
 #ifndef INTEGRITY
 
             } else {
@@ -312,6 +328,7 @@ u_serviceInit(
 
     if ((service != NULL) && (domain != NULL)) {
         admin = watchSplicedAdmin(os_malloc((os_uint32)C_SIZEOF(watchSplicedAdmin)));
+        service->stt = NULL;
         if (admin != NULL) {
             service->serviceKind = kind;
             r = u_participantInit(u_participant(service), domain);
@@ -384,6 +401,23 @@ u_serviceChangeState(
         result = u_entityReadClaim(u_entity(service), (v_entity*)(&s));
         if (result == U_RESULT_OK) {
             assert(s);
+
+            /* start or stop the Termination Monitor Thread */
+            if (newState == STATE_TERMINATING) {
+                if (service->stt == NULL) {
+                    service->stt = u_serviceTerminationThreadNew();
+                }
+            }
+            if (newState == STATE_TERMINATED) {
+                if (service->stt != NULL) {
+                    r = u_serviceTerminationThreadFree(service->stt);
+                    if (r != U_RESULT_OK) {
+                        OS_REPORT_1(OS_ERROR, "u_serviceChangeState", 0,
+                                   "Failed to clean up the Service Termination Thread for process %d",os_procIdSelf());
+                    }
+                    service->stt = NULL;
+                }
+            }
             result = v_serviceChangeState(s, newState);
             r = u_entityRelease(u_entity(service));
         } else {
@@ -391,6 +425,7 @@ u_serviceChangeState(
                       "Could not claim service.");
         }
     }
+
     return result;
 }
 

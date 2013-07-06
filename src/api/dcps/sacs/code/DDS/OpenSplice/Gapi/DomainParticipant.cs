@@ -257,7 +257,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_domain_id();
          */
         [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipant_get_domain_id")]
-        public static extern IntPtr get_domain_id(
+        public static extern int get_domain_id(
             IntPtr _this);
 
         /*     ReturnCode_t

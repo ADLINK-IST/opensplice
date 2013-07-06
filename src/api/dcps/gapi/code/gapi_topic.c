@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -26,6 +26,9 @@
 #include "u_entity.h"
 #include "u_topic.h"
 #include "v_kernel.h"
+#include "sd_serializerXMLMetadata.h"
+#include "sd_serializerXMLTypeinfo.h"
+#include "sd_typeInfoParser.h"
 
 #define U_TOPIC_SET(t,e)     _EntitySetUserEntity(_Entity(t), u_entity(e))
 
@@ -557,7 +560,6 @@ gapi_topic_dispose_all_data (
         uTopic = U_TOPIC_GET(topic);
         uResult = u_topicDisposeAllData( uTopic );
         result = kernelResultToApiResult(uResult);
-
     }
 
    _EntityRelease(topic);
@@ -945,5 +947,74 @@ _TopicNotifyListener(
             _StatusNotifyAllDataDisposed(status, source);
         }
     }
+}
+
+gapi_string
+gapi_topic_get_metadescription (
+    gapi_topic _this)
+{
+    gapi_returnCode_t result;
+    _Topic topic;
+    u_topic uTopic;
+
+    gapi_string metadescription = NULL;
+    gapi_string description = NULL;
+    sd_serializer serializer;
+    sd_serializedData serData;
+    c_base base;
+    c_type type = NULL;
+
+    topic = gapi_topicClaim(_this, &result);
+    if ( topic && result == GAPI_RETCODE_OK )
+    {
+        uTopic = U_TOPIC_GET(topic);
+        type = u_topicGetUserType( uTopic );
+        if ( type ) {
+            base = c_getBase(type);
+            if (base) {
+                serializer = sd_serializerXMLTypeinfoNew(base, FALSE);
+                if ( serializer ) {
+                    serData = sd_serializerSerialize(serializer, (c_object)type);
+                    if ( serData ) {
+                        description = sd_serializerToString(serializer, serData);
+                        if ( description ) {
+                            metadescription = gapi_string_dup(description);
+                            os_free(description);
+                        }
+                        sd_serializedDataFree(serData);
+                    }
+                    sd_serializerFree(serializer);
+                }
+            }
+            c_free(type);
+        }
+    }
+   _EntityRelease(topic);
+   return metadescription;
+}
+
+gapi_string
+gapi_topic_get_keylist (
+    gapi_topic _this)
+{
+    gapi_returnCode_t result;
+    _Topic topic;
+    u_topic uTopic;
+
+    gapi_string keylist = NULL;
+    gapi_string keys = NULL;
+
+    topic = gapi_topicClaim(_this, &result);
+    if ( topic && result == GAPI_RETCODE_OK )
+    {
+        uTopic = U_TOPIC_GET(topic);
+        keys = u_topicGetTopicKeys( uTopic );
+        if (keys) {
+            keylist = gapi_string_dup(keys);
+            c_free(keys);
+        }
+    }
+   _EntityRelease(topic);
+   return keylist;
 }
 

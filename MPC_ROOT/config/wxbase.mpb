@@ -1,0 +1,35 @@
+// $Id$
+project {
+  // wxWindows specific variables used by this and other wxWindows related
+  // base projects.  You must always set WXWINDOWS_ROOT to the full path of
+  // the installation of wxWindows.
+  //
+  // If you have a project that inherits from this project, you can do one
+  // of two things to get the following variable settings:
+  // 1) You can set them as environment variables before you begin building.
+  // 2) You can have your project also inherit from one of the base projects
+  //    to automatically set them.  Use 'wxmake' for use with the 'make'
+  //    project type.  Or use 'wxmsvs' for use with Visual Studio related
+  //    project types (e.g., vc71, vc8, vc9, vc10, etc.).  You may need to
+  //    edit wxmsvs.mpb to correspond to the values of your version of
+  //    wxWindows.
+  //
+  // WX_PORT         - e.g., gtk2, msw
+  // WX_PORT_MACRO   - e.g., __WXGTK__
+  // WX_VERSION      - e.g., -2.9, 29
+  // WX_UNICODE      - e.g., u
+  // WX_BUILD_CONFIG - e.g., gtk2-unicode
+
+  requires += wxwindows
+  includes += $(WXWINDOWS_ROOT)/include/wx$(WX_VERSION) \
+              $(WXWINDOWS_ROOT)/lib/wx/include/$(WX_BUILD_CONFIG)$(WX_VERSION)
+  macros   += WXUSINGDLL $(WX_PORT_MACRO)
+  libpaths += $(WXWINDOWS_ROOT)/lib
+
+  specific(prop:windows) {                                  
+    Debug::lit_libs   += wxbase$(WX_VERSION)$(WX_UNICODE)d
+    Release::lit_libs += wxbase$(WX_VERSION)$(WX_UNICODE)
+  } else {
+    lit_libs += wx_base$(WX_UNICODE)$(WX_VERSION)
+  }
+}

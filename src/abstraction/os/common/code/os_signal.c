@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <pthread.h>
@@ -30,12 +30,21 @@ os_sigsetEmpty (
     sigemptyset (set);
 }
 
-void
+os_result
 os_sigsetFill (
     os_sigset *set
     )
 {
-    sigfillset (set);
+    os_result result;
+    os_int32 r;
+
+    r = sigfillset (set);
+    if (r == 0) {
+        result = os_resultSuccess;
+    } else {
+        result = os_resultFail;
+    }
+    return result;
 }
 
 os_int32
@@ -151,11 +160,20 @@ os_sigProcSetMask (
     sigprocmask (SIG_SETMASK, mask, omask);
 }
 
-void
+os_result
 os_sigThreadSetMask (
     os_sigset *mask,
     os_sigset *omask
     )
 {
-    pthread_sigmask (SIG_SETMASK, mask, omask);
+    os_result result;
+    os_int32 r;
+
+    r = pthread_sigmask (SIG_SETMASK, mask, omask);
+    if (r == 0) {
+        result = os_resultSuccess;
+    } else {
+        result = os_resultFail;
+    }
+    return result;
 }

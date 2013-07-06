@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -22,7 +22,7 @@ public class MetaStruct extends MetaField{
     /**
      * The list of members of the structure.(<MetaField>)
      */ 
-    private ArrayList members;
+    private final ArrayList members;
     
     /**
      * Creates a new structure field.
@@ -36,6 +36,7 @@ public class MetaStruct extends MetaField{
         members = _members;
     }
     
+    @Override
     public MetaField[] getFields(){
         MetaField[] result = new MetaField[members.size()];
     
@@ -46,15 +47,17 @@ public class MetaStruct extends MetaField{
     
     }
     
+    @Override
     public String toString(){
-        String s = super.toString();
-        
-        for(int i=0; i<members.size(); i++){
-            s += "\n" + members.get(i).toString();
+        StringBuffer buf = new StringBuffer();
+        buf.append(super.toString());
+        for (int i = 0; i < members.size(); i++) {
+            buf.append("\n" + members.get(i).toString());
         }
-        return s;
+        return buf.toString();
     }
        
+    @Override
     public MetaField getField(String fieldName){
         MetaField result;
     
@@ -68,6 +71,7 @@ public class MetaStruct extends MetaField{
         return null;
     }
     
+    @Override
     public ArrayList getFieldNames(){
         MetaField field;
         ArrayList result = new ArrayList();

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_DATAVIEW_H
@@ -43,7 +43,11 @@ extern "C" {
  */
 #define  v_dataView(o) (C_CAST(o,v_dataView))
 
-OS_API v_dataView 
+#define v_dataView_t(scope) \
+        c_type(c_resolve(c_getBase(scope), \
+                          "kernelModule::v_dataView"))
+
+OS_API v_dataView
 v_dataViewNew(
     v_dataReader reader,
     const c_char *name,
@@ -54,49 +58,49 @@ OS_API void
 v_dataViewFree(
     v_dataView dataView);
 
-OS_API v_dataReader     
+OS_API v_dataReader
 v_dataViewGetReader(
     v_dataView dataView);
 
-OS_API c_bool           
+OS_API v_actionResult
 v_dataViewWrite(
     v_dataView dataView,
     v_readerSample sample);
 
-OS_API c_bool           
+OS_API c_bool
 v_dataViewRead(
     v_dataView dataView,
     v_readerSampleAction action,
     c_voidp arg);
-                     
-OS_API c_bool           
+
+OS_API c_bool
 v_dataViewTake(
     v_dataView dataView,
     v_readerSampleAction action,
     c_voidp arg);
-                                         
+
 OS_API c_bool
 v_dataViewReadInstance(
     v_dataView dataView,
     v_dataViewInstance instance,
     v_readerSampleAction action,
     c_voidp arg);
-                 
-OS_API c_bool           
+
+OS_API c_bool
 v_dataViewTakeInstance(
     v_dataView dataView,
     v_dataViewInstance instance,
     v_readerSampleAction action,
     c_voidp arg);
-                                         
-OS_API c_bool           
+
+OS_API c_bool
 v_dataViewReadNextInstance(
     v_dataView dataView,
     v_dataViewInstance instance,
     v_readerSampleAction action,
     c_voidp arg);
-                     
-OS_API c_bool           
+
+OS_API c_bool
 v_dataViewTakeNextInstance(
     v_dataView dataView,
     v_dataViewInstance instance,
@@ -105,7 +109,7 @@ v_dataViewTakeNextInstance(
 
 OS_API v_dataViewInstance
 v_dataViewLookupInstance (
-    v_dataView view, 
+    v_dataView view,
     v_message keyTemplate);
 
 OS_API c_bool

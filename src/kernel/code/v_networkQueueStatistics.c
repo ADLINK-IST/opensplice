@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -64,6 +64,7 @@ c_bool v_networkQueueStatisticsReset(v_networkQueueStatistics nqs, const c_char*
 {
     c_bool result;
 
+    OS_UNUSED_ARG(fieldName);
     assert(nqs!=NULL);
     assert(C_TYPECHECK(nqs, v_networkQueueStatistics));
     nqs->numberOfSamplesArrived =0;

@@ -1,6 +1,14 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_ddsconf_incl, ospl_ddsdatabase, ospl_base {
+project : ospl_ddsdatabase, ospl_base {
   lit_libs += ddsconf
+}
+
+feature(!src_co) {
+
+}
+
+feature(src_co) {
+
 }

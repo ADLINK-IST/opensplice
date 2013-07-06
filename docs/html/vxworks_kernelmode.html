@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - OpenSplice Kernel Mode for VxWorks</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="changedV6.html">
+        Back to Fixed Bugs and Changes V6 series Page<img src="../images/back.gif" align="middle"
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+
+<h1> OpenSplice Kernel Mode for VxWorks </h1>
+
+<h2> Contents </h2>
+
+<ul>
+  <li><a href="#build">How to build the examples</a></li>
+  <li><a href="#two">Running the examples on two targets</a></li>
+  <li><a href="#one">Running the examples on one target</a></li>
+  <li><a href="#important">Important information</a></li>
+</ul>
+
+<h2> <a name="build">How to build the examples</a> </h2>
+
+<p> Start a dds command prompt, from the command prompt start Windriver workbench and select File, Import..., General, Existing Projects Into Workspace, Next, and choose to import the examples directory from the installation( Select root directory ), Make sure copy projects into workspace is not selected and click finish.</p>
+<p> Right Click on wb_sac_pingpong_kernel and the choose "Rebuild Build Project". </p>
+
+<h2> <a name="two">Running the examples on two targets</a> </h2>
+First configure the targets to use the target server filesystem, mapped as on the target as /tgtsvr.</p>
+
+<p> Copy the "wb_sac_pingpong_kernel/PENTIUM4gnu/sac_pingpong_kernel/Debug/sac_pingpong_kernel.out" built above to the target server for each board as sac_pingpong_kernel.out</p>
+
+<p>Open a target shell connection to each board and in the C mode shell run:</p>
+<code>
+ld 1,0,"/tgtsvr/sac_pingpong_kernel.out"<br>
+ospl_spliced
+</code>
+
+<p>Open another target shell connection to one board and run :-</p>
+<code>
+pong "PongRead PongWrite"
+</code>
+
+<p>Open another target shell on the other board and run :-</p>
+<code>
+ping "100 100 m PongRead PongWrite"
+</code>
+
+<h2> <a name="one">Running the examples on one targets</a> </h2>
+
+<p> Copy the "wb_sac_pingpong_kernel/PENTIUM4gnu/sac_pingpong_kernel/Debug/sac_pingpong_kernel.out"
+ built above to the target server as sac_pingpong_kernel.out</p>
+
+<p>Open a target shell connection and in the C mode shell run</p>
+<code>
+ld 1,0,"/tgtsvr/sac_pingpong_kernel.out"<br>
+ospl_spliced
+</code>
+
+<p>Open another target shell connection and run :-</p>
+<code>
+pong "PongRead PongWrite"
+</code>
+
+<p>Open another target shell and run :-</p>
+<code>
+ping "100 100 m PongRead PongWrite"
+</code>
+
+<h2> <a name="important">Important Information</a> </h2>
+<p>If you want use a different path other than "/tgtsvr" ( e.g. you are using a different filesystem. )
+Then you need to change the path set by the -e options of conf2c in the .wrmakefile.</p>
+
+<p>You can also set other environment variables by adding additional -e options.</p>
+
+
+<p>ospl_conf2c is a tool which processes the OpenSplice configuration XML, and produces a source file which should be compiled and linked into the final image.  It contains the data from the XML file, in addition to any environment variables that you require to configure OpenSplice and references to the symbols for the entry points of opensplice, ( environment variables may be added using the -e option , e.g. you would use the -e "OSPL_LOGPATH=/xxx/yyy" option if you wish the logs to be dropped in /xxx/yyy )
+</p>
+<p>ospl_conf2c is run automatically by the example project.
+</p>
+<p>The example builds by linking the object produced by compling the output of ospl_conf2c along with the example application, and the splice deamon and services enabled in the configuration XML into one single downloadable kernel module.  The user producing their own application could of course decide to link the object and library files into a monolithic kernel image instead.
+</p>
+</body> </html>

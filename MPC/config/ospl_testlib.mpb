@@ -7,3 +7,11 @@ project : ospl_ddsos, taolib_with_idl, portableserver {
     includes += ..
     after += testlib
 }
+
+feature(!src_co) {
+
+}
+
+feature(src_co) {
+
+}

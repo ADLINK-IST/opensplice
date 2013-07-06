@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,13 +14,11 @@
 #include "v_statistics.h"
 #include "v_filter.h"
 #include "v_readerStatistics.h"
-#include "v__dataReader.h"
 #include "v_dataReaderEntry.h"
 #include "v_state.h"
 #include "v_event.h"
 #include "v__index.h"
 #include "v__subscriber.h"
-#include "v_subscriber.h"
 #include "v_projection.h"
 #include "v_entity.h"
 #include "v_handle.h"
@@ -47,7 +45,6 @@
 #include "v__statisticsInterface.h"
 #include "v__statCat.h"
 #include "v__topic.h"
-#include "c_extent.h"
 #include "v__kernel.h"
 
 #include "c_stringSupport.h"
@@ -270,24 +267,11 @@ onNewIndex(
 }
 
 static c_bool
-onSampleDumpedAction(
-    v_readerSample sample,
-    c_voidp arg)
-{
-    /* We should only be here if the reader has view(s) */
-    v_dataReader r = v_dataReader(arg);
-
-    if (r->views != NULL) {
-        v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
-    }
-    return TRUE;
-}
-
-static c_bool
 dataReaderEntryUpdatePurgeLists(
     c_object o,
     c_voidp arg)
 {
+    OS_UNUSED_ARG(arg);
     v_dataReaderEntryUpdatePurgeLists(v_dataReaderEntry(o));
     return TRUE; /* process all other entries */
 }
@@ -347,57 +331,6 @@ v_dataReaderUpdatePurgeLists(
 }
 
 
-#define STAT_INIT_ULONG(member) \
-        v_statisticsULongInit(v_reader, member, _this)
-
-#define STAT_INIT_MAXVALUE(member) \
-        v_statisticsMaxValueInit(v_reader, member, _this)
-
-#define STAT_INIT_FULLCOUNTER(member) \
-        v_statisticsFullCounterInit(v_reader, member, _this)
-
-static void
-v_dataReaderStatisticsInit(
-    v_dataReader _this)
-{
-    STAT_INIT_MAXVALUE(maxSampleSize);
-    STAT_INIT_MAXVALUE(maxSamplesPerInstance);
-    STAT_INIT_MAXVALUE(maxNumberOfSamples);
-    STAT_INIT_MAXVALUE(maxNumberOfInstances);
-
-    STAT_INIT_ULONG(numberOfSamples);
-    STAT_INIT_ULONG(numberOfInstances);
-
-    STAT_INIT_FULLCOUNTER(readLatency);
-    STAT_INIT_FULLCOUNTER(transportLatency);
-
-    STAT_INIT_ULONG(numberOfInstancesWithStatusNew);
-    STAT_INIT_ULONG(numberOfInstancesWithStatusAlive);
-    STAT_INIT_ULONG(numberOfInstancesWithStatusDisposed);
-    STAT_INIT_ULONG(numberOfInstancesWithStatusNoWriters);
-
-    STAT_INIT_ULONG(numberOfSamplesWithStatusRead);
-    STAT_INIT_ULONG(numberOfSamplesExpired);
-    STAT_INIT_ULONG(numberOfSamplesPurgedByDispose);
-    STAT_INIT_ULONG(numberOfSamplesPurgedByNoWriters);
-
-    STAT_INIT_ULONG(numberOfSamplesArrived);
-    STAT_INIT_ULONG(numberOfSamplesInserted);
-    STAT_INIT_ULONG(numberOfSamplesDiscarded);
-    STAT_INIT_ULONG(numberOfSamplesRead);
-    STAT_INIT_ULONG(numberOfSamplesTaken);
-
-    STAT_INIT_ULONG(numberOfReads);
-    STAT_INIT_ULONG(numberOfInstanceReads);
-    STAT_INIT_ULONG(numberOfNextInstanceReads);
-    STAT_INIT_ULONG(numberOfInstanceLookups);
-    STAT_INIT_ULONG(numberOfTakes);
-    STAT_INIT_ULONG(numberOfInstanceTakes);
-    STAT_INIT_ULONG(numberOfNextInstanceTakes);
-}
-#undef STAT_INIT_ULONG
-#undef STAT_INIT_MAXVALUE
-#undef STAT_INIT_FULLCOUNTER
 
 #ifdef _MSG_STAMP_
 
@@ -566,7 +499,6 @@ v_dataReaderNew (
     v_readerStatistics readerStatistics;
     struct onNewIndexArg arg;
     q_expr expr, term, _projection, _from, _where;
-    v_filter filter;
     c_type instanceType;
     c_property sampleProperty;
     c_long i;
@@ -597,7 +529,6 @@ v_dataReaderNew (
     _projection = NULL;
     _from = NULL;
     _where = NULL;
-    filter = NULL;
     i=0;
     term = q_getPar(expr,i++);
     while (term != NULL) {
@@ -753,32 +684,21 @@ v_dataReaderNew (
          * outside the reader lock.
          */
         if (sampleProperty != NULL) {
-            _this->sampleExtent = c_extentSyncNew(sampleProperty->type,128,TRUE);
-            if (_this->sampleExtent != NULL) {
-                _this->projection = v_projectionNew(_this,_projection);
+            _this->sampleType = c_keep (sampleProperty->type);
+            _this->projection = v_projectionNew(_this,_projection);
 
-                participant = v_participant(subscriber->participant);
-                assert(participant != NULL);
-                _this->deadLineList =
-                    v_deadLineInstanceListNew(c_getBase(c_object(_this)),
-                                              participant->leaseManager,
-                                              q->deadline.period,
-                                              V_LEASEACTION_READER_DEADLINE_MISSED,
-                                              v_public(_this));
+            participant = v_participant(subscriber->participant);
+            assert(participant != NULL);
+            _this->deadLineList =
+            v_deadLineInstanceListNew(c_getBase(c_object(_this)),
+                                      participant->leaseManager,
+                                      q->deadline.period,
+                                      V_LEASEACTION_READER_DEADLINE_MISSED,
+                                      v_public(_this));
 
-                if (enable) {
+            if (enable) {
 /* TODO : result checking and error propagation */
-                    v_dataReaderEnable(_this);
-                }
-            } else {
-                OS_REPORT_2(OS_ERROR,
-                            "kernel::v_dataReader::v_dataReaderNew", 0,
-                            "Creation of DataReader (name=\"%s\") failed."
-                            OS_REPORT_NL "Operation c_extentSyncNew(type=0x%x, 128, TRUE) failed.",
-                            name, sampleProperty->type);
-                v_readerDeinit(v_reader(_this));
-                c_free(_this);
-                _this = NULL;
+                v_dataReaderEnable(_this);
             }
         } else {
             OS_REPORT_2(OS_ERROR,
@@ -896,7 +816,7 @@ v_dataReaderFree (
         v_readerFree(v_reader(_this));
         v_dataReaderLock(_this);
         if (_this->views != NULL) {
-            views = c_select(_this->views, 0);
+            views = ospl_c_select(_this->views, 0);
             view = v_dataView(c_iterTakeFirst(views));
             while (view != NULL) {
                 v_dataViewFreeUnsafe(view);
@@ -926,6 +846,7 @@ instanceFree(
     c_object o,
     c_voidp arg)
 {
+    OS_UNUSED_ARG(arg);
     v_publicFree(o);
     return TRUE;
 }
@@ -959,16 +880,16 @@ v_dataReaderDeinit (
 
 /* Help function for writing into the dataViews */
 
-static c_bool
+static v_actionResult
 writeSlave(
-    v_readerSample sample,
+    c_object sample,
     c_voidp arg)
 {
     c_bool result = TRUE;
 
     if (v_readerSampleTestState(sample, L_VALIDDATA))
     {
-        result = v_dataViewWrite(v_dataView(arg),sample);
+        result = v_dataViewWrite(v_dataView(arg), v_readerSample(sample));
     }
     return result;
 }
@@ -1167,7 +1088,7 @@ v_dataReaderRead(
     argument.query = NULL;
     argument.emptyList = NULL;
 
-    proceed = c_readAction(v_dataReaderNotEmptyInstanceSet(_this),
+    proceed = c_tableReadCircular(v_dataReaderNotEmptyInstanceSet(_this),
                            (c_action)instanceReadSamples,
                            &argument);
 
@@ -1178,7 +1099,7 @@ v_dataReaderRead(
         emptyInstance = c_iterTakeFirst(argument.emptyList);
         while (emptyInstance != NULL) {
             v_dataReaderRemoveInstance(_this,emptyInstance);
-            v_dataReaderInstanceFree(emptyInstance);
+            c_free(emptyInstance);
             emptyInstance = c_iterTakeFirst(argument.emptyList);
         }
         c_iterFree(argument.emptyList);
@@ -1353,6 +1274,28 @@ instanceTakeSamples(
                               a->reader,
                               v_dataReader(a->reader)->sampleCount);
 
+#if 0
+      /* This code snippet is functionally correct, but in typical
+       * pingpong like scenario'sit might result in the same instance
+       * being inserted and removed from the non-emptyList continuously.
+       * So postponing the decision to move the instance around can be
+       * seen as an optimization for these pingpong like scenario's.
+       *
+       * So this snippet of code intends to avoid leakage, but is also
+       * executed by other functions that operate on the v_dataReaderInstance.
+       * So if we don't clean-up the instance now, it will be done in
+       * a more lazy manner by subsequent operations on the same
+       * v_dataReaderInstance.
+       *
+       * Code like this can permanently be deleted as soon as active
+       * garbage collection is implemented (scdds1817)
+       */
+    if (v_dataReaderInstanceEmpty(instance)) {
+        if (!c_iterContains(a->emptyList, instance)) {
+             a->emptyList = c_iterInsert(a->emptyList,c_keep(instance));
+        }
+    }
+#endif
     return proceed;
 }
 
@@ -1429,7 +1372,6 @@ v_dataReaderRemoveInstance(
                 UPDATE_READER_STATISTICS_REMOVE_INSTANCE(_this->index,
                                                          instance);
                 instance->purgeInsertionTime = C_TIME_ZERO;
-                v_groupCacheDeinit(instance->sourceCache);
                 v_publicFree(v_public(instance));
                 c_free(found);
             } else {
@@ -1480,14 +1422,14 @@ v_dataReaderTake(
     argument.reader = _this;
     argument.emptyList = NULL;
 
-    proceed = c_readAction(v_dataReaderNotEmptyInstanceSet(_this),
+    proceed = c_tableReadCircular(v_dataReaderNotEmptyInstanceSet(_this),
                            (c_action)instanceTakeSamples,
                            &argument);
     if (argument.emptyList != NULL) {
         emptyInstance = c_iterTakeFirst(argument.emptyList);
         while (emptyInstance != NULL) {
             v_dataReaderRemoveInstance(_this,emptyInstance);
-            v_dataReaderInstanceFree(emptyInstance);
+            c_free(emptyInstance);
             emptyInstance = c_iterTakeFirst(argument.emptyList);
         }
         c_iterFree(argument.emptyList);
@@ -1645,6 +1587,8 @@ v_dataReaderNotify(
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_dataReader));
 
+    OS_UNUSED_ARG(userData);
+
     if (event != NULL) {
 
 #define _NOTIFICATION_MASK_ \
@@ -1756,6 +1700,7 @@ v_dataReaderNotifyIncompatibleQos(
     c_bool changed;
     C_STRUCT(v_event) event;
 
+    OS_UNUSED_ARG(writerGID);
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_dataReader));
 
@@ -1777,7 +1722,7 @@ v_dataReaderNotifyIncompatibleQos(
 
 void
 v_dataReaderNotifySubscriptionMatched (
-	v_dataReader _this,
+        v_dataReader _this,
     v_gid        writerGID,
     c_bool       dispose)
 {
@@ -1846,8 +1791,8 @@ v_dataReaderNotifyChangedQos(
     v_dataReaderLock(_this);
     kernel = v_objectKernel(_this);
     builtinMsg = v_builtinCreateSubscriptionInfo(kernel->builtin, _this);
-    v_deadLineInstanceListSetDuration(_this->deadLineList,
-                                      v_reader(_this)->qos->deadline.period);
+    v_deadLineInstanceListSetDuration(_this->deadLineList,v_reader(_this)->qos->deadline.period);
+
     v_dataReaderUnLock(_this);
     v_writeBuiltinTopic(kernel, V_SUBSCRIPTIONINFO_ID, builtinMsg);
     c_free(builtinMsg);
@@ -1864,6 +1809,7 @@ v_dataReaderNotifyLivelinessChanged(
     c_bool changed;
     C_STRUCT(v_event) event;
 
+    OS_UNUSED_ARG(publicationInfo);
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_dataReader));
     assert(oldLivState != V_STATUSLIVELINESS_COUNT);
@@ -1973,7 +1919,7 @@ v_dataReaderSampleType(
     v_dataReader _this)
 {
     assert(C_TYPECHECK(_this,v_dataReader));
-    return c_extentType(_this->sampleExtent);
+    return c_keep (_this->sampleType);
 }
 
 c_char *
@@ -1996,7 +1942,7 @@ v_dataReaderIndexField(
     /* Try lookup the specified name as an instance field. */
     field = c_fieldNew(instanceType,name);
     if (field == NULL) {
-        fieldName = os_alloca(strlen(name) + strlen("sample.message.userData.."));
+        fieldName = os_alloca(strlen(name) + strlen("sample.message.userData.") + 1);
         /* Try to lookup the specified name as a sample field. */
         os_sprintf(fieldName,"sample.%s",name);
         field = c_fieldNew(instanceType,fieldName);
@@ -2239,13 +2185,12 @@ v_dataReaderAllocInstance(
 
     kernel = v_objectKernel(_this);
 
-    instance = v_dataReaderInstance(c_extentCreate(_this->index->objectExtent));
+    instance = v_dataReaderInstance(c_new(_this->index->objectType));
 
     v_object(instance)->kernel = kernel;
     v_objectKind(instance) = K_DATAREADERINSTANCE;
 
     instance->index = (c_voidp)_this->index;
-    instance->sourceCache = v_groupCacheNew(kernel, V_CACHE_SOURCES);
 
     return instance;
 }
@@ -2265,5 +2210,3 @@ v_dataReaderNotReadCount(
 
     return count;
 }
-
-

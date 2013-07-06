@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,8 +13,9 @@ package org.opensplice.common.model.sample;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 import org.opensplice.cm.CMException;
 import org.opensplice.cm.DataTypeUnsupportedException;
@@ -24,6 +25,7 @@ import org.opensplice.cm.Query;
 import org.opensplice.cm.Reader;
 import org.opensplice.cm.Topic;
 import org.opensplice.cm.data.Sample;
+import org.opensplice.cm.data.UserData;
 import org.opensplice.cm.qos.TopicQoS;
 import org.opensplice.cm.transform.DataTransformerFactory;
 import org.opensplice.cm.transform.QoSSerializer;
@@ -45,6 +47,7 @@ public class ReaderSampleModel extends SampleModel{
      * The reader where data is read/taken from.
      */
     protected Reader reader;
+    protected String structDetail = null;
     
     /**
      * Constructs the model for the supplied Reader.
@@ -63,6 +66,7 @@ public class ReaderSampleModel extends SampleModel{
         try {
             userDataModel = new UserDataTableModel(reader.getDataType());
             singleUserDataModel = new UserDataSingleTableModel(reader.getDataType(), false);
+            this.initiateToBeWrittenUserData(new UserData(reader.getDataType()));
         } catch (CMException e) {
             throw new CommonException(e.getMessage());
         } catch (DataTypeUnsupportedException de) {
@@ -70,6 +74,25 @@ public class ReaderSampleModel extends SampleModel{
         }
     }
     
+    public ReaderSampleModel(Reader _reader, String struct) throws CommonException{
+        super();
+        
+        structDetail = struct;
+        if(_reader == null){
+            throw new CommonException("Supplied reader == null.");
+        }
+        reader = _reader;
+        try {
+            userDataModel = new UserDataTableModel(reader.getDataType(), struct);
+            singleUserDataModel = new UserDataSingleTableModel(reader.getDataType(), false, struct);
+        } catch (CMException e) {
+            throw new CommonException(e.getMessage());
+        } catch (DataTypeUnsupportedException de) {
+            throw new CommonException(de.getMessage());
+        }
+    }
+    
+    @Override
     public Sample read() throws CommonException, SampleModelSizeException {
         Sample result = null;
         this.checkSize();
@@ -82,7 +105,12 @@ public class ReaderSampleModel extends SampleModel{
             throw new CommonException(de.getMessage());
         }
         if(result != null){
-            boolean added = this.addSample(result);
+            boolean added;
+            if (structDetail != null) {
+                added = this.addSample(result,structDetail);
+            } else {
+                added = this.addSample(result);    
+            }
             
             if(added && (result != null)){
                 this.notifyListeners("data_read");
@@ -93,6 +121,7 @@ public class ReaderSampleModel extends SampleModel{
         return result;
     }
 
+    @Override
     public Sample take() throws CommonException, SampleModelSizeException {
         Sample result = null;
         this.checkSize();
@@ -105,14 +134,25 @@ public class ReaderSampleModel extends SampleModel{
             throw new CommonException(de.getMessage());
         }
         if(result != null){
-            boolean added = this.addSample(result);
+            boolean added;
+            if (structDetail != null) {
+                added = this.addSample(result,structDetail);
+            } else {
+                added = this.addSample(result);    
+            }
+            
             
             while(!added && result != null){
                 try {
                     result = reader.take();
                     
                     if(result != null){
-                        added = this.addSample(result);
+                        if (structDetail != null) {
+                            added = this.addSample(result,structDetail);
+                        } else {
+                            added = this.addSample(result);    
+                        }
+                        
                     }
                 } catch (CMException e) {
                     throw new CommonException(e.getMessage());
@@ -131,6 +171,7 @@ public class ReaderSampleModel extends SampleModel{
         return result;
     }
     
+    @Override
     public Sample readNext() throws CommonException, SampleModelSizeException {
         Sample result = null;
         this.checkSize();
@@ -146,7 +187,13 @@ public class ReaderSampleModel extends SampleModel{
                 throw new CommonException(de.getMessage());
             }
             if(result != null){
-                boolean added = this.addSample(result);
+                boolean added;
+                if (structDetail != null) {
+                    added = this.addSample(result,structDetail);
+                } else {
+                    added = this.addSample(result);    
+                }
+                
                 
                 if(added && (result != null)){
                     this.notifyListeners("data_read");
@@ -158,11 +205,12 @@ public class ReaderSampleModel extends SampleModel{
         return result;
     }
     
+    @Override
     public synchronized int export(File file) throws CommonException{
         Topic top;
         TopicQoS qos;
         QoSSerializer ser;
-        FileWriter fw;
+        OutputStreamWriter fw = null;
         String xmlQos;
         Sample sample;
         SampleSerializer sampleSer;
@@ -183,7 +231,7 @@ public class ReaderSampleModel extends SampleModel{
             ser = DataTransformerFactory.getQoSSerializer(DataTransformerFactory.XML);
             sampleSer = DataTransformerFactory.getSampleSerializer(DataTransformerFactory.XML);
             
-            fw = new FileWriter(file, false);
+            fw = new OutputStreamWriter(new FileOutputStream(file, false), "UTF-8");
             top = this.getTopic();
             
             qos = (TopicQoS)top.getQoS();
@@ -230,6 +278,14 @@ public class ReaderSampleModel extends SampleModel{
             throw new CommonException(ce.getMessage());
         } catch (TransformationException te) {
             throw new CommonException(te.getMessage());
+        } finally {
+            if (fw != null) {
+                try {
+                    fw.close();
+                } catch (IOException ie) {
+                    throw new CommonException(ie.getMessage());
+                }
+            }
         }
         return i-1;
     }
@@ -290,6 +346,7 @@ public class ReaderSampleModel extends SampleModel{
         return result;
     }
 
+    @Override
     public String getDataTypeKeyList() throws CommonException {
         String result = null;
         Topic t = this.getTopic();

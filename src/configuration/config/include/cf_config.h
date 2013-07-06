@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -39,12 +39,15 @@ extern "C" {
 #define CFG_THRESHOLD     "Threshold"
 #define CFG_ADDRESS       "Address"
 #define CFG_LOCKING       "Locking"
-#define CFG_HEAP          "Heap"
+#define CFG_SINGLEPROCESS "SingleProcess"
+#define CFG_CPUAFFINITY   "CPUAffinity"
 #define CFG_BUILTINTOPICS "BuiltinTopics"
 #define CFG_PRIOINHER     "PriorityInheritance"
 #define CFG_LEASE         "Lease"
 #define CFG_EXPIRYTIME    "ExpiryTime"
 #define CFG_TERMPERIOD    "ServiceTerminatePeriod"
+#define CFG_ID            "Id"
+#define CFG_REPORT        "Report"
 
 #undef OS_API
 

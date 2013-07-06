@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -44,7 +44,7 @@
  * This MARCRO specifies the non zero value as first serial value.
  */
 #define SERIALSTART (1)
-#define MAXSERIAL   (0x7fffffff)
+#define MAXSERIAL   (0x00ffffff)
 
 const v_handle V_HANDLE_NIL = {0, 0, 0};
 
@@ -68,7 +68,7 @@ ut_trace(
     char **strs;
     size_t s,i;
     FILE* stream;
- 
+
     if (v_object(object)->kind == CHECK_REF_TYPE) {
         if(!CHECK_REF_FILE){
             CHECK_REF_FILE = os_malloc(16);
@@ -94,49 +94,6 @@ ut_trace(
 #define UT_TRACE(object, old_count, new_count)
 #endif
 
-static void
-disableHandleServer(
-    c_voidp server)
-{
-    v_handleServerSuspend(server);
-}
-
-static void
-issueLowMemoryWarning(
-    c_voidp arg)
-{
-#ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
-    os_uint32 warningCount;
-    v_handleServer server;
-
-    server = v_handleServer(arg);
-    /* dds1958: ES: Check if the warning count is 0 at the moment. If so it
-     * means that no warning has been issued. If the value is not 0 however
-     * then we do not need to continue and do not need to do any increment
-     * and safe out on that code in situations where we get the low memory
-     * warning a lot. The idea is that just doing this check (although not
-     * a definate yes or no to doing the warning) is in the cases where
-     * a warning has already been issued much cheaper then doing the
-     * increment and then checking. Only in the situation where the warning
-     * is issued for the first time, is this check useless. But that is only
-     * 1 time vs many times.
-     */
-    if(server->lowMemWarningCount == 0)
-    {
-        /*  increment the warning count
-         */
-        warningCount = pa_increment(&server->lowMemWarningCount);
-        if(warningCount == 1)
-        {
-            OS_REPORT(OS_WARNING,
-                      "kernel::v_handle::issueLowMemoryWarning",0,
-                      "Shared memory is running very low!");
-
-        }
-    }
-#endif
-}
-
 v_handleServer
 v_handleServerNew (
     c_base base)
@@ -161,8 +118,6 @@ v_handleServerNew (
             server->lastIndex = NOHANDLE;
             server->suspended = FALSE;
             c_mutexInit(&server->mutex,SHARED_MUTEX);
-            c_baseOnOutOfMemory(base, disableHandleServer,server);
-            c_baseOnLowOnMemory(base, issueLowMemoryWarning, server);
         } else {
             c_free(server);
             server = NULL;
@@ -288,6 +243,8 @@ v_handleServerRegister(
 
     assert(C_TYPECHECK(server,v_handleServer));
     assert(o != NULL);
+
+    info = NULL;
 
     if(server->suspended == TRUE) {
         /* For now the suspended state means that an unrecoverable error has

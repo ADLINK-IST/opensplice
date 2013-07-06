@@ -1,0 +1,79 @@
+#!/bin/bash
+
+. buildsys/functions
+
+ProcessArgs $*
+Assert LoadConfigs
+Assert SetupResFile
+
+UnTarGZ ()
+{
+   tar -xzf $1
+}
+
+UnZip ()
+{
+   unzip $1
+}
+
+cd ../../../
+
+SetState "Configuring"
+
+EXTRACT=UnTarGZ
+EXT=".tar.gz"
+CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
+if [ "$CURRENT_PL_CYGWIN" != "" ]
+then
+    EXTRACT=UnZip
+    EXT=".zip"
+fi
+
+START_DIR=`pwd`
+if [ "$DEP" != "none" ]
+then
+    #Were in osplo and need to access the distro from the 
+    #inner which is DEPWORKDIR
+    START_DIR=$DEPWORKDIR
+fi
+SRC=`find $START_DIR/install/HDE -name OpenSpliceDDS-src${EXT}`
+
+if [ -f "${SRC}" ]
+then
+    (
+        mkdir test-src
+        cd test-src
+        $EXTRACT ${SRC}
+        TOPLEVEL=`pwd`/OpenSpliceDDS
+        cd $TOPLEVEL
+        if [ -d "$TOPLEVEL/ospli" ]
+        then
+            cd $TOPLEVEL/ospli
+        fi
+        export OSPL_HOME=`pwd`
+        SPLICE_PLATFORM=$SETUP_TYPE
+        export SPLICE_PLATFORM
+        if [ -d "$TOPLEVEL/osplo" ]
+        then
+            cd $TOPLEVEL/osplo
+        fi
+        . ./configure -full
+        if [ "$CONFIGURATION" != "OK" ]
+        then
+            echo "ERROR: configuration - dcps_build_src"
+            exit 1
+        fi
+        SetState "Building"    
+        echo "BUILD/SRC=RUNNING" >> $RESFILE
+        ArchiveLogs
+        make VERBOSE=yes
+        if [ $? != 0 ] 
+        then
+            exit 2
+        fi    
+    )
+else
+    echo "ERROR: no src to build - dcps_build_src"
+    exit 1
+fi
+exit 0

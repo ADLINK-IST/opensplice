@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,10 +11,6 @@
  */
 #ifndef OS_LIBRARY_H
 #define OS_LIBRARY_H
-
-#if defined (__cplusplus)
-extern "C" {
-#endif
 
 #include "os_defs.h"
 #include "include/os_library.h"
@@ -27,12 +23,17 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 typedef os_os_library os_library;
 typedef os_os_symbol os_symbol;
 
 typedef struct os_libraryAttr {
     os_int32 flags;
-    os_boolean autoTranslate; /* Determines whether the library name is automatically mapped to its platform dependent name*/ 
+    os_boolean autoTranslate; /* Determines whether the library name is automatically mapped to its platform dependent name*/
+    os_boolean staticLibOnly;
 } os_libraryAttr;
 
 OS_API os_result    os_libraryAttrInit      (os_libraryAttr *attr);

@@ -1,0 +1,14 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+startOSPL
+
+echo "=== Launching BuiltInTopics "
+./sacpp_builtintopics_sub > subResult.txt
+
+builtintopicsCheckResult
+
+sleep 5
+
+stopOSPL

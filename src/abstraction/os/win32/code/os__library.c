@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include <stdio.h>
@@ -21,7 +21,7 @@ os_libraryAttrInit(
 {
     attr->flags = 0;
     attr->autoTranslate = OS_TRUE;
-    
+
     return os_resultSuccess;
 }
 
@@ -31,11 +31,15 @@ os_libraryOpen(
     os_libraryAttr *attr)
 {
     os_library handle;
-    char dllName[64];
-    
+    char dllName[256];
     if(name && (strlen(name) > 0)){
         if(attr->autoTranslate == OS_TRUE){
-            snprintf(dllName, 64, "%s.dll", name);
+            /* check if name ends with dll */
+            if (strrchr(name, '.') != 0) {
+                snprintf(dllName, 256, "%s", name);
+            } else {
+                snprintf(dllName, 256, "%s.dll", name);
+            }
             handle = LoadLibrary(dllName);
         } else {
             handle = LoadLibrary(name);
@@ -55,11 +59,11 @@ os_libraryClose(
     os_library library)
 {
     os_result result;
-    
+
     if (library) {
         if (FreeLibrary(library) == 0) {
             OS_REPORT_1 (OS_ERROR, "os_libraryClose", 0,
-                "FreeLibrary error: %s", GetLastError());
+                "FreeLibrary error: %d", GetLastError());
             result = os_resultFail;
         } else {
             result = os_resultSuccess;
@@ -76,16 +80,21 @@ os_libraryGetSymbol(
     const char *symbolName)
 {
     os_symbol symbol;
-    
+
     assert (library);
     assert (symbolName);
-    
+
     if (library && symbolName) {
         symbol = GetProcAddress(library, symbolName);
-        
+
         if (!symbol) {
             OS_REPORT_1 (OS_ERROR, "os_libraryGetSymbol", 0,
+                "GetProcAddress error for %s", symbolName);
+
+            /* GetLastError() crashes in this context
+            OS_REPORT_1 (OS_ERROR, "os_libraryGetSymbol", 0,
                 "GetProcAddress error: %s", GetLastError());
+            */
         }
     } else {
         symbol = NULL;

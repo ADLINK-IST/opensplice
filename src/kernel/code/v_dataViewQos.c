@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -76,9 +76,7 @@ v_dataViewQosSet(
 {
     v_qosChangeMask cm;
     v_result result;
-    c_base base;
 
-    base = c_getBase(c_object(q));
     cm = 0;
     if ((q != NULL) && (tmpl != NULL)) {
         if (!v_userKeyPolicyEqual(q->userKey, tmpl->userKey)) {

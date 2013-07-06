@@ -1,4 +1,4 @@
-. $OSPL_HOME/bin/checkconf
+. "$OSPL_HOME/bin/checkconf"
 
 SPLICE_HOST=x86.win32-release
 SPLICE_TARGET=x86.win32-release
@@ -16,6 +16,10 @@ javac_check || ERRS=1
 tao_check || ERRS=1
 jacorb_check || ERRS=1
 zlib_check || ERRS=1
+openorb_check || ERRS=1
+doxygen_check || ERRS=1
+
+export SPLICE_HOST_FULL=x86.win-vs${VS_YEAR}
 
 if [ -z $REPORT ]
 then

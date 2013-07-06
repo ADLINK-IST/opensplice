@@ -33,3 +33,17 @@ module mod {
     };
 #pragma keylist embeddedStructType long_1
 };
+
+module MyTopicModule {
+
+    struct MyTopic {
+        long                  long_1;
+        string                str;
+        string                strArr[3];
+        sequence<string>      strUBSeq;
+        sequence<string, 3>   strBSeq;
+    };
+#pragma keylist MyTopic long_1
+
+};
+

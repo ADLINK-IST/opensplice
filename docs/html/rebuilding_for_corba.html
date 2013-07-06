@@ -8,20 +8,40 @@
   <body>
     <p class="back">
       <a href="releasenotes.html">
-        Back to Release Notes Page<img src="../images/back.gif" align="middle" 
+        Back to Release Notes Page<img src="../images/back.gif" align="middle"
         height="25" width="30" alt="Back">
       </a>
     </p>
 
     <h1>Building your own C++ and CORBA APIs</h1>
+
+    <p>
+    OpenSplice DDS includes C++ and Java APIs, but these will have
+    been built with a specific ORB and a specific compiler in the case of the C++ API.
+    To reduce the number of installers PrismTech have to support, we have
+    provided the ability to rebuild the C++ and Java APIs to match your choice of
+    deployment environment; this is known as the custom library.
     <h2>Contents</h2>
     <ul>
+      <li><a href="#sacpp">Building your own Standalone C++ API</a></li>
       <li><a href="#ccpp">Building your own Corba C++ API</a></li>
-      <li><a href="#sacpp">Building your own Stand-alone C++ API</a></li>
       <li><a href="#java">Building your own Corba Java API</a></li>
     </ul>
     <hr>
-    
+
+    <h2><a name="sacpp">Building your own Standalone C++ API</a></h2>
+    <p>
+        The OpenSplice DDS DCPS API for the C++ language binding without Corba
+        cohabitation is delivered using a specific compiler.
+    </p>
+    <p>
+        To be able to use a different compiler with the OpenSplice DDS
+        Standalone C++ API, we deliver the source code for this language with
+        the OpenSplice DDS distribution. This is contained in a directory
+        <b>custom_lib/sacpp</b> along with a <b>README</b> file describing how
+        to generate the custom library.
+    <p>
+
     <h2><a name="ccpp">Building your own Corba C++ API</a></h2>
     <p>
         The OpenSplice DDS DCPS API for the C++ language binding with Corba
@@ -36,19 +56,6 @@
         choice. Located in this directory is a <b>README</b> file, describing
         how to generate this custom library.
     </p>
-
-    <h2><a name="sacpp">Building your own Standalone C++ API</a></h2>
-    <p>
-        The OpenSplice DDS DCPS API for the C++ language binding without Corba
-        cohabitation is delivered using a specific compiler.
-    </p>
-    <p>
-        To be able to use a different compiler with the OpenSplice DDS
-        Standalone C++ API, we deliver the source code for this language with
-        the OpenSplice DDS distribution. This is contained in a directory
-        <b>custom_lib/sacpp</b> along with a <b>README</b> file describing how
-        to generate the custom library.
-    <p>
 
     <h2><a name="java">Building your own Corba Java API</a></h2>
     <p>

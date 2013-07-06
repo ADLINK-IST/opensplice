@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -17,10 +17,6 @@
 #include "v__reader.h"
 #include "v_time.h"
 #include "v_state.h"
-#define _EXTENT_
-#ifdef _EXTENT_
-#include "c_extent.h"
-#endif
 #include "os_report.h"
 
 #define PRINT_REFCOUNT(functionName, sample)
@@ -49,14 +45,10 @@ v_dataViewSampleNew(
     assert(C_TYPECHECK(masterSample,v_readerSample));
 
     dataView = v_dataView(instance->dataView);
-#ifdef _EXTENT_
-    sample = v_dataViewSample(c_extentCreate(dataView->sampleExtent));
-#else
     sample = v_dataViewSample(c_new(dataView->sampleType));
-#endif
     if (sample) {
         v_readerSample(sample)->instance = (c_voidp)instance;
-        v_readerSample(sample)->sampleState = 0;
+        v_readerSample(sample)->sampleState = L_VALIDDATA;
         v_dataViewSampleList(sample)->next = NULL;
         v_dataViewSampleList(sample)->prev = NULL;
         sample->prev = NULL;
@@ -75,9 +67,10 @@ void
 v_dataViewSampleFree(
     v_dataViewSample sample)
 {
+    OS_UNUSED_ARG(sample);
     assert(sample != NULL);
     assert(C_TYPECHECK(sample, v_dataViewSample));
-    
+
  PRINT_REFCOUNT(v_dataViewSampleFree, sample);
     /* Free the slave-samples as well */
 
@@ -106,7 +99,10 @@ v_dataViewSampleRemove(
         }
         sample->prev = NULL;
         sample->next = NULL;
+        v_readerSampleSetState(sample, L_REMOVED);
         c_free(sample);
+    } else {
+        v_readerSampleSetState(sample, L_REMOVED);
     }
     instance->sampleCount--;
     if (instance->sampleCount > 0) {

@@ -3,11 +3,8 @@
 #
 SUBSYSTEMS	:= spliced
 
-ifeq ($(INCLUDE_SERVICES_NETWORKING),yes)
-SUBSYSTEMS	+= networking
 ifeq ($(INCLUDE_SERVICES_DDSI),yes)
 SUBSYSTEMS	+= ddsi2
-endif
 endif
 
 ifeq ($(INCLUDE_SERVICES_COMMON),yes)
@@ -16,6 +13,10 @@ endif
 
 ifeq ($(INCLUDE_SERVICES_DURABILITY),yes)
 SUBSYSTEMS	+= durability
+endif
+
+ifeq ($(INCLUDE_SERVICES_CMSOAP),yes)
+SUBSYSTEMS	+= cmsoap
 endif
 
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak

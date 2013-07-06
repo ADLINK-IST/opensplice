@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -38,9 +38,8 @@ os_getDomainNameforMutex(
 
 char* os_getDomainNameforCond (os_cond* cond);
 
-os_address
-os_getShmBaseAddressFromPointer(
-    void *vpointer);
+const char*
+os_getShmDomainKeyForPointer(void *ptr);
 
 int
 os_sharedMemIsGlobal(void);
@@ -48,7 +47,5 @@ os_sharedMemIsGlobal(void);
 #if defined (__cplusplus)
 }
 #endif
-
-
 
 #endif /* OS_WIN32__SHAREDMEM_H */

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -37,9 +37,9 @@
 #include "sd_serializer.h"
 #include "sd_serializerXML.h"
 #include "sd_serializerXMLMetadata.h"
+#include "sd_serializerXMLTypeinfo.h"
 #include "c_base.h"
 #include "c_laptime.h"
-#include "c_serialize.h"
 #include "os_heap.h"
 #include "os_time.h"
 #include "os_stdlib.h"
@@ -57,6 +57,7 @@ C_CLASS(d_topicMetadata);
 
 C_STRUCT(d_topicMetadata) {
     c_char* name;
+    c_char* typeName;
     c_char* keyList;
     v_topicQos qos;
     c_type type;
@@ -200,6 +201,25 @@ actionStopUnlocked(
     store->openedFiles = NULL;
     return D_STORE_RESULT_OK;
 }
+
+static c_bool
+isDeprecatedMetadataFormat(
+    c_char* meta)
+{
+    c_bool result;
+
+    if(meta && strlen(meta) > 26){
+        if(os_strncasecmp(meta, "<MetaData version=\"1.0.0\">", 26) == 0){
+            result = FALSE;
+        } else {
+            result = TRUE;
+        }
+    } else {
+        result = TRUE;
+    }
+    return result;
+}
+
 
 static void
 setKernelGroup(
@@ -960,6 +980,27 @@ getMessageMetadata(
 
     metaType = c_getType(type);
     userDataAttr = c_property(c_metaResolve(c_metaObject(type), "userData"));
+    serializer = sd_serializerXMLTypeinfoNew(c_getBase(metaType), FALSE);
+    serData = sd_serializerSerialize(serializer, userDataAttr->type);
+    str = sd_serializerToString(serializer, serData);
+    sd_serializedDataFree(serData);
+    sd_serializerFree(serializer);
+    c_free(userDataAttr);
+    return(str);
+}
+
+static c_char *
+getMessageMetadataDeprecated(
+    const c_type type )
+{
+    c_char *          str;
+    c_type            metaType;
+    sd_serializer     serializer;
+    sd_serializedData serData;
+    c_property userDataAttr;
+
+    metaType = c_getType(type);
+    userDataAttr = c_property(c_metaResolve(c_metaObject(type), "userData"));
     serializer = sd_serializerXMLMetadataNew(c_getBase(metaType));
     serData = sd_serializerSerialize(serializer, userDataAttr->type);
     str = sd_serializerToString(serializer, serData);
@@ -984,6 +1025,7 @@ readTopicMetadata(
     c_char *      tmp;
     os_result     ret;
     c_ulong       size;
+    c_bool useDeprecatedSerializer;
     sd_serializer serializer;
     sd_serializedData serData;
     struct baseFind f;
@@ -1005,25 +1047,21 @@ readTopicMetadata(
             data = (c_char *)os_malloc(size);
 
             if (data) {
-                data[0] = '\0';
-                fscanf(fdes, "%s", data);
+                readLine(fdes, size, data);
 
                 if(strncmp(data, "<METADATA>", 10) == 0){
-                    data[0] = '\0';
-                    fscanf(fdes, "%s", data);
+                    readLine(fdes, size, data);
 
                     if(strncmp(data, "<name>", 6) == 0){
                         metadata = d_topicMetadata(os_malloc(C_SIZEOF(d_topicMetadata)));
                         metadata->name = getSubString(data, 6, strlen(data)-7);
 
-                        data[0] = '\0';
-                        fscanf(fdes, "%s", data);
+                        readLine(fdes, size, data);
 
                         if(strncmp(data, "<keyList>", 9) == 0){
                             metadata->keyList = getSubString(data, 9, strlen(data)-10);
 
-                            data[0] = '\0';
-                            fscanf(fdes, "%s", data);
+                            readLine(fdes, size, data);
 
                             if(strncmp(data, "<qos>", 5) == 0){
                                 tmp = getSubString(data, 5, strlen(data)-6);
@@ -1042,12 +1080,19 @@ readTopicMetadata(
                                     sd_serializerFree(serializer);
                                     c_free(qosType);
 
-                                    data[0] = '\0';
-                                    fscanf(fdes, "%s", data);
+                                    readLine(fdes, size, data);
 
                                     if(strncmp(data, "<type>", 6) == 0){
                                         tmp = getSubString(data, 6, (strlen(data) - 7));
-                                        serializer = sd_serializerXMLMetadataNew(f.base);
+
+                                        useDeprecatedSerializer = isDeprecatedMetadataFormat(tmp);
+
+                                        /* Instantiate deprecated serializer only if meta-data format is old. */
+                                        if(useDeprecatedSerializer){
+                                            serializer = sd_serializerXMLMetadataNew(f.base);
+                                        } else{
+                                            serializer = sd_serializerXMLTypeinfoNew(f.base, FALSE);
+                                        }
                                         serData = sd_serializerFromString(serializer, tmp);
                                         metadata->type = (c_type)(sd_serializerDeserializeValidated(serializer, serData));
                                         os_free(tmp);
@@ -1061,10 +1106,28 @@ readTopicMetadata(
                                                     "Reconstruction of Topic failed. Topic type on disk is not valid.\nReason: %s\nError: %s\n",
                                                     sd_serializerLastValidationMessage(serializer),
                                                     sd_serializerLastValidationLocation(serializer));
-
+                                                OS_REPORT_2(OS_ERROR, D_CONTEXT, 0,
+                                                        "Reconstruction of Topic failed. Topic type on disk is not valid.\nReason: %s\nError: %s\n",
+                                                        sd_serializerLastValidationMessage(serializer),
+                                                        sd_serializerLastValidationLocation(serializer));
                                                 os_free(metadata->name);
                                                 os_free(metadata->keyList);
                                                 v_topicQosFree(metadata->qos);
+                                                os_free(metadata);
+                                                metadata = NULL;
+                                            }
+                                        } else if(useDeprecatedSerializer){
+                                            metadata->typeName = c_metaScopedName(c_metaObject(metadata->type));
+                                        } else {
+                                            readLine(fdes, size, data);
+
+                                            if(strncmp(data, "<typeName>", 10) == 0){
+                                                metadata->typeName = getSubString(data, 10, strlen(data)-11);
+                                            } else {
+                                                os_free(metadata->name);
+                                                os_free(metadata->keyList);
+                                                v_topicQosFree(metadata->qos);
+                                                c_free(metadata->type);
                                                 os_free(metadata);
                                                 metadata = NULL;
                                             }
@@ -1126,6 +1189,7 @@ storeTopicMetadata(
 {
     FILE   *    fdes = NULL;
     c_char *    topicName = NULL;
+    c_char *    typeName = NULL;
     c_char *    keyExpr = NULL;
     c_char *    partitionName = NULL;
     c_char *    fileStorePath;
@@ -1140,11 +1204,12 @@ storeTopicMetadata(
     topicName = v_topicName(topic);
     partitionName = v_partitionName(v_groupPartition(group));
     keyExpr = v_topicKeyExpr(topic);
+    typeName = c_metaScopedName(c_metaObject(v_topicGetUserType(topic)));
 
     if(!keyExpr){
         keyExpr = "";
     }
-    if(topicName && partitionName){
+    if(topicName && partitionName && typeName){
         char * filename;
 
         serializer = sd_serializerXMLNewTyped(c_getType(v_topicQosRef(topic)));
@@ -1183,6 +1248,7 @@ storeTopicMetadata(
                 fprintf(fdes, "<keyList>%s</keyList>\n", keyExpr);
                 fprintf(fdes, "<qos>%s</qos>\n", qos);
                 fprintf(fdes, "<type>%s</type>\n", str);
+                fprintf(fdes, "<typeName>%s</typeName>\n", typeName);
                 fprintf(fdes, "</METADATA>\n");
                 os_fsync(fdes);
                 os_free(str);
@@ -1201,9 +1267,13 @@ storeTopicMetadata(
     } else {
         result = FALSE;
     }
+    if(typeName){
+        os_free(typeName);
+    }
     return result;
 }
 
+/* TODO: Update to support new format*/
 static c_bool
 metaDataIsCorrect(
     const c_type            type,
@@ -1224,6 +1294,8 @@ metaDataIsCorrect(
     c_char *            tmpQos;
     c_char*             tmpType;
     c_bool              result;
+    c_bool              noError;
+    c_bool              isDeprecated;
     c_type              qosType;
     sd_serializer       ser;
     sd_serializedData   serData;
@@ -1244,23 +1316,19 @@ metaDataIsCorrect(
             data = (c_char *)os_malloc(size);
 
             if (data) {
-                data[0] = '\0';
-                fscanf(fdes, "%s", data);
+                readLine(fdes, size, data);
 
                 if(strncmp(data, "<METADATA>", 10) == 0){
-                    data[0] = '\0';
-                    fscanf(fdes, "%s", data);
+                    readLine(fdes, size, data);
 
                     if(strncmp(data, "<name>", 6) == 0){
-                        data[0] = '\0';
-                        fscanf(fdes, "%s", data);
+                        readLine(fdes, size, data);
 
                             if(strncmp(data, "<keyList>", 9) == 0){
                                 tmpKeys = getSubString(data, 9, (strlen(data) - 10));
 
                                 if(strcmp(tmpKeys, keyList) == 0){
-                                    data[0] = '\0';
-                                    fscanf(fdes, "%s", data);
+                                    readLine(fdes, size, data);
 
                                     if(strncmp(data, "<qos>", 5) == 0){
                                         tmpQos = getSubString(data, 5, (strlen(data) - 6));
@@ -1273,31 +1341,50 @@ metaDataIsCorrect(
                                         /* c_free(qosType); c_getType() does not keep type; */
 
                                         if(strcmp(xmlQos, tmpQos) == 0){
-                                            data[0] = '\0';
-                                            fscanf(fdes, "%s", data); /* <type> */
+                                            readLine(fdes, size, data); /* <type> */
 
                                             if(strncmp(data, "<type>", 6) == 0){
                                                 tmpType = getSubString(data, 6, (strlen(data) - 7));
-                                                str = getMessageMetadata(type);
+                                                isDeprecated = isDeprecatedMetadataFormat(tmpType);
 
+                                                if(isDeprecated){
+                                                    str = getMessageMetadataDeprecated(type);
+                                                } else {
+                                                    str = getMessageMetadata(type);
+                                                }
                                                 if(str) {
                                                     size = strlen(str);
 
                                                     if(strncmp(str, tmpType, size) == 0) {
-                                                        data[0] = '\0';
-                                                        fscanf(fdes, "%s", data); /* </METADATA> */
+                                                        noError = TRUE;
+                                                        /* The new format also has a line
+                                                         * to store the typeName
+                                                         */
+                                                        if(isDeprecated == FALSE){
+                                                            readLine(fdes, size, data); /* <typeName> */
 
-                                                        if(strncmp(data, "</METADATA>", 11) == 0){
-                                                            result = TRUE;
-                                                            d_storeReport(d_store(persistentStore),
-                                                                D_LEVEL_FINE,
-                                                                "metaDataIsCorrect for '%s' OK\n", topicName);
-                                                        }  else {
-                                                            d_storeReport(d_store(persistentStore),
-                                                                D_LEVEL_SEVERE,
-                                                                "</METADATA> missing for topic '%s'\n", topicName);
+                                                            if(strncmp(data, "<typeName>", 10) != 0){
+                                                                noError = FALSE;
+                                                                d_storeReport(d_store(persistentStore),
+                                                                    D_LEVEL_SEVERE,
+                                                                    "type-name of topic with name '%s' is missing\n",
+                                                                    topicName);
+                                                            }
                                                         }
+                                                        if(noError){
+                                                            readLine(fdes, size, data); /* </METADATA> */
 
+                                                            if(strncmp(data, "</METADATA>", 11) == 0){
+                                                                result = TRUE;
+                                                                d_storeReport(d_store(persistentStore),
+                                                                    D_LEVEL_FINE,
+                                                                    "metaDataIsCorrect for '%s' OK\n", topicName);
+                                                            }  else {
+                                                                d_storeReport(d_store(persistentStore),
+                                                                    D_LEVEL_SEVERE,
+                                                                    "</METADATA> missing for topic '%s'\n", topicName);
+                                                            }
+                                                        }
                                                     } else {
                                                         d_storeReport(d_store(persistentStore),
                                                             D_LEVEL_SEVERE,
@@ -1692,11 +1779,11 @@ determineInstance(
                     valueImage = c_valueImage(value);
 
                     if(valueImage){
-                        os_strncat(keyValues, valueImage, (c_ulong)(totalSize + 1));
+                        os_strncat(keyValues, valueImage, strlen(valueImage));
                         os_free(valueImage);
 
                         if (i<(nrOfKeys-1)) {
-                            os_strncat(keyValues, ",", (c_ulong)(totalSize + 1));
+                            os_strncat(keyValues, ",", 1);
                         }
                     }
                     c_valueFreeRef(value);
@@ -1867,12 +1954,54 @@ persistentInstanceInsertRegister(
 }
 
 static c_bool
+persistentInstanceReplaceLastTransactionMessage(
+    persistentInstance instance,
+    v_message message)
+{
+    v_message current;
+    c_bool replaced = FALSE;
+    c_iter newList = c_iterNew(NULL);
+
+    current = v_message(c_iterTakeFirst(instance->messages));
+
+    while(current && !replaced){
+        if(current->sequenceNumber == message->sequenceNumber){
+            /* Same transactionId */
+            if(V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(current->transactionId)
+                == V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(message->transactionId))
+            {
+                /* Same DataWriter */
+                if(v_gidCompare(current->writerGID, message->writerGID) == C_EQ)
+                {
+                    newList = c_iterAppend(newList, message);
+                    c_free(current);
+                    replaced = TRUE;
+                }
+            }
+        }
+        if(!replaced){
+            newList = c_iterAppend(newList, current);
+        }
+        current = v_message(c_iterTakeFirst(instance->messages));
+    }
+    /* make sure rest of the list is stored as well in case something has been replaced. */
+    while(current){
+        newList = c_iterAppend(newList, current);
+        current = v_message(c_iterTakeFirst(instance->messages));
+    }
+    c_iterFree(instance->messages);
+    instance->messages = newList;
+
+    return replaced;
+}
+
+static c_bool
 persistentInstanceInsert(
     persistentInstance instance,
     v_topicQos topicQos,
     v_message message)
 {
-    c_bool added, checkCounters;
+    c_bool added, checkCounters, replaced;
     v_message tmp, oldest;
     c_iter newList;
 
@@ -1892,7 +2021,15 @@ persistentInstanceInsert(
         added = TRUE;
         checkCounters = TRUE;
     } else { /*KEEP_LAST*/
-        if( (instance->writeCount < topicQos->durabilityService.history_depth) || /*There is still room; add it*/
+        if(v_stateTest(v_nodeState(message), L_TRANSACTION)){
+            replaced = persistentInstanceReplaceLastTransactionMessage(instance, message);
+        } else {
+            replaced = FALSE;
+        }
+        if(replaced){
+            added = TRUE;
+            checkCounters = FALSE;
+        } else if( (instance->writeCount < topicQos->durabilityService.history_depth) || /*There is still room; add it*/
             (topicQos->durabilityService.history_depth == V_LENGTH_UNLIMITED) )
         {
             instance->messages = c_iterAppend(instance->messages, message);
@@ -1907,6 +2044,17 @@ persistentInstanceInsert(
                 /* This is a WRITE message; throw away last received write message,
                  * which is this one. Simply don't add it.
                  */
+
+                /* Remove first sample */
+                tmp = c_iterTakeFirst(instance->messages);
+                c_free(tmp);
+                tmp = NULL;
+
+                /* Insert last sample */
+                c_iterAppend(instance->messages, message);
+
+                added = TRUE;
+                checkCounters = TRUE;
             }
         } else { /* V_ORDERBY_SOURCETIME */
             if(!v_stateTest(v_nodeState(message), L_WRITE)){ /* Not a WRITE message; add it*/
@@ -3031,6 +3179,7 @@ processExpungeAction(
                                     default:
                                         /*Message should not be in this list*/
                                         assert(FALSE);
+                                        break;
                                 }
 
                                 if(v_timeCompare(perData->writeTime, deleteTime) == C_GT){
@@ -3259,7 +3408,11 @@ d_storeXMLOptimizeGroup(
                                 perData = sd_serializerDeserializeValidated(serializer, serData);
 
                                 if(perData){
-                                    if (perData->qos != NULL) {
+                                    /* Dispose messages caused by dispose_all_data have no inline qos,
+                                     * but make sure all the other messages do.
+                                     */
+                                    if (perData->qos != NULL ||
+                                            (v_nodeState(perData) == L_DISPOSED && v_nodeState(perData) != L_WRITE)) {
                                         added = persistentInstanceInsert(instance,
                                                                          topicQos,
                                                                          perData);
@@ -3269,7 +3422,7 @@ d_storeXMLOptimizeGroup(
                                     } else {
                                         OS_REPORT_2(OS_ERROR, D_CONTEXT, 0,
                                             "Data for group '%s.%s' on disk is mutilated. "
-                                            "Found data without QoS value.",
+                                            "Found valid data without QoS value.",
                                             partition, topic);
                                         assert(0);
                                         c_free(perData);
@@ -3547,7 +3700,7 @@ correctGroupQuality(
 }
 
 d_storeXML
-d_storeNewXML()
+d_storeNewXML(u_participant participant)
 {
     d_storeXML storeXML;
     d_store store;
@@ -3878,7 +4031,6 @@ d_storeGroupInjectXML(
     u_partition upartition;
     v_partitionQos partitionQos;
     v_duration timeout;
-    c_char* typeName;
 
     assert(d_objectIsValid(d_object(store), D_STORE));
     assert(store->type == D_STORE_TYPE_XML);
@@ -3900,9 +4052,8 @@ d_storeGroupInjectXML(
                 metadata = readTopicMetadata(d_storeXML(store), participant, partition, topic);
 
                 if(metadata) {
-                    typeName = c_metaScopedName(c_metaObject(metadata->type));
                     utopic = u_topicNew(participant, metadata->name,
-                                        typeName,
+                                        metadata->typeName,
                                         metadata->keyList, metadata->qos);
                     if(utopic) {
                         d_storeReport(store, D_LEVEL_FINE, "Topic %s created.\n", metadata->name);
@@ -3943,10 +4094,10 @@ d_storeGroupInjectXML(
                     } else {
                         d_storeReport(store, D_LEVEL_SEVERE,
                             "Topic '%s' with typeName '%s' and keyList '%s' could NOT be created.\n",
-                            metadata->name, typeName, metadata->keyList);
+                            metadata->name, metadata->typeName, metadata->keyList);
                         result = D_STORE_RESULT_METADATA_MISMATCH;
                     }
-                    os_free(typeName);
+                    os_free(metadata->typeName);
                     os_free(metadata->name);
                     os_free(metadata->keyList);
                     v_topicQosFree(metadata->qos);
@@ -4152,6 +4303,12 @@ d_storeRestoreBackupXML (
                 }
                 groupList = groupList->next;
             }
+
+            /* Re-determine quality of groups */
+            d_storeXMLInitGroups(persistentStore);
+
+            /* Walk namespaces in administration */
+            d_adminNameSpaceWalk (store->admin, correctGroupQuality, persistentStore->groups);
         }
         d_lockUnlock(d_lock(persistentStore));
     } else {
@@ -4326,25 +4483,6 @@ d_storeInstanceRegisterXML(
     return result;
 }
 
-static void
-collectNsWalk(
-    d_nameSpace ns, void* userData)
-{
-    c_iter nameSpaces = (c_iter)userData;
-    if (ns)
-    {
-        d_objectKeep(d_object(ns));
-        c_iterInsert (nameSpaces, ns);
-    }
-}
-
-static void
-deleteNsWalk(
-   void* o, void* userData)
-{
-    d_objectFree(d_object(o), D_NAMESPACE);
-}
-
 d_storeResult
 d_storeCreatePersistentSnapshotXML(
     const d_store store,
@@ -4412,8 +4550,7 @@ d_storeCreatePersistentSnapshotXML(
                                 if(result == D_STORE_RESULT_OK)
                                 {
                                     /* Collect namespaces */
-                                    nameSpaces = c_iterNew(NULL);
-                                    d_adminNameSpaceWalk (store->admin, collectNsWalk, nameSpaces);
+                                    nameSpaces = d_adminNameSpaceCollect(store->admin);
                                     length = c_iterLength(nameSpaces);
                                     for(i = 0; i < length; i++)
                                     {
@@ -4433,8 +4570,7 @@ d_storeCreatePersistentSnapshotXML(
                                     }
 
                                     /* Free namespace list */
-                                    c_iterWalk(nameSpaces, deleteNsWalk, NULL);
-                                    c_iterFree(nameSpaces);
+                                    d_adminNameSpaceCollectFree(store->admin, nameSpaces);
                                 }
                             }
                         } else

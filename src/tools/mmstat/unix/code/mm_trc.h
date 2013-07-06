@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -18,12 +18,20 @@
 C_CLASS(monitor_trc);
 #define monitor_trc(o)     ((monitor_trc)(o))
 
+typedef enum {
+    NO_ORDERING,
+    ORDER_BY_COUNT, 
+    ORDER_BY_SIZE, 
+    ORDER_BY_TOTAL
+} orderKind;
+
 monitor_trc
 monitor_trcNew (
     c_long objectCountLimit,
     const char *filterExpression,
-    c_bool delta
-    );
+    orderKind oKind,
+    int orderCount,
+    c_bool delta);
 
 void
 monitor_trcFree (

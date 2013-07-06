@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,6 +15,7 @@
 #include "sd_xmlParser.h"
 #include "sd__resultCodes.h"
 #include "sd_typeInfoParser.h"
+#include <string.h>
 
 /* for tracing, change to #define TRACE(p) p */
 #define TRACE(p)
@@ -261,6 +262,8 @@ sd_nodeDefaultAction (
 {
     assert(node);
     assert(arg);
+    OS_UNUSED_ARG(node);
+    OS_UNUSED_ARG(arg);
 
     return TRUE;
 }
@@ -317,32 +320,6 @@ sd_elementDefaultAction (
 
     return result;
 }
-
-static c_bool
-sd_moduleInitAction (
-    sd_node node,
-    void    *arg)
-{
-    sd_nodeActionArg *info       = (sd_nodeActionArg *) arg;
-    sd_element        element    = (sd_element) node;
-    sd_module         pmodule    = (sd_module) node;
-    c_bool            result     = FALSE;
-
-    assert(node);
-    assert(info);
-    assert(info->callback);
-    assert(info->typeInfo);
-
-    if ( element->name ) {
-        result = sd_elementDefaultAction(node, arg);
-    } else {
-        sd_listWalk(pmodule->children, walkModules, arg);
-        result = info->result;
-    }
-
-    return result;
-}
-
 
 static c_bool
 sd_moduleAction (
@@ -1685,6 +1662,10 @@ handleMetaData (
     c_bool       start,
     sd_xmlParser handle)
 {
+    OS_UNUSED_ARG(info);
+    OS_UNUSED_ARG(attributes);
+    OS_UNUSED_ARG(start);
+    OS_UNUSED_ARG(handle);
     return TRUE;
 }
 
@@ -1948,6 +1929,8 @@ handleDefaultLabel (
     c_bool        result    = FALSE;
     c_bool        noError   = TRUE;
 
+    OS_UNUSED_ARG(attributes);
+
     if ( start ) {
         if ( SD_CURRENT(info) ) {
             switch ( SD_CURRENT_KIND(info) ) {
@@ -2001,6 +1984,7 @@ handleUnionSwitch (
     sd_unionSwitch  punionSwitch;
     c_bool          result = FALSE;
 
+    OS_UNUSED_ARG(attributes);
     TRACE(printf("handleUnionSwitch called\n"));
 
     if ( start ) {
@@ -2303,6 +2287,7 @@ handlePrimitive (
     c_bool   result = FALSE;
     sd_node  pnode;
 
+    OS_UNUSED_ARG(attributes);
     TRACE(printf("handlePrimitive called\n"));
 
     if ( start ) {

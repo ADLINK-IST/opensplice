@@ -1,0 +1,14 @@
+// -*- MPC -*-
+// $Id:$
+
+// project (sacs*types) : _repetitive_sacs_example_types {
+//}
+
+project(sacs*pub): _repetitive_sacs_example_pub {
+  after += ddsapihelper
+}
+
+project(sacs*sub): _repetitive_sacs_example_sub {
+  after += ddsapihelper
+}
+

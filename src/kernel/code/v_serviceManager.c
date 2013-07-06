@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -97,6 +97,8 @@ v_serviceManagerNotify(
     v_event event,
     c_voidp userData)
 {
+    OS_UNUSED_ARG(serviceManager);
+    OS_UNUSED_ARG(userData);
     assert(serviceManager != NULL);
     assert(C_TYPECHECK(serviceManager,v_serviceManager));
 
@@ -167,7 +169,7 @@ v_serviceManagerGetServiceState(
     c_mutexLock(&serviceManager->mutex);
     q = c_queryNew(serviceManager->serviceStates, expr, params);
     q_dispose(expr);
-    list = c_select(q, 0);
+    list = ospl_c_select(q, 0);
     c_free(q);
     c_mutexUnlock(&serviceManager->mutex);
 
@@ -224,4 +226,34 @@ v_serviceManagerGetServices(
     c_mutexUnlock(&serviceManager->mutex);
 
     return arg.list;
+}
+
+c_bool
+v_serviceManagerRemoveService(
+        v_serviceManager serviceManager,
+        const c_char *serviceName)
+{
+    v_serviceState state,removed;
+    c_bool result = FALSE;
+    assert(serviceManager != NULL);
+    assert(C_TYPECHECK(serviceManager, v_serviceManager));
+    assert(serviceName != NULL);
+
+    state = v_serviceManagerGetServiceState(serviceManager,serviceName);
+    if (state) {
+        c_mutexLock(&serviceManager->mutex);
+        removed = c_remove(serviceManager->serviceStates, state, NULL, NULL);
+        if (state != removed) {
+            OS_REPORT_1(OS_ERROR, "v_serviceManagerRemoveService", 0,
+                      "Could not remove the service %s form the serviceset",serviceName);
+        } else {
+            result = TRUE;
+        }
+        c_mutexUnlock(&serviceManager->mutex);
+    } else {
+        OS_REPORT_1(OS_ERROR, "v_serviceManagerRemoveService", 0,
+                   "Could not get the service state for service %s",serviceName);
+    }
+    return result;
+
 }

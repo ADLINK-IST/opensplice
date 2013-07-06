@@ -1,0 +1,9 @@
+// -*- MPC -*-
+// $Id$
+
+project {
+  Define_Custom(Perl_IDL) {
+    command  = perl <%quote%>$(OPALORB_ROOT)/idl/idl.pl<%quote%>
+    inputext = .idl
+  }
+}

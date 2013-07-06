@@ -45,6 +45,8 @@ namespace test.sacs
             qos2.LatencyBudget.Duration = new DDS.Duration(6, 6);
             qos2.ReaderDataLifecycle.AutopurgeDisposedSamplesDelay = new DDS.Duration(
                 5, 5);
+            qos2.ReaderDataLifecycle.EnableInvalidSamples = false;
+            qos2.ReaderDataLifecycle.InvalidSampleVisibility.Kind = DDS.InvalidSampleVisibilityQosPolicyKind.MinimumInvalidSamples;
             qos2.UserData.Value = new byte[2];
             qos2.UserData.Value[0] = 2;
             qos2.UserData.Value[0] = 4;

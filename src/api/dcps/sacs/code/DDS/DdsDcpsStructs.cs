@@ -196,6 +196,67 @@ namespace DDS
             return string.Format("{0}.{1}", sec, nanosec);
         }
     }
+    
+    // This marshals as an int or 32-bit integer
+    public struct DomainId
+    {
+        private int value;
+
+        public static readonly DomainId Default = new DomainId(0x7fffffff);
+
+        public DomainId(int id)
+        {
+            value = id;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is DomainId))
+                return false;
+
+            return ((DomainId)obj).value == value;
+        }
+
+        public override int GetHashCode()
+        {
+            return (int)value;
+        }
+
+        public long ToInt32()
+        {
+            return value;
+        }
+
+        public static bool operator ==(DomainId id1, DomainId id2)
+        {
+            return (id1.value == id2.value);
+        }
+
+        public static bool operator !=(DomainId id1, DomainId id2)
+        {
+            return (id1.value != id2.value);
+        }
+
+        public static implicit operator DomainId(int id)
+        {
+            return new DomainId(id);
+        }
+
+        public static implicit operator int(DomainId id)
+        {
+            return id.value;
+        }
+
+        public override string ToString()
+        {
+            return ToString(null);
+        }
+
+        public string ToString(string format)
+        {
+            return value.ToString(format);
+        }
+    }
 
     // This marshals as a long or 64-bit integer
     public struct InstanceHandle
@@ -739,7 +800,7 @@ namespace DDS
         public int SampleRank;
         public int GenerationRank;
         public int AbsoluteGenerationRank;
-        public Time ArrivalTimestamp;
+        public Time ReceptionTimestamp;
     }
 
 } // end namespace DDS

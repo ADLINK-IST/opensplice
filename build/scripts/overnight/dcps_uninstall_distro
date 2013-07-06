@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . buildsys/functions
 
@@ -11,7 +11,7 @@ echo "Uninstalling..."
 
 SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
 
-UNINSTALLER_NAME=$WORKDIR/installed/uninstall-$SHORTSETUP-HDE
+UNINSTALLER_NAME="$WORKDIR/$EXAMPLE_INSTALL_DIR/uninstall-$SHORTSETUP-HDE"
 UNINSTALLER_FILE=
 
 # Check if the uninstaller exists (Only if installed with bitrock installer)
@@ -29,10 +29,18 @@ fi
 # If the uninstaller exists, call onto it to remove the distribution
 if  [ -n "$UNINSTALLER_FILE" ]
 then
+    echo "backing up installation directory"
+    ( cd "$WORKDIR" && tar -cf installed.tar installed/ )
+
     echo "running $UNINSTALLER_FILE --mode unattended..."
     $UNINSTALLER_FILE --mode unattended
     if [ $? = 0 ]
     then
+        # the uninstaller creates a bitrock log which is not removed even
+        # if removeLogFile is set, that just seems to work for the installer
+        # and not the uninstaller.  So just remove the file from the 
+        # uninstaller here.
+        rm -rf /tmp/bitrock_installer*
         echo "Uninstall completed"
     else
         echo "ERROR: Uninstall failed"

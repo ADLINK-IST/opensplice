@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef RS_REPORTHANDLER_H
@@ -28,13 +28,13 @@ extern "C" {
 
 C_CLASS(rs_reportHandler);
 
-OS_API rs_reportHandler rs_reportHandlerNew (c_char *handlerId, c_short port);
+OS_API rs_reportHandler rs_reportHandlerNew (c_char *handlerId, c_ushort port);
 
 OS_API void rs_reportHandlerFree (rs_reportHandler reportHandler);
 
 OS_API void
 rs_reportHandlerReport (
-    rs_reportHandler reportHandler, 
+    rs_reportHandler reportHandler,
     rs_reportMsg message);
 
 #undef OS_API

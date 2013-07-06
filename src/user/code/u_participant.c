@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -58,12 +58,12 @@ leaseManagerMain(
         assert(kp);
         lm = v_participantGetLeaseManager(kp);
         OS_REPORT_1(OS_INFO,
-                    "u_participant::leaseManagerMain", 0,
+                    "u_participant::leaseManagerMain", 1,
                     "Lease Manager for Participant 0x%x started",
                     _this);
         v_leaseManagerMain(lm);
         OS_REPORT_1(OS_INFO,
-                    "u_participant::leaseManagerMain", 0,
+                    "u_participant::leaseManagerMain", 1,
                     "Lease Manager for Participant 0x%x stopped",
                     _this);
         c_free(lm);
@@ -88,12 +88,12 @@ resendManagerMain(
     {
         assert(kp);
         OS_REPORT_1(OS_INFO,
-                    "u_participant::resendManagerMain", 0,
+                    "u_participant::resendManagerMain", 1,
                     "Resend Manager for Participant 0x%x started",
                     _this);
         v_participantResendManagerMain(kp);
         OS_REPORT_1(OS_INFO,
-                    "u_participant::resendManagerMain", 0,
+                    "u_participant::resendManagerMain", 1,
                     "Resend Manager for Participant 0x%x stopped",
                     _this);
         u_entityRelease(u_entity(_this));
@@ -124,8 +124,10 @@ u_participantNew(
     } else {
         uri_string = "";
     }
-    domain = u_domainOpen(uri, timeout);
-    if (domain != NULL) {
+    r = u_domainOpen(&domain, uri, timeout);
+
+    if (r == U_RESULT_OK)
+    {
         r = u_entityWriteClaim(u_entity(domain),(v_entity*)(&kk));
         if (r == U_RESULT_OK) {
             assert(kk);
@@ -156,7 +158,9 @@ u_participantNew(
         }
     } else {
         OS_REPORT_1(OS_ERROR,"u_participantNew",0,
-                    "Failure to open the domain, URI=\"%s\"",
+                    "Failure to open the domain, URI=\"%s\" "
+                    "The most common cause of this error is that OpenSpliceDDS is not running (when using shared memory mode). "
+                    "Please make sure to start OpenSplice before creating a DomainParticipant.",
                     uri_string);
     }
     return p;
@@ -228,6 +232,10 @@ u_configurationResolveParameter(
 #define U_WATCHDOG_TEXT         "/#text"
 #define U_WATCHDOG_CLASS_FMT    "%s[@name='%s']/Watchdog/Scheduling/Class"
 #define U_WATCHDOG_PRIO_FMT     "%s[@name='%s']/Watchdog/Scheduling/Priority"
+#define U_GENERALWATCHDOG_CLASS_FMT    "%s/GeneralWatchdog/Scheduling/Class"
+#define U_GENERALWATCHDOG_PRIO_FMT     "%s/GeneralWatchdog/Scheduling/Priority"
+#define U_SPLICEDWATCHDOG_CLASS_FMT    "%s/Watchdog/Scheduling/Class"
+#define U_SPLICEDWATCHDOG_PRIO_FMT     "%s/Watchdog/Scheduling/Priority"
 #define U_WATCHDOG_ATTRKIND     "priority_kind"
 
 static void
@@ -238,6 +246,7 @@ participantGetWatchDogAttr(
     os_threadAttr * attr)
 {
     c_char* path;
+    c_char* fallbackPath;
     c_char* schedClass;
     c_char* prioKind;
     c_ulong prio;
@@ -245,13 +254,50 @@ participantGetWatchDogAttr(
     u_cfData data;
     u_cfAttribute attribute;
     struct v_schedulePolicy qos;
+    const char* fallbackElement = "Domain";
+    c_bool deprecatedSpliced = FALSE;
+    c_bool showDeprecationWarning = FALSE;
+
+    /*
+     * General search path for the watchdog parameters:
+     * Service/Watchdog/Scheduling/ if a service has explicitly specified individual preferences.
+     * Domain/GeneralWatchdog/Scheduling/ if a service has not set an overruling preference.
+     *
+     * For Spliced the search path is:
+     * Domain/Daemon/Watchdog/Scheduling/ if not present,
+     * Domain/Watchdog/Scheduling/ this path is now deprecated as it moved to Domain/Daemon but kept alive for backward compatibility
+     * Domain/GeneralWatchdog/Scheduling/
+     */
 
     if (root != NULL) {
-        path = os_malloc(strlen(U_WATCHDOG_CLASS_FMT U_WATCHDOG_TEXT) +
-                         strlen(element) + strlen(name) + 1);
+
+        if (strcmp(element, "Domain/Daemon")==0) {
+            /* old watchdog location configuration for spliced still needed for backward compatibility*/
+            deprecatedSpliced = TRUE;
+            path = os_malloc(strlen(U_SPLICEDWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT) +
+                                     strlen(element) + 1);
+        } else {
+            path = os_malloc(strlen(U_WATCHDOG_CLASS_FMT U_WATCHDOG_TEXT) +
+                                     strlen(element) + strlen(name) + 1);
+        }
         if (path != NULL) {
-            os_sprintf(path, U_WATCHDOG_CLASS_FMT U_WATCHDOG_TEXT, element, name);
+            if (deprecatedSpliced) {
+                os_sprintf(path, U_SPLICEDWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT, element);
+            } else {
+                os_sprintf(path, U_WATCHDOG_CLASS_FMT U_WATCHDOG_TEXT, element, name);
+            }
             data = u_configurationResolveParameter(root, path);
+            /* look for deprecated place Domain/Watchdog */
+            if (data == NULL && deprecatedSpliced) {
+                os_free(path);
+                path = os_malloc(strlen(U_SPLICEDWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT) +
+                                         strlen(fallbackElement) + 1);
+                if (path != NULL) {
+                    os_sprintf(path, U_SPLICEDWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT, fallbackElement);
+                    data = u_configurationResolveParameter(root, path);
+                    showDeprecationWarning = TRUE;
+                }
+            }
             if (data != NULL) {
                 success = u_cfDataStringValue(data, &schedClass);
                 if (success) {
@@ -262,58 +308,163 @@ participantGetWatchDogAttr(
                     } else if (strcmp(schedClass, "Timeshare")==0) {
                         qos.kind = V_SCHED_TIMESHARING;
                     } else {
-                        OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0,
+                        OS_REPORT_1(OS_ERROR, "Watchdog initialization", 0,
                                     "Illegal 'Scheduling/Class' for %s", name);
                         success = FALSE;
                     }
+                    if (showDeprecationWarning) {
+                        OS_REPORT(OS_WARNING, "Watchdog initialization", 0,
+                                  "deprecated path for Domain Watchdog 'Scheduling/Class' please use Domain/Daemon.");
+                    }
                     os_free(schedClass);
                 } else {
-                    OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0,
+                    OS_REPORT_1(OS_ERROR, "Watchdog initialization", 0,
                     "Illegal 'Scheduling/Class' for %s. Applying default.",
                     name);
                 }
                 u_cfDataFree(data);
             } else {
-                success = FALSE;
+                fallbackPath = os_malloc(strlen(U_GENERALWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT) +
+                                         strlen(fallbackElement) + 1);
+                if (fallbackPath != NULL) {
+                    os_sprintf(fallbackPath, U_GENERALWATCHDOG_CLASS_FMT U_WATCHDOG_TEXT, fallbackElement);
+                    data = u_configurationResolveParameter(root, fallbackPath);
+                    if (data != NULL) {
+                        success = u_cfDataStringValue(data, &schedClass);
+                        if (success) {
+                            if (strcmp(schedClass, "Default")==0) {
+                                qos.kind = V_SCHED_DEFAULT;
+                            } else if (strcmp(schedClass, "Realtime")==0) {
+                                qos.kind = V_SCHED_REALTIME;
+                            } else if (strcmp(schedClass, "Timeshare")==0) {
+                                qos.kind = V_SCHED_TIMESHARING;
+                            } else {
+                                OS_REPORT(OS_ERROR, "GeneralWatchdog initialization", 0,
+                                            "Illegal 'Scheduling/Class'");
+                                success = FALSE;
+                            }
+                            os_free(schedClass);
+                        } else {
+                            OS_REPORT(OS_ERROR, "GeneralWatchdog initialization", 0,
+                            "Illegal 'Scheduling/Class' Applying default.");
+                        }
+                        u_cfDataFree(data);
+                    } else {
+                        success = FALSE;
+                    }
+                } else {
+                    success = FALSE;
+                }
+                os_free(fallbackPath);
             }
             os_free(path);
         } else {
             success = FALSE;
         }
-
+        showDeprecationWarning = FALSE;
         if (success) {
-            path = os_malloc(strlen(U_WATCHDOG_PRIO_FMT U_WATCHDOG_TEXT) +
-                             strlen(element) + strlen(name) + 1);
+            if (strcmp(element, "Domain/Daemon")==0) {
+                /* old watchdog location configuration for spliced still needed for backward compatibility*/
+                deprecatedSpliced = TRUE;
+                path = os_malloc(strlen(U_SPLICEDWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT) +
+                                         strlen(element) + 1);
+            } else {
+                path = os_malloc(strlen(U_WATCHDOG_PRIO_FMT U_WATCHDOG_TEXT) +
+                                         strlen(element) + strlen(name) + 1);
+            }
+
             if (path != NULL) {
-                os_sprintf(path, U_WATCHDOG_PRIO_FMT U_WATCHDOG_TEXT,
-                        element, name);
+                if (deprecatedSpliced) {
+                    os_sprintf(path, U_SPLICEDWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT, element);
+                } else {
+                    os_sprintf(path, U_WATCHDOG_PRIO_FMT U_WATCHDOG_TEXT, element, name);
+                }
                 data = u_configurationResolveParameter(root, path);
+                /* look for deprecated place Domain/Watchdog */
+                if (data == NULL && deprecatedSpliced) {
+                    os_free(path);
+                    path = os_malloc(strlen(U_SPLICEDWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT) +
+                                             strlen(fallbackElement) + 1);
+                    if (path != NULL) {
+                        os_sprintf(path, U_SPLICEDWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT, fallbackElement);
+                        data = u_configurationResolveParameter(root, path);
+                        showDeprecationWarning = TRUE;
+                    }
+                }
                 if (data != NULL) {
                     success = u_cfDataULongValue(data, &prio);
                     if (success) {
                         qos.priority = prio;
+                        if(showDeprecationWarning) {
+                            OS_REPORT(OS_WARNING, "Watchdog initialization", 0,
+                                      "deprecated path for Domain Watchdog 'Scheduling/Priority' please use Domain/Daemon.");
+                        }
                     } else {
-                        OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0,
+                        OS_REPORT_1(OS_ERROR, "Watchdog initialization", 0,
                         "%s Configuration: value of 'Scheduling/Priority' not "
                         "valid.  Applying default.", name);
                     }
                     u_cfDataFree(data);
                 } else {
-                    success = FALSE;
+                    fallbackPath = os_malloc(strlen(U_GENERALWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT) +
+                                     strlen(fallbackElement) + 1);
+                    if (fallbackPath != NULL) {
+                        os_sprintf(fallbackPath, U_GENERALWATCHDOG_PRIO_FMT U_WATCHDOG_TEXT,fallbackElement);
+                        data = u_configurationResolveParameter(root, fallbackPath);
+                        if (data != NULL) {
+                            success = u_cfDataULongValue(data, &prio);
+                            if (success) {
+                                qos.priority = prio;
+                            } else {
+                                OS_REPORT(OS_ERROR, "GeneralWatchdog initialization", 0,
+                                "Configuration: value of 'Scheduling/Priority' not "
+                                "valid.  Applying default.");
+                            }
+                            u_cfDataFree(data);
+                        } else {
+                            success = FALSE;
+                        }
+                        os_free(fallbackPath);
+                    } else {
+                        success = FALSE;
+                    }
                 }
                 os_free(path);
             } else {
                 success = FALSE;
             }
         }
-
+        showDeprecationWarning = FALSE;
         if (success) {
-            path = os_malloc(strlen(U_WATCHDOG_PRIO_FMT) +
-                             strlen(element) + strlen(name) + 1);
+            if (strcmp(element, "Domain/Daemon")==0) {
+                /* old watchdog location configuration for spliced still needed for backward compatibility*/
+                deprecatedSpliced = TRUE;
+                path = os_malloc(strlen(U_SPLICEDWATCHDOG_PRIO_FMT) +
+                                         strlen(element) + 1);
+            } else {
+                path = os_malloc(strlen(U_WATCHDOG_PRIO_FMT) +
+                                 strlen(element) + strlen(name) + 1);
+            }
             if (path != NULL) {
-                os_sprintf(path, U_WATCHDOG_PRIO_FMT, element, name);
+                if (deprecatedSpliced) {
+                     /*no need to realloc path because the alloced size is always bigger than needed here*/
+                    os_sprintf(path, U_SPLICEDWATCHDOG_PRIO_FMT, element);
+                } else {
+                    os_sprintf(path, U_WATCHDOG_PRIO_FMT, element, name);
+                }
                 attribute = u_configurationResolveAttribute(root, path,
                                                             U_WATCHDOG_ATTRKIND);
+                 /*look for deprecated place Domain/Watchdog*/
+                if (attribute == NULL && deprecatedSpliced) {
+                    os_free(path);
+                    path = os_malloc(strlen(U_SPLICEDWATCHDOG_PRIO_FMT) +
+                                             strlen(fallbackElement) + 1);
+                    if (path != NULL) {
+                        os_sprintf(path, U_SPLICEDWATCHDOG_PRIO_FMT, fallbackElement);
+                        attribute = u_configurationResolveAttribute(root, path,U_WATCHDOG_ATTRKIND);
+                        showDeprecationWarning = TRUE;
+                    }
+                }
                 if (attribute != NULL) {
                     success = u_cfAttributeStringValue(attribute, &prioKind);
                     if (success) {
@@ -323,24 +474,60 @@ participantGetWatchDogAttr(
                             qos.priorityKind = V_SCHED_PRIO_ABSOLUTE;
                         } else {
                             OS_REPORT_1(OS_ERROR,
-                                        "Splicedaemon initialization", 0,
+                                        "Watchdog initialization", 0,
                                         "Invalid 'priority_kind' in "
                                         "'Scheduling/Priority'. "
                                         "Applying default for %s.", name);
                             success = FALSE;
                         }
+                        if(showDeprecationWarning) {
+                            OS_REPORT(OS_WARNING, "Watchdog initialization", 0,
+                                      "deprecated path for 'priority_kind' in Domain Watchdog 'Scheduling/Priority' please use Domain/Daemon.");
+                        }
                     } else {
-                        OS_REPORT_1(OS_ERROR, "Splicedaemon initialization", 0,
+                        OS_REPORT_1(OS_ERROR, "Watchdog initialization", 0,
                         "Invalid 'priority_kind' in 'Scheduling/Priority'. "
                         "Applying default for %s.", name);
                     }
                 } else {
-                    success = FALSE;
-                    os_free(path);
+                    fallbackPath = os_malloc(strlen(U_GENERALWATCHDOG_PRIO_FMT) +
+                                     strlen(fallbackElement) + 1);
+                    if (fallbackPath != NULL) {
+                        os_sprintf(fallbackPath, U_GENERALWATCHDOG_PRIO_FMT, fallbackElement);
+                        attribute = u_configurationResolveAttribute(root, fallbackPath,
+                                                                    U_WATCHDOG_ATTRKIND);
+                        if (attribute != NULL) {
+                            success = u_cfAttributeStringValue(attribute, &prioKind);
+                            if (success) {
+                                if (strcmp(prioKind, "Relative")==0) {
+                                    qos.priorityKind = V_SCHED_PRIO_RELATIVE;
+                                } else if (strcmp(prioKind, "Absolute")==0) {
+                                    qos.priorityKind = V_SCHED_PRIO_ABSOLUTE;
+                                } else {
+                                    OS_REPORT(OS_ERROR,
+                                                "GeneralWatchdog initialization", 0,
+                                                "Invalid 'priority_kind' in "
+                                                "'Scheduling/Priority' "
+                                                "Applying default.");
+                                    success = FALSE;
+                                }
+                            } else {
+                                OS_REPORT(OS_ERROR, "GeneralWatchdog initialization", 0,
+                                "Invalid 'priority_kind' in 'Scheduling/Priority'. "
+                                "Applying default");
+                            }
+                        } else {
+                            success = FALSE;
+                        }
+                    } else {
+                        success = FALSE;
+                    }
+                    os_free(fallbackPath);
                 }
             } else {
                 success = FALSE;
             }
+            os_free(path);
         }
         os_threadAttrInit(attr);
 
@@ -349,7 +536,8 @@ participantGetWatchDogAttr(
         }
     } else {
         OS_REPORT_1(OS_INFO,
-                    "Splicedaemon initialization", 0,
+                    "Watchdog"
+                    " initialization", 0,
                     "No watchdog configuration information specified\n"
                     "              for process \"%s\".\n"
                     "              The service will not be able to detect "
@@ -411,37 +599,56 @@ u_participantInit (
         if (u_entity(_this)->kind == U_SERVICE) {
             root = u_participantGetConfiguration(_this);
             switch(u_service(_this)->serviceKind) {
-            case U_SERVICE_NETWORKING:
-                participantGetWatchDogAttr(root, "NetworkService",
-                                           v_participantName(kp), &attr);
-            break;
-            case U_SERVICE_DURABILITY:
-                participantGetWatchDogAttr(root, "DurabilityService",
-                                           v_participantName(kp), &attr);
-            break;
-            case U_SERVICE_CMSOAP:
-                participantGetWatchDogAttr(root, "TunerService",
-                                           v_participantName(kp), &attr);
-            break;
-            case U_SERVICE_SPLICED:
-                /*
-                 * There doesn't exist a proper "service" configuration
-                 * for the splicedaemon the Daemon config for example
-                 * doesn't have a name attribute.
-                 * For now, we leave it at default
-                 */
-                os_threadAttrInit(&attr);
-            break;
-            case U_SERVICE_INCOGNITO:
-                os_threadAttrInit(&attr);
-            break;
-            default:
-                OS_REPORT(OS_ERROR, "u_participantInit", 0,
-                          "Internal error: Unknown Service kind detected.");
-                os_threadAttrInit(&attr);
-            break;
+                case U_SERVICE_DDSI:
+                    participantGetWatchDogAttr(root, "DDSI2Service",
+                                               v_participantName(kp), &attr);
+                    break;
+                case U_SERVICE_DDSIE:
+                    participantGetWatchDogAttr(root, "DDSI2EService",
+                                               v_participantName(kp), &attr);
+                    break;
+                case U_SERVICE_SNETWORKING:
+                    participantGetWatchDogAttr(root, "SNetworkService",
+                                               v_participantName(kp), &attr);
+                    break;
+                case U_SERVICE_NETWORKING:
+                    participantGetWatchDogAttr(root, "NetworkService",
+                                               v_participantName(kp), &attr);
+                    break;
+                case U_SERVICE_DURABILITY:
+                    participantGetWatchDogAttr(root, "DurabilityService",
+                                               v_participantName(kp), &attr);
+                    break;
+                case U_SERVICE_CMSOAP:
+                    participantGetWatchDogAttr(root, "TunerService",
+                                               v_participantName(kp), &attr);
+                    break;
+                case U_SERVICE_SPLICED:
+                    participantGetWatchDogAttr(root, "Domain/Daemon",
+                                               v_participantName(kp), &attr);
+                    break;
+                case U_SERVICE_DBMSCONNECT:
+                    participantGetWatchDogAttr(root, "DbmsConnectService",
+                                               v_participantName(kp), &attr);
+                    break;
+                case U_SERVICE_RNR:
+                    participantGetWatchDogAttr(root, "RnRService",
+                                               v_participantName(kp), &attr);
+                    break;
+                case U_SERVICE_INCOGNITO:
+                    os_threadAttrInit(&attr);
+                    break;
+                default:
+                    OS_REPORT(OS_ERROR, "u_participantInit", 0,
+                              "Internal error: Unknown Service kind detected.");
+                    os_threadAttrInit(&attr);
+                    break;
             }
             u_cfElementFree(root);
+        } else if (u_entity(_this)->kind == U_PARTICIPANT) {
+            os_threadAttrInit(&attr);
+            /* use the values configured for the participant */
+            u_threadAttrInit (&kp->qos->watchdogScheduling, &attr);
         } else {
             os_threadAttrInit(&attr);
         }
@@ -456,6 +663,8 @@ u_participantInit (
                 OS_REPORT(OS_ERROR, "u_participantInit", 0,
                           "Watchdog thread could not be started.\n");
             }
+            /* slave ResendManager attributes from parent process */
+            os_threadAttrInit(&attr);
 
             osr = os_threadCreate(&_this->threadIdResend, "resendManager", &attr,
                             (void *(*)(void *))resendManagerMain,(void *)_this);
@@ -473,6 +682,7 @@ u_participantInit (
                                    u_participantNewGroupListener,
                                    NULL);
         mask |= V_EVENT_NEW_GROUP;
+        mask |= V_EVENT_CONNECT_WRITER;
         u_dispatcherSetEventMask(u_dispatcher(_this), mask);
         r = u_entityRelease(u_entity(_this));
         if (r != U_RESULT_OK) {
@@ -493,7 +703,8 @@ u_participantFree (
     u_result result = U_RESULT_OK;
     c_bool destroy;
 
-    if (_this != NULL) {
+    result = u_entityLock(u_entity(_this));
+    if (result == U_RESULT_OK) {
         destroy = u_entityDereference(u_entity(_this));
         if (destroy) {
             if (u_entityOwner(u_entity(_this))) {
@@ -513,21 +724,25 @@ u_participantFree (
             } else {
                 OS_REPORT_2(OS_WARNING,
                             "u_participantFree",0,
-                            "Operation u_subscriberDeinit failed: "
-                            "Subscriber = 0x%x, result = %s.",
+                            "Operation u_participantDeinit failed: "
+                            "participant = 0x%x, result = %s.",
                             _this, u_resultImage(result));
                 u_entityUnlock(u_entity(_this));
             }
+        } else {
+            u_entityUnlock(u_entity(_this));
         }
     } else {
-        OS_REPORT(OS_WARNING, "u_participantFree", 0,
-                  "The specified Participant = NIL.");
-        result = U_RESULT_OK;
+        OS_REPORT_2(OS_WARNING,
+            "u_participantFree",0,
+            "Operation u_entityLock failed: "
+            "participant = 0x%x, result = %s.",
+            _this, u_resultImage(result));
     }
     return result;
 }
 
-/* Precondition: Praticipant _this must be locked. */
+/* Precondition: Participant _this must be locked. */
 u_result
 u_participantDeinit (
     u_participant _this)
@@ -570,9 +785,18 @@ u_participantDeinit (
                           "Failed to claim Participant.");
             }
             u_domainFree(_this->domain);
-            /* Disable the participant to avoid multiple Free's */
+            /* The domain may or may not be actually deinitialised, since there
+             * can be more participants connected throught this domain. At least
+             * remove acces through this participant to the domain. */
             _this->domain = NULL;
-        }
+            assert(c_iterLength(_this->publishers) == 0);
+            c_iterFree(_this->publishers);
+            assert(c_iterLength(_this->subscribers) == 0);
+            c_iterFree(_this->subscribers);
+            assert(_this->builtinTopicCount == 0);
+            assert(c_iterLength(_this->topics) == 0);
+            c_iterFree(_this->topics);
+         }
     } else {
         OS_REPORT(OS_ERROR, "u_participantDeinit", 0,
                   "Participant is not specified.");
@@ -783,6 +1007,7 @@ u_participantDetach(
             }
             os_threadWaitExit(_this->threadIdResend, NULL);
             r = u_entityRelease(u_entity(_this));
+            os_mutexLock(&u_entity(_this)->mutex); /* u_dispatcherDeinit must be called Locked on entity */
             u_dispatcherDeinit(u_dispatcher(_this));
             _this->domain = NULL;
         } else {
@@ -861,49 +1086,93 @@ u_participantFindTopic(
     v_participant kp;
     u_topic t;
     v_topic kt;
-    c_iter list, topics;
+    c_iter list = NULL;
+    c_iter topics = NULL;
     os_time delay;
+    os_time const tryPeriod = {0, 100 * 1e6}; /* 0.1s */
+    os_time endTime;
+    os_int retry = 1;
+    c_bool error = FALSE;
 
-    topics = NULL;
+    if(!c_timeIsInfinite(timeout)){
+        delay.tv_sec = timeout.seconds;
+        delay.tv_nsec = timeout.nanoseconds;
+        endTime = os_timeAdd(os_timeGet(), delay);
+    }
     if (p== NULL) {
         OS_REPORT(OS_ERROR,
                   "User Participant",0,
                   "u_participantFindTopic: No participant specified.");
     } else {
-        r = u_entityReadClaim(u_entity(p), (v_entity*)(&kp));
-        if(r == U_RESULT_OK)
-        {
-            assert(kp);
-            /** \todo Make real implementatio when SI912 is solved...... */
-            list = v_resolveTopics(v_objectKernel(kp),name);
-            if (c_iterLength(list) == 0) {
-                c_iterFree(list);
-                delay.tv_sec = timeout.seconds;
-                delay.tv_nsec = timeout.nanoseconds;
-                os_nanoSleep(delay);
-                list = v_resolveTopics(v_objectKernel(kp),name);
+        do {
+            r = u_entityLock(u_entity(p));
+            if(r == U_RESULT_OK) {
+                r = u_entityReadClaim(u_entity(p), (v_entity*)(&kp));
+                if(r == U_RESULT_OK)
+                {
+                    assert(kp);
+                    /** todo Make real implementatio when SI912 is solved...... */
+                    list = v_resolveTopics(v_objectKernel(kp),name);
+                    r = u_entityRelease(u_entity(p));
+                    if(r != U_RESULT_OK) {
+                        OS_REPORT(OS_WARNING,
+                                  "u_participantFindTopic",0,
+                                  "Failed to release the Participant.");
+                        retry = 0;
+                        error = TRUE;
+                    }
+
+                    r = u_entityUnlock(u_entity(p));
+                    if(r != U_RESULT_OK) {
+                        OS_REPORT(OS_WARNING,
+                                  "u_participantFindTopic",0,
+                                  "Failed to unlock the Participant.");
+                        retry = 0;
+                        error = TRUE;
+                    }
+
+                    if(c_iterLength(list) == 0) {
+                        os_nanoSleep(tryPeriod);
+                        retry = c_timeIsInfinite(timeout) || (os_timeCompare(os_timeGet(), endTime) == OS_LESS);
+                    } else {
+                        retry = 0;
+                    }
+                } else {
+                    OS_REPORT(OS_WARNING,
+                              "u_participantFindTopic",0,
+                              "Failed to claim Participant.");
+                    retry = 0;
+                    error = TRUE;
+                    u_entityUnlock(u_entity(p));
+                }
+            }  else {
+                OS_REPORT(OS_WARNING,
+                          "u_participantFindTopic",0,
+                          "Failed to lock the Participant.");
+                retry = 0;
+                error = TRUE;
             }
+        } while (retry);
+        if (list != NULL && c_iterLength(list) != 0) {
             kt = c_iterTakeFirst(list);
             while (kt != NULL) {
-                t = u_topic(u_entityNew(v_entity(kt), p,TRUE));
-                c_free(kt);
-                if (t) {
-                    topics = c_iterInsert(topics,t);
-                } else {
-                    OS_REPORT_1(OS_WARNING,
-                                "u_participantFindTopic",0,
-                                "Found Kernel Topic '%s' without user layer entity.",
-                                name);
+                if (!error) {
+                    t = u_topic(u_entityNew(v_entity(kt), p,TRUE));
+                    if (t) {
+                        topics = c_iterInsert(topics,t);
+                    } else {
+                        OS_REPORT_1(OS_WARNING,
+                                    "u_participantFindTopic",0,
+                                    "Found Kernel Topic '%s' without user layer entity.",
+                                    name);
+                    }
                 }
+                c_free(kt);
                 kt = c_iterTakeFirst(list);
             }
-            c_iterFree(list);
-            r = u_entityRelease(u_entity(p));
-        } else {
-            OS_REPORT(OS_WARNING,
-                      "u_participantFindTopic",0,
-                      "Failed to claim Participant.");
         }
+        c_iterFree(list);
+        list = NULL;
     }
     return topics;
 }
@@ -1271,7 +1540,7 @@ u_participantSubscriberCount(
         u_entityUnlock(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING,
-                  "u_participantRemoveSubscriber",0,
+                  "u_participantSubscriberCount",0,
                   "Failed to lock Participant.");
     }
     return length;
@@ -1553,3 +1822,16 @@ u_participantCreateTopic(
     return topic;
 }
 
+u_result
+u_participantFederationSpecificPartitionName (
+    u_participant _this,
+    c_char *buf,
+    os_size_t bufsize)
+{
+    u_result result;
+    if ((result = u_entityLock (u_entity(_this))) == U_RESULT_OK) {
+        result = u_domainFederationSpecificPartitionName (_this->domain, buf, bufsize);
+        u_entityUnlock (u_entity (_this));
+    }
+    return result;
+}

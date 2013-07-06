@@ -1,0 +1,13 @@
+// -*- MPC -*-
+// $Id:$
+
+project : splice_targets, vc_warnings {
+  // This property is set when generating for csharp
+  specific (prop:csharp) {
+      requires += dummy_label
+  }
+  // This property is set when generating for java
+  specific (prop:java) {
+      requires += dummy_label
+  }
+}

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -24,6 +24,7 @@ import org.opensplice.common.model.table.UserDataSingleTableModel;
  */
 public class UserDataSingleTable extends JTable{
     protected String userDataKeys = null;
+    protected String structName = null;
     
     /**
      * Constructs a new UserDataEditTable from the supplied arguments. The
@@ -41,6 +42,15 @@ public class UserDataSingleTable extends JTable{
             this.setKeyList(keyList);
         }
     }
+    
+    public UserDataSingleTable(UserDataSingleTableModel model, String keyList, String struct){
+        super(model);
+        structName = struct;
+        if(keyList != null){
+            this.setKeyList(keyList);
+        }
+    }
+    
     
     /**
      * Sets the key list of the data in this table. Backgrounds of cells that 
@@ -67,5 +77,14 @@ public class UserDataSingleTable extends JTable{
      */
     public String getUserDataKeys() {
         return userDataKeys;
+    }
+    
+    /**
+     * Provides access to the structName.
+     * 
+     * @return Returns the structName.
+     */
+    public String getStructName() {
+        return structName;
     }
 }

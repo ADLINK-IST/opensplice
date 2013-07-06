@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -16,6 +16,8 @@
  * that don't need it.
  */
 #include "os_init.h"
+
+static os_boolean _ospl_singleProcess = OS_FALSE;
 
 os_result
 os_serviceStart(const char *name)
@@ -39,5 +41,17 @@ os_serviceName(void)
 void
 os_createPipeNameFromDomainName(const os_char *name)
 {
+    OS_UNUSED_ARG(name);
 }
 
+void
+os_serviceSetSingleProcess (void)
+{
+    _ospl_singleProcess = OS_TRUE;
+}
+
+os_boolean
+os_serviceGetSingleProcess (void)
+{
+    return _ospl_singleProcess;
+}

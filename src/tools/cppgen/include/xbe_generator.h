@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -93,7 +93,7 @@ public:
    virtual AST_Expression *create_expr (unsigned long v);
    virtual AST_Expression *create_expr (UTL_String *s);
    virtual AST_Expression *create_expr (char c);
-   virtual AST_Expression *create_expr (double d, char * str);
+   virtual AST_Expression *create_expr (double d, const char * str);
 
    virtual AST_EnumVal *create_enum_val(unsigned long v,
                                         UTL_ScopedName *n,

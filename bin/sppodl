@@ -1,3 +1,16 @@
+SPATH=`echo $PATH | tr ' ' '\177' | tr ':' ' '`
+PATHCHECK_FOUND=
+WINCMD=
+for i in $SPATH
+do
+    PATHCHECK_FOUND="`echo $i | tr '\177' ' '`/ospl_wincmd"
+    if [ -f "$PATHCHECK_FOUND" ]
+    then 
+	WINCMD=ospl_wincmd
+	break
+    fi
+done
+
 options="-C -I. "
 odlpp_options=""
 if test $# -eq 0; then
@@ -10,7 +23,7 @@ else
     -*) options="$options $1";;
     *)
        cpp $options $1 $1.$$.odl
-       odlpp $odlpp_options $1.$$.odl
+       $WINCMD odlpp $odlpp_options $1.$$.odl
        rm -f $1.$$.odl
     ;;
     esac

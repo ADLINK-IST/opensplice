@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -18,11 +18,7 @@ c_char*
 cmx_groupQueueInit(
     v_groupQueue entity)
 {
-    char buf[512];
-    v_groupQueue groupqueue;
+    assert(C_TYPECHECK(entity, v_groupQueue));
     
-    groupqueue = v_groupQueue(entity);
-    os_sprintf(buf, "<kind>GROUPQUEUE</kind>");
-    
-    return (c_char*)(os_strdup(buf));
+    return (c_char*)(os_strdup("<kind>GROUPQUEUE</kind>"));
 }

@@ -1,0 +1,14 @@
+// -*- MPC -*-
+// $Id:$
+
+project {
+  // This property is set when generating csharp
+  specific (prop:csharp) {
+      requires += dummy_label
+  }
+
+  // This property is set when generating c/cpp
+  specific (prop:cplusplus) {
+      requires += dummy_label
+  }
+}

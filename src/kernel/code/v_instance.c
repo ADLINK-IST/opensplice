@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -28,7 +28,7 @@ v_instanceInit(
 
     instance->next = instance;
     instance->prev = instance;
-    instance->lastCheckTime = C_TIME_ZERO;
+    instance->lastDeadlineResetTime = C_TIME_ZERO;
 }
 
 void
@@ -98,7 +98,7 @@ v_instanceUpdate(
 {
     assert(C_TYPECHECK(instance, v_instance));
 
-    instance->lastCheckTime = v_timeGet();
+    instance->lastDeadlineResetTime = v_timeGet();
 }
 
 v_writeResult

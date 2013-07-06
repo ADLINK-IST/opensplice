@@ -1,0 +1,28 @@
+// $Id$
+
+project {
+  custom_only = 1
+
+  Define_Custom (WXS) {
+    command           = <%quote%>$(WIX_ROOT)/bin/candle.exe<%quote%>
+    inputext          = .wxs
+    output_option     = -out
+    commandflags      = -nologo
+    generic_outputext = .wixobj
+    keyword wix_flags = commandflags
+  }
+
+  Define_Custom (WXI) {
+    inputext = .wxi
+  }
+
+
+  specific {
+    wix_flags += -dtype=<%prj_type%>
+
+    prebuild  += <%rm%> <%project_name%>.msi
+    postbuild += \
+      <%quote%>$(WIX_ROOT)/bin/light.exe<%quote%> -out <%project_name%>.msi \
+      <%light_flags%> <%foreach(wxs_files)%><%noextension(wxs_file)%>.wixobj <%endfor%>
+  }
+}

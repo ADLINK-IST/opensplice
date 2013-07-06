@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -260,7 +260,7 @@ u_readerGetMatchedPublications (
     v_statusAction action,
     c_voidp arg)
 {
-    v_reader reader;
+    v_dataReader reader;
     v_spliced spliced;
     v_kernel kernel;
     u_result result;
@@ -296,7 +296,7 @@ u_readerGetMatchedPublicationData (
     v_statusAction action,
     c_voidp arg)
 {
-    v_reader reader;
+    v_dataReader reader;
     v_spliced spliced;
     v_kernel kernel;
     u_result result;

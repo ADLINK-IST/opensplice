@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,16 +11,17 @@
  */
 package org.opensplice.config.swing;
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 
+import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.TransferHandler;
-
-import java.awt.GridBagConstraints;
-import javax.swing.JScrollPane;
-import javax.swing.BorderFactory;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -37,9 +38,6 @@ import org.opensplice.config.data.DataValue;
 import org.opensplice.config.meta.MetaAttribute;
 import org.opensplice.config.meta.MetaElement;
 import org.opensplice.config.meta.MetaNode;
-
-import java.awt.Font;
-import java.awt.Color;
 
 public class ServicePanel extends JPanel implements TreeSelectionListener, ListSelectionListener {
 
@@ -79,6 +77,7 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
         return configurationTable;
     }
 
+    @Override
     public void valueChanged(TreeSelectionEvent e) {
         TreePath selectionPath = e.getNewLeadSelectionPath();
         
@@ -93,6 +92,7 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
         }
     }
 
+    @Override
     public void valueChanged(ListSelectionEvent e) {
         if(!e.getValueIsAdjusting()){
             int selectedRow = this.getConfigurationTable().getSelectedRow();
@@ -105,6 +105,7 @@ public class ServicePanel extends JPanel implements TreeSelectionListener, ListS
         }
     }
     
+    @Override
     public void setTransferHandler(TransferHandler t){
         super.setTransferHandler(t);
         int count = this.getComponentCount();

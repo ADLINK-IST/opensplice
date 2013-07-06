@@ -1,0 +1,14 @@
+Prerequisites, assumptions, constraints:
+
+    dds2117 test application is situated in /home/osplo/testsuite/rbt/services/networking/dds2117. 
+    It must be built before running this test.
+
+HOWTO RUN:
+    Using STAXMon tool:
+        1. Start STAXMon.
+        2. Select to execute the "dds2117\dds2117_run_test.xml" script.
+
+    From command line:
+        1. Source STAF environment varibale script (STAFEnv).
+	2. Set var values in dds2117\run_test.sh.
+        3. Run the "dds2117\run_test.sh" script.

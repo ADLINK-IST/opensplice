@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -27,6 +27,9 @@
 #include "c_iterator.h"
 #include "c_collection.h"
 #include "os_report.h"
+#include "os_heap.h"
+#include "os_stdlib.h"
+#include "ut_misc.h"
 
 /**
  * To be able to slave mechanisms to the mechanisms already implemented in the
@@ -46,6 +49,10 @@
 
 struct groupConnected{
     c_bool connected;
+    v_group group;
+};
+struct groupMatched{
+    c_bool matched;
     v_group group;
 };
 
@@ -68,6 +75,43 @@ isGroupConnected(
         }
     }
     return (!data->connected);
+}
+
+static c_bool
+isGroupMatched(
+    c_string expr,
+    c_voidp args)
+{
+    char* str;
+    unsigned int partitionLength, topicLength;
+    c_string partition, topic;
+    struct groupMatched* data;
+
+    data = (struct groupMatched*)args;
+
+    /* Retrieve partition- & topicname and their lengths */
+    partition = v_entity(data->group->partition)->name;
+    topic = v_entity(data->group->topic)->name;
+    partitionLength = strlen(partition);
+    topicLength = strlen(topic);
+
+    /* Allocate temporary string on stack */
+    str = os_alloca(partitionLength + topicLength + 1 + 1); /* include '.' */
+
+    /* Build string */
+    os_strcpy(str, partition);
+    str[partitionLength] = '.';
+    os_strcpy(str + partitionLength + 1, topic);
+
+    /* Match string with pattern */
+    if(ut_patternMatch(str, expr)) {
+        data->matched = 1;
+    }
+
+    /* Because not all platforms properly support alloca.. */
+    os_freea(str);
+
+    return (!data->matched);
 }
 
 void
@@ -118,6 +162,7 @@ v_groupStreamNotify(
     c_bool interested;
     v_partition partition, found;
 
+    OS_UNUSED_ARG(userData);
     assert(stream != NULL);
     assert(C_TYPECHECK(stream,v_groupStream));
     if (e) {
@@ -216,12 +261,24 @@ v_groupStreamNotifyDataAvailable(
     return;
 }
 
+static void fillExprList(
+    void* o,
+    void* udata) {
+
+    c_list list = udata;
+    char* str = o;
+
+    /* Insert expressions into list */
+    c_listInsert(list, c_stringNew(c_getBase(list), str));
+}
+
 void
 v_groupStreamInit(
     v_groupStream stream,
     const c_char *name,
     v_subscriber subscriber,
-    v_readerQos qos)
+    v_readerQos qos,
+    c_iter expr)
 {
     v_kernel kernel;
 
@@ -231,6 +288,9 @@ v_groupStreamInit(
     kernel = v_objectKernel(subscriber);
 
     stream->groups = c_setNew(v_kernelType(kernel,K_GROUP));
+    stream->expr = c_listNew(c_resolve(c_getBase(stream), "::c_string"));
+    c_iterWalk(expr, fillExprList, stream->expr);
+
     v_readerInit(v_reader(stream),name,subscriber,qos,NULL,TRUE);
     v_subscriberAddReader(subscriber,v_reader(stream));
 }
@@ -246,7 +306,7 @@ v_groupStreamDeinit(
 
     v_readerDeinit(v_reader(stream));
 
-    groups = c_select(stream->groups, 0);
+    groups = ospl_c_select(stream->groups, 0);
     group = v_group(c_iterTakeFirst(groups));
 
     while(group){
@@ -306,10 +366,25 @@ v_groupStreamSubscribeGroup(
     assert(C_TYPECHECK(group, v_group));
 
     if (v_reader(stream)->qos->durability.kind == v_topicQosRef(group->topic)->durability.kind) {
-        inserted = v_groupAddStream(group, stream);
+        struct groupMatched data;
+        /*
+         * OSPL-1073: Check if the new group matches with the group-expression list. This
+         * is a collection of partition.topic strings that allows users to connect to specific
+         * topics rather than connecting to all topics within a partition.
+         */
+        if(stream->expr) {
+            data.matched = FALSE;
+            data.group = group;
+            c_walk(stream->expr, (c_action)isGroupMatched, &data);
+        }else {
+            data.matched = TRUE;
+        }
 
-        if(inserted == TRUE){
-            c_insert(stream->groups, group);
+        if(data.matched) {
+            inserted = v_groupAddStream(group, stream);
+            if(inserted == TRUE){
+                c_insert(stream->groups, group);
+            }
         }
     }
     return TRUE;
@@ -327,7 +402,7 @@ v_groupStreamUnSubscribe(
     assert(C_TYPECHECK(stream, v_groupStream));
     assert(C_TYPECHECK(partition, v_partition));
 
-    list = c_select(stream->groups, 0);
+    list = ospl_c_select(stream->groups, 0);
     group = c_iterTakeFirst(list);
     result = FALSE;
 

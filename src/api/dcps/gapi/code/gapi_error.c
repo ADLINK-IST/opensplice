@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -223,7 +223,9 @@ static const char *qosAttributeName[] = {
     "key_list",
     "use_lifespan",
     "scheduling_class",
-    "scheduling_priority_kind"
+    "scheduling_priority_kind",
+    "enable_invalid_samples",
+    "invalid_sample_visibility"
 };
 
 

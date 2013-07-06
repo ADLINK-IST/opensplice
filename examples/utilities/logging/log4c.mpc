@@ -1,0 +1,53 @@
+//  -*- MPC -*-
+// $Id$
+
+project(*) : vc_warnings, c_or_cplusplus {
+  sharedname   = log4c
+  dynamicflags += LOG4C_EXPORTS
+  includes += ./log4c-1.2.1/src ./log4c-1.2.1/src/log4c ./log4c-1.2.1/src/sd
+  recurse=1
+  macros += HAVE_CONFIG_H
+  macros += YY_NO_INPUT
+  libout = ./lib
+  requires += ospl_dcpssaccp
+  avoids += ospl_os_wince
+
+  Source_Files {
+    recurse=1
+    log4c-1.2.1/src/log4c
+    //sd/defs.h
+    //sd/domnode-expat.c
+    log4c-1.2.1/src/sd/domnode-xml-parser.c
+    //sd/domnode-xml-parser.h
+    //sd/domnode-xml-parser.y
+    log4c-1.2.1/src/sd/domnode-xml-scanner.c
+    //sd/domnode-xml-scanner.h
+    //sd/domnode-xml-scanner.l
+    log4c-1.2.1/src/sd/domnode-xml.c
+    //sd/domnode-xml.h
+    log4c-1.2.1/src/sd/domnode.c
+    //sd/domnode.h
+    log4c-1.2.1/src/sd/error.c
+    //sd/error.h
+    log4c-1.2.1/src/sd/factory.c
+    //sd/factory.h
+    log4c-1.2.1/src/sd/hash.c
+    //sd/hash.h
+    log4c-1.2.1/src/sd/list.c
+    //sd/list.h
+    log4c-1.2.1/src/sd/malloc.c
+    //sd/malloc.h
+    log4c-1.2.1/src/sd/sd_xplatform.c
+    //sd/sd_xplatform.h
+    log4c-1.2.1/src/sd/sprintf.c
+    //sd/sprintf.h
+    log4c-1.2.1/src/sd/stack.c
+    //sd/stack.h
+    //sd/test.c
+    //sd/test.h
+  }
+
+  //Header_Files {
+  //  log4c-1.2.1/src/config.h
+  //}
+}

@@ -1,4 +1,5 @@
-#!/bin/sh
+
+#!/bin/bash
 
 . buildsys/functions
 
@@ -15,6 +16,8 @@ CURRENT_PL_CYGWIN=`uname | grep CYGWIN`
 CURRENT_PL_AIX=`uname | grep AIX`
 CURRENT_PL_SUNOS=`uname | grep SunOS`
 AWK=""
+
+EXRUNTYPE_UPPER=`echo $EXRUNTYPE | tr "[:lower:]" "[:upper:]"`
 
 if [ "$CURRENT_PL_SUNOS" != "" ] ;then
    AWK="/usr/xpg4/bin/awk"
@@ -34,10 +37,23 @@ check_platform()
    elif [ "$CURRENT_PL_CYGWIN" != "" ];
    then
      return 1
-   else 
+   else
     echo UNKNOWN Platform:
     echo Current platform: `uname`
     exit
+   fi
+}
+
+add_example()
+{
+   if check_platform
+   then
+      if test -f "$1/Makefile"
+      then
+         EXAMPLES="$EXAMPLES $1 "
+      fi
+   else
+      EXAMPLES="$EXAMPLES $1 "
    fi
 }
 
@@ -61,11 +77,11 @@ then
         exit 1
     fi
 
-    echo "RUN/EXAMPLES=RUNNING" >> $RESFILE
+    echo "RUN_EXAMPLES/$EXRUNTYPE_UPPER=RUNNING" >> $RESFILE
     ArchiveLogs
 
-    mkdir $LOGDIR/examples/run
-    cd $LOGDIR/examples/run
+    mkdir $LOGDIR/examples/run_$EXRUNTYPE
+    cd $LOGDIR/examples/run_$EXRUNTYPE
 
     faketerm $OSPL_OUTER_HOME/testsuite/bin/run_examples_pcx86_integrity509
     $OSPL_OUTER_HOME/testsuite/bin/analyse_examples_pcx86_integrity509 > summary.txt
@@ -97,22 +113,47 @@ EOF
         exit 0
     fi
 else
-    echo "RUN/EXAMPLES=RUNNING" >> $RESFILE
+    SUM=0
+    SUCC=0
+    FAIL=0
+
+    export SUM SUCC FAIL
+
+    echo "RUN_EXAMPLES/$EXRUNTYPE_UPPER=RUNNING" >> $RESFILE
     ArchiveLogs
 
+    OSPL_BUILD_HOME=$WORKDIR
     if [ "$DEP" != "none" ]
     then
         BASE=$DEPWORKDIR/build/scripts/overnight
+        OSPL_BUILD_HOME=$DEPWORKDIR
     fi
-    SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
+
+    if [ -f "${DEPWORKDIR}/setup/environment/${SETUP_TYPE}" ]
+    then
+        CHECK_FILE=${DEPWORKDIR}/setup/environment/${SETUP_TYPE}
+    else
+        if [ -f "${WORKDIR}/build/setup/environment/${SETUP_TYPE}" ]
+        then
+            CHECK_FILE=${WORKDIR}/build/setup/environment/${SETUP_TYPE}
+        fi
+    fi
+    LONGSETUP=`grep "^SPLICE_TARGET=" $CHECK_FILE | tail -1 | cut -f 2 -d =`
+    SHORTSETUP=`echo $LONGSETUP | sed 's/-release//'`
 
     OUTER_BASE_DIR=`pwd`
 
-    if [ -d $WORKDIR/installed/HDE/$SHORTSETUP/ ]
+    if [ -d "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/" ]
     then
-        cd $WORKDIR/installed/HDE/$SHORTSETUP/
+        cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/"
+        INSTALLDIRUP="$WORKDIR"
+        INSTALLDIR="$WORKDIR/$EXAMPLE_INSTALL_DIR"
+        EXAMPLESDIR="$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/examples"
     else
         cd $DEPWORKDIR/install/HDE/$SHORTSETUP/
+        INSTALLDIRUP="$DEPWORKDIR"
+        INSTALLDIR="$DEPWORKDIR/install"
+        EXAMPLESDIR="$DEPWORKDIR/install/HDE/$SHORTSETUP/examples"
     fi
 
     #Copy license in place for the ospldcg
@@ -122,186 +163,141 @@ else
         cp $OSPL_BASE_DIR/etc/license.lic etc/.
     fi
 
+    if [ -f "$OSPL_BUILD_HOME/exec/$LONGSETUP/ospl_unique_domainID" ]
+    then
+        echo "Copying ospl_unique_domainID in for domain id generation"
+        cp $OSPL_BUILD_HOME/exec/$LONGSETUP/ospl_unique_domainID bin/
+    fi
+
+    if [ -f "$OSPL_BUILD_HOME/exec/$LONGSETUP/ospl_unique_domainID.exe" ]
+    then
+        echo "Copying ospl_unique_domainID.exe in for domain id generation"
+        cp $OSPL_BUILD_HOME/exec/$LONGSETUP/ospl_unique_domainID.exe bin/
+    fi
+
     if check_platform
     then
+       unset OSPL_HOME_NORMALIZED
+       more release.com
        . ./release.com
     fi
 
     cd examples
 
-    # Do not do CORBA C++ or standalone C++ examples with AIX for now as the build fails and don't do
-    # dlrl either with AIX Also the DBMSConnect example cannot be run under AIX for now due to the 
-    # fact that it needs the C++ example to be built.  Once the C++ example builds then we can run the
-    # DBMSConnect example.
-    if [ "$SETUP_TYPE" = "PPC5plus.AIX5.3-dev" -o "$SETUP_TYPE" = "PPC5plus.AIX5.3-release" ]
+    add_example dcps/PingPong/c/standalone
+    add_example dcps/PingPong/cpp/corba
+    add_example dcps/PingPong/cpp/standalone
+    add_example dcps/PingPong/java/corba
+    add_example dcps/PingPong/java/standalone
+    add_example dcps/Tutorial/c/standalone
+    add_example dcps/Tutorial/cpp/corba
+    add_example dcps/Tutorial/cpp/standalone
+    add_example dcps/Tutorial/java/corba
+    add_example dcps/Tutorial/java/standalone
+    add_example dcps/ContentFilteredTopic/c/standalone
+    add_example dcps/ContentFilteredTopic/cpp/standalone
+    add_example dcps/HelloWorld/c/standalone
+    add_example dcps/HelloWorld/cpp/standalone
+    add_example dcps/Lifecycle/c/standalone
+    add_example dcps/Lifecycle/cpp/standalone
+    add_example dcps/Listener/c/standalone
+    add_example dcps/Listener/cpp/standalone
+    add_example dcps/Ownership/c/standalone
+    add_example dcps/Ownership/cpp/standalone
+    add_example dcps/QueryCondition/c/standalone
+    add_example dcps/QueryCondition/cpp/standalone
+    add_example dcps/WaitSet/c/standalone
+    add_example dcps/WaitSet/cpp/standalone
+    add_example dcps/BuiltInTopics/c/standalone
+    add_example dcps/BuiltInTopics/cpp/standalone
+
+    # isocpp - need to check for more than a directory because the
+    # run scripts are copied in as a whole so there will always be
+    # an isocpp directory
+    if [ -f "$EXAMPLESDIR/dcps/HelloWorld/isocpp/HelloWorld.mpc" ]
     then
-        EXAMPLES="dcps/CORBA/Java/JacORB/PingPong dcps/CORBA/Java/JacORB/Tutorial dcps/standalone/C/PingPong dcps/standalone/C/Tutorial dcps/standalone/C++OnC/PingPong dcps/standalone/Java/PingPong dcps/standalone/Java/Tutorial "
-    else
-        EXAMPLES="dcps/CORBA/Java/JacORB/PingPong "
-        EXAMPLES=$EXAMPLES" dcps/CORBA/Java/JacORB/Tutorial "
-        EXAMPLES=$EXAMPLES" dcps/CORBA/C++/OpenFusion/PingPong "
-        EXAMPLES=$EXAMPLES" dcps/CORBA/C++/OpenFusion/Tutorial "
-        EXAMPLES=$EXAMPLES" dcps/standalone/C/PingPong "
-        EXAMPLES=$EXAMPLES" dcps/standalone/C/Tutorial "
-        EXAMPLES=$EXAMPLES" dcps/standalone/C++/PingPong "
-        EXAMPLES=$EXAMPLES" dcps/standalone/C++/Tutorial "
-        EXAMPLES=$EXAMPLES" dcps/standalone/C++OnC/PingPong "
-        EXAMPLES=$EXAMPLES" dcps/standalone/Java/PingPong "
-        EXAMPLES=$EXAMPLES" dcps/standalone/Java/Tutorial "
+        add_example dcps/ContentFilteredTopic/isocpp
+        add_example dcps/HelloWorld/isocpp
+        add_example dcps/Listener/isocpp
+        add_example dcps/QueryCondition/isocpp
+        add_example dcps/WaitSet/isocpp
+    fi
 
-        if check_platform
+    # cpp corba
+    add_example dcps/HelloWorld/cpp/corba
+
+    #  java standalone
+    add_example dcps/ContentFilteredTopic/java/standalone
+    add_example dcps/HelloWorld/java/standalone
+    add_example dcps/Lifecycle/java/standalone
+    add_example dcps/Listener/java/standalone
+    add_example dcps/Ownership/java/standalone
+    add_example dcps/QueryCondition/java/standalone
+    add_example dcps/WaitSet/java/standalone
+    add_example dcps/BuiltInTopics/java/standalone
+
+    # Java Corba
+    add_example dcps/HelloWorld/java/corba
+
+    # Check for the existence of the ClientServer idl directory.
+    # If 1 of the RMI examples is there they all should be.
+    if [ -d "$EXAMPLESDIR/rmi/ClientServer/idl" ]
+    then
+        add_example rmi/ClientServer/cpp
+        add_example rmi/ClientServer/java
+        add_example rmi/Printer/cpp
+        add_example rmi/Printer/java
+        add_example rmi/HelloWorld/cpp
+        add_example rmi/HelloWorld/java
+    fi
+
+    # Some examples are not included in an inner only build so only add them if doing an outer build
+    if [ "$DEP" != "none" ]
+    then
+        add_example dlrl/standalone/java/Tutorial dlrl/standalone/cpp/Tutorial
+        # Check for the existence of the StreamsExample idl directory to make sure the
+        # example is included in this build.  (there will be a StreamsExample/cpp
+        # directory because the RUN scripts are copied in as a whole.
+        if [ -d "$EXAMPLESDIR/streams/StreamsExample/idl" ]
         then
-           #
-           # New examples - integrated since V5.4.0
-           #
-           # Posix
-           # 
-           # C Posix / Standalone
-           EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C/Standalone/Posix/sh "
-           #EXAMPLES=$EXAMPLES" dcps/Durability/C/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/HelloWorld/C/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Lifecycle/C/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Listener/C/Standalone/Posix/sh "    
-           EXAMPLES=$EXAMPLES" dcps/Ownership/C/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/QueryCondition/C/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/WaitSet/C/Standalone/Posix/sh "
-           #EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C/Standalone/Posix/sh "
-           # 
-           # 
-           # C++ Posix / Standalone
-           EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C++/Standalone/Posix/sh "
-           #EXAMPLES=$EXAMPLES" dcps/Durability/C++/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/HelloWorld/C++/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Listener/C++/Standalone/Posix/sh "    
-           EXAMPLES=$EXAMPLES" dcps/Ownership/C++/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/QueryCondition/C++/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/WaitSet/C++/Standalone/Posix/sh "
-           #EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C++/Standalone/Posix/sh "
-           # 
-           # C++ Posix / Corba/OpenFusion
-           EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C++/Corba/OpenFusion/Posix/sh "
-           #EXAMPLES=$EXAMPLES" dcps/Durability/C++/Corba/OpenFusion/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/HelloWorld/C++/Corba/OpenFusion/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Corba/OpenFusion/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Listener/C++/Corba/OpenFusion/Posix/sh "    
-           EXAMPLES=$EXAMPLES" dcps/Ownership/C++/Corba/OpenFusion/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/QueryCondition/C++/Corba/OpenFusion/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/WaitSet/C++/Corba/OpenFusion/Posix/sh "
-           #EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C++/Corba/OpenFusion/Posix/sh "
-           #
-           # 
-           #  Java Posix / Standalone
-           # Java examples use a "BUILD" file instead of a "Makefile", 
-           # so they are also added to the "SPECIAL_BUILD_FILES" list.
-           EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/Java/Standalone/Posix/sh "
-           #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Listener/Java/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/WaitSet/Java/Standalone/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/Java/Standalone/Posix/sh "
-           #
-           # Java Posix Corba/JacORB
-           EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/Java/Corba/JacORB/Posix/sh "
-           #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Corba/JacORB/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Corba/JacORB/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Corba/JacORB/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Listener/Java/Corba/JacORB/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Corba/JacORB/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Corba/JacORB/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/WaitSet/Java/Corba/JacORB/Posix/sh "
-           EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/Java/Corba/JacORB/Posix/sh "
-           #
-           # END Posix
-           #
-        else
-           # Windows / VisualStudio 2005
-           #
-           # C VS2005 / Standalone
-           # Windows VS2005 examples use a "BUILD.bat" file instead of a "Makefile", 
-           # so they are also added to the "SPECIAL_BUILD_FILES" list.
-           #EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Durability/C/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/HelloWorld/C/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Lifecycle/C/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Listener/C/Standalone/VS2005/Bat "    
-           #EXAMPLES=$EXAMPLES" dcps/Ownership/C/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/QueryCondition/C/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/WaitSet/C/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C/Standalone/VS2005/Bat "
-           # 
-           # C++ VS2005 / Standalone
-           #EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C++/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Durability/C++/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/HelloWorld/C++/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Listener/C++/Standalone/VS2005/Bat "    
-           #EXAMPLES=$EXAMPLES" dcps/Ownership/C++/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/QueryCondition/C++/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/WaitSet/C++/Standalone/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C++/Standalone/VS2005/Bat "
-           # 
-           # C++ VS2005 / Corba/OpenFusion
-           #EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/C++/Corba/OpenFusion/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Durability/C++/Corba/OpenFusion/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/HelloWorld/C++/Corba/OpenFusion/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Lifecycle/C++/Corba/OpenFusion/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Listener/C++/Corba/OpenFusion/VS2005/Bat "    
-           #EXAMPLES=$EXAMPLES" dcps/Ownership/C++/Corba/OpenFusion/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/QueryCondition/C++/Corba/OpenFusion/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/WaitSet/C++/Corba/OpenFusion/VS2005/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/C++/Corba/OpenFusion/VS2005/Bat "
-           #
-           #
-           # Java Windows / Standalone
-           EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/Java/Standalone/Windows/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Standalone/Windows/Bat "
-           EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Standalone/Windows/Bat "
-           EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Standalone/Windows/Bat "
-           EXAMPLES=$EXAMPLES" dcps/Listener/Java/Standalone/Windows/Bat "
-           EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Standalone/Windows/Bat "
-           EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Standalone/Windows/Bat "
-           EXAMPLES=$EXAMPLES" dcps/WaitSet/Java/Standalone/Windows/Bat "
-           EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/Java/Standalone/Windows/Bat "
-           #
-           # Java Windows / Corba/JacORB
-           #EXAMPLES=$EXAMPLES" dcps/ContentFilteredTopic/Java/Corba/JacORB/Windows/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Durability/Java/Corba/JacORB/Windows/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/HelloWorld/Java/Corba/JacORB/Windows/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Lifecycle/Java/Corba/JacORB/Windows/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Listener/Java/Corba/JacORB/Windows/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/Ownership/Java/Corba/JacORB/Windows/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/QueryCondition/Java/Corba/JacORB/Windows/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/WaitSet/Java/Corba/JacORB/Windows/Bat "
-           #EXAMPLES=$EXAMPLES" dcps/BuiltInTopics/Java/Corba/JacORB/Windows/Bat "
-           #
-           # END Windows / VisualStudio 2005
-           #
-           # END New examples - integrated since V5.4.0
+            add_example streams/StreamsExample/cpp/standalone
         fi
+    fi
 
-        # DLRL and DBMSConnect examples are not included in an inner only build so only add them if doing an outer build
-        if [ "$DEP" != "none" ]
-        then
-            EXAMPLES=$EXAMPLES" dlrl/standalone/Java/Tutorial dlrl/standalone/C++/Tutorial "
+    # C#
+    if [ "$CURRENT_PL_CYGWIN" != "" ]
+    then
+        add_example dcps/PingPong/cs/standalone
+        add_example dcps/Tutorial/cs/standalone
+        add_example dcps/ContentFilteredTopic/cs/standalone
+        add_example dcps/HelloWorld/cs/standalone
+        add_example dcps/Lifecycle/cs/standalone
+        add_example dcps/Listener/cs/standalone
+        add_example dcps/Ownership/cs/standalone
+        add_example dcps/QueryCondition/cs/standalone
+        add_example dcps/WaitSet/cs/standalone
+        add_example dcps/BuiltInTopics/cs/standalone
+        # Do not include Durability cs example as it doesn't work and
+        # hangs - it should always be last in this list as it has it's
+        # own config files
+        #add_example dcps/Durability/cs/standalone
+    fi
 
-            # If it's 64 bit linux don't run the dbmsconnect example - see dds1869
-            # Do not do it if it's studio12 either because the ODBC for that is installed in the wrong place and the 
-            # odbc.ini and odbc.inst files are not populated.
-            if [ "$IS_64_BIT" = "0" -a "$IS_STUDIO12" = "0" ]
-            then
-                EXAMPLES=$EXAMPLES" services/dbmsconnect/SQL/C++/ODBC "
-            fi
-        fi
-    fi 
+    # The Durability and DBMS connect examples have their own config files
+    # so run them last
+    add_example dcps/Durability/c/standalone
+    add_example dcps/Durability/cpp/standalone
+    add_example dcps/Durability/java/standalone
+
+    if [ "$DEP" != "none" ]
+    then
+        add_example services/dbmsconnect/SQL/C++/ODBC
+    fi
 
     export EXAMPLES
 
     echo "Running Examples:"
-    
+
     if [ "$SETUP_TYPE" = "PPC5plus.AIX5.3-dev" -o "$SETUP_TYPE" = "PPC5plus.AIX5.3-release" ]
     then
        PATH="/usr/vac/bin:/usr/vacpp/bin:$PATH"
@@ -310,51 +306,95 @@ else
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$TAO_ROOT/lib"
     export LD_LIBRARY_PATH
 
-    if check_platform
+    if [ -z "$SPLICE_TARGET_HOST" ]
     then
-        PATH="$JAVA_HOME/bin:$PATH"
-        PATH="$PATH:$TAO_ROOT/bin:$JACORB_HOME/bin"
+        if uname | grep -q CYGWIN
+        then
+            PATH="$PATH:/cygdrive/c/WINDOWS/system32"
+            export PATH
 
-        CLASSPATH="$CLASSPATH:$JACORB_HOME/lib/endorsed/jacorb.jar:$JACORB_HOME/lib/endorsed/logkit.jar:$JACORB_HOME/lib/idl.jar"
+            XPATH="$(cygpath -w $BASE)";
 
-        export PATH CLASSPATH
-
-        echo "Updating XML:"
-        echo "OSPL_URI before XMLFILE update is $OSPL_URI"
-
-        sleep 7200 &
-        UNIQID=$!
-        XMLFILE=`echo $OSPL_URI | sed 's@file://@@' | sed 's/ospl.xml$/ospl_no_network.xml/'`
-
-        echo "XMLFILE is $XMLFILE"
-        echo "OSPL_URI is $OSPL_URI"
-
-        NEWXMLFILE=`echo $XMLFILE | sed 's/_no_network.xml$/_no_network_uniq.xml/'`
-
-        echo "NEWXMLFILE is $NEWXMLFILE"
-        echo "UNIQID is $UNIQID"
-
-        sed "s@<Name>OpenSpliceV[^<]*</Name>@<Name>oex_$UNIQID</Name>@" < $XMLFILE > $NEWXMLFILE
-        OSPL_URI=`echo $OSPL_URI | sed 's/ospl.xml/ospl_no_network_uniq.xml/'`
-
-        ODBCINI="$ODBCHOME/etc/odbc.ini"
-        ODBCINST="$ODBCHOME/etc/odbcinst.ini"
-        ODBC_MSSQL_SERVER="10.1.0.189"
-        ODBC_MYSQL_SERVER="10.1.0.191"
-        ODBCSYSINI="$ODBCHOME/etc"
-        LD_LIBRARY_PATH="$ODBCHOME/lib:$LD_LIBRARY_PATH"
-
-        export  ODBCINI ODBCINST ODBC_MSSQL_SERVER ODBC_MYSQL_SERVER ODBCSYSINI LD_LIBRARY_PATH
-
-        sh $BASE/run_examples.sh
+            echo "Running examples "
+            cmd.exe /C $XPATH/run_examples.bat
+            RESULT=$?
+        else
+            sh $BASE/run_examples.sh
+            RESULT=$?
+        fi
     else
-        PATH="$PATH:/cygdrive/c/WINDOWS/system32"
-        export PATH
+        echo '#!/bin/bash' > $INSTALLDIR/remoterun.sh
+        cat $WORKDIR/build/build/scripts/overnight/configs/$SPLICE_TARGET_HOST/runtime.$SHORTSETUP >> $INSTALLDIR/remoterun.sh
+        echo LOGDIR=$LOGDIR export LOGDIR >> $INSTALLDIR/remoterun.sh
+        echo EXRUNTYPE=$EXRUNTYPE export EXRUNTYPE >> $INSTALLDIR/remoterun.sh
+        echo EXAMPLES=\"$EXAMPLES\" export EXAMPLES >> $INSTALLDIR/remoterun.sh
+        echo EXCLUDED_TESTS=\"$EXCLUDED_TESTS\" export EXCLUDED_TESTS >> $INSTALLDIR/remoterun.sh
+        echo mkdir -p $INSTALLDIRUP/log/examples/run_$EXRUNTYPE >> $INSTALLDIR/remoterun.sh
+        sed -e s#/host/lib#/lib:.# $INSTALLDIR/HDE/$SHORTSETUP/release.com >> $INSTALLDIR/remoterun.sh
+        echo cd $EXAMPLESDIR >> $INSTALLDIR/remoterun.sh
+        echo sh ./run_examples.sh >> $INSTALLDIR/remoterun.sh
+        chmod +x $INSTALLDIR/remoterun.sh
+        cp $BASE/run_examples.sh $EXAMPLESDIR
 
-        XPATH="$(cygpath -w $BASE)";
+        if [ -z "$SPLICE_SSH" ] ; then SPLICE_SSH=ssh ; fi
+        if [ -z "$SPLICE_SCP" ] ; then SPLICE_SCP="scp -q" ; fi
 
-        echo "Running examples "
-        cmd.exe /C $XPATH/run_examples.bat
+        if [ -z "$SPLICE_TARGET_HOST_SHAREDFS" ]
+        then
+            $SPLICE_SSH $SPLICE_TARGET_HOST rm -rf $INSTALLDIRUP
+            $SPLICE_SSH $SPLICE_TARGET_HOST mkdir -p $INSTALLDIRUP
+            $SPLICE_SCP -r $INSTALLDIR $SPLICE_TARGET_HOST:$INSTALLDIRUP
+        fi
+        $SPLICE_SSH $SPLICE_TARGET_HOST $INSTALLDIR/remoterun.sh
+        RESULT=$?
+        if [ "$SPLICE_SSH" = "rsh" ]
+        then
+            # rsh doesn't pass return codes back
+            tail -1 "$LOGDIR/examples/run_$EXRUNTYPE/totals.log" | grep -q "Examples Failed = 0"
+            RESULT=$?
+        fi
+        if [ -z "$SPLICE_TARGET_HOST_SHAREDFS" ]
+        then
+            $SPLICE_SCP -r $SPLICE_TARGET_HOST:$LOGDIR $INSTALLDIRUP
+        fi
     fi
-    exit $?
+
+    RUN_SUMMARY_LOG="$LOGDIR/examples/run_$EXRUNTYPE/run_results_summary.txt"
+    SUMMARY_LOG="$LOGDIR/examples/run_$EXRUNTYPE/examples.log"
+    TOTALS_LOG="$LOGDIR/examples/run_$EXRUNTYPE/totals.log"
+
+    cat $RUN_SUMMARY_LOG  >> $SUMMARY_LOG
+    sleep 10
+
+    rm $RUN_SUMMARY_LOG
+    sleep 5
+
+cat <<EOF > summary.html
+    <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+    <HTML>
+
+    <H2><a HREF=run_results.txt>Overview log</a></H2>
+    <TABLE>
+    <TBODY>
+    <TABLE border=1>
+    <TR><a HREF=examples.log>Results summary (examples.log)</a><br></TR>
+    <TR><a HREF=examples.log.gz>Results summary (examples.log.gz)</a><br></TR>
+EOF
+
+    awk '$0~/^./ {print "<TR  bgcolor="white"><TD>"$1" "$2" "$3" "$4"</TD><br></TR>" }' < $TOTALS_LOG >> summary.html
+
+    awk '$0~/^./{ if ( NR % 2 == 0 ) { bgc="white" } else { bgc="E0E0E0" } ; if ( $2 == "PASSED" ) { cr="<FONT COLOR=\"green\">" } else { cr="<FONT COLOR=\"red\">" } ; print "<TR  bgcolor="bgc"><TD>"$1"</a></TD><TD>""<a HREF="$1">"cr $2"</FONT><br></TR>" }' < $SUMMARY_LOG >> summary.html
+
+cat <<EOF >> summary.html
+
+    </TBODY>
+    </TABLE>
+    </HTML>
+EOF
+
+    sleep 10
+
+    mv summary.html $LOGDIR/examples/run_$EXRUNTYPE/
+
+    exit $RESULT
 fi

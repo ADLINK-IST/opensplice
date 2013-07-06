@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -169,11 +169,12 @@ static q_expr q_exprMalloc()
     q_expr expr;
 
     expr = (q_expr)os_malloc(C_SIZEOF(q_expr));
-    expr->text = NULL;
-    expr->instanceState = 0;
-    expr->sampleState = 0;
-    expr->viewState = 0;
-
+    if(expr){
+        expr->text = NULL;
+        expr->instanceState = 0;
+        expr->sampleState = 0;
+        expr->viewState = 0;
+    }
     return expr;
 }
 
@@ -181,11 +182,7 @@ static c_char *
 q_stringMalloc(
     const c_char *string)
 {
-    c_char *str;
-    if (string == NULL) return NULL;
-    str = (c_char *)os_malloc(strlen(string)+1);
-    os_strcpy(str, string);
-    return str;
+    return string ? os_strdup(string) : NULL;
 }
 
 static void
@@ -206,8 +203,10 @@ funcMalloc(
     q_list params)
 {
     q_func func = (q_func)os_malloc(C_SIZEOF(q_func));
-    func->tag = tag;
-    func->params = params;
+    if(func){
+        func->tag = tag;
+        func->params = params;
+    }
     return func;
 }
 
@@ -216,8 +215,10 @@ q_newInt(
     c_longlong value)
 {
     q_expr expr = q_exprMalloc();
-    expr->kind = T_INT;
-    expr->info.integer = value;
+    if(expr){
+        expr->kind = T_INT;
+        expr->info.integer = value;
+    }
     return expr;
 }
 
@@ -226,8 +227,10 @@ q_newDbl(
     c_double value)
 {
     q_expr expr = q_exprMalloc();
-    expr->kind = T_DBL;
-    expr->info.real = value;
+    if(expr){
+        expr->kind = T_DBL;
+        expr->info.real = value;
+    }
     return expr;
 }
 
@@ -236,8 +239,10 @@ q_newChr(
     c_char value)
 {
     q_expr expr = q_exprMalloc();
-    expr->kind = T_CHR;
-    expr->info.character = value;
+    if(expr){
+        expr->kind = T_CHR;
+        expr->info.character = value;
+    }
     return expr;
 }
 
@@ -246,8 +251,10 @@ q_newStr(
     c_char *string)
 {
     q_expr expr = q_exprMalloc();
-    expr->kind = T_STR;
-    expr->info.string = q_stringMalloc(string);
+    if(expr){
+        expr->kind = T_STR;
+        expr->info.string = q_stringMalloc(string);
+    }
     return expr;
 }
 
@@ -256,8 +263,10 @@ q_newId(
     c_char *string)
 {
     q_expr expr = q_exprMalloc();
-    expr->kind = T_ID;
-    expr->info.string = q_stringMalloc(string);
+    if(expr){
+        expr->kind = T_ID;
+        expr->info.string = q_stringMalloc(string);
+    }
     return expr;
 }
 
@@ -265,8 +274,10 @@ q_expr
 q_newVar(c_longlong id)
 {
     q_expr expr = q_exprMalloc();
-    expr->kind = T_VAR;
-    expr->info.integer = id;
+    if(expr){
+        expr->kind = T_VAR;
+        expr->info.integer = id;
+    }
     return expr;
 }
 
@@ -274,11 +285,11 @@ q_expr
 q_newTyp(
     c_type type)
 {
-    q_expr expr;
-
-    expr = q_exprMalloc();
-    expr->kind = T_TYP;
-    expr->info.type = c_keep(type);
+    q_expr expr = q_exprMalloc();
+    if(expr){
+        expr->kind = T_TYP;
+        expr->info.type = c_keep(type);
+    }
     return expr;
 }
 
@@ -293,8 +304,10 @@ q_newFnc(
 
 /* ================================================== */
     expr = q_exprMalloc();
-    expr->kind = T_FNC;
-    expr->info.function = funcMalloc(tag, params);
+    if(expr){
+        expr->kind = T_FNC;
+        expr->info.function = funcMalloc(tag, params);
+    }
     return expr;
 }
 
@@ -1400,7 +1413,7 @@ q_countVarWalk(
     if (e != NULL) {
         switch(e->kind) {
         case T_VAR:
-            found = c_iterResolve(list,compareVar,e);
+            found = c_iterResolve(list,(c_iterResolveCompare)compareVar,e);
             if (found == NULL) {
                 list = c_iterInsert(list,e);
             }

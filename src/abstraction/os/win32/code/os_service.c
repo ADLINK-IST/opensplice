@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,7 +13,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
-#include "code/os__service.h"
+#include "os__service.h"
 #include <sys/timeb.h>
 #include <time.h>
 #include "os_heap.h"
@@ -23,9 +23,10 @@
 #include <stdio.h>
 #include <assert.h>
 #include "os_time.h"
+#include "os_thread.h"
 
-#include "code/os__debug.h"
-#include "code/os__sharedmem.h"
+#include "os__debug.h"
+#include "os__sharedmem.h"
 
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0500
@@ -85,6 +86,7 @@ struct eventService {
 static HANDLE _ospl_serviceThreadId = 0;
 static char *_ospl_servicePipeName = OS_SERVICE_DEFAULT_PIPE_NAME;
 static char *_ospl_serviceName = OS_SERVICE_DEFAULT_NAME;
+static os_boolean _ospl_singleProcess = OS_FALSE;
 
 /* Generic pool functions */
 static void
@@ -140,18 +142,21 @@ createSem(
                             &security_attributes.lpSecurityDescriptor,
                             NULL);
 
-    _snprintf(name, OS_SERVICE_ENTITY_NAME_MAX,
-              "%s%s%d%d",
-              (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
-              OS_SERVICE_SEM_NAME_PREFIX,
-              id,
-              os_getShmBaseAddressFromPointer(NULL));
+    if (_snprintf(name, OS_SERVICE_ENTITY_NAME_MAX, "%s%s%d%s",
+        (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+        OS_SERVICE_SEM_NAME_PREFIX,
+        id,
+        os_getShmDomainKeyForPointer(NULL)) <= 0) {
+        OS_REPORT_1(OS_ERROR, "createSem", 0, "Semaphore name exceeds maximum allowed length (%d)", OS_SERVICE_ENTITY_NAME_MAX);
+        return NULL;
+    }
 
     /* Note that NULL sec attributes would be default access - believed != 'everyone' */
     namedSem = CreateSemaphore((os_sharedMemIsGlobal() && sec_descriptor_ok ? &security_attributes : NULL),
                                 0,
                                 0x7fffffff,
                                 name);
+
     if (sec_descriptor_ok)
     {
         /* Free the heap allocated descriptor */
@@ -183,12 +188,14 @@ createEv(
                             &security_attributes.lpSecurityDescriptor,
                             NULL);
 
-    _snprintf(name, OS_SERVICE_ENTITY_NAME_MAX,
-              "%s%s%d%d",
-              (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
-              OS_SERVICE_EVENT_NAME_PREFIX,
-              id,
-              os_getShmBaseAddressFromPointer(NULL));
+    if (_snprintf(name, OS_SERVICE_ENTITY_NAME_MAX, "%s%s%d%s",
+        (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+        OS_SERVICE_EVENT_NAME_PREFIX,
+        id,
+        os_getShmDomainKeyForPointer(NULL)) <= 0) {
+        OS_REPORT_1(OS_ERROR, "createEv", 0, "Event name exceeds maximum allowed length (%d)", OS_SERVICE_ENTITY_NAME_MAX);
+        return NULL;
+    }
 
     /* Note that NULL sec attributes would be default access - believed != 'everyone' */
     namedEv = CreateEvent((os_sharedMemIsGlobal() && sec_descriptor_ok ? &security_attributes : NULL),
@@ -428,14 +435,27 @@ osServiceThread(
     DWORD dwWait;
     DWORD cbRet;
     struct eventService es;
-    int terminate;
+    SECURITY_ATTRIBUTES security_attributes;
+
+	int terminate;
     /* only use 'ready' to indicate initialisation is done. Then
      * never use this variable again as it is a stack variable of
      *  the os_serviceStart() routine
      */
     HANDLE *initializedEvent = (HANDLE *)arg;
+    BOOL sec_descriptor_ok;
 
     terminate = 0;
+
+	ZeroMemory(&security_attributes, sizeof(security_attributes));
+    security_attributes.nLength = sizeof(security_attributes);
+    sec_descriptor_ok = ConvertStringSecurityDescriptorToSecurityDescriptor
+                            ("D:P(A;OICI;GA;;;WD)", /* grant all acess to 'world' (everyone) */
+                            SDDL_REVISION_1,
+                            &security_attributes.lpSecurityDescriptor,
+                            NULL);
+
+    os_threadSetThreadName(-1, "ospService OSPL Service Thread");
     poolInit(&es.eventPool);
     poolInit(&es.semPool);
     for (i = 0; i < _PIPE_MAX_INSTANCES; i++) {
@@ -456,7 +476,8 @@ osServiceThread(
                                 sizeof(pipe[i].reply),   // output buffer size
                                 sizeof(pipe[i].request), // input buffer size
                                 _PIPE_DEFAULT_TIMEOUT,   // client time-out
-                                NULL);                   // default security attributes
+								(os_sharedMemIsGlobal() && sec_descriptor_ok ? &security_attributes : NULL)); // Set security attributes
+
         if (pipe[i].hPipeInst == INVALID_HANDLE_VALUE) {
             OS_DEBUG_2("osServiceThread", "Failed to create named pipe %s %d",
                        _ospl_servicePipeName, GetLastError());
@@ -500,6 +521,7 @@ osServiceThread(
         i = dwWait - WAIT_OBJECT_0;  // determines which pipe
         assert(i >= 0 || i < _PIPE_MAX_INSTANCES);
         /* Get the result if the operation was pending. */
+
         if (pipe[i].fPendingIO) {
             fSuccess = GetOverlappedResult(
                            pipe[i].hPipeInst, // handle to pipe
@@ -614,6 +636,12 @@ osServiceThread(
     poolDeinit(&es.eventPool);
     poolDeinit(&es.semPool);
     free(_ospl_servicePipeName); /* allocated by os_serviceStart! */
+	if (sec_descriptor_ok)
+    {
+        /* Free the heap allocated descriptor */
+        LocalFree(security_attributes.lpSecurityDescriptor);
+    }
+
     _ospl_servicePipeName = OS_SERVICE_DEFAULT_PIPE_NAME;
 
 
@@ -661,7 +689,7 @@ os_constructPipeName(
     const os_char *name)
 {
     os_char *n;
-    os_uint32 i, len;
+    size_t i, len;
 
     assert(name);
 
@@ -785,9 +813,9 @@ os_serviceStart(
         _ospl_clock_starttime.tv_nsec = t_best.millitm * 1000000;
         _ospl_clock_offset = p_best.QuadPart;
 
-        OS_REPORT_7(OS_INFO, "os_serviceStart", 0,
-            "Time sync took: %lld ms; resolution= %lld ms, accuracy=%lld us, "
-            "time=%d,%d, offset=%lld and frequency=%lld\n",
+        OS_REPORT_7(OS_DEBUG, "os_serviceStart", 0,
+            "Time sync took: %"PA_PA_PRId64" ms; resolution= %"PA_PA_PRId64" ms, accuracy=%"PA_PA_PRId64" us, "
+            "time=%"PA_PA_PRId64",%d, offset=%"PA_PA_PRId64" and frequency=%"PA_PA_PRId64"",
             t_diff_start, t_diff_best, limit_best/2,
             _ospl_clock_starttime.tv_sec, _ospl_clock_starttime.tv_nsec,
             _ospl_clock_offset, _ospl_clock_freq);
@@ -889,4 +917,16 @@ os_char *
 os_servicePipeName(void)
 {
     return _ospl_servicePipeName;
+}
+
+void
+os_serviceSetSingleProcess (void)
+{
+    _ospl_singleProcess = OS_TRUE;
+}
+
+os_boolean
+os_serviceGetSingleProcess (void)
+{
+    return _ospl_singleProcess;
 }

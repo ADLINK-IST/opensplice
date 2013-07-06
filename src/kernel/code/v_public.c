@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v_public.h"
@@ -45,7 +45,7 @@ v_publicInit(
     v_public o)
 {
     v_kernel kernel;
-    
+
     assert(C_TYPECHECK(o,v_public));
 
     kernel = v_objectKernel(o);
@@ -58,6 +58,7 @@ void
 v_publicDeinit(
     v_public o)
 {
+    OS_UNUSED_ARG(o);
     assert(C_TYPECHECK(o,v_public));
 }
 
@@ -89,17 +90,18 @@ v_publicDispose(
     case K_NETWORKING:
     case K_DURABILITY:
     case K_CMSOAP:
+    case K_RNR:
     case K_SERVICE:        v_serviceDeinit(v_service(o));               break;
     case K_SERVICESTATE:   /* Is never freed! */                        break;
     case K_CONFIGURATION:                                               break;
     case K_QUERY:
-        OS_REPORT(OS_ERROR, "v_publicDispose failure", 
+        OS_REPORT(OS_ERROR, "v_publicDispose failure",
                   0, "deinit of abstract class K_QUERY");
     break;
-    case K_DATAREADERQUERY: 
+    case K_DATAREADERQUERY:
         v_dataReaderQueryDeinit(v_dataReaderQuery(o));
     break;
-    case K_DATAVIEWQUERY: 
+    case K_DATAVIEWQUERY:
         v_dataViewQueryDeinit(v_dataViewQuery(o));
     break;
     case K_DATAVIEW:       v_dataViewDeinit(v_dataView(o));             break;
@@ -160,7 +162,7 @@ v_publicGid (
     v_public o)
 {
     v_gid id;
-    
+
     assert(C_TYPECHECK(o,v_public));
 
     if (o == NULL) {
@@ -218,7 +220,7 @@ v_gidRelease (
     v_kernel kernel)
 {
     v_handle handle;
-    
+
     if (v_gidIsValid(id)) {
         handle = gidToHandle(id,kernel);
         v_handleRelease(handle);
@@ -233,7 +235,7 @@ v_gidReleaseChecked(
 {
     v_handle handle;
     v_handleResult result;
-    
+
     if (v_gidIsValid(id)) {
         handle = gidToHandle(id,kernel);
         result = v_handleRelease(handle);
@@ -276,7 +278,7 @@ v_publicSetUserData (
     c_voidp userDataPublic)
 {
     c_voidp old;
-    
+
     assert(C_TYPECHECK(o,v_public));
 
     old = o->userDataPublic;

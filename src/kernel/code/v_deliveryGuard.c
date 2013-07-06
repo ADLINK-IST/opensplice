@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,126 +20,43 @@
 #include "v_writer.h"
 #include "v_entity.h"
 #include "v_topic.h"
+#include "v_observer.h"
 
 #include "c_sync.h"
 
 #include "os_report.h"
 
-/*
- * This method updates the v_deliveryGuard->publications list with all synchronous
- * writers the v_deliveryService is aware of, preconditions for to be added to the list are:
- *  a) guard->writer->topic matches the sInfo->topic
- *  b) guard->writer->partitions match the sInfo->partitions
- *
- * parameters:
- *  o - a v_subscriptionInfoTemplate instance from the v_deliveryService->subscriptions list
- *  arg - the v_deliveryGuard who's publications list is to be updated
- *
- */
-static c_bool
-getMatchingPublications (
-    c_object o,
-    c_voidp arg)
-{
-    v_subscriptionInfoTemplate sInfo = (v_subscriptionInfoTemplate)o;
-    v_deliveryPublisher p, found;
-    C_STRUCT(v_deliveryPublisher) template;
-    c_type type;
-    c_long nrOfPartitions, i;
-    v_deliveryGuard guard;
-    v_writer writer;
-    v_writerGroup wGroup;
-    struct v_writerGroupSet groupSet;
-    c_bool result = TRUE;
-
-    guard = (v_deliveryGuard)arg;
-
-    writer = v_writer(v_gidClaim (guard->writerGID, v_objectKernel(guard->owner)));
-
-    if(writer){
-        groupSet = writer->groupSet;
-
-        wGroup = groupSet.firstGroup;
-
-        while(wGroup){
-            nrOfPartitions = c_arraySize(sInfo->userData.partition.name);
-            if(strcmp(v_topicName(wGroup->group->topic), sInfo->userData.topic_name) == 0) {
-                for(i=0; i<nrOfPartitions; i++){
-                    if(v_partitionStringMatchesExpression(v_entity(wGroup->group->partition)->name, sInfo->userData.partition.name[i])){
-                        template.readerGID = sInfo->userData.key;
-                        found = v_deliveryPublisher(c_find(guard->publications,&template));
-                        if (found) {
-                            found->count++;
-                        } else {
-                            type = c_subType(guard->publications);
-                            p = c_new(type);
-                            if (p) {
-                                p->count = 1;
-                                p->readerGID = sInfo->userData.key;
-                                found = c_insert(guard->publications,p);
-                            } else {
-                                OS_REPORT(OS_ERROR,
-                                          "getMatchingPublications",0,
-                                          "Failed to allocate v_deliveryPublisher object.");
-                                assert(FALSE);
-                                result = FALSE;
-                            }
-                        }
-                    }
-                }
-            }
-            wGroup = wGroup->next;
-        }
-        v_gidRelease(guard->writerGID, v_objectKernel(guard->owner));
-    }
-    else
-    {
-        OS_REPORT(OS_ERROR,
-                  "getMatchingPublications",0,
-                  "Could not claim writer; writer = NULL.");
-        assert(writer);
-        result = FALSE;
-
-    }
-
-    return result;
-}
-
-
-
 v_deliveryGuard
 v_deliveryGuardNew(
-    v_deliveryService _this,
+    v_deliveryService service,
     v_writer writer)
 {
     C_STRUCT(v_deliveryGuard) template;
-    v_deliveryGuard guard, found;
     c_type type;
+    v_deliveryGuard _this;
+    v_result result;
 
-    assert(C_TYPECHECK(_this,v_deliveryService));
+    assert(C_TYPECHECK(service,v_deliveryService));
     assert(C_TYPECHECK(writer,v_writer));
 
-    if (_this && writer) {
-        /* lookup or create a writer specific admin.
-         */
+    if (service && writer) {
+        /* lookup or create a writer specific delivery guard */
         template.writerGID = v_publicGid(v_public(writer));
-        found = v_deliveryGuard(c_find(_this->guards,&template));
-        if (!found) {
-            type = c_subType(_this->guards);
-            guard = c_new(type);
+        _this = v_deliveryServiceLookupGuard(service,&template);
+        if (!_this) {
+            type = c_subType(service->guards);
+            _this = c_new(type);
             c_free(type);
-            if (guard) {
-                guard->writerGID = template.writerGID;
-                guard->owner = (c_voidp)_this; /* backref used by the free */
-                guard->gidType = c_resolve(c_getBase(_this),
-                                 "kernelModule::v_gid");
-                type = c_resolve(c_getBase(_this),
-                                 "kernelModule::v_deliveryWaitList");
-                /*
-                 * The sequence number is the key, as this is unique
-                 * within each writer.
-                 */
-                guard->waitlists = c_tableNew(type, "sequenceNumber");
+
+            if (_this) {
+                c_mutexInit(&(_this->mutex),SHARED_MUTEX);
+                _this->writerGID = template.writerGID;
+                _this->owner = (c_voidp)service; /* backref used by the free */
+                _this->gidType = c_resolve(c_getBase(_this),"kernelModule::v_gid");
+
+                type = c_resolve(c_getBase(_this),"kernelModule::v_deliveryWaitList");
+                /* The sequence number is the key, as this is unique within each writer */
+                _this->waitlists = c_tableNew(type,"sequenceNumber");
                 c_free(type);
 
                 /* The following subscription set attribute contains the
@@ -151,64 +68,46 @@ v_deliveryGuardNew(
                  * so the whole state will be delivered and delivery will
                  * update the list.
                  */
-                type = c_resolve(c_getBase(_this),
-                                 "kernelModule::v_deliveryPublisher");
-                guard->publications = c_tableNew(type,
-                                                 "readerGID.systemId,"
-                                                 "readerGID.localId,"
-                                                 "readerGID.serial");
+                type = c_resolve(c_getBase(_this),"kernelModule::v_deliveryPublisher");
+                _this->publications = c_tableNew(type,"readerGID.systemId,readerGID.localId,readerGID.serial");
                 c_free(type);
 
-                found = c_tableInsert(_this->guards, guard);
-                if (found != guard) {
-                    /* This should not happen! */
-                    OS_REPORT(OS_ERROR,
-                              "v_deliveryGuardNew",0,
-                              "detected inconsistent writer admin.");
+                result = v_deliveryServiceAddGuard(service,_this);
+                if (result != V_RESULT_OK) {
+                    c_free(_this);
+                    _this = NULL;
                 }
-                c_free(guard);
-                c_keep(found);
-
-                /* Now update publication list from delivery service subscriptions.
-                 */
-                c_walk(_this->subscriptions, getMatchingPublications, guard);
-            } else {
-                OS_REPORT(OS_ERROR,
-                          "v_deliveryGuardNew",0,
-                          "Failed to allocate v_deliveryGuard object.");
-                assert(FALSE);
-                found = NULL;
             }
         }
     } else {
-        found = NULL;
+        _this = NULL;
     }
-    return found;
+    return _this;
 }
 
 v_result
 v_deliveryGuardFree(
     v_deliveryGuard _this)
 {
-    v_deliveryGuard found;
     v_result result;
 
     assert(C_TYPECHECK(_this,v_deliveryGuard));
 
     if (_this) {
-        found = c_remove(v_deliveryService(_this->owner)->guards,_this,NULL,NULL);
-        if (found != _this) {
-            /* This should not happen! */
-            OS_REPORT(OS_ERROR,
-                      "v_deliveryGuardFree",0,
-                      "detected inconsistent writer admin.");
+        v_deliveryService owner = v_deliveryService(_this->owner);
+        result = v_deliveryServiceRemoveGuard(owner, _this);
+        if (result != V_RESULT_OK) {
+            OS_REPORT_2(OS_ERROR,
+                "v_deliveryGuardFree",result,
+                "Failed to remove guard from delivery-service; _this = 0x%x, owner = 0x%x.",
+                _this, owner);
+        } else {
+            c_free(_this);
         }
-        c_free(found);
-        result = V_RESULT_OK;
     } else {
         OS_REPORT(OS_ERROR,
                   "v_deliveryGuardFree",0,
-                  "Precondition not met; _this = NULL.");
+                  "Precondition not met; _this == NULL.");
         result = V_RESULT_PRECONDITION_NOT_MET;
     }
     return result;
@@ -223,6 +122,7 @@ waitlistNotify(
     v_result result;
 
     result = v_deliveryWaitListNotify(v_deliveryWaitList(o), msg);
+    assert(result == V_RESULT_OK);
     return TRUE;
 }
 
@@ -236,14 +136,29 @@ v_deliveryGuardNotify(
     v_deliveryGuard _this,
     v_deliveryInfoTemplate msg)
 {
+    c_syncResult sr;
     v_result result;
 
     assert(C_TYPECHECK(_this,v_deliveryGuard));
 
+    result = V_RESULT_UNDEFINED;
+
     if (_this && msg) {
-        /* lookup or create a writer specific admin.
-         */
-        c_walk(_this->waitlists,waitlistNotify,msg);
+        sr = c_mutexLock(&_this->mutex);
+        if (sr == SYNC_RESULT_SUCCESS) {
+            c_walk(_this->waitlists,waitlistNotify,msg);
+            sr = c_mutexUnlock(&_this->mutex);
+        }
+
+        if (sr != SYNC_RESULT_SUCCESS) {
+            result = V_RESULT_INTERNAL_ERROR;
+            OS_REPORT_2(OS_ERROR,
+                      "v_deliveryGuardNotify",0,
+                      "Failed to claim/release mutex; _this = 0x%x, msg = 0x%x.",
+                      _this, msg);
+        } else {
+            result = V_RESULT_OK;
+        }
     } else {
         result = V_RESULT_ILL_PARAM;
     }
@@ -260,6 +175,7 @@ waitlistIgnore(
 
     result = v_deliveryWaitListIgnore(v_deliveryWaitList(o),
                                       readerGID);
+    assert(result == V_RESULT_OK);
     return TRUE;
 }
 
@@ -268,14 +184,28 @@ v_deliveryGuardIgnore(
     v_deliveryGuard _this,
     v_gid readerGID)
 {
+    c_syncResult sr;
     v_result result;
 
     assert(C_TYPECHECK(_this,v_deliveryGuard));
 
+    result = V_RESULT_UNDEFINED;
+
     if (_this) {
-        /* lookup or create a writer specific admin.
-         */
-        c_walk(_this->waitlists,waitlistIgnore,&readerGID);
+        sr = c_mutexLock(&_this->mutex);
+        if (sr == SYNC_RESULT_SUCCESS)
+        {
+            c_walk(_this->waitlists,waitlistIgnore,&readerGID);
+            sr = c_mutexUnlock(&_this->mutex);
+        }
+        if (sr != SYNC_RESULT_SUCCESS)
+        {
+            result = V_RESULT_INTERNAL_ERROR;
+            OS_REPORT_4(OS_ERROR,
+                      "v_deliveryGuardIgnore",0,
+                      "Failed to claim/release mutex; _this = 0x%x, readerGID = {%d,%d,%d}.",
+                      _this, readerGID.systemId, readerGID.localId, readerGID.serial);
+        }
     } else {
         result = V_RESULT_ILL_PARAM;
     }

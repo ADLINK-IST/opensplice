@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -33,12 +33,6 @@ v_cacheNodeCheck(
     if (node->targets.prev) {
         assert(v_cacheNode(node->targets.prev)->targets.next == node);
     }
-    if (node->sources.next) {
-        assert(v_cacheNode(node->sources.next)->sources.prev == node);
-    }
-    if (node->sources.prev) {
-        assert(v_cacheNode(node->sources.prev)->sources.next == node);
-    }
 }
 #endif
 
@@ -51,8 +45,6 @@ v_cacheNodeInit(
         node->connections.prev = NULL;
         node->targets.next = NULL;
         node->targets.prev = NULL;
-        node->sources.next = NULL;
-        node->sources.prev = NULL;
     }
 }
 
@@ -141,18 +133,6 @@ v_cacheDeinit (
             v_cacheNodeCheck(v_cacheNode(cache));
         }
     break;
-    case V_CACHE_SOURCES:
-        node = v_cacheNode(cache)->sources.next;
-        while (node != NULL) {
-            v_cacheNodeCheck(node);
-            assert(C_TYPECHECK(node,v_cacheNode));
-            next = node->sources.next;
-            v_cacheNodeRemove(node,V_CACHE_SOURCES); /* also frees node. */
-            node = v_cacheNode(cache)->sources.next;
-            assert(next == node);
-            v_cacheNodeCheck(v_cacheNode(cache));
-        }
-    break;
     default:
         node = NULL;
     }
@@ -190,14 +170,6 @@ v_cacheInsert (
         cacheLink = &v_cacheNode(cache)->targets;
         if (cacheLink->next != NULL) {
             headLink = &v_cacheNode(cacheLink->next)->targets;
-            headLink->prev = node;
-        }
-    break;
-    case V_CACHE_SOURCES:
-        nodeLink = &node->sources;
-        cacheLink = &v_cacheNode(cache)->sources;
-        if (cacheLink->next != NULL) {
-            headLink = &v_cacheNode(cacheLink->next)->sources;
             headLink->prev = node;
         }
     break;
@@ -253,15 +225,6 @@ v_cacheWalk (
             node = node->targets.next;
         }
     break;
-    case V_CACHE_SOURCES:
-        node = v_cacheNode(cache)->sources.next;
-        while ((node != NULL) && (proceed)) {
-            v_cacheNodeCheck(node);
-            assert(C_TYPECHECK(node,v_cacheNode));
-            proceed = action(node,arg);
-            node = node->sources.next;
-        }
-    break;
     default:
     break;
     }
@@ -301,20 +264,6 @@ v_cacheNodeRemove (
         }
         if (nodeLink->prev != NULL) {
             v_cacheNode(nodeLink->prev)->targets.next = nodeLink->next;
-        }
-        nodeLink->next = NULL;
-        nodeLink->prev = NULL;
-        v_cacheNodeCheck(node);
-        c_free(node);
-    break;
-    case V_CACHE_SOURCES:
-        v_cacheItem(node)->instance = NULL;
-        nodeLink = &node->sources;
-        if (nodeLink->next != NULL) {
-            v_cacheNode(nodeLink->next)->sources.prev = nodeLink->prev;
-        }
-        if (nodeLink->prev != NULL) {
-            v_cacheNode(nodeLink->prev)->sources.next = nodeLink->next;
         }
         nodeLink->next = NULL;
         nodeLink->prev = NULL;

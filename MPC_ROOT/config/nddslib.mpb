@@ -1,0 +1,24 @@
+// -*- MPC -*-
+// $Id$
+
+project {
+  requires += ndds
+  libs     += nddscpp nddsc nddscore
+  libpaths += $(NDDSHOME)/lib/$(NDDSARCHITECTURE)
+  includes += $(NDDSHOME)/include $(NDDSHOME)/include/ndds
+
+  specific(prop:windows) {
+    macros += RTI_WIN32 NDDS_DLL_VARIABLE
+  } else {
+    macros += RTI_UNIX
+  }
+
+  verbatim(gnuace, circuit) {
+    ifeq ($(buildbits),64)
+    FLAGS_C_CC += -DRTI_64BIT
+    endif
+    ifeq ($(ACE_PLATFORM_CONFIG),config-linux.h)
+    FLAGS_C_CC += -DRTI_LINUX
+    endif
+  }
+}

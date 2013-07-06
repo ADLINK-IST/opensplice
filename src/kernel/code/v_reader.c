@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -57,6 +57,7 @@ entryFree(
 {
     v_entry entry;
 
+    OS_UNUSED_ARG(arg);
     assert(o != NULL);
     assert(arg == NULL);
 
@@ -67,15 +68,23 @@ entryFree(
     return TRUE;
 }
 
+/* This getHistoricalDataCommon function takes two optional parameters:
+ * - the v_group parameter indicates the group from which to get the
+ *   historical data.  NULL indicates all groups.
+ * - the v_historicalDataRequest is an optional historical condition,
+ *   the existence of which switches the function that is called.
+ */
 static c_bool
-getHistoricalData(
+getHistoricalDataCommon(
     c_object o,
-    c_voidp arg)
+    v_group specificGroup,
+    v_historicalDataRequest historicalDataRequest)
 {
     v_entry entry;
     c_iter proxies;
     v_proxy proxy;
     v_group group;
+    c_bool result;
 
     assert(o != NULL);
 
@@ -83,16 +92,20 @@ getHistoricalData(
     assert(entry != NULL);
     assert(C_TYPECHECK(entry,v_entry));
 
-    proxies = c_select(entry->groups, 0);
+    proxies = ospl_c_select(entry->groups, 0);
     proxy = c_iterTakeFirst(proxies);
+    result = TRUE;
+
     while (proxy != NULL) {
         group = v_group(v_proxyClaim(proxy));
         if (group) {
-            if(arg == NULL){
-                v_groupGetHistoricalData(group, entry);
-            } else {
-                v_groupGetHistoricalDataWithCondition(group,
-                        entry, (v_historicalDataRequest)arg);
+            if (specificGroup == NULL || specificGroup == group) {
+                if(historicalDataRequest == NULL) {
+                    v_groupGetHistoricalData(group, entry);
+                } else {
+                    result = v_groupGetHistoricalDataWithCondition(group,
+                        entry, historicalDataRequest);
+                }
             }
             v_proxyRelease(proxy);
         }
@@ -100,7 +113,31 @@ getHistoricalData(
         proxy = c_iterTakeFirst(proxies);
     }
     c_iterFree(proxies);
-    return TRUE;
+    return result;
+}
+
+static c_bool
+getHistoricalData(
+    c_object o,
+    c_voidp arg)
+{
+    /* request the historical data for all of the reader's groups with
+     * a v_historicalDataRequest that may or may not be set */
+    v_historicalDataRequest historicalDataRequest = NULL;
+    if (arg) {
+        historicalDataRequest = (v_historicalDataRequest)arg;
+    }
+
+    return getHistoricalDataCommon (o, NULL, historicalDataRequest);
+}
+
+static c_bool
+getHistoricalDataSpecificGroup(
+    c_object o,
+    c_voidp arg)
+{
+    /* request the historical data for only the specified group */
+    return getHistoricalDataCommon (o, (v_group)arg, NULL);
 }
 
 static void
@@ -111,6 +148,19 @@ readerGetHistoricalData(
 
     if (r->qos->durability.kind != V_DURABILITY_VOLATILE) {
         v_readerWalkEntries(r, getHistoricalData, NULL);
+    }
+}
+
+static void
+readerGetHistoricalDataSpecificGroup(
+    v_reader r,
+    v_group g)
+{
+    assert(C_TYPECHECK(r, v_reader));
+    assert(C_TYPECHECK(g, v_group));
+
+    if (r->qos->durability.kind != V_DURABILITY_VOLATILE) {
+        v_readerWalkEntries(r, getHistoricalDataSpecificGroup, g);
     }
 }
 
@@ -192,6 +242,8 @@ v_readerSubscribeGroup(
 {
     c_bool result;
 
+    result = FALSE;
+
     assert(C_TYPECHECK(_this, v_reader));
     switch(v_objectKind(_this)) {
     case K_DATAREADER:
@@ -203,7 +255,8 @@ v_readerSubscribeGroup(
            v_groupPartitionAccessMode(group) == V_ACCESS_MODE_READ)
         {
             result = v_dataReaderSubscribeGroup(v_dataReader(_this), group);
-            readerGetHistoricalData(_this);
+            /* need to get historical data only for the group that was just subscribed to */
+            readerGetHistoricalDataSpecificGroup(_this, group);
         } else
         {
             result = FALSE;
@@ -213,8 +266,7 @@ v_readerSubscribeGroup(
         result = v_groupStreamSubscribeGroup(v_groupStream(_this), group);
     break;
     case K_NETWORKREADER:
-        result = v_networkReaderSubscribeGroup(v_networkReader(_this), group);
-        readerGetHistoricalData(_this);
+        assert(FALSE);
     break;
     default:
         OS_REPORT_1(OS_ERROR,"v_readerSubscribeGroup failed",0,
@@ -306,7 +358,7 @@ v_readerCollectEntries(
 
     if(r){
         v_readerEntrySetLock(r);
-        result = c_select(r->entrySet.entries, 0);
+        result = ospl_c_select(r->entrySet.entries, 0);
         v_readerEntrySetUnlock(r);
     } else {
         result = NULL;
@@ -358,6 +410,7 @@ v_readerSubscribe(
     c_bool result;
 
     assert(C_TYPECHECK(r,v_reader));
+    result = FALSE;
 
     switch(v_objectKind(r)) {
     case K_DATAREADER:
@@ -370,7 +423,7 @@ v_readerSubscribe(
         result = v_groupStreamSubscribe(v_groupStream(r),d);
     break;
     case K_NETWORKREADER:
-        result = v_networkReaderSubscribe(v_networkReader(r),d);
+        assert(FALSE);
     break;
     default:
         OS_REPORT_1(OS_ERROR,"v_readerSubscribe failed",0,
@@ -599,7 +652,7 @@ waitForHistoricalData(
     assert(entry != NULL);
     assert(C_TYPECHECK(entry,v_entry));
 
-    proxies = c_select(entry->groups, 0);
+    proxies = ospl_c_select(entry->groups, 0);
     proxy = c_iterTakeFirst(proxies);
     while ((proxy != NULL) && (parms->_status == TRUE)) {
         group = v_group(v_proxyClaim(proxy));
@@ -631,7 +684,7 @@ v_readerWaitForHistoricalData(
     c_object e;
 
     v_readerEntrySetLock(r);
-    entries = c_select(r->entrySet.entries, 0);
+    entries = ospl_c_select(r->entrySet.entries, 0);
     v_readerEntrySetUnlock(r);
 
     arg._expire_time = c_timeAdd(v_timeGet(), timeout);
@@ -669,115 +722,135 @@ v_readerWaitForHistoricalDataWithCondition(
     v_historyResult result;
     v_historicalDataRequest request;
     c_bool doRequest, doWait;
+    v_result durabilityAvailable;
     struct historicalWaitArg arg;
     C_STRUCT(v_event) event;
+    c_bool success;
 
+    success = TRUE;
     arg._expire_time = c_timeAdd(v_timeGet(), timeout);
     arg._status = TRUE;
 
-    request = v_historicalDataRequestNew(v_objectKernel(_this), filter, params,
-                paramsLength, minSourceTime, maxSourceTime, resourceLimits);
+    durabilityAvailable = v_kernelWaitForDurabilityAvailability(
+            v_objectKernel(_this), timeout);
 
-    if(request){
-        V_READER_LOCK(_this);
+    if(durabilityAvailable == V_RESULT_OK){
+        request = v_historicalDataRequestNew(v_objectKernel(_this), filter, params,
+                    paramsLength, minSourceTime, maxSourceTime, resourceLimits);
 
-        if(_this->historicalDataRequest) {
-            /* Historical data request already in progress or complete, check
-             * whether request is equal to the original one.
-             */
-            doRequest = FALSE;
+        if(request){
+            V_READER_LOCK(_this);
 
-            if(v_historicalDataRequestEquals(request, _this->historicalDataRequest)){
-                /* Request is equal to original request*/
-                result = V_HISTORY_RESULT_OK;
+            if(_this->historicalDataRequest) {
+                /* Historical data request already in progress or complete, check
+                 * whether request is equal to the original one.
+                 */
+                doRequest = FALSE;
 
-                if(_this->historicalDataComplete){
-                    /* Request has already been fulfilled. Consider this call
-                     * a no-operation.
+                if(v_historicalDataRequestEquals(request, _this->historicalDataRequest)){
+                    /* Request is equal to original request*/
+                    result = V_HISTORY_RESULT_OK;
+
+                    if(_this->historicalDataComplete){
+                        /* Request has already been fulfilled. Consider this call
+                         * a no-operation.
+                         */
+                        doWait = FALSE;
+                    } else {
+                        /* Request is still in progress, wait for data to arrive*/
+                        doWait = TRUE;
+                    }
+                } else {
+                    /* The requested parameters are not equal to the originally
+                     * requested set. Return a precondition not met.
                      */
                     doWait = FALSE;
-                } else {
-                    /* Request is still in progress, wait for data to arrive*/
-                    doWait = TRUE;
+                    result = V_HISTORY_RESULT_PRE_NOT_MET;
                 }
-            } else {
-                /* The requested parameters are not equal to the originally
-                 * requested set. Return a precondition not met.
-                 */
-                doWait = FALSE;
-                result = V_HISTORY_RESULT_PRE_NOT_MET;
-            }
-            c_free(request);
-        } else {
-            /* No active request, so validate it now.*/
-            if(v_historicalDataRequestIsValid(request, _this)){
-                /* This request is valid, so request data.*/
-                doRequest = TRUE;
-                doWait    = TRUE;
-                result    = V_HISTORY_RESULT_OK;
-                _this->historicalDataRequest = request;
-            } else {
-                /* Request is not valid, so return bad parameter.*/
-                doRequest = FALSE;
-                doWait    = FALSE;
-                result    = V_HISTORY_RESULT_BAD_PARAM;
                 c_free(request);
+            } else {
+                /* No active request, so validate it now.*/
+                if(v_historicalDataRequestIsValid(request, _this)){
+                    /* This request is valid, so request data.*/
+                    doRequest = TRUE;
+                    doWait    = TRUE;
+                    result    = V_HISTORY_RESULT_OK;
+                    _this->historicalDataRequest = request;
+                } else {
+                    /* Request is not valid, so return bad parameter.*/
+                    doRequest = FALSE;
+                    doWait    = FALSE;
+                    result    = V_HISTORY_RESULT_BAD_PARAM;
+                    c_free(request);
+                }
             }
+            V_READER_UNLOCK(_this);
+        } else {
+            doRequest = FALSE;
+            doWait    = FALSE;
+            result    = V_HISTORY_RESULT_ERROR;
         }
-        V_READER_UNLOCK(_this);
-    } else {
-        doRequest = FALSE;
-        doWait    = FALSE;
-        result    = V_HISTORY_RESULT_ERROR;
-    }
 
-    if(doWait){
-        v_readerEntrySetLock(_this);
-        entries = c_select(_this->entrySet.entries, 0);
-        v_readerEntrySetUnlock(_this);
+        if(doWait){
+            v_readerEntrySetLock(_this);
+            entries = ospl_c_select(_this->entrySet.entries, 0);
+            v_readerEntrySetUnlock(_this);
 
-        if(doRequest){
-            /* Historical data must be requested, since this is the first time
-             * the operation is called and the request is valid.
-             */
-            if (_this->qos->durability.kind == V_DURABILITY_VOLATILE) {
-                /* If reader is volatile, the historical data from the
-                 * group(s) has/have not been retrieved yet, so do it now.
+            if(doRequest){
+                /* Historical data must be requested, since this is the first time
+                 * the operation is called and the request is valid.
                  */
-                e = c_iterTakeFirst(entries);
-                while (e != NULL) {
-                    getHistoricalData(e, _this->historicalDataRequest);
-                    c_free(e);
+                if (_this->qos->durability.kind == V_DURABILITY_VOLATILE) {
+                    /* If reader is volatile, the historical data from the
+                     * group(s) has/have not been retrieved yet, so do it now.
+                     */
                     e = c_iterTakeFirst(entries);
+
+                    while (e != NULL && success) {
+                        success = getHistoricalData(e, _this->historicalDataRequest);
+                        c_free(e);
+                        e = c_iterTakeFirst(entries);
+                    }
+                    c_iterFree(entries);
                 }
-                c_iterFree(entries);
+                if(success){
+                    event.kind = V_EVENT_HISTORY_REQUEST;
+                    event.source = v_publicHandle(v_public(_this));
+                    event.userData = _this->historicalDataRequest;
+                    v_observableNotify(v_observable(v_objectKernel(_this)),&event);
+                } else {
+                    result = V_HISTORY_RESULT_BAD_PARAM;
+                }
             }
-            event.kind = V_EVENT_HISTORY_REQUEST;
-            event.source = v_publicHandle(v_public(_this));
-            event.userData = _this->historicalDataRequest;
-            v_observableNotify(v_observable(v_objectKernel(_this)),&event);
-        }
 
-        V_READER_LOCK(_this);
+            V_READER_LOCK(_this);
 
-        if(!_this->historicalDataComplete){
-            if (c_timeCompare(timeout, C_TIME_INFINITE) != C_EQ) {
-                if (c_condTimedWait(&_this->historicalDataCondition,
-                                    &V_READER_GET_LOCK(_this),
-                                    timeout) != SYNC_RESULT_SUCCESS)
+            if(!_this->historicalDataComplete && success){
+                if (c_timeCompare(timeout, C_TIME_INFINITE) != C_EQ) {
+                    if (c_condTimedWait(&_this->historicalDataCondition,
+                                        &V_READER_GET_LOCK(_this),
+                                        timeout) != SYNC_RESULT_SUCCESS)
+                    {
+                        result = V_HISTORY_RESULT_TIMEOUT;
+                    }
+                } else if (c_condWait(&_this->historicalDataCondition,
+                                &V_READER_GET_LOCK(_this)) != SYNC_RESULT_SUCCESS)
                 {
-                    result = V_HISTORY_RESULT_TIMEOUT;
+                        result = V_HISTORY_RESULT_TIMEOUT;
                 }
-            } else if (c_condWait(&_this->historicalDataCondition,
-                            &V_READER_GET_LOCK(_this)) != SYNC_RESULT_SUCCESS)
-            {
-                    result = V_HISTORY_RESULT_TIMEOUT;
+                assert( (result == V_HISTORY_RESULT_OK) ==
+                         _this->historicalDataComplete);
             }
-            assert( (result == V_HISTORY_RESULT_OK) ==
-                     _this->historicalDataComplete);
-        }
-        V_READER_UNLOCK(_this);
+            V_READER_UNLOCK(_this);
 
+        }
+    } else {
+        /* The durability service is not running, so pre-condition not met. */
+        OS_REPORT(OS_WARNING, "v_readerWaitForHistoricalDataWithCondition", 0,
+                "wait_for_historical_data_w_condition() could not be " \
+                "performed as no durability service is available. Please " \
+                "reconfigure your domain to include a durability service.");
+        result = V_HISTORY_RESULT_PRE_NOT_MET;
     }
     return result;
 }

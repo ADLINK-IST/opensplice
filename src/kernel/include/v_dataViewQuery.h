@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -21,6 +21,7 @@
 #include "v_event.h"
 #include "v_dataView.h"
 #include "v_dataViewSample.h"
+#include "v_query.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -57,7 +58,9 @@ v_dataViewQueryFree(
 
 OS_API c_bool
 v_dataViewQueryTest(
-    v_dataViewQuery _this);
+    v_dataViewQuery _this,
+    v_queryAction action,
+    c_voidp args);
 
 OS_API c_bool
 v_dataViewQueryRead(

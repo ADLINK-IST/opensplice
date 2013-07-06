@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -103,7 +103,48 @@ public class DataTransformerFactory {
         }
         return ss;
     }
-    
+
+    /**
+     * Constructs a deserializer that is capable of deserializing a Storage and
+     * its related return-/parameter-types.
+     *
+     * @param kind The kind of serializer that is needed. Currently only XML
+     *             is supported.
+     * @return A deserializer that is capable of deserializing a Storage
+     */
+    public static StorageDeserializer getStorageDeserializer(int kind){
+        StorageDeserializer sd = null;
+
+        if(kind == XML){
+            try {
+                sd = new StorageDeserializerXML();
+            }
+            catch (ParserConfigurationException e) {
+                logger.logp(Level.SEVERE, "DataHandlerFactory", "getStorageDeserializer", "ParserConfigurationException: " + e.getMessage());
+                System.err.println("Parser could not be intialized.\nUnrecoverable exception. Bailing out...");
+                System.exit(0);
+            }
+        }
+        return sd;
+    }
+
+    /**
+     * Constructs a serializer that is capable of serializing a Storage and
+     * its related return-/parameter-types.
+     *
+     * @param kind The kind of serializer that is needed. Currently only XML
+     *             is supported.
+     * @return A serializer that is capable of serializing a Storage
+     */
+    public static StorageSerializer getStorageSerializer(int kind){
+        StorageSerializer ss = null;
+
+        if(kind == XML){
+            ss = new StorageSerializerXML();
+        }
+        return ss;
+    }
+
     /**
      * Constructs a deserializer that is capable of deserializing a type.
      * 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -100,6 +100,37 @@ OS_API void *
 sd_listAt (
     sd_list list,
     c_ulong index);
+
+OS_API c_ulong
+sd_listIndexOf (
+    sd_list list,
+    void *obj);
+
+void
+sd_listInsertAt(
+    sd_list list,
+    void *object,
+    c_ulong index);
+
+/*
+ * This method inserts 'object' before 'beforeObject'.
+ *
+ * Precondition: 'beforeObject' is in the list.
+ * Postcondition: 'object' is in the list, before 'beforeObject'.
+ *
+ * example:
+ * L = {1, 4, 7, 3}
+ *
+ * insert(L, 100, 7)
+ *
+ * L = {1, 4, 100, 7, 3}
+ *
+ */
+void
+sd_listInsertBefore(
+    sd_list list,
+    void *object,
+    void *before);
 
 #undef OS_API
 

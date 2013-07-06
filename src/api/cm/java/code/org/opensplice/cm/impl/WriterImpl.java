@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -85,6 +85,7 @@ public class WriterImpl extends EntityImpl implements Writer{
      * @throws CMException Thrown when the writer is not available or when 
      *                     snapshot could not be created.
      */
+    @Override
     public WriterSnapshot makeSnapshot() throws CMException{
         if(freed){
             throw new CMException("Reader has already been freed.");
@@ -105,6 +106,7 @@ public class WriterImpl extends EntityImpl implements Writer{
      * @param data The data to write.
      * @throws CMException Thrown when the writer is not available anymore.
      */
+    @Override
     public void write(UserData data) throws CMException{
         if(freed){
             throw new CMException("Writer has already been freed.");
@@ -122,9 +124,13 @@ public class WriterImpl extends EntityImpl implements Writer{
      * @param data The data to dispose.
      * @throws CMException Thrown when the writer is not available anymore.
      */
+    @Override
     public void dispose(UserData data) throws CMException{
         if(freed){
             throw new CMException("Writer has already been freed.");
+        }
+        if (data.getUserData().isEmpty()) {
+            throw new CMException("No instance to dispose");
         }
         try {
             CMFactory.getCommunicator().writerDispose(this, data);
@@ -139,6 +145,7 @@ public class WriterImpl extends EntityImpl implements Writer{
      * @param data The data to writeDispose.
      * @throws CMException Thrown when the writer is not available anymore.
      */
+    @Override
     public void writeDispose(UserData data) throws CMException{
         if(freed){
             throw new CMException("Writer has already been freed.");
@@ -156,6 +163,7 @@ public class WriterImpl extends EntityImpl implements Writer{
      * @param data The data to register.
      * @throws CMException Thrown when the writer is not available anymore.
      */
+    @Override
     public void register(UserData data) throws CMException{
         if(freed){
             throw new CMException("Writer has already been freed.");
@@ -173,6 +181,7 @@ public class WriterImpl extends EntityImpl implements Writer{
      * @param data The data to unregister.
      * @throws CMException Thrown when the writer is not available anymore.
      */
+    @Override
     public void unregister(UserData data) throws CMException{
         if(freed){
             throw new CMException("Writer has already been freed.");
@@ -194,6 +203,7 @@ public class WriterImpl extends EntityImpl implements Writer{
      * @throws DataTypeUnsupportedException Thrown when the data type of the
      *                                      Topic is not supported.
      */
+    @Override
     public MetaType getDataType() throws DataTypeUnsupportedException, CMException{
         if(freed){
             throw new CMException("Writer has already been freed.");
@@ -208,6 +218,7 @@ public class WriterImpl extends EntityImpl implements Writer{
         return dataType;
     }
     
+    @Override
     public void setQoS(QoS qos) throws CMException{
         if(freed){
             throw new CMException("Supplied entity is not available (anymore).");

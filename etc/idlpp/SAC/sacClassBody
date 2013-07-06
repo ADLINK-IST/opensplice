@@ -1,23 +1,38 @@
+extern c_bool __$(type_name)__copyIn(c_base base, void *from, void *to);
+extern void __$(type_name)__copyOut(void *from, void *to);
+extern const char *$(type_name)_metaDescriptor[];
+extern const c_ulong $(type_name)_metaDescriptorArrLength;
+
 $(type_name)TypeSupport
 $(type_name)TypeSupport__alloc (
     void
     )
 {
-    extern c_bool __$(type_name)__copyIn(c_base base, void *from, void *to);
-    extern void __$(type_name)__copyOut(void *from, void *to);
-    extern const char *$(type_name)_metaDescriptor;
+    c_ulong i;
+    c_ulong strlength =0;
+    char * metaDescriptor;
+    $(type_name)TypeSupport result;
+    for (i = 0; i < $(type_name)_metaDescriptorArrLength; i++) {
+        strlength +=strlen($(type_name)_metaDescriptor[i]);
+    }
 
-    return
-	DDS__FooTypeSupport__alloc (
+    metaDescriptor = (char*)malloc(strlength+1);
+    metaDescriptor[0] = '\0';
+    for (i = 0; i < $(type_name)_metaDescriptorArrLength; i++) {
+        strcat(metaDescriptor,$(type_name)_metaDescriptor[i]);
+    }
+	result = DDS__FooTypeSupport__alloc (
 	    __$(type_name)__name(),
             __$(type_name)__keys(),
-            $(type_name)_metaDescriptor,
+            metaDescriptor,
             NULL,
             (DDS_copyIn)__$(type_name)__copyIn,
             (DDS_copyOut)__$(type_name)__copyOut,
             (DDS_unsigned_long)(sizeof($(type_name))),
             (DDS_typeSupportAllocBuffer)DDS_sequence_$(type_name)_allocbuf
         );
+    free(metaDescriptor);
+    return result;
 }
 
 DDS_ReturnCode_t
@@ -755,19 +770,19 @@ $(type_name)DataReaderView_return_loan (
             (DDS_sequence)received_data,
             info_seq
     );
-    
+
     if ( result == DDS_RETCODE_OK ) {
         DDS__free(received_data->_buffer);
         received_data->_length  = 0;
         received_data->_maximum = 0;
         received_data->_buffer  = NULL;
-        
+
         DDS__free(info_seq->_buffer);
         info_seq->_length  = 0;
         info_seq->_maximum = 0;
         info_seq->_buffer  = NULL;
     }
-        
+
     return result;
 }
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -34,6 +34,7 @@ public class WriterStatusTableModel extends EntityStatusTableModel {
         super(_entity);
     }
 
+    @Override
     protected void init() {
         Object[] data = new Object[3];
         data[2] = "N/A";
@@ -85,6 +86,7 @@ public class WriterStatusTableModel extends EntityStatusTableModel {
         this.addRow(data);
     }
 
+    @Override
     public boolean update() {
         WriterStatus status;
         
@@ -113,17 +115,17 @@ public class WriterStatusTableModel extends EntityStatusTableModel {
             Long[] qpc = status.getIncompatibleQos().getPolicies();
             
             if(qpc != null){
-                String value = "[";
-                
+                StringBuffer buf = new StringBuffer();
+                buf.append("[");
                 for(int i=0; i< qpc.length; i++){
                     if(i==0){
-                        value += qpc[i].longValue();
+                        buf.append(qpc[i].longValue());
                     } else {
-                        value += ", " + qpc[i].longValue();
+                        buf.append(", " + qpc[i].longValue());
                     }
                 }
-                value += "]";
-                this.setValueAt(value, 9, 2);
+                buf.append("]");
+                this.setValueAt(buf.toString(), 9, 2);
             } else {
                 this.setValueAt("NULL", 9, 2);
             }

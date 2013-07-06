@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "../../stax/stax.dtd">
+
+<stax>
+    <function name="Publisher">
+        <function-map-args>
+            <function-required-arg name="host">Publisher TestNode</function-required-arg>
+            <function-optional-arg name="samples" default="None">Path to samples file (if omitted, publisher will generate random data)</function-optional-arg>
+            <function-optional-arg name="count" default="0">Number of samples to write (default is to write all samples from samples file</function-optional-arg>
+            <function-optional-arg name="partition" default="'partition1'">List of partition expressions (comma-seperated) to publish on</function-optional-arg>
+            <function-optional-arg name="topic" default="None">Topic name</function-optional-arg>
+            <function-optional-arg name="persistent" default="None">If true write persistent samples, else write transient samples</function-optional-arg>
+            <function-optional-arg name="delay" default="10">Delay between writes in ms</function-optional-arg>
+            <function-optional-arg name="timeout" default="'30s'">Timeout after which the publisher fails if it's not finished</function-optional-arg>
+            <function-optional-arg name="autodispose" default="'0'">Enable autodispose unregistered instances QoS</function-optional-arg>
+            <function-optional-arg name="domainId" default="0">DomainId for publisher.</function-optional-arg>
+        </function-map-args>
+        
+        <sequence>
+            <if expr="samples != None">
+                <!-- Copy samples file to host -->
+                <sequence>
+                    <script>samples_dest = host.get_basedir() + host.get_filesep() + 'etc'</script>
+                    <call function="'FileCopy'">
+                        { 'src_path': samples,
+                          'dest_host': host,
+                          'dest_path': samples_dest,
+                          'overwrite': 2 }
+                    </call>
+                    <script>args = "-i '" + samples_dest + host.get_filesep() + os.path.basename(samples) + "' "</script>
+                </sequence>
+                <else>
+                    <script>args = "-i '' "</script>
+                </else>
+            </if>
+            <script>
+                host.set_process('writer')
+                args += "-n %s -p %s -u %s -d %s " % (count, partition, domainId, delay)
+                if (topic):
+                    args += "-t %s " % topic
+                if (persistent):
+                    args += "-P "
+                if (autodispose):
+                    args += "-D "
+            </script>
+            <log message="STAXMessageLog" level="'debug'">'Publisher process: %s %s Env: %s' % (host.get_process(), args, host.get_process_envs())</log>
+            <timer duration="timeout">
+                <sequence>
+                    <process name="'Publisher'">
+                        <location>host.get_staf_url()</location>
+                        <command mode="'shell'">host.get_process_prearg() + host.get_process()</command>
+                        <parms>args</parms>
+                        <envs>host.get_process_envs()</envs>
+                        <stopusing>'SIGKILLALL'</stopusing>
+                        <stderr mode="'stdout'"/>
+                        <returnstdout/>
+                    </process>
+                    <script>procRC = RC</script>
+                </sequence>
+            </timer>
+            <script>timerRC = RC</script>
+            <if expr="timerRC != STAFRC.Ok">
+                <sequence>
+                    <log message="STAXMessageLog" level="'info'">'Publisher timeout on %s (%s)' % (host.get_hostname(), timeout)</log>
+                    <script>result = timerRC</script>
+                </sequence>
+                <else>
+                    <sequence>
+                        <if expr="STAXResult">
+                            <if expr="STAXResult[0][0] == 0">
+                                <sequence>
+                                    <script>
+                                        output = ''.join(STAXResult[0][1]).strip()
+                                        msg = 'Publisher output on %s (RC=%s):\n%s' % (host.get_hostname(), procRC, output)
+                                    </script>
+                                    <log message="0" level="'debug'">msg</log>                 
+                                </sequence>
+                            </if>
+                        </if>
+                        <script>result = procRC</script>
+                    </sequence>
+                </else>
+            </if>
+            <return>result</return>
+        </sequence>    
+    </function>
+    
+    <function name="DeployPublisher">
+        <function-list-args>
+            <function-required-arg name="host">TestHost</function-required-arg>
+            <function-optional-arg name="purge" default="0">Overwrite existing files</function-optional-arg>
+            <function-optional-arg name="keep" default="0">Remove files after tests</function-optional-arg>
+        </function-list-args>
+        <sequence>
+            <script>
+                base_path = os.path.dirname(STAXCurrentXMLFile) + file_sep + '..' + file_sep + 'common'
+                src_path = base_path + file_sep + 'writer' + file_sep + 'bld' + file_sep + host.get_target()
+                dest_path = host.get_basedir() + host.get_filesep() + 'publisher'
+            </script>
+            <try>
+                <sequence>
+                <call-with-map function="'FileCopy'">
+                    <call-map-arg name="'src_path'">src_path</call-map-arg>
+                    <call-map-arg name="'dest_host'">host</call-map-arg>
+                    <call-map-arg name="'dest_path'">dest_path</call-map-arg>
+                    <call-map-arg name="'overwrite'">2</call-map-arg>
+                </call-with-map>
+                <if expr="STAXResult == STAFRC.Ok">
+                    <sequence>
+                        <script>
+                            path = '%s%c%s' % (host.get_env('PATH'), host.get_pathsep(), dest_path)
+                            host.set_env('PATH', path);
+                        </script>
+                        <log message="STAXMessageLog" level="'debug'">'DeployPublisher: Deployed on %s' % host.get_hostname()</log>
+                    </sequence>
+                </if>
+                </sequence>
+                <catch exception="'FileCopy'" var="eInfo">
+                	<sequence>
+                    	<log message="STAXMessageLog">'DeployPublisher: Failed to deploy on %s (%s)' % (host.get_hostname(), eInfo)</log>
+                    	<throw exception="'TestCase.DeployFailed'">'DeployPublisher: Failed to deploy on $s (%s)' % (host.get_hostname(), eInfo)</throw>
+                    </sequence>
+                </catch>
+            </try>
+        </sequence>
+    </function>
+</stax>

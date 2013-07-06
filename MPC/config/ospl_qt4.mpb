@@ -1,0 +1,39 @@
+// -*- MPC -*-
+// $Id$
+
+project: qt4_gui {
+  Modify_Custom(MOC) {
+    inputext         = .hpp
+    automatic_out    = 1
+  }
+}
+
+feature (ospl_os_linux) {
+
+  // The headers and libs don't seem consistently placed
+  // we look in /usr/* /usr/*/qt4 & allow a last ditch explicit override
+  includes += $(QT4_INCLUDE)/. /usr/include/qt4
+  libpaths += $(QT4_LIB)/. /usr/lib/qt4
+
+  // Assuming usual case of Qt installed via a package manager
+  // there's no need to path these tools
+  Modify_Custom(UIC) {
+    command          = uic$(QT4_TOOL_SUFFIX)
+  }
+
+  Modify_Custom(MOC) {
+    command          = moc$(QT4_TOOL_SUFFIX)
+  }
+
+  Modify_Custom(QRC) {
+    command          = rcc
+  }
+}
+
+feature (ospl_os_win) {
+    // The libs on windows need a version i.e. '4' decorater
+    expand(QT_CFG) {
+        $QT_CFG
+        4
+    }
+}

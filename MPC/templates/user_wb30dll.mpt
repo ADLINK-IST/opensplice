@@ -1,0 +1,376 @@
+// platforms
+
+platform = VxWorksRTP
+exe_ext    = .vxe
+
+VxWorksRTP {
+  platform_name = INVALID // Deliberate invalid value
+  project_type = RealTimeProcessProject
+  platform_includes = $(WIND_BASE)/target/usr/h $(WIND_BASE)/target/usr/h/wrn/coreip
+  platform_makefilevars = WIND_BASE WIND_USR
+  wrprj_macros = VX_CPU_FAMILY CPU TOOL_FAMILY TOOL TOOL_PATH CC_ARCH_SPEC
+  common_defines = VXWORKS_RTP USE_CLOCK_GETTIME USE_NANOSLEEP
+  buildspecs = NO_PLATFORM // Deliberate invalid value
+  default_buildspec = NO_PLATFORM // Deliberate invalid value
+  librarian_objects = @$(PRJ_ROOT_DIR)/filelist.txt
+  exe_buildtool = Linker
+  project_type_macro = RTP
+  platform_asflags = -mrtp -D_VX_CPU=_VX_$(CPU) -D_VX_TOOL_FAMILY=$(TOOL_FAMILY) -D_VX_TOOL=$(TOOL)
+  platform_cxxflags = -mrtp -D_VX_CPU=_VX_$(CPU) -D_VX_TOOL_FAMILY=$(TOOL_FAMILY) -D_VX_TOOL=$(TOOL)
+  platform_ccflags = -mrtp -D_VX_CPU=_VX_$(CPU) -D_VX_TOOL_FAMILY=$(TOOL_FAMILY) -D_VX_TOOL=$(TOOL)
+  link_groups = 1
+}
+
+// Build specs
+
+MIPSI32R2sfgnu_RTP {
+  cc_arch_spec = -G 0 -mno-branch-likely -mips32r2 -mgp32 -mfp32 -EB -fno-strict-aliasing -msoft-float -DMIPSEB -DSOFT_FLOAT
+  cpu = MIPSI32R2
+  tool_family = gnu
+  tool = sfgnu
+  vx_cpu_family = mips
+  cc = ccmips
+  cxx = c++mips
+  ar = armips
+  nm = nmmips
+  munchflag = mips
+  cxx_flags = -ansi -Wall -MD -MP -fexceptions -frtti -fweak -Wunused -P
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ass_flags = -ansi -xassembler-with-cpp -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  c_flags = -ansi -Wall -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
+  // Default to < 6.8 link location. See splice_targets.mpb for 'later versions' override
+  linker_flags = $(CC_ARCH_SPEC) -mrtp -L '$(WIND_BASE)/target/usr/lib/mips/MIPSI32R2/sfcommon'
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+}
+
+PENTIUMgnu_RTP {
+  cc_arch_spec =
+  cpu = PENTIUM
+  tool_family = gnu
+  tool = gnu
+  vx_cpu_family = pentium
+  cc = ccpentium
+  cxx = c++pentium
+  ar = arpentium
+  nm = nmpentium
+  munchflag = pentium
+  cxx_flags = -ansi -Wall -MD -MP -fexceptions -frtti -fweak -Wunused -P
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ass_flags = -ansi -xassembler-with-cpp -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  c_flags = -ansi -Wall -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
+  // Default to < 6.8 link location. See splice_targets.mpb for 'later versions' override
+  linker_flags = $(CC_ARCH_SPEC) -mrtp -L '$(WIND_BASE)/target/usr/lib/pentium/PENTIUM4/common'
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+}
+
+PENTIUMgnu {
+  cc_arch_spec = -mtune=pentium -march=pentium -nostdlib -fno-builtin -fno-defer-pop -fno-implicit-fp
+  cpu = PENTIUM
+  tool_family = gnu
+  tool = gnu
+  vx_cpu_family = pentium
+  cc = ccpentium
+  cxx = c++pentium
+  ar = arpentium
+  nm = nmpentium
+  munchflag = pentium
+  cxx_flags = -ansi -fno-zero-initialized-in-bss  -Wall    -MD -MP
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2
+  ass_flags = -ansi -fno-zero-initialized-in-bss   -xassembler-with-cpp  -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2
+  c_flags = -ansi -fno-zero-initialized-in-bss  -Wall    -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
+  // Default to < 6.8 link location. See splice_targets.mpb for 'later versions' override
+  linker_flags = -T $(WIND_BASE)/target/h/tool/gnu/ldscripts/link.OUT
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2
+}
+
+SIMPENTIUMgnu_RTP {
+  cc_arch_spec = -mtune=i486 -march=i486
+  cpu = SIMPENTIUM
+  tool_family = gnu
+  tool = gnu
+  vx_cpu_family = pentium
+  cc = ccpentium
+  cxx = c++pentium
+  ar = arpentium
+  nm = nmpentium
+  munchflag = pentium
+  cxx_flags = -ansi -Wall -MD -MP -fexceptions -frtti -fweak -Wunused -P
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ass_flags = -ansi -xassembler-with-cpp -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  c_flags = -ansi -Wall -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
+  // Default to < 6.8 link location. See splice_targets.mpb for 'later versions' override
+  linker_flags = $(CC_ARCH_SPEC) -mrtp -L '$(WIND_BASE)/target/usr/lib/simpentium/SIMPENTIUM/common'
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+}
+
+
+PENTIUM3gnu_RTP {
+  cc_arch_spec = -mtune=pentium3 -march=pentium3
+  cpu = PENTIUM3
+  tool_family = gnu
+  tool = gnu
+  vx_cpu_family = pentium
+  cc = ccpentium
+  cxx = c++pentium
+  ar = arpentium
+  nm = nmpentium
+  munchflag = pentium
+  cxx_flags = -ansi -Wall -MD -MP -fexceptions -frtti -fweak -Wunused -P
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ass_flags = -ansi -xassembler-with-cpp -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  c_flags = -ansi -Wall -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
+  // Default to < 6.8 link location. See splice_targets.mpb for 'later versions' override
+  linker_flags = $(CC_ARCH_SPEC) -mrtp -L '$(WIND_BASE)/target/usr/lib/pentium/PENTIUM3/common'
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+}
+
+PENTIUM4gnu_RTP {
+  cc_arch_spec = -mtune=pentium4 -march=pentium4
+  cpu = PENTIUM4
+  tool_family = gnu
+  tool = gnu
+  vx_cpu_family = pentium
+  cc = ccpentium
+  cxx = c++pentium
+  ar = arpentium
+  nm = nmpentium
+  munchflag = pentium
+  cxx_flags = -ansi -Wall -MD -MP -fexceptions -frtti -fweak -Wunused -P
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ass_flags = -ansi -xassembler-with-cpp -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  c_flags = -ansi -Wall -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
+  // Default to < 6.8 link location. See splice_targets.mpb for 'later versions' override
+  linker_flags = $(CC_ARCH_SPEC) -mrtp -L '$(WIND_BASE)/target/usr/lib/pentium/PENTIUM4/common'
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+}
+
+PPC32gnu_RTP {
+  cc_arch_spec = -mhard-float -mstrict-align -mregnames
+  cpu = PPC32
+  tool_family = gnu
+  tool = gnu
+  vx_cpu_family = ppc
+  cc = ccppc
+  cxx = c++ppc
+  ar = arppc
+  nm = nmppc
+  munchflag = ppc
+  cxx_flags = -ansi -Wall -MD -MP -fexceptions -frtti -fweak -Wunused -P
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ass_flags = -ansi -xassembler-with-cpp -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  c_flags = -ansi -Wall -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
+  // Default to < 6.8 link location. See splice_targets.mpb for 'later versions' override
+  linker_flags = $(CC_ARCH_SPEC) -mrtp -L '$(WIND_BASE)/target/usr/lib/ppc/PPC32/common'
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+}
+
+PPC32e500v2gnu_RTP {
+  cc_arch_spec = -te500v2 -mcpu=8548 -mfloat-gprs=double -mspe=yes -mabi=spe -mstrict-align -mregnames -mhard-float
+  cpu = PPC32
+  tool_family = gnu
+  tool = e500v2
+  vx_cpu_family = ppc
+  cc = ccppc
+  cxx = c++ppc
+  ar = arppc
+  nm = nmppc
+  munchflag = ppc
+  cxx_flags = -ansi -Wall -MD -MP -fexceptions -frtti -fweak -Wunused -P
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ass_flags = -ansi -xassembler-with-cpp -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  c_flags = -ansi -Wall -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
+  // Default to < 6.8 link location. See splice_targets.mpb for 'later versions' override
+  linker_flags = $(CC_ARCH_SPEC) -mrtp -L '$(WIND_BASE)/target/usr/lib/ppc/PPC32/e500v2common'
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+}
+
+
+PENTIUM4gnu {
+  cc_arch_spec = -mtune=pentium4 -march=pentium4
+  cpu = PENTIUM4
+  tool_family = gnu
+  tool = gnu
+  vx_cpu_family = pentium
+  cxx = ccpentium
+  cc = ccpentium
+  ar = arpentium
+  nm = nmpentium
+  munchflag = pentium
+  cxx_flags = -ansi -Wall -MD -MP -fexceptions -frtti -fweak -Wunused
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2 -nostdlib -fno-builtin -fno-defer-pop -mno-sse -mno-sse2
+  ass_flags = -ansi -xassembler-with-cpp -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2 -nostdlib -fno-builtin -fno-defer-pop -mno-sse -mno-sse2
+  c_flags = -Wall -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2 -nostdlib -fno-builtin -fno-defer-pop -mno-sse -mno-sse2
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
+  linker_flags = -T $(WIND_BASE)/target/h/tool/gnu/ldscripts/link.OUT
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2 -nostdlib -fno-builtin -fno-defer-pop -mno-sse -mno-sse2
+}
+
+PENTIUM4gnu_SMP {
+  cc_arch_spec = -mtune=pentium4 -march=pentium4
+  cpu = PENTIUM4
+  tool_family = gnu
+  tool = gnu
+  vx_cpu_family = pentium
+  cxx = ccpentium
+  cc = ccpentium
+  ar = arpentium
+  nm = nmpentium
+  munchflag = pentium
+  cxx_flags = -ansi -Wall -MD -MP -fexceptions -frtti -fweak -Wunused
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2 -nostdlib -fno-builtin -fno-defer-pop -mno-sse -mno-sse2
+  ass_flags = -ansi -xassembler-with-cpp -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2 -nostdlib -fno-builtin -fno-defer-pop -mno-sse -mno-sse2
+  c_flags = -Wall -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2 -nostdlib -fno-builtin -fno-defer-pop -mno-sse -mno-sse2
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
+  linker_flags = -T $(WIND_BASE)/target/h/tool/gnu/ldscripts/link.OUT
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2 -nostdlib -fno-builtin -fno-defer-pop -mno-sse -mno-sse2
+}
+
+
+PPC85XXe500v2gnu {
+  cc_arch_spec = -te500v2 -mhard-float -fno-implicit-fp -mstrict-align -fno-zero-initialized-in-bss
+  cpu = PPC85XX
+  tool_family = gnu
+  tool = e500v2gnu
+  vx_cpu_family = ppc
+  cc  = ccppc
+  cxx = c++ppc
+  ar = arppc
+  nm = nmppc
+  munchflag = ppc
+  cxx_flags = $(CC_ARCH_SPEC) -ansi -Wall -MD -MP
+  cxx_dbgflags = -g
+  cxx_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ass_flags = -ansi -fno-zero-initialized-in-bss   -xassembler-with-cpp  -MD -MP
+  ass_dbgflags = -g
+  ass_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  c_flags = -ansi -fno-zero-initialized-in-bss  -Wall    -MD -MP
+  c_dbgflags = -g
+  c_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+  ar_flags = crus
+  ar_dbgflags =
+  ar_nondbgflags =
+  part_flags =
+  part_dbgflags =
+  part_nondbgflags =
+  linker_flags = -T $(WIND_BASE)/target/h/tool/gnu/ldscripts/link.OUT
+  linker_dbgflags = -g
+  linker_nondbgflags = -O2 -fstrength-reduce -fno-builtin
+}

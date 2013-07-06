@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -28,6 +28,7 @@ d_nameSpace         d_nameSpaceNew_w_policy             (d_configuration config,
                                                          const char * name,
                                                          c_bool aligner,
                                                          d_alignmentKind alignmentKind,
+                                                         c_bool delayedAlignment,
                                                          d_durabilityKind durabilityKind);
 
 d_nameSpace         d_nameSpaceCopy                     (d_nameSpace nameSpace);
@@ -37,6 +38,9 @@ int                 d_nameSpaceCompare                  (d_nameSpace ns1,
 
 int                 d_nameSpaceCompatibilityCompare     (d_nameSpace ns1,
                                                          d_nameSpace ns2);
+
+int					d_nameSpaceNameCompare				(d_nameSpace ns1,
+														 d_nameSpace ns2);
 
 void                d_nameSpaceFree                     (d_nameSpace nameSpace);
 
@@ -62,9 +66,13 @@ void                d_nameSpaceElementWalk              (d_nameSpace nameSpace,
                                                             c_voidp userData),
                                                          c_voidp args);
 
+d_name              d_elementGetExpression              (d_element element);
+
 c_bool              d_nameSpaceIsAligner                (d_nameSpace nameSpace) ;
 
 c_char*             d_nameSpaceGetPartitions            (d_nameSpace nameSpace);
+
+c_char*             d_nameSpaceGetPartitionTopics       (d_nameSpace nameSpace);
 
 void                d_nameSpaceCopyPartitions           (d_nameSpace to,
                                                          d_nameSpace from);
@@ -74,8 +82,7 @@ void                d_nameSpaceSetInitialQuality        (d_nameSpace nameSpace,
 
 d_quality           d_nameSpaceGetInitialQuality        (d_nameSpace nameSpace);
 
-d_nameSpace         d_nameSpaceFromNameSpaces           (d_configuration config,
-                                                         d_nameSpaces ns);
+d_nameSpace         d_nameSpaceFromNameSpaces           (d_nameSpaces ns);
 
 d_alignmentKind     d_nameSpaceGetAlignmentKind         (d_nameSpace nameSpace);
 
@@ -102,6 +109,8 @@ c_bool              d_nameSpaceMasterIsMe               (d_nameSpace nameSpace,
                                                          d_admin admin);
 
 c_bool              d_nameSpaceIsAlignmentNotInitial    (d_nameSpace nameSpace);
+
+c_bool              d_nameSpaceGetDelayedAlignment      (d_nameSpace nameSpace);
 
 c_bool
 d_nameSpaceStringMatches(

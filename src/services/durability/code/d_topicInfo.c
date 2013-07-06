@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -21,6 +21,7 @@
 #include "os_report.h"
 #include "os_stdlib.h"
 #include "os_abstract.h"
+#include "c_clone.h"
 
 
 #define USERDATA_FIELD_NAME "userData"
@@ -138,7 +139,6 @@ createMessageKeyList(
     c_array *keyListRef)
 {
     c_array keyList;
-    c_type fieldType;
     c_field field;
     c_iter splitNames, newNames;
     c_char *name, *newName;
@@ -171,9 +171,7 @@ createMessageKeyList(
         return TRUE;
     }
 
-    fieldType = c_field_t(c_getBase(messageType));
-    keyList = c_arrayNew(fieldType,length);
-    c_free(fieldType);
+    keyList = c_arrayNew(c_field_t(c_getBase(messageType)),length);
     i=0;
     while ((name = c_iterTakeFirst(newNames)) != NULL) {
         field = c_fieldNew(messageType,name);
@@ -396,7 +394,7 @@ cloneType(
     }
     return result;
 }
-#else
+#elif 0
 static c_type
 cloneType(
     c_base src,
@@ -434,6 +432,24 @@ cloneType(
         sd_serializerFree(deserializer);
     }
     return result;
+}
+#else
+static c_type
+cloneType(
+    c_base src,
+    c_base dst,
+    c_type object)
+{
+    c_clone c;
+    c_type type;
+
+    c = c_cloneNew(dst);
+
+    type = c_cloneCloneObject(c, object);
+
+    c_cloneFree(c);
+
+    return type;
 }
 #endif
 

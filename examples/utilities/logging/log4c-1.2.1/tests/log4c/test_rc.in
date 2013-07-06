@@ -1,0 +1,11 @@
+<log4c prefix="@prefix@">
+	<category name="root"	 priority="error" 	appender="stderr"/>
+	<category name="a"	 priority="info"	appender=""/>
+	<category name="a.b"	 priority="debug"	appender="afile" additivity="false"/>
+	<category name="a.b.c"	 priority="warning"	additivity="true"/>
+	<category name="a.b.c.d" priority="trace"	additivity="foo"/>
+	<category name=""	 priority="toto" 	/>
+
+	<appender name="afile"	 layout="toto"/>
+	<appender name="stderr"	 layout="dated"/>
+</log4c>

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -24,8 +24,7 @@
 #include <sys/timeb.h>
 #include <time.h>
 
-#include "code/os__debug.h"
-#include "os__time.h"
+#include "os__debug.h"
 #include "os__service.h"
 #include "os_thread.h"
 #include "os_report.h"
@@ -102,8 +101,8 @@ os_timeModuleReinit(
     if(!_ospl_time_synched)
     {
         pipename = os_constructPipeName(domainName);
-
         if(pipename){
+
             request.kind = OS_SRVMSG_GET_TIME;
             reply.result = os_resultFail;
             reply.kind = OS_SRVMSG_UNDEFINED;
@@ -136,14 +135,14 @@ os_timeModuleReinit(
                     _ospl_time_offset = reply._u.time.time_offset;
                     _ospl_time_synched = 1;
 
-                    OS_REPORT_4(OS_INFO, "os_timeModuleReinit", 0,
+                    OS_REPORT_4(OS_DEBUG, "os_timeModuleReinit", 0,
                             "Synched time with domain '%s'. time=%d,%d, offset=%lld",
                             domainName, _ospl_time.tv_sec, _ospl_time.tv_nsec,
                             _ospl_time_offset);
                 }
             } else {
                 OS_REPORT_2(OS_ERROR, "os_timeModuleReinit", 0,
-                        "Time synchronisation with domain '%s' failed (reason: %s)",
+                        "Time synchronisation with domain '%s' failed (reason: %d)",
                         domainName, lastError);
             }
             os_free(pipename);
@@ -209,7 +208,7 @@ os_nanoSleep (
     assert (delay.tv_nsec < 1000000000);
 
     if (delay.tv_sec >= 0 ) {
-        dt = delay.tv_sec * 1000 + delay.tv_nsec / 1000000;
+        dt = (DWORD)delay.tv_sec * 1000 + delay.tv_nsec / 1000000;
         Sleep(dt);
     } else {
         /* Negative time-interval should return illegal param error */

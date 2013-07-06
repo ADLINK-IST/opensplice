@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -72,7 +72,7 @@ v_networkReaderEntryCalculateHashValue(
     const char *partitionName;
     const char *topicName;
     const char *currentPtr;
-    
+
     partitionName = v_partitionName(v_groupPartition(entry->group));
     topicName = v_topicName(v_groupTopic(entry->group));
     currentPtr = partitionName;
@@ -97,7 +97,7 @@ v_networkReaderEntryCalculateHashValue(
 
         currentPtr = &(currentPtr[1]);
     }
-    
+
     currentPtr = topicName;
     while (*currentPtr != '\0') {
         result.h1 = NW_ROT_CHAR(result.h1, 4);
@@ -116,7 +116,7 @@ v_networkReaderEntryCalculateHashValue(
     }
     return result;
 }
- 
+
 
 static void
 v_networkReaderEntryInit(
@@ -125,18 +125,20 @@ v_networkReaderEntryInit(
     v_group group,
     v_networkId networkId,
     c_ulong channelsToConnect,
-    v_networkPartitionId networkPartitionId)
+    v_networkPartitionId networkPartitionId,
+    c_bool isRouting)
 {
     v_networkReaderEntry found;
-    
+
     v_entryInit(v_entry(entry),v_reader(reader));
-    
+
     entry->group = c_keep(group);
     entry->networkId = networkId;
     entry->channelCountdown = channelsToConnect;
     c_mutexInit(&entry->channelCountdownMutex, SHARED_MUTEX);
     entry->networkPartitionId = networkPartitionId;
     entry->hashValue = v_networkReaderEntryCalculateHashValue(entry);
+    entry->isRouting = isRouting;
 
     found = v_networkReaderEntry(v_readerAddEntry(v_reader(reader), v_entry(entry)));
     assert(found == entry);
@@ -151,18 +153,19 @@ v_networkReaderEntryNew(
     v_group group,
     v_networkId networkId,
     c_ulong channelsToConnect,
-    v_networkPartitionId networkPartitionId)
+    v_networkPartitionId networkPartitionId,
+    c_bool isRouting)
 {
     v_kernel kernel;
     v_networkReaderEntry result;
-    
+
     assert(C_TYPECHECK(reader, v_networkReader));
     assert(C_TYPECHECK(group, v_group));
 
     kernel = v_objectKernel(reader);
     result = v_networkReaderEntry(v_objectNew(kernel,K_NETWORKREADERENTRY));
     v_networkReaderEntryInit(result, reader, group, networkId,
-        channelsToConnect, networkPartitionId);
+        channelsToConnect, networkPartitionId, isRouting);
 
     return result;
 }
@@ -170,10 +173,10 @@ v_networkReaderEntryNew(
 void
 v_networkReaderEntryNotifyConnected(
     v_networkReaderEntry entry,
-    const c_char* serviceName) 
+    const c_char* serviceName)
 {
     c_bool allChannelsConnected = FALSE;
-    
+
     c_mutexLock(&entry->channelCountdownMutex);
 
     assert (entry->channelCountdown > 0);
@@ -183,14 +186,23 @@ v_networkReaderEntryNotifyConnected(
     }
 
     c_mutexUnlock(&entry->channelCountdownMutex);
-    
+
     if (allChannelsConnected) {
         v_groupAddEntry(v_group(entry->group), v_entry(entry));
         v_groupNotifyAwareness(v_group(entry->group),serviceName,TRUE);
         v_groupGetHistoricalData(v_group(entry->group), v_entry(entry));
     }
-}    
+}
 
+
+c_bool
+v_networkReaderEntryIsRouting(
+    v_networkReaderEntry entry)
+{
+    assert(C_TYPECHECK(entry, v_networkReaderEntry));
+
+    return entry->isRouting;
+}
 
 void
 v_networkReaderEntryFree(
@@ -209,18 +221,21 @@ v_networkReaderEntryWrite(
     v_writeResult result = V_WRITE_SUCCESS;
     c_bool writeSucceeded;
     static v_gid zeroAddressee = {0,0,0};
-    
+
     assert(C_TYPECHECK(entry, v_networkReaderEntry));
     assert(message != NULL);
 
     /* First check if there is any remote interest at all */
-    
+
     if (v_networkReader(v_entry(entry)->reader)->remoteActivity) {
         /* Only forward messages that come from this kernel */
-        if (writingNetworkId == V_NETWORKID_LOCAL) {
-            /* OK, message is from this kernel. Now attach the 
-             * correct fields if needed 
-             */
+        if (writingNetworkId == V_NETWORKID_LOCAL || entry->isRouting) {
+            /* OK, message is from this kernel or this is a routing entry. Now
+             * attach the correct fields if needed */
+
+            /* TODO: For networking services that support routing perhaps
+             * messages shouldn't be forwarded to 'self' (e.g., echo cancellation
+             * may be needed). For R&R this modus is fine. */
             writeSucceeded = v_networkReaderWrite(
                                   v_networkReader(v_entry(entry)->reader),
                                   message, entry, 0, message->writerGID,
@@ -232,7 +247,7 @@ v_networkReaderEntryWrite(
             }
         }
     }
-    
+
     return result;
 }
 
@@ -247,9 +262,17 @@ v_networkReaderEntryReceive(
 {
     /* Prepared for p2p sending but not yet implemented */
     /* Ignore result */
+
+    v_resendScope resendScope = V_RESEND_NONE; /* resendScope not yet used here beyond this function */
+
+    OS_UNUSED_ARG(sequenceNumber);
+    OS_UNUSED_ARG(sender);
+    OS_UNUSED_ARG(sendTo);
+    OS_UNUSED_ARG(receiver);
+
     return v_groupWrite(entry->group, message,
-        NULL /* no instance pointer */, entry->networkId);
-}                       
+        NULL /* no instance pointer */, entry->networkId, &resendScope);
+}
 
 
 

@@ -1439,6 +1439,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         private static readonly int offset_autopurge_nowriter_samples_delay = (int)Marshal.OffsetOf(type, "autopurge_nowriter_samples_delay");
         private static readonly int offset_autopurge_disposed_samples_delay = (int)Marshal.OffsetOf(type, "autopurge_disposed_samples_delay");
         private static readonly int offset_enable_invalid_samples = (int)Marshal.OffsetOf(type, "enable_invalid_samples");
+        private static readonly int offset_invalid_sample_visibility = (int)Marshal.OffsetOf(type, "invalid_sample_visibility");
 
         public ReaderDataLifecycleQosPolicyMarshaler() :
                 base(Gapi.GenericAllocRelease.Alloc(Size))
@@ -1466,6 +1467,7 @@ namespace DDS.OpenSplice.CustomMarshalers
                 BaseMarshaler.Write(to, offset + offset_autopurge_nowriter_samples_delay, from.AutopurgeNowriterSamplesDelay);
                 BaseMarshaler.Write(to, offset + offset_autopurge_disposed_samples_delay, from.AutopurgeDisposedSamplesDelay);
                 BaseMarshaler.Write(to, offset + offset_enable_invalid_samples, from.EnableInvalidSamples);
+                BaseMarshaler.Write(to, offset + offset_invalid_sample_visibility, (int)from.InvalidSampleVisibility.Kind);
             } else {
                 result = DDS.ReturnCode.BadParameter;
                 DDS.OpenSplice.OS.Report(
@@ -1493,6 +1495,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             to.AutopurgeNowriterSamplesDelay = BaseMarshaler.ReadDuration(from, offset + offset_autopurge_nowriter_samples_delay);
             to.AutopurgeDisposedSamplesDelay = BaseMarshaler.ReadDuration(from, offset + offset_autopurge_disposed_samples_delay);
             to.EnableInvalidSamples = BaseMarshaler.ReadBoolean(from, offset + offset_enable_invalid_samples);
+            to.InvalidSampleVisibility.Kind = (InvalidSampleVisibilityQosPolicyKind)BaseMarshaler.ReadInt32(from, offset + offset_invalid_sample_visibility);
         }
     }
 
@@ -1755,6 +1758,66 @@ namespace DDS.OpenSplice.CustomMarshalers
         	if (to == null) to = new ReaderLifespanQosPolicy();
             to.UseLifespan = BaseMarshaler.ReadBoolean(from, offset + offset_use_lifespan);
             to.Duration = BaseMarshaler.ReadDuration(from, offset + offset_duration);
+        }
+    }
+
+    internal class InvalidSampleVisibilityQosPolicyMarshaler : GapiMarshaler
+    {
+        private static readonly Type type = typeof(OpenSplice.Gapi.gapi_invalidSampleVisibilityQosPolicy);
+        public static readonly int Size = Marshal.SizeOf(type);
+
+        private static readonly int offset_kind = (int)Marshal.OffsetOf(type, "kind");
+
+        public InvalidSampleVisibilityQosPolicyMarshaler() :
+                base(Gapi.GenericAllocRelease.Alloc(Size))
+        { }
+
+        public override void Dispose()
+        {
+            if (cleanupRequired)
+            {
+                CleanupIn(GapiPtr, 0);
+            }
+            OpenSplice.Gapi.GenericAllocRelease.Free(GapiPtr);
+        }
+
+        internal DDS.ReturnCode CopyIn(InvalidSampleVisibilityQosPolicy from)
+        {
+            cleanupRequired = true;
+            return CopyIn(from, GapiPtr, 0);
+        }
+
+        internal static DDS.ReturnCode CopyIn(InvalidSampleVisibilityQosPolicy from, IntPtr to, int offset)
+        {
+            DDS.ReturnCode result = DDS.ReturnCode.Ok;
+            if (from != null) {
+                BaseMarshaler.Write(to, offset + offset_kind, (int)from.Kind);
+            } else {
+                result = DDS.ReturnCode.BadParameter;
+                DDS.OpenSplice.OS.Report(
+                        DDS.OpenSplice.ReportType.OS_ERROR,
+                        "DDS.OpenSplice.CustomMarshalers.InvalidSampleVisibilityQosPolicyMarshaler.CopyIn",
+                        "DDS/OpenSplice/CustomMarshalers/QosContainedMarshalers.cs",
+                        DDS.ErrorCode.InvalidValue,
+                        "InvalidSampleVisibilityQosPolicy attribute may not be a null pointer.");
+            }
+            return result;
+        }
+
+        internal static void CleanupIn(IntPtr nativePtr, int offset)
+        {
+        }
+
+        internal void CopyOut(ref InvalidSampleVisibilityQosPolicy to)
+        {
+            CopyOut(GapiPtr, ref to, 0);
+        }
+
+        internal static void CopyOut(IntPtr from, ref InvalidSampleVisibilityQosPolicy to, int offset)
+        {
+            if (to == null) to = new InvalidSampleVisibilityQosPolicy();
+            to.Kind = (InvalidSampleVisibilityQosPolicyKind)
+                BaseMarshaler.ReadInt32(from, offset + offset_kind);
         }
     }
 }

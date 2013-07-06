@@ -9,9 +9,10 @@ compiler.
 
 #include "dds_dcps_builtintopics.idl"
 
-#define DOMAINID_TYPE_NATIVE            string
+#define DOMAINID_TYPE_NATIVE            long
 #define HANDLE_TYPE_NATIVE              long long
 #define HANDLE_NIL_NATIVE               0
+
 
 #define TheParticipantFactory
 #define PARTICIPANT_QOS_DEFAULT
@@ -45,6 +46,7 @@ module DDS {
     const unsigned long DURATION_ZERO_NSEC      = 0;
     const long TIMESTAMP_INVALID_SEC            = -1;
     const unsigned long TIMESTAMP_INVALID_NSEC      = 0xffffffff;
+    const DomainId_t DOMAIN_ID_DEFAULT            =  0x7fffffff;
 
     // ----------------------------------------------------------------------
     // Return codes
@@ -110,7 +112,7 @@ module DDS {
     const StatusKind PUBLICATION_MATCHED_STATUS     = 0x0001 << 13;
     const StatusKind SUBSCRIPTION_MATCHED_STATUS    = 0x0001 << 14;
 
-    // Opensplice Extensions 
+    // Opensplice Extensions
     const StatusKind ALL_DATA_DISPOSED_TOPIC_STATUS = 0x0001 << 31;
 
     struct InconsistentTopicStatus {
@@ -702,7 +704,7 @@ module DDS {
     local interface DomainParticipantFactoryInterface {
         DomainParticipant
         create_participant(
-            in DomainId_t domainId,
+            in DomainId_t domain_id,
             in DomainParticipantQos qos,
             in DomainParticipantListener a_listener,
             in StatusMask mask);
@@ -730,7 +732,7 @@ module DDS {
 
         // @discrepancy Start discrepancy - this method existed in C++ mapping IDL not ./etc/idlpp/dds_dcps.idl
         Domain lookup_domain(
-            in DomainId_t domain_id);
+            in DomainId_t domainId);
 
         ReturnCode_t delete_domain(
             in Domain a_domain);
@@ -768,7 +770,7 @@ module DDS {
 
     // ----------------------------------------------------------------------
     // @discrepancy This class now inherits Entity in C++ mapping IDL
-    local interface TopicDescription : Entity {
+    local interface TopicDescription {
         string
         get_type_name();
 
@@ -780,7 +782,7 @@ module DDS {
         };
 
     // @discrepancy This class now inherits Entity from TopicDescription not directly in C++ mapping IDL
-    local interface Topic : TopicDescription {
+    local interface Topic : Entity, TopicDescription {
         // Access the status
         ReturnCode_t
         get_inconsistent_topic_status(inout InconsistentTopicStatus a_status);
@@ -1073,7 +1075,24 @@ module DDS {
             in TopicQos a_topic_qos);
     };
 
-    local interface DataReader : Entity {
+    // Specifies an interface for setting and retrieving custom properties
+    // by means of name-value pairs.
+    struct Property {
+        string name;
+        string value;
+    };
+
+    local interface PropertyInterface {
+        ReturnCode_t
+        set_property(
+            in Property a_property);
+
+        ReturnCode_t
+        get_property(
+            inout Property a_property);
+    };
+
+    local interface DataReader : Entity, PropertyInterface {
         //  ReturnCode_t
         //  read(
         //      inout DataSeq data_values,
@@ -1300,6 +1319,7 @@ module DDS {
         long sample_rank;
         long generation_rank;
         long absolute_generation_rank;
+        Time_t reception_timestamp;
     };
 
     typedef sequence<SampleInfo> SampleInfoSeq;
@@ -1450,5 +1470,6 @@ module DDS {
 
         DataReader get_datareader();
     };
+
 };
 #endif

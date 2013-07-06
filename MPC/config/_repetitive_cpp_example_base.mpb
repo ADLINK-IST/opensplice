@@ -1,0 +1,14 @@
+// -*- MPC -*-
+// $Id:$
+
+project  : c_or_cplusplus_example {
+    includes += .
+    Source_Files {
+        ../src/CheckStatus.cpp
+        ../src/DDSEntityManager.cpp
+    }
+
+    Documentation_Files {
+        ../../.
+    }
+}

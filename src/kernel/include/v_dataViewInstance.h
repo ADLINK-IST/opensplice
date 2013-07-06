@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -20,6 +20,8 @@
 #include "v_kernel.h"
 #include "v_dataViewSample.h"
 #include "os_if.h"
+#include "v_query.h"
+#include "v_dataReaderInstance.h"
 
 #ifdef OSPL_BUILD_KERNEL
 #define OS_API OS_API_EXPORT
@@ -45,6 +47,11 @@
 
 #define v_dataViewInstanceSampleCount(_this) \
         (v_dataViewInstance(_this)->sampleCount)
+
+#define v_dataViewInstanceState(_this) \
+        (v_dataViewInstance(_this)->instanceState)
+
+
 
 typedef c_bool 
 (*v_dataViewInstanceAction)(
@@ -117,7 +124,16 @@ v_dataViewInstancePurge(
 OS_API c_bool
 v_dataViewInstanceTest(
      v_dataViewInstance _this,
-     c_query query);
+     c_query query,
+     v_queryAction action,
+     c_voidp args);
+
+OS_API v_actionResult
+v_dataViewSampleReadTake(
+    v_dataViewSample sample,
+    v_readerSampleAction action,
+    c_voidp arg,
+    c_bool consume);
 
 #undef OS_API              
 

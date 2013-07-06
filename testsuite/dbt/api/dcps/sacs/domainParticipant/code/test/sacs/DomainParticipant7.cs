@@ -107,7 +107,7 @@ namespace test.sacs
                 result.Result = "Expected RETCODE_BAD_PARAMETER but received " + returnCode + " after deleting a non exisiting topic (9).";
                 return result;
             }
-            participant2 = factory.CreateParticipant(string.Empty, qos);//, null, 0);
+            participant2 = factory.CreateParticipant(DDS.DomainId.Default, qos);//, null, 0);
             if (participant2 == null)
             {
                 result.Result = "Create Participant failed (10).";

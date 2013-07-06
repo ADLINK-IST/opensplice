@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,12 +17,15 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.EventObject;
 import java.util.StringTokenizer;
 
 import javax.swing.AbstractCellEditor;
 import javax.swing.JComboBox;
+import javax.swing.JFrame;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.table.TableCellEditor;
 
 import org.opensplice.cm.meta.MetaCollection;
@@ -45,6 +48,8 @@ import org.opensplice.common.view.table.UserDataEditTable;
  * @date Nov 9, 2004 
  */
 public class UserDataEditTableEditor extends AbstractCellEditor implements TableCellEditor, ActionListener, KeyListener {
+
+    private static final long      serialVersionUID = 8681953476555069267L;
     private Object curValue = null;
     private MetaUnion curUnion = null;
     private MetaType type = null;
@@ -53,8 +58,8 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
     private int editRow, editColumn;
     private StatusPanel status = null;
     private Component curEditor = null;
-    private Color editColor = Config.getInputColor();
-    private Color errorColor = Config.getIncorrectColor();
+    private final Color editColor = Config.getInputColor();
+    private final Color errorColor = Config.getIncorrectColor();
     
     /**
      * Constructs a new editor for that is able to edit UserData of the supplied
@@ -70,7 +75,14 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         view = _view;
         model = (UserDataEditTableModel)view.getModel();
     }
-    
+
+    @Override
+    public boolean isCellEditable(EventObject e) {
+        JFrame frame = (JFrame) SwingUtilities.getRoot(status);
+        frame.firePropertyChange("enableSaveButton", 0, 1);
+        return true;
+    }
+
     /**
      * Constructs and returns the editor component for the supplied cell in the
      * table. The editor type depends on the type of the data in the cell:
@@ -86,6 +98,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
      * 
      * @return The editor for the supplied cell.
      */
+    @Override
     public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
         MetaField potential;
         editRow = row;
@@ -93,40 +106,37 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
         Component result = null;
         curValue = value;
         curUnion = null;
-        
-        String name = (String)(model.getValueAt(row, column-1));
-        int index = name.indexOf("[");
-        
-        if(index != -1){
-            name = name.substring(0, index);
-        }
-        MetaField editField = type.getField(name);
-        
-        if(editField instanceof MetaEnum){
-            if(name.endsWith(".switch")){
-                potential = type.getField(name.substring(0, name.length()-7));
-                
-                if(potential instanceof MetaUnion){
-                    curUnion = (MetaUnion)potential;
+        String name = (String) (model.getValueAt(row, column - 1));
+
+        if (result == null) {
+            MetaField editField = type.getField(name);
+            
+            if(editField instanceof MetaEnum){
+                if(name.endsWith(".switch")){
+                    potential = type.getField(name.substring(0, name.length()-7));
+                    
+                    if(potential instanceof MetaUnion){
+                        curUnion = (MetaUnion)potential;
+                    }
                 }
-            }
-            result = this.getEnumEditor(row, column, value, (MetaEnum)editField);
-        }
-        else if(editField instanceof MetaPrimitive){
-            if(name.endsWith(".switch")){
-                potential = type.getField(name.substring(0, name.length()-7));
-                
-                if(potential instanceof MetaUnion){
-                    curUnion = (MetaUnion)potential;
+                result = this.getEnumEditor(row, column, value, (MetaEnum)editField);
+            } else if (editField instanceof MetaPrimitive) {
+                if(name.endsWith(".switch")){
+                    potential = type.getField(name.substring(0, name.length()-7));
+                    
+                    if(potential instanceof MetaUnion){
+                        curUnion = (MetaUnion)potential;
+                    }
                 }
+                result = this.getPrimitiveEditor(row, column, value);
+            } else if (editField instanceof MetaStruct) {
+                result = this.getPrimitiveEditor(row, column, value);
+            } else if (editField == null) {
+                result = this.getPrimitiveEditor(row, column, value);
+            } else if (editField instanceof MetaCollection) {
+                result = this.getCollectionEditor(row, column, value, (MetaCollection)editField, name);
+            } else {
             }
-            result = this.getPrimitiveEditor(row, column, value);
-        }
-        else{
-            name = (String)(model.getValueAt(row, column-1));
-            index = name.indexOf(']');
-            name = name.substring(index+2);
-            result = this.getCollectionEditor(row, column, value, (MetaCollection)editField, name);
         }
         curEditor = result;
         curEditor.addKeyListener(this);
@@ -138,6 +148,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
      * 
      * @return The current value of the field that is being edited.
      */
+    @Override
     public Object getCellEditorValue() {
         return curValue;
     }
@@ -285,6 +296,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
      * 
      * @param e The event that occurred.
      */
+    @Override
     public void actionPerformed(ActionEvent e){
         if(e.getSource().equals(curEditor)){
            this.assign();
@@ -295,6 +307,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
     /**
      * Called when editing has been cancelled.
      */
+    @Override
     public void cancelCellEditing(){
         super.cancelCellEditing();
         
@@ -306,6 +319,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
     /**
      * Called when editing has been stopped.
      */
+    @Override
     public boolean stopCellEditing(){
         boolean result = true;
         
@@ -321,6 +335,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
     private AssignmentResult assign(){
         AssignmentResult test = this.testAssignment(true);
         
+
         if(test.isValid()){
             if(curEditor instanceof JComboBox){
                 JComboBox source = (JComboBox)curEditor;
@@ -357,6 +372,17 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                 JTextField source = (JTextField)curEditor;
                 
                 String typeName = (String)(model.getValueAt(editRow, editColumn-2));
+                String typeNameTmp = typeName;
+
+                if (typeName.startsWith("C_SEQUENCE<")) {
+                    int ending = typeName.indexOf(">");
+                    typeNameTmp = typeName.substring(11, ending);
+                } else if (typeName.startsWith("C_ARRAY<")) {
+                    int ending = typeName.indexOf(">");
+                    typeNameTmp = typeName.substring(8, ending);
+                }
+                typeName = "INVALID";
+
                 String text = source.getText();
                 
                 try{
@@ -390,7 +416,6 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                                             (subTypeName.startsWith("C_STRING<")) ||
                                             (subTypeName.startsWith("C_WSTRING<")))))
                                 {
-                                    String val;
                                     
                                     if(text.equals("[]")){
                                         /* Ok, do nothing*/
@@ -401,13 +426,10 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                                     } else if(text.startsWith("[") && text.endsWith("]")){
                                         String token;
                                         StringTokenizer strTok = new StringTokenizer(text.substring(1, text.length()-1), ",");
-                                        val = "[";
-                                        
                                         while(strTok.hasMoreTokens()){
                                             token = strTok.nextToken();
-                                            val += this.handlePrimitive(token, subTypeName);
+                                            this.handlePrimitive(token, subTypeName);
                                         }
-                                        val += "]";
                                     } else {
                                         throw new NumberFormatException("Invalid value");
                                     }
@@ -471,6 +493,11 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
                                                  false, false);
                             }
                             source.setText((String)curValue);
+                        }
+                    } else if (typeName.equals("INVALID")) {
+                        String value = this.handlePrimitive(text, typeNameTmp);
+                        if(updateSource){
+                            source.setText(value);
                         }
                     } else {
                         String value = this.handlePrimitive(text, typeName);
@@ -632,6 +659,7 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
      * editing a field, the input is validated. When a status listener is
      * attached status information is provided to that listener.
      */
+    @Override
     public void keyReleased(KeyEvent e) {
         if(curEditor != null){
             if(e.getSource() instanceof JTextField){
@@ -667,10 +695,12 @@ public class UserDataEditTableEditor extends AbstractCellEditor implements Table
     /**
      * Does nothing.
      */
+    @Override
     public void keyTyped(KeyEvent e) {}
     
     /**
      * Does nothing.
      */
+    @Override
     public void keyPressed(KeyEvent e) {}
 }

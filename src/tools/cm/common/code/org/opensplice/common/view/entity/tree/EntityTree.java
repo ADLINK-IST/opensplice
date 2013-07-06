@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -20,7 +20,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
-import javax.swing.tree.*;
+import javax.swing.tree.DefaultTreeModel;
 
 import org.opensplice.cm.Entity;
 import org.opensplice.cm.Participant;
@@ -224,9 +224,11 @@ public abstract class EntityTree extends JTree implements ActionListener{
      * 
      * @param e The event that occurred.
      */
+    @Override
     public void actionPerformed(ActionEvent e){
         if(e.getSource().equals(updateTimer)){
             Runnable worker = new Runnable(){
+                @Override
                 public void run(){
                     try {
                         refresh();
@@ -234,7 +236,8 @@ public abstract class EntityTree extends JTree implements ActionListener{
                         if(updateTimer != null){
                             updateTimer.restart();
                         }
-                    } catch (CommonException ce) {}
+                    } catch (CommonException ce) {
+                    }
                 }
             };
             SwingUtilities.invokeLater(worker);
@@ -337,6 +340,7 @@ public abstract class EntityTree extends JTree implements ActionListener{
     private class EntityTreeSelectionListener implements TreeSelectionListener {
         private boolean selected = false;
 
+        @Override
         public void valueChanged(TreeSelectionEvent e) {
             if(e.isAddedPath()){
                 if(!selected){
@@ -364,8 +368,7 @@ public abstract class EntityTree extends JTree implements ActionListener{
     protected Participant participant;
     
     /**
-     * Listener that listens for node expansion/collapse events and loads/
-     * refreshes the concerning nodes.
+     * Listener that listens for node expansion/collapse events
      */
     protected EntityTreeWillExpandListener willExpandListener;
     

@@ -21,7 +21,7 @@ namespace test.sacs
                 , "OK", Test.Framework.TestVerdict.Pass, Test.Framework.TestVerdict.Pass);
             factory = (DDS.DomainParticipantFactory)ResolveObject("theFactory");
             participant1 = (DDS.IDomainParticipant)ResolveObject("participant1");
-            lookedUpParticipant1 = factory.LookupParticipant(string.Empty);
+            lookedUpParticipant1 = factory.LookupParticipant(DDS.DomainId.Default);
             if (participant1 != lookedUpParticipant1)
             {
                 result.Result = "participant1 and lookedUpParticipant1 differ";
@@ -29,7 +29,7 @@ namespace test.sacs
                 return result;
             }
             lookedUpParticipant1 = null;
-            lookedUpParticipant1 = factory.LookupParticipant("file://rubbish");
+            lookedUpParticipant1 = factory.LookupParticipant(12345);
             if (lookedUpParticipant1 != null)
             {
                 result.Result = "lookup returned a participant after looking for a non existing participant";
@@ -37,7 +37,7 @@ namespace test.sacs
                 return result;
             }
             lookedUpParticipant1 = null;
-            lookedUpParticipant1 = factory.LookupParticipant(string.Empty);
+            lookedUpParticipant1 = factory.LookupParticipant(DDS.DomainId.Default);
             if (lookedUpParticipant1 != participant1)
             {
                 result.Result = "lookup didn't return the expected participant";

@@ -1,0 +1,3 @@
+# Unset variables for when OpenORB is not availible
+
+set_var OSPL_NO_ZLIB 1

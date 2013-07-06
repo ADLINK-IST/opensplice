@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file services/serialization/code/sd_serializerBigE.c
@@ -17,12 +17,12 @@
  *  No padding is inserted, so the resulting serializedData object
  *  can be interpreted as a stream of bytes. This stream can
  *  be used for networking, but also for persistent storage.
- * 
+ *
  * ---------------------- Serialization format ---------------------------
  *
  *  Below, the exact definition for version 0.1 of the BigE format is given.
  *  Here, MSB means Most Significant Byte and LSB means Least Significant Byte
- *  
+ *
 \verbatim
 
   ....2...........8..............16..............24..............32
@@ -237,7 +237,7 @@ the sign-bit, E indicates the mantissa and F indicates the float-value.
  *  <b>Structure types</b> are represented as a concatenation of their
  *  individual members.
  *
- * 
+ *
  * ---------------------- General mechanism ---------------------------
  *
  * Both serialization and deserialization make use of the deepwalk function.
@@ -283,7 +283,7 @@ C_STRUCT(sd_serializerBigEInternal) {
 
 #define sd_serializerBigEInternal(o) ((sd_serializerBigEInternal)(o))
 
-
+#ifndef NDEBUG
 /* -------------------------- checking routines -------------------------- */
 
 /** \brief Private function for typechecking the current serializer. This avoids
@@ -297,6 +297,7 @@ sd_checkSerializerType(
             ((unsigned int)serializer->formatID == SD_FORMAT_ID) &&
             ((unsigned int)serializer->formatVersion == SD_FORMAT_VERSION));
 }
+#endif
 
 
 /* ----------------------- serialization routines ----------------------- */
@@ -315,28 +316,28 @@ sd_bigESerCollection(
     c_long colSize;
     c_ulong len;
     c_octet *dataPtrHelper;
-    
+
     /* Different behaviour for reftypes and non-reftypes */
     if (((collectionType->kind == C_ARRAY) ||
          (collectionType->kind == C_SEQUENCE)) &&
          !(int)c_typeIsRef(c_type(collectionType))) {
-           
+
         len = 0U;
-        
+
     } else {
-       
+
         /* first serialize the validity of the object. We have to do this in
          * all situations, whether the reference is valid or not */
         *dataPtr = sd_isValidReference(object);
         len = 1;
-        
+
         /* Now check if this was a valid reference. In that case, we have to
          * handle the data itself as well */
         if (sd_isValidReference(object)) {
 
             /* Skip to the data itself */
             dataPtrHelper = C_DISPLACE(dataPtr, C_ADDRESS(len));
-            
+
             /* Only serialize the collection size in case of list/set/bag/etc */
             switch (collectionType->kind) {
             case C_STRING:
@@ -431,7 +432,7 @@ sd_bigECountCallback(
     void *actionArg)
 {
     c_ulong *size = (c_ulong *)actionArg;
-    
+
     switch (c_baseObject(type)->kind) {
     case M_COLLECTION:
         switch (c_collectionType(type)->kind) {
@@ -484,7 +485,7 @@ sd_bigECountCallback(
         SD_CONFIDENCE(FALSE);
     break;
     }
-/* QAC EXPECT 5101; cyclomatic complexity is no problem here */    
+/* QAC EXPECT 5101; cyclomatic complexity is no problem here */
 }
 
 
@@ -511,18 +512,18 @@ sd_bigEDeserCollection(
     if (((collectionType->kind == C_ARRAY) ||
          (collectionType->kind == C_SEQUENCE)) &&
          !(int)c_typeIsRef(c_type(collectionType))) {
-           
+
         len = 0;
-        
+
     } else {
         SD_COPY2BIG_1(&isValidRef, dataPtr);
         len = 1;
-        
+
         if (isValidRef) {
-       
+
             /* Skip to the data itself */
             dataPtrHelper = C_DISPLACE(dataPtr, C_ADDRESS(len));
-            
+
             /* Only serialize the collection size in case of list/set/bag/etc */
             switch (collectionType->kind) {
             case C_STRING:
@@ -573,7 +574,7 @@ sd_bigEDeserCollection(
             }
         }
     }
-    
+
     return len;
 }
 
@@ -588,7 +589,7 @@ sd_bigEDeserInterface(
     c_ulong result;
     c_object *placeHolder;
 
-    SD_CONFIDENCE((c_baseObject(interf)->kind == M_INTERFACE) || 
+    SD_CONFIDENCE((c_baseObject(interf)->kind == M_INTERFACE) ||
                   (c_baseObject(interf)->kind == M_CLASS));
 
     placeHolder = (c_object *)(*objectPtr);
@@ -669,6 +670,8 @@ sd_serializerBigESerialize(
     c_type type;
     c_char *startPtr;
 
+    OS_UNUSED_ARG(serializer);
+
     SD_CONFIDENCE(sd_checkSerializerType(serializer));
 
     type = c_getType(object);
@@ -698,7 +701,7 @@ sd_serializerBigESerialize(
     return result;
 }
 
-/** \brief The actual BigE typed implementation of the virtual abstract 
+/** \brief The actual BigE typed implementation of the virtual abstract
  * serialize function as introduced by sd_serializer
  */
 static sd_serializedData
@@ -737,7 +740,7 @@ sd_serializerBigESerializeTyped(
 /** \brief The actual BigE typed internal implementation of the virtual abstract
  * serialize function as introduced by sd_serializer
  */
- 
+
 static sd_serializedData
 sd_serializerBigESerializeTypedInternal(
     sd_serializer serializer,
@@ -756,10 +759,10 @@ sd_serializerBigESerializeTypedInternal(
                   (sd_serializerBigEInternal(serializer)->internalType == c_getType(object)) ||
                   (c_baseObject(c_typeActualType(serializer->type))->kind ==
                    M_COLLECTION));
-    
+
     /* First check if this is the internal type */
     isInternalType = (object != NULL) &&
-        ((sd_serializerBigEInternal(serializer)->internalType == 
+        ((sd_serializerBigEInternal(serializer)->internalType ==
                          c_getType(object)));
 
     if (isInternalType) {
@@ -771,7 +774,7 @@ sd_serializerBigESerializeTypedInternal(
         typeToUse = serializer->type;
         internalFormatByte = SD_FORMAT_USER_BYTE;
     }
-    
+
     /* Determine the size */
     size = SD_INTERNAL_INDICATOR_SIZE; /* Starting byte is counted as well */
     sd_deepwalk(typeToUse, &object, sd_bigECountCallback, &size);
@@ -784,7 +787,7 @@ sd_serializerBigESerializeTypedInternal(
     *startPtr = internalFormatByte;
     /* skip to the actual startingpoint of the serialized data */
     startPtr = &(startPtr[SD_INTERNAL_INDICATOR_SIZE]);
-    
+
     /* And do the serialization */
     sd_deepwalk(typeToUse, &object, sd_bigESerCallback, &startPtr);
 
@@ -832,9 +835,11 @@ sd_serializerBigEDeserialize(
     c_char *name;
     c_octet *startPtr;
 
+    OS_UNUSED_ARG(doValidation);
+
     SD_CONFIDENCE(sd_checkSerializerType(serializer));
-    /* Validation not supported for this class */              
-    SD_CONFIDENCE((int)doValidation == FALSE);              
+    /* Validation not supported for this class */
+    SD_CONFIDENCE((int)doValidation == FALSE);
 
     /* The deserialized data starts with the scoped name of the type */
     /* Create the object using this name */
@@ -848,13 +853,13 @@ sd_serializerBigEDeserialize(
 
         /* Find the starting point of the actual data */
         startPtr = C_DISPLACE(serData->data, C_ADDRESS(strlen(name) + 1U));
-    
+
         sd_serializerBigEDeserializeInternal(resultType,
                                              &result, &startPtr);
         /* Double-check if the size was calculated correctly */
-        SD_CONFIDENCE((C_ADDRESS(startPtr) - C_ADDRESS(serData->data)) == 
+        SD_CONFIDENCE((C_ADDRESS(startPtr) - C_ADDRESS(serData->data)) ==
                       sd_serializedDataGetDataSize(serData));
-                      
+
         c_free(resultType);
     }
 
@@ -873,13 +878,15 @@ sd_serializerBigEDeserializeTyped(
     c_object result = NULL;
     c_octet *startPtr;
 
+    OS_UNUSED_ARG(doValidation);
+
     SD_CONFIDENCE(sd_checkSerializerType(serializer));
-    /* Validation not supported for this class */              
-    SD_CONFIDENCE((int)doValidation == FALSE);              
+    /* Validation not supported for this class */
+    SD_CONFIDENCE((int)doValidation == FALSE);
 
     /* Only continue if this is constructed using BigENewTyped */
     SD_CONFIDENCE(serializer->type != NULL);
-    
+
     startPtr = serData->data;
     sd_serializerBigEDeserializeInternal(serializer->type,
                                          &result, &startPtr);
@@ -904,16 +911,18 @@ sd_serializerBigEDeserializeTypedInternal(
     c_octet *startPtr;
     c_bool isInternalType;
 
-    SD_CONFIDENCE(sd_checkSerializerType(serializer));
-    /* Validation not supported for this class */              
-    SD_CONFIDENCE((int)doValidation == FALSE);              
+    OS_UNUSED_ARG(doValidation);
 
-    
+    SD_CONFIDENCE(sd_checkSerializerType(serializer));
+    /* Validation not supported for this class */
+    SD_CONFIDENCE((int)doValidation == FALSE);
+
+
     startPtr = serData->data;
     /* First check if this is user data or internal data */
     isInternalType = (*startPtr == SD_FORMAT_INTERNAL_BYTE);
     startPtr = &(startPtr[SD_INTERNAL_INDICATOR_SIZE]);
-    
+
     if (isInternalType) {
         /* Only continue if this is correctly constructed */
         SD_CONFIDENCE(sd_serializerBigEInternal(serializer)->internalType != NULL);
@@ -974,7 +983,7 @@ sd_serializerBigEToString(
     c_ulong line, i, nThisLine;
     c_char sizeBuf[SD_BUFSIZE];
     int snpRes;
-
+    OS_UNUSED_ARG(serializer);
 
     SD_CONFIDENCE(sd_checkSerializerType(serializer));
 
@@ -1003,14 +1012,14 @@ sd_serializerBigEToString(
     } else {
         start = 0;
         SD_CONFIDENCE(snpRes >= 0);
-    }                    
-    
+    }
+
     /* The actual serialized data */
     currentSrc = serData->data;
     currentDest = (c_octet *)C_DISPLACE(result, C_ADDRESS(start));
     for (line=0; line < nLines; line++) {
-        nThisLine = (((line+1U) < nLines) ? 
-                     SD_LINE_WIDTH : 
+        nThisLine = (((line+1U) < nLines) ?
+                     SD_LINE_WIDTH :
                      (((dataSize - 1U) % SD_LINE_WIDTH) + 1U));
         for (i=0; i < SD_LINE_WIDTH; i++) {
             if (i < nThisLine) {
@@ -1055,9 +1064,9 @@ sd_serializerBigEToString(
  *  \b serializer class. In order to use this class, create it with this
  *  function and call the methods as defined on \b serializer. This class
  *  is capable of (de)serializing objects of any type.
- * 
+ *
  *  This class is supposed to do quick (de)serialization and does not do any
- *  checking on format errors. 
+ *  checking on format errors.
  *
  *  \param base The database to serialize to and deserialize from.
  */
@@ -1088,7 +1097,7 @@ sd_serializerBigENew(
  *  capable of (de)serializing objects of one specific type only.
  *
  *  This class is supposed to do quick (de)serialization and does not do any
- *  checking on format errors. 
+ *  checking on format errors.
  *
  *  \param type The type that will be (de)serialized by this object.
  */
@@ -1107,7 +1116,7 @@ sd_serializerBigENewTyped(
     VMT.deserializeInto = NULL;
     VMT.toString = sd_serializerBigEToString;
     VMT.fromString = NULL;
-    
+
     result = sd_serializerNew(SD_FORMAT_ID, SD_FORMAT_VERSION, base, type, VMT);
 
     return result;
@@ -1123,8 +1132,8 @@ sd_serializerBigENewTyped(
  *  to the constructor and the v_networkMessageType
  *
  *  This class is supposed to do quick (de)serialization and does not do any
- *  checking on format errors. 
- * 
+ *  checking on format errors.
+ *
  *  Note: this class could be changed so that it will be able to (de)serialize
  *  several internal types.
  *
@@ -1151,14 +1160,14 @@ sd_serializerBigENewTypedInternal(
     VMT.deserializeInto = NULL;
     VMT.toString = sd_serializerBigEToString;
     VMT.fromString = NULL;
-    
+
     result = (sd_serializerBigEInternal)os_malloc((os_uint32)sizeof(*result));
 
     if (result) {
         /* Initialize self */
         result->internalType = c_resolve(base, SD_INTERNAL_TYPE_NAME);
         /* Initialize parent */
-        sd_serializerInitialize((sd_serializer)result, 
+        sd_serializerInitialize((sd_serializer)result,
             SD_FORMAT_ID, SD_FORMAT_VERSION, base, type, VMT);
     }
 

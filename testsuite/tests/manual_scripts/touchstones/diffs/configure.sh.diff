@@ -1,0 +1,15 @@
+Index: configure.sh
+===================================================================
+--- configure.sh	(revision 17)
++++ configure.sh	(working copy)
+@@ -34,8 +34,8 @@
+ 
+ TOUCHSTONE_HOME=`pwd | sed 's~^/nfs/[^/]*~~'`
+ 
+-C_COPTIONS="-g -m32"
+-CPP_COPTIONS="-g -m32"
++C_COPTIONS="-g -m64"
++CPP_COPTIONS="-g -m64"
+ 
+ # Select DDS vendor...
+ #DDS_VENDORS=`ls vendor`

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -118,6 +118,22 @@ OS_API c_iter
 u_serviceManagerGetServices(
     u_serviceManager serviceManager,
     v_serviceStateKind kind);
+
+/**
+ * \brief Removes the service with a given name from the servicemanager set.
+ *
+ * A service with the given name will be removed from the serviceSet.
+ * This function should be called when the service kind of the service is changed to STATE_DIED
+ *
+ * \param serviceManager a reference to the service manager.
+ * \param name           the name of the service.
+ *
+ * \return a boolean with the value TRUE if the remove was successful and FALSE if not.
+ */
+OS_API c_bool
+u_serviceManagerRemoveService(
+    u_serviceManager _this,
+    const c_char *serviceName);
 
 #undef OS_API
 

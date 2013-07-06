@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . buildsys/functions
 
@@ -30,9 +30,81 @@ SetState "Building"
 echo "BUILD=RUNNING" >> $RESFILE
 ArchiveLogs
 
-make
+if [ "$COVERITY" = "yes" ]
+then
+    #VER will have tags/ or heads/ on the front
+    BRANCH_NAME=`echo $VER | cut -f 2 -d '/'`
+    echo "++++++++COVERITY RUN"
+    . $OSPL_OUTER_HOME/build/scripts/overnight/coverity_common
+    #Regen the model file as they are not compatible between versions
+    #and this only takes seconds
+    if [ -f "$MODEL_DB_FILE" ]
+    then
+        echo "++++++++COVERITY removing $MODEL_DB_FILE"
+        rm -f $MODEL_DB_FILE
+    fi
+    echo "++++++++COVERITY generating $MODEL_DB_FILE from $MODEL_FILE"
+    cov-make-library -of $MODEL_DB_FILE $MODEL_FILE 
+    if [ $? != 0 ] 
+    then
+        exit 2
+    fi
+    #Configure for each target compiler we use, this really only
+    #needs to be done once, only warns about each time after that
+    for i in $COMPILER_CONFIG
+    do
+        echo "++++++++COVERITY configuring $i"
+        cov-configure $i
+    done
+    BUILD_CMD="cov-build --dir $CACHE_DIR sh -c"   
+    echo "++++++++COVERITY building CACHE_DIR - $CACHE_DIR"
+    #Clean the cache dir as the unique directory path makes coverity
+    #count all the source as new again
+    if [ -d "$CACHE_DIR" ]
+    then
+        rm -rf $CACHE_DIR
+    fi
+fi
+
+$BUILD_CMD make VERBOSE=yes
 if [ $? != 0 ] 
 then
     exit 2
 fi
+
+if [ "$COVERITY" = "yes" ]
+then
+    for i in $ANALYSIS_TYPE
+    do
+        STREAM="${i}_${BRANCH_NAME}_${HOSTNAME}_${SPLICE_PLATFORM}"
+        echo "++++++++COVERITY analyze $i"
+        echo "++++++++COVERITY stream setup is $STREAM"
+        if [ "$i" = "CandC++" ]
+        then
+            cov-analyze --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE \
+                $COV_C_CPP_ANALYSIS_OPTIONS $COV_C_CPP_ANALYSIS_EXTRA_OPTIONS
+            if [ $? != 0 ] 
+            then
+                exit 2
+            fi
+        fi
+        if [ "$i" = "JAVA" ]
+        then
+            cov-analyze-java --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE \
+                $COV_JAVA_ANALYSIS_OPTIONS $COV_JAVA_ANALYSIS_EXTRA_OPTIONS
+            if [ $? != 0 ] 
+            then
+                exit 2
+            fi
+        fi
+        echo "++++++++COVERITY commiting defects to $STREAM"
+        cov-commit-defects --dir $CACHE_DIR --host $COV_SERVER --port $COV_PORT \
+            --user $COV_USER --password $COV_PASSWORD --stream $STREAM
+        if [ $? != 0 ] 
+        then
+            exit 2
+        fi
+    done
+fi
+
 exit 0

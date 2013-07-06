@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -135,7 +135,7 @@ v_lifespanAdminRemove(
     } else {
         if (sample == admin->tail) {
             assert(sample->prev);
-            assert(c_refCount(sample) > 1);
+            assert(c_refCount(sample) > 2); /* Both tail and next field from prev sample. */
             assert(sample->next == NULL);
             c_free(admin->tail);
             admin->tail = c_keep(sample->prev);

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -47,6 +47,13 @@ public class UserDataEditTable extends UserDataSingleTable {
                 (this.getColumnModel().getColumn(2).getCellEditor())).setStatusListener(editOutputWindow);
     }
     
+    public UserDataEditTable(UserDataEditTableModel model, String keyList, StatusPanel editOutputWindow, String struct){
+        this(model, keyList, struct);
+
+        ((UserDataEditTableEditor)
+                (this.getColumnModel().getColumn(2).getCellEditor())).setStatusListener(editOutputWindow);
+    }
+    
     /**
      * Constructs a new UserDataEditTable from the supplied arguments. The
      * table will display the supplied model and attaches a 
@@ -61,6 +68,17 @@ public class UserDataEditTable extends UserDataSingleTable {
      */
     public UserDataEditTable(UserDataEditTableModel model, String keyList){
         super(model, keyList);
+        this.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        this.setCellSelectionEnabled(false);
+       
+        this.setSurrendersFocusOnKeystroke(true);
+        UserDataEditTableEditor editor = new UserDataEditTableEditor(model.getDataType(), this);
+        this.getColumnModel().getColumn(2).setCellEditor(editor);
+        model.setEditor(editor);
+    }
+    
+    public UserDataEditTable(UserDataEditTableModel model, String keyList, String struct){
+        super(model, keyList, struct);
         this.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         this.setCellSelectionEnabled(false);
        

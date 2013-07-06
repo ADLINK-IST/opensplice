@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,15 +11,17 @@
  */
 package org.opensplice.config.data;
 
-import org.w3c.dom.Node;
+import java.util.HashSet;
 
 import org.opensplice.config.meta.MetaNode;
+import org.w3c.dom.Node;
 
 public abstract class DataNode {
     protected MetaNode metadata;
     protected Node node;
     protected DataNode parent;
     protected DataConfiguration owner;
+    private HashSet<DataNode>   dependencies = null;
     
     public DataNode(MetaNode metadata, Node node) throws DataException {
         if(metadata == null){
@@ -31,6 +33,17 @@ public abstract class DataNode {
         this.node     = node;
         this.parent   = null;
         this.owner    = null;
+    }
+
+    public void addDependency(DataNode dv) {
+        if (dependencies == null) {
+            dependencies = new HashSet<DataNode>();
+        }
+        dependencies.add(dv);
+    }
+
+    public HashSet<DataNode> getDependencies() {
+        return dependencies;
     }
 
     public MetaNode getMetadata() {

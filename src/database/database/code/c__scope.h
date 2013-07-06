@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -29,9 +29,9 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-typedef c_bool (*c_scopeCondition) (/* c_metaObject o1, c_metaObject o2 */);
+typedef c_bool (*c_scopeCondition) (c_metaObject o1, c_metaObject o2);
 typedef void  *c_scopeWalkActionArg;
-typedef void (*c_scopeWalkAction) (/* c_metaObject o, c_scopeWalkActionArg actionArg */);
+typedef void (*c_scopeWalkAction) (c_metaObject o, c_scopeWalkActionArg actionArg);
 
 /* Declaration of c_binding for c_scope */
 C_CLASS(c_binding);

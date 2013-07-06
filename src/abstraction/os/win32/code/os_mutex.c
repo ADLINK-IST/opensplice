@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,9 +20,11 @@
 #include <Windows.h>
 #include "os_stdlib.h"
 #include "os_mutex.h"
-#include "code/os__debug.h"
-#include "code/os__service.h"
-#include "code/os__sharedmem.h"
+#include "os_report.h"
+#include "os_init.h"
+#include "os__debug.h"
+#include "os__service.h"
+#include "os__sharedmem.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -54,6 +56,11 @@ os_mutexSetPriorityInheritanceMode(
  * In case the scope attribute is \b OS_SCOPE_SHARED, the posix
  * mutex "pshared" attribute is set to \b PTHREAD_PROCESS_SHARED
  * otherwise it is set to \b PTHREAD_PROCESS_PRIVATE.
+ *
+ * When in single process mode, a request for a SHARED variable will
+ * implictly create a PRIVATE equivalent.  This is an optimisation
+ * because there is no need for "shared" multi process variables in
+ * single process mode.
  */
 os_result
 os_mutexInit (
@@ -70,32 +77,40 @@ os_mutexInit (
 
     assert(mutex != NULL);
 
-
     mutex->scope = mutexAttr->scopeAttr;
     mutex->lockCount = 0;
-    if (mutexAttr->scopeAttr == OS_SCOPE_SHARED) {
+
+
+    /* In single process mode only "private" variables are required */
+    if (os_serviceGetSingleProcess ()) {
+        mutex->scope = OS_SCOPE_PRIVATE;
+    }
+
+    if (mutex->scope == OS_SCOPE_SHARED) {
         pipename = os_createPipeNameFromMutex(mutex); /*os_servicePipeName();*/
-         if (pipename == NULL) {
-             pipename = os_servicePipeName();
-             OS_DEBUG_1("os_mutexInit", "Failed to get a domain name from mutex using default %s %d", pipename);
-         }
+        if (pipename == NULL) {
+            pipename = os_servicePipeName();
+            OS_DEBUG_1("os_mutexInit", "Failed to get a domain name from mutex, using default: %s", pipename);
+        }
         request.kind = OS_SRVMSG_CREATE_EVENT;
         reply.result = os_resultFail;
         reply.kind = OS_SRVMSG_UNDEFINED;
 
-        do{
-           result = CallNamedPipe(
-                               TEXT(pipename),
-                               &request, sizeof(request),
-                               &reply, sizeof(reply),
-                               &nRead,
-                               NMPWAIT_USE_DEFAULT_WAIT);
+        do {
+            result = CallNamedPipe(
+                TEXT(pipename),
+                &request, sizeof(request),
+                &reply, sizeof(reply),
+                &nRead,
+                NMPWAIT_USE_DEFAULT_WAIT);
+
             if(!result){
                 lastError = GetLastError();
             } else {
                 lastError = ERROR_SUCCESS;
             }
         } while((!result) && (lastError == ERROR_PIPE_BUSY));
+
 
         if (!result || (nRead != sizeof(reply))) {
             OS_DEBUG_4("os_mutexInit", "Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
@@ -142,7 +157,7 @@ os_mutexDestroy (
         pipename = os_createPipeNameFromMutex(mutex); /*os_servicePipeName();*/
         if (pipename == NULL) {
             pipename = os_servicePipeName();
-            OS_DEBUG_1("os_mutexInit", "Failed to get a domain name from mutex using default %s %d", pipename);
+            OS_DEBUG_1("os_mutexInit", "Failed to get a domain name from mutex, using default: %s", pipename);
         }
         request.kind = OS_SRVMSG_DESTROY_EVENT;
         request._u.id = mutex->id;
@@ -151,11 +166,11 @@ os_mutexDestroy (
 
         do{
            result = CallNamedPipe(
-                                  TEXT(pipename),
-                                  &request, sizeof(request),
-                                  &reply, sizeof(reply),
-                                  &nRead,
-                                  NMPWAIT_USE_DEFAULT_WAIT);
+               TEXT(pipename),
+               &request, sizeof(request),
+               &reply, sizeof(reply),
+               &nRead,
+               NMPWAIT_USE_DEFAULT_WAIT);
 
            if(!result){
               lastError = GetLastError();
@@ -164,7 +179,7 @@ os_mutexDestroy (
            }
         } while((!result) && (lastError == ERROR_PIPE_BUSY));
 
-        if (!result  || (nRead != sizeof(reply))){
+        if (!result  || (nRead != sizeof(reply))) {
            OS_DEBUG_4("os_mutexDestroy", "Failure %d %d %d %d\n", result, GetLastError(), nRead, reply.kind);
            osr = os_resultFail;
         } else {
@@ -203,14 +218,19 @@ os_mutexLock(
     lc = InterlockedIncrement(&mutex->lockCount);
     if (lc > 1) {
         if (mutex->scope == OS_SCOPE_SHARED) {
-            _snprintf(name, sizeof(name), "%s%s%d%d",
-                      (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
-                      OS_SERVICE_EVENT_NAME_PREFIX,
-                      mutex->id,
-                      os_getShmBaseAddressFromPointer(mutex));
+            if (_snprintf(name, sizeof(name), "%s%s%d%s",
+                (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+                OS_SERVICE_EVENT_NAME_PREFIX,
+                mutex->id,
+                os_getShmDomainKeyForPointer(mutex)) <= 0) {
+                OS_REPORT_1(OS_ERROR, "mutexLock", 0,
+                    "Event name exceeds maximum allowed length (%d)", OS_SERVICE_ENTITY_NAME_MAX);
+                return os_resultFail;
+            }
+
             mutexHandle = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
             if (mutexHandle == NULL) {
-                OS_DEBUG_2("os_mutexLock", "Failed to open mutex %s %d", name, GetLastError());
+                OS_DEBUG_2("os_mutexLock", "Failed to open event with name %s (Error: %d)", name, GetLastError());
                 assert(mutexHandle != NULL);
                 return os_resultFail;
             }
@@ -275,15 +295,19 @@ os_mutexUnlock (
     lc = InterlockedDecrement(&mutex->lockCount);
     if (lc > 0) {
         if (mutex->scope == OS_SCOPE_SHARED) {
-            _snprintf(name, sizeof(name), "%s%s%d%d",
-                      (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
-                      OS_SERVICE_EVENT_NAME_PREFIX,
-                      mutex->id,
-                      os_getShmBaseAddressFromPointer(mutex));
+            if (_snprintf(name, sizeof(name), "%s%s%d%s",
+                (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
+                OS_SERVICE_EVENT_NAME_PREFIX,
+                mutex->id,
+                os_getShmDomainKeyForPointer(mutex)) <= 0) {
+                OS_REPORT_1(OS_ERROR, "mutexUnlock", 0,
+                    "Event name exceeds maximum allowed length (%d)", OS_SERVICE_ENTITY_NAME_MAX);
+                return os_resultFail;
+            }
 
             mutexHandle = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
             if (mutexHandle == NULL) {
-                OS_DEBUG_2("os_mutexUnlock", "Failed to open mutex %s %d", name, GetLastError());
+                OS_DEBUG_2("os_mutexUnlock", "Failed to open event with name %s (Error: %d)", name, GetLastError());
                 assert(mutexHandle != NULL);
                 return os_resultFail;
             }

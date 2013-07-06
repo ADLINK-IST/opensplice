@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -20,12 +20,14 @@ import java.util.List;
 import javax.swing.JComponent;
 import javax.swing.TransferHandler;
 
+@SuppressWarnings("serial")
 public class ConfigTransferHandler extends TransferHandler {
-    private ConfigWindow view;
+    private final ConfigWindow view;
     
     public ConfigTransferHandler(ConfigWindow view){
         this.view = view;
     }
+    @Override
     public boolean canImport(JComponent comp, DataFlavor[] transferFlavors) {
         for(DataFlavor flavor: transferFlavors){
             if(flavor.equals(DataFlavor.javaFileListFlavor)){
@@ -43,6 +45,7 @@ public class ConfigTransferHandler extends TransferHandler {
         return false;
     }
     
+    @Override
     public boolean importData(JComponent comp, Transferable t) {
         if (!canImport(comp, t.getTransferDataFlavors())) {
             view.setStatus("Warning: Unsupported type", false);
@@ -50,10 +53,11 @@ public class ConfigTransferHandler extends TransferHandler {
         }
         try{
             if(t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)){
-                List files = (List)t.getTransferData(DataFlavor.javaFileListFlavor);
+                @SuppressWarnings("unchecked")
+                List<File> files = (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
                 
                 if(files.size() == 1){
-                    File file = (File)files.get(0);
+                    File file = files.get(0);
                     view.getController().handleOpen(file);
                 } else {
                     return false;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -21,12 +21,12 @@ public class MetaCollection extends MetaField{
     /**
      * The maximum size of the collection.
      */
-    private int maxSize;
+    private final int maxSize;
     
     /**
      * The subtype of the collection.
      */
-    private MetaField subType;
+    private final MetaField subType;
     
     /**
      * Constructs a new collection type.
@@ -83,16 +83,20 @@ public class MetaCollection extends MetaField{
         return recSize;
     }
    
+    @Override
     public String toString(){
         String s = super.toString();
                 
         return s;
     }
     
+    @Override
     public MetaField getField(String fieldName){
         MetaField result;
         
         if(subType instanceof MetaStruct){
+            result = subType.getField(fieldName);
+        } else if (subType instanceof MetaUnion) {
             result = subType.getField(fieldName);
         } else {
             result = null;

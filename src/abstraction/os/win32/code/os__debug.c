@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -19,7 +19,7 @@
  * os_debugModeInit().
  */
 /* interface */
-#include "code/os__debug.h"
+#include "os__debug.h"
 
 /* implementation */
 #include <crtdbg.h>
@@ -57,7 +57,7 @@ setCrtMode(
 {
     const char *fileName;
     char *fullFileName;
-    int size;
+    os_size_t size;
     _HFILE reportFile;
     os_crtReportInfo result = NULL;
 

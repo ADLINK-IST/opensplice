@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -97,11 +97,16 @@ idl_fileFree(
 static c_equality
 idl_objectCompare(
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
-    const c_baseObject listObject,
+    void* _listObject,
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
-    const c_baseObject object)
+    void* _object)
 {
+    c_baseObject listObject;
+    c_baseObject object;
     c_equality result = C_NE;
+
+    listObject = _listObject;
+    object = _object;
 
     if (listObject == object) {
         result = C_EQ;
@@ -116,11 +121,16 @@ idl_objectCompare(
 static c_equality
 idl_objectMap(
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
-    const c_baseObject listObject,
+    void* _listObject,
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
-    const idl_map map)
+    void* _map)
 {
+    c_baseObject listObject;
+    idl_map map;
     c_equality result = C_NE;
+
+    listObject = _listObject;
+    map = _map;
 
     if (listObject == map->object) {
         result = C_EQ;
@@ -178,10 +188,15 @@ idl_fileMapFree(
 static c_equality
 idl_fileCompare(
     /* QAC EXPECT 3673; No solution to the message here, but no problem either */
-    const idl_file file,
-    const c_char *fileName)
+    void* _file,
+    void* _fileName)
 {
+    idl_file file;
+    c_char *fileName;
     c_equality result = C_NE;
+
+    file = _file;
+    fileName = _fileName;
 
     /* QAC EXPECT 5007, 3416; will not use wrapper, No side effect here */
     if (strcmp(file->fileName, fileName) == 0) {
@@ -306,3 +321,92 @@ idl_fileMapObject(
     }
     return result;
 }
+
+/* Add object to source */
+void idl_fileMapFillList(
+    c_baseObject object,
+    c_iter objects)
+{
+    switch(object->kind) {
+    case M_LITERAL:
+    case M_EXPRESSION:
+    case M_EXCEPTION:
+    case M_PARAMETER:
+        break;
+    default:
+        c_iterInsert(objects, object);
+        break;
+    }
+}
+
+/* Create source */
+c_iter
+idl_fileMapGetObjects(
+    const idl_fileMap fileMap,
+    const char *fileName)
+{
+    idl_file file;
+    c_iter result;
+
+    result = 0;
+
+    if(fileMap != NULL) {
+        /* Lookup file */
+        file = c_iterResolve(fileMap->files, idl_fileCompare, (c_iterResolveCompareArg)fileName);
+        if (file) {
+            result = c_iterNew(0);
+
+            /* Walk metaobjects in filemap, add to source. */
+            if(file->contains) {
+                c_iterWalk(file->contains, (c_iterWalkAction)idl_fileMapFillList, result);
+            }
+        }
+    }
+
+    return result;
+}
+
+static void
+idl_checkFinalized(
+    c_baseObject o,
+    int* unfinalCount) {
+    char* name;
+
+    switch(o->kind) {
+    case M_STRUCTURE:
+    case M_UNION:
+        if(!c_isFinal(c_metaObject(o))) {
+            name = c_metaScopedName(c_metaObject(o));
+            printf("missing implementation for struct\\union %s.\n", name);
+            (*unfinalCount)++;
+            free(name);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+/* */
+c_bool idl_fileMapCheckFinalized(
+    const idl_fileMap fileMap,
+    const char* fileName)
+{
+    idl_file file;
+    int count;
+
+    count = 0;
+
+    if(fileMap != NULL) {
+        file = c_iterResolve(fileMap->files, (c_iterResolveCompare)idl_fileCompare, (c_iterResolveCompareArg)fileName);
+        if(file) {
+
+            c_iterWalk(file->contains, (c_iterWalkAction)idl_checkFinalized, &count);
+        }
+    }
+    return !count;
+}
+
+
+
+

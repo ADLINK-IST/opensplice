@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,7 +20,6 @@
 #include "v_state.h"
 #include "v_index.h"
 #include "v_public.h"
-#include "c_extent.h"
 #include "v__lifespanAdmin.h"
 
 v_dataReaderSample
@@ -32,6 +31,7 @@ v_dataReaderSampleNew(
     v_dataReaderSample sample;
     v_readerQos readerQos;
     v_index index;
+    c_time insertTime;
 
     assert(instance != NULL);
     assert(C_TYPECHECK(message,v_message));
@@ -39,6 +39,7 @@ v_dataReaderSampleNew(
     index = v_index(instance->index);
     dataReader = v_dataReader(index->reader);
     readerQos = v_reader(dataReader)->qos;
+    assert(readerQos);
     if (dataReader->cachedSample != NULL) {
         sample = dataReader->cachedSample;
 
@@ -53,7 +54,7 @@ v_dataReaderSampleNew(
         dataReader->cachedSample = NULL;
 #endif
     } else {
-        sample = v_dataReaderSample(c_extentCreate(dataReader->sampleExtent));
+        sample = v_dataReaderSample(c_new(dataReader->sampleType));
     }
     v_readerSample(sample)->instance = (c_voidp)instance;
     v_readerSample(sample)->viewSamples = NULL;
@@ -78,16 +79,40 @@ v_dataReaderSampleNew(
     sample->insertTime = v_timeGet();
 #endif
 #endif
-    if (readerQos->lifespan.used) {
+
+    /* The expiry time calculation is dependent on the DestinationOrderQos(readerQos->orderby.kind):
+     * In case of the by_reception_timestamp kind the expiry time is determined based on insertion time(sample->insertTime).
+     * In case of the by_source_timestamp kind the expiry time is determined based on source time (message->writeTime).
+     * see OSPL-871
+     */
+
+    if (readerQos->orderby.kind == V_ORDERBY_SOURCETIME) {
+       insertTime = message->writeTime;
+    } else {
+        insertTime = sample->insertTime;
+    }
+
+     /* When both ReaderLifespanQos(readerQos->lifespan.used) and the inline LifespanQos (v_messageQos_getLifespanPeriod(message->qos))
+      * are set the expiryTime will be set to the earliest time among them.
+      */
+    if (readerQos->lifespan.used && message->qos != NULL) {
+        if (c_timeCompare(readerQos->lifespan.duration, v_messageQos_getLifespanPeriod(message->qos)) == C_LT) {
+            v_lifespanSample(sample)->expiryTime =
+                        c_timeAdd(insertTime, readerQos->lifespan.duration);
+        } else {
+            v_lifespanSample(sample)->expiryTime =
+                        c_timeAdd(insertTime,
+                                  v_messageQos_getLifespanPeriod(message->qos));
+        }
+    } else if (readerQos->lifespan.used){
         v_lifespanSample(sample)->expiryTime =
-            c_timeAdd(sample->insertTime, readerQos->lifespan.duration);
+            c_timeAdd(insertTime,readerQos->lifespan.duration);
     } else if (message->qos != NULL){
         v_lifespanSample(sample)->expiryTime =
-            c_timeAdd(sample->insertTime,
+            c_timeAdd(insertTime,
                       v_messageQos_getLifespanPeriod(message->qos));
     } else {
-        v_lifespanSample(sample)->expiryTime = c_timeAdd(sample->insertTime,
-                C_TIME_INFINITE);
+        v_lifespanSample(sample)->expiryTime = c_timeAdd(insertTime, C_TIME_INFINITE);
     }
     sample->disposeCount = instance->disposeCount;
     sample->noWritersCount = instance->noWritersCount;
@@ -98,8 +123,6 @@ v_dataReaderSampleNew(
     v_dataReaderSampleTemplate(sample)->message = c_keep(message);
     v_lifespanAdminInsert(v_dataReaderEntry(index->entry)->lifespanAdmin,
                           v_lifespanSample(sample));
-
-    dataReader->notReadCount++;
 
     return sample;
 }
@@ -121,9 +144,6 @@ v_dataReaderSampleFree(
             instance = v_readerSample(sample)->instance;
             index = v_index(instance->index);
             dataReader = v_dataReader(index->reader);
-            if (!v_readerSampleTestState(sample,L_READ)) {
-                dataReader->notReadCount--;
-            }
 #ifdef _SL_
             if (dataReader->cachedSampleCount < 1000) {
                 message = v_dataReaderSampleMessage(sample);

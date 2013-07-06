@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,21 +20,42 @@
 #include "ccpp_ListenerUtils.h"
 #include "ccpp_DataReaderView_impl.h"
 
-DDS::DataReader_impl::DataReader_impl(gapi_dataReader handle) : DDS::Entity_impl(handle)
+static void pdc_terminateWorkers(DDS::ccpp_parDemContext *);
+static void pdc_joinWorkers(os_threadId *, unsigned int &);
+
+DDS::DataReader_impl::DataReader_impl(
+        gapi_dataReader handle,
+        void * (*pdcMainFnc)(void *)
+        ) : DDS::Entity_impl(handle),
+    pdc(NULL), workers(NULL), nrofWorkers(0)
 {
-  os_mutexAttr mutexAttr = { OS_SCOPE_PRIVATE };
-  if (os_mutexInit(&dr_mutex, &mutexAttr) != os_resultSuccess)
-  {
-    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to create mutex");
-  }
+    os_mutexAttr mutexAttr = { OS_SCOPE_PRIVATE };
+    if (os_mutexInit(&dr_mutex, &mutexAttr) != os_resultSuccess) {
+        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to create mutex");
+    }
+    assert(pdcMainFnc);
+    this->pdcMainFnc = pdcMainFnc;
 }
 
 DDS::DataReader_impl::~DataReader_impl()
 {
-  if (os_mutexDestroy(&dr_mutex) != os_resultSuccess)
-  {
-    OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to destroy mutex");
-  }
+    if(os_mutexLock(&dr_mutex) == os_resultSuccess) {
+        pdc_terminateWorkers(pdc);
+        pdc_joinWorkers(workers, nrofWorkers);
+        assert(nrofWorkers == 0);
+        os_mutexUnlock(&dr_mutex);
+    } else {
+        OS_REPORT(OS_FATAL, "CCPP", 0, "Unable to lock mutex");
+    }
+
+    if(os_mutexDestroy(&dr_mutex) != os_resultSuccess) {
+        OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to destroy mutex");
+    }
+
+    delete workers;
+    delete pdc;
+
+    return;
 }
 
 DDS::ReadCondition_ptr DDS::DataReader_impl::create_readcondition (
@@ -57,7 +78,7 @@ DDS::ReadCondition_ptr DDS::DataReader_impl::create_readcondition (
       if (myUD)
       {
         gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                  DDS::ccpp_CallBack_DeleteUserData, NULL);
+                                  ccpp_CallBack_DeleteUserData, NULL);
       }
       else
       {
@@ -107,14 +128,13 @@ DDS::QueryCondition_ptr DDS::DataReader_impl::create_querycondition (
         myUD = new DDS::ccpp_UserData(queryCondition);
         if (myUD)
         {
-	       gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                         DDS::ccpp_CallBack_DeleteUserData, NULL);
+           gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
+                                         ccpp_CallBack_DeleteUserData, NULL);
         }
         else
         {
           OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
         }
-        DDS::QueryCondition::_duplicate(queryCondition);
       }
       else
       {
@@ -174,11 +194,11 @@ DDS::ReturnCode_t DDS::DataReader_impl::set_qos (
 {
   DDS::ReturnCode_t result;
 
-  if (&qos == DDS::DefaultQos::DataReaderQosDefault)
+  if (&qos == &DDS::DefaultQos::DataReaderQosDefault.in())
   {
     result = gapi_dataReader_set_qos(_gapi_self, GAPI_DATAREADER_QOS_DEFAULT);
   }
-  else if (&qos == DDS::DefaultQos::DataReaderQosUseTopicQos)
+  else if (&qos == &DDS::DefaultQos::DataReaderQosUseTopicQos.in())
   {
     result = gapi_dataReader_set_qos(_gapi_self, GAPI_DATAREADER_QOS_USE_TOPIC_QOS);
   }
@@ -601,7 +621,7 @@ DDS::DataReaderView_ptr DDS::DataReader_impl::create_view (
                   if (myUD)
                   {
                     gapi_object_set_user_data(view_handle, (CORBA::Object *)myUD,
-                                              DDS::ccpp_CallBack_DeleteUserData, NULL);
+                                              ccpp_CallBack_DeleteUserData, NULL);
                   }
                   else
                   {
@@ -639,13 +659,8 @@ DDS::ReturnCode_t DDS::DataReader_impl::delete_view (
       if (os_mutexLock(&(dataReaderView->drv_mutex)) == os_resultSuccess)
       {
         result = gapi_dataReader_delete_view(_gapi_self, dataReaderView->_gapi_self);
-        if (result == DDS::RETCODE_OK)
+        if (result != DDS::RETCODE_OK)
         {
-          dataReaderView->_gapi_self = NULL;
-        }
-        else
-        {
-          result = DDS::RETCODE_ERROR;
           OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to delete view");
         }
         if (os_mutexUnlock(&(dataReaderView->drv_mutex)) != os_resultSuccess)
@@ -712,9 +727,10 @@ DDS::ReturnCode_t DDS::DataReader_impl::read (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
     return gapi_fooDataReader_read(
                 _gapi_self,
-                data_values,
+                &ctx,
                 &info_seq,
                 max_samples,
                 sample_states,
@@ -731,9 +747,10 @@ DDS::ReturnCode_t DDS::DataReader_impl::take (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
     return gapi_fooDataReader_take(
                 _gapi_self,
-                data_values,
+                &ctx,
                 &info_seq,
                 max_samples,
                 sample_states,
@@ -750,13 +767,14 @@ DDS::ReturnCode_t DDS::DataReader_impl::read_w_condition (
 {
   DDS::ReadCondition_impl_ptr readCondition;
   DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
+  ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
 
   readCondition = dynamic_cast<DDS::ReadCondition_impl_ptr>(a_condition);
   if (readCondition)
   {
     result = gapi_fooDataReader_read_w_condition(
                 _gapi_self,
-                data_values,
+                &ctx,
                 &info_seq,
                 max_samples,
                 readCondition->_gapi_self);
@@ -773,13 +791,14 @@ DDS::ReturnCode_t DDS::DataReader_impl::take_w_condition (
 {
   DDS::ReadCondition_impl_ptr readCondition;
   DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
+  ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
 
   readCondition = dynamic_cast<DDS::ReadCondition_impl_ptr>(a_condition);
   if (readCondition)
   {
     result = gapi_fooDataReader_take_w_condition(
                 _gapi_self,
-                data_values,
+                &ctx,
                 &info_seq,
                 max_samples,
                 readCondition->_gapi_self);
@@ -794,10 +813,11 @@ DDS::ReturnCode_t DDS::DataReader_impl::read_next_sample (
 {
   gapi_sampleInfo gapi_info;
   DDS::ReturnCode_t result;
+  ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
 
   result = gapi_fooDataReader_read_next_sample(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                static_cast<gapi_foo*>((void*)&ctx),
                 &gapi_info);
 
   if (result == DDS::RETCODE_OK)
@@ -814,10 +834,11 @@ DDS::ReturnCode_t DDS::DataReader_impl::take_next_sample (
 {
   gapi_sampleInfo gapi_info;
   DDS::ReturnCode_t result;
+  ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
 
   result = gapi_fooDataReader_take_next_sample(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                static_cast<gapi_foo*>((void*)&ctx),
                 &gapi_info);
 
   if (result == DDS::RETCODE_OK)
@@ -837,9 +858,10 @@ DDS::ReturnCode_t DDS::DataReader_impl::read_instance (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
     return gapi_fooDataReader_read_instance(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,
@@ -858,9 +880,10 @@ DDS::ReturnCode_t DDS::DataReader_impl::take_instance (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
     return gapi_fooDataReader_take_instance(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,
@@ -879,9 +902,10 @@ DDS::ReturnCode_t DDS::DataReader_impl::read_next_instance (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
     return gapi_fooDataReader_read_next_instance(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,
@@ -900,9 +924,10 @@ DDS::ReturnCode_t DDS::DataReader_impl::take_next_instance (
     DDS::InstanceStateMask instance_states
 ) THROW_ORB_EXCEPTIONS
 {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
     return gapi_fooDataReader_take_next_instance(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,
@@ -925,9 +950,10 @@ DDS::ReturnCode_t DDS::DataReader_impl::read_next_instance_w_condition (
   readCondition = dynamic_cast<DDS::ReadCondition_impl_ptr>(a_condition);
   if (readCondition)
   {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
     result = gapi_fooDataReader_read_next_instance_w_condition(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,
@@ -950,9 +976,10 @@ DDS::ReturnCode_t DDS::DataReader_impl::take_next_instance_w_condition (
   readCondition = dynamic_cast<DDS::ReadCondition_impl_ptr>(a_condition);
   if (readCondition)
   {
+    ccpp_DataReaderCopy_ctx ctx = {CCPP_CHECK_STATIC_INIT data_values, pdc};
     result = gapi_fooDataReader_take_next_instance_w_condition(
                 _gapi_self,
-                static_cast<gapi_foo*>(data_values),
+                &ctx,
                 &info_seq,
                 max_samples,
                 a_handle,
@@ -984,3 +1011,190 @@ DDS::InstanceHandle_t DDS::DataReader_impl::lookup_instance (
   return gapi_fooDataReader_lookup_instance(_gapi_self, static_cast<const gapi_foo*>(instance));
 }
 
+/**
+ * Sets the terminate-flag in the parallel demarshalling context and signals workers.
+ * @param[in] pdc the parallel demarshalling context to signal
+ * @pre dr_mutex locked
+ */
+static void
+pdc_terminateWorkers(
+    DDS::ccpp_parDemContext *pdc)
+{
+    if(pdc){
+        if(os_mutexLock(&pdc->superMtx) != os_resultSuccess) goto err_mutex_lock;
+        if(os_mutexLock(&pdc->mtx) != os_resultSuccess) goto err_mutex_lock;
+        pdc->terminate = 1U;
+        os_condBroadcast(&pdc->startCnd);
+        os_mutexUnlock(&pdc->mtx);
+        os_mutexUnlock(&pdc->superMtx);
+    }
+    return;
+
+err_mutex_lock:
+    OS_REPORT(OS_FATAL, "CCPP", 0, "Failed to claim mutex");
+    return;
+}
+
+/**
+ * Joins the worker-threads and only returns if all threads are stopped or returned
+ * an error.
+ * @param[in] workers the array of threads to join
+ * @param[in/out] nrofWorkers the number of elements in workers, decremented to 0.
+ * @pre dr_mutex locked
+ * @post nrofWorkers == 0
+ */
+static void
+pdc_joinWorkers(
+    os_threadId * workers,
+    unsigned int &nrofWorkers)
+{
+    while(nrofWorkers != 0){
+        os_result osresult;
+        if((osresult = os_threadWaitExit(workers[--nrofWorkers], NULL)) != os_resultSuccess){
+            OS_REPORT_1(OS_WARNING, "CCPP", osresult, "Failed to join worker thread; os_threadWaitExit returned %s", os_resultImage(osresult));
+        }
+    }
+}
+
+/* See header-file for */
+unsigned int
+DDS::DataReader_impl::set_ParallelReadThreadCount(
+    unsigned int value
+    )
+{
+    DDS::ReturnCode_t exc = DDS::RETCODE_OK;
+
+    if(os_mutexLock(&dr_mutex) != os_resultSuccess) {
+        OS_REPORT(OS_FATAL, "CCPP", 0, "Failed to claim mutex");
+        exc = DDS::RETCODE_ERROR;
+        goto fatal_mtx;
+    }
+
+    if(pdc){
+       /* Signal eventual current threads to shutdown */
+       pdc_terminateWorkers(pdc);
+       /* Join threads */
+       pdc_joinWorkers(workers, nrofWorkers);
+       /* Assert that all threads are actually stopped, so the terminate flag is
+       * reset (last one to stop will do this). */
+       assert(pdc->terminate == 0);
+       delete workers;
+       workers = NULL;
+       /* If the requested size is 0 or 1, this will both result in a single-threaded
+        * copy, so we don't have to start any extra threads. If previously there
+        * were threads created, we can now cleanup the context as well. */
+       if(value <= 1){
+           delete pdc;
+           pdc = NULL;
+       }
+    }
+
+    if(value > 1){
+       if(!pdc){
+           /* Create a parallelDemarshalling context. */
+           try{
+               if((pdc = new ccpp_parDemContext()) == NULL) {
+                   exc = DDS::RETCODE_OUT_OF_RESOURCES;
+                   goto err_out_of_resources;
+               }
+           } catch (::DDS::ReturnCode_t e){
+               exc = e;
+               goto err_out_of_resources;
+           }
+       }
+
+       os_threadAttr thrAttrs;
+       os_result result;
+
+       if((result = os_threadAttrInit(&thrAttrs)) != os_resultSuccess){
+           exc = DDS::RETCODE_ERROR;
+           goto err_thr_attrs;
+       }
+       if((workers = new os_threadId[value - 1]) == NULL){
+           exc = DDS::RETCODE_OUT_OF_RESOURCES;
+           goto err_workers_alloc;
+       }
+
+       assert(pdcMainFnc);
+       assert(nrofWorkers == 0);
+       for(nrofWorkers = 0; nrofWorkers < (value - 1); nrofWorkers++){
+           result = os_threadCreate(
+                       &workers[nrofWorkers],
+                       "parDemWorker", /* TODO: pretty name */
+                       &thrAttrs,
+                       pdcMainFnc,
+                       (void*)pdc);
+           if(result != os_resultSuccess){
+               nrofWorkers--;
+               /* If a thread was started (nrofWorkers > 0), then something
+                * happened and we warn that not all threads could be started
+                * (probably due to out of resources condition).
+                * If no threads were started at all, an error occurred. */
+               OS_REPORT_2(nrofWorkers ? OS_WARNING : OS_ERROR, "CCPP", result, "Starting a parallel demarshalling worker thread failed; %d out of %d requested threads are available for parallel demarshalling.", nrofWorkers + 1,  value);
+               if(nrofWorkers == 0) {
+                   exc = DDS::RETCODE_ERROR;
+                   goto err_thread_start;
+               } else {
+                   break;
+               }
+           }
+       }
+    }
+
+    os_mutexUnlock(&dr_mutex);
+    /* When a ParallelReadThreadCount of x is requested only x - 1 threads are
+     * started, since the application thread is performing read actions as well */
+    return nrofWorkers + 1;
+
+/* Error handling */
+err_thread_start:
+err_workers_alloc:
+err_thr_attrs:
+err_out_of_resources:
+    os_mutexUnlock(&dr_mutex);
+fatal_mtx:
+    assert(exc != DDS::RETCODE_OK);
+    throw exc;
+}
+
+DDS::ReturnCode_t DDS::DataReader_impl::set_property (
+    const DDS::Property & prop
+) THROW_ORB_EXCEPTIONS
+{
+    DDS::ReturnCode_t result = DDS::RETCODE_BAD_PARAMETER;
+
+    if(prop.name == NULL) return result; /* Bad parameter */
+
+    /* Currently parameters are not stored, so can't be queried later either. */
+    if(strcmp("parallelReadThreadCount", prop.name) == 0){
+        if(!prop.value) return result; /* Bad parameter */
+
+        long int nrofThreads;
+        char * end;
+
+        nrofThreads = strtol(prop.value, &end, 10);
+        if(*end == '\0' && nrofThreads >= 0){
+            /* The entire string was valid and contains a valid value */
+            try{
+                if(set_ParallelReadThreadCount(nrofThreads) < nrofThreads){
+                    result = DDS::RETCODE_OUT_OF_RESOURCES;
+                } else {
+                    result = DDS::RETCODE_OK;
+                }
+            } catch (DDS::ReturnCode_t exc){
+                result = exc;
+            }
+        }
+    } else {
+        result = DDS::RETCODE_UNSUPPORTED;
+    }
+
+    return result;
+}
+
+DDS::ReturnCode_t DDS::DataReader_impl::get_property (
+    DDS::Property & prop
+) THROW_ORB_EXCEPTIONS
+{
+    return DDS::RETCODE_UNSUPPORTED;
+}

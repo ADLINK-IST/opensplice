@@ -1,0 +1,63 @@
+<OpenSplice>
+   <Domain>
+      <Name>ospl_sp_native</Name>
+      <Id>0</Id>
+      <SingleProcess>true</SingleProcess>
+      <Service name="networking">
+         <Command>networking</Command>
+      </Service>
+      <Service name="durability">
+         <Command>durability</Command>
+      </Service>
+      <Service name="cmsoap">
+         <Command>cmsoap</Command>
+      </Service>
+   </Domain>
+   <NetworkService name="networking">
+      <Partitioning>
+         <GlobalPartition Address="broadcast"/>
+         <NetworkPartitions>
+            <NetworkPartition Address="239.0.0.2" Connected="true" Name="ChatRoom1"/>
+         </NetworkPartitions>
+         <PartitionMappings>
+            <PartitionMapping DCPSPartitionTopic="ChatRoom1.*" NetworkPartition="ChatRoom1"/>
+         </PartitionMappings>
+      </Partitioning>
+      <Channels>
+         <Channel default="true" enabled="true" name="BestEffort" reliable="false">
+            <PortNr>53400</PortNr>
+         </Channel>
+         <Channel enabled="true" name="Reliable" reliable="true">
+            <PortNr>53410</PortNr>
+         </Channel>
+      </Channels>
+      <Discovery enabled="true">
+         <PortNr>53420</PortNr>
+      </Discovery>
+   </NetworkService>
+   <DurabilityService name="durability">
+      <Network>
+         <Alignment>
+            <TimeAlignment>FALSE</TimeAlignment>
+            <RequestCombinePeriod>
+               <Initial>2.5</Initial>
+               <Operational>0.1</Operational>
+            </RequestCombinePeriod>
+         </Alignment>
+         <WaitForAttachment maxWaitCount="10">
+            <ServiceName>networking</ServiceName>
+         </WaitForAttachment>
+      </Network>
+      <NameSpaces>
+         <NameSpace name="defaultNamespace">
+            <Partition>*</Partition>
+         </NameSpace>
+         <Policy alignee="Initial" aligner="True" durability="Durable" nameSpace="defaultNamespace"/>
+      </NameSpaces>
+   </DurabilityService>
+   <TunerService name="cmsoap">
+      <Server>
+         <PortNr>Auto</PortNr>
+      </Server>
+   </TunerService>
+</OpenSplice>

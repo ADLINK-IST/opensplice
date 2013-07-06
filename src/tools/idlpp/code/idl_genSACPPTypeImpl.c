@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -121,11 +121,11 @@ idl_arrayTypeImpl(
     if ((idl_typeSpecType(actualType) == idl_tbasic) &&
         (idl_typeBasicType(idl_typeBasic(actualType)) == idl_string)) {
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"DDS::String_mgr *ret = (DDS::String_mgr *) new DDS::String_mgr[%d];\n",totalDim);
+        idl_fileOutPrintf(idl_fileCur(),"::DDS::String_mgr *ret = (::DDS::String_mgr *) new ::DDS::String_mgr[%d];\n",totalDim);
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"for (DDS::ULong i = 0; i < %d; i++) {\n", totalDim);
+        idl_fileOutPrintf(idl_fileCur(),"for (::DDS::ULong i = 0; i < %d; i++) {\n", totalDim);
         idl_printIndent(arg->indent_level+1);
-        idl_fileOutPrintf(idl_fileCur(),"ret[i] = (DDS::String)NULL;\n");
+        idl_fileOutPrintf(idl_fileCur(),"ret[i] = (::DDS::String)NULL;\n");
         idl_printIndent(arg->indent_level);
         idl_fileOutPrintf(idl_fileCur(),"}\n");
         idl_printIndent(arg->indent_level);
@@ -162,11 +162,11 @@ idl_arrayTypeImpl(
         idl_fileOutPrintf(idl_fileCur(),"if (s) {\n");
         arg->indent_level++;
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"DDS::String_mgr *base = (DDS::String_mgr *)s;\n");
+        idl_fileOutPrintf(idl_fileCur(),"::DDS::String_mgr *base = (::DDS::String_mgr *)s;\n");
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"for (DDS::ULong i = 0; i < %d; i++) {\n", totalDim);
+        idl_fileOutPrintf(idl_fileCur(),"for (::DDS::ULong i = 0; i < %d; i++) {\n", totalDim);
         idl_printIndent(arg->indent_level+1);
-        idl_fileOutPrintf(idl_fileCur(),"base[i] = (DDS::String)NULL;\n");
+        idl_fileOutPrintf(idl_fileCur(),"base[i] = (::DDS::String)NULL;\n");
         idl_printIndent(arg->indent_level);
         idl_fileOutPrintf(idl_fileCur(),"}\n");
         arg->indent_level--;
@@ -196,16 +196,16 @@ idl_arrayTypeImpl(
     if ((idl_typeSpecType(actualType) == idl_tbasic) &&
         (idl_typeBasicType(idl_typeBasic(actualType)) == idl_string)) {
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"DDS::String_mgr *sv = (DDS::String_mgr *)from;\n");
+        idl_fileOutPrintf(idl_fileCur(),"::DDS::String_mgr *sv = (::DDS::String_mgr *)from;\n");
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"DDS::String_mgr *tv = (DDS::String_mgr *)to;\n");
+        idl_fileOutPrintf(idl_fileCur(),"::DDS::String_mgr *tv = (::DDS::String_mgr *)to;\n");
         idl_printIndent(arg->indent_level);
-        idl_fileOutPrintf(idl_fileCur(),"for (DDS::ULong i = 0; i < %d; i++) {\n", totalDim);
+        idl_fileOutPrintf(idl_fileCur(),"for (::DDS::ULong i = 0; i < %d; i++) {\n", totalDim);
         idl_printIndent(arg->indent_level+1);
-        idl_fileOutPrintf(idl_fileCur(),"tv[i] = DDS::string_dup (sv[i]);\n");
+        idl_fileOutPrintf(idl_fileCur(),"tv[i] = ::DDS::string_dup (sv[i]);\n");
         idl_printIndent(arg->indent_level);
         idl_fileOutPrintf(idl_fileCur(),"}\n");
-        
+
     } else {
         if (idl_typeSpecType(actualType) == idl_tseq) {
             /* \TODO */
@@ -219,7 +219,7 @@ idl_arrayTypeImpl(
                 idl_corbaCxxTypeFromTypeSpec(actualType),
                 idl_corbaCxxTypeFromTypeSpec(actualType));
             idl_printIndent(arg->indent_level);
-            idl_fileOutPrintf(idl_fileCur(),"for (DDS::ULong i = 0; i < %d; i++) {\n", totalDim);
+            idl_fileOutPrintf(idl_fileCur(),"for (::DDS::ULong i = 0; i < %d; i++) {\n", totalDim);
             idl_printIndent(arg->indent_level+1);
             idl_fileOutPrintf(idl_fileCur(),"tv[i] = sv[i];\n");
             idl_printIndent(arg->indent_level);
@@ -600,7 +600,7 @@ idl_typedefOpenClose(
     refName = idl_typeSpecName(refType);
     scopedName = idl_corbaCxxTypeFromTypeSpec(idl_typeSpec(defSpec));
     if (idl_typeSpecType(refType) == idl_tarray) { /* ex. typedef long myArr[22]; */
-        idl_arrayTypeImpl(idl_typeArray(refType), scopedName, arg); 
+        idl_arrayTypeImpl(idl_typeArray(refType), scopedName, arg);
     } else {
         if (idl_typeSpecType(actualType) == idl_tarray) {
             /* Generate implementation _alloc() method */

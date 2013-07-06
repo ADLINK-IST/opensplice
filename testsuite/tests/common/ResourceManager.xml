@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "../../stax/stax.dtd">
+
+<stax>
+    <defaultcall function="CreateResourcePools">0</defaultcall>
+
+    <function name="CreateResourcePools">
+        <function-prolog>
+         <![CDATA[
+            <p>Create STAF resource pools for TestMachines and OpenSplice networking ports. These
+            resources can be locked/released by a testcase. This allows multiple testcases to run
+            simultaneous without concurrent scripts interfering on the same machine or on the
+            networking level if the same UDP ports are used by two different testcases. This function
+            is called by the 'Initialize' function of the HostManager.
+            </p>
+         ]]>   
+        </function-prolog>
+        <function-list-args>
+            <function-required-arg name="purge">
+                If resource pools already exist on the resource pool machine, purge and delete them.
+                This also clears locked resources. 
+            </function-required-arg>
+            <function-optional-arg name="resPoolServer" default="'local'">
+                Hostname of the machine that is managing the resource pools. Optional argument which defaults to 'local'.
+                This is stored in a global variable named 'resourceHost' for easy access later on. 
+            </function-optional-arg>
+        </function-list-args>
+        <sequence>
+            <script>
+                resourceHost = STAXGlobal([resPoolServer])
+            </script>
+            <call function="'InitializePool'">
+                'TestMachines', 'Available test machines by hostname', purge
+            </call>
+            <call function="'InitializePool'">
+                'NetworkingPorts', 'Available (UDP) ports for use by OpenSplice during tests', purge
+            </call>
+        </sequence>
+    </function>
+
+    <function name="InitializePool">
+        <function-prolog>
+        <![CDATA[
+            <p>Create a STAF resource pool. If a resource pool with the specified name already exists,
+            it will be deleted and recreated as a new, empty, pool if there're no outstanding requests in the pool.</p>
+        ]]>
+        </function-prolog>
+
+        <function-list-args>
+            <function-required-arg name="poolName">
+                The name of the resource pool to create.
+            </function-required-arg>
+            <function-optional-arg name="poolDesc" default="'None'">
+                Optional argument to specify a pool description.
+            </function-optional-arg>
+            <function-optional-arg name="purge" default="0">
+                Optional argument, if set it will recreate the resource pool if it already exists.
+            </function-optional-arg>
+        </function-list-args>
+
+        <sequence>
+            <stafcmd name="'CreatePool'">
+                <location>resourceHost[0]</location>
+                <service>'RESPOOL'</service>
+                <request>'CREATE POOL %s DESCRIPTION %s' % (poolName, poolDesc)</request>
+            </stafcmd>
+            <if expr="RC == STAFRC.Ok">
+                <log message="STAXMessageLog" level="'info'">
+                    'ResourceManager: Resource pool %s successfully created on machine %s' % (poolName, resourceHost[0])
+                </log>
+                <elseif expr="RC == STAFRC.AlreadyExists">
+                    <if expr="purge == 1">
+                        <sequence>
+                            <stafcmd name="'DeleteExistingPool'">
+                                <location>resourceHost[0]</location>
+                                <service>'RESPOOL'</service>
+                                <request>'DELETE POOL %s CONFIRM' % poolName</request>
+                            </stafcmd>
+                            <if expr="RC == STAFRC.Ok">
+                                <sequence>
+                                    <stafcmd name="'RecreatePool'">
+                                        <location>resourceHost[0]</location>
+                                        <service>'RESPOOL'</service>
+                                        <request>'CREATE POOL %s DESCRIPTION %s' % (poolName, poolDesc)</request>
+                                    </stafcmd>
+                                    <log message="STAXMessageLog" if="RC == STAFRC.Ok" level="'info'">
+                                        'ResourceManager: Existing pool %s successfully purged and recreated on machine %s' % (poolName, resourceHost[0])
+                                    </log>
+                                    <log message="STAXMessageLog" if="RC != STAFRC.Ok" level="'error'">
+                                        'ResourceManager: Failed to recreate pool %s on machine %s' % (poolName, resourceHost[0])
+                                    </log>
+                                </sequence>
+                                <else>
+                                    <log message="STAXMessageLog" level="'error'">
+                                        'ResourceManager: Failed to delete pool %s (RC=%s STAFResult=%s)' % (poolName, RC, STAFResult)
+                                    </log>
+                                </else>
+                            </if>
+                        </sequence>
+                        <else>
+                            <log message="STAXMessageLog" level="'info'">
+                                'ResourceManager: Pool %s already exists on machine %s' % (poolName, resourceHost[0])
+                            </log>
+                        </else>
+                    </if>
+                </elseif>
+                <else>
+                    <log message="STAXMessageLog" level="'error'">
+                        'ResourceManager: Unhandled return code (RC=%s STAFResult=%s)' % (RC, STAFResult)
+                    </log>
+                </else>
+            </if>
+        </sequence>
+    </function>
+    
+    <function name="AddPortResource">
+        <function-prolog>
+        <![CDATA[
+            <p>Add a networking port entry to the 'NetworkingPorts' resource pool</p>
+        ]]>
+        </function-prolog>
+        <function-epilog>
+        <![CDATA[
+            <p>The function returns the RC and STAFResult values of the call to 
+            the STAF resource service.</p>
+        ]]>
+        </function-epilog>
+        <function-single-arg>
+            <function-required-arg name="port">Port number</function-required-arg>
+        </function-single-arg>
+        <sequence>
+            <!-- Add port to 'NetworkingPorts' resource pool -->
+            <stafcmd name="'addPortResource::AddEntry'">
+                <location>resourceHost[0]</location>
+                <service>'RESPOOL'</service>
+                <request>'ADD POOL NetworkingPorts ENTRY %d' % port</request>
+            </stafcmd>
+            <return>RC, STAFResult</return>
+        </sequence>
+    </function>
+    
+    <function name="AddHostResource">
+        <function-prolog>
+        <![CDATA[
+            <p>Add a host entry to the 'TestMachines' resource pool. Connectivity with the host
+            is confirmed using the STAF ping service. If a host doesn't respond within 10 seconds it
+            is probably not reachable on the network so there is no need to wait for an answer to the
+            ping request. Other possible results may indicate a host is up but not running the STAF service,
+            or an illegal hostname is used.</p>
+        ]]>
+        </function-prolog>
+        <function-epilog>
+        <![CDATA[
+            <p>The function returns the RC and result message if a host doesn't respond to the ping request
+            in time. If the host responds, it is added to the resource pool and the RC and STAFResult values of
+            the call to the STAF resource service are returned.</p>
+        ]]>
+        </function-epilog>
+        <function-single-arg>
+            <function-required-arg name="host">TestMachine identifier, either hostname or IP address</function-required-arg>
+        </function-single-arg>
+        <sequence>
+            <!--  Check if host is reachable and is running STAFProc -->
+            <timer duration="'10s'">
+                <sequence>
+                    <stafcmd name="'addHostResource::Ping'">
+                        <location>'local'</location>
+                        <service>'PING'</service>
+                        <request>'PING MACHINE %s' % (host.get_staf_url())</request>
+                    </stafcmd>
+                    <if expr="RC != STAFRC.Ok">
+                        <return>RC, STAFResult</return>
+                    </if>
+                </sequence>
+            </timer>
+            <if expr="RC == 1">
+                <return>RC, 'Ping Timeout'</return>
+            </if>
+            
+            <!--  Add hostname to 'TestMachines' resource pool -->
+            <stafcmd name="'addHostResource:AddEntry'">
+                <location>resourceHost[0]</location>
+                <service>'RESPOOL'</service>
+                <request>'ADD POOL TestMachines ENTRY %s' % host.get_hostname()</request>
+            </stafcmd>
+            <return>RC, STAFResult</return>
+        </sequence>
+    </function>
+    
+    <function name="RequestHostResource" scope="local">
+        <function-prolog>
+        <![CDATA[
+            <p>Request a resource entry from the 'TestMachines' resource pool. If the request succeeds within the specified timeout, the resource is locked.
+            A locked host resource needs to be explicitely released by a call to 'ReleaseHostResource'.</p>
+        ]]>
+        </function-prolog>
+        <function-epilog>
+        <![CDATA[
+            <p>The result code of the call to the STAF resource service is returned.</p>
+        ]]>
+        </function-epilog>
+        <function-list-args>
+            <function-required-arg name="hostname">The identifier of the requested entry (hostname or IP address)</function-required-arg>
+            <function-optional-arg name="timeout" default="120">Time (in secondes) to wait for a succesful lock</function-optional-arg>
+        </function-list-args>
+        <sequence>
+            <stafcmd name="'RequestHostResource'">
+                <location>resourceHost[0]</location>
+                <service>'RESPOOL'</service>
+                <request>'REQUEST POOL TestMachines ENTRY %s TIMEOUT %ds GARBAGECOLLECT No' % (hostname, timeout)</request>
+            </stafcmd>
+            <return>RC</return>
+        </sequence>
+    </function>
+    
+    <function name="ReleaseHostResource" scope="local">
+        <function-prolog>
+        <![CDATA[
+            <p>Release a resource entry from the 'TestMachines' resource pool.</p>
+        ]]>
+        </function-prolog>
+        <function-epilog>
+        <![CDATA[
+            <p>The result code of the call to the STAF resource service is returned.</p>
+        ]]>
+        </function-epilog>
+        <function-list-args>
+            <function-required-arg name="hostname">The identifier of the entry to release (hostname or IP address)</function-required-arg>
+        </function-list-args>
+        <sequence>
+            <stafcmd name="'ReleaseHostResource'">
+                <location>resourceHost[0]</location>
+                <service>'RESPOOL'</service>
+                <request>'RELEASE POOL TestMachines ENTRY %s FORCE' % hostname</request>
+            </stafcmd>
+            <return>RC</return>
+        </sequence>
+    </function>
+    
+    <function name="RequestPortResource" scope="local">
+        <function-prolog>
+        <![CDATA[
+            <p>Request a resource entry from the 'NetworkingPorts' resource pool. If the request succeeds within the specified timeout, the resource is locked.
+            A locked port resource needs to be explicitely released by a call to 'ReleasePortResource'. A specific port number can be requested but this argument is optional,
+            if omitted, a random port will be returned.</p>
+        ]]>
+        </function-prolog>
+        <function-epilog>
+        <![CDATA[
+            <p>The result code of the call to the STAF resource service is returned. If the call is successful the portnumber is also returned.</p>
+        ]]>
+        </function-epilog>
+        <function-list-args>
+            <function-optional-arg name="port" default="None">The identifier of the requested entry (UDP port number)</function-optional-arg>
+            <function-optional-arg name="timeout" default="120">Time (in secondes) to wait for a succesful lock</function-optional-arg>
+        </function-list-args>
+        <sequence>
+            <script>
+                if port == None:
+                    entry = 'RANDOM'
+                else:
+                    entry = 'ENTRY %s' % port
+            </script>
+            <stafcmd name="'RequestPortResource'">
+                <location>resourceHost[0]</location>
+                <service>'RESPOOL'</service>
+                <request>'REQUEST POOL NetworkingPorts %s TIMEOUT %ds GARBAGECOLLECT No' % (entry, timeout)</request>
+            </stafcmd>
+            <if expr="RC != STAFRC.Ok">
+                <throw exception="Resource.NoPortAvailable">'No available Host'</throw>
+            </if>
+            <return>[RC, STAFResult]</return>
+        </sequence>
+    </function>
+    
+    <function name="ReleasePortResource">
+        <function-prolog>
+        <![CDATA[
+            <p>Release a resource entry from the 'NetworkingPorts' resource pool.</p>
+        ]]>
+        </function-prolog>
+        <function-epilog>
+        <![CDATA[
+            <p>The result code of the call to the STAF resource service is returned.</p>
+        ]]>
+        </function-epilog>
+        <function-list-args>
+            <function-required-arg name="port">The identifier of the entry to release (UDP port number)</function-required-arg>
+        </function-list-args>
+        <sequence>
+            <stafcmd name="'ReleaseHostResource'">
+                <location>resourceHost[0]</location>
+                <service>'RESPOOL'</service>
+                <request>'RELEASE POOL NetworkingPorts ENTRY %s FORCE' % port</request>
+            </stafcmd>
+            <return>RC</return>
+        </sequence>
+    </function>
+</stax>

@@ -2,11 +2,11 @@
 
 . $OSPL_HOME/install/make_functions
 
-set_envs $*
+set_envs "$@"
 
 make_hde_mirror_and_builder
 
-if [ "${SOURCE_TARGET_SHORT}" != "int" ]
+if [ "${SOURCE_TARGET_SHORT}" != "int" -a "${SOURCE_TARGET_SHORT}" != "pikeos" ]
 then
     make_rts_mirror_and_builder
 fi

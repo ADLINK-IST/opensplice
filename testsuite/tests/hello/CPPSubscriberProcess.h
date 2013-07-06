@@ -45,7 +45,7 @@ class CPPSubscriberProcess
             = ::DDS::DomainParticipantFactory::get_instance ();
 
         ::DDS::DomainParticipant_var domain_participant
-                = factory->create_participant (this->default_domain_id_.in (),
+                = factory->create_participant (this->default_domain_id_,
                                               PARTICIPANT_QOS_DEFAULT,
                                               ::DDS::DomainParticipantListener::_nil (),
                                               0UL);

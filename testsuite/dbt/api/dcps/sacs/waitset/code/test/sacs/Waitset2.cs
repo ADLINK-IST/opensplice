@@ -41,7 +41,7 @@ namespace test.sacs
                 result.Result = "get_default_participant_qos failed.";
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, qosHolder);//, null, 0);
+            participant = factory.CreateParticipant(DDS.DomainId.Default, qosHolder);//, null, 0);
             if (participant == null)
             {
                 result.Result = "create_participant failed.";

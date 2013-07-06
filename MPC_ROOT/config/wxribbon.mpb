@@ -1,0 +1,9 @@
+// $Id$
+project: wxadvanced, wxhtml, wxxml {
+  specific(prop:windows) {                                  
+    Debug::lit_libs   += wx$(WX_PORT)$(WX_VERSION)$(WX_UNICODE)d_ribbon
+    Release::lit_libs += wx$(WX_PORT)$(WX_VERSION)$(WX_UNICODE)_ribbon
+  } else {
+    lit_libs += wx_$(WX_PORT)$(WX_UNICODE)_ribbon$(WX_VERSION)
+  }
+}

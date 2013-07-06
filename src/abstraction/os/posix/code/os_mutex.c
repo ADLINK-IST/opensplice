@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,6 +19,7 @@
 #include <../posix/code/os__mutex.h>
 #include <os_report.h>
 #include <os_signature.h>
+#include <os_init.h>
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
@@ -31,10 +32,12 @@ static os_boolean ospl_mtx_prio_inherit = OS_FALSE;
 #endif
 #endif
 
+/* #define OSPL_ERROR_CHECKING_MUTEX */
+
 void
 os_mutexModuleInit()
 {
-//    ospl_mtx_prio_inherit = 0;
+    /* ospl_mtx_prio_inherit = 0; */
 }
 
 void
@@ -64,6 +67,11 @@ os_mutexSetPriorityInheritanceMode(
  * In case the scope attribute is \b OS_SCOPE_SHARED, the posix
  * mutex "pshared" attribute is set to \b PTHREAD_PROCESS_SHARED
  * otherwise it is set to \b PTHREAD_PROCESS_PRIVATE.
+ *
+ * When in single process mode, a request for a SHARED variable will
+ * implictly create a PRIVATE equivalent.  This is an optimisation
+ * because there is no need for "shared" multi process variables in
+ * single process mode.
  */
 os_result
 os_mutexInit (
@@ -77,15 +85,25 @@ os_mutexInit (
     assert (mutex != NULL);
     assert (mutexAttr != NULL);
 #ifdef OSPL_STRICT_MEM
-    assert (mutex->signature != OS_MUTEX_MAGIC_SIG);
+    assert (mutex->signature != OS_MUTEX_MAGIC_SIG && "Double Initialization of mutex" );
 #endif
 
     pthread_mutexattr_init (&mattr);
-    if (mutexAttr->scopeAttr == OS_SCOPE_SHARED) {
+
+#ifndef OS_OMIT_PROCESS_SHARED_MUTEX_SETUP
+    /* In single process mode only "private" variables are required */
+    if (mutexAttr->scopeAttr == OS_SCOPE_SHARED && !os_serviceGetSingleProcess ()) {
         result = pthread_mutexattr_setpshared (&mattr, PTHREAD_PROCESS_SHARED);
     } else {
         result = pthread_mutexattr_setpshared (&mattr, PTHREAD_PROCESS_PRIVATE);
     }
+#endif
+#ifdef OSPL_ERROR_CHECKING_MUTEX
+    /* Do not store in result, since it is not a showstopper. Just warn. */
+    if(pthread_mutexattr_settype(&mattr, PTHREAD_MUTEX_ERRORCHECK)){
+        OS_REPORT(OS_INFO, "os_mutexInit", 0, "Error-checking mutex not supported");
+    }
+#endif
 #ifdef OSPL_PRIO_INHERIT_SUPPORTED
 /* only if priority inheritance is supported in the pthread lib */
     if ((result == 0) && ospl_mtx_prio_inherit) {
@@ -135,7 +153,7 @@ os_mutexDestroy (
     assert (mutex != NULL);
 
 #ifdef OSPL_STRICT_MEM
-    assert(mutex->signature == OS_MUTEX_MAGIC_SIG);
+    assert(mutex->signature == OS_MUTEX_MAGIC_SIG && "Destroy of invalid mutex");
     result = pthread_mutex_destroy (&mutex->mutex);
 #else
     result = pthread_mutex_destroy (mutex);
@@ -153,7 +171,7 @@ os_mutexDestroy (
                     "Operation failed: mutex 0x%x, result = %s",
                     mutex, strerror(result));
         assert(OS_FALSE);
-        rv=  os_resultFail;
+        rv = os_resultFail;
     }
     return rv;
 }
@@ -173,7 +191,7 @@ os_mutexLock (
     assert (mutex != NULL);
 
 #ifdef OSPL_STRICT_MEM
-    assert(mutex->signature == OS_MUTEX_MAGIC_SIG);
+    assert(mutex->signature == OS_MUTEX_MAGIC_SIG && "Lock of invalid mutex");
     result = pthread_mutex_lock (&mutex->mutex);
 #else
     result = pthread_mutex_lock (mutex);
@@ -181,12 +199,20 @@ os_mutexLock (
 
     if (result == 0) {
         rv=  os_resultSuccess;
-    } else {
+    }
+#ifdef OSPL_ERROR_CHECKING_MUTEX
+    else if (result == EDEADLK){
+        OS_REPORT_1(OS_FATAL, "os_mutexLock", 0, "Deadlock on mutex 0x%x", mutex);
+        assert(OS_FALSE);
+        rv = os_resultFail;
+    }
+#endif
+    else {
         OS_REPORT_2(OS_ERROR,"os_mutexLock",0,
                     "Operation failed: mutex 0x%x, result = %s",
                     mutex, strerror(result));
         assert(OS_FALSE);
-        rv=  os_resultFail;
+        rv = os_resultFail;
     }
     return rv;
 }
@@ -206,7 +232,7 @@ os_mutexTryLock (
 
     assert (mutex != NULL);
 #ifdef OSPL_STRICT_MEM
-    assert(mutex->signature == OS_MUTEX_MAGIC_SIG);
+    assert(mutex->signature == OS_MUTEX_MAGIC_SIG && "Trylock of invalid mutex");
     result = pthread_mutex_trylock (&mutex->mutex);
 #else
     result = pthread_mutex_trylock (mutex);
@@ -240,7 +266,7 @@ os_mutexUnlock (
 
     assert (mutex != NULL);
 #ifdef OSPL_STRICT_MEM
-    assert(mutex->signature == OS_MUTEX_MAGIC_SIG);
+    assert(mutex->signature == OS_MUTEX_MAGIC_SIG && "Unlock of invalid mutex");
     result = pthread_mutex_unlock (&mutex->mutex);
 #else
     result = pthread_mutex_unlock (mutex);
@@ -248,7 +274,15 @@ os_mutexUnlock (
 
     if (result == 0) {
         rv=  os_resultSuccess;
-    } else {
+    }
+#ifdef OSPL_ERROR_CHECKING_MUTEX
+    else if (result == EPERM){
+        OS_REPORT_1(OS_FATAL, "os_mutexUnlock", 0, "Trying to unlock a not locked mutex 0x%x", mutex);
+        assert(OS_FALSE);
+        rv = os_resultFail;
+    }
+#endif
+    else {
         OS_REPORT_2(OS_ERROR,"os_mutexUnlock",0,
                     "Operation failed: mutex 0x%x, result = %s",
                     mutex, strerror(result));

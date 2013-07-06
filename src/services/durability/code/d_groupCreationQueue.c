@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "d__groupCreationQueue.h"
@@ -70,7 +70,7 @@ d_waitForCompletenessDCPSTopic(
                 os_nanoSleep(sleepTime);
             }
         } else {
-            completeness = D_GROUP_UNKNOWN;
+            completeness = D_GROUP_KNOWLEDGE_UNDEFINED;
         }
     } while((completeness != D_GROUP_COMPLETE) && (queue->terminate == FALSE));
 

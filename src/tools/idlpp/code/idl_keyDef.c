@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -117,8 +117,8 @@ idl_keyResolve (
             typeScope = keyMap->scope;
             while (si >= 0) {
                 /* for each scope element */
-                if (idl_scopeElementType(idl_scopeIndexed (scope, si)) == idl_tModule &&
-                    strcmp (typeScope->name, idl_scopeElementName(idl_scopeIndexed (scope, si))) == 0) {
+                if ((idl_scopeElementType(idl_scopeIndexed (scope, si)) == idl_tModule) && (typeScope->name != NULL) &&
+                    (strcmp (typeScope->name, idl_scopeElementName(idl_scopeIndexed (scope, si))) == 0)) {
                     /* the scope is a module and the scope name compares */
                     si--;
                     if (typeScope) {
@@ -126,19 +126,19 @@ idl_keyResolve (
                     }
                     if (si == -1) {
                         /* bottom of the stack is reached */
-                        if (typeScope == NULL || typeScope->name == NULL) {
-                        /* the typeScope has reached the bottom too,
-                           thus the scopes are equal
-                        */
-                        return keyMap->keyList;
+                        if ((typeScope == NULL) || (typeScope->name == NULL)) {
+                            /* the typeScope has reached the bottom too,
+                               thus the scopes are equal
+                            */
+                            return keyMap->keyList;
+                        }
                     }
+                } else {
+                    si = -1;
                 }
-            } else {
-                si = -1;
             }
-	    }
-	}
-	li++;
+        }
+        li++;
     }
     return NULL;
 }

@@ -108,9 +108,11 @@ namespace DDS.OpenSplice
                                 mask);
                         if (gapiPtr != IntPtr.Zero)
                         {
-                            TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
-                                    as OpenSplice.TypeSupport;
-                            dataReader = typeSupport.CreateDataReader(gapiPtr);
+                            DDS.OpenSplice.DomainParticipant participantImpl;
+                    
+                            participantImpl = topic.Participant as DDS.OpenSplice.DomainParticipant;
+                            TypeSupportFactory tsFactory = participantImpl.GetTypeSupportFactory(topic.TypeName);
+                            dataReader = tsFactory.CreateDataReader(gapiPtr);
                             dataReader.SetListener(listenerHelper);
                         }
                     }
@@ -125,9 +127,11 @@ namespace DDS.OpenSplice
                             StatusKind.Any);
                     if (gapiPtr != IntPtr.Zero)
                     {
-                        TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
-                                as OpenSplice.TypeSupport;
-                        dataReader = typeSupport.CreateDataReader(gapiPtr);
+                        DDS.OpenSplice.DomainParticipant participantImpl;
+                    
+                        participantImpl = topic.Participant as DDS.OpenSplice.DomainParticipant;
+                        TypeSupportFactory tsFactory = participantImpl.GetTypeSupportFactory(topic.TypeName);
+                        dataReader = tsFactory.CreateDataReader(gapiPtr);
                     }
                 }
             }
@@ -187,9 +191,11 @@ namespace DDS.OpenSplice
                                         mask);
                                 if (gapiPtr != IntPtr.Zero)
                                 {
-                                    TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
-                                            as OpenSplice.TypeSupport;
-                                    dataReader = typeSupport.CreateDataReader(gapiPtr);
+                                    DDS.OpenSplice.DomainParticipant participantImpl;
+                    
+                                    participantImpl = topic.Participant as DDS.OpenSplice.DomainParticipant;
+                                    TypeSupportFactory tsFactory = participantImpl.GetTypeSupportFactory(topic.TypeName);
+                                    dataReader = tsFactory.CreateDataReader(gapiPtr);
                                     dataReader.SetListener(listenerHelper);
                                 }
                             }
@@ -204,9 +210,11 @@ namespace DDS.OpenSplice
                                     mask);
                             if (gapiPtr != IntPtr.Zero)
                             {
-                                TypeSupport typeSupport = topic.Participant.GetTypeSupport(topic.TypeName)
-                                        as OpenSplice.TypeSupport;
-                                dataReader = typeSupport.CreateDataReader(gapiPtr);
+                                DDS.OpenSplice.DomainParticipant participantImpl;
+                
+                                participantImpl = topic.Participant as DDS.OpenSplice.DomainParticipant;
+                                TypeSupportFactory tsFactory = participantImpl.GetTypeSupportFactory(topic.TypeName);
+                                dataReader = tsFactory.CreateDataReader(gapiPtr);
                             }
                         }
                     }

@@ -1,0 +1,16 @@
+// -*- MPC -*-
+// $Id:$
+
+project (ccpp*types) : _repetitive_ccpp_example_types {
+}
+
+project(ccpp*pub): _repetitive_ccpp_example_pub {
+  after += ccpp*types
+  libs  += ccpp*types
+}
+
+project(ccpp*sub): _repetitive_ccpp_example_sub {
+  after += ccpp*types
+  libs  += ccpp*types
+}
+

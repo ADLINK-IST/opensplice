@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -64,16 +64,13 @@ cmx_readerDataType(
     const c_char* reader)
 {
     u_entity entity;
-    c_bool result;
-    c_char* type;
     struct cmx_readerArg arg;
 
-    type = NULL;
     entity = cmx_entityUserEntity(reader);
     arg.result = NULL;
 
     if(entity != NULL){
-        result = u_entityAction(entity, cmx_readerDataTypeAction, &arg);
+        u_entityAction(entity, cmx_readerDataTypeAction, &arg);
     }
     return arg.result;
 }
@@ -145,14 +142,14 @@ cmx_readerRead(
     const c_char* reader)
 {
     u_reader ureader;
-    c_bool result;
     struct cmx_readerArg arg;
 
-    ureader = u_reader(cmx_entityUserEntity(reader));
     arg.result = NULL;
 
+    ureader = u_reader(cmx_entityUserEntity(reader));
+
     if(ureader != NULL){
-        result = u_readerRead(ureader, cmx_readerReadCopy, &arg);
+        u_readerRead(ureader, cmx_readerReadCopy, &arg);
     }
     return arg.result;
 }
@@ -162,14 +159,14 @@ cmx_readerTake(
     const c_char* reader)
 {
     u_reader ureader;
-    c_bool result;
     struct cmx_readerArg arg;
 
-    ureader = u_reader(cmx_entityUserEntity(reader));
     arg.result = NULL;
 
+    ureader = u_reader(cmx_entityUserEntity(reader));
+
     if(ureader != NULL){
-        result = u_readerTake(ureader, cmx_readerCopy, &arg);
+        u_readerTake(ureader, cmx_readerCopy, &arg);
     }
     return arg.result;
 }
@@ -211,7 +208,7 @@ cmx_readerReadNext(
     return cmx_readerRead(reader);
 }
 
-c_bool
+v_actionResult
 cmx_readerCopy(
     c_object o,
     c_voidp args)
@@ -219,14 +216,18 @@ cmx_readerCopy(
     sd_serializer ser;
     sd_serializedData data;
     struct cmx_readerArg *arg;
-    v_dataReaderSample sample, newer;
+    v_dataReaderSample sample, older;
+    v_actionResult result = 0;
+    v_lifespanSample next;
 
     arg = (struct cmx_readerArg *)args;
 
     if(o != NULL){
         sample = v_dataReaderSample(o);
-        newer = sample->newer;
-        sample->newer = NULL;
+        older = sample->older;
+        next = sample->_parent._parent.next;
+        sample->older = NULL;
+        sample->_parent._parent.next = NULL;
 
         ser = sd_serializerXMLNewTyped(c_getType(o));
         data = sd_serializerSerialize(ser, o);
@@ -234,12 +235,13 @@ cmx_readerCopy(
         sd_serializedDataFree(data);
         sd_serializerFree(ser);
 
-        sample->newer = newer;
+        sample->older = older;
+        sample->_parent._parent.next = next;
     }
-    return FALSE;
+    return result;
 }
 
-c_bool
+v_actionResult
 cmx_readerReadCopy(
     c_object o,
     c_voidp args)
@@ -248,15 +250,14 @@ cmx_readerReadCopy(
     sd_serializedData data;
     v_dataReaderSample sample, newer;
     struct cmx_readerArg *arg;
-    c_bool result;
+    v_actionResult result;
 
-    result = FALSE;
-
+    result = 0;
     if(o != NULL){
         sample = v_dataReaderSample(o);
 
         if(v_stateTest(v_readerSampleState(sample), L_READ)){
-            result = TRUE;
+            v_actionResultSet(result, V_PROCEED);
         } else {
             sample = v_dataReaderSample(o);
             newer = sample->newer;

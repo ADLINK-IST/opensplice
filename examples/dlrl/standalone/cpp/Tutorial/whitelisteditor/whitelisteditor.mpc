@@ -1,0 +1,10 @@
+// -*- MPC -*-
+// $Id:$
+
+project(dlrl*sacpp) : dlrl_sacpp_typesupport, c_or_cplusplus_example {
+    includes += ../Common ../WhiteListObjectsEditor
+    exeout = ..
+    libs += dlrl_common_sacpp dlrl_whitelistobjectseditor_sacpp
+    libpaths += ..
+    after += dlrl_whitelistobjectseditor_sacpp
+}

@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+Bundle-Description: Java DCPS API packages as an OSGI bundle
+Bundle-ManifestVersion: 2
+Bundle-Name: dcpssaj-osgi-bundle
+Bundle-SymbolicName: org.opensplice.dcpssaj.osgi
+Bundle-Version: <ospl-version>
+DynamicImport-Package: *
+Export-Package: DDS;uses:="org.opensplice.dds.dcps,org.omg.CORBA,org.omg
+ .CORBA.portable";version="0.0.1.SNAPSHOT",org.opensplice.dds.dcps;uses:
+ ="DDS,org.omg.CORBA";version="0.0.1.SNAPSHOT"
+Import-Package: DDS;resolution:=optional,org.omg.CORBA;resolution:=optio
+ nal,org.omg.CORBA.portable;resolution:=optional,org.opensplice.dds.dcps
+ ;resolution:=optional

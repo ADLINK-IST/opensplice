@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,14 +15,15 @@
  * Implements process management for WIN32
  */
 #include "os_process.h"
-#include "code/os__process.h"
+#include "os__process.h"
 #include "os_thread.h"
 #include "os_stdlib.h"
 #include "os_heap.h"
 #include "os_time.h"
 #include "os_report.h"
 #include "os_signal.h"
-#include "code/os__debug.h"
+#include "os_init.h"
+#include "os__debug.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -58,6 +59,7 @@ static os_procTerminationHandler _ospl_termHandler   = (os_procTerminationHandle
 /* The signal emulator has to be removed in the future. */
 static HANDLE _ospl_signalEmulatorHandle             = INVALID_HANDLE_VALUE;
 static HANDLE _ospl_signalEmulatorThreadId           = 0;
+static char* processName                             = NULL;
 
 static BOOL
 CtrlHandler(
@@ -101,6 +103,14 @@ CtrlHandler(
         break;
     }
 */
+    if(os_serviceGetSingleProcess())
+    {
+        /* ES 08-aug-2011 in case of ctrl-c being used in single process mode,
+         * then bypass everything and terminate without calling any exit handlers.
+         * This is a temporary measure.
+         */
+        _exit(0);
+    }
     if (_ospl_termHandler) {
         terminate = _ospl_termHandler(OS_TERMINATION_NORMAL);
     } else {
@@ -194,17 +204,16 @@ signalEmulatorThread(
     os_time delay = { 0, 100000000 }; /* 100millesec */
     int terminate = 0;
 
+    os_threadSetThreadName(-1, "ospSigEmulator OSPL Signal Emulator Thread");
+
     while (!terminate) {
         result = (ConnectNamedPipe(_ospl_signalEmulatorHandle, NULL)?TRUE:(GetLastError() == ERROR_PIPE_CONNECTED));
-        printf("signal thread triggered\n");
         if (result) {
-            printf("reading signal\n");
             /* read signal */
             sig = 0;
             result = ReadFile(_ospl_signalEmulatorHandle, &sig, sizeof(sig), &nread, NULL);
             if (result && (nread > 0)) {
                 OS_DEBUG_1("signalEmulatorThread", "Received signal %d", sig);
-                printf("Received signal %d", sig);
                 terminate = 1;
             }
         } else {
@@ -255,7 +264,7 @@ if (_ospl_signalEmulatorHandle == INVALID_HANDLE_VALUE) {
                     (DWORD)0, &threadIdent);
 }
 }
-
+#define _OS_PROC_PROCES_NAME_LEN (512)
 /* Protected functions */
 void
 os_processModuleInit(void)
@@ -282,6 +291,7 @@ os_processModuleInit(void)
                 (DWORD)0, &threadIdent);
 #endif
 }
+#undef _OS_PROC_PROCES_NAME_LEN
 
 void
 os_processModuleExit(void)
@@ -290,6 +300,9 @@ os_processModuleExit(void)
     DWORD written;
 
     SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, FALSE);
+    if (processName) {
+        os_free(processName);
+    }
 
     if (_ospl_signalEmulatorHandle != INVALID_HANDLE_VALUE) {
         WriteFile(_ospl_signalEmulatorHandle, &signal, sizeof(os_int32), &written, NULL);
@@ -334,11 +347,12 @@ os_procSetTerminationHandler(
  * to be called when the process exists.
  *
  */
-void
+os_result
 os_procAtExit(
     void (*function)(void))
 {
     struct _ospl_handlerList_t *handler;
+    os_result result;
 
     assert(function != NULL);
 
@@ -353,7 +367,12 @@ os_procAtExit(
         handler->handler = (_ospl_exitHandler)function;
         handler->next = _ospl_handlerList;
         _ospl_handlerList = handler;
+        result = os_resultSuccess;
+    } else
+    {
+        result = os_resultFail;
     }
+    return result;
 }
 
 /** \brief Terminate the process and return the status
@@ -481,8 +500,8 @@ os_procCreate(
 
         environmentCopy = (LPTCH)os_malloc(newLen + 1 /* End of array */);
         if(environmentCopy){
-            int until = spliceVar - environment;
-            int newSpliceVarLen;
+            size_t until = spliceVar - environment;
+            size_t newSpliceVarLen;
             /* First copy up until location of spliceVar */
             memcpy(environmentCopy, environment, until);
             /* Now write the new SPLICE_PROCNAME */
@@ -513,7 +532,7 @@ os_procCreate(
                       &si,
                       &process_info) == 0) {
         const DWORD errorCode= GetLastError();
-        OS_DEBUG_1("os_procCreate", "Failed with %d", errorCode);
+        OS_DEBUG_2("os_procCreate", "Process creation for exe file %s failed with %d", executable_file, errorCode);
         os_free(inargs);
         return (ERROR_FILE_NOT_FOUND == errorCode ||
                 ERROR_PATH_NOT_FOUND == errorCode ||
@@ -640,11 +659,33 @@ os_procDestroy(
     HANDLE ph;
     os_result result;
     DWORD written;
+    char* errMsg;
     int id = os_procIdToInteger(procId);
+
+    if (signal == OS_SIGKILL)
+    {
+        result = (TerminateProcess(procId, 1) == 0 ? os_resultFail : os_resultSuccess);
+        if (result == os_resultFail)
+        {
+            if (GetLastError() == ERROR_ACCESS_DENIED)
+            {
+                OS_REPORT_1 (OS_ERROR, "os_procDestroy", 0,
+                        "OS_SIGKILL / TerminateProcess of PID %d failed - HANDLE procId lacks TERMINATE_PROCESS "
+                        OS_REPORT_NL "access right or process has already terminated.", id);
+            }
+            else
+            {
+                errMsg = os_reportErrnoToString(GetLastError());
+                OS_REPORT_2 (OS_ERROR, "os_procDestroy", 0,
+                        "OS_SIGKILL / TerminateProcess of PID %d failed: %s", id, errMsg);
+                os_free(errMsg);
+            }
+        }
+        return result;
+    }
 
     if (signal != OS_SIGHUP  &&
         signal != OS_SIGINT  &&
-        signal != OS_SIGKILL &&
         signal != OS_SIGALRM &&
         signal != OS_SIGTERM) {
        return os_resultInvalid;
@@ -671,6 +712,117 @@ os_procDestroy(
 
     return result;
 }
+
+/** \brief Terminate process \b pid by progressive use of stronger kill
+ * signals followed by \b checkcount cycles of status tests to confirm
+ * action of kill signal. Checkcount cycles are 100ms long.
+ * Blocking state is passed via \b isblocking
+ *
+ * \b returns appropriate \b os_resultSuccess or Fail following final
+ * status check
+ */
+os_result
+os_procServiceDestroy(
+    os_int32 pid,
+    os_boolean isblocking,
+    os_int32 checkcount)
+{
+    os_result osr;
+    os_int32 procBusyChecks = 0;
+    BOOL result;
+    HANDLE hProcess;
+    os_int32 procResult;
+
+    hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+
+    if (hProcess == INVALID_HANDLE_VALUE)
+    {
+        int err = GetLastError();
+        return os_resultFail;
+    }
+    else
+    {
+        /* remove process*/
+        osr = os_procDestroy((os_procId)hProcess, OS_SIGTERM);
+        if(osr != os_resultSuccess)
+        {
+            OS_REPORT_1(OS_ERROR,"ospl",0, "Failed to send the term signal to the splice daemon process %d", (os_procId)hProcess);
+        }
+        osr = os_procCheckStatus((os_procId)hProcess, &procResult);
+
+        procBusyChecks = checkcount;
+        while ((osr == os_resultBusy) && (procBusyChecks > 0)) {
+            procBusyChecks--;
+            if ((procBusyChecks % 10) == 0) printf (".");
+            fflush(stdout);
+            Sleep(100);
+            osr = os_procCheckStatus((os_procId)hProcess, &procResult);
+
+        }
+        printf ("\n");
+        fflush(stdout);
+
+        CloseHandle(hProcess);
+
+        if (osr == os_resultBusy)
+        {
+            /* If we're going to try a pseudo sigkill we need the PROCESS_TERMINATE access control right */
+            hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | (OS_SIGKILL ? PROCESS_TERMINATE : 0),
+                                    FALSE, pid);
+            if(hProcess != INVALID_HANDLE_VALUE)
+            {
+                if (os_procCheckStatus((os_procId)hProcess, &procResult) == os_resultBusy)
+                {
+                    /* A process is still running with specified PID.
+                    Check the handles process creation times against those in the iterator
+                    process info to make sure they are the same process. */
+
+                    OS_REPORT_1(OS_ERROR,"ospl", 0,
+                                            "OpenSplice service process PID %u still running after spliced terminated." OS_REPORT_NL
+                                            "Sending termination signal.",pid);
+                    os_procDestroy ((os_procId)hProcess, OS_SIGKILL);
+
+                    CloseHandle(hProcess);
+                }
+
+                if (os_procCheckStatus((os_procId)hProcess, &procResult) == os_resultBusy)
+                {
+                    /* A process is still running with specified PID.
+
+                    /* Process matches. */
+                    /* (100 x 0.1) Ten seconds for an orphaned process to expire subject
+                    to a *kill* should be way more than enough (?). */
+                    procBusyChecks = checkcount;
+                    osr = os_procCheckStatus((os_procId)hProcess, &procResult);
+                    while ((osr == os_resultBusy) && (procBusyChecks > 0))
+                    {
+                        procBusyChecks--;
+                        if ((procBusyChecks % 10) == 0) printf (".");
+                        fflush(stdout);
+                        Sleep(100);
+                        osr = os_procCheckStatus((os_procId)hProcess, &procResult);
+                    }
+                    printf ("\n");
+                    fflush(stdout);
+
+                    if (osr == os_resultBusy)
+                    {
+                        OS_REPORT_1(OS_CRITICAL,"ospl", 0,
+                                                "OpenSplice service process PID %u could not be terminated.",pid);
+                    }
+                }
+                CloseHandle(hProcess);
+            }
+            else
+            {
+                return os_resultFail;
+            }
+        }
+    }
+
+    return os_resultSuccess;
+}
+
 
 /** \brief Initialize process attributes
  *
@@ -740,36 +892,90 @@ os_procIdSelf(void)
  *
  * \b procIdentity will not be filled beyond the specified \b procIdentitySize
  */
-#define _OS_PROC_PROCES_NAME_LEN (64)
+#define _OS_PROC_PROCES_NAME_LEN (512)
 os_int32
 os_procFigureIdentity(
     char *procIdentity,
     os_uint procIdentitySize)
 {
-    os_int32 size = 0;
-    char *process_name;
+    int size = 0;
+    char process_name[_OS_PROC_PROCES_NAME_LEN];
 
-    process_name = os_getenv("SPLICE_PROCNAME");
+    size = os_procGetProcessName(process_name,_OS_PROC_PROCES_NAME_LEN);
 
-    if (process_name == NULL) {
-        process_name = GetCommandLine();
+    if (size > 0) {
+        size = snprintf(procIdentity, procIdentitySize, "%s <%d>",
+                process_name, os_procIdToInteger(os_procIdSelf()));
     }
-
-    if(process_name){
-        size = snprintf(procIdentity, procIdentitySize, "PID <%d> %s",
-                    os_procIdToInteger(os_procIdSelf()), process_name);
-    } else {
-        /* Resolving failed, reverting to default */
-        size = 0;
-    }
-
-    if(size == 0){
+    else {
         /* No processname could be determined, so default to PID */
         size = snprintf(procIdentity, procIdentitySize, "<%d>",
                 os_procIdToInteger(os_procIdSelf()));
     }
 
-    return size;
+    return (os_int32)size;
+}
+
+os_int32
+os_procGetProcessName(
+    char *procName,
+    os_uint procNameSize)
+{
+    int size = 0;
+    char *process_name = NULL;
+    char *process_env_name;
+    char *exec = NULL;
+
+    if (processName == NULL) {
+        /* free is done in os_processModuleExit() */
+        processName = (char*) os_malloc(_OS_PROC_PROCES_NAME_LEN);
+        *processName = '\0';
+        process_env_name = os_getenv("SPLICE_PROCNAME");
+        if (process_env_name != NULL) {
+            size = snprintf(processName, _OS_PROC_PROCES_NAME_LEN, "%s",process_env_name);
+        } else {
+            char *tmp;
+            DWORD nSize;
+            DWORD allocated = 0;
+            do {
+                   /* While procNameSize could be used (since the caller cannot
+                    * store more data anyway, it is not used. This way the amount that
+                    * needs to be allocated to get the full-name can be determined. */
+                   allocated++;
+                   tmp = (char*) os_realloc(process_name, allocated * _OS_PROC_PROCES_NAME_LEN);
+                   if(tmp){
+                       process_name = tmp;
+
+                       /* First parameter NULL retrieves module-name of executable */
+                       nSize = GetModuleFileNameA (NULL, process_name, allocated * _OS_PROC_PROCES_NAME_LEN);
+                   } else {
+                       /* Memory-claim denied, revert to default */
+                       size = 0;
+                       if(process_name){
+                           os_free(process_name);
+                           process_name = NULL; /* Will break loop */
+                       }
+                   }
+
+               /* process_name will only be guaranteed to be NULL-terminated if nSize <
+                * (allocated * _OS_PROC_PROCES_NAME_LEN), so continue until that's true */
+               } while (process_name && nSize >= (allocated * _OS_PROC_PROCES_NAME_LEN));
+
+            if(process_name){
+                exec = strrchr(process_name,'\\');
+                if (exec) {
+                    /* skip all before the last '\' */
+                    exec++;
+                    snprintf(processName, _OS_PROC_PROCES_NAME_LEN, "%s", exec);
+                } else {
+                    snprintf(processName, _OS_PROC_PROCES_NAME_LEN, "%s", process_name);
+                }
+                os_free(process_name);
+            }
+        }
+    }
+    size = snprintf(procName, procNameSize, "%s", processName);
+    return (os_int32)size;
 }
 #undef _OS_PROC_PROCES_NAME_LEN
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -73,7 +73,7 @@ d_waitsetEventHandlerRunToCompletion(
                 event = u_waitsetEvent(c_iterTakeFirst(events));
 
                 while(event){
-                    we = c_iterResolve(waitset->entities, d_waitsetEntityFind, event->entity);
+                    we = c_iterResolve(waitset->entities, (c_iterResolveCompare)d_waitsetEntityFind, event->entity);
 
                     if(we){
                         we->action(we->dispatcher, event, we->usrData);
@@ -189,7 +189,9 @@ d_waitsetNew(
                 mask |= V_EVENT_HISTORY_REQUEST;
                 mask |= V_EVENT_PERSISTENT_SNAPSHOT;
                 mask |= V_EVENT_TRIGGER;
+                mask |= V_EVENT_CONNECT_WRITER;
                 u_waitsetSetEventMask(waitset->uwaitset, mask);
+                waitset->threads = NULL;
 
                 osr = os_threadAttrInit(&attr);
 
@@ -201,7 +203,6 @@ d_waitsetNew(
                 if(osr != os_resultSuccess) {
                     d_waitsetFree(waitset);
                 }
-                waitset->threads = NULL;
             } else {
                 waitset->threads = c_iterNew(NULL);
                 waitset->uwaitset = NULL;
@@ -329,6 +330,7 @@ d_waitsetAttach(
                     mask |= V_EVENT_HISTORY_REQUEST;
                     mask |= V_EVENT_PERSISTENT_SNAPSHOT;
                     mask |= V_EVENT_TRIGGER;
+                    mask |= V_EVENT_CONNECT_WRITER;
                     u_waitsetSetEventMask(helper->userWaitset, mask);
                     ur = u_waitsetAttach(helper->userWaitset, u_entity(we->dispatcher),
                              (c_voidp)we->dispatcher);

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -331,6 +331,7 @@ c_condWait (
     result = os_condWait(cnd,mtx);
 #else
     mtx->owner = OS_THREAD_ID_NONE;
+
     result = os_condWait(cnd,&mtx->mtx);
     mtx->owner = os_threadIdSelf();
 #endif

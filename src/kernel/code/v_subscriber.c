@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -446,7 +446,7 @@ v_subscriberLookupReaders(
     assert(s != NULL);
 
     c_lockRead(&s->lock);
-    list = c_select(s->readers,0);
+    list = ospl_c_select(s->readers,0);
     c_lockUnlock(&s->lock);
     return list;
 }
@@ -636,6 +636,8 @@ v_subscriberNotify(
      * For consistency _this must be locked by v_observerLock(_this) before
      * calling this method.
      */
+    OS_UNUSED_ARG(_this);
+    OS_UNUSED_ARG(e);
 }
 
 void

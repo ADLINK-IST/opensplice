@@ -1,0 +1,12 @@
+all compile link: $(OSPL_HOME)/exec/$(SPLICE_HOST)/ospl_unique_domainID.exe
+$(OSPL_HOME)/exec/$(SPLICE_HOST)/ospl_unique_domainID.exe: exec/$(SPLICE_HOST)/ospl_unique_domainID.exe
+	mkdir -p $(OSPL_HOME)/exec/$(SPLICE_HOST)
+	cp -p $^ $@
+
+exec/$(SPLICE_HOST)/ospl_unique_domainID.exe: code/ospl_unique_domainID.c	
+	mkdir -p exec/$(SPLICE_HOST)
+	gcc $^ -o $@
+
+clean:
+	rm -f $(OSPL_HOME)/exec/$(SPLICE_HOST)/ospl_unique_domainID.exe
+	rm -f $ exec/$(SPLICE_HOST)/ospl_unique_domainID.exe

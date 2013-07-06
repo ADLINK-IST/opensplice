@@ -1,4 +1,4 @@
-all:		link 
+all:		link
 compile:	$(addsuffix .ss_compile,	$(SUBSYSTEMS))
 link:		$(addsuffix .ss_link,		$(SUBSYSTEMS))
 clean:		$(addsuffix .ss_clean,		$(SUBSYSTEMS))
@@ -19,4 +19,30 @@ ifneq (,$(wildcard $(OSPL_HOME)/setup/$(SPLICE_TARGET)))
 include $(OSPL_HOME)/setup/$(SPLICE_TARGET)/config.mak
 else
 include $(OSPL_OUTER_HOME)/setup/$(SPLICE_TARGET)/config.mak
+endif
+
+MPC_CISH_TYPE_TO_GEN = "make"
+MPC_JISH_TYPE_TO_GEN = "ospljavamake"
+ifneq ("$(VCPP7)", "")
+MPC_CISH_TYPE_TO_GEN = "vc7"
+MPC_JISH_TYPE_TO_GEN = "javabat"
+else
+ifneq ("$(VCPP8)", "")
+MPC_CISH_TYPE_TO_GEN = "vc8"
+MPC_JISH_TYPE_TO_GEN = "javabat"
+else
+ifneq ("$(VCPP9)", "")
+MPC_CISH_TYPE_TO_GEN = "vc9"
+MPC_JISH_TYPE_TO_GEN = "javabat"
+else
+ifneq ("$(VCPP10)", "")
+MPC_CISH_TYPE_TO_GEN = "vc10"
+MPC_JISH_TYPE_TO_GEN = "javabat"
+endif
+endif
+endif
+endif
+
+ifeq (vxworks6,$(findstring vxworks6,$(SPLICE_TARGET))) # if VxWorks 6.x
+MPC_CISH_TYPE_TO_GEN = "wb30"
 endif

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -34,6 +34,9 @@ import org.opensplice.common.controller.QoSTableEditor;
  * @date Jan 10, 2005 
  */
 public abstract class EntityQoSTableModel extends DefaultTableModel {
+
+    private static final long    serialVersionUID    = -251046106776534295L;
+
     /**
      * The Entity where to retrieve and hold the QoS of. 
      */
@@ -43,8 +46,9 @@ public abstract class EntityQoSTableModel extends DefaultTableModel {
     
     protected AbstractCellEditor editor = null;
     
-    protected HashSet nonEditRows = null;
-    
+    protected HashSet<Integer>   nonEditRows         = null;
+    protected HashSet<Integer>   nonEditRowsNoEntity = null;
+
     /**
      * Constructs a new table model that is capable of retrieving and
      * administrating the QoS of the supplied Entity.
@@ -56,11 +60,11 @@ public abstract class EntityQoSTableModel extends DefaultTableModel {
         super();
         entity = _entity;
         currentQos = null;
-        
         this.addColumn("Name");
         this.addColumn("Field");
         this.addColumn("Value");
-        nonEditRows = new HashSet();
+        nonEditRows = new HashSet<Integer>();
+        nonEditRowsNoEntity = new HashSet<Integer>();
         this.init();
         if(!this.update()){
             throw new CommonException("Entity not available anymore");
@@ -71,11 +75,24 @@ public abstract class EntityQoSTableModel extends DefaultTableModel {
         super();
         this.entity = null;
         this.currentQos = currentQos;
-        
         this.addColumn("Name");
         this.addColumn("Field");
         this.addColumn("Value");
-        nonEditRows = new HashSet();
+        nonEditRows = new HashSet<Integer>();
+        nonEditRowsNoEntity = new HashSet<Integer>();
+        this.init();
+    }
+
+    EntityQoSTableModel(QoS currentQos, boolean editable) {
+        super();
+        this.entity = null;
+        this.currentQos = currentQos;
+        this.addColumn("");
+        this.addColumn("Name");
+        this.addColumn("Field");
+        this.addColumn("Value");
+        nonEditRows = new HashSet<Integer>();
+        nonEditRowsNoEntity = new HashSet<Integer>();
         this.init();
     }
     
@@ -140,20 +157,30 @@ public abstract class EntityQoSTableModel extends DefaultTableModel {
      * @param col The column to edit.
      * @return Always false.
      */
+    @Override
     public boolean isCellEditable(int row, int col){
         boolean result = false;
-        
-        if(col == 2){
-            Integer it = new Integer(row);
-            if(entity == null){
-                result = true;
-            } else if(!(entity.isEnabled())){
-                result = true;
-            } else {
-                if(nonEditRows.contains(it)){
+        int colValue = this.getColumnCount() - 1;
+
+        if (this.getColumnCount() > 3 && col == 0) {
+            result = true;
+        } else if (this.getColumnCount() > 3 && (Boolean) this.getValueAt(row, 0)) {
+            result = false;
+        } else {
+            if (col == colValue) {
+                Integer it = new Integer(row);
+                if (entity == null && nonEditRowsNoEntity.contains(it)) {
                     result = false;
-                } else {
+                } else if (entity == null) {
                     result = true;
+                } else if (!(entity.isEnabled())) {
+                    result = true;
+                } else {
+                    if (nonEditRows.contains(it)) {
+                        result = false;
+                    } else {
+                        result = true;
+                    }
                 }
             }
         }
@@ -162,5 +189,13 @@ public abstract class EntityQoSTableModel extends DefaultTableModel {
     
     public void setEditor(AbstractCellEditor editor){
         this.editor = editor;
+    }
+
+    public HashSet<Integer> getNonEditRowsNoEntity() {
+        return nonEditRowsNoEntity;
+    }
+
+    public void setNonEditRowsNoEntity(HashSet<Integer> nonEditRowsNoEntity) {
+        this.nonEditRowsNoEntity = nonEditRowsNoEntity;
     }
 }

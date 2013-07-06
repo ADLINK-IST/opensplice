@@ -1,0 +1,23 @@
+/** \file 
+ * \brief File that defines data structure for the test.
+ * 
+ */
+
+module Test2466
+{
+    /** \brief Struct of data for the test
+    */
+    struct Sample
+    {
+        /** Unique struct field
+        */ 
+        long   id;
+        /** Publisher id:
+        */ 
+        long publisher_id;
+        /** Not-unique struct field
+        */ 
+        string data;
+    };
+    #pragma keylist Sample id
+};

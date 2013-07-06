@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -43,7 +43,6 @@ C_CLASS(c_operation);
 C_CLASS(c_collectionType);
 C_CLASS(c_type);
 C_CLASS(c_typeDef);
-C_CLASS(c_extent);
 C_CLASS(c_primitive);
 C_CLASS(c_parameter);
 C_CLASS(c_member);
@@ -52,6 +51,7 @@ C_CLASS(c_structure);
 C_CLASS(c_class);
 C_CLASS(c_union);
 C_CLASS(c_interface);
+C_CLASS(c_annotation);
 C_CLASS(c_operand);
 C_CLASS(c_literal);
 C_CLASS(c_expression);
@@ -64,17 +64,20 @@ C_CLASS(c_valueType);
 /* Meta Specifiers                                                            */
 /*============================================================================*/
 
+/* Note: if c_metaKind is updated a corresponding update to the baseKind array
+   in common/mm_metakindNames.c for mmstat is also required */
 typedef enum c_metaKind {
     M_UNDEFINED,
-    M_ATTRIBUTE, M_CLASS, M_COLLECTION, M_CONSTANT, M_CONSTOPERAND,
+    M_ANNOTATION, M_ATTRIBUTE, M_CLASS, M_COLLECTION, M_CONSTANT, M_CONSTOPERAND,
     M_ENUMERATION, M_EXCEPTION, M_EXPRESSION, M_INTERFACE,
     M_LITERAL, M_MEMBER, M_MODULE, M_OPERATION, M_PARAMETER,
     M_PRIMITIVE, M_RELATION, M_BASE, M_STRUCTURE, M_TYPEDEF,
     M_UNION, M_UNIONCASE,
-    M_EXTENT, M_EXTENTSYNC,
     M_COUNT
 } c_metaKind;
 
+/* Note: if c_collKind is updated a corresponding update to the collectionKind
+   array in common/mm_metakindNames.c for mmstat is also required */
 typedef enum c_collKind {
     C_UNDEFINED,
     C_LIST, C_ARRAY, C_BAG, C_SET, C_MAP, C_DICTIONARY,
@@ -111,29 +114,28 @@ typedef enum c_direction {
 /*============================================================================*/
 
 /* Search Type Qualifiers */
-#define CQ_ATTRIBUTE	   (1 << (M_ATTRIBUTE-1))
-#define CQ_CLASS	   (1 << (M_CLASS-1))
-#define CQ_COLLECTION	   (1 << (M_COLLECTION-1))
-#define CQ_CONSTANT	   (1 << (M_CONSTANT-1))
-#define CQ_CONSTOPERAND	   (1 << (M_CONSTOPERAND-1))
-#define CQ_ENUMERATION	   (1 << (M_ENUMERATION-1))
-#define CQ_EXCEPTION	   (1 << (M_EXCEPTION-1))
-#define CQ_EXPRESSION	   (1 << (M_EXPRESSION-1))
-#define CQ_INTERFACE	   (1 << (M_INTERFACE-1))
-#define CQ_LITERAL	   (1 << (M_LITERAL-1))
-#define CQ_MEMBER	   (1 << (M_MEMBER-1))
-#define CQ_MODULE	   (1 << (M_MODULE-1))
-#define CQ_OPERATION	   (1 << (M_OPERATION-1))
-#define CQ_PARAMETER	   (1 << (M_PARAMETER-1))
-#define CQ_PRIMITIVE	   (1 << (M_PRIMITIVE-1))
-#define CQ_RELATION	   (1 << (M_RELATION-1))
-#define CQ_BASE		   (1 << (M_BASE-1))
-#define CQ_STRUCTURE	   (1 << (M_STRUCTURE-1))
-#define CQ_TYPEDEF	   (1 << (M_TYPEDEF-1))
+#define CQ_ATTRIBUTE       (1 << (M_ATTRIBUTE-1))
+#define CQ_ANNOTATION      (1 << (M_ANNOTATION-1))
+#define CQ_CLASS           (1 << (M_CLASS-1))
+#define CQ_COLLECTION      (1 << (M_COLLECTION-1))
+#define CQ_CONSTANT            (1 << (M_CONSTANT-1))
+#define CQ_CONSTOPERAND    (1 << (M_CONSTOPERAND-1))
+#define CQ_ENUMERATION     (1 << (M_ENUMERATION-1))
+#define CQ_EXCEPTION       (1 << (M_EXCEPTION-1))
+#define CQ_EXPRESSION      (1 << (M_EXPRESSION-1))
+#define CQ_INTERFACE       (1 << (M_INTERFACE-1))
+#define CQ_LITERAL         (1 << (M_LITERAL-1))
+#define CQ_MEMBER          (1 << (M_MEMBER-1))
+#define CQ_MODULE          (1 << (M_MODULE-1))
+#define CQ_OPERATION       (1 << (M_OPERATION-1))
+#define CQ_PARAMETER       (1 << (M_PARAMETER-1))
+#define CQ_PRIMITIVE       (1 << (M_PRIMITIVE-1))
+#define CQ_RELATION            (1 << (M_RELATION-1))
+#define CQ_BASE            (1 << (M_BASE-1))
+#define CQ_STRUCTURE       (1 << (M_STRUCTURE-1))
+#define CQ_TYPEDEF             (1 << (M_TYPEDEF-1))
 #define CQ_UNION           (1 << (M_UNION-1))
-#define CQ_UNIONCASE	   (1 << (M_UNIONCASE-1))
-#define CQ_EXTENT	   (1 << (M_EXTENT-1))
-#define CQ_EXTENTSYNC	   (1 << (M_EXTENTSYNC-1))
+#define CQ_UNIONCASE       (1 << (M_UNIONCASE-1))
 
 /* Search Directives */
 #define CQ_CASEINSENSITIVE (1U << 31) /* Search case insensitive, which is slower */
@@ -148,7 +150,7 @@ typedef enum c_direction {
         (CQ_TYPEDEF | CQ_COLLECTION | CQ_PRIMITIVE | CQ_ENUMERATION | \
          CQ_UNION | CQ_STRUCTURE | CQ_EXCEPTION | CQ_INTERFACE | \
          CQ_MODULE | CQ_CONSTANT | CQ_OPERATION | CQ_ATTRIBUTE | \
-         CQ_RELATION | CQ_CLASS)
+         CQ_RELATION | CQ_CLASS | CQ_ANNOTATION)
 
 /* Search Types Directive */
 #define CQ_TYPEOBJECTS \
@@ -166,7 +168,7 @@ typedef enum c_direction {
          CQ_EXPRESSION | CQ_INTERFACE | CQ_LITERAL | CQ_MEMBER | \
          CQ_MODULE | CQ_OPERATION | CQ_PARAMETER | CQ_PRIMITIVE | \
          CQ_RELATION | CQ_BASE | CQ_STRUCTURE | CQ_TYPEDEF | CQ_UNION | \
-         CQ_UNIONCASE | CQ_EXTENT)
+         CQ_UNIONCASE | CQ_ANNOTATION)
 
 /* Check If baseObject type is in the mask */
 #define CQ_KIND_IN_MASK(object,set) \
@@ -360,6 +362,11 @@ C_STRUCT(c_valueType) {
     C_EXTENDS(c_interface);
 };
 
+C_STRUCT(c_annotation) {
+    C_EXTENDS(c_interface);
+    c_annotation extends;
+};
+
 /*============================================================================*/
 /* Meta Cast Macro's                                                          */
 /*============================================================================*/
@@ -389,6 +396,7 @@ C_STRUCT(c_valueType) {
 #define c_unionCase(o)      (C_CAST(o,c_unionCase))
 #define c_member(o)         (C_CAST(o,c_member))
 #define c_blob(o)           ((c_blob)(o))
+#define c_annotation(o)     ((c_annotation)(o))
 
 /*============================================================================*/
 /* Meta Support Methods                                                       */
@@ -440,7 +448,7 @@ c_metaResolveType(
     c_metaObject scope,
     const c_char *name);
 
-OS_API c_metaObject
+OS_API c_specifier
 c_metaResolveSpecifier(
     c_metaObject scope,
     const c_char *name);
@@ -451,11 +459,23 @@ c_metaFindByName(
     const char *name,
     c_long metaFilter);
 
+/*
+ * Walks over all the elements in the c_scope of the given metaObject.
+ * Action 'action' is called for each element, and as arguments to that action,
+ * the element and 'arg' are passed on.
+ */
 OS_API void
 c_metaWalk(
     c_metaObject scope,
     c_metaWalkAction action,
     c_metaWalkActionArg arg);
+
+/*
+ * Returns the number of elements in the c_scope of the given c_metaObject.
+ */
+OS_API c_long
+c_metaCount(
+    c_metaObject scope);
 
 OS_API c_metaObject
 c_metaModule(

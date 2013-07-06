@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef C_ITERATOR_H
@@ -27,9 +27,15 @@ extern "C" {
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 C_CLASS(c_iter);
+C_CLASS(c_iterNode);
+
+/* List iterator */
+typedef struct c_iterIter {
+    c_iterNode current;
+}c_iterIter;
 
 typedef void *c_iterResolveCompareArg;
-typedef c_equality (*c_iterResolveCompare) ();
+typedef c_equality (*c_iterResolveCompare) (c_voidp o, c_iterResolveCompareArg arg);
 
 typedef void    *c_iterActionArg;
 typedef c_bool (*c_iterAction)     (void *o, c_iterActionArg arg);
@@ -49,10 +55,12 @@ OS_API c_long  c_iterLength     (c_iter i);
 OS_API void   *c_iterResolve    (c_iter i, c_iterResolveCompare compare, c_iterResolveCompareArg arg);
 OS_API void   *c_iterObject     (c_iter i, c_long index);
 OS_API void    c_iterWalk       (c_iter i, c_iterWalkAction action, c_iterActionArg arg);
-OS_API void    c_iterWalkUntil  (c_iter i, c_iterAction action, c_iterActionArg arg);
+OS_API c_bool  c_iterWalkUntil  (c_iter i, c_iterAction action, c_iterActionArg arg);
 OS_API void    c_iterArray      (c_iter i, void *ar[]);
 OS_API void    c_iterFree       (c_iter i);
 OS_API c_bool  c_iterContains   (c_iter i, void *object);
+OS_API c_iterIter c_iterIterGet (c_iter i);
+OS_API void   *c_iterNext       (c_iterIter* iterator);
 
 #undef OS_API
 

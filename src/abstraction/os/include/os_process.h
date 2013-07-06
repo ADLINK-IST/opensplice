@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -29,6 +29,7 @@ extern "C" {
 /* include OS specific header file				*/
 #include "include/os_process.h"
 #include "os_if.h"
+#include "os_time.h"
 
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT
@@ -42,6 +43,15 @@ extern "C" {
  * os_procId is a platform specific definition for a process identification.
  */
 typedef os_os_procId os_procId;
+
+/**
+* A platform specific definition of an invalid os_procId value.
+*/
+#if defined WIN32 || defined WIN64
+#define OS_INVALID_PID INVALID_HANDLE_VALUE
+#else
+#define OS_INVALID_PID (os_procId) -1
+#endif
 
 /** \brief Exit status definition
  */
@@ -103,7 +113,7 @@ os_procSetTerminationHandler(
  * Possible Results:
  * - assertion failure: function = NULL
  */
-OS_API void
+OS_API os_result
 os_procAtExit(
     void (*function)(void));
 
@@ -171,6 +181,16 @@ os_procDestroy(
     os_procId procId,
     os_int32 signal);
 
+#if !defined (VXWORKS_RTP)
+
+OS_API os_result
+os_procServiceDestroy(
+    os_int32 pid,
+    os_boolean isblocking,
+    os_int32 checkcount);
+
+#endif
+
 /** \brief Check the child exit status of the identified process
  *
  * Possible Results:
@@ -226,6 +246,24 @@ OS_API os_int32
 os_procFigureIdentity(
     char *procIdentity,
     os_uint32 procIdentitySize);
+
+/** \brief Figure out the name of the current process
+ *
+ * Possible Results:
+ * - returns the actual length of procName
+ *
+ * Postcondition:
+ * - \b procName is ""
+ *     the process name could not be determined
+ * - \b procName is "<process name>"
+ *     the process name could be determined
+ *
+ * \b procName will not be filled beyond the specified \b procNameSize
+ */
+OS_API os_int32
+os_procGetProcessName(
+    char *procName,
+    os_uint32 procNameSize);
 
 /** \brief Set the default process attributes
  *
@@ -305,6 +343,18 @@ os_procMUnlockAll(void);
 OS_API void
 os_procSetSignalHandlingEnabled(
     os_uint enabled);
+
+/* Docced in impl file */
+OS_API void
+os_procInitializeOpenSpliceService(os_boolean isSpliceD);
+
+/* Docced in impl file */
+OS_API os_boolean
+os_procIsOpenSpliceService(void);
+
+/* Docced in impl file */
+OS_API os_boolean
+os_procIsOpenSpliceDomainDaemon(void);
 
 #undef OS_API
 

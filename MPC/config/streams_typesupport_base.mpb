@@ -1,0 +1,35 @@
+// -*- MPC -*-
+// $Id:$
+
+feature(!src_co) {
+  Define_Custom(StreamsTypes) {
+    automatic             = 1
+    command               = <%quote%>$(OSPL_HOME)/bin/idlpp<%quote%>
+    libpath               = $(OSPL_HOME)/bin<%pathsep%>$(OSPL_HOME)/lib
+    inputext             = .idl
+    keyword streams_ts_flags = commandflags
+    output_follows_input = 0
+  }
+
+  streams_ts_flags += \
+    -I <%quote%>$(OSPL_HOME)<%slash%>etc<%slash%>idl<%quote%>
+}
+
+feature(!src_co, cross_compile) {
+  Modify_Custom(StreamsTypes) {
+    libpath               = $(OSPL_HOME)<%slash%>bin<%pathsep%>$(OSPL_HOME)<%slash%>host<%slash%>lib
+  }
+}
+
+feature(src_co) {
+  Define_Custom(StreamsTypes) {
+    command               = <%quote%>$(OSPL_HOME_NORMALIZED)/exec/$(SPLICE_HOST)/idlpp<%quote%>
+    libpath               = $(OSPL_HOME_NORMALIZED)/exec/$(SPLICE_HOST)<%pathsep%>$(OSPL_HOME_NORMALIZED)/lib/$(SPLICE_HOST)
+    inputext             = .idl
+    keyword streams_ts_flags = commandflags
+    output_follows_input = 0
+  }
+
+  streams_ts_flags += \
+    -I <%quote%>$(OSPL_HOME_NORMALIZED)<%slash%>etc<%slash%>idl<%quote%>
+}

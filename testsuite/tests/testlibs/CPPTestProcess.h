@@ -18,9 +18,10 @@ namespace OSPLTestLib
 #else
               other_process_name_ (CORBA::string_dup ("")),
 #endif
-              process_controller_ (0),
-              default_domain_id_ ()
+              process_controller_ (0)
+
         {
+                default_domain_id_ = 0x7fffffff;
         }
 
         virtual ~CPPTestProcess ()
@@ -65,7 +66,7 @@ namespace OSPLTestLib
 
         ProcessControlImpl * process_controller_;
 
-        ::CORBA::String_var default_domain_id_;
+        ::CORBA::Long default_domain_id_;
     };
 
 }

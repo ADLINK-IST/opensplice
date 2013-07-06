@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -270,7 +270,7 @@ gapi_expressionCreateQuery (
 
     if ( expression->pinfo ) {
 
-        u_entityAction(u_entity(reader), getReaderType, &type);
+        u_entityWriteAction(u_entity(reader), getReaderType, &type);
 
         if ( type ) {
             expression->type = type;
@@ -328,200 +328,9 @@ gapi_expressionSetQueryArgs (
 
 struct conditionArg {
     const c_char    *query;
-    gapi_readerMask *mask;
     gapi_expression  expr;
 };
 
-static c_bool
-readerCallback (
-    c_object o,
-    c_value arg,
-    c_value *result)
-{
-    c_long sampleStateMask, viewStateMask, instanceStateMask;
-    c_bool sampleStateFlag, viewStateFlag, instanceStateFlag;
-    v_dataReaderInstance instance;
-    v_readerSample sample;
-    v_dataViewInstanceTemplate view_instance;
-    v_state instanceState;
-    v_state sampleState;
-    gapi_readerMask *mask;
-    c_bool returnValue = FALSE;
-
-    result->kind = V_BOOLEAN;
-    result->is.Boolean = FALSE;
-
-    if ( v_objectKind(o) == K_DATAVIEWINSTANCE) {
-        view_instance = v_dataViewInstanceTemplate(o);
-        sample = v_dataViewSampleTemplate(view_instance->sample)->sample;
-        instance = v_dataReaderInstance(sample->instance);
-        sampleState = v_readerSampleState(view_instance->sample);
-    } else if ( v_objectKind(o) == K_DATAREADERINSTANCE) {
-        instance = v_dataReaderInstance(o);
-        sample = v_readerSample(v_dataReaderInstanceNewest(instance));
-        sampleState = sample->sampleState;
-    } else {
-        OS_REPORT_2(OS_ERROR,
-                    "readerCallback", 0,
-                    "Given object is not a reader type: "
-                    "object = 0x%x, kind = %d",
-                    o, v_objectKind(o));
-        assert(FALSE);
-        return returnValue;
-    }
-    instanceState = instance->instanceState;
-
-    mask = ((gapi_readerMask *)((PA_ADDRCAST)arg.is.LongLong));
-
-    sampleStateMask   = (c_long)(mask->sampleStateMask);
-    viewStateMask     = (c_long)(mask->viewStateMask);
-    instanceStateMask = (c_long)(mask->instanceStateMask);
-
-    sampleStateFlag = FALSE;
-    if (!sampleStateMask) {
-        sampleStateFlag = TRUE;
-    } else {
-        if (v_stateTestOr(sampleState,L_READ | L_LAZYREAD)) {
-            if (v_stateTest(sampleStateMask, GAPI_READ_SAMPLE_STATE)) {
-                sampleStateFlag = TRUE;
-            }
-        } else {
-            if (v_stateTest(sampleStateMask, GAPI_NOT_READ_SAMPLE_STATE)) {
-                sampleStateFlag = TRUE;
-            }
-        }
-    }
-
-    if (sampleStateFlag) {
-        viewStateFlag = FALSE;
-        if (!viewStateMask) {
-            viewStateFlag = TRUE;
-        } else {
-            if (v_stateTest(instanceState,L_NEW)) {
-                if (v_stateTest(viewStateMask, GAPI_NEW_VIEW_STATE)) {
-                    viewStateFlag = TRUE;
-                }
-            } else {
-                if (v_stateTest(viewStateMask, GAPI_NOT_NEW_VIEW_STATE)) {
-                    viewStateFlag = TRUE;
-                }
-            }
-        }
-
-        if (viewStateFlag) {
-            instanceStateFlag = FALSE;
-            if (!instanceStateMask) {
-                instanceStateFlag = TRUE;
-            } else {
-                if (v_stateTest(instanceState,L_DISPOSED)) {
-                    if (v_stateTest(instanceStateMask,
-                                    GAPI_NOT_ALIVE_DISPOSED_INSTANCE_STATE)) {
-                        instanceStateFlag = TRUE;
-                    }
-                } else if (v_stateTest(instanceState,L_NOWRITERS)) {
-                    if (v_stateTest(instanceStateMask,
-                                    GAPI_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE)) {
-                        instanceStateFlag = TRUE;
-                    }
-                } else {
-                    if (v_stateTest(instanceStateMask,
-                                    GAPI_ALIVE_INSTANCE_STATE)) {
-                        instanceStateFlag = TRUE;
-                    }
-                }
-            }
-
-            if (instanceStateFlag) {
-                result->is.Boolean = TRUE;
-		returnValue = TRUE;
-            }
-        }
-    }
-    return returnValue;
-}
-
-static void
-fillReaderMaskState(
-    gapi_readerMask *mask,
-    q_expr expr)
-{
-    gapi_unsigned_long istate;
-
-    if(mask->instanceStateMask){
-        if (v_stateTest(mask->instanceStateMask,
-                        GAPI_NOT_ALIVE_DISPOSED_INSTANCE_STATE)) {
-            istate = q_exprGetInstanceState(expr);
-            q_exprSetInstanceState(expr, istate | L_DISPOSED);
-        }
-        if (v_stateTest(mask->instanceStateMask,
-                               GAPI_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE)) {
-            istate = q_exprGetInstanceState(expr);
-            q_exprSetInstanceState(expr, istate | L_NOWRITERS);
-        }
-        if (v_stateTest(mask->instanceStateMask, GAPI_ALIVE_INSTANCE_STATE)) {
-             istate = q_exprGetInstanceState(expr);
-             q_exprSetInstanceState(expr, istate | L_WRITE);
-        }
-    }
-
-    if(mask->sampleStateMask){
-        if (v_stateTest(mask->sampleStateMask,GAPI_READ_SAMPLE_STATE)) {
-            q_exprSetSampleState(expr, L_READ);
-        } else {
-            q_exprSetSampleState(expr, L_WRITE);
-        }
-    }
-
-    if(mask->viewStateMask){
-        if (v_stateTest(mask->viewStateMask, GAPI_NEW_VIEW_STATE)) {
-            q_exprSetViewState(expr, L_NEW);
-        } else {
-            q_exprSetViewState(expr, L_WRITE);
-        }
-    }
-    return;
-}
-
-static void
-actionReadCondition(
-    v_entity e,
-    c_voidp arg)
-{
-    struct conditionArg *ca = (struct conditionArg *)arg;
-    c_type type;
-    c_address mask;
-    c_bool noCondition;
-
-    noCondition = TRUE;
-    ca->expr = gapi_expressionNew(NULL);
-
-    if ( ca->expr ) {
-        mask = (c_address)ca->mask;
-        type = c_resolve(c_getBase(c_object(e)), "c_bool");
-        ca->expr->expr = F1(Q_EXPR_PROGRAM,
-                            F3(Q_EXPR_CALLBACK,
-                               (q_expr)q_newTyp(type),
-                               (q_expr)readerCallback,q_newInt(mask)));
-
-        fillReaderMaskState(ca->mask, ca->expr->expr);
-    }
-}
-
-gapi_expression
-gapi_createReadExpression (
-    u_entity entity,
-    gapi_readerMask *mask)
-{
-    struct conditionArg ca;
-
-    ca.query = NULL;
-    ca.mask  = mask;
-    ca.expr  = NULL;
-
-    u_entityAction(entity, actionReadCondition, &ca);
-
-    return ca.expr;
-}
 
 static void
 actionQueryCondition(
@@ -529,32 +338,19 @@ actionQueryCondition(
     c_voidp arg)
 {
     struct conditionArg *ca = (struct conditionArg *)arg;
-    c_type type;
-    c_address mask;
-    q_expr expr, expr2;
+    q_expr expr;
 
     ca->expr = gapi_expressionNew(NULL);
 
     if ( ca->expr ) {
-        mask = (c_address)ca->mask;
-        type = c_resolve(c_getBase(c_object(e)), "c_bool");
-
         expr = gapi_parseExpression(ca->query);
         if ( expr ) {
-            expr2 = q_getPar(expr,0);
-            expr2 = F2(Q_EXPR_AND,expr2,
-                       F3(Q_EXPR_CALLBACK,
-                          (q_expr)q_newTyp(type),
-                          (q_expr)readerCallback,q_newInt(mask)));
-            expr2 = q_swapPar(expr,0,expr2);
             ca->expr->expr = expr;
             ca->expr->maxParmNum = getMaxParameterNumber(expr, -1);
             if ( buildParameterInfo(ca->expr) ) {
                 if ( !validParameterUsage(ca->expr) ) {
                     gapi_expressionFree(ca->expr);
                     ca->expr = NULL;
-                } else {
-                    fillReaderMaskState(ca->mask, ca->expr->expr);
                 }
             } else {
                 gapi_expressionFree(ca->expr);
@@ -570,13 +366,11 @@ actionQueryCondition(
 gapi_expression
 gapi_createQueryExpression (
     u_entity entity,
-    gapi_readerMask *mask,
     const c_char *query)
 {
     struct conditionArg ca;
 
     ca.query = query;
-    ca.mask  = mask;
     ca.expr  = NULL;
 
     u_entityAction(entity, actionQueryCondition, &ca);

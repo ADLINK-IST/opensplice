@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,8 +19,8 @@ public class MetaElement extends MetaNode {
     private int maxOccurrences;
     private ArrayList<MetaNode> children;
     
-    public MetaElement(String doc, String name, int minOccurrences, int maxOccurrences, ArrayList<MetaNode> children) {
-        super(doc);
+    public MetaElement(String doc, String name, int minOccurrences, int maxOccurrences, ArrayList<MetaNode> children, String version) {
+        super(doc,version);
         this.name = name;
         this.minOccurrences = minOccurrences;
         this.maxOccurrences = maxOccurrences;
@@ -86,22 +86,32 @@ public class MetaElement extends MetaNode {
         return result;
     }
     
+    @Override
+    public int hashCode() {
+        int var_gen_code;
+        int hash = 13;
+        var_gen_code = minOccurrences;
+        var_gen_code += maxOccurrences;
+        var_gen_code += (null == children ? 0 : children.hashCode());
+        var_gen_code += (null == name ? 0 : name.hashCode());
+        hash = 31 * hash + var_gen_code;
+        return hash;
+    }
+    
     public String toString(){
-        String result = "";
-        result += "\nElement\n";
-        result += "-Name: " + this.name + "\n";
-        result += "-MinOcccurrences: " + this.minOccurrences + "\n";
-        result += "-MaxOcccurrences: " + this.maxOccurrences + "\n";
-        
+        StringBuffer buf = new StringBuffer();
+        buf.append("\nElement\n");
+        buf.append("-Name: " + this.name + "\n");
+        buf.append("-Version: " + this.version + "\n");
+        buf.append("-MinOcccurrences: " + this.minOccurrences + "\n");
+        buf.append("-MaxOcccurrences: " + this.maxOccurrences + "\n");
         if(this.children.size() > 0){
-            result += "-Children: ";
-            
+            buf.append("-Children: ");
             for(MetaNode child: children){
-                result += child.toString().replaceAll("\n", "\n\t");
+                buf.append(child.toString().replaceAll("\n", "\n\t"));
             }
         }
-        return result;
-        
+        return buf.toString();
     }
     
     public boolean hasElementChildren(){

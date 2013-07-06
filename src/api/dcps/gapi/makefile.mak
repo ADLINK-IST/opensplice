@@ -16,6 +16,7 @@ CINCS		+= -I$(OSPL_HOME)/src/database/database/include
 CINCS		+= -I$(OSPL_HOME)/src/database/serialization/include
 CINCS		+= -I$(OSPL_HOME)/src/kernel/include
 CINCS		+= -I$(OSPL_HOME)/src/user/include
+CINCS		+= -I$(OSPL_HOME)/src/configuration/config/include
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS   += $(SHLDLIBS)
@@ -24,7 +25,7 @@ ifeq ($(SPECIAL),purify)
 CPPFLAGS += -D_PURIFY
 endif
 
-LDLIBS += -l$(DDS_OS) -l$(DDS_UTIL) -l$(DDS_DATABASE) 
+LDLIBS += -l$(DDS_OS) -l$(DDS_UTIL) -l$(DDS_DATABASE)
 LDLIBS += -l$(DDS_SERIALIZATION) -l$(DDS_KERNEL) -l$(DDS_USER)
 
 -include $(DEPENDENCIES)

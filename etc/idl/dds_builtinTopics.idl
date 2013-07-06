@@ -10,6 +10,7 @@ This file was the one orginally in ./src/api/dcps/saj/code/.
 
 module DDS {
 
+
     // Added octet sequence definition.
     // Prevents IDL compiler warnings from deprecated anonymous types
     // on composite type members.

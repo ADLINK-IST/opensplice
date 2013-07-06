@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,7 +12,8 @@
 #ifndef IDL_FILEMAP_H
 #define IDL_FILEMAP_H
 
-#include "c_metabase.h"
+#include <c_metabase.h>
+#include <c_base.h>
 
 C_CLASS(idl_fileMap);
 
@@ -51,5 +52,14 @@ idl_fileMapObject(
     const idl_fileMap fileMap,
     const char *fileName,
     const c_baseObject object);
+
+c_bool idl_fileMapCheckFinalized(
+    const idl_fileMap fileMap,
+    const char* fileName);
+
+c_iter
+idl_fileMapGetObjects(
+    const idl_fileMap fileMap,
+    const char *fileName);
 
 #endif /* IDL_FILEMAP_H */

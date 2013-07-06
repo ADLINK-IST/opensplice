@@ -692,9 +692,31 @@ namespace DDS.OpenSplice.Gapi
     {
         Duration minimum_separation;
     }
+    /*
+    
+        enum InvalidSampleVisibilityQosPolicyKind {
+        NO_INVALID_SAMPLES,
+        MINIMUM_INVALID_SAMPLES,
+        ALL_INVALID_SAMPLES
+    };
+    */
+    
+    /* struct InvalidSampleVisibilityQosPolicy {
+     *     InvalidSampleVisibilityQosPolicyKind kind;
+     * };
+     */
+    [StructLayoutAttribute(LayoutKind.Sequential)]
+    internal struct gapi_invalidSampleVisibilityQosPolicy
+    {
+        InvalidSampleVisibilityQosPolicyKind kind;
+    }
+
 
     /* struct ReaderDataLifecycleQosPolicy {
      *     Duration_t autopurge_nowriter_samples_delay;
+     *     Duration_t autopurge_disposed_samples_delay;
+     *     boolean enable_invalid_samples;
+     *     InvalidSampleVisibilityQosPolicy invalid_sample_visibility;
      * };
      */
     [StructLayoutAttribute(LayoutKind.Sequential)]
@@ -704,6 +726,7 @@ namespace DDS.OpenSplice.Gapi
         Duration autopurge_disposed_samples_delay;
         [MarshalAs(UnmanagedType.U1)]
         bool enable_invalid_samples;
+        gapi_invalidSampleVisibilityQosPolicy invalid_sample_visibility;
     }
 
     /* struct SubscriptionKeyQosPolicy {

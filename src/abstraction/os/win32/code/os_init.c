@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -22,11 +22,10 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
-#include "code/os__process.h"
-#include "code/os__sharedmem.h"
-#include "code/os__thread.h"
-#include "code/os__socket.h"
-#include "code/os__time.h"
+#include "os__process.h"
+#include "os__sharedmem.h"
+#include "os__thread.h"
+#include "os__socket.h"
 #include "os__debug.h"
 #include "os_report.h"
 #include "os_abstract.h"
@@ -40,8 +39,12 @@ static os_uint32 _ospl_osInitCount = 0;
 /** \brief OS layer initialization
  *
  * \b os_osInit calls:
+ * - \b os_reportInit(OS_FALSE);
+ * - \b os_debugModeInit();
+ * - \b os_timeModuleInit();
+ * - \b os_processModuleInit();
  * - \b os_sharedMemoryInit
- * - \b os_threadInit
+ * - \b os_threadModuleInit
  */
 void
 os_osInit(void)
@@ -51,6 +54,7 @@ os_osInit(void)
     initCount = pa_increment(&_ospl_osInitCount);
 
     if (initCount == 1) {
+        os_reportInit(OS_FALSE);
         os_debugModeInit();
         os_timeModuleInit();
         os_processModuleInit();
@@ -77,6 +81,7 @@ os_osExit(
         os_processModuleExit();
         os_timeModuleExit();
         os_debugModeExit();
+        os_reportExit();
     } else if ((initCount + 1) < initCount){
         /* The 0 boundary is passed, so os_osExit is called more often than
          * os_osInit. Therefore undo decrement as nothing happened and warn. */

@@ -1,0 +1,8 @@
+// $Id$
+
+project {
+  requires += tena
+
+  includes += $(TENA_HOME)/$(TENA_VERSION)/include
+  libpaths += $(TENA_HOME)/lib
+}

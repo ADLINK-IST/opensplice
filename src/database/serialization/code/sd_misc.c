@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /** \file services/serialization/code/sd_misc.c
@@ -22,6 +22,7 @@
 #include "os_heap.h"
 #include "c_base.h"
 #include "sd__confidence.h"
+#include "sd_stringsXML.h"
 
 /** \brief Function for selecting the correct switch value for a given
  *         union object
@@ -136,7 +137,7 @@ sd_unionDetermineActiveCase(
 c_char *
 sd_getScopedTypeName(
     c_type type,
-    const c_char *separator)
+    const c_char *moduleSep)
 {
     c_string typeName;
     c_metaObject module;
@@ -144,7 +145,6 @@ sd_getScopedTypeName(
     c_ulong nameLen;
     c_char *result;
     c_type actualType;
-    c_bool hasModuleName;
 
     actualType = type;
     typeName = c_metaName(c_metaObject(actualType));
@@ -152,21 +152,16 @@ sd_getScopedTypeName(
         module = c_metaModule(c_metaObject(actualType));
         if (module) {
             moduleName = c_metaName(c_metaObject(module));
-            hasModuleName = (moduleName != NULL);
-            if (!hasModuleName) {
-                moduleName = sd_stringDup("");
-            }
-            nameLen = strlen(moduleName) +
-                      strlen(separator) +
+            nameLen = (moduleName ? strlen(moduleName) : 0) +
+                      (moduleName ? strlen(moduleSep) : 0) +
                       strlen(typeName) +
                       1U /* '\0' */;
             result = (c_char *)os_malloc(nameLen);
-            snprintf(result, nameLen, "%s%s%s", moduleName, separator, typeName);
-            if (hasModuleName) {
-                c_free(moduleName);
-            } else {
-                os_free(moduleName);
-            }
+            snprintf(result, nameLen, "%s%s%s",
+                    moduleName ? moduleName : "",
+                    moduleName ? moduleSep : "",
+                    typeName);
+            c_free(moduleName);
             c_free(module);
         } else {
             result = sd_stringDup(typeName);

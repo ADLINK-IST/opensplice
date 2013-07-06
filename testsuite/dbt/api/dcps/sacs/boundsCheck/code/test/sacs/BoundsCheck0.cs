@@ -39,7 +39,7 @@ namespace test.sacs
 				result.Result = "Default DomainParticipantQos could not be resolved.";
 				return result;
 			}
-			bce.participant = bce.factory.CreateParticipant(string.Empty, pqos);
+			bce.participant = bce.factory.CreateParticipant(DDS.DomainId.Default, pqos);
 			if (bce.participant == null)
 			{
 				result.Result = "Creation of DomainParticipant failed.";

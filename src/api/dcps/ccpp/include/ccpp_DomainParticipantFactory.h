@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -12,9 +12,9 @@
 #ifndef CCPP_DOMAINPARTICIPANTFACTORY_H
 #define CCPP_DOMAINPARTICIPANTFACTORY_H
 
+#include "ccpp.h"
 #include "os_report.h"
 #include "gapi.h"
-#include "ccpp.h"
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 namespace DDS
@@ -37,7 +37,7 @@ namespace DDS
         static ::DDS::DomainParticipantFactory_ptr get_instance() THROW_ORB_EXCEPTIONS;
 
         virtual ::DDS::DomainParticipant_ptr create_participant (
-            const char * domainId,
+            ::DDS::DomainId_t domainId,
             const ::DDS::DomainParticipantQos & qos,
             ::DDS::DomainParticipantListener_ptr a_listener,
             ::DDS::StatusMask mask
@@ -48,11 +48,11 @@ namespace DDS
         ) THROW_ORB_EXCEPTIONS;
 
         virtual ::DDS::DomainParticipant_ptr lookup_participant (
-            const char * domainId
+           ::DDS::DomainId_t domainId
         ) THROW_ORB_EXCEPTIONS;
 
         virtual ::DDS::Domain_ptr lookup_domain (
-            const char * domainId
+           ::DDS::DomainId_t domainId
         ) THROW_ORB_EXCEPTIONS;
 
         virtual ::DDS::ReturnCode_t delete_domain (
@@ -84,15 +84,15 @@ namespace DDS
           return (DomainParticipantFactory_ptr)0;
         }
 
-        static const ::DDS::DomainParticipantQos  * const participant_qos_default (void);
-        static const ::DDS::TopicQos              * const topic_qos_default (void);
-        static const ::DDS::PublisherQos          * const publisher_qos_default (void);
-        static const ::DDS::SubscriberQos         * const subscriber_qos_default (void);
-        static const ::DDS::DataReaderQos         * const datareader_qos_default (void);
-        static const ::DDS::DataReaderViewQos     * const datareaderview_qos_default (void);
-        static const ::DDS::DataReaderQos         * const datareader_qos_use_topic_qos (void);
-        static const ::DDS::DataWriterQos         * const datawriter_qos_default (void);
-        static const ::DDS::DataWriterQos         * const datawriter_qos_use_topic_qos (void);
+        static const ::DDS::DomainParticipantQos  * participant_qos_default (void);
+        static const ::DDS::TopicQos              * topic_qos_default (void);
+        static const ::DDS::PublisherQos          * publisher_qos_default (void);
+        static const ::DDS::SubscriberQos         * subscriber_qos_default (void);
+        static const ::DDS::DataReaderQos         * datareader_qos_default (void);
+        static const ::DDS::DataReaderViewQos     * datareaderview_qos_default (void);
+        static const ::DDS::DataReaderQos         * datareader_qos_use_topic_qos (void);
+        static const ::DDS::DataWriterQos         * datawriter_qos_default (void);
+        static const ::DDS::DataWriterQos         * datawriter_qos_use_topic_qos (void);
     };
 }
 

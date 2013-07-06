@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -31,7 +31,8 @@ v_groupQueueInit (
     v_subscriber subscriber,
     const c_char *name,
     c_ulong size,
-    v_readerQos qos);
+    v_readerQos qos,
+    c_iter expr);
 
 void
 v_groupQueueDeinit (

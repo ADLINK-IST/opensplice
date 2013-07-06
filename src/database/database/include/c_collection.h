@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -423,7 +423,7 @@ c_take (
  * \return
  */
 OS_API c_iter
-c_select (
+ospl_c_select (
     c_collection c,
     c_long max);
 
@@ -438,6 +438,12 @@ c_select (
  */
 OS_API c_bool
 c_readAction (
+    c_collection c,
+    c_action action,
+    c_voidp arg);
+
+OS_API c_bool
+c_tableReadCircular (
     c_collection c,
     c_action action,
     c_voidp arg);
@@ -701,6 +707,14 @@ OS_API c_object
 c_tableNext (
     c_table table,
     c_object o);
+
+OS_API c_object
+c_tableReadCursor (
+    c_table table);
+
+OS_API c_object
+c_tablePeekCursor (
+    c_table table);
 
 /**
  * \brief This query operation sets the value of the query parameters.

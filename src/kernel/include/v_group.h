@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -88,6 +88,17 @@ typedef c_bool (*v_groupWriterAction)(v_writer w, c_voidp arg);
 #define v_groupPartitionAccessMode(_this)\
         (v_group(_this)->partitionAccessMode)
 
+typedef c_equality (*v_matchIdentityAction)(v_gid id1, v_gid id2);
+
+typedef enum {
+    V_GROUP_FLUSH_REGISTRATION, /* The object flushed is a v_registration */
+    V_GROUP_FLUSH_MESSAGE       /* The object flushed is a v_message */
+} v_groupFlushType;
+
+typedef c_bool (*v_groupFlushCallback)
+               (c_object obj, v_groupInstance instance,
+                       v_groupFlushType flushType, c_voidp arg);
+
 OS_API void
 v_groupFree (
     v_group _this);
@@ -121,11 +132,25 @@ OS_API c_long
 v_groupSampleCount (
     v_group _this);
 
+/* The following hash defines implement a basic form of
+ * destination identification for resend messages.
+ * The resendScope is a set of these bits specifying the
+ * resend scope.
+ */
+
+#define V_RESEND_NONE        (0)
+#define V_RESEND_TOPIC       (1)
+#define V_RESEND_VARIANT     (2)
+#define V_RESEND_REMOTE      (4)
+#define V_RESEND_DURABLE     (8)
+#define V_RESEND_ALL        (15)
+
 OS_API v_writeResult
 v_groupWrite (
     v_group _this, v_message o,
     v_groupInstance *instancePtr,
-    v_networkId writingNetworkId);
+    v_networkId writingNetworkId,
+    v_resendScope *resendScope);
 
 OS_API v_writeResult
 v_groupWriteNoStream (
@@ -182,7 +207,7 @@ v_groupFlush (
 OS_API void
 v_groupFlushAction (
     v_group _this,
-    c_action action,
+    v_groupFlushCallback action,
     c_voidp arg);
 
 OS_API c_bool
@@ -221,12 +246,27 @@ OS_API void
 v_groupFlushActionWithCondition(
     v_group  g,
     v_historicalDataRequest request,
-    c_action action,
+    v_groupFlushCallback action,
     c_voidp arg);
 
 OS_API void
 v_groupUpdatePurgeList(
     v_group group);
+
+OS_API v_groupInstance
+v_groupLookupInstance(
+    v_group group,
+    c_value keyValue[]);
+
+OS_API v_message
+v_groupCreateUntypedInvalidMessage(
+    v_kernel kernel,
+    v_message typedMsg);
+
+OS_API void
+v_groupRemoveAwareness (
+    v_group _this,
+    const c_char* serviceName);
 
 #undef OS_API
 

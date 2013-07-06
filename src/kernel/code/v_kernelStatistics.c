@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -51,6 +51,7 @@ void v_kernelStatisticsDeinit(v_kernelStatistics ks)
 {
     assert(ks!=NULL);
     assert(C_TYPECHECK(ks, v_kernelStatistics));
+    OS_UNUSED_ARG(ks);
 }
 
 c_bool v_kernelStatisticsReset(v_kernelStatistics ks, const c_char* fieldName)

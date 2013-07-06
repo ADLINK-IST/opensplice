@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -22,7 +22,6 @@
 #include "v__statisticsInterface.h"
 #include "v__kernel.h"
 
-#include "c_extent.h"
 #include "os_report.h"
 
 #define CHECK_REFCOUNT(var, i)
@@ -33,7 +32,6 @@ v_writerInstanceNew(
     v_message message)
 {
     v_writerInstance instance;
-    c_type type;
 
     assert(C_TYPECHECK(writer,v_writer));
     assert(C_TYPECHECK(message,v_message));
@@ -43,13 +41,7 @@ v_writerInstanceNew(
         writer->cachedInstance = NULL;
     } else {
 
-#ifdef _EXTENT_
-        instance = v_writerInstance(c_extentCreate(writer->instanceExtent));
-#else
-        type = c_subType(writer->instances);
-        instance = v_writerInstance(c_new(type));
-        c_free(type);
-#endif
+        instance = v_writerInstance(c_new(writer->instanceType));
         if (instance) {
             v_object(instance)->kernel = v_objectKernel(writer);
             v_objectKind(instance) = K_WRITERINSTANCE;
@@ -76,7 +68,6 @@ v_writerInstanceInit (
     c_array messageKeyList;
     c_value value;
     c_long i, nrOfKeys;
-    c_long nrOfInstanceKeys;
 
     assert(C_TYPECHECK(instance,v_writerInstance));
     assert(C_TYPECHECK(message,v_message));
@@ -95,7 +86,6 @@ v_writerInstanceInit (
     messageKeyList = v_topicMessageKeyList(v_writerTopic(instance->writer));
     instanceKeyList = v_writerKeyList(instance->writer);
     nrOfKeys = c_arraySize(messageKeyList);
-    nrOfInstanceKeys = c_arraySize(instanceKeyList);
     assert(nrOfKeys == c_arraySize(instanceKeyList));
     for (i=0;i<nrOfKeys;i++) {
         value = c_fieldValue(messageKeyList[i],message);
@@ -207,13 +197,16 @@ v_writerInstanceInsert(
                     instance->last = last->prev;
                 }
                 if (last->prev != NULL) {
-		  /* do not "c_free(v_writerSample(last->prev)->next);",
+                  /* do not "c_free(v_writerSample(last->prev)->next);",
                    * since last will be returned by this function.
                    */
                     v_writerSample(last->prev)->next = last->next;
-                    last->next = NULL;
+                } else {
+                    /* Avoiding writerInstanceSetHead because
+                     * last->next's reference is transferred */
+                    v_writerInstanceTemplate(instance)->sample = last->next;
                 }
-                assert(last->next == NULL);
+                last->next = NULL;
                 last->prev = NULL;
                 CHECK_REFCOUNT(last, 1);
             }

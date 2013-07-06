@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -194,24 +194,27 @@ u_queryDeinit(
 C_STRUCT(readActionArg) {
     u_readerAction action;
     c_voidp arg;
-    c_bool proceed;
+    v_actionResult result;
 };
 
 C_CLASS(readActionArg);
 
-static c_bool
+static v_actionResult
 readAction(
     c_object sample,
     c_voidp arg)
 {
     readActionArg a = (readActionArg)arg;
 
-    if (sample == NULL) {
+    if (sample == NULL)
+    {
         a->action((v_dataReaderSample)sample,a->arg);
-        return a->proceed;
     }
-    a->proceed = a->action((v_dataReaderSample)sample,a->arg);
-    return a->proceed;
+    else
+    {
+        a->result = a->action((v_dataReaderSample)sample,a->arg);
+    }
+    return a->result;
 }
 
 u_result
@@ -228,9 +231,9 @@ u_queryRead(
     if (result == U_RESULT_OK) {
         arg.action = action;
         arg.arg = actionArg;
-        arg.proceed = TRUE;
-        v_queryRead(query,readAction,&arg);
-        u_entityRelease(u_entity(_this));
+        arg.result = 0;
+        v_queryRead(query, readAction, &arg);
+        result = u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_queryRead", 0,
                   "Could not claim query.");
@@ -252,9 +255,9 @@ u_queryTake(
     if (result == U_RESULT_OK) {
         arg.action = action;
         arg.arg = actionArg;
-        arg.proceed = TRUE;
-        v_queryTake(query,readAction,&arg);
-        u_entityRelease(u_entity(_this));
+        arg.result = 0;
+        v_queryTake(query, readAction, &arg);
+        result = u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_queryTake", 0,
                   "Could not claim query.");
@@ -272,19 +275,20 @@ C_STRUCT(readListActionArg) {
 
 C_CLASS(readListActionArg);
 
-static c_bool
+static v_actionResult
 readListAction(
     c_object sample,
     c_voidp arg)
 {
+    v_actionResult result = 0;
     readListActionArg a = (readListActionArg)arg;
 
     if (a->spaceLeft == 0) {
-        return FALSE;
+        return result;
     }
     if (sample == NULL) {
         a->result = a->copyAction(NULL,a->iter,a->copyArg);
-        return FALSE;
+        return result;
     }
     if (!c_iterContains(a->iter,sample)) {
         a->iter = c_iterInsert(a->iter,c_keep(sample));
@@ -292,9 +296,10 @@ readListAction(
     }
     if (a->spaceLeft == 0) {
         a->result = a->copyAction(NULL,a->iter,a->copyArg);
-        return FALSE;
+        return result;
     } else {
-        return TRUE;
+        v_actionResultSet(result, V_PROCEED);
+        return result;
     }
 }
 
@@ -312,34 +317,42 @@ u_queryReadList(
     C_STRUCT(readListActionArg) arg;
     c_object object;
 
-    if (copy) {
+    if (copy)
+    {
         r = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
-        if (r == U_RESULT_OK) {
+        if (r == U_RESULT_OK)
+        {
             arg.iter = NULL;
-            if (max == 0) {
+            if (max == 0)
+            {
                 arg.spaceLeft = 0x7fffffff;
-            } else {
+            }
+            else
+            {
                 arg.spaceLeft = max;
             }
             arg.copyAction = copy;
             arg.copyArg = copyArg;
             arg.result = NULL;
-            v_queryRead(query,readListAction,&arg);
+            v_queryRead(query, (v_readerSampleAction) readListAction, &arg);
             list = arg.iter;
             result = arg.result;
             object = c_iterTakeFirst(list);
-            while (object != NULL) {
+            while (object != NULL)
+            {
                 c_free(object);
                 object = c_iterTakeFirst(list);
             }
             c_iterFree(list);
             u_entityRelease(u_entity(_this));
-        } else
+        }
+        else
         {
             OS_REPORT(OS_WARNING, "u_queryReadList", 0,"Could not claim query.");
             result = NULL;
         }
-    } else
+    }
+    else
     {
         result = NULL;
     }
@@ -360,35 +373,43 @@ u_queryTakeList(
     C_STRUCT(readListActionArg) arg;
     c_object object;
 
-    if (copy){
+    if (copy)
+    {
         r = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
-        if (r == U_RESULT_OK){
+        if (r == U_RESULT_OK)
+        {
             assert(query);
             arg.iter = NULL;
-            if (max == 0) {
+            if (max == 0)
+            {
                 arg.spaceLeft = 0x7fffffff;
-            } else {
+            }
+            else
+            {
                 arg.spaceLeft = max;
             }
             arg.copyAction = copy;
             arg.copyArg = copyArg;
             arg.result = NULL;
-            v_queryTake(query,readListAction,&arg);
+            v_queryTake(query, (v_readerSampleAction) readListAction, &arg);
             list = arg.iter;
             result = arg.result;
             object = c_iterTakeFirst(list);
-            while (object != NULL) {
+            while (object != NULL)
+            {
                 c_free(object);
                 object = c_iterTakeFirst(list);
             }
             c_iterFree(list);
             u_entityRelease(u_entity(_this));
-        } else
+        }
+        else
         {
             OS_REPORT(OS_WARNING, "u_queryTakeList", 0,"Could not claim query.");
             result = NULL;
         }
-    } else
+    }
+    else
     {
         result = NULL;
     }
@@ -397,7 +418,9 @@ u_queryTakeList(
 
 c_bool
 u_queryTest(
-    u_query _this)
+    u_query _this,
+    u_queryAction action,
+    c_voidp args)
 {
     v_query query;
     c_bool result;
@@ -406,30 +429,10 @@ u_queryTest(
     r = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
     if (r == U_RESULT_OK) {
         assert(query);
-        result = v_queryTest(query);
+        result = v_queryTest(query, action, args);
         u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_queryTest", 0,"Could not claim query.");
-        result = FALSE;
-    }
-    return result;
-}
-
-c_bool
-u_queryTriggerTest(
-    u_query _this)
-{
-    v_query query;
-    c_bool result;
-    u_result r;
-
-    r = u_entityReadClaim(u_entity(_this),(v_entity*)(&query));
-    if (r == U_RESULT_OK) {
-        assert(query);
-        result = v_queryTriggerTest(query);
-        u_entityRelease(u_entity(_this));
-    } else {
-        OS_REPORT(OS_WARNING, "u_queryTriggerTest", 0,"Could not claim query.");
         result = FALSE;
     }
     return result;
@@ -519,7 +522,7 @@ u_queryReadInstance(
         if (result == U_RESULT_OK) {
             assert(instance != NULL);
             if (queryContainsInstance(query,instance)) {
-                v_queryReadInstance(query,instance,action,actionArg);
+                v_queryReadInstance(query, instance, action, actionArg);
             } else {
                 result = U_RESULT_PRECONDITION_NOT_MET;
             }
@@ -552,7 +555,7 @@ u_queryTakeInstance(
         if (result == U_RESULT_OK) {
             assert(instance != NULL);
             if (queryContainsInstance(query,instance)) {
-                v_queryTakeInstance(query,instance,action,actionArg);
+                v_queryTakeInstance(query, instance, action, actionArg);
             } else {
                 result = U_RESULT_PRECONDITION_NOT_MET;
             }
@@ -583,7 +586,8 @@ u_queryReadNextInstance(
     if (result == U_RESULT_OK) {
         assert(query);
         if ( u_instanceHandleIsNil(handle) ) {
-            v_queryReadNextInstance(query, NULL, action, actionArg);
+            v_queryReadNextInstance(query, NULL,
+                    (v_readerSampleAction) action, actionArg);
         } else {
             handle = u_instanceHandleFix(handle,v_collection(query));
             result = u_instanceHandleClaim(handle, &instance);
@@ -596,7 +600,8 @@ u_queryReadNextInstance(
                 result = U_RESULT_OK;
             } else if (result == U_RESULT_OK) {
                 if (queryContainsInstance(query,instance)) {
-                    v_queryReadNextInstance(query, instance, action, actionArg);
+                    v_queryReadNextInstance(query, instance,
+                            (v_readerSampleAction) action, actionArg);
                     result = U_RESULT_OK;
                 } else {
                     result = U_RESULT_PRECONDITION_NOT_MET;
@@ -628,7 +633,8 @@ u_queryTakeNextInstance(
     if (result == U_RESULT_OK) {
         assert(query);
         if ( u_instanceHandleIsNil(handle) ) {
-            v_queryTakeNextInstance(query, NULL, action, actionArg);
+            v_queryTakeNextInstance(query, NULL,
+                    (v_readerSampleAction) action, actionArg);
         } else {
             handle = u_instanceHandleFix(handle,v_collection(query));
             result = u_instanceHandleClaim(handle, &instance);
@@ -641,7 +647,8 @@ u_queryTakeNextInstance(
                 result = U_RESULT_OK;
             } else if (result == U_RESULT_OK) {
                 if (queryContainsInstance(query,instance)) {
-                    v_queryTakeNextInstance(query, instance, action, actionArg);
+                    v_queryTakeNextInstance(query, instance,
+                            (v_readerSampleAction) action, actionArg);
                     result = U_RESULT_OK;
                 } else {
                     result = U_RESULT_PRECONDITION_NOT_MET;

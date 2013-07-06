@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -11,10 +11,14 @@
  */
 #include "u__user.h"
 #include "u__domain.h"
+#include "u__types.h"
 #include "u_entity.h"
+#include "cfg_parser.h"
+#include "cf_config.h"
 
 #include "os.h"
 #include "os_report.h"
+#include "os_signalHandler.h"
 
 #define MAX_DOMAINS (128)
 
@@ -22,7 +26,6 @@
 
 C_CLASS(u_domainAdmin);
 C_STRUCT(u_domainAdmin) { /* protected by global user lock */
-    c_long refCount;
     u_domain domain;
     /* The keepList holds all domain references issues by u_userKeep().
      * This list will keep the objects alive until the objects are removed by
@@ -99,9 +102,6 @@ u__userLock(void)
             /* The mutex is not valid so apparently the user-layer is either
              * destroyed or in process of destruction. */
             u = NULL;
-            OS_REPORT(OS_INFO,
-                      "User Layer",0,
-                      "User layer is corrupted or process is terminating");
         } else if ((os_threadIdToInteger(u->detachThreadId) != 0) &&
                    (os_threadIdToInteger(u->detachThreadId) !=
                     os_threadIdToInteger(os_threadIdSelf())))
@@ -112,16 +112,10 @@ u__userLock(void)
              */
             os_mutexUnlock(&u->mutex);
             u = NULL;
-            OS_REPORT(OS_INFO,
-                      "User Layer",0,
-                      "User layer is corrupted or process is terminating");
         }
     } else {
-      /* The user-layer is not created or destroyed i.e. non existent, therefore return null.
-       */
-        OS_REPORT(OS_ERROR,
-                  "User Layer",0,
-                  "User layer not initialized");
+        /* The user-layer is not created or destroyed i.e. non existent, therefore return null. */
+        OS_REPORT(OS_ERROR, "User Layer", 0, "User layer not initialized");
     }
     return u;
 }
@@ -143,8 +137,9 @@ u__userUnlock(void)
     }
 }
 
-static void
-u_userExit(void)
+void
+u_userExit(
+    void)
 {
     u_user u;
     u_domain domain;
@@ -201,10 +196,15 @@ u_userExit(void)
         }
         /* Free the user-object */
         os_free(u);
-
-        /* De-init the OS-abstraction layer */
-        os_osExit();
     }
+
+    /* Even if access to the user layer is denied, we still need to cleanup
+     * the signal handler, which includes waiting for the threads to exit
+     * the DDS database */
+    os_signalHandlerFree();
+
+    /* De-init the OS-abstraction layer */
+    os_osExit();
 }
 
 /* This method registers a database object to be managed by the user-layer.
@@ -297,14 +297,103 @@ u_userDetach()
     return U_RESULT_OK;
 }
 
+static void
+u__userDetach(
+    void)
+{
+    u_user u;
+    u_domain domain;
+    u_result r;
+    c_long i;
+
+    u = u__userLock();
+    if (u) {
+        /* Disable access to user-layer for all other threads except for this thread.
+         * Any following user access from other threads is gracefully
+         * aborted.
+         */
+        u->detachThreadId = os_threadIdSelf();
+        /* Unlock the user-layer
+         * Part of following code requires to unlock the user object
+         * This is allowed now all other threads will abort when
+         * trying to claim the lock
+         */
+        u__userUnlock();
+
+        for (i = 1; (i <= u->domainCount); i++) {
+            domain = u->domainList[i].domain;
+            if (domain) {
+                r = u_domainDetachParticipants(domain);
+                if (r != U_RESULT_OK) {
+                    OS_REPORT_2(OS_ERROR,
+                                "user::u_user::u_userDetach", 0,
+                                "Operation u_domainDetachParticipants(0x%x) failed."
+                                OS_REPORT_NL "result = %s",
+                                domain, u_resultImage(r));
+                } else {
+                    r = u_domainFree(domain);
+                    if (r != U_RESULT_OK) {
+                        OS_REPORT_2(OS_ERROR,
+                                    "user::u_user::u_userDetach", 0,
+                                    "Operation u_domainFree(0x%x) failed."
+                                    OS_REPORT_NL "result = %s",
+                                    domain, u_resultImage(r));
+                    }
+                }
+            }
+        }
+        /*        user = NULL;
+         * ES: This was set to NULL here by RP, but this causes  errors later on
+         * when u_userExit is performed. So commented this out here. As I can
+         * not explain why we would need to set it to NULL here.
+         */
+
+    }
+}
+
+static os_result
+u__userExceptionCallbackWrapper(void)
+{
+    /* do not detach when using single process as this does not function correctly for single process*/
+    if(!os_serviceGetSingleProcess()) {
+        OS_REPORT(OS_ERROR, "u__userExceptionCallbackWrapper", 0,
+                "Exception occurred, will detach user-layer from domain.");
+        u__userDetach();
+    }
+    return os_resultSuccess;
+}
+
+static os_result
+u__userExitRequestCallbackWrapper(
+    os_callbackArg arg)
+{
+    /* do _exit when using single process as the exit request handler does not function correctly for single process*/
+    if(!os_serviceGetSingleProcess()) {
+        OS_REPORT(OS_WARNING, "u__userExitRequestCallbackWrapper", 0,
+                  "Received termination request, will detach user-layer from domain.");
+        u__userDetach();
+    } else {
+#ifdef _WRS_KERNEL
+        exit(0);
+#else
+        _exit(0);
+#endif    
+    }
+    return os_signalHandlerFinishExitRequest(arg);
+}
+
 u_result
-u_userInitialise()
+u_userInitialise(
+    void)
 {
     u_user u;
     u_result rm = U_RESULT_OK;
     os_mutexAttr mutexAttr;
     os_uint32 initCount;
     void* initUser;
+    os_result osResult;
+    os_signalHandlerExitRequestCallback exitRequestCallback;
+    os_signalHandlerExceptionCallback exceptionCallback;
 
     initCount = pa_increment(&_ospl_userInitCount);
     /* If initCount == 0 then an overflow has occurred.
@@ -313,15 +402,10 @@ u_userInitialise()
      */
     assert(initCount != 0);
 
+    os_osInit();
     if (initCount == 1) {
-#ifndef NDEBUG
-#if 0   /* Allow delay for debugging */
-        sleep(20);
-#endif
-#endif
         /* Will start allocating the object, so it should currently be empty. */
         assert(user == NULL);
-        os_osInit();
 
         /* Use indirection, as user != NULL is a precondition for user-layer
          * functions, so make sure it only holds true when the user-layer is
@@ -339,13 +423,44 @@ u_userInitialise()
             os_mutexAttrInit(&mutexAttr);
             mutexAttr.scopeAttr = OS_SCOPE_PRIVATE;
             os_mutexInit(&u->mutex,&mutexAttr);
-            u->domainCount = 0;
-            u->protectCount = 0;
-            u->detachThreadId = OS_THREAD_ID_NONE;
-            os_procAtExit(u_userExit);
+            osResult = os_signalHandlerNew();
+            if(osResult != os_resultSuccess)
+            {
+                /* Initialization did not succeed, undo increment and return error */
+                initCount = pa_decrement(&_ospl_userInitCount);
+                OS_REPORT(OS_ERROR, "u_userInitialise", 0,
+                      "Failed to create the signal handler. No proper signal handling can be performed.");
+                rm = U_RESULT_INTERNAL_ERROR;
+            } else
+            {
+                exitRequestCallback = os_signalHandlerSetExitRequestCallback(u__userExitRequestCallbackWrapper);
+                if(exitRequestCallback && exitRequestCallback != u__userExitRequestCallbackWrapper)
+                {
+                    initCount = pa_decrement(&_ospl_userInitCount);
+                    OS_REPORT(OS_ERROR, "u_userInitialise", 0,
+                        "Replaced an exit request callback on the signal handler while this was not expected.");
+                    rm = U_RESULT_INTERNAL_ERROR;
+                }
+                if(rm == U_RESULT_OK){
+                    exceptionCallback = os_signalHandlerSetExceptionCallback(u__userExceptionCallbackWrapper);
+                    if(exceptionCallback && exceptionCallback != u__userExceptionCallbackWrapper)
+                    {
+                        initCount = pa_decrement(&_ospl_userInitCount);
+                        OS_REPORT(OS_ERROR, "u_userInitialise", 0,
+                            "Replaced an exception callback on the signal handler while this was not expected.");
+                        rm = U_RESULT_INTERNAL_ERROR;
+                    }
+                }
+                if(rm == U_RESULT_OK)
+                {
+                    u->domainCount = 0;
+                    u->protectCount = 0;
+                    u->detachThreadId = OS_THREAD_ID_NONE;
 
-            /* This will mark the user-layer initialized */
-            user = initUser;
+                    /* This will mark the user-layer initialized */
+                    user = initUser;
+                }
+            }
         }
     } else {
         if(user == NULL){
@@ -388,7 +503,6 @@ u_userAddDomain(
                 u->domainCount++;
                 ka = &u->domainList[u->domainCount];
                 ka->domain = domain;
-                ka->refCount = 1;
                 /* The keepList holds all domain references issues by
                  * u_userKeep().
                  * This list will keep the objects alive until the objects
@@ -430,42 +544,220 @@ u_userAddDomain(
     return result;
 }
 
-u_result
+c_long
 u_userRemoveDomain(
     u_domain domain)
 {
     u_domainAdmin ka;
     u_user u;
-    u_result result;
+    c_long result = -1;
     c_long i;
 
     if (domain == NULL) {
         OS_REPORT(OS_ERROR,
                   "user::u_user::u_userRemoveDomain", 0,
                   "Illegal parameter: Domain = NULL.");
-        return U_RESULT_ILL_PARAM;
+        return result;
     }
-    result = U_RESULT_ILL_PARAM;
+
     u = u__userLock();
     if(u){
         ka = NULL;
         for (i=1; (i<=u->domainCount && ka == NULL); i++) {
             if (u->domainList[i].domain == domain) {
                 ka = &u->domainList[i];
-                ka->refCount--;
+                result = 0;
+                /* Prevent it from being opened again, caller has a reference
+                 * and will have to free it through that */
                 ka->domain = NULL;
-                result = U_RESULT_OK;
             }
         }
         u__userUnlock();
-        if (result != U_RESULT_OK) {
+
+        if (result < 0) {
             OS_REPORT_1(OS_ERROR,
-                        "user::u_user::u_userRemoveDomain", 0,
-                        "Illegal parameter: Unknown Domain = 0x%x.",
-                        domain);
+                "user::u_user::u_userRemoveDomain", 0,
+                "Domain to be removed not found in user-layer administration: Unknown Domain = 0x%x.",
+                 domain);
         }
     }
     return result;
+}
+
+int
+u_userGetDomainIdFromEnvUri() {
+    char *uri = NULL;
+    int domainId = 0;
+    cf_element platformConfig = NULL;
+    cf_element dc = NULL;
+    cf_element elemName = NULL;
+    cf_data dataName;
+    c_value value;
+    cfgprs_status r;
+
+    uri = os_getenv ("OSPL_URI");
+    r = cfg_parse_ospl (uri, &platformConfig);
+    if (r == CFGPRS_OK)
+    {
+       dc = cf_element (cf_elementChild (platformConfig, CFG_DOMAIN));
+       if (dc) {
+      elemName = cf_element(cf_elementChild(dc, CFG_ID));
+      if (elemName) {
+         dataName = cf_data(cf_elementChild(elemName, "#text"));
+         if (dataName != NULL) {
+            value = cf_dataValue(dataName);
+        sscanf(value.is.String, "%d", &domainId);
+         }
+      }
+       }
+    }
+    return domainId;
+
+}
+
+char *
+u_userGetDomainNameFromEnvUri() {
+    char *uri = NULL;
+    char * domainName = NULL;
+    cf_element platformConfig = NULL;
+    cf_element dc = NULL;
+    cf_element elemName = NULL;
+    cf_data dataName;
+    c_value value;
+    cfgprs_status r;
+
+    uri = os_getenv ("OSPL_URI");
+    if ( uri != NULL )
+    {
+       domainName = os_strdup(uri);
+    }
+    else
+    {
+       r = cfg_parse_ospl (uri, &platformConfig);
+       if (r == CFGPRS_OK)
+       {
+          dc = cf_element (cf_elementChild (platformConfig, CFG_DOMAIN));
+          if (dc)
+          {
+             elemName = cf_element(cf_elementChild(dc, CFG_NAME));
+             if (elemName)
+             {
+                dataName = cf_data(cf_elementChild(elemName, "#text"));
+                if (dataName != NULL)
+                {
+                   value = cf_dataValue(dataName);
+                   domainName = os_strdup(value.is.String);
+                }
+             }
+          }
+       }
+    }
+    return domainName;
+}
+
+c_bool
+u_userGetSPBFromEnvUri() {
+    char *uri = NULL;
+    c_bool spb = FALSE;
+    cf_element platformConfig = NULL;
+    cf_element dc = NULL;
+    cf_element elemName = NULL;
+    cf_element singleProcess = NULL;
+    cf_data elementData = NULL;
+    cf_data dataName;
+    c_value value;
+    cfgprs_status r;
+
+    uri = os_getenv ("OSPL_URI");
+    r = cfg_parse_ospl (uri, &platformConfig);
+    if (r == CFGPRS_OK)
+    {
+       dc = cf_element (cf_elementChild (platformConfig, CFG_DOMAIN));
+       if (dc) {
+      singleProcess = cf_element(cf_elementChild(dc, CFG_SINGLEPROCESS));
+      if (singleProcess != NULL) {
+         elementData = cf_data(cf_elementChild(singleProcess, "#text"));
+         if (elementData != NULL) {
+            value = cf_dataValue(elementData);
+        if (os_strncasecmp(value.is.String, "TRUE", 4) == 0) {
+           /* A SingleProcess value of True implies that Heap is to be used */
+          spb = TRUE;
+        }
+         }
+      }
+       }
+    }
+    return spb;
+
+}
+
+
+/*
+ * get the domain name for a given domain id
+ * first check the user layer administration
+ * if no name is found check the key files for a match
+ *
+ */
+c_char *
+u_userDomainIdToDomainName(
+    os_int32 id)
+{
+    c_char *name = NULL;
+    os_sharedAttr    shm_attr;
+    os_sharedHandle  shm = NULL;
+    u_user u;
+    u_domainAdmin ka;
+    c_long i;
+    u = u__userLock();
+    /* user does not know the id find it by looking into the uri */
+    if (id == MAX_DOMAIN_ID) {
+        id = u_userGetDomainIdFromEnvUri();
+    }
+    if (u) {
+        /* the user-layer object exists so now find the domain that holds
+         * the given id.
+         */
+        for (i=1; i <= u->domainCount; i++) {
+            ka = &u->domainList[i];
+            if (ka && ka->domain && ka->domain->id == id) {
+               /* found the domain with the id now get the name */
+                if (ka->domain->name) {
+                    name = os_strdup(ka->domain->name);
+                }
+            }
+        }
+        u__userUnlock();
+    }
+    if (name == NULL) {
+        os_sharedAttrInit(&shm_attr);
+        if (u_userGetSPBFromEnvUri()) {
+            /* HACK!!! just return the OSPL_URI as name
+             * a good solution has to be made for the single process build to match
+             * the id and domainName through the os_sharedMemoryGetNameFromId interface.
+             */
+            if (id == u_userGetDomainIdFromEnvUri()) {
+           name = u_userGetDomainNameFromEnvUri();
+            }
+        } else {
+
+            shm = os_sharedCreateHandle(DOMAIN_NAME, &shm_attr, id);
+
+            if (shm == NULL) {
+               OS_REPORT(OS_ERROR,
+                         "user::u_domain::u_userDomainIdToDomainName",0,
+                         "c_open failed; shared memory open failure!");
+            } else {
+                /* if this fails name will be NULL */
+                os_sharedMemoryGetNameFromId(shm,&name);
+                os_sharedDestroyHandle(shm);
+        /* As for SPB if we still haven't got the name, just use the URI */
+        if (name == NULL && id == u_userGetDomainIdFromEnvUri()) {
+            name = u_userGetDomainNameFromEnvUri();
+        }
+            }
+        }
+    }
+    return name;
 }
 
 u_domain
@@ -494,7 +786,6 @@ u_userLookupDomain(
             ka = &u->domainList[i];
             if (u_domainCompareDomainId(ka->domain,(void *)uri))
             {
-                ka->refCount++;
                 domain = ka->domain;
             }
         }

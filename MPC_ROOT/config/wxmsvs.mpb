@@ -1,0 +1,22 @@
+// $Id$
+project {
+  // These settings are specific to wxWindows 2.9.X on Visual Studio.
+  // If you are using a different version of wxWindows, feel free to change
+  // the version number to match your version.
+
+  expand(WX_PORT) {
+    msw
+  }
+  expand(WX_PORT_MACRO) {
+    __WXMSW__
+  }
+  expand(WX_VERSION) {
+    29
+  }
+  expand(WX_UNICODE) {
+    u
+  }
+  expand(WX_BUILD_CONFIG) {
+    msw-unicode
+  }
+}

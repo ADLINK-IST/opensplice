@@ -35,14 +35,14 @@ namespace test.sacs
                      + returnCode + ").", expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, pqosHolder);//, null, 0);
+            participant = factory.CreateParticipant(DDS.DomainId.Default, pqosHolder);//, null, 0);
             if (participant == null)
             {
                 result = new Test.Framework.TestResult(expResult, "DomainParticipant could not be created."
                     , expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            participant2 = factory.CreateParticipant(string.Empty, pqosHolder);//, null, 0);
+            participant2 = factory.CreateParticipant(DDS.DomainId.Default, pqosHolder);//, null, 0);
             if (participant2 == null)
             {
                 result = new Test.Framework.TestResult(expResult, "DomainParticipant 2 could not be created."
@@ -63,7 +63,7 @@ namespace test.sacs
                     , expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            participant2 = factory.CreateParticipant(null, pqosHolder);//, null, 0);
+            participant2 = factory.CreateParticipant(DDS.DomainId.Default, pqosHolder);//, null, 0);
             if (participant2 == null)
             {
                 return new Test.Framework.TestResult(expResult, "failure creating a DomainParticipant with an empty domainId"
@@ -75,7 +75,7 @@ namespace test.sacs
                 return new Test.Framework.TestResult(expResult, "erroneous returncode while deleting a participant"
                     , expVerdict, Test.Framework.TestVerdict.Fail);
             }
-            participant = factory.LookupParticipant(string.Empty);
+            participant = factory.LookupParticipant(DDS.DomainId.Default);
             if (participant != null)
             {
                 return new Test.Framework.TestResult(expResult, "could still lookup deleted participant"

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -37,15 +37,15 @@ package org.opensplice.common.model.table;
  * 
  * @date Nov 5, 2004 
  */
-import java.util.*;
-
-import javax.swing.table.TableModel;
-import javax.swing.event.TableModelEvent;
+import java.util.Date;
+import java.util.Vector;
 
 import javax.swing.JTable;
+import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
+import javax.swing.table.TableModel;
 
 import org.opensplice.cm.meta.MetaField;
 import org.opensplice.cm.meta.MetaPrimitive;
@@ -99,6 +99,7 @@ public class UserDataTableSorter extends TableMap {
      * 
      * @param model The model to sort.
      */
+    @Override
     public void setModel(TableModel model) {
         super.setModel(model); 
         reallocateIndexes();
@@ -108,6 +109,7 @@ public class UserDataTableSorter extends TableMap {
         }
     }
 
+    @Override
     public void tableChanged(TableModelEvent e) {
         reallocateIndexes();
 
@@ -118,6 +120,7 @@ public class UserDataTableSorter extends TableMap {
      * The mapping only affects the contents of the data rows.
      * Pass all requests to these rows through the mapping array: "indexes".
      */
+    @Override
     public Object getValueAt(int aRow, int aColumn) {
         checkModel();
         return model.getValueAt(indexes[aRow], aColumn);
@@ -147,6 +150,7 @@ public class UserDataTableSorter extends TableMap {
         return indexes[sorterRow];
     }
 
+    @Override
     public void setValueAt(Object aValue, int aRow, int aColumn) {
         checkModel();
         model.setValueAt(aValue, indexes[aRow], aColumn);
@@ -224,7 +228,7 @@ public class UserDataTableSorter extends TableMap {
         if (high - low < 2) {
             return;
         }
-        int middle = (low + high)/2;
+        int middle = (low + high) >>> 1;
         shuttlesort(to, from, low, middle);
         shuttlesort(to, from, middle, high);
 
@@ -430,7 +434,7 @@ public class UserDataTableSorter extends TableMap {
         checkModel();
 
         compares = 0;
-        shuttlesort((int[])indexes.clone(), indexes, 0, indexes.length);
+        shuttlesort(indexes.clone(), indexes, 0, indexes.length);
     }
 }
 

@@ -1,4 +1,4 @@
-. $OSPL_HOME/bin/checkconf
+. "$OSPL_HOME/bin/checkconf"
 
 SPLICE_HOST=sparc.solaris10_studio12-release
 SPLICE_TARGET=sparc.solaris10_studio12-release
@@ -16,6 +16,8 @@ javac_check || ERRS=1
 gmcs_check || ERRS=1
 tao_check || ERRS=1
 jacorb_check || ERRS=1
+openorb_check || ERRS=1
+doxygen_check || ERRS=1
 
 if [ -z "$REPORT" ]
 then

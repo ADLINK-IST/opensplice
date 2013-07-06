@@ -1,18 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "ccpp_Topic_impl.h"
 #include "ccpp_ListenerUtils.h"
 
-DDS::Topic_impl::Topic_impl(gapi_topic handle) : DDS::TopicDescription_impl(handle)
+DDS::Topic_impl::Topic_impl(gapi_topic handle) :
+  DDS::TopicDescription_impl(handle),
+  DDS::Entity_impl (handle)
 {
   os_mutexAttr mutexAttr = { OS_SCOPE_PRIVATE };
   if (os_mutexInit(&t_mutex, &mutexAttr) != os_resultSuccess)
@@ -35,13 +37,13 @@ DDS::ReturnCode_t DDS::Topic_impl::get_inconsistent_topic_status (
 {
   gapi_inconsistentTopicStatus gapi_status;
   DDS::ReturnCode_t result;
-  
+
   result = gapi_topic_get_inconsistent_topic_status( DDS::Entity_impl::_gapi_self,&gapi_status);
   if (result == DDS::RETCODE_OK)
   {
     ccpp_InconsistentTopicStatus_copyOut(gapi_status, a_status);
   }
-  
+
   return result;
 }
 
@@ -51,13 +53,13 @@ DDS::ReturnCode_t DDS::Topic_impl::get_all_data_disposed_topic_status (
 {
   gapi_allDataDisposedTopicStatus gapi_status;
   DDS::ReturnCode_t result;
-  
+
   result = gapi_topic_get_all_data_disposed_topic_status( DDS::Entity_impl::_gapi_self,&gapi_status);
   if (result == DDS::RETCODE_OK)
   {
     ccpp_AllDataDisposedTopicStatus_copyOut(gapi_status, a_status);
   }
-  
+
   return result;
 }
 
@@ -80,13 +82,13 @@ DDS::ReturnCode_t DDS::Topic_impl::get_qos (
   }
   return result;
 }
-    
+
 DDS::ReturnCode_t DDS::Topic_impl::set_qos (
   const DDS::TopicQos & qos
 ) THROW_ORB_EXCEPTIONS
 {
   DDS::ReturnCode_t result;
-  if (&qos == DDS::DefaultQos::TopicQosDefault)
+  if (&qos == &DDS::DefaultQos::TopicQosDefault.in())
   {
     result = gapi_topic_set_qos( _gapi_self, GAPI_TOPIC_QOS_DEFAULT );
   }
@@ -126,7 +128,7 @@ DDS::TopicListener_ptr DDS::Topic_impl::get_listener (
     }
   }
   else
-  { 
+  {
     OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain lock");
   }
   return result;
@@ -192,8 +194,8 @@ DDS::ReturnCode_t DDS::Topic_impl::dispose_all_data (
 ) THROW_ORB_EXCEPTIONS
 {
   DDS::ReturnCode_t result;
-  
+
   result = gapi_topic_dispose_all_data(DDS::Entity_impl::_gapi_self);
-  
+
   return result;
 }

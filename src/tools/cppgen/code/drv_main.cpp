@@ -111,7 +111,7 @@ static void DRV_version ()
 ** 7. Check if asked to dump AST. If so, do.
 ** 8. Invoke BE.
 */
-int DRV_drive (char *s)
+int DRV_drive (const char *s)
 {
    // Pass through CPP
    if (idl_global->compile_flags () & IDL_CF_INFORMATIVE)
@@ -137,7 +137,7 @@ int DRV_drive (char *s)
    idl_global->set_compilation_stage (IDL_GlobalData::CS_InitStage2);
 
    (*DRV_FE_init_stage2) ();
- 
+
    // Parse
    if (idl_global->compile_flags () & IDL_CF_INFORMATIVE)
       cerr << idl_global->prog_name ()
@@ -244,11 +244,11 @@ int driver_main(int argc, char **argv)
             DRV_fork ();
 #else
 
-            char tmp_command[1024];
-
             for (int tmpcounter = 0; tmpcounter < DRV_nfiles; tmpcounter++)
             {
-               os_sprintf(tmp_command, "%s %s\0", cmdstr, DRV_files[tmpcounter]);
+                char * tmp_command = new char [strlen (cmdstr) + strlen(DRV_files[tmpcounter]) + 2];
+                /* +2 consists of one the space between %s %s and one for line termination */
+                os_sprintf(tmp_command, "%s %s", cmdstr, DRV_files[tmpcounter]);
 
                _flushall ();
 
@@ -256,6 +256,7 @@ int driver_main(int argc, char **argv)
                {
                   cerr << "system() failed, errno: " << errno << endl;
                }
+               delete [] tmp_command;
             }
 #endif
          }
@@ -274,5 +275,5 @@ int driver_main(int argc, char **argv)
       }
    }
 
-   return ret; 
+   return ret;
 }

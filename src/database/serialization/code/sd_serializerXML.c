@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -102,6 +102,7 @@
 #define SD_VALID_REF_IMAGE ""
 
 
+#ifndef NDEBUG
 /* -------------------------- checking routines -----------------------*/
 
 /** \brief Check if a serializer is an instance of the serializerXML
@@ -124,52 +125,121 @@ sd_checkSerializerType(
             ((unsigned int)serializer->formatID == SD_FORMAT_ID) &&
             ((unsigned int)serializer->formatVersion == SD_FORMAT_VERSION));
 }
+#endif
 
 /* -------------------------------- Serialization ------------------------ */
 
 c_ulong sd_XMLSerType( c_type type, c_object object, c_char *dataPtr);
-
 
 static c_char *
 sd_primValue(
     c_primKind primKind,
     c_object object)
 {
-    c_value value;
+    char buf[64];
 
-#define __CASE__(kind,type) case kind: value = type##Value(*((type *)object)); break;
-    switch (primKind) {
-    __CASE__(P_ADDRESS,c_address)
-    __CASE__(P_BOOLEAN,c_bool)
-    __CASE__(P_CHAR,c_char)
-    __CASE__(P_OCTET,c_octet)
-    __CASE__(P_WCHAR,c_wchar)
-    __CASE__(P_SHORT,c_short)
-    __CASE__(P_USHORT,c_ushort)
-    __CASE__(P_LONG,c_long)
-    __CASE__(P_ULONG,c_ulong)
-    __CASE__(P_LONGLONG,c_longlong)
-    __CASE__(P_ULONGLONG,c_ulonglong)
-    __CASE__(P_FLOAT,c_float)
-    __CASE__(P_DOUBLE,c_double)
-    case P_VOIDP:
-        value = c_objectValue(*((c_object *)object));
-    break;
-    case P_MUTEX:
-    case P_LOCK:
-    case P_COND:
-    case P_COUNT:
-        value = c_undefinedValue();
-    break;
-    default:
-        value = c_undefinedValue();
-        SD_CONFIDENCE(FALSE);
-    break;
+    switch(primKind) {
+        case P_ADDRESS:
+        {
+            snprintf(buf, sizeof(buf), "0x"PA_ADDRFMT, (PA_ADDRCAST)*((c_address*)object));
+            break;
+        }
+        case P_BOOLEAN:
+        {
+            if (*((c_bool*)object)) {
+                snprintf(buf, sizeof(buf), "TRUE");
+            } else {
+                snprintf(buf, sizeof(buf), "FALSE");
+            }
+            break;
+        }
+        case P_CHAR:
+        {
+            unsigned char c = *((c_char*)object);
+            if (c < 32 || c >= 127 || c == '&' || c == '>' || c == '<') {
+                snprintf(buf, sizeof(buf), "\\%03o", c);
+            } else {
+                *(buf) = c;
+                *(buf+1) = '\0';
+            }
+            break;
+        }
+        case P_OCTET:
+        {
+            snprintf(buf, sizeof(buf), "%u", *((c_octet*)object));
+            break;
+        }
+        case P_WCHAR:
+        {
+            snprintf(buf, sizeof(buf), "(a-wchar-value)");
+            break;
+        }
+        case P_SHORT:
+        {
+            snprintf(buf, sizeof(buf), "%d", *((c_short*)object));
+            break;
+        }
+        case P_USHORT:
+        {
+            snprintf(buf, sizeof(buf), "%u", *((c_ushort*)object));
+            break;
+        }
+        case P_LONG:
+        {
+            snprintf(buf, sizeof(buf), "%d", *((c_long*)object));
+            break;
+        }
+        case P_ULONG:
+        {
+            snprintf(buf, sizeof(buf), "%u", *((c_ulong*)object));
+            break;
+        }
+        case P_LONGLONG:
+        {
+            char llstr[36];
+            llstr[35] = '\0';
+            snprintf(buf, sizeof(buf), "%s", os_lltostr(*((c_longlong*)object), &llstr[35]));
+            break;
+        }
+        case P_ULONGLONG:
+        {
+            char llstr[36];
+            llstr[35] = '\0';
+            snprintf(buf, sizeof(buf), "%s", os_ulltostr(*((c_ulonglong*)object), &llstr[35]));
+            break;
+        }
+        case P_FLOAT:
+        {
+            snprintf(buf, sizeof(buf), "%0.7g", *((c_float*)object));
+            break;
+        }
+        case P_DOUBLE:
+        {
+            snprintf(buf, sizeof(buf), "%0.15g", *((c_double*)object));
+            break;
+        }
+        case P_VOIDP:
+        {
+            snprintf(buf, sizeof(buf), "0x"PA_ADDRFMT, (PA_ADDRCAST)object); break;
+            break;
+        }
+        case P_MUTEX:
+        case P_LOCK:
+        case P_COND:
+        case P_COUNT:
+        {
+            snprintf(buf, sizeof(buf), "(an-undefined-value)");
+            break;
+        }
+        default:
+        {
+            snprintf(buf, sizeof(buf), "(an-undefined-value)");
+            SD_CONFIDENCE(FALSE);
+            break;
+        }
     }
 
-    return c_valueImage(value);
-#undef __CASE__
-/* QAC EXPECT 5101; cyclomatic complexity is no problem here */
+    return os_strdup(buf);
 }
 
 static c_ulong
@@ -554,6 +624,8 @@ sd_XMLSerInterface(
 {
     c_ulong result;
 
+    OS_UNUSED_ARG(interf);
+
      SD_CONFIDENCE((c_baseObject(interf)->kind == M_CLASS) ||
                    (c_baseObject(interf)->kind == M_INTERFACE));
 
@@ -604,7 +676,6 @@ sd_XMLSerType(
 
 /* --------------------- Serialization driving functions -------------------- */
 
-
 static void
 sd_XMLSerCallbackPre(
     const c_char *name,
@@ -616,15 +687,24 @@ sd_XMLSerCallbackPre(
 {
     c_char **dataPtrPtr = (c_char **)actionArg;
     c_ulong len;
-    c_char *tagName;
+    c_char *tagName, *typeName = NULL;
     int spRes;
 
-    SD_CONFIDENCE(errorInfo == errorInfo); /* errorInfo not used */
-    SD_CONFIDENCE(userData == userData); /* userData not used */
+    OS_UNUSED_ARG(errorInfo);
+    OS_UNUSED_ARG(userData);
 
     /* Opening tag */
-    tagName = sd_getTagName(name, type);
-    spRes = os_sprintf(*dataPtrPtr, "<%s>", tagName);
+    tagName = name ? sd_stringDup(name) : sd_stringDup("object");
+    if(!name){
+        typeName = sd_getScopedTypeName(type, "::");
+        sd_strEscapeXML(&typeName);
+    }
+    if(typeName){
+        spRes = os_sprintf(*dataPtrPtr, "<%s type=\"%s\">", tagName, typeName);
+        os_free(typeName);
+    } else {
+        spRes = os_sprintf(*dataPtrPtr, "<%s>", tagName);
+    }
     if (spRes > 0) {
         *dataPtrPtr = SD_DISPLACE(*dataPtrPtr, C_ADDRESS(spRes));
     }
@@ -649,18 +729,15 @@ sd_XMLSerCallbackPost(
     c_long len;
     c_char *tagName;
 
-    SD_CONFIDENCE(objectPtr);
-    SD_CONFIDENCE(errorInfo == errorInfo); /* errorInfo not used */
-    SD_CONFIDENCE(userData == userData); /* userData not used */
-
+    OS_UNUSED_ARG(objectPtr);
+    OS_UNUSED_ARG(errorInfo);
+    OS_UNUSED_ARG(userData);
 
     /* Closing tag */
-    tagName = sd_getTagName(name, type);
-    len = os_sprintf(*dataPtrPtr, "</%s>", tagName);
+    len = os_sprintf(*dataPtrPtr, "</%s>", name ? name : "object");
     if (len > 0) {
         *dataPtrPtr = SD_DISPLACE(*dataPtrPtr, C_ADDRESS(len));
     }
-    os_free(tagName);
 }
 
 
@@ -680,8 +757,7 @@ sd_XMLCountCallback(
     c_char *start, *end;
     int len;
 
-    SD_CONFIDENCE(errorInfo == errorInfo); /* errorInfo not used */
-    SD_CONFIDENCE(userData == userData); /* userData not used */
+    OS_UNUSED_ARG(errorInfo);
 
     len = 256;
     if ((c_baseObject(type)->kind == M_COLLECTION) &&
@@ -713,7 +789,7 @@ sd_serializerXMLSerialize(
     c_type type;
     sd_deepwalkMetaContext context;
 
-
+    OS_UNUSED_ARG(serializer);
     SD_CONFIDENCE(sd_checkSerializerType(serializer));
 
     type = c_getType(object);
@@ -917,11 +993,12 @@ sd_scanOctetNoSkip(
     int i;
 
     result = 0;
+    i = 0;
     *resultPtr = 0;
     resultValue = 0;
     helperPtr = dataPtr;
     sd_strSkipChars(&helperPtr, SD_SKIP_SPACES);
-    i = sscanf(helperPtr, SD_FORMAT_CHAR, &helperValue);
+    i = (*helperPtr != 0), helperValue = *helperPtr;
     while (i==1) {
         if (((int)helperValue >= SD_FIRST_DIGIT) &&
             ((int)helperValue <= SD_LAST_DIGIT)) {
@@ -929,7 +1006,7 @@ sd_scanOctetNoSkip(
              resultValue = (resultValue * 10) + ((int)helperValue-SD_FIRST_DIGIT);
              helperPtr = &(helperPtr[1]);
              if (resultValue <= 255) {
-                 i = sscanf(helperPtr, SD_FORMAT_CHAR, &helperValue);
+                 i = (*helperPtr != 0), helperValue = *helperPtr;
              } else {
                  result = 0;
                  i = 0;
@@ -962,17 +1039,18 @@ sd_scanCharNoSkip(
     c_long result;
     int count;
 
+    result = 0;
     *resultPtr = 0;
     resultValue = 0;
     helperPtr = dataPtr;
     sd_strSkipChars(&helperPtr, SD_SKIP_SPACES);
-    result = sscanf(helperPtr, SD_FORMAT_CHAR, &helperValue);
+    result = (*helperPtr != 0), helperValue = *helperPtr;
     if (result == 1) {
         if ((int)helperValue == (int)'\\') {
             /* Going into escape mode, read octal digit characters */
             helperPtr = &(helperPtr[1]);
             for (count = 1; (count <= 3) && (result == 1); count++) {
-                result = sscanf(helperPtr, SD_FORMAT_CHAR, &helperValue);
+                result = (*helperPtr != 0), helperValue = *helperPtr;
                 if ((result == 1) &&
                     ((int)helperValue >= SD_FIRST_OCTAL_DIGIT) &&
                     ((int)helperValue <= SD_LAST_OCTAL_DIGIT)) {
@@ -1006,12 +1084,12 @@ sd_scanReference(
     sd_errorInfo *errorInfo)
 {
     c_bool result = FALSE;
-    c_char *helperString;
     c_char *startPtr = *dataPtr;
 
+    /* Check whether the string pointed to by *dataPtr contains the special
+     * NULL-value. */
     sd_strSkipChars(dataPtr, SD_SKIP_SPACES);
-    helperString = strstr(*dataPtr, SD_NULL_REF_IMAGE);
-    if (helperString == *dataPtr) {
+    if (strncmp(SD_NULL_REF_IMAGE, *dataPtr, sizeof(SD_NULL_REF_IMAGE)-1) == 0) {
         result = FALSE;
         *dataPtr = &((*dataPtr)[sizeof(SD_NULL_REF_IMAGE)-1]);
     } else {
@@ -1020,14 +1098,12 @@ sd_scanReference(
             /* Undo skips */
             *dataPtr = startPtr;
         } else {
-/* Use this if SD_VALID_REF_IMAGE contains some characters
- *          helperString = strstr(*dataPtr, SD_VALID_REF_IMAGE);
- *          if (helperString == *dataPtr) {
- */
-            if (**dataPtr == '<') {
+            if (strncmp("</", startPtr, 2) == 0) {
+                /* Nothing enclosed between open- and close-tag, this is NULL as well. */
+                result = FALSE;
+            } else if (**dataPtr == '<') {
+                /* Open tag of the referenced data */
                 result = TRUE;
-/* Use this if SD_VALID_REF_IMAGE contains some characters
- *                 *dataPtr = &((*dataPtr)[sizeof(SD_VALID_REF_IMAGE)-1]); */
             } else {
                 if (SD_VALIDATION_NEEDED(errorInfo)) {
                     SD_VALIDATION_SET_ERROR(errorInfo, INVALID_REFERENCE_FORMAT, NULL, startPtr);
@@ -1252,48 +1328,6 @@ sd_peekTaggedCharData(
 
 #else
 
-static void
-sd_os_strncpyWithLenCheck(
-    char **to,
-    const char *from,
-    int len,
-    char **base,
-    int *remainingLen)
-{
-#define SD_STEPSIZE (200)
-    int curLen;
-    int oldLen;
-    int toOffset;
-    char *newString;
-
-    if (len > *remainingLen) {
-        if (*base != NULL) {
-            toOffset = C_ADDRESS(*to) - C_ADDRESS(*base);
-            oldLen = strlen(*base);
-            curLen = oldLen + len;
-        } else {
-            toOffset = 0;
-            oldLen = 0;
-            curLen = len;
-        }
-        curLen += SD_STEPSIZE;
-        newString = os_malloc(curLen);
-        *remainingLen = curLen - oldLen;
-        if (*base) {
-            os_strncpy(newString, *base, oldLen);
-            os_free(*base);
-        }
-        *base = newString;
-        *to = (char *)(C_ADDRESS(*base) + toOffset);
-    }
-    if (len > 0) {
-        SD_CONFIDENCE(len < *remainingLen);
-        os_strncpy(*to, from, len);
-        *remainingLen -= len;
-    }
-#undef SD_STEPSIZE
-}
-
 c_char *
 sd_scanToken (
     c_char **dataPtrPtr,
@@ -1301,6 +1335,7 @@ sd_scanToken (
 {
     c_char *result = NULL;
 
+    OS_UNUSED_ARG(errorInfo);
     sd_strSkipChars(dataPtrPtr, SD_SKIP_SPACES);
 
     result = sd_strGetUptoChars(dataPtrPtr, "<");
@@ -1318,135 +1353,128 @@ sd_scanCharData(
     c_char **src,
     sd_errorInfo *errorInfo)
 {
-    c_bool done = FALSE;
-    int len;
-    const char *firstCDataOpener;
-    const char *firstCDataCloser;
-    const char *firstLessThan;
-    const char *firstAmpersand;
-    const char *firstEscapeString;
-    const char *firstSpecial;
-    struct escapePair pair;
-    c_char *base;
-    int remaining;
-    c_bool skipSpaces = TRUE;
-    char *from;
-    char *to;
-    enum SD_XML_TOKEN {
-        TOK_STRING_OPENER, TOK_STRING_CLOSER, TOK_LESS_THAN, TOK_AMPERSAND, TOK_ESCAPE
-    } firstToken;
-    static char zeroChar = '\0';
+   static const c_char _CDATA[] = "<![CDATA[";
+   static const c_ulong _CDATAlen = sizeof(_CDATA) - 1;
+   static const c_char _CDATAEND[] = "]]>";
+   static const c_ulong _CDATAENDlen = sizeof(_CDATAEND) - 1;
+   static const c_char _AMP[] = "&amp;";
+   static const c_ulong _AMPlen = sizeof(_AMP) - 1;
+   static const c_char _GT[] = "&gt;";
+   static const c_ulong _GTlen = sizeof(_GT) - 1;
+   static const c_char _LT[] = "&lt;";
+   static const c_ulong _LTlen = sizeof(_LT) - 1;
 
-    base = NULL;
-    remaining = 0;
-    from = *src;
-    to = base;
-    while (done == FALSE) {
-        if(skipSpaces){
-            sd_strSkipChars((c_char **)(&from), SD_SKIP_SPACES);
-            skipSpaces = FALSE;
-        }
-        firstLessThan = strchr(from, SD_LESS_THAN);
-        if (SD_VALIDATION_NEEDED(errorInfo)) {
-            if (firstLessThan == NULL) {
-                SD_VALIDATION_SET_ERROR(errorInfo, INVALID_STRING_FORMAT, NULL, *src);
-            }
-        } else {
-            SD_CONFIDENCE(firstLessThan != NULL);
-        }
-        SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
-        firstToken = TOK_LESS_THAN;
-        firstSpecial = firstLessThan;
+   const c_ulong step = 128;
+   c_ulong dstLen = 0;
+   c_ulong srcPos, dstPos;
+   c_char *newDst;
+   c_bool inCdata = FALSE;
 
-        firstCDataOpener = strstr(from, SD_STRING_OPENER);
-        if ((firstCDataOpener != NULL) &&
-             (C_ADDRESS(firstCDataOpener) <= C_ADDRESS(firstSpecial))) {
-            firstToken = TOK_STRING_OPENER;
-            firstSpecial = firstCDataOpener;
-        }
+   srcPos = 0;
+   dstPos = 0;
 
-        firstCDataCloser = strstr(from, SD_STRING_CLOSER);
-        if ((firstCDataCloser != NULL) &&
-             (C_ADDRESS(firstCDataCloser) <= C_ADDRESS(firstSpecial))) {
-            firstToken = TOK_STRING_CLOSER;
-            firstSpecial = firstCDataCloser;
-        }
+   *dst = NULL;
 
-        firstAmpersand = strchr(from, SD_AMPERSAND);
-        if ((firstAmpersand != NULL) &&
-             (C_ADDRESS(firstAmpersand) <= C_ADDRESS(firstSpecial))) {
-            firstToken = TOK_AMPERSAND;
-            firstSpecial = firstAmpersand;
-        }
+   do{
+       /* Allocate enough memory for result; re-alloc if needed */
+       if (dstPos >= dstLen) {
+           dstLen += step;
+           newDst = (c_char *)os_realloc(*dst, dstLen);
+           if (newDst == NULL){
+               /* Out of resources */
+               os_free(*dst);
+               *dst = NULL;
+               break;
+           }
+           *dst = newDst;
+       }
 
-        getFirstEscapeString(from, &firstEscapeString, &pair);
-        if ((pair.escapeString != NULL) &&
-             (C_ADDRESS(firstEscapeString) <= C_ADDRESS(firstSpecial))) {
-            firstToken = TOK_ESCAPE;
-            firstSpecial = firstEscapeString;
-        }
-        SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
+       /* Scan the string for character-data */
+       if(!inCdata){
+           switch((*src)[srcPos]){
+               case '<': /* Can mark closing tag or start of C_DATA */
+                   switch((*src)[srcPos + 1]){
+                       case '/': /* End of charData */
+                           (*dst)[dstPos++] = '\0';
+                           *src = &((*src)[srcPos]);
+                           break;
+                       case '!': /* Start of CDATA: <![CDATA[ */
+                           assert(strncmp(_CDATA, &((*src)[srcPos]), _CDATAlen) == 0);
+                           srcPos += _CDATAlen;
+                           inCdata = TRUE;
+                           break;
+                       default:
+                           if (SD_VALIDATION_NEEDED(errorInfo)) {
+                               SD_VALIDATION_SET_ERROR(errorInfo, UNEXPECTED_OPENING_TAG, NULL, src[srcPos]);
+                           }
+                           os_free(*dst);
+                           *dst = NULL;
+                           break;
+                   }
+                   break;
+               case '>': /* Malformed XML... */
+                   if (SD_VALIDATION_NEEDED(errorInfo)) {
+                       SD_VALIDATION_SET_ERROR(errorInfo, INVALID_XML_FORMAT, NULL, &((*src)[srcPos]));
+                   }
+                   os_free(*dst);
+                   *dst = NULL;
+                   break;
+               case '&': /* &amp; &gt; &lt; */
+                   switch((*src)[srcPos + 1]){
+                       case 'a': /* &amp; */
+                           assert(strncmp(_AMP, &((*src)[srcPos]), _AMPlen) == 0);
+                           srcPos += _AMPlen;
+                           (*dst)[dstPos++] = '&';
+                           break;
+                       case 'g': /* &gt; */
+                           assert(strncmp(_GT, &((*src)[srcPos]), _GTlen) == 0);
+                           srcPos += _GTlen;
+                           (*dst)[dstPos++] = '>';
+                           break;
+                       case 'l': /* &lt; */
+                           assert(strncmp(_LT, &((*src)[srcPos]), _LTlen) == 0);
+                           srcPos += _LTlen;
+                           (*dst)[dstPos++] = '<';
+                           break;
+                       default:
+                           if (SD_VALIDATION_NEEDED(errorInfo)) {
+                               SD_VALIDATION_SET_ERROR(errorInfo, INVALID_STRING_FORMAT, NULL, &((*src)[srcPos]));
+                           }
+                           os_free(*dst);
+                           *dst = NULL;
+                           break;
+                   }
+                   break;
+               default:
+                   /* Copy character */
+                   (*dst)[dstPos++] = (*src)[srcPos++];
+                   break;
+           }
+       } else {
+           if((*src)[srcPos] == _CDATAEND[0]){ /* Potential end of CDATA section */
+               if(strncmp(_CDATAEND, &((*src)[srcPos]), _CDATAENDlen) == 0){
+                   inCdata = FALSE;
+                   srcPos += _CDATAENDlen;
+               }
+           } else {
+               /* Copy character */
+               (*dst)[dstPos++] = (*src)[srcPos++];
+           }
+       }
+   } while(*dst && ((dstPos == 0) || ((*dst)[dstPos - 1] != '\0')));
 
-        /* Copy upto first special token */
-        switch (firstToken) {
-        case TOK_LESS_THAN:
-        case TOK_STRING_OPENER:
-        case TOK_ESCAPE:
-            len = C_ADDRESS(firstSpecial) - C_ADDRESS(from);
-            if (len > 0) {
-                sd_os_strncpyWithLenCheck(&to, from, len, &base, &remaining);
-                to = &(to[len]);
-                from = &(from[len]);
-            }
-        break;
-        case TOK_STRING_CLOSER:
-        case TOK_AMPERSAND:
-            if (SD_VALIDATION_NEEDED(errorInfo)) {
-                SD_VALIDATION_SET_ERROR(errorInfo, INVALID_STRING_FORMAT, NULL, *src);
-            } else {
-                SD_CONFIDENCE((firstToken != TOK_STRING_CLOSER) &&
-                          (firstToken != TOK_AMPERSAND));
-            }
-        break;
-        }
-        SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
-
-        /* Now handle first special token (if any) */
-        switch (firstToken) {
-        case TOK_LESS_THAN:
-            /* The first non-standard character is a closing tag, which means
-             * that we are ready now */
-            done = TRUE;
-        break;
-        case TOK_STRING_OPENER:
-            if (SD_VALIDATION_NEEDED(errorInfo)) {
-                if (firstCDataCloser == NULL) {
-                    SD_VALIDATION_SET_ERROR(errorInfo, INVALID_STRING_FORMAT, NULL, *src);
-                }
-            } else {
-                SD_CONFIDENCE(firstCDataCloser);
-            }
-            SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
-            from = &(from[sizeof(SD_STRING_OPENER)-1]);
-            len = C_ADDRESS(firstCDataCloser) - C_ADDRESS(from);
-            sd_os_strncpyWithLenCheck(&to, from, len, &base, &remaining);
-            from = &(from[len + sizeof(SD_STRING_CLOSER) - 1]);
-            to = &(to[len]);
-        break;
-        case TOK_ESCAPE:
-            SD_CONFIDENCE(pair.escapeString != NULL);
-            sd_os_strncpyWithLenCheck(&to, &pair.token, 1, &base, &remaining);
-            from = &(from[strlen(pair.escapeString)]);
-            to = &(to[1]);
-        break;
-        default:
-            SD_CONFIDENCE(0);
-        }
-    }
-    sd_os_strncpyWithLenCheck(&to, &zeroChar, 1, &base, &remaining);
-    *dst = base;
-    *src = (c_char*)from;
+#if 0
+   /* We possibly waste step-1 bytes (but in this context only pretty short). If
+    * that's not OK, than #if 1 this block. */
+   if(*dst){
+       assert(dstPos <= dstLen);
+       /* Shrinking, so cannot run out of resources... */
+       *dst = (c_char *)os_realloc(*dst, dstPos);
+       assert(*dst); /* Running out of resource when shrinking? */
+   }
+#endif
 }
+
 
 /** Peek for string between tags. Note that no escape sequences
  *  are allowed here, nor are mixes of strings and CDATA
@@ -1526,7 +1554,6 @@ sd_scanString(
 
     sd_scanCharData(&scannedString, dataPtrPtr, errorInfo);
     SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
-
     base = c_getBase((c_object)type);
     *((c_string *)(*objectPtr)) = c_stringNew(base, scannedString);
     os_free(scannedString);
@@ -1543,6 +1570,7 @@ sd_XMLDeserCollection(
 {
     c_long colSize = 0, i;
     c_long *colSizePtr = &colSize;
+    c_long** colSizePtrPtr;
     c_set set;
     c_object object, inserted;
     c_bool isValidRef;
@@ -1570,19 +1598,31 @@ sd_XMLDeserCollection(
                 SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
             break;
             case C_ARRAY:
-            case C_SEQUENCE:
                 SD_CONFIDENCE(c_typeIsRef(c_type(collectionType)));
-                sd_scanTaggedPrim("size", P_LONG, (c_object *)(&colSizePtr), dataPtrPtr, errorInfo);
+                colSizePtrPtr = &colSizePtr;
+                sd_scanTaggedPrim("size", P_LONG, (c_object*)colSizePtrPtr, dataPtrPtr, errorInfo);
 
                 SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
 
                 /* This function will always return a bounded array, or an (potentially unbounded) empty array */
-           		*((c_array *)(*objectPtr)) = c_arrayNew_w_header(collectionType, colSize);
+                *((c_array *)(*objectPtr)) = c_arrayNew_w_header(collectionType, colSize);
+
+            break;
+            case C_SEQUENCE:
+                SD_CONFIDENCE(c_typeIsRef(c_type(collectionType)));
+                colSizePtrPtr = &colSizePtr;
+                sd_scanTaggedPrim("size", P_LONG, (c_object *)colSizePtrPtr, dataPtrPtr, errorInfo);
+
+                SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
+
+                /* This function will always return a bounded sequence, or an (potentially unbounded) empty sequence */
+                *((c_sequence *)(*objectPtr)) = c_sequenceNew(collectionType->subType, collectionType->maxSize, colSize);
 
             break;
             case C_SET:
                 /* Scan the size */
-                sd_scanTaggedPrim("size", P_LONG, (c_object *)(&colSizePtr), dataPtrPtr, errorInfo);
+                colSizePtrPtr = &colSizePtr;
+                sd_scanTaggedPrim("size", P_LONG, (c_object *)colSizePtrPtr, dataPtrPtr, errorInfo);
                 SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
                 /* Create the set */
                 set = c_setNew(collectionType->subType);
@@ -1599,7 +1639,8 @@ sd_XMLDeserCollection(
             break;
             case C_SCOPE:
                 /* Scan the size */
-                sd_scanTaggedPrim("size", P_LONG, (c_object *)(&colSizePtr), dataPtrPtr, errorInfo);
+                colSizePtrPtr = &colSizePtr;
+                sd_scanTaggedPrim("size", P_LONG, (c_object *)colSizePtrPtr, dataPtrPtr, errorInfo);
                 SD_VALIDATION_RETURN_ON_ERROR(errorInfo);
                 /* Currently, only empty scopes can be deserialized */
                 SD_CONFIDENCE(colSize == 0);
@@ -1618,7 +1659,7 @@ sd_XMLDeserCollection(
             break;
             }
         } else {
-        	// Invalid reference
+            /* Invalid reference */
             *(c_object *)(*objectPtr) = NULL;
         }
     }
@@ -1745,7 +1786,7 @@ sd_XMLDeserCallbackPre(
     c_char *tagName;
     c_char *openingTag;
 
-    SD_CONFIDENCE(userData == userData); /* userData not used */
+    OS_UNUSED_ARG(userData);
 
     /* Opening tag */
     openingTag = sd_strGetOpeningTag(dataPtrPtr);
@@ -1792,8 +1833,8 @@ sd_XMLDeserCallbackPost(
     c_char *tagName;
     c_char *closingTag;
 
-    SD_CONFIDENCE(objectPtr);
-    SD_CONFIDENCE(userData == userData); /* userData not used */
+    OS_UNUSED_ARG(objectPtr);
+    OS_UNUSED_ARG(userData);
 
     /* Closing tag */
     /* Check if it has the correct name */
@@ -1901,8 +1942,7 @@ sd_serializerXMLDeserialize(
     /* First determine type from data */
     dummy = xmlString;
     openingTag = sd_strGetOpeningTag(&dummy);
-    typeName = os_strdup(openingTag);
-    sd_strReplace(typeName, "..", "::");
+    typeName = sd_getTypeAttributeFromOpenTag(openingTag);
 
     resultType = c_resolve(serializer->base, typeName);
     SD_CONFIDENCE(resultType);
@@ -1978,6 +2018,7 @@ sd_serializerXMLToString(
     sd_serializer serializer,
     sd_serializedData serData)
 {
+    OS_UNUSED_ARG(serializer);
     SD_CONFIDENCE(serializer != NULL);
 
     return sd_stringDup((const char *)serData->data);
@@ -1992,6 +2033,7 @@ sd_serializerXMLFromString(
     sd_serializedData result;
     c_ulong size;
 
+    OS_UNUSED_ARG(serializer);
     SD_CONFIDENCE(serializer != NULL);
     size = strlen(str) + 1U /* '\0' */;
     result = sd_serializedDataNew(SD_FORMAT_ID, SD_FORMAT_VERSION, size);

@@ -35,14 +35,14 @@ namespace test.sacs
                     , expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            participant = factory.CreateParticipant(string.Empty, pqosHolder);//, null, 0);
+            participant = factory.CreateParticipant(DDS.DomainId.Default, pqosHolder);//, null, 0);
             if (participant == null)
             {
                 result = new Test.Framework.TestResult(expResult, "DomainParticipant could not be created."
                     , expVerdict, Test.Framework.TestVerdict.Fail);
                 return result;
             }
-            participant2 = factory.LookupParticipant(string.Empty);
+            participant2 = factory.LookupParticipant(DDS.DomainId.Default);
             if (participant2 == null)
             {
                 result = new Test.Framework.TestResult(expResult, "DomainParticipant could not be looked up."

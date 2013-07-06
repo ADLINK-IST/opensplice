@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+  <head>
+  <title>OpenSplice DDS Release Notes - PikeOS on Windows hosts</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <link rel="stylesheet" href="../css/prismstyle.css" type="text/css">
+  </head>
+  <body>
+    <p class="back">
+      <a href="changedV6.html">
+        Back to Fixed Bugs and Changes V6 series Page<img src="../images/back.gif" align="middle"
+        height="25" width="30" alt="Back">
+      </a>
+    </p>
+
+
+<h1> PikeOS on Windows hosts </h1>
+
+<h2> Contents </h2>
+
+<ul>
+  <li><a href="#Introduction">Introduction</a></li>
+  <li><a href="#Development">Development</a></li>
+  <li><a href="#ExampleBuild">Building the examples</a></li>
+</ul>
+
+<h2> <a name="Introduction">Introduction</a> </h2>
+
+<p> This note provides information on using OpenSplice DDS for PikeOS on Windows. It should be read in conjunction with the chapter 12 of the "Getting Started" guide. </p>
+
+<h2> <a name="Development">Development</a> </h2>
+
+<p> Developing with OpenSplice for PikeOS on Windows differs from OpenSplice on other Windows-hosted platforms. The reason for this is that PikeOS uses Cygwin to present a Unix-like environment for cross-development. OpenSplice development therefore follows similar practice to the Unix-hosted editions, for example you would start a session by entering a bash shell and sourcing the release.com file.</p>
+
+<p> However, the Opensplice tools (idlpp, osplconf2c, ospltun and so forth) are built as Windows executables or will be running in Java for Windows and so need to be run with Windows-style pathnames. This is handled using the cygpath command as seen in the release.com script and the example Makefiles. Tuner and Configurator may be launched from the Start menu as usual. </p>
+
+<h2> <a name="ExampleBuild">Building the examples</a> </h2>
+
+<p> This proceeds as would be expected in a Unix environment. Assuming that OpenSplice and PikeOS are installed in the default locations: </p>
+
+<ul>
+  <li> Start Cygwin bash </li>
+  <li> <code> declare -x PIKEOS_HOME=/opt/pikeos-3.1  </code> </li>
+  <li> <code> declare -x PATH=$PATH:$PIKEOS_HOME/cdk/ppc/oea/bin  </code> </li>
+  <li> <code> . /opt/OpenSpliceDDS-V6.2.3/HDE/ppc.pikeos3/release.com </code> </li>
+  <li> <code> cd $OSPL_HOME/examples </code> </li>
+  <li> <code> make </code> </li>
+</ul>
+
+</body> </html>

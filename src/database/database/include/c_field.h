@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -110,6 +110,17 @@ c_fieldCompare (
     c_object src1,
     c_field field2,
     c_object src2);
+
+OS_API c_size
+c_fieldBlobSize(
+    c_field field,
+    c_object o);
+
+OS_API c_size
+c_fieldBlobCopy(
+    c_field field,
+    c_object o,
+    void *dst);
 
 #undef OS_API
 

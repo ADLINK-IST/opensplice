@@ -48,7 +48,7 @@ namespace test.sacs
                 result.Verdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
-            participant1 = factory.CreateParticipant(string.Empty, qosHolder);//, null, 0);
+            participant1 = factory.CreateParticipant(DDS.DomainId.Default, qosHolder);//, null, 0);
             if (participant1 == null)
             {
                 result.Result = "failure creating a DomainParticipant using null as qos parameter";

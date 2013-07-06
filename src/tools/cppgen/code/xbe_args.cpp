@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -81,8 +81,8 @@ DDS_BE_parse_args(int &argc, char **argv)
       else if (strncmp(argv[i], "-import_export",
                         sizeof ("-import_export") - 1) == 0)
       {
-        char* macroName = "";
-        char* macroHeader = "";
+        char* macroName;
+        char* macroHeader = NULL;
 
         /* Locate the macro name by searching for the '=' character. */
         macroName = strchr(argv[i], '=');
@@ -107,13 +107,10 @@ DDS_BE_parse_args(int &argc, char **argv)
                  */
                 *macroHeader = '\0';
                 macroHeader = macroHeader + 1;
-            } else
-            {
-                macroHeader = "";
             }
         }
         BE_Globals::UserDLL = macroName;
-        BE_Globals::UserDLLHeader = macroHeader;
+        BE_Globals::UserDLLHeader = macroHeader ? macroHeader : "";
         DDSStripArg(argc, argv, i);
         i = 0;
       }

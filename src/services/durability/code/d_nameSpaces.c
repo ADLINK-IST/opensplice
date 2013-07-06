@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -49,6 +49,7 @@ d_nameSpacesNew(
     d_durability durability;
     d_networkAddress master;
     d_mergeState state;
+    c_sequence *mergedStatesPtr;
     struct nsWalkHelper helper;
 
     if(nameSpace){
@@ -62,7 +63,7 @@ d_nameSpacesNew(
             ns->aligner                    = d_nameSpaceIsAligner(nameSpace);
             ns->durabilityKind             = d_nameSpaceGetDurabilityKind(nameSpace);
             ns->alignmentKind              = d_nameSpaceGetAlignmentKind(nameSpace);
-            ns->partitions                 = d_nameSpaceGetPartitions(nameSpace);
+            ns->partitions                 = d_nameSpaceGetPartitionTopics(nameSpace);
             ns->total                      = total;
             ns->initialQuality.seconds     = initialQuality.seconds;
             ns->initialQuality.nanoseconds = initialQuality.nanoseconds;
@@ -83,7 +84,7 @@ d_nameSpacesNew(
             if(ns->mergedStatesCount > 0){
                 ns->mergedStates               = os_malloc(C_SIZEOF(d_mergeState)*ns->mergedStatesCount);
 
-                helper.states = (d_mergeState*)(&(ns->mergedStates));
+                helper.states = (d_mergeState*)(mergedStatesPtr = &(ns->mergedStates));
                 helper.index = 0;
 
                 d_tableWalk(nameSpace->mergedRoleStates, addMergeState, &helper);

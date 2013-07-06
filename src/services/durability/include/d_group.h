@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -65,6 +65,10 @@ v_group             d_groupGetKernelGroup   (d_group group);
 c_bool              d_groupIsBuiltinGroup   (d_group group);
 
 void                d_groupSetComplete      (d_group group);
+
+void                d_groupSetUnaligned     (d_group group);
+
+void                d_groupSetIncomplete    (d_group group);
 
 void                d_groupSetPrivate       (d_group group,
                                              c_bool isPrivate);

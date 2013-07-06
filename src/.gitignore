@@ -1,0 +1,16 @@
+.depend.*
+Makefile*
+*.exe
+*.so
+*.sln
+*.vcxproj*
+*.vcproj*
+*.ncb
+*.ilk
+*.pdb
+*.dll
+Debug
+Release
+*.lib
+*.exp
+*.suo

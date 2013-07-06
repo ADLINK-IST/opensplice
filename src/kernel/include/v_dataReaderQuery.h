@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_DATAREADERQUERY_H
@@ -21,6 +21,7 @@
 #include "v_event.h"
 #include "v_dataReader.h"
 #include "v_dataReaderSample.h"
+#include "v_query.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -57,7 +58,9 @@ v_dataReaderQueryFree(
 
 OS_API c_bool
 v_dataReaderQueryTest(
-    v_dataReaderQuery _this);
+    v_dataReaderQuery _this,
+    v_queryAction action,
+    c_voidp args);
 
 OS_API c_bool
 v_dataReaderQueryTriggerTest(
@@ -118,7 +121,7 @@ v_dataReaderQuerySetParams(
     q_expr predicate,
     c_value params[]);
 
-#undef OS_API 
+#undef OS_API
 
 #if defined (__cplusplus)
 }

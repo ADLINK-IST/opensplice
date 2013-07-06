@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -21,6 +21,7 @@ extern "C" {
 #include "u_participant.h"
 #include "os_if.h"
 #include "os.h"
+#include "cf_node.h"
 
 #ifdef OSPL_BUILD_USER
 #define OS_API OS_API_EXPORT
@@ -32,26 +33,32 @@ extern "C" {
 #define u_domain(p) ((u_domain)(p))
 
 #define DOMAIN_NAME "The default Domain"
+#define DEF_DOMAIN_ID 0
+#define MAX_DOMAIN_ID 0x7fffffff
+
+#define U_DOMAIN_FEDERATIONSPECIFICPARTITIONNAME_MINBUFSIZE 36
 
 /** \brief The class constructor (1).
  *
- * The constructor will create a new Domain object. 
+ * The constructor will create a new Domain object.
  * The Domain object provides access to the kernel.
  * This method will lookup or create the kernel.
  * This operation is typically used by the splice daemon.
  *
+ * \param domain   the domain being created
  * \param uri      the domain configuration
  *
  * \return the created Domain object or
  *         NULL if the operation failed.
  */
-OS_API u_domain
+OS_API u_result
 u_domainNew (
+    u_domain *domain,
     const c_char *uri);
 
 /** \brief The class constructor (2).
  *
- * The constructor will create a new Domain object. 
+ * The constructor will create a new Domain object.
  * The Domain object provides access to the kernel.
  * This method will try to lookup the kernel for a
  * given timeout period. In case no kernel is found
@@ -59,6 +66,7 @@ u_domainNew (
  * return NULL.
  * This operation is typically used by all except the splice daemon.
  *
+ * \param domain   the domain being opened
  * \param uri      the domain configuration
  * \param timeout  the duration this operation will
  *                 wait for the iavailability of the kernel.
@@ -66,9 +74,26 @@ u_domainNew (
  * \return the created Domain object or
  *         NULL if the operation failed.
  */
-OS_API u_domain
+OS_API u_result
 u_domainOpen (
+    u_domain *domain,
     const c_char *uri,
+    c_long timeout); /* timeout in seconds */
+
+
+/** \brief get uri from domain id.
+ *
+ * This method retrieves the uri that belongs to a given domain id.
+ *
+ * \param id      the domain id
+ * \param timeout  the duration this operation will
+ *                 wait for the availability of the kernel.
+ *
+ * \return the uri that belongs to the given id.
+ */
+OS_API const c_char *
+u_domainOpenWithId (
+    const os_int32 uri,
     c_long timeout); /* timeout in seconds */
 
 /** \brief The class destructor.
@@ -218,6 +243,30 @@ u_domainMemoryAddress(
 OS_API c_size
 u_domainMemorySize(
    u_domain _this);
+
+/** \brief Fills buf with the domain-specific built-in partition name.
+    Bufsize must be no greater than the number of bytes available in
+    buf and must be at least
+    U_DOMAIN_FEDERATIONSPECIFICPARTITIONNAME_MINBUFSIZE, or ILL_PARAM
+    will be returned. */
+OS_API u_result
+u_domainFederationSpecificPartitionName (
+    u_domain _this,
+    c_char *buf,
+    os_size_t bufsize);
+
+/* Note: This function is part of a temporary workaround used by R&R.
+ * The function copies heap-configuration (cf_node from parser) to shm-configuration (v_cfNode).
+ * This is needed so R&R can use a single operation to process configuration nodes, either from the config file (URI)
+ * or a string (R&R config command).
+ * Ideally in the future this will be replaced by memory-agnostic XML processing (so that it doesn't make a difference
+ * if the configuration is on heap or in shared memory)
+ */
+OS_API u_result
+u_domainCopyConfiguration(
+    cf_node  cfgNode,
+    u_participant p,
+    u_cfElement *elem);
 
 #undef OS_API
 

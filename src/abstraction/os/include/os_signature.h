@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -19,6 +19,7 @@
 #define OS_FREE_MAGIC_SIG   0xC1BF0D82E5B89623ULL
 
 /* Check for either of the above values */
+#ifdef PA_BIG_ENDIAN
 #define OS_MAGIC_SIG_CHECK(ptr) *(ptr) != 0xF0 \
 		  || *((ptr)+1) != 0xA7 \
 		  || *((ptr)+2) != 0xB4 \
@@ -27,6 +28,16 @@
 		  || *((ptr)+5) != 0xA9 \
 		  || *((ptr)+6) != 0x85 \
 		  || (*((ptr)+7) & 0xFCU) != 0x10 
+#else
+#define OS_MAGIC_SIG_CHECK(ptr) *((ptr)+7) != 0xF0  \
+		  || *((ptr)+6) != 0xA7 \
+		  || *((ptr)+5) != 0xB4 \
+		  || *((ptr)+4) != 0xC9 \
+		  || *((ptr)+3) != 0xE6 \
+		  || *((ptr)+2) != 0xA9 \
+		  || *((ptr)+1) != 0x85 \
+          || (*(ptr) & 0xFCU) != 0x10 
+#endif
 #endif
 
 #endif

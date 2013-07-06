@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /****************************************************************
@@ -27,6 +27,9 @@ extern "C" {
 
 #include "os_defs.h"
 #include "os_if.h"
+#include "os_process.h"
+#include "os_signal.h"
+#include "os_iterator.h"
 
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT
@@ -62,6 +65,9 @@ typedef struct os_sharedAttr {
     os_userCred		userCred;
     /** Preferred mapping address */
     void		*map_address;
+#ifdef VXWORKS_RTP
+    int needsErase;
+#endif
 } os_sharedAttr;
 
 /** \brief Create a handle for shared memory operations
@@ -79,7 +85,13 @@ typedef struct os_sharedAttr {
 OS_API os_sharedHandle
 os_sharedCreateHandle(
     const char *name,
-    const os_sharedAttr *sharedAttr);
+    const os_sharedAttr *sharedAttr,
+    const os_int32 id);
+
+OS_API void
+os_sharedMemoryRegisterUserProcess(
+    os_char* domainName,
+    os_procId pid);
 
 /** \brief Destroy a handle for shared memory operations
  *
@@ -222,6 +234,60 @@ os_sharedMemoryDetach(
 OS_API os_result
 os_sharedAttrInit(
     os_sharedAttr *sharedAttr);
+
+
+/** \brief retrieve the domain name belonging to a domain id
+ *
+ * Precondition:
+ * - sharedHandle is previously created with \b os_sharedCreateHandle
+ *
+ * Possible Results:
+ * - assertion failure: sharedHandle = NULL
+ *     sharedHandle is inconsistent
+ * - returns os_resultSuccess if
+ *     The name is returned successful
+ * - returns os_resultFail if
+ *     The name could not be resolved
+ */
+OS_API os_result
+os_sharedMemoryGetNameFromId(
+    os_sharedHandle sharedHandle,
+    char **name);
+
+OS_API char *
+os_findKeyFile(
+    const char * name);
+
+OS_API char *
+os_findKeyFileByNameAndId(
+    const char *name,
+    const os_int32 id);
+
+OS_API void
+os_cleanKeyFiles(
+    void);
+
+OS_API os_int32
+os_sharedMemoryListUserProcesses(
+    os_iter pidList,
+    const char * fileName);
+
+OS_API os_int32
+os_sharedMemoryListUserProcessesFree(
+    os_iter pidList);
+
+OS_API os_int32
+os_sharedMemoryListDomainNames(
+    os_iter nameList);
+
+OS_API os_int32
+os_sharedMemoryListDomainNamesFree(
+    os_iter nameList);
+
+OS_API os_int32
+os_destroyKeyFile(
+    const char * name);
+
 
 #undef OS_API
 

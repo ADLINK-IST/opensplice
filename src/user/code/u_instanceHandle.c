@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "u__handle.h"
@@ -58,7 +58,7 @@ u_instanceHandleNew(
         translator.lid.localId = handle.index;
     } else {
         translator.handle = 0;
-    } 
+    }
     return translator.handle;
 }
 
@@ -102,6 +102,7 @@ u_instanceHandleClaim (
     c_voidp instance)
 {
     u_result result;
+    v_handleResult vresult;
     v_handle handle;
     u_instanceHandleTranslator translator;
 
@@ -116,7 +117,8 @@ u_instanceHandleClaim (
         handle.index  = translator.lid.localId;
         handle.server = u_userServer(translator.lid.lifecycleId & HANDLE_SERVER_MASK);
 
-        result = u__handleResult(v_handleClaim(handle,instance));
+        vresult = v_handleClaim(handle, instance);
+        result = u__handleResult(vresult);
     }
 
     return result;

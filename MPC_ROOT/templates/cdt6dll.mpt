@@ -1,0 +1,10 @@
+// -*- MPC -*-
+// $Id$
+
+conditional_include "cdt6platforms"
+
+configurations = debug release
+project_type_name = "Shared Library"
+project_type = so
+build_artefact_type = org.eclipse.cdt.build.core.buildArtefactType.sharedLib
+pic = -fPIC

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -34,9 +34,6 @@
 #include "v_topic.h"
 #include "v__participant.h"
 
-#ifdef _EXTENT_
-#include "c_extent.h"
-#endif
 #include "sd_serializerXMLTypeinfo.h"
 
 #include "c_stringSupport.h"
@@ -118,7 +115,6 @@ createMessageKeyList(
     c_array *keyListRef)
 {
     c_array keyList;
-    c_type fieldType;
     c_field field;
     c_iter splitNames, newNames;
     c_char *name, *newName;
@@ -152,9 +148,7 @@ createMessageKeyList(
         return TRUE;
     }
 
-    fieldType = c_field_t(c_getBase(messageType));
-    keyList = c_arrayNew(fieldType,length);
-    c_free(fieldType);
+    keyList = c_arrayNew(c_field_t(c_getBase(messageType)),length);
     i=0;
     while ((name = c_iterTakeFirst(newNames)) != NULL) {
         field = c_fieldNew(messageType,name);
@@ -546,34 +540,20 @@ v__topicNew(
                 topic->crcOfName = v_crcCalculate(kernel->crc, name, strlen(name));
                 topic->crcOfTypeName = v_crcCalculate(kernel->crc, str, strlen(str));
                 os_free(str);
-#ifdef _EXTENT_
-#define _MAXTYPESIZE_ (3072)
-                {
-                    c_long count;
-                    if (type->size < _MAXTYPESIZE_) {
-                        count = 64;
-                    } else {
-                        count = 0;
-                    }
-
-                    topic->messageExtent = c_extentSyncNew(type,count,TRUE);
-                }
-#endif
                 assert(found == NULL);
-                result = v_topicEnable(topic, &found);
+                result = v_topicEnable(topic);
                 switch(result)
                 {
                     case V_RESULT_OK:
-                        if(found != NULL)
-                        {
-                            /* rollback */
-                            c_free(topic);
-                            topic = found;
-                        }
-                        else if(announce)
+                        if(announce)
                         {
                             builtinMsg = v_builtinCreateTopicInfo(kernel->builtin,topic);
                         }
+                        break;
+                    case V_RESULT_PRECONDITION_NOT_MET:
+                        /* Request is superfluous, so release previous topic and lookup existing precursor. */
+                        c_free(topic);
+                        topic = v_lookupTopic(kernel, name);
                         break;
                     case V_RESULT_INCONSISTENT_QOS:
                         c_free(topic);
@@ -617,8 +597,7 @@ v__topicNew(
  */
 v_result
 v_topicEnable (
-    v_topic topic,
-    v_topic* topic_found)
+    v_topic topic)
 {
     v_kernel kernel;
     v_topic found;
@@ -626,8 +605,6 @@ v_topicEnable (
 
     assert(topic);
     assert(C_TYPECHECK(topic,v_topic));
-
-    *topic_found = NULL;
 
     if (topic) {
         kernel = v_objectKernel(topic);
@@ -643,14 +620,16 @@ v_topicEnable (
 
             if(typeName)
             {
-                *topic_found = found;
                 if(isTopicConsistent(found,
                                    v_topicName(topic),
                                    typeName,
                                    topic->qos,
                                    v_topicKeyExpr(topic)))
                 {
-                    result = V_RESULT_OK;
+                    /* Compatible and already enabled topic found,
+                     * so this request is superfluous.
+                     */
+                    result = V_RESULT_PRECONDITION_NOT_MET;
                 }
                 else
                 {
@@ -721,11 +700,7 @@ v_topicMessageNew(
 
     assert(C_TYPECHECK(topic,v_topic));
 
-#ifdef _EXTENT_
-    message = (v_message)c_extentCreate(topic->messageExtent);
-#else
-    message = (v_message)c_new(v_topicMessageType(topic));
-#endif
+    message = (v_message)c_new(topic->messageType);
     if (message) {
 #ifndef _NAT_
         message->allocTime = v_timeGet();
@@ -803,7 +778,7 @@ v_topicLookupWriters(
 
     while(participant != NULL){
         c_lockRead(&participant->lock);
-        entities = c_select(participant->entities, 0);
+        entities = ospl_c_select(participant->entities, 0);
         c_lockUnlock(&participant->lock);
         entity = v_entity(c_iterTakeFirst(entities));
 
@@ -850,7 +825,7 @@ v_topicLookupReaders(
 
     while(participant != NULL){
         c_lockRead(&participant->lock);
-        entities = c_select(participant->entities, 0);
+        entities = ospl_c_select(participant->entities, 0);
         c_lockUnlock(&participant->lock);
         entity = v_entity(c_iterTakeFirst(entities));
 
@@ -919,6 +894,9 @@ v_topicNotify(
     v_event event,
     c_voidp userData)
 {
+    OS_UNUSED_ARG(topic);
+    OS_UNUSED_ARG(event);
+    OS_UNUSED_ARG(userData);
     assert(C_TYPECHECK(topic,v_topic));
 }
 
@@ -1170,4 +1148,18 @@ v_topicDisposeAllData(
         c_free(msg);
     }
     return (res);
+}
+
+c_type
+v_topicGetUserType (
+    v_topic topic)
+{
+    c_type type = NULL;
+    c_metaObject obj = NULL;
+    assert(topic != NULL);
+    assert(C_TYPECHECK(topic,v_topic));
+    obj = c_metaResolve(c_metaObject(v_topicMessageType(topic)),USERDATA_FIELD_NAME);
+    type = c_property(obj)->type;
+    c_free(obj);
+    return type;
 }

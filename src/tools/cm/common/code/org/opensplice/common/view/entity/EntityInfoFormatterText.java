@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -14,8 +14,10 @@ package org.opensplice.common.view.entity;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.opensplice.cm.meta.MetaClass;
 import org.opensplice.cm.meta.MetaCollection;
@@ -54,6 +56,7 @@ public class EntityInfoFormatterText extends EntityInfoFormatter{
      * 
      * If the type is not supported, no error will occur.
      */
+    @Override
     public synchronized String getValue(Object object){
         curObject = object;
         if(object == null){
@@ -77,7 +80,7 @@ public class EntityInfoFormatterText extends EntityInfoFormatter{
      * @param type The type to create a plain text representation of.
      */
     private void setUserDataType(MetaType type){
-        curValue = (String)typeCache.get(type);
+        curValue = typeCache.get(type);
         
         if(curValue == null){
             MetaField field = type.getRootField();
@@ -97,22 +100,19 @@ public class EntityInfoFormatterText extends EntityInfoFormatter{
      * @param type The type to extract the typedefs from.
      */
     private void drawTypedefs(MetaType type){
-        MetaField field;
-        String typedefName;
         
-        LinkedHashMap typedefs = type.getTypedefs();
-        Iterator iter = typedefs.keySet().iterator();
-        HashSet finished = new HashSet();
+        LinkedHashMap<MetaField, String> typedefs = type.getTypedefs();
+        HashSet<String> finished = new HashSet<String>();
         
-        while(iter.hasNext()){
-            field = (MetaField)(iter.next());
-            typedefName = (String)(typedefs.get(field));
-            
+        for (Iterator<Entry<MetaField, String>> it = typedefs.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<MetaField, String> entry = it.next();
+            MetaField field = entry.getKey();
+            String typedefName = entry.getValue();
             if(!(finished.contains(typedefName))){
                 writer.write("typedef ");
                 this.drawTypedefMetaField(field, "", type);
                 writer.write(" " + typedefName + ";" + newLine + newLine + separator);
-                finished.add(typedefName);    
+                finished.add(typedefName);
             }
         }
     }

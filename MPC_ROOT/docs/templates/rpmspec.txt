@@ -1,0 +1,33 @@
+// $Id$
+//
+//
+// Document template variables for -type rpmspec
+// Please try to keep this alphabetically sorted.
+//
+env_check = Optional.  Names of environment variables that must be set when the RPM is built.
+makefile_generator = Script that will run in the %build section of the RPM spec file in order to generate makefiles.  If the default is changed it should be a wrapper around mwc.pl and pass all relevant arguments to mwc.pl.
+makefile_name_pattern = A shell wildcard pattern describing the makefiles created by makefile_generator.
+makeflags = Additional flags to pass on the make command line in the %build section of the RPM spec file.
+mkgen_args = Additional arguments to pass to the makefile_generator.
+prebuild = Additional command to run in the %build section of the RPM spec (before makefile_generator).
+rpm_autorequiresprovides = Sets the RPM spec AutoReqProv tag.
+rpm_buildrequires = Optional.  Sets the RPM spec BuildRequires tag.
+rpm_description = Required.  Sets the content of the %description section of the RPM spec file.  Multiple lines can be separated by \n.
+rpm_group = Required.  Sets the RPM spec Group tag.
+rpm_license = Sets the RPM spec License tag.
+rpm_mpc_requires = Do not provide a value, it is filled in by the RpmSpecWorkspaceCreator.
+rpm_mpc_temp = Temporary directory for "fake installing" RPMs to satisfy dependency requirements during building.
+rpm_mpc_workspace = Do not provide a value, it is filled in by the RpmSpecWorkspaceCreator.
+rpm_name = Do not provide a value, it is filled in by the RpmSpecWorkspaceCreator.
+rpm_post_cmd = Sets the content of the %post section of the RPM spec file.
+rpm_postun_cmd = Sets the content of the %postun section of the RPM spec file.
+rpm_prefix = Sets the RPM spec Prefix tag.
+rpm_pre_cmd = Sets the content of the %pre section of the RPM spec file.
+rpm_preun_cmd = Sets the content of the %preun section of the RPM spec file.
+rpm_provides = Optional.  Sets the RPM spec Provides tag.
+rpm_releasenumber = Required.  Sets the RPM spec Release tag.
+rpm_requires = Optional.  Sets the RPM spec Requires tag.  These values will be used in addition to dependencies that MPC already knows due to the 'after' assignments.
+rpm_source_base = Sets the URL or path base of the RPM spec Source tag.  The RPM tarball name will be appended so it should end with a slash.
+rpm_summary = Required.  Sets the RPM spec Summary tag.
+rpm_url = Optional.  Sets the URL of the application.
+rpm_version = Required.  Sets the RPM spec Version tag.

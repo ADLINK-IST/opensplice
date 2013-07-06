@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta name="id" content=
+  "$Id$">
+  <link rel="STYLESHEET" href="MakeProjectCreator.css" charset="ISO-8859-1"
+  type="text/css">
+
+  <title>MPC: WB30 Project Type</title>
+</head>
+
+<body>
+<div>
+  <h1 class="Head1">WB30 Project Type documentation</h1>
+
+  <div>
+    <h3 class="Head2">Background/Abstract</h3>
+    <li class="body">The <em>WB30 Project Type</em> generates project files
+      utilizable by Wind River Workbench, version 3.0.  Workbench is built
+      on the Eclipse platform and inherits many of its features.  In this
+      document, "eclipse" is used at times to describe features common to
+      both eclipse itself and workbench.
+      The project type generates workbench projects from generic mpc
+      files.  These workbench projects can then be imported into a user's
+      workspace and built using the workbench "managed flexible build".</li>
+
+    <li class="body">MPC's WB30 Project Type currently supports Linux
+      and Windows as both host and target platforms.  It can be extended to
+      support other platforms as well.</li>
+  </div>
+
+  <div>
+    <h3 class="Head2">Usage</h3>
+    For every <code>project <var>myprojname</var> { }</code> in mpc files, the
+    WB30 project type
+    generates a corresponding "workbench project" directory of the form
+    <samp>wb_<var>myprojname</var></samp>.  The WB30 Project Type
+    uses Eclipse's <em>linked resource</em> feature to work around
+    Eclipse's usual requirement that source files reside inside the Eclipse
+    project directory.  However, the linked resource feature also comes with
+    restrictions; see <a href="#fullpath">the note</a> for details.
+
+    <h4>Generic workflow</h4>
+    Presuming .mpc files already exist:
+    <ol>
+      <li>Generate projects using <samp>-type wb30</samp>.</li>
+      <li>Import projects into a Workbench workspace.  From within Workbench
+        (preferably an otherwise-empty workspace) select
+        <strong>File->Import...</strong> and perform the following actions:
+        <ol type="a">
+          <li>Choose <strong>General->Existing Projects Into
+              Workspace</strong> and click <strong>Next</strong></li>
+          <li>In "Select Root Directory:" text field, enter the full path
+            to the MPC workspace.</li>
+          <li>Workbench will scan all the subdirectories looking for existing
+            projects.</li>
+          <li><strong>Be sure that the checkbox next to <em>Copy projects
+                into workspace</em> is <em>UN</em>checked.</strong>
+            Copying projects into the workspace unnecessarily duplicates
+            files, plus we have found that Workbench can get confused with file
+            paths sometimes (though sometimes it will work).</li>
+          <li>Click <strong>Finish</strong> to proceed with the import.</li>
+        </ol>
+    </ol>
+
+   <h4>Building A Project</h4>
+   To build a project or set of projects, select the project (or
+   projects) in the <em>Project</em> pane, then select
+   <strong>Project->Build Project</strong>.
+
+</div>
+
+<div>
+  <h3 class="Head2">Platforms and Buildspecs</h3>
+  The default platform for WB30 is called "Native" and corresponds to creating
+  a project in Workbench using File -> New -> Native Application Project.
+  Although this method doesn't have (in workbench) any direct support for
+  building shared libraries, MPC does generate projects that pass the correct
+  compiler and linker flags to create shared (dynamic) libraries.  Selecting
+  static or shared libraries with WB30 works the same as with any other MPC
+  project type.<p/>
+  The alternative platform, "VxWorks" can be selected by passing the option
+  <code>-value_template platform=VxWorks</code> on the mwc.pl command line.
+  Currently the VxWorks support is inherited from the existing
+  <code>-type wb26</code> template, so it may need some more work before it is
+  production-ready.  Note that the wb26 template supported only DKM projects for
+  VxWorks (Downloadable Kernel Modules).<p/>
+  Each platform includes a list of supported buildspecs, and a single default
+  buildspec.  For the "Native" platform, the list of supported buildspecs is:
+  <ul>
+    <li>Linux_gnu_native_3.x_4.x</li>
+    <li>Windows_gnu_native_3.x_4.x</li>
+  </ul>
+  Users can select the list of buildspecs by passing the option
+  <code>-value_template buildspecs=&lt;specs&gt;</code> on the mwc.pl command
+  line, where &lt;specs&gt; is replaced by the buildspec value or values.
+  Multiple values are separated by spaces (with the entire specs string
+  enclosed in quotes).  Similarly, the default buildspec can be selected with
+  <code>-value_template default_buildspec=&lt;spec&gt;</code>.<p/>
+  New buildspecs (or even platforms) can be added by either editing the file
+  <code>$MPC_ROOT/templates/wb30dll.mpt</code> (if the modification will be
+  submitted back to the public MPC repository), or creating a file named
+  <code>user_wb30dll.mpt</code> anywhere on the MPC -include search path.
+  Within either of these files, create a scope for the platform/buildspec and
+  use assignment statements within that scope to set the various template
+  variables.  The existing buildspecs serve as the best examples.</p>
+</div>
+
+<div>
+</div>
+  <div>
+    <h3 class="Head2">Notes</h3>
+    <ol>
+      <li>
+        MPC doesn't directly generate Workbench workspaces, because they depend
+        on an unknown binary file format that it can't generate.  Instead of
+        generating files that can be loaded as a Workbench workspace, MPC
+        generates two files representing the workspace:
+        <ol>
+          <li>wb30projects.lst</li>
+          <li>org.eclipse.core.resources.prefs</li>
+        </ol>
+        wb30projects.lst contains comment lines (starting with #) followed by
+        one line per project, listing the full path to the .project file.<br/>
+        org.eclipse.core.resources.prefs also begins with comment lines
+        (starting with #) follwed by the contents of one of the files from
+        Eclipse's workspace format, specifically:
+        <code>.metadata/.plugins/org.eclipse.core.runtime/.settings/org.eclipse.core.resources.prefs</code>
+        Unfortunately, this file alone is not enough to actually constitute a
+        workspace because Eclipse uses other binary files in this .settings
+        directory.
+      </li>
+
+      <li><a name="fullpath"></a>WB30 uses Eclipse's <em>linked resource</em>
+        feature to work around the usual requirement that
+        all source code reside in Workbench project directories.  These
+        act similar to symbolic links.  While convenient so that a
+        developer is not required to conform to Workbench's directory
+        layout, it comes at a price: the target of the link must be
+        specified as a full path. The consequence of this restriction is
+        that, once the WB30 projects get generated, the source directory can
+        not move in the filesystem without re-generating the projects.</li>
+
+      <li><a name="remove_projects"></a>MPC's WB30 Project Generator
+        creates directories named <samp>wb_*</samp> for projects.
+        To remove all WB30 projects from a
+        directory hierarchy, on Linux you can use a command such as:
+<pre>
+  $ find . -name 'wb_*' -type d | xargs rm -rf
+</pre>
+      </li>
+
+    </ol>
+  </div>
+
+</div>
+
+
+<hr>
+
+</body> </html>

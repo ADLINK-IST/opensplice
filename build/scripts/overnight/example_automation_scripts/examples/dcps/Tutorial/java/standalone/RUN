@@ -1,0 +1,29 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+get_libjsig
+
+startOSPL
+
+echo start MessageBoard
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP chatroom.MessageBoard &
+
+sleep 2
+
+echo start UserLoad
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP chatroom.UserLoad &
+
+sleep 2
+
+echo start Chatter
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP chatroom.Chatter
+
+sleep 4
+
+echo start Chatter with terminate message
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP chatroom.Chatter -1
+
+sleep 4
+
+stopOSPL

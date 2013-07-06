@@ -132,7 +132,7 @@ namespace saj
 			long handle;
 			string resultMsg;
 			// Create Participant.
-			participant = DDS.TheParticipantFactory.Value.CreateParticipant(null, DDS.PARTICIPANT_QOS_DEFAULT
+			participant = DDS.TheParticipantFactory.Value.CreateParticipant(DDS.DomainId.Default, DDS.PARTICIPANT_QOS_DEFAULT
 				.Value, null, 0);
 			if (participant == null)
 			{

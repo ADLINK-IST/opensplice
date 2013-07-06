@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_common.h"
@@ -87,7 +87,7 @@ instanceHandleSeqCopyin (
     gapi_instanceHandleSeq *dst)
 {
     const gapi_instanceHandleSeq *src = _src;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -97,9 +97,9 @@ instanceHandleSeqCopyin (
             dst->_length  = 0;
             dst->_buffer  = NULL;
         }
-        
+
     }
- 
+
     if ( src->_length > 0 ) {
         assert(src->_buffer);
 
@@ -126,7 +126,7 @@ instanceHandleSeqCopyout (
     void *_dst)
 {
     gapi_instanceHandleSeq *dst = _dst;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -212,7 +212,7 @@ stringSeqCopyout (
 {
     gapi_stringSeq *dst = _dst;
     gapi_unsigned_long i;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -569,7 +569,7 @@ qosPolicyCountSeqCopyin (
     gapi_qosPolicyCountSeq *dst)
 {
     const gapi_qosPolicyCountSeq *src = _src;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -607,7 +607,7 @@ qosPolicyCountSeqCopyout (
     void *_dst)
 {
     gapi_qosPolicyCountSeq *dst = _dst;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -796,7 +796,7 @@ topicSeqCopyin (
     gapi_topicSeq *dst)
 {
     const gapi_topicSeq *src = _src;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -832,7 +832,7 @@ topicSeqCopyout (
     void *_dst)
 {
     gapi_topicSeq *dst = _dst;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -876,7 +876,7 @@ dataReaderSeqCopyin (
     gapi_dataReaderSeq *dst)
 {
     const gapi_dataReaderSeq *src = _src;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length != dst->_maximum ) {
             if ( dst->_release ) {
@@ -914,7 +914,7 @@ dataReaderSeqCopyout (
     void *_dst)
 {
     gapi_dataReaderSeq *dst = _dst;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length != dst->_maximum ) {
             if ( dst->_release ) {
@@ -960,7 +960,7 @@ dataReaderViewSeqCopyin (
     gapi_dataReaderViewSeq *dst)
 {
     const gapi_dataReaderViewSeq *src = _src;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
              gapi_free(dst->_buffer);
@@ -996,7 +996,7 @@ dataReaderViewSeqCopyout (
     void *_dst)
 {
     gapi_dataReaderViewSeq *dst = _dst;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
              gapi_free(dst->_buffer);
@@ -1041,7 +1041,7 @@ conditionSeqCopyin (
     gapi_conditionSeq *dst)
 {
     const gapi_conditionSeq *src = _src;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -1077,7 +1077,7 @@ conditionSeqCopyout (
     void *_dst)
 {
     gapi_conditionSeq *dst = _dst;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -1126,7 +1126,7 @@ sampleStateSeqCopyin (
     gapi_sampleStateSeq *dst)
 {
     const gapi_sampleStateSeq *src = _src;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -1154,7 +1154,7 @@ sampleStateSeqCopyin (
             }
         }
     }
-    
+
     dst->_length = src->_length;
 }
 
@@ -1164,7 +1164,7 @@ sampleStateSeqCopyout (
     void *_dst)
 {
     gapi_sampleStateSeq *dst = _dst;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -1233,7 +1233,7 @@ instanceStateSeqCopyin (
                 memcpy(dst->_buffer, src->_buffer, src->_length);
             }
         }
-    }   
+    }
 
     dst->_length = src->_length;
 }
@@ -1244,7 +1244,7 @@ instanceStateSeqCopyout (
     void *_dst)
 {
     gapi_instanceStateSeq *dst = _dst;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length > dst->_maximum ) {
             if ( dst->_release ) {
@@ -1269,7 +1269,7 @@ instanceStateSeqCopyout (
                 memcpy(dst->_buffer, src->_buffer, src->_length);
             }
         }
-    }   
+    }
 
     dst->_length = src->_length;
 }
@@ -1313,8 +1313,8 @@ userDataQosPolicyCopy (
                 dst->value._length = src->value._length;
             }
         }
-    }   
-    
+    }
+
     dst->value._length = src->value._length;
 }
 
@@ -1434,7 +1434,7 @@ subscriptionKeyQosPolicyEqual (
     if ( orig->use_key_list != req->use_key_list ) {
         equal = FALSE;
     }
-    
+
     if ( equal && orig->use_key_list ) {
         if ( orig->key_list._length != req->key_list._length ) {
             equal = FALSE;
@@ -1483,7 +1483,7 @@ viewKeyQosPolicyEqual (
     if ( orig->use_key_list != req->use_key_list ) {
         equal = FALSE;
     }
-    
+
     if ( equal && orig->use_key_list ) {
         if ( orig->key_list._length != req->key_list._length ) {
             equal = FALSE;
@@ -1532,7 +1532,7 @@ gapi_domainParticipantQosCopy (
     gapi_domainParticipantQos *dst)
 {
     userDataQosPolicyCopy (&src->user_data, &dst->user_data);
-    
+
     dst->entity_factory      = src->entity_factory;
     dst->watchdog_scheduling = src->watchdog_scheduling;
     dst->listener_scheduling = src->listener_scheduling;
@@ -1562,19 +1562,19 @@ gapi_topicQosCopy (
     gapi_topicQos *dst)
 {
     topicDataQosPolicyCopy (&src->topic_data, &dst->topic_data);
-    
-    dst->durability         = src->durability; 
-    dst->durability_service = src->durability_service; 
-    dst->deadline           = src->deadline; 
-    dst->latency_budget     = src->latency_budget; 
-    dst->liveliness         = src->liveliness; 
-    dst->reliability        = src->reliability; 
-    dst->destination_order  = src->destination_order; 
-    dst->history            = src->history; 
-    dst->resource_limits    = src->resource_limits; 
-    dst->transport_priority = src->transport_priority; 
-    dst->lifespan           = src->lifespan; 
-    dst->ownership          = src->ownership; 
+
+    dst->durability         = src->durability;
+    dst->durability_service = src->durability_service;
+    dst->deadline           = src->deadline;
+    dst->latency_budget     = src->latency_budget;
+    dst->liveliness         = src->liveliness;
+    dst->reliability        = src->reliability;
+    dst->destination_order  = src->destination_order;
+    dst->history            = src->history;
+    dst->resource_limits    = src->resource_limits;
+    dst->transport_priority = src->transport_priority;
+    dst->lifespan           = src->lifespan;
+    dst->ownership          = src->ownership;
 
     return dst;
 }
@@ -1603,20 +1603,20 @@ gapi_dataWriterQosCopy (
     gapi_dataWriterQos *dst)
 {
    userDataQosPolicyCopy (&src->user_data, &dst->user_data);
-    
-   dst->durability            = src->durability; 
-   dst->deadline              = src->deadline; 
-   dst->latency_budget        = src->latency_budget; 
-   dst->liveliness            = src->liveliness; 
-   dst->reliability           = src->reliability; 
-   dst->destination_order     = src->destination_order; 
-   dst->history               = src->history; 
-   dst->resource_limits       = src->resource_limits; 
-   dst->transport_priority    = src->transport_priority; 
+
+   dst->durability            = src->durability;
+   dst->deadline              = src->deadline;
+   dst->latency_budget        = src->latency_budget;
+   dst->liveliness            = src->liveliness;
+   dst->reliability           = src->reliability;
+   dst->destination_order     = src->destination_order;
+   dst->history               = src->history;
+   dst->resource_limits       = src->resource_limits;
+   dst->transport_priority    = src->transport_priority;
    dst->lifespan              = src->lifespan;
    dst->ownership             = src->ownership;
-   dst->ownership_strength    = src->ownership_strength; 
-   dst->writer_data_lifecycle = src->writer_data_lifecycle; 
+   dst->ownership_strength    = src->ownership_strength;
+   dst->writer_data_lifecycle = src->writer_data_lifecycle;
 
     return dst;
 }
@@ -1636,7 +1636,7 @@ gapi_publisherQosCopy (
 {
     groupDataQosPolicyCopy (&src->group_data, &dst->group_data);
     partitionQosPolicyCopy (&src->partition, &dst->partition);
-    
+
     dst->presentation   = src->presentation;
     dst->entity_factory = src->entity_factory;
 
@@ -1668,10 +1668,10 @@ gapi_dataReaderQosCopy (
     userDataQosPolicyCopy (&src->user_data, &dst->user_data);
     subscriptionKeyQosPolicyCopy (&src->subscription_keys, &dst->subscription_keys);
     shareQosPolicyCopy (&src->share, &dst->share);
-    
+
     dst->durability            = src->durability ;
     dst->deadline              = src->deadline;
-    dst->latency_budget        = src->latency_budget;  
+    dst->latency_budget        = src->latency_budget;
     dst->liveliness            = src->liveliness;
     dst->reliability           = src->reliability;
     dst->destination_order     = src->destination_order;
@@ -1679,7 +1679,7 @@ gapi_dataReaderQosCopy (
     dst->resource_limits       = src->resource_limits;
     dst->ownership             = src->ownership;
     dst->time_based_filter     = src->time_based_filter;
-    dst->reader_data_lifecycle = src->reader_data_lifecycle; 
+    dst->reader_data_lifecycle = src->reader_data_lifecycle;
     dst->reader_lifespan       = src->reader_lifespan;
 
     return dst;
@@ -1716,7 +1716,7 @@ gapi_subscriberQosCopy (
     partitionQosPolicyCopy (&src->partition, &dst->partition);
     groupDataQosPolicyCopy (&src->group_data, &dst->group_data);
     shareQosPolicyCopy (&src->share, &dst->share);
-    
+
     dst->presentation   = src->presentation;
     dst->entity_factory = src->entity_factory;
 
@@ -1739,7 +1739,7 @@ gapi_mergeTopicQosWithDataWriterQos (
     dstWriterQos->ownership          = srcTopicQos->ownership;
     dstWriterQos->transport_priority = srcTopicQos->transport_priority;
     dstWriterQos->lifespan           = srcTopicQos->lifespan;
-    
+
     return dstWriterQos;
 }
 
@@ -1778,21 +1778,10 @@ participantBuiltinTopicDataCopy (
     dst->key[1] = src->key[1];
     dst->key[2] = src->key[2];
     userDataQosPolicyCopy (&src->user_data, &dst->user_data);
-    
+
     return TRUE;
 }
 
-
-gapi_boolean
-(*gapi_participantBuiltinTopicDataCopyin) (
-    const void *src,
-    gapi_participantBuiltinTopicData *dst) =
-        participantBuiltinTopicDataCopy;
-
-void (*gapi_participantBuiltinTopicDataCopyout) (
-    const gapi_participantBuiltinTopicData *src,
-    void *dst) =
-        participantBuiltinTopicDataCopy;
 
 /*
  * struct TopicBuiltinTopicData {
@@ -1826,32 +1815,20 @@ topicBuiltinTopicDataCopy (
 
     topicDataQosPolicyCopy (&src->topic_data, &dst->topic_data);
 
-    dst->durability         = src->durability; 
-    dst->deadline           = src->deadline; 
-    dst->latency_budget     = src->latency_budget; 
-    dst->liveliness         = src->liveliness; 
-    dst->reliability        = src->reliability; 
-    dst->destination_order  = src->destination_order; 
-    dst->history            = src->history; 
-    dst->resource_limits    = src->resource_limits; 
-    dst->transport_priority = src->transport_priority; 
-    dst->lifespan           = src->lifespan; 
+    dst->durability         = src->durability;
+    dst->deadline           = src->deadline;
+    dst->latency_budget     = src->latency_budget;
+    dst->liveliness         = src->liveliness;
+    dst->reliability        = src->reliability;
+    dst->destination_order  = src->destination_order;
+    dst->history            = src->history;
+    dst->resource_limits    = src->resource_limits;
+    dst->transport_priority = src->transport_priority;
+    dst->lifespan           = src->lifespan;
     dst->ownership          = src->ownership;
-    
+
     return TRUE;
 }
-
-gapi_boolean
-(*gapi_topicBuiltinTopicDataCopyin) (
-    const void *src,
-    gapi_topicBuiltinTopicData *dst) =
-        topicBuiltinTopicDataCopy;
-
-void
-(*gapi_topicBuiltinTopicDataCopyout) (
-    const gapi_topicBuiltinTopicData *src,
-    void *dst) =
-        topicBuiltinTopicDataCopy;
 
 /*
  * struct PublicationBuiltinTopicData {
@@ -1886,37 +1863,25 @@ publicationBuiltinTopicDataCopy (
     dst->participant_key[2] = src->participant_key[2];
     dst->topic_name = gapi_string_dup (src->topic_name);
     dst->type_name = gapi_string_dup (src->type_name);
-    
+
     partitionQosPolicyCopy (&src->partition, &dst->partition);
     topicDataQosPolicyCopy (&src->topic_data, &dst->topic_data);
     groupDataQosPolicyCopy (&src->group_data, &dst->group_data);
     userDataQosPolicyCopy (&src->user_data, &dst->user_data);
-    
-    dst->durability         = src->durability; 
-    dst->deadline           = src->deadline; 
-    dst->latency_budget     = src->latency_budget; 
-    dst->liveliness         = src->liveliness; 
-    dst->reliability        = src->reliability; 
+
+    dst->durability         = src->durability;
+    dst->deadline           = src->deadline;
+    dst->latency_budget     = src->latency_budget;
+    dst->liveliness         = src->liveliness;
+    dst->reliability        = src->reliability;
     dst->presentation       = src->presentation;
     dst->lifespan           = src->lifespan;
     dst->ownership          = src->ownership;
-    dst->ownership_strength = src->ownership_strength; 
+    dst->ownership_strength = src->ownership_strength;
 
     return TRUE;
 }
 
-
-gapi_boolean
-(*gapi_publicationBuiltinTopicDataCopyin) (
-    const void *src,
-    gapi_publicationBuiltinTopicData *dst) =
-        publicationBuiltinTopicDataCopy;
-
-void
-(*gapi_publicationBuiltinTopicDataCopyout) (
-    const gapi_publicationBuiltinTopicData *src,
-    void *dst) =
-        publicationBuiltinTopicDataCopy;
 
 /*
  * struct SubscriptionBuiltinTopicData {
@@ -1957,31 +1922,18 @@ subscriptionBuiltinTopicDataCopy (
     groupDataQosPolicyCopy (&src->group_data, &dst->group_data);
     userDataQosPolicyCopy (&src->user_data, &dst->user_data);
 
-    dst->durability         = src->durability; 
-    dst->deadline           = src->deadline; 
-    dst->latency_budget     = src->latency_budget; 
-    dst->liveliness         = src->liveliness; 
-    dst->reliability        = src->reliability; 
+    dst->durability         = src->durability;
+    dst->deadline           = src->deadline;
+    dst->latency_budget     = src->latency_budget;
+    dst->liveliness         = src->liveliness;
+    dst->reliability        = src->reliability;
     dst->ownership          = src->ownership;
     dst->presentation       = src->presentation;
     dst->destination_order  = src->destination_order;
     dst->time_based_filter  = src->time_based_filter;
-    
+
     return TRUE;
 }
-
-
-gapi_boolean
-(*gapi_subscriptionBuiltinTopicDataCopyin) (
-    const void *src,
-    gapi_subscriptionBuiltinTopicData *dst) =
-        subscriptionBuiltinTopicDataCopy;
-
-void
-(*gapi_subscriptionBuiltinTopicDataCopyout) (
-    const gapi_subscriptionBuiltinTopicData *src,
-    void *dst) =
-        subscriptionBuiltinTopicDataCopy;
 
 /*
  * struct SampleInfo {
@@ -2040,7 +1992,7 @@ sampleInfoSeqCopyin (
     gapi_sampleInfoSeq *dst)
 {
     const gapi_sampleInfoSeq *src = _src;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length != dst->_maximum ) {
              gapi_free(dst->_buffer);
@@ -2074,7 +2026,7 @@ sampleInfoSeqCopyout (
     void *_dst)
 {
     gapi_sampleInfoSeq *dst = _dst;
-    
+
     if ( dst->_maximum > 0 ) {
         if ( src->_length != dst->_maximum ) {
              gapi_free(dst->_buffer);
@@ -2129,7 +2081,7 @@ gapi_stringSeq_to_String (
     for ( i = 0; i < sequence->_length; i++ ) {
         size += strlen(sequence->_buffer[i]);
     }
-    
+
     if ( size > 0 ) {
         size += (sequence->_length * strlen(delimiter)) + 1;
         rstring = (gapi_string) os_malloc(size);
@@ -2161,7 +2113,7 @@ gapi_string_to_StringSeq (
 {
     gapi_boolean result = TRUE;
     unsigned long size  = 0UL;
-    
+
     assert(delimiter);
     assert(sequence);
 
@@ -2171,7 +2123,7 @@ gapi_string_to_StringSeq (
             unsigned long size = c_iterLength(iter);
             if ( gapi_stringSeq_set_length(sequence, size) ) {
                 unsigned long i;
-                
+
                 for ( i = 0UL; i < size; i++ ) {
                     gapi_string s = (gapi_string)c_iterTakeFirst(iter);
                     gapi_string_replace(s, &sequence->_buffer[i]);
@@ -2199,12 +2151,12 @@ gapi_dataSampleSeq_setLength (
     )
 {
     gapi_boolean result = TRUE;
-    
+
     assert(seq);
-    
+
     if ( length > seq->_maximum ) {
         gapi_dataSample  *newBuffer;
-        gapi_unsigned_long size; 
+        gapi_unsigned_long size;
 
         size = seq->_maximum + GAPI_DATASAMPLESEQ_INCREMENT;
         newBuffer = gapi_dataSampleSeq_allocbuf(size);
@@ -2285,12 +2237,12 @@ v_readerSampleSeq_setLength (
     gapi_unsigned_long  length)
 {
     gapi_boolean result = TRUE;
-    
+
     assert(seq);
-    
+
     if ( length > seq->_maximum ) {
         v_readerSample *newBuffer;
-        gapi_unsigned_long size; 
+        gapi_unsigned_long size;
 
         size = seq->_maximum + V_DATAREADERSAMPLESEQ_INCREMENT;
         newBuffer = v_readerSampleSeq_allocbuf(size);

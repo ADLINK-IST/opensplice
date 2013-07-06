@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -57,11 +57,13 @@ idl_metaCharpAddType(
 
 void
 idl_metaCsharpSerialize2XML(
-        idl_metaCsharp *metaElmnt,
+        void *_metaElmnt,
         void *args)
 {
+    idl_metaCsharp  *metaElmnt = _metaElmnt;
+    c_ulong nrElements;
     if (!metaElmnt->descriptor)
-        metaElmnt->descriptor = idl_genXMLmeta(metaElmnt->type);
+        metaElmnt->descriptor = idl_cutXMLmeta(idl_genXMLmeta(metaElmnt->type), &nrElements);
 }
 
 void
@@ -165,11 +167,16 @@ static const c_char *Csharp_keywords[] = {
 c_char *
 idl_CsharpId(
     const c_char *identifier,
-    c_bool customPSM)
+    c_bool customPSM,
+    c_bool isCType)
 {
     c_ulong i, j, nrScopes, scopeNr, totalLength;
     c_char *cSharpId;
     c_char **scopeList;
+
+    if (strcmp("", identifier) == 0) {
+        return os_strdup("");
+    }
 
     nrScopes = 1;
     /* Determine the amount of scopes by looking for the number of '.' chars. */
@@ -188,6 +195,21 @@ idl_CsharpId(
         /* In case of the custom PSM mode, first go to PascalCase. */
         if (customPSM) {
             toPascalCase(scopeList[scopeNr]);
+        }
+
+        /* If the identifier represents a cType, then prepend it with a
+         * double underscore ('__') to distinguish it from the corresponding
+         * C# representation of the same datatype.
+         */
+        if (isCType && scopeNr == nrScopes - 1) /* Actual datatype is always in last scope. */
+        {
+            totalLength = i - j + 2 + 1; /* Account for '__' and '\0'. */
+            cSharpId = os_malloc(totalLength);
+            cSharpId[0] = '\0';
+            os_strncat(cSharpId, "__", 2);
+            os_strncat(cSharpId, scopeList[scopeNr], strlen(scopeList[scopeNr]));
+            os_free(scopeList[scopeNr]);
+            scopeList[scopeNr] = cSharpId;
         }
 
         /* search through the C# keyword list */
@@ -287,11 +309,11 @@ idl_scopeStackCsharp (
     if (si < sz) {
         /* The scope stack is not empty */
         /* Copy the first scope element name */
-        scopeStack = os_strdup(idl_CsharpId(idl_scopeElementName(idl_scopeIndexed(scope, si)), FALSE));
+        scopeStack = idl_CsharpId(idl_scopeElementName(idl_scopeIndexed(scope, si)), FALSE, FALSE);
         si++;
         while (si < sz) {
             /* Translate the scope name to a C identifier */
-            Id = idl_CsharpId(idl_scopeElementName(idl_scopeIndexed(scope, si)), FALSE);
+            Id = idl_CsharpId(idl_scopeElementName(idl_scopeIndexed(scope, si)), FALSE, FALSE);
             /* allocate space for the current scope stack + the separator
                and the next scope name
              */
@@ -311,7 +333,7 @@ idl_scopeStackCsharp (
         if (name) {
             /* A user identifier is specified */
             /* Translate the user identifier to a C# identifier */
-            Id = idl_CsharpId(name, FALSE);
+            Id = idl_CsharpId(name, FALSE, FALSE);
             /* allocate space for the current scope stack + the separator
                and the user identifier
              */
@@ -331,7 +353,7 @@ idl_scopeStackCsharp (
     /* The stack is empty */
         if (name) {
             /* A user identifier is specified */
-            scopeStack = os_strdup(idl_CsharpId(name, FALSE));
+            scopeStack = idl_CsharpId(name, FALSE, FALSE);
         } else {
             /* make the stack representation empty */
             scopeStack = os_strdup("");

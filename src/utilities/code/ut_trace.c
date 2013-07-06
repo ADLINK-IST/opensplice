@@ -1,18 +1,19 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "ut__trace.h"
 
-#ifdef UT_TRACE_ENABLED
+#if UT_TRACE_ENABLED
 #include <string.h>
+#include "os.h"
 
 #define STDERR_STR "<stderr>"
 #define STDOUT_STR "<stdout>"
@@ -33,7 +34,7 @@ ut_traceInitialize(
             stream = stdout;
             result = 0;
         } else {
-            char * filename = os_fileNormalize(outputPathName); 
+            char * filename = os_fileNormalize(outputPathName);
             stream = fopen(filename, "w");
             os_free(filename);
             if (stream) {

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -122,14 +122,22 @@ idl_fileOpen(
     idl_fileOutPrintf(idl_fileCur(), "\n");
     if(!test_mode)
     {
-        idl_fileOutPrintf(idl_fileCur(), "#include \"%s.h\"\n", includeFile);
+        char *dot = strrchr(includeFile, '.');
+        if (dot && !strcmp(dot, ".hpp"))
+        {
+            idl_fileOutPrintf(idl_fileCur(), "#include \"%s\"\n", includeFile);
+        }
+        else
+        {
+            idl_fileOutPrintf(idl_fileCur(), "#include \"%s.h\"\n", includeFile);
+        }
         if(idl_dllGetHeader() != NULL)
         {
             idl_fileOutPrintf(idl_fileCur(), "%s\n", idl_dllGetHeader());
         }
     }
 
-    /* Generate inclusion of standard SPLICE-DDS type definition files */
+    /* Generate inclusion of standard OpenSpliceDDS type definition files */
     idl_fileOutPrintf(idl_fileCur(), "#include <c_base.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "#include <c_misc.h>\n");
     idl_fileOutPrintf(idl_fileCur(), "#include <c_sync.h>\n");

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -224,19 +224,16 @@ void DDS::ccpp_PublicationBuiltinTopicData_copyOut(
     DDS::ccpp_GroupDataQosPolicy_copyOut(from.group_data, to.group_data);
 }
 
-void DDS::ccpp_CallBack_DeleteUserData( void * entityData, void * userData)
+void ccpp_CallBack_DeleteUserData( void * userData, void * arg)
 {
-  if (entityData)
+  if (userData)
   {
     CORBA::Object_ptr cObject;
     CORBA::LocalObject_ptr anObject;
-    DDS::ccpp_UserData_ptr myUD;
 
-    cObject = static_cast<CORBA::Object_ptr>(entityData);
+    cObject = static_cast<CORBA::Object_ptr>(userData);
     anObject = dynamic_cast<CORBA::LocalObject_ptr>(cObject);
     CORBA::release(anObject);
-    myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)userData);
-    delete myUD;
   }
 }
 
@@ -267,5 +264,6 @@ void DDS::ccpp_SampleInfo_copyOut(const gapi_sampleInfo & from, DDS::SampleInfo 
     to.sample_rank                 = from.sample_rank;
     to.generation_rank             = from.generation_rank;
     to.absolute_generation_rank    = from.absolute_generation_rank;
+    ccpp_TimeStamp_copyOut(from.reception_timestamp, to.reception_timestamp);
 }
 

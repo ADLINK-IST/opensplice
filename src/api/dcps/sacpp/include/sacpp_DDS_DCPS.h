@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,7 +15,11 @@
 #include "os_defs.h"
 #include "os_stdlib.h"
 #include "sacpp_if.h"
+#include <string.h>
 
+/**
+ * @file
+ * @bug OSPL-2272 We've no business/should have no need to define NULL, TRUE, & FALSE. Wrongly. */
 #if !defined NULL
 #define NULL ((void *)0)
 #endif
@@ -48,6 +52,8 @@ template <class T> class DDS_DCPS_mgr;
 namespace DDS
 {
    // Primitive types
+   /**
+    * @bug OSPL-918 This should be bool */
    typedef os_uchar Boolean;
    typedef Boolean& Boolean_out;
    typedef Boolean* Boolean_ptr;
@@ -170,14 +176,14 @@ SACPP_API inline void DDS::string_free (char * str)
 {
    delete [] str;
 }
- 
+
 SACPP_API inline char * DDS::string_dup (const char * s)
 {
    char * ret = 0;
 
    if (s)
    {
-      ret = DDS::string_alloc (strlen (s));
+      ret = DDS::string_alloc ((DDS::ULong)strlen (s));
       os_strcpy (ret, s);
    }
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -20,7 +20,7 @@ public class MetaEnum extends MetaField{
     /**
      * Array of possible values of the enumeration.
      */
-    private String[] posValues;
+    private final String[] posValues;
     
     /**
      * Constructs a new enumeration field.
@@ -59,20 +59,20 @@ public class MetaEnum extends MetaField{
         return false;
     }
   
+    @Override
     public String toString(){
-        String s = super.toString();
-        
-        s += " {";
-        
-        for(int i=0; i<posValues.length; i++){
+        StringBuffer buf = new StringBuffer();
+        buf.append(super.toString());
+        buf.append(" {");
+        for (int i = 0; i < posValues.length; i++) {
             if(i != 0){
-                s+= ", " + posValues[i];
-            } else{
-                s+= posValues[i];
+                buf.append(", " + posValues[i]);
+            } else {
+                buf.append(posValues[i]);
             }
         }
-        s+= "}";
-        return s;
+        buf.append("}");
+        return buf.toString();
     }
 }
 

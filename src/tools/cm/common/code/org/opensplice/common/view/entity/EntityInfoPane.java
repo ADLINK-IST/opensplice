@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -79,6 +79,7 @@ public class EntityInfoPane extends JEditorPane{
              * This makes the GUI keep responding while processing.
              */
             Runnable worker = new Runnable() {
+                @Override
                 public void run() {
                     ep.setEditorKit(ek);
                     curContentType = ek.getContentType();
@@ -136,7 +137,7 @@ public class EntityInfoPane extends JEditorPane{
     /**
      * Current entity formatter.
      */
-    private EntityInfoFormatter infoFormatter;
+    private transient EntityInfoFormatter infoFormatter;
     
     /**
      * Current content type. Currently supported types:

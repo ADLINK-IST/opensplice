@@ -1,0 +1,34 @@
+// -*- MPC -*-
+// $Id:$
+
+project (build*) : ospl_dcpssacpp, ospl_build_lib {
+    dynamicflags = BUILD_OMG_DDS_API
+
+    sharedname = dcpsisocpp
+    // Always put $BOOST_ROOT on 'in case' users want to rebuild. DO NOT remove the trailing /.
+    includes += $(BOOST_ROOT)/.
+}
+
+feature(!src_co) {
+    recurse = 1
+    Source_Files {
+        isocpp
+    }
+
+    Header_Files {
+        $(OSPL_HOME)/include/dcps/C++/isocpp
+    }
+    includes += $(OSPL_HOME)/include/dcps/C++/isocpp
+}
+
+feature(src_co) {
+    recurse = 1
+    Source_Files {
+        code
+    }
+
+    Header_Files {
+        include
+    }
+    includes += include
+}

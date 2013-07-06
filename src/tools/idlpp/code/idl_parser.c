@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -30,7 +30,7 @@ idl_parseFile(
     /* Create a database on heap */
     if (base == NULL) {
         base = c_create("preprocessor",NULL,0, 0);
-        if (idl_defineUnsupportedTypes(base)) {
+        if (base != NULL && idl_defineUnsupportedTypes(base)) {
             base = NULL;
         }
     }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -18,8 +18,9 @@ extern "C" {
 
 #include "v_status.h"
 #include "os_if.h"
+#include "v_readerSample.h"
 
-typedef c_bool
+typedef v_actionResult
 (*u_readerAction)(
     c_object o,
     c_voidp copyArg);

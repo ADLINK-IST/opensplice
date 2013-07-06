@@ -17,8 +17,8 @@ convert_windows_path ()
         CYGWIN_NT*)
             if [ ! -d "$1" ]
             then
-            	  echo "ERROR: Path $1 does not exist"
-            	  return 1
+                echo "ERROR: Path $1 does not exist"
+                return 1
             fi
             #Make it a dos path to remove all spaces
             DOS_CONV_PATH=`cygpath -d "$1"`
@@ -120,17 +120,27 @@ csharp_check ()
         then
             if [ ! -f "/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/v2.0.50727/al.exe" ]
             then
-                if [ ! -f "/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v6.0A/bin/al.exe" ]
+                if [ ! -f "/cygdrive/$MAIN_DRIVE/Program Files (x86)/Microsoft SDKs/Windows/v7.0A/bin/x64/al.exe" ]
                 then
-                    if [ ! -f "/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v5.0A/bin/al.exe" ]
-                    then
-                        echo "Error - no Assembly Linker found (al.exe). Please *PREFIX* its location to your PATH"
-                        return 1
-                    else
-                        PATH="$PATH:/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v5.0A/bin/"
-                    fi
+                   if [ ! -f "/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v7.0A/bin/al.exe" ]
+                   then
+                      if [ ! -f "/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v6.0A/bin/al.exe" ]
+                      then
+                         if [ ! -f "/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v5.0A/bin/al.exe" ]
+                         then
+                             echo "Error - no Assembly Linker found (al.exe). Please *PREFIX* its location to your PATH"
+                             return 1
+                         else
+                             PATH="$PATH:/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v5.0A/bin/"
+                         fi
+                      else
+                         PATH="$PATH:/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v6.0A/bin/"
+                      fi
+                   else
+                        PATH="$PATH:/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v7.0A/bin"
+                   fi
                 else
-                    PATH="$PATH:/cygdrive/$MAIN_DRIVE/Program Files/Microsoft SDKs/Windows/v6.0A/bin/"
+                     PATH="$PATH:/cygdrive/$MAIN_DRIVE/Program Files (x86)/Microsoft SDKs/Windows/v7.0A/bin/x64"
                 fi
             else
                 PATH="$PATH:/cygdrive/$MAIN_DRIVE/Windows/Microsoft.NET/Framework/v2.0.50727/"
@@ -146,57 +156,77 @@ csharp_check ()
 msvs_check ()
 {
     echo -n "VS: "
-    pathcheck cl.exe
-    if [ $? != 0 ]
+
+    if [ -n "$VS_HOME" ]
     then
-        if [ -z "$VS_HOME" ]
-        then
-            echo "ERROR - No VS_HOME not set"
-            return 1
-        fi
         if [ ! -d "$VS_HOME" ]
         then
             echo "ERROR - $VS_HOME is not set to a directory"
             return 1
         fi
+        set_var VS_HOME "$VS_HOME"
     else
-        CL_EXE=`which cl.exe`
-        if [ "$?" != "0" ]
+        pathcheck cl.exe
+        if [ $? = 0 ]
         then
-            echo "ERROR - cl.exe not found"
+            CL_EXE=`which cl.exe`
+            if [ "$?" != "0" ]
+            then
+                echo "ERROR - cl.exe not found"
+                return 1
+            fi
+            VS_HOME=`dirname "$CL_EXE"`
+            VS_HOME=`dirname "$VS_HOME"`
+            VS_HOME=`dirname "$VS_HOME"`
+            set_var VS_HOME "$VS_HOME"
+        else
+            echo "ERROR - No VS_HOME not set"
             return 1
         fi
-  	    VS_HOME=`dirname $CL_EXE`
-  	    VS_HOME=`dirname $VS_HOME`
-  	    VS_HOME=`dirname $VS_HOME`
-        set_var VS_HOME "$VS_HOME"
     fi
+
     convert_windows_path "$VS_HOME"
     if [ $? != 0 ]
     then
         return 1
     fi
 
+    PATH_ADDON=""
+    SDK_PATH_ADDON=""
+    case ${SPLICE_HOST} in
+    x86_64.*)
+        PATH_ADDON="amd64"
+        SDK_PATH_ADDON="x64"
+        ;;
+    esac
+
     if [ -d "$UNIX_CONV_PATH/Vc7" ]
     then
-        PATH="$UNIX_CONV_PATH/Vc7/bin:$PATH"
+        PATH="$UNIX_CONV_PATH/Vc7/bin/${PATH_ADDON}:$PATH"
     else
-        PATH="$UNIX_CONV_PATH/VC/bin:$PATH"
+        PATH="$UNIX_CONV_PATH/VC/bin/${PATH_ADDON}:$PATH"
     fi
     PATH="$UNIX_CONV_PATH/Common7/IDE:$PATH"
     PATH="$OSPL_OUTER_HOME/testsuite/lib/$SPLICE_HOST:$PATH"
     set_var PATH "$PATH"
 
     COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
+    case ${SPLICE_HOST} in
+    x86_64.*)
+        COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$7; }'`
+        ;;
+    esac
+
     if [ -z $COMPILER_VER ]
     then
         echo "ERROR - Compiler version cannot be determined"
         return 1
     fi
+    set_var OSPL_COMPILER_VER "$COMPILER_VER"
     CL_MAJOR=`echo $COMPILER_VER | cut -f 1 -d .`
     if [ $CL_MAJOR -lt 13 ]
     then
-        echo "ERROR - Only .NET 2005 and above supported"
+        echo "ERROR - Only .NET 2003 and above supported"
         echo "  got cl version [$COMPILER_VER]"
         return 1
     fi
@@ -208,6 +238,7 @@ msvs_check ()
         LIBPATH="$DOS_CONV_PATH\Vc7\atlmfc\lib"
         LIB="$DOS_CONV_PATH\Vc7\lib;$DOS_CONV_PATH\Vc7\atlmfc\lib"
         FrameworkSDKDir="$UNIX_CONV_PATH/SDK/v1.1"
+        VS_YEAR=2003
         set_var FrameworkSDKDir "$FrameworkSDKDir"
         set_var LIBPATH "$LIBPATH"
         set_var LIB "$LIB"
@@ -217,7 +248,7 @@ msvs_check ()
     if [ $CL_MAJOR = 14 ]
     then
         COMPILER_VER="VS .NET 2005 (Visual Studio 8)"
-
+        VS_YEAR=2005
         LIBPATH="$DOS_CONV_PATH\VC\ATLMFC\LIB"
         LIB="$DOS_CONV_PATH\VC\LIB;$DOS_CONV_PATH\VC\ATLMFC\LIB"
         FrameworkSDKDir="$UNIX_CONV_PATH/SDK/v2.0"
@@ -227,24 +258,63 @@ msvs_check ()
 
     fi
 
-    if [ $CL_MAJOR = 15 ]
+    if [ "$CL_MAJOR" = "15" -o "$CL_MAJOR" = "16" ]
     then
-        COMPILER_VER="VS .NET 2008 (Visual Studio 9)"
+        if [ "$CL_MAJOR" = "15" ]
+        then
+            COMPILER_VER="VS .NET 2008 (Visual Studio 9)"
+            VS_YEAR=2008
+            SDK_VERSION="v6.0A"
+        else
+            COMPILER_VER="VS .NET 2010 (Visual Studio 10)"
+            VS_YEAR=2010
+            SDK_VERSION="v7.0A"
+        fi
 
-        LIB="$DOS_CONV_PATH\VC\LIB;"
-        SDK_DIR="$UNIX_CONV_PATH/../Microsoft SDKs/Windows/v6.0A"
+        LIB="$DOS_CONV_PATH\VC\LIB\${PATH_ADDON};"
+        if [ -n "$WINDOWSSDKDIR" ]
+        then
+            convert_windows_path "$WINDOWSSDKDIR"
+            SDK_DIR="$UNIX_CONV_PATH"
+        else
+            SDK_DIR="$UNIX_CONV_PATH/../../Program Files/Microsoft SDKs/Windows/$SDK_VERSION"
+            WINDOWSSDKDIR=$SDK_DIR
+        fi
+        convert_windows_path "$SDK_DIR"
         FrameworkSDKDir=`cygpath -u "$SDK_DIR"`
-        PATH="$FrameworkSDKDir/bin:$PATH"
+        PATH="$FrameworkSDKDir/bin/${SDK_PATH_ADDON}:$PATH"
+        LIB="$DOS_CONV_PATH\LIB\${PATH_ADDON};"
         set_var FrameworkSDKDir "$FrameworkSDKDir"
-        set_var LIBPATH "$LIBPATH"
         set_var LIB "$LIB"
     fi
-
     echo "OK - using $COMPILER_VER"
 
     VS_VER=$CL_MAJOR
     set_var VS_VER "$VS_VER"
 
+    # Right now we only absolutely need devenv for
+    # ISO C++
+    if [ "$INCLUDE_API_DCPS_ISOCPP" != "no" ]
+    then
+        echo -n "Visual Studio builder: "
+        which devenv.com > /dev/null 2>&1
+        if [ $? != 0 ]
+        then
+            which VCExpress.exe > /dev/null 2>&1
+            if [ $? != 0 ]
+            then
+                printf "ERROR: devenv.com or VCExpress.exe not available on the path when Visual Studio compilation configured.\n"
+                printf "PATH is $PATH\n"
+                printf "VS_HOME is $VS_HOME\n"
+                return 1
+            else
+                set_var OSPL_DEVENV VCExpress.exe
+            fi
+        else
+            set_var OSPL_DEVENV devenv.com
+        fi
+        echo "OK - using $OSPL_DEVENV"
+    fi
     return 0
 }
 
@@ -260,22 +330,39 @@ gcc_check ()
         return 1
     fi
 
-    GCC_MAJOR=`gcc -dumpversion | cut -f 1 -d .`
+    GCC_FULLVERSION=`gcc -dumpversion`
+    GCC_MAJOR=`echo $GCC_FULLVERSION | cut -f 1 -d .`
     if [ $GCC_MAJOR -lt 3 ]
     then
         echo "ERROR - Only gcc 3.2 and above is supported"
         return 1
     fi
 
-    GCC_MINOR=`gcc -dumpversion | cut -f 2 -d .`
+    GCC_MINOR=`echo $GCC_FULLVERSION | cut -f 2 -d .`
     if [ $GCC_MAJOR -eq 3 -a $GCC_MINOR -lt 2 ]
     then
         echo "ERROR - Only gcc 3.2 and above is supported"
         return 1
     fi
 
-    echo "OK - using version" `gcc -dumpversion`
+    GLIBC_VERSION=`getconf GNU_LIBC_VERSION | cut -f 2 -d ' '`
+
+    echo "OK - using version $GCC_FULLVERSION"
     return 0
+}
+
+# test that we are on glibc and get its version string
+glibc_check ()
+{
+    GLIBC_VERSION=`getconf GNU_LIBC_VERSION | cut -f 2 -d ' '`
+    if test -z $GLIBC_VERSION
+    then
+        echo "ERROR - no or unidentifed glibc"
+        return 1
+    else
+        echo "GLIBC: version $GLIBC_VERSION"
+        return 0
+    fi
 }
 
 # test if we are truing to use valgrind it is in the path
@@ -301,7 +388,7 @@ valgrind_check ()
         #setup where the default logs will go
         #will be overridden when ran in the build system
         export VG_LOG_DIR=.
-        . $OSPL_HOME/bin/valgrind_cmds
+        . "$OSPL_HOME/bin/valgrind_cmds"
     fi
     return 0
 }
@@ -317,14 +404,153 @@ sun_cc_studio12_check ()
         return 1
     fi
     cc_VER=`cc -V 2>&1 | grep '^cc:' | sed 's/\(.*Sun C \)\([0-9.]*\)\( .*\)/\2/'`
-    if [ ${cc_VER} != "5.9" ]
+    if [ ${cc_VER} != "5.9" -a ${cc_VER} != "5.10" -a ${cc_VER} != "5.11" ]
     then
-        echo "ERROR - Only SunCC 5.9 (Studio 12) is supported"
+        echo "ERROR - Only SunCC 5.9--5.11 (Studio 12) is supported"
         return 1
     fi
 
     echo "OK - using version" `cc -V 2>&1 |  grep '^cc:'`
     return 0
+}
+
+check_and_set_native_dir ()
+{
+    if [ ! -d "${!1}" ]
+    then
+       echo "ERROR: Value of \$${1} : ${!1} does not exist "
+       return 1
+    fi
+    case `uname` in
+        CYGWIN_NT*)
+            WINDOWS_PATH=`cygpath -w ${!1} 2>/dev/null`
+            if [ $? == 0 ]
+            then
+                echo "OK. \$${1} was ${!1}, set to $WINDOWS_PATH"
+                set_var ${1} ${WINDOWS_PATH}
+            else
+                echo "ERROR: Can't convert path ${!1} for \$${1} "
+                return 1
+            fi
+            ;;
+        *)
+            if [ -d ${!1} ]
+            then
+                echo "OK. Set \$${1} to ${!1} "
+                set_var ${1} ${!1}
+            fi
+            ;;
+    esac
+    return 0
+}
+
+qt_check ()
+{
+    echo -n "Qt: "
+    if [ "$OSPL_QT_IS_ON" = "no" ]
+    then
+        echo "Disabled. \$OSPL_QT_IS_ON was: no"
+        return 0
+    fi
+    if [ -n "$QTDIR" ]
+    then
+        if [ -f $QTDIR/bin/uic ]
+        then
+            QT_VERSION=`$QTDIR/bin/uic -version 2>&1 | sed 's/\([^0-9][^0-9]*\)\([0-9]\)\([^0-9].*\)/\2/'`
+            if [ "$QT_VERSION" != "4" ]
+            then
+                echo "Error \$QTDIR points to $QTDIR. This is not version 4. Please unset or set OSPL_QT_IS_ON=no"
+                return 1
+            fi
+        fi
+        check_and_set_native_dir QTDIR
+        if [ $? = 0 ]
+        then
+            set_var OSPL_QT_IS_ON yes
+            case `uname` in
+            CYGWIN_NT*)
+                convert_windows_path "$QTDIR"
+                PATH="$UNIX_CONV_PATH/bin:$PATH"
+                set_var PATH "$PATH"
+                ;;
+            *)
+            esac
+        else
+            return 1
+        fi
+    else
+        case `uname` in
+        CYGWIN_NT*)
+            # Protect against 'cygwin' Qt. It can include uic-qt4.
+            ;;
+        *)
+            pathcheck uic-qt4
+            if [ $? = 0 ]
+            then
+                echo "On. Using QT tools from the path (with -qt4 suffix)."
+                set_var QT4_TOOL_SUFFIX \-qt4
+                set_var OSPL_QT_IS_ON yes
+                return 0
+            fi
+            ;;
+        esac
+        pathcheck uic
+        if [ $? = 0 ]
+        then
+            QT_VERSION=`uic -version 2>&1 | sed 's/\([^0-9][^0-9]*\)\([0-9]\)\([^0-9].*\)/\2/'`
+            if [ "$QT_VERSION" != "4" ]
+            then
+                echo "Off. Qt tools on the path are not version 4."
+                return 0
+            fi
+            echo "On. Using QT tools from the path."
+            set_var OSPL_QT_IS_ON yes
+        else
+            echo "Off. Ok, but you're missing out on bouncing shapes..."
+        fi
+    fi
+    return 0
+}
+
+perl_check ()
+{
+    echo -n "Perl: "
+    pathcheck perl
+    if [ $? != 0 ]
+    then
+        echo "ERROR - Not found"
+        return 1
+    fi
+    PERL_VER=`perl -V:version`
+    echo "OK - using perl $PERL_VER"
+    return 0
+}
+
+boost_check ()
+{
+    if [ -n "$BOOST_ROOT" ]
+    then
+        echo -n "Boost: "
+        check_and_set_native_dir BOOST_ROOT
+        if [ $? != 0 ]
+        then
+            return 1
+        else
+            convert_windows_path "$BOOST_ROOT"
+            set_var BOOST_ROOT_UNIX $UNIX_CONV_PATH
+        fi
+    fi
+}
+
+# There are currently 56 individual config files in git that call make_check.
+# There are (AFAIK) none that don't
+global_checks ()
+{
+   ERRS=0
+   perl_check || ERRS=1
+   qt_check || ERRS=1
+   boost_check || ERRS=1
+   return $ERRS
 }
 
 # require GNU make 3.80 or 3.81
@@ -353,7 +579,8 @@ make_check ()
     fi
 
     echo "OK - using `make -v 2>/dev/null | head -1`"
-    return 0
+    global_checks
+    return $?
 }
 
 # required Bison
@@ -442,6 +669,19 @@ javac_check ()
     REQUIRED_VERSION=1.6
     REQUIRED_VERSION=`echo $REQUIRED_VERSION | sed -e 's;\.;0;g'`
 
+    if [ -z "$JAVAC_COMMAND" ] ; then
+        JAVAC_COMMAND=javac
+    fi
+
+    # Darwin hack
+    if [ -z "$JAVA_HOME" ] ; then
+        case $host in
+            Darwin*)
+          JAVA_HOME=`/usr/libexec/java_home`
+          ;;
+        esac
+    fi
+
     # Check JAVA_HOME directory first
     if [ -n "$JAVA_HOME" ]
     then
@@ -450,7 +690,7 @@ javac_check ()
         then
             return 1
         fi
-        JAVAC_EXE="$UNIX_CONV_PATH/bin/javac"
+        JAVAC_EXE="$UNIX_CONV_PATH/bin/$JAVAC_COMMAND"
         if [ ! -f "$JAVAC_EXE" ]
         then
             no_javac
@@ -460,7 +700,7 @@ javac_check ()
         set_var PATH "$PATH"
     else
         # If not check the path for java
-        pathcheck javac
+        pathcheck $JAVAC_COMMAND
         if [ $? != 0 ]
         then
             no_javac
@@ -491,21 +731,28 @@ javac_check ()
         then
             JAVA_HOME=`echo "$JAVAC_EXE" | sed 's@/bin/javac$@@' `
             set_var JAVA_HOME "$JAVA_HOME"
+            if [ "$JAVAC_VERSION" -ne "$REQUIRED_VERSION" -a ! -f "$JAVA_COMPATJAR" ]
+            then
+                if [ "$STRICT_CHECKS" = yes ]
+                then
+                    echo "ERROR - JAVA_COMPATJAR must point to rt.jar for Java 1.6"
+                    return 1
+                else
+                    echo "Warning - you should set JAVA_COMPATJAR to rt.jar for Java 1.6"
+                fi
+            fi
         else
-            echo "ERROR - Only ORACLE JAVA 1.6 and above is supported"
-            no_javac
-            return $?
+            echo "ERROR - Only Oracle JAVA 1.6 and above is supported"
+            return 1
         fi
-        if [ ! -z "$OSPL_OUTER_HOME"  -a "$JAVAC_VERSION" -ne "$REQUIRED_VERSION" ]
+        if [ ! -n "$JAVA_VERSION_OVERRIDE" -a ! -z "$OSPL_OUTER_HOME"  -a "$JAVAC_VERSION" -ne "$REQUIRED_VERSION" ]
         then
-            echo "ERROR - Only ORACLE JAVA 1.6 is supported"
-            no_javac
-            return $?
+            echo "ERROR - Only Oracle JAVA 1.6 is supported"
+            return 1
         fi
     else
-        echo "ERROR - Only ORACLE JAVA 1.6 and above is supported"
-        no_javac
-        return $?
+        echo "ERROR - Only Oracle JAVA 1.6 and above is supported"
+        return 1
     fi
 
     LD_LIBRARY_PATH="$JAVA_HOME/lib:$LD_LIBRARY_PATH"
@@ -516,11 +763,11 @@ javac_check ()
         Linux)
             if [ "$TYPE" = "x86_64" ]
             then
-		        JAVA_PATH_EXT=amd64
-		        LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/server"
-	        else
-		        JAVA_PATH_EXT=i386
-	        fi
+                JAVA_PATH_EXT=amd64
+                LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JAVA_HOME/jre/lib/$JAVA_PATH_EXT/server"
+            else
+                JAVA_PATH_EXT=i386
+            fi
             ;;
         SunOS)
             JAVA_PATH_EXT=sparc
@@ -530,12 +777,19 @@ javac_check ()
             ;;
         CYGWIN_NT*)
             JAVA_PATH_EXT=i386
+            case ${SPLICE_HOST} in
+                x86_64.*)
+                    JAVA_PATH_EXT=amd64
+                    ;;
+            esac
             PATH="$UNIX_CONV_PATH/lib:$PATH"
             PATH="$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT"
             PATH="$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/client"
             PATH="$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/native_threads"
             set_var PATH "$PATH"
             T_LD_PATH=no
+            ;;
+        Darwin)
             ;;
         *)
             echo "ERROR - Not yet supported Java setup"
@@ -553,7 +807,7 @@ javac_check ()
     fi
 
     echo "OK - using JAVAC version $JAVAC_REAL_VERSION"
-    echo "  setting JAVA_HOME to $JAVA_HOME"
+    echo "  JAVA_HOME is $JAVA_HOME"
     return 0
 }
 
@@ -580,7 +834,7 @@ gmcs_check()
            RES=$?
        else
            echo "GMCS: MONO_HOME not set, disabling SACS api build."
-           . $OSPL_HOME/setup/environment/exclude_sacs
+           . "$OSPL_HOME/setup/environment/exclude_sacs"
            RES=0
        fi
    else
@@ -588,7 +842,7 @@ gmcs_check()
        if [ $? != 0 ]
        then
            echo "   gmcs C# compiler not found, disabling SACS api build."
-           . $OSPL_HOME/setup/environment/exclude_sacs
+           . "$OSPL_HOME/setup/environment/exclude_sacs"
        fi
        RES=0
    fi
@@ -649,7 +903,7 @@ tao_check()
        if [ $? != 0 ]
        then
            echo "   TAO environment not set, disabling TAO related features."
-           . $OSPL_HOME/setup/environment/exclude_tao
+           . "$OSPL_HOME/setup/environment/exclude_tao"
        fi
        RES=0
    fi
@@ -663,12 +917,12 @@ tao_check_fn ()
     if [ -z "$TAO_ROOT" ]
     then
         pathcheck tao_idl
-        TAOIDL_EXE="$PATHCHECK_FOUND"
         if [ "$?" != "0" ]
         then
             echo "$1 - No TAO found"
             return 1
         fi
+        TAOIDL_EXE="$PATHCHECK_FOUND"
         TAO_ROOT1=`dirname "$TAOIDL_EXE"`
         TAO_ROOT=`dirname "$TAO_ROOT1"`
         set_var TAO_ROOT "$TAO_ROOT"
@@ -678,12 +932,20 @@ tao_check_fn ()
             echo "$1 - $TAO_ROOT is not set to a directory"
             return 1
         fi
+        set_var TAO_ROOT "$TAO_ROOT"
     fi
-    LD_LIBRARY_PATH="$TAO_ROOT/lib:$LD_LIBRARY_PATH"
+
+    if [ -z "$ACE_ROOT" ]
+    then
+       ACE_ROOT=$TAO_ROOT
+       set_var ACE_ROOT "$ACE_ROOT"
+    fi
+
+    LD_LIBRARY_PATH="$ACE_ROOT/lib:$TAO_ROOT/lib:$LD_LIBRARY_PATH"
     set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
     export LD_LIBRARY_PATH
 
-    PATH="$TAO_ROOT/bin:$PATH"
+    PATH="$TAO_ROOT/bin:$ACE_ROOT/lib:$ACE_ROOT/bin:$PATH"
     set_var PATH "$PATH"
 
     TAO_VERSION=`tao_idl -V 2>&1 | grep "PrismTech Version"`
@@ -701,7 +963,6 @@ tao_check_fn ()
             return 1
         fi
     else
-        set_var ACE_ROOT "$TAO_ROOT"
         T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 1.4.1\"`"
         if [ $? = 0 ]
         then
@@ -728,6 +989,8 @@ tao_check_fn ()
     set_var SPLICE_ORB $SPLICE_ORB
     echo "OK - SPLICE_ORB is TAO $TAO_VERSION"
     echo "  setting TAO_ROOT to $TAO_ROOT"
+    TAO_ROOT_NORMALIZED=`"$OSPL_HOME/bin/ospl_normalizePath" "$TAO_ROOT"`
+    set_var TAO_ROOT_NORMALIZED $TAO_ROOT_NORMALIZED
     return 0
 }
 
@@ -757,155 +1020,58 @@ jacorb_check()
        if [ $? != 0 ]
        then
            echo "   JACORB environment not set, disabling JACORB related features."
-           . $OSPL_HOME/setup/environment/exclude_jacorb
+           . "$OSPL_HOME/setup/environment/exclude_jacorb"
        fi
        RES=0
    fi
    return $RES
 }
 
-# converts mixed to unix paths. This operates on CLASSPATH
-
-convert_native_classpath_to_unix_classpath ()
-{
-    case `uname` in
-      CYGWIN_NT*)
-         WIN32CP=true
-    esac
-
-    # Segments of classpath on windows ( seperated by ; ) may only have one
-    # : character as either the first or second character.
-    if [ "$WIN32CP" = "true" ]
-    then
-        for i in `echo $CLASSPATH | tr ' ' '%' | tr ';' ' '`
-        {
-            CPS=`echo $i| tr '%' ' ' `
-            J=`echo $i | grep ':'`
-            if [ "$J" != "" ]
-            then
-                case $J in
-                   :*)
-                      echo $J | grep '^:' | grep -v '^:[^:]*$' > /dev/null
-                      RES=$?
-                      ;;
-                   *)
-                      echo $J | grep -v '^[^:]:[^:]*$' > /dev/null
-                      RES=$?
-                      ;;
-                esac
-                if [ $RES = 0 ]
-                then
-                    echo
-                    echo "ERROR: Invalid CLASSPATH segment \"$CPS\""
-                    return 1 || return 1
-                fi
-            fi
-        }
-
-        LIST_CLASSPATHS=`echo $CLASSPATH | tr ' ' '%' | tr ';' ' ' | tr '\\\' '/' \
-                               | sed 's@\(.\):@/cygdrive/\1@g'`
-        CLASSPATH=`echo $CLASSPATH | sed 's@\([^;]\):@/cygdrive/\1@g' | tr ';' ':' | tr '\\\' '/'`
-    else
-        LIST_CLASSPATHS=`echo $CLASSPATH | tr ' ' '%' | tr ':' ' '`
-    fi
-}
-
-# converts a unix path to the appropriate format on the native system
-convert_unix_classpath_to_native_classpath ()
-{
-    case `uname` in
-      CYGWIN_NT*)
-         WIN32CP=true
-    esac
-
-    if [ "$WIN32CP" = "true" ]
-    then
-        WIN_CPATH=`echo "$CLASSPATH" | tr ' ' '%' | tr ':' ' '`
-        CLASSPATH=""
-
-        for i in $WIN_CPATH
-        do
-            CP=`echo $i | tr '%' ' '`
-            CLASSPATH=`cygpath -w "$CP"`\;"$CLASSPATH"
-        done
-    fi
-}
-
-# jacorb_check - should be on the CLASSPATH
+# jacorb_check - should have JACORB_HOME
 jacorb_check_fn ()
 {
     echo -n "JACORB: "
 
-    convert_native_classpath_to_unix_classpath
-    FOUND_IN_CLASSPATH=false
-    for i in $LIST_CLASSPATHS
-    do
-        i=`echo $i | tr '%' ' '`
-        if [ `basename '$i'` = "jacorb.jar" -o `basename '$i'` = "avalon-framework.jar" -o `basename '$i'` = "logkit.jar" ]
-        then
-            FOUND_IN_CLASSPATH=true
-            JACORB_HOME=`dirname '$i'`
-            JACORB_HOME=`dirname $JACORB_HOME`
-            set_var JACORB_HOME "$JACORB_HOME"
-            break
-        fi
-    done
-
-    if [ "$FOUND_IN_CLASSPATH" != "true" ]
-    then
-        if test ! -d "$JACORB_HOME"
-        then
-            echo "$1 - JACORB_HOME is not a directory"
-            return 1
-        fi
-    fi
-
     if [ -z "$JACORB_HOME" ]
     then
-        echo "$1 - JACORB_HOME not set and cannot find jacorb.jar in CLASSPATH"
+        echo "$1 - JACORB_HOME not set"
         return 1
     fi
 
-    if [ "$FOUND_IN_CLASSPATH" != "true" ]
+    if test ! -d "$JACORB_HOME"
     then
-        if [ ! -f "$JACORB_HOME/lib/endorsed/jacorb.jar" ]
-        then
-            echo "$1 - $JACORB_HOME/lib/endorsed/jacorb.jar in CLASSPATH invalid"
-            return 1
-        fi
-        CLASSPATH="$JACORB_HOME/lib/endorsed/jacorb.jar:$CLASSPATH"
-
-        if [ ! -f "$JACORB_HOME/lib/endorsed/logkit.jar" ]
-        then
-            echo "$1 - $JACORB_HOME/lib/endorsed/logkit.jar in CLASSPATH invalid"
-            return 1
-        fi
-        CLASSPATH="$JACORB_HOME/lib/endorsed/logkit.jar:$CLASSPATH"
-
-        if [ ! -f "$JACORB_HOME/lib/endorsed/avalon-framework.jar" ]
-        then
-            echo "$1 - $JACORB_HOME/lib/endorsed/avalon-framework.jar in CLASSPATH invalid"
-            return 1
-        fi
-        CLASSPATH="$JACORB_HOME/lib/endorsed/avalon-framework.jar:$CLASSPATH"
-        if [ ! -f "$JACORB_HOME/lib/idl.jar" ]
-        then
-            echo "$1 - $JACORB_HOME/lib/idl.jar in CLASSPATH invalid"
-            return 1
-        fi
-        CLASSPATH="$JACORB_HOME/lib/idl.jar:$CLASSPATH"
-
-        convert_unix_classpath_to_native_classpath
-        set_var CLASSPATH "$CLASSPATH"
+        echo "$1 - JACORB_HOME is not a directory"
+        return 1
     fi
+
+    if [ ! -f "$JACORB_HOME/lib/endorsed/jacorb.jar" ]
+    then
+        echo "$1 - $JACORB_HOME/lib/endorsed/jacorb.jar is not a file"
+        return 1
+    fi
+
+    if [ ! -f "$JACORB_HOME/lib/endorsed/logkit.jar" ]
+    then
+        echo "$1 - $JACORB_HOME/lib/endorsed/logkit.jar is not a file"
+        return 1
+    fi
+
+    if [ ! -f "$JACORB_HOME/lib/endorsed/avalon-framework.jar" ]
+    then
+        echo "$1 - $JACORB_HOME/lib/endorsed/avalon-framework.jar is not a file"
+        return 1
+    fi
+
+    if [ ! -f "$JACORB_HOME/lib/idl.jar" ]
+    then
+        echo "$1 - $JACORB_HOME/lib/idl.jar is not a file"
+        return 1
+    fi
+
     echo "OK"
-    echo "  setting JACORB_HOME to $JACORB_HOME"
-    if [ "$FOUND_IN_CLASSPATH" != "true" ]
-    then
-        echo "  \$JACORB_HOME/lib/endorsed/jacorb.jar added to CLASSPATH"
-        echo "  \$JACORB_HOME/lib/endorsed/logkit.jar added to CLASSPATH"
-        echo "  \$JACORB_HOME/lib/endorsed/avalon-framework.jar added to CLASSPATH"
-    fi
+    echo "  JACORB_HOME is $JACORB_HOME"
+    JACORB_HOME_NORMALIZED=`"$OSPL_HOME/bin/ospl_normalizePath" "$JACORB_HOME"`
+    set_var JACORB_HOME_NORMALIZED "$JACORB_HOME_NORMALIZED"
     return 0
 }
 
@@ -914,8 +1080,9 @@ zlib_check ()
     echo -n "zlib: "
     if [ -z "$ZLIB_HOME" ]
     then
-        echo "ERROR - No ZLIB_HOME set"
-        return 1
+        echo "zlib environment not set, disabling related features."
+        . "$OSPL_HOME/setup/environment/exclude_zlib"
+        return 0
     fi
     if [ ! -f "$ZLIB_HOME/zlib.h" ]
     then
@@ -924,6 +1091,96 @@ zlib_check ()
     fi
 
     echo OK
+    return 0
+}
+
+doxygen_check ()
+{
+    echo -n "Doxygen: "
+    command -v doxygen >/dev/null 2>&1
+    DOXYGEN_INSTALLED=$?
+    if [ $DOXYGEN_INSTALLED -ne 0 ]
+    then
+        command -v git >/dev/null 2>&1
+        GIT_INSTALLED=$?
+        if [ $GIT_INSTALLED -ne 0 ]
+        then
+            if [ "IS_SCOREBOARD_BUILD" = "yes" ]
+            then
+                echo "ERROR: no doxygen or git installed, no way to get generated docs."
+                return 1
+            else
+                echo "Warning: no doxygen or git installed"
+                echo "  Some generated docs will not be available"
+                set_var OSPL_DOCS none
+                return 0
+            fi
+        fi
+        git ls-remote git://repository2.prismtech.com/ospl_docs &> /dev/null
+        REPO_CHECK=$?
+        if [ $REPO_CHECK -ne 0 ]
+        then
+            if [ "IS_SCOREBOARD_BUILD" = "yes" ]
+            then
+                echo "ERROR: doc repo cannot be reached and doxygen not installed"
+                return 1       
+            else
+                echo "Warning: doc repo cannot be reached and doxygen not installed"
+                echo "  Some generated docs will not be available"
+                set_var OSPL_DOCS none
+                return 0
+            fi       
+        fi
+        echo "OK: no doxygen installed, will attempt to retreive docs from git repo"
+        return 0
+    fi
+
+    echo OK
+    return 0
+}
+
+# OpenORB - OPENORB_HOME should be set
+openorb_check ()
+{
+   if [ "$STRICT_CHECKS" = "yes" ]
+   then
+       openorb_check_fn "ERROR"
+       RES=$?
+   else
+       openorb_check_fn "Warning"
+       if [ $? != 0 ]
+       then
+           echo "   OpenOrb environment not set, disabling OpenOrb related features."
+           . "$OSPL_HOME/setup/environment/exclude_openorb"
+       fi
+       RES=0
+   fi
+   return $RES
+}
+
+openorb_check_fn ()
+{
+    echo -n "OpenORB: "
+    if test ! $OPENORB_VERSION
+    then
+        echo "$1 - OPENORB_VERSION is not set"
+        return 1
+    fi
+    set_var OPENORB_VERSION $OPENORB_VERSION
+
+    if [ -z "$OPENORB_HOME" ]
+    then
+        echo "$1 - OPENORB_HOME not set"
+        return 1
+    else
+        echo "OK"
+    fi
+
+    ESCAPED_OPENORB_HOME=`echo "$OPENORB_HOME" | sed 's/ /\\\\ /g'`
+    export ESCAPED_OPENORB_HOME
+    set_var ESCAPED_OPENORB_HOME "$ESCAPED_OPENORB_HOME"
+
+    echo "  OPENORB_HOME is $OPENORB_HOME"
     return 0
 }
 
@@ -937,19 +1194,22 @@ cleanup_checks ()
     unset javac_check
     unset no_javac
     unset tao_check
+    unset tao_check_fn
     unset gawk_check
     unset csharp_check
     unset jacorb_check
-    unset openssl_check
     unset valgrind_check
     unset zlib_check
+    unset openorb_check
+    unset openorb_check_fn
+    unset doxygen_check
     unset PATHCHECK_FOUND
-    unset GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION JAVAC_REAL_VERSION
+    unset GCC_FULLVERSION GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION JAVAC_REAL_VERSION
     unset GMCS_VERSION GMCS_REAL_VERSION GMCS_VERSION_OUTPUT GMCS_REQUIRED_VERSION GMCS_REQUIRED_VER
     unset MAKE_MAJOR MAKE_MINOR BISON_MAJOR FLEX_MAJOR FLEX_MINOR
     unset REQUIRED_VERSION JAVAC_EXE JAVAC_VERSION MAIN_DRIVE
     unset T_JAVAC_EXE TAOIDL_EXE T_VAR SPATH TAO_ROOT1
     unset GAWK_VERSION JAVA_PATH_EXT CL_MAJOR COMPILER_VER CL_EXE
     unset VS_HOME_UNIX VS_HOME_DOS DOS_CONV_PATH UNIX_CONV_PATH T_LD_PATH
-    unset CSC_EXE VERSIONS NET_VERSION TYPE
+    unset CSC_EXE VERSIONS NET_VERSION TYPE PATH_ADDON SDK_PATH_ADDON
 }

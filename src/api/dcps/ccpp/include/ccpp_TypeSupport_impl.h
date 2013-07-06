@@ -1,19 +1,19 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef __DCPS_TYPESUPPORT_IMPL_H
 #define __DCPS_TYPESUPPORT_IMPL_H
 
-#include "gapi.h"
 #include "ccpp.h"
+#include "gapi.h"
 #include "ccpp_Utils.h"
 #include "ccpp_Publisher_impl.h"
 #include "ccpp_Subscriber_impl.h"
@@ -22,7 +22,7 @@
 
 namespace DDS {
 
-    class OS_DCPS_API TypeSupportFactory_impl : 
+    class OS_DCPS_API TypeSupportFactory_impl :
             public virtual ::DDS::TypeSupportFactory,
             public LOCAL_REFCOUNTED_OBJECT
     {
@@ -46,9 +46,10 @@ namespace DDS {
         create_view (gapi_dataReaderView handle) = 0;
     };
 
+
     typedef TypeSupportFactory_impl *TypeSupportFactory_impl_ptr;
 
-    class OS_DCPS_API TypeSupport_impl : 
+    class OS_DCPS_API TypeSupport_impl :
             public virtual ::DDS::TypeSupport,
             public LOCAL_REFCOUNTED_OBJECT
     {
@@ -60,11 +61,12 @@ namespace DDS {
     	TypeSupport_impl(
             const gapi_char *type_name,
             const gapi_char *type_keys,
-            const gapi_char *type_def,
+            const gapi_char *type_def[],
             gapi_copyIn copy_in,
             gapi_copyOut copy_out,
             gapi_readerCopy reader_copy,
-            TypeSupportFactory_impl_ptr factory
+            TypeSupportFactory_impl_ptr factory,
+            const CORBA::ULong type_def_length
         );
 
     public:

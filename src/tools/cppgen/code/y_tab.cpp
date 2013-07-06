@@ -142,7 +142,7 @@ typedef union
 #define YYCONST
 #endif
 
-#if !defined(WIN32) && !defined(__Lynx__) && !defined(__QNXNTO__) && !defined(DDS_NETBSD)
+#if !defined(WIN32) && !defined(__Lynx__) && !defined(__QNXNTO__) && !defined(DDS_NETBSD) && !defined(_DARWIN_C_SOURCE)
 #include <values.h>
 #endif
 

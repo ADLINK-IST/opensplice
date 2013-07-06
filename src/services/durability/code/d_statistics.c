@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -304,25 +304,6 @@ d_adminStatisticsInfoFree(
     }
 }
 
-static void
-collectNsWalk(
-    d_nameSpace ns, void* userData)
-{
-    c_iter nameSpaces = (c_iter)userData;
-    if (ns)
-    {
-        d_objectKeep(d_object(ns));
-        c_iterInsert (nameSpaces, ns);
-    }
-}
-
-static void
-deleteNsWalk(
-   void* o, void* userData)
-{
-    d_objectFree(d_object(o), D_NAMESPACE);
-}
-
 void
 d_statisticsUpdateConfiguration(
     v_durabilityStatistics ds,
@@ -342,11 +323,9 @@ d_statisticsUpdateConfiguration(
     config     = d_durabilityGetConfiguration(durability);
     master     = 0;
     slave      = 0;
-    nameSpaces = c_iterNew(NULL);
-
     
     /* Collect namespaces from administration */
-    d_adminNameSpaceWalk(admin, collectNsWalk, nameSpaces);
+    nameSpaces = d_adminNameSpaceCollect(admin);
     nameSpaceCount = c_iterLength(nameSpaces);
 
     for(i=0; i<nameSpaceCount; i++){
@@ -363,8 +342,7 @@ d_statisticsUpdateConfiguration(
     ds->nameSpacesSlave  = slave;
     
     /* Free collected namespaces */
-    c_iterWalk(nameSpaces, deleteNsWalk, NULL);
-    c_iterFree (nameSpaces);
+    d_adminNameSpaceCollectFree(admin, nameSpaces);
 
     return;
 }

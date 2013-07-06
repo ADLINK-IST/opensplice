@@ -1,0 +1,22 @@
+// -*- MPC -*-
+// $Id:$
+
+project : java_only {
+    requires += ospl_dcpscj
+}
+
+feature(!src_co) {
+    libpaths += $(OSPL_HOME)<%slash%>jar<%slash%>dcpscj.jar
+    specific(prop:windows) {
+      compile_flags += -endorseddirs \"%JACORB_HOME%<%slash%>lib<%slash%>endorsed\"
+    } else {
+      compile_flags += -endorseddirs \"$(JACORB_HOME)<%slash%>lib<%slash%>endorsed\"
+    }
+}
+
+feature(src_co) {
+    libpaths += $(OSPL_HOME_NORMALIZED)<%slash%>jar<%slash%>$(SPLICE_TARGET)<%slash%>dcpscj.jar
+    specific (prop:java) {
+        compile_flags += -endorseddirs \"$(JACORB_HOME_NORMALIZED)<%slash%>lib<%slash%>endorsed\"
+    }
+}

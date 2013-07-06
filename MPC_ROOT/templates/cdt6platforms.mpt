@@ -1,0 +1,188 @@
+// -*- MPC -*-
+//
+// $Id$
+//
+// Any of these platforms can be set using
+//   -value_template platforms="blah blah blah"
+// when generating a CDT project/workspace combo.  The default is to use the
+// platform that matches the host that's running MPC (see fill_value() in
+// CDT6ProjectCreator.pm).
+//
+
+//
+// Platforms
+//
+
+conditional_include "common"
+conditional_include "unixcommon" // We include this at the global b/c most
+                                 // platforms are unix-ish.  windowscommon
+                                 // overrides these in the relevant scopes.
+
+// These will have platform_specializer appended if it's defined
+configuration_parent_root = cdt.managedbuild.config.gnu
+toolchain_superclass_root = cdt.managedbuild.toolchain.gnu
+toolchain_internal_builder_root = cdt.managedbuild.target.gnu.builder
+targetplatform_superclass = cdt.managedbuild.target.gnu.platform
+outputtype_superclass = cdt.managedbuild.tool.gnu.cpp.linker.output
+
+// These are just defaults
+exe_ext_nodot =
+dll_ext_nodot = so
+lib_ext_nodot = a
+tool_name_prefix = GNU
+c_linker_tool_superclass_root = cdt.managedbuild.tool.gnu.c.linker // must have .so.debug appended
+cpp_linker_tool_superclass_root = cdt.managedbuild.tool.gnu.cpp.linker // must have .so.debug appended
+linker_option_superclass = gnu.cpp.link.option // must have .XXX appended
+cpp_compiler_option_superclass = gnu.cpp.compiler.option
+c_compiler_superclass = ???
+c_compiler_option_superclass = gnu.c.compiler.option
+project_element_type_id = cdt.managedbuild.target.gnu
+c_linker_dynamiclib_superclass = gnu.c.link.so.debug.option.shared
+cpp_linker_dynamiclib_superclass = gnu.cpp.link.so.debug.option.shared
+cpp_linker_tool_input_superclass = cdt.managedbuild.tool.gnu.cpp.linker.input
+
+linux {
+  binary_parsers = org.eclipse.cdt.core.ELF
+  error_parsers = org.eclipse.cdt.core.GASErrorParser org.eclipse.cdt.core.GLDErrorParser org.eclipse.cdt.core.GCCErrorParser
+  threadflags = -pthread
+  platform_libs += rt dl
+}
+
+// cellppu is an example for how to do a cross-compile (or, really, any compile using
+// tools with non-standard names).
+cellppu {
+  as = ppu-as
+  ar = ppu-ar
+  cc = ppu-gcc
+  // can set ccld to name of C Linker if different from cc
+  cxx = ppu-g++
+  // can set cxxld to name of C++ Linker if different from cxx
+
+  binary_parsers = org.eclipse.cdt.core.ELF
+  error_parsers = org.eclipse.cdt.core.GASErrorParser org.eclipse.cdt.core.GLDErrorParser org.eclipse.cdt.core.GCCErrorParser
+  threadflags = -pthread
+  platform_libs += rt dl
+}
+
+// This scope serves as an example of a custom platform.  On 64-bit linux,
+// you can compile a 32-bit binary by passing -m32 to gcc.  Using this custom
+// platform, MPC can generate CDT projects that have "Build Configurations"
+// for both 64-bit and 32-bit.  This would be enabled by running mwc.pl with
+// -value_template platforms="linux linux_m32"
+linux_m32 {
+  binary_parsers = org.eclipse.cdt.core.ELF
+  error_parsers = org.eclipse.cdt.core.GASErrorParser org.eclipse.cdt.core.GLDErrorParser org.eclipse.cdt.core.GCCErrorParser
+  ccflags += -m32
+  cxxflags += -m32
+  linkflags += -m32
+  threadflags = -pthread
+  platform_libs += rt dl
+}
+
+macosx {
+  dll_ext = .dylib
+  exe_ext_nodot =
+  dll_ext_nodot = dylib
+  lib_ext_nodot = a
+
+  binary_parsers = org.eclipse.cdt.core.MachO64
+  error_parsers = org.eclipse.cdt.core.GASErrorParser org.eclipse.cdt.core.GLDErrorParser org.eclipse.cdt.core.GCCErrorParser
+  host_platform = host_macosx
+  project_element_type_id = cdt.managedbuild.target.macosx
+  // platform_specializer gets added on to various things like configuration_parent_root, etc.
+  configuration_parent_root = cdt.managedbuild.config
+  platform_specializer = macosx
+  tool_name_prefix = "MacOS X"
+  linker_option_superclass = macosx.cpp.link.option
+  c_linker_dynamiclib_superclass = macosx.c.link.macosx.so.debug.option.shared
+  cpp_linker_dynamiclib_superclass = macosx.cpp.link.macosx.so.debug.option.shared
+  c_linker_tool_superclass_root = cdt.managedbuild.tool.macosx.c.linker.macosx // must have .so.debug appended
+  cpp_linker_tool_superclass_root = cdt.managedbuild.tool.macosx.cpp.linker.macosx // must have .so.debug appended
+cpp_linker_tool_input_superclass = cdt.managedbuild.tool.macosx.cpp.linker.input
+  outputtype_superclass = cdt.managedbuild.tool.macosx.cpp.linker.output.so
+}
+
+win32 {
+  conditional_include "windowscommon"
+
+  lib_prefix = lib // this is different from VC++ b/c we're using mingw
+
+  exe_ext_nodot = exe
+  dll_ext_nodot = dll
+  lib_ext_nodot = lib
+
+  platform_libs =
+  threadflags = -mthreads
+
+  binary_parsers = org.eclipse.cdt.core.PE
+  error_parsers = org.eclipse.cdt.core.GASErrorParser org.eclipse.cdt.core.GLDErrorParser org.eclipse.cdt.core.GCCErrorParser
+  host_platform = host_win32
+  project_element_type_id = cdt.managedbuild.target.gnu.mingw
+  platform_specializer = mingw
+  tool_name_prefix = MinGW
+  linker_option_superclass = gnu.cpp.link.option // must have .XXX appended
+  c_compiler_superclass = cdt.managedbuild.tool.gnu.c.compiler.mingw
+  c_linker_dynamiclib_superclass = gnu.c.link.mingw.so.debug.option.shared
+  cpp_linker_dynamiclib_superclass = gnu.cpp.link.mingw.so.debug.option.shared
+  c_linker_tool_superclass_root = cdt.managedbuild.tool.gnu.c.linker.mingw // must have .so.debug appended
+  cpp_linker_tool_superclass_root = cdt.managedbuild.tool.gnu.cpp.linker.mingw // must have .so.debug appended
+  cpp_linker_tool_input_superclass = cdt.managedbuild.tool.mingw.cpp.linker.input
+}
+
+cygwin {
+  binary_parsers = org.eclipse.cdt.core.PE
+  error_parsers = org.eclipse.cdt.core.GASErrorParser org.eclipse.cdt.core.GLDErrorParser org.eclipse.cdt.core.GCCErrorParser
+  host_platform = host_win32
+  platform_specializer = cygwin
+}
+
+solaris {
+  binary_parsers = org.eclipse.cdt.core.ELF
+  error_parsers = org.eclipse.cdt.core.GASErrorParser org.eclipse.cdt.core.GLDErrorParser org.eclipse.cdt.core.GCCErrorParser
+  platform_specializer = solaris
+}
+
+// default values for the host-specific variables, overridden below
+host_platform = linux
+libenv = LD_LIBRARY_PATH
+shell = sh
+script_ext = .sh
+script_hdr = #!/bin/sh
+script_tmpfile = temporary$$.src
+makefile_tmpfile = temporary$$$$.src
+setenv = export
+envvar_pre = $
+pathsep = :
+quote_echo = '
+ln = ln -sf
+
+host_macosx {
+  libenv = DYLD_LIBRARY_PATH
+}
+
+host_win32 {
+  libenv = PATH
+  shell = cmd /c
+  script_ext = .cmd
+  script_hdr = "@echo off & set TMPFILE=temporary%RANDOM%.src"
+  script_tmpfile = %TMPFILE%
+  makefile_tmpfile = temporary_mpc.src
+  setenv = set
+  envvar_pre = %
+  envvar_post = %
+  pathsep = ;
+  mkdir_pre = if not exist
+  ln = copy /y
+  quote_echo =
+}
+
+// Abstractions for different configurations
+release {
+  optimization_level = max
+  debugging_level = none
+}
+
+debug {
+  optimization_level = none
+  debugging_level = max
+}

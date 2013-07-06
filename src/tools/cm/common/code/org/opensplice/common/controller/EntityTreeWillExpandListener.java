@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -49,6 +49,7 @@ public class EntityTreeWillExpandListener implements TreeWillExpandListener {
      * @param event The event that has occurred.
      * @throws ExpandVetoException Thrown when the node may not be collapsed.
      */
+    @Override
     public void treeWillCollapse(TreeExpansionEvent event)
             throws ExpandVetoException {
         EntityTreeNode node = ((EntityTreeNode)(event.getPath().getLastPathComponent()));
@@ -67,8 +68,8 @@ public class EntityTreeWillExpandListener implements TreeWillExpandListener {
      * @param event The event that has occurred.
      * @throws ExpandVetoException Thrown when the node may not be expanded.
      */
-    public void treeWillExpand(TreeExpansionEvent event)
-            throws ExpandVetoException {
+    @Override
+    public void treeWillExpand(TreeExpansionEvent event) throws ExpandVetoException {
         
         EntityTreeNode node = ((EntityTreeNode)(event.getPath().getLastPathComponent()));
         int childCount = node.getChildCount();
@@ -77,17 +78,20 @@ public class EntityTreeWillExpandListener implements TreeWillExpandListener {
         node.setExpanded(true);
         try {
             tree.refresh(node);
-        } catch (CommonException ce) {}
+        } catch (CommonException ce) {
+            logger.logp(Level.FINEST, "EntityTreeWillExpandListener", "treeWillExpand", "Update tree exception. "
+                    + node.getUserObject() + " childCount: " + childCount);
+        }
     }
     
     /**
      * The tree, which collapse/expansion events are being handled by this
      * listener
      */
-    private EntityTree tree;
+    private final EntityTree tree;
     
     /**
      * Logging facilities
      */
-    private Logger logger;
+    private final Logger     logger;
 }

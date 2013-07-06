@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -57,6 +57,7 @@ v_networkingStatisticsDeinit(
 {
     assert(_this!=NULL);
     assert(C_TYPECHECK(_this, v_networkingStatistics));
+    OS_UNUSED_ARG(_this);
 }
 
 c_bool

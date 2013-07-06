@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef GAPI_DATAREADER_H
@@ -56,7 +56,6 @@ C_STRUCT(_DataReader) {
     C_EXTENDS(_Entity);
     _TopicDescription               topicDescription;
     struct gapi_dataReaderListener  _Listener;
-    u_query                         uQuery;
     gapi_readerCopy                 readerCopy;
     gapi_copyIn                     copy_in;
     gapi_copyOut                    copy_out;

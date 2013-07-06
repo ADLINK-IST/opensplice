@@ -1,0 +1,11 @@
+// $Id$
+project {
+  verbatim(make, macros) {
+    WX_PORT         = $(shell $(WXWINDOWS_ROOT)/bin/wx-config --query-toolkit)
+    WX_PORT_MACRO   = $(shell $(WXWINDOWS_ROOT)/bin/wx-config --cflags |  sed 's/.*\-D__/__/; s/__ .*/__/')
+    WX_VERSION      = -$(shell $(WXWINDOWS_ROOT)/bin/wx-config --version | sed 's/^\\([0-9]*\\)\\.\\([0-9]*\\)\\.[0-9]*/\\1.\\2/')
+    WX_CHARTYPE     = $(shell $(WXWINDOWS_ROOT)/bin/wx-config --query-chartype)
+    WX_UNICODE      = $(shell echo $(WX_CHARTYPE) | sed 's!unicode!u!;s!ansi!!')
+    WX_BUILD_CONFIG = $(WX_PORT)-$(WX_CHARTYPE)
+  }
+}

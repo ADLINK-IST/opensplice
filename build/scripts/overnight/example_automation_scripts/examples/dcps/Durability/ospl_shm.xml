@@ -1,0 +1,44 @@
+<OpenSplice>
+   <Domain>
+      <Name>ospl_shm_durabilityExample</Name>
+      <Id>56</Id>
+      <Database>
+         <Size>7340032</Size>
+      </Database>
+      <Service name="durability">
+         <Command>durability</Command>
+      </Service>
+      <Service name="cmsoap">
+         <Command>cmsoap</Command>
+      </Service>
+   </Domain>
+   <DurabilityService name="durability">
+      <Network>
+         <Alignment>
+            <TimeAlignment>FALSE</TimeAlignment>
+            <RequestCombinePeriod>
+               <Initial>2.5</Initial>
+               <Operational>0.1</Operational>
+            </RequestCombinePeriod>
+         </Alignment>
+         <WaitForAttachment maxWaitCount="10">
+            <ServiceName>networking</ServiceName>
+         </WaitForAttachment>
+      </Network>
+      <NameSpaces>
+         <NameSpace name="defaultNamespace">
+            <Partition>*</Partition>
+         </NameSpace>
+         <Policy alignee="Initial" aligner="True" durability="Durable" nameSpace="defaultNamespace"/>
+      </NameSpaces>
+      <Persistent>
+         <StoreDirectory>./tmp/pstore</StoreDirectory>
+      </Persistent>
+   </DurabilityService>
+   <TunerService name="cmsoap">
+      <Server>
+         <PortNr>50000</PortNr>
+      </Server>
+   </TunerService>
+</OpenSplice>
+

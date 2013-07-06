@@ -1,8 +1,0 @@
-// -*- MPC -*-
-// $Id:$
-
-project {
-    includes += $(OSPL_HOME)/include/dcps/C++/SACPP
-}
-
-

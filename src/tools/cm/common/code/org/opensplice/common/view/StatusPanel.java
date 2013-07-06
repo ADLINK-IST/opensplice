@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,12 +11,17 @@
  */
 package org.opensplice.common.view;
 
-import javax.swing.*;
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 
 import org.opensplice.common.util.Config;
-
-import java.awt.event.*;
-import java.awt.Color;
 
 /**
  * This class provides a standard statusbar that can be placed in a window
@@ -147,6 +152,7 @@ public class StatusPanel extends JPanel{
             final String tt = toolTip;
             
             Runnable runner = new Runnable(){
+                @Override
                 public void run(){
                     if(con){
                         connectionPanel.setBackground(connectedColor);
@@ -230,28 +236,30 @@ public class StatusPanel extends JPanel{
                 status.setText(" " + myMsg);
                 status.setToolTipText(myMsg);
                 setBusy(b);
-                
-                if(!p){
-                    Timer persistentTimer = new Timer(persistentTime,
-                        new ActionListener(){
-                            public void actionPerformed(ActionEvent e){
-                                long currentTime = System.currentTimeMillis();
-                                
-                                if(((currentTime - lastMessageTime) < persistentTime) || (!lastPersistent)){
-                                    /*New message has arrived, ignore reset.*/
-                                } else {
-                                    setStatus(defaultText, false, false);
-                                }
+
+        synchronized (this) {
+            if (!p) {
+                Timer persistentTimer = new Timer(persistentTime, new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        long currentTime = System.currentTimeMillis();
+                        synchronized (org.opensplice.common.view.StatusPanel.this) {
+                            if (((currentTime - lastMessageTime) < persistentTime) || (!lastPersistent)) {
+                                /* New message has arrived, ignore reset. */
+                            } else {
+                                setStatus(defaultText, false, false);
                             }
                         }
-                    );
-                    persistentTimer.setRepeats(false);
-                    lastMessageTime = System.currentTimeMillis();
-                    persistentTimer.start();
-                    lastPersistent = true;
-                } else {
-                    lastPersistent = false;
-                }
+                    }
+                });
+                persistentTimer.setRepeats(false);
+                lastMessageTime = System.currentTimeMillis();
+                persistentTimer.start();
+                lastPersistent = true;
+            } else {
+                lastPersistent = false;
+            }
+        }
 /*
             }
 
@@ -308,7 +316,7 @@ public class StatusPanel extends JPanel{
         return status.getText();
     }
     
-    private int persistentTime = 4000;
+    private static final int persistentTime = 4000;
     
     private long lastMessageTime;
     
@@ -346,11 +354,11 @@ public class StatusPanel extends JPanel{
      */
     private JPanel statusPanel          = null;
     
-    private Color connectedColor        = Config.getActiveColor();
+    private final Color connectedColor        = Config.getActiveColor();
     
-    private Color errorColor            = Config.getErrorColor();
+    private final Color errorColor            = Config.getErrorColor();
     
-    private Color warningColor          = Config.getWarningColor();
+    private final Color warningColor          = Config.getWarningColor();
     
-    private Color disconnectedColor     = Config.getErrorColor();
+    private final Color disconnectedColor     = Config.getErrorColor();
 }

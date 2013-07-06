@@ -1,0 +1,18 @@
+// -*- MPC -*-
+// $Id:$
+
+project :  sacs_typesupport {
+
+    Source_Files {
+        ../src/*DataPublisher.cs
+    }
+
+    TypeSupport_Files {
+        ../../idl
+    }
+
+    exename = *
+    specific {
+        output_dir = .
+    }
+}

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -41,13 +41,13 @@ extern "C" {
 #define v_leaseManager(o) (C_CAST(o,v_leaseManager))
 
 /**
- * \brief This is the main operation of the leaseManager which can be called
- * when a new thread is spawned. The operation will determine the first
- * expiry time of the observed leases and wait until that expiry time is
- * reached (or a notify when the first expiry time (might have) changed.
- * It will then collect any expired leases and perform the registered
- * actions for each of the expired leases. This operation will run until
- * a terminate event sets the quit attribute of the leaseManager to FALSE.
+ * \brief This is the main routine of the leaseManager which is called
+ * when the lease manager thread is spawned. The function acts based on
+ * the 'next expiry time' of the lease manager. It waits until that moment
+ * is reached and then collects any expired leases, and performs the registered
+ * action routine for each one.
+ * The main routine will run until the quit attribute of the lease manager is set
+ * to FALSE, which happens when it is notified by a termination event.
  *
  * \param _this The leaseManager to use within this function.
  */

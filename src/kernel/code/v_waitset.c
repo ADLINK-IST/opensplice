@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -84,13 +84,11 @@ void
 v_waitsetFree(
    v_waitset _this)
 {
-    v_kernel kernel;
     v_participant p;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_waitset));
 
-    kernel = v_objectKernel(_this);
     p = v_participant(_this->participant);
     if (p != NULL) {
         v_participantRemove(p, v_entity(_this));
@@ -105,6 +103,7 @@ v_waitsetDeinit(
 {
     v_waitsetEvent event;
     v_observable o;
+    v_observable* oPtr;
     v_proxy found;
     v_handleResult result;
     void* userDataRemoved = NULL;
@@ -118,7 +117,8 @@ v_waitsetDeinit(
 
     found = c_take(_this->observables);
     while (found) {
-        result = v_handleClaim(found->source,(v_object *)&o);
+        oPtr = &o;
+        result = v_handleClaim(found->source,(v_object *)oPtr);
         if (result == V_HANDLE_OK) {
             v_observableRemoveObserver(o,v_observer(_this), &userDataRemoved);
             v_waitsetClearRemovedObserverPendingEvents(_this, userDataRemoved);
@@ -176,6 +176,8 @@ v_waitsetEventFree(
             c_free(event);
         } else if(event->kind == V_EVENT_PERSISTENT_SNAPSHOT) {
             c_free(event);
+        } else if(event->kind == V_EVENT_CONNECT_WRITER) {
+            c_free(event);
         }else {
             event->next = _this->eventCache;
             _this->eventCache = event;
@@ -200,6 +202,7 @@ v_waitsetNotify(
     v_waitsetEventHistoryDelete wehd;
     v_waitsetEventHistoryRequest wehr;
     v_waitsetEventPersistentSnapshot weps;
+    v_waitsetEventConnectWriter wecw;
     v_kernel k;
 
     assert(_this != NULL);
@@ -248,7 +251,18 @@ v_waitsetNotify(
                 assert(FALSE);
             }
             event = (v_waitsetEvent)weps;
-
+        } else if (e->kind == V_EVENT_CONNECT_WRITER) {
+            /* request persistent snapshot data */
+            wecw = c_new(v_kernelType(k, K_WAITSETEVENTCONNECTWRITER));
+            if (wecw) {
+                wecw->group = (v_group)e->userData;
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_waitset::v_waitsetNotify",0,
+                          "Failed to allocate v_waitsetEventConnectWriter object.");
+                assert(FALSE);
+            }
+            event = (v_waitsetEvent)wecw;
         } else {
             /* Group events by origin of event */
             /* What about events while no threads are waiting?

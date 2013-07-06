@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE stax SYSTEM "../../stax/stax.dtd">
+
+<stax>
+    <defaultcall function="main"/>
+    <script>
+        STAXMessageLog = 1
+    </script>
+
+    <function name="main">
+    	<function-single-arg>
+    		<function-optional-arg name="runs" default="1">Number of test runs, default is 1</function-optional-arg>
+    	</function-single-arg>
+        <sequence>
+            <import file="'../../common/LogWriter.xml'"/>
+            <script>
+                import os
+                scriptdir = os.path.dirname(STAXCurrentXMLFile)
+            </script>
+
+            <loop from="1" to="1" var="i">
+                <sequence>
+                    <!-- Scenario 1 -->
+                    <script>tc_name = 'dds2340_subnets_scenario1_%d' % i</script>
+                    <job name="tc_name" monitor="0" clearlogs="'enabled'">
+                        <job-file>scriptdir + '/dds2340_scenario1.xml'</job-file>
+                        <job-function>'Run'</job-function>
+                        <!-- <job-function-args>['perf5.perfnet.ptnl', 'xlrw07.testnet.ptnl']</job-function-args>  -->
+                        <job-function-args>['perf4.perfnet.ptnl', 'x64-ub10-01.office.ptnl']</job-function-args>
+                    </job>
+                    <if expr="RC == STAFRC.Ok">
+                        <call function="'SaveJobLog'">tc_name, STAXSubJobID</call>
+                        <else>
+                            <log message="STAXMessageLog" level="'error'">
+                                'Sub-job %s could not be started: %s (RC: %s)' % (tc_name, STAFResult, RC)
+                            </log>
+                        </else>
+                    </if>
+
+                    <!-- Scenario 2 -->
+                    <script>tc_name = 'dds2340_subnets_scenario2_%d' % i</script>
+                    <job name="tc_name" monitor="0" clearlogs="'enabled'">
+                        <job-file>scriptdir + '/dds2340_scenario2.xml'</job-file>
+                        <job-function>'Run'</job-function>
+                        <!-- <job-function-args>['perf5.perfnet.ptnl', 'xlrw07.testnet.ptnl', 'xlrw06.testnet.ptnl']</job-function-args> -->
+                        <job-function-args>['perf4.perfnet.ptnl', 'x64-ub10-02.office.ptnl', 'x64-ub10-01.office.ptnl']</job-function-args>
+                    </job>
+                    <if expr="RC == STAFRC.Ok">
+                        <call function="'SaveJobLog'">tc_name, STAXSubJobID</call>
+                        <else>
+                            <log message="STAXMessageLog" level="'error'">
+                                'Sub-job %s could not be started: %s (RC: %s)' % (tc_name, STAFResult, RC)
+                            </log>
+                        </else>
+                    </if>
+
+                    <!-- Scenario 3 -->
+                    <script>tc_name = 'dds2340_subnets_scenario3_%d' % i</script>
+                    <job name="tc_name" monitor="0" clearlogs="'enabled'" logtcelapsedtime="'enabled'" logtcnumstarts="'enables'" logtcstartstop="'enabled'">
+                        <job-file>scriptdir + '/dds2340_scenario3.xml'</job-file>
+                        <job-function>'Run'</job-function>
+                        <job-function-args>['perf4.perfnet.ptnl', 'x64-ub10-02.office.ptnl', 'x64-ub10-01.office.ptnl']</job-function-args>
+                    </job>
+                    <if expr="RC == STAFRC.Ok">
+                        <call function="'SaveJobLog'">tc_name, STAXSubJobID</call>
+                        <else>
+                            <log message="STAXMessageLog" level="'error'">
+                                'Sub-job %s could not be started: %s (RC: %s)' % (tc_name, STAFResult, RC)
+                            </log>
+                        </else>
+                    </if>
+
+                    <!-- Scenario 4 -->
+                    <script>tc_name = 'dds2340_subnets_scenario4_%d' % i</script>
+                    <job name="tc_name" monitor="0" clearlogs="'enabled'">
+                        <job-file>scriptdir + '/dds2340_scenario4.xml'</job-file>
+                        <job-function>'Run'</job-function>
+                        <job-function-args>['perf4.perfnet.ptnl', 'x64-ub10-02.office.ptnl', 'x64-ub10-01.office.ptnl']</job-function-args>
+                    </job>
+                    <if expr="RC == STAFRC.Ok">
+                        <call function="'SaveJobLog'">tc_name, STAXSubJobID</call>
+                        <else>
+                            <log message="STAXMessageLog" level="'error'">
+                                'Sub-job %s could not be started: %s (RC: %s)' % (tc_name, STAFResult, RC)
+                            </log>
+                        </else>
+                    </if>
+                </sequence>
+            </loop>
+        </sequence>
+    </function>
+</stax>

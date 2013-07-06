@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -19,12 +19,16 @@
 #include "os_stdlib.h"
 #include "os_abstract.h"
 #include "os_report.h"
+#include "os_process.h"
 
 #include "os_heap.h"
 #include "os_thread.h"
 #include "os_mutex.h"
 #include "os_cond.h"
-#include "code/os__debug.h"
+#include "os_init.h"
+#include "os__debug.h"
+#include "os_iterator.h"    /*2008 */
+#include "os_signal.h"  /* 2008 */
 
 #include <assert.h>
 #include <stdio.h>
@@ -42,16 +46,24 @@ struct os_sharedHandle_s {
     os_sharedAttr attr;
     void *mapped_address;
     char *name;
+    char *key;
     HANDLE dataFile;
     HANDLE mapObject;
     os_address size;
     os_int32 shm_created;
+    os_int32 id;
 };
 
 struct os_shmInfo {
     os_sharedHandle sharedHandle;
     struct os_shmInfo *next;
 };
+
+/**
+* @todo This is defined in os_time.c which now needs a header as this is used by this file.
+*/
+void
+os_timeModuleReinit(const os_char*);
 
 struct os_shmInfo *shmInfo = NULL;
 
@@ -77,7 +89,7 @@ os_getDomainNameforMutex(
 {
     /* get shm and look if pointer is in memory range */
     os_address base,size,mtx;
-	struct os_shmInfo *shmInf;
+    struct os_shmInfo *shmInf;
     char *result = NULL;
     os_int32 foundName = 0;
 
@@ -101,7 +113,7 @@ char* os_getDomainNameforCond (os_cond* cond)
 {
    /* get shm and look if pointer is in memory range */
    os_address base, size, cnd;
-	struct os_shmInfo* shmInf;
+    struct os_shmInfo* shmInf;
    char* result = NULL;
    os_int32 foundName = 0;
 
@@ -124,36 +136,49 @@ char* os_getDomainNameforCond (os_cond* cond)
    return result;
 }
 
-os_address
-os_getShmBaseAddressFromPointer(
-    void *vpointer)
-{
-     /* get shm and look if pointer is in memory range */
-     struct os_shmInfo *shmInf;
-     os_address base,size,pointer;
-     os_address result;
-     os_int32 foundName = 0;
+/** \brief Get an unique key identifying a domain, used for naming semaphores and mutexes
+ *
+ * A multi-domain user application will map a SHM file per domain so OpenSplice needs to compare the pointer
+ * address to the SHM mapping range to find out to which domain it belongs.
+ * The splice daemon is responsible for semaphore/mutex creation, so it may call this function with NULL (ptr is not available yet).
+ * The splice daemon and services are started separately so will always have at most one SHM mapping per process.
+ * If multiple domains are running separately (no multi-domain applications) they may use the same SHM mapping range.
+ * But Windows needs semaphores/mutexes to be created with unique names or they will be mixed up between domains.
+ *
+ * The key is identical to the unique filename created by GetTempFile during shared memory creation/attachment.
+ * Some applications use the abstraction layer but don't use shared memory (like idlpp, odlpp that use the memory manager for heap memory),
+ * so there is no key. In those cases the os_serviceName will be used as key. There is no sharing between processes thus the serviceName cannot change
+ * between semaphore/mutex create and open calls.
+ */
+const os_char*
+os_getShmDomainKeyForPointer(void *ptr) {
+    struct os_shmInfo *shmPtr;
+    os_address min, max, pointer;
+    const os_char *result;
 
-     if (shmInfo != NULL) {
-         result = (os_address)shmInfo->sharedHandle->mapped_address;
-     } else {
-         result = 0;
-     }
+    result = NULL;
 
-     if (vpointer != NULL && shmInfo != NULL) {
-
-         for (shmInf = shmInfo;shmInf != NULL && foundName==0;shmInf = shmInf->next) {
-            base = (os_address)shmInf->sharedHandle->mapped_address;
-            size = (os_address)shmInf->sharedHandle->size;
-            pointer = (os_address)vpointer;
-            /* check if the pointer is in the shm range */
-            if((base < pointer) && (pointer < (base+size) )) {
-                result = (os_address)shmInf->sharedHandle->mapped_address;
-                foundName = 1;
+    if (shmInfo == NULL) {
+        result = os_serviceName();
+    } else {
+        if (ptr == NULL) {
+            assert(shmInfo->sharedHandle);
+            result = shmInfo->sharedHandle->key;
+        } else {
+            for (shmPtr = shmInfo; shmPtr != NULL && result == NULL; shmPtr = shmPtr->next) {
+                assert(shmPtr->sharedHandle);
+                min = (os_address)shmPtr->sharedHandle->mapped_address;
+                max = (os_address)shmPtr->sharedHandle->size + min;
+                pointer = (os_address)ptr;
+                if ((pointer >= min) && (pointer <= max)) {
+                    result = shmPtr->sharedHandle->key;
+                }
             }
-         }
-     }
-     return result;
+        }
+
+    }
+    assert(result);
+    return result;
 }
 
 /** \brief Create a handle for shared memory operations
@@ -166,7 +191,8 @@ os_getShmBaseAddressFromPointer(
 os_sharedHandle
 os_sharedCreateHandle(
     const char *name,
-    const os_sharedAttr *sharedAttr)
+    const os_sharedAttr *sharedAttr,
+    const int id)
 {
     os_sharedHandle sh;
 
@@ -179,11 +205,13 @@ os_sharedCreateHandle(
         if (sh->name != NULL) {
             os_strcpy(sh->name, name);
             sh->attr = *sharedAttr;
+            sh->key = NULL;
             sh->mapped_address = (void *)0;
             sh->dataFile = 0;
             sh->mapObject = 0;
             sh->size = 0;
             sh->shm_created = 0;
+            sh->id = id;
         } else {
             os_free(sh);
             sh = NULL;
@@ -205,6 +233,7 @@ os_sharedDestroyHandle(
     assert(sharedHandle->name != NULL);
 
     os_free(sharedHandle->name);
+    os_free(sharedHandle->key);
     os_free(sharedHandle);
 }
 
@@ -221,46 +250,41 @@ os_sharedAddress(
 
 /** Defines the file prefix for the key file */
 
-static char *key_file_path = NULL;
-static const char key_file_prefix[] = "osp";
+char *key_file_path = NULL;
+const char key_file_prefix[] = "osp";
 
-/** \brief Return the file-path of the key file related
- *         to the identified shared memory
+/** \brief Check if the contents of the identified key file
+ *         matches the identified id and and set the name
  *
- * \b os_findKeyFile tries to find the key file related to \b name
- * in the \b temporary directory. The key files are prefixed with \b
- * /<temporary directory>/sp2v3key_.
- *
- * \b os_findKeyFile first opens the temporary directory by calling
- * \b opendir. Then it reads all entries in serach for  any entry
- * that starts with the name \b sp2v3key_ by reading the entry with
- * \b readdir. If the a matching entry is found, it opens the file
- * and compares the contents with the required \b name. If the
- * \b name matches the contents, the entry is found, and the path
- * is returned to the caller. The memory for the path is allocated
- * from heap and is expected to be freed by the caller.
- *
- * If no matching entry is found, NULL is returned to the caller.
+ * \b os_findNameById tries to compare the contents of the identified
+ * key file in \b key_file_name with the identified \b id.
+ * On a match 1 will be returned and the domain name will be set,
+ * on a mismatch 0 will be returned and name will be NULL.
  */
-static char *
-os_findKeyFile(
-    const char *name)
+static int
+os_findNameById(
+    int id,
+    char **name)
 {
     HANDLE fileHandle;
     WIN32_FIND_DATA fileData;
-    char key_file_name[MAX_PATH];
-    char uri[512];
+    char key_file_name[MAX_PATH], line[512];
     FILE *key_file;
+    char *nl;
     int last = 0;
-    char *kfn;
-    int len;
+    int domainId;
+    int retVal =0;
+
+    key_file = NULL;
+    nl = NULL;
 
     if (key_file_path == NULL) {
         key_file_path = os_getTempDir();
     }
 
     if (key_file_path == NULL) {
-        OS_REPORT(OS_ERROR, "os_findKeyFile", 0, "Failed to determine temporary directory");
+        OS_REPORT(OS_ERROR, "os_findNameById", 0, "Failed to determine temporary directory");
+        return 0;
     }
 
     os_strcpy(key_file_name, key_file_path);
@@ -272,14 +296,123 @@ os_findKeyFile(
 
     if (fileHandle == INVALID_HANDLE_VALUE) {
         /* Try to communicate error message via thread-specific memory */
-#define ERR_MESSAGE "os_findKeyFile: Could not find any key file: %s"
+#define ERR_MESSAGE "os_findNameById: Could not find any key file: %s"
         char *message;
-        unsigned int messageSize;
+        os_size_t messageSize;
 
         messageSize = sizeof(ERR_MESSAGE) + strlen(key_file_name);
         /* Free any existing thread specific warnings */
         os_threadMemFree(OS_THREAD_WARNING);
-        message = (char *)os_threadMemMalloc(OS_THREAD_WARNING, messageSize);
+        message = (char *)os_threadMemMalloc(OS_THREAD_WARNING, (os_int32)messageSize);
+        if (message) {
+            snprintf(message, messageSize, ERR_MESSAGE, key_file_name);
+        } else {
+            /* Allocation failed, use report mechanism */
+            OS_REPORT_1(OS_WARNING, "os_findNameById", 0, "Could not find any key file: %s", key_file_name);
+        }
+        return 0;
+    }
+
+    while (!last && !retVal) {
+        os_strcpy(key_file_name, key_file_path);
+        os_strcat(key_file_name, "\\");
+        os_strcat(key_file_name, fileData.cFileName);
+        key_file = fopen(key_file_name, "r");
+        if (key_file != NULL) {
+            if (fgets(line, sizeof(line), key_file) != NULL) {
+                /* Remove trailing newline char */
+                if (nl = strchr(line, '\n')) {
+                    *nl = 0;
+                }
+                *name = os_strdup(line);
+            }
+            fgets(line, sizeof(line), key_file);
+            fgets(line, sizeof(line), key_file);
+            fgets(line, sizeof(line), key_file);
+            fgets(line, sizeof(line), key_file);
+            if (fgets(line, sizeof(line), key_file) != NULL) {
+                sscanf(line, "%d", &domainId);
+            }
+            fclose(key_file);
+            if (id != domainId) {
+                os_free(*name);
+                *name = NULL;
+            } else {
+                retVal =1;
+            }
+        } else {
+            OS_REPORT_1(OS_INFO, "os_findNameById", 0, "Failed to open key file: %s", key_file_name);
+        }
+
+        if (!retVal && FindNextFile(fileHandle, &fileData) == 0 ) {
+            last = 1;
+        }
+    }
+
+    FindClose(fileHandle);
+
+
+    return retVal;
+}
+
+/** \brief Return the file-path of the key file related
+ *         to the identified shared memory
+ *
+ * \b os_findKeyFile tries to find the key file related to \b name
+ * in the \b temporary directory. The key files are prefixed with \b
+ * /<temporary directory>/sp2v3key_.
+ *
+ * \b os_findKeyFile first opens the temporary directory by calling
+ * \b opendir. Then it reads all entries in search for  any entry
+ * that starts with the name \b sp2v3key_ by reading the entry with
+ * \b readdir. If the a matching entry is found, it opens the file
+ * and compares the contents with the required \b name. If the
+ * \b name matches the contents, the entry is found, and the path
+ * is returned to the caller. The memory for the path is allocated
+ * from heap and is expected to be freed by the caller.
+ *
+ * If no matching entry is found, NULL is returned to the caller.
+ */
+char *
+os_findKeyFile(
+    const char *name)
+{
+    HANDLE fileHandle;
+    WIN32_FIND_DATA fileData;
+    char key_file_name[MAX_PATH], domainId[512];
+    FILE *key_file;
+    char *kfn, *nl;
+    int last = 0;
+
+    key_file = NULL;
+    kfn = NULL;
+    nl = NULL;
+
+    if (key_file_path == NULL) {
+        key_file_path = os_getTempDir();
+    }
+
+    if (key_file_path == NULL) {
+        OS_REPORT(OS_ERROR, "os_findKeyFile", 0, "Failed to determine temporary directory");
+        return NULL;
+    }
+
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, key_file_prefix);
+    os_strcat(key_file_name, "*.tmp");
+
+    fileHandle = FindFirstFile(key_file_name, &fileData);
+
+    if (fileHandle == INVALID_HANDLE_VALUE) {
+        /* Try to communicate error message via thread-specific memory */
+        char *message;
+        os_size_t messageSize;
+
+        messageSize = sizeof(ERR_MESSAGE) + strlen(key_file_name);
+        /* Free any existing thread specific warnings */
+        os_threadMemFree(OS_THREAD_WARNING);
+        message = (char *)os_threadMemMalloc(OS_THREAD_WARNING, (os_int32)messageSize);
         if (message) {
             snprintf(message, messageSize, ERR_MESSAGE, key_file_name);
         } else {
@@ -289,46 +422,645 @@ os_findKeyFile(
         return NULL;
     }
 
-    os_strcpy(key_file_name, key_file_path);
-    os_strcat(key_file_name, "\\");
-    os_strcat(key_file_name, fileData.cFileName);
-    key_file = fopen(key_file_name, "r");
-
     while (!last) {
+        os_strcpy(key_file_name, key_file_path);
+        os_strcat(key_file_name, "\\");
+        os_strcat(key_file_name, fileData.cFileName);
+        key_file = fopen(key_file_name, "r");
         if (key_file != NULL) {
-            if (fgets(uri, sizeof(uri), key_file) != NULL) {
-                len = strlen(uri);
-                if (len > 0) {
-                    uri[len-1] = 0;
+            if (fgets(domainId, 512, key_file) != NULL) {
+                /* Remove trailing newline char */
+                if (nl = strchr(domainId, '\n')) {
+                    *nl = 0;
                 }
-                if (strcmp(name, uri) == 0) {
-                    fclose(key_file);
-                    kfn = (char*)os_malloc(strlen (key_file_name) + 1);
+                /* Compare domain name from key file with requested domain name */
+                if(os_strncasecmp(name, domainId, (os_uint32)strlen(name)) == 0) {
+                    kfn = (char*)os_malloc(strlen(key_file_name) + 1);
                     if (kfn != NULL) {
                         os_strcpy(kfn, key_file_name);
+                        last = 1;
                     }
-                    FindClose(fileHandle);
-                    return kfn;
                 }
             }
+            fclose(key_file);
+        } else {
+            OS_REPORT_1(OS_INFO, "os_findKeyFile", 0, "Failed to open key file: %s", key_file_name);
         }
 
         if (FindNextFile(fileHandle, &fileData) == 0) {
             last = 1;
-        } else {
-            os_strcpy(key_file_name, key_file_path);
-            os_strcat(key_file_name, "\\");
-            os_strcat(key_file_name, fileData.cFileName);
-            key_file = fopen(key_file_name, "r");
         }
     }
-    if (key_file) {
-       fclose(key_file);
-    }
+
     FindClose(fileHandle);
-    OS_REPORT_1(OS_INFO, "os_findKeyFile", 0, "Could not find matching key file for uri: %s", name);
-    return NULL;
+
+    if (kfn == NULL) {
+        OS_REPORT_1(OS_INFO, "os_findKeyFile", 0, "Could not find matching key file for domain: %s", name);
+    }
+
+    return kfn;
 }
+
+char *
+os_findKeyFileByNameAndId(
+    const char *name,
+    int id)
+{
+    HANDLE fileHandle;
+    WIN32_FIND_DATA fileData;
+    char key_file_name[MAX_PATH], domainName[512], line[512];
+    FILE *key_file;
+    char *kfn, *nl;
+    int last = 0;
+    int domainId;
+
+    key_file = NULL;
+    kfn = NULL;
+    nl = NULL;
+
+    if (key_file_path == NULL) {
+        key_file_path = os_getTempDir();
+    }
+
+    if (key_file_path == NULL) {
+        OS_REPORT(OS_ERROR, "os_findKeyFileByNameAndId", 0, "Failed to determine temporary directory");
+        return NULL;
+    }
+
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, key_file_prefix);
+    os_strcat(key_file_name, "*.tmp");
+
+    fileHandle = FindFirstFile(key_file_name, &fileData);
+
+    if (fileHandle == INVALID_HANDLE_VALUE) {
+        /* Try to communicate error message via thread-specific memory */
+        char *message;
+        os_size_t messageSize;
+
+        messageSize = sizeof(ERR_MESSAGE) + strlen(key_file_name);
+        /* Free any existing thread specific warnings */
+        os_threadMemFree(OS_THREAD_WARNING);
+        message = (char *)os_threadMemMalloc(OS_THREAD_WARNING, (os_int32)messageSize);
+        if (message) {
+            snprintf(message, messageSize, ERR_MESSAGE, key_file_name);
+        } else {
+            /* Allocation failed, use report mechanism */
+            OS_REPORT_1(OS_WARNING, "os_findKeyFileByNameAndId", 0, "Could not find any key file: %s", key_file_name);
+        }
+        return NULL;
+    }
+
+    while (!last) {
+        os_strcpy(key_file_name, key_file_path);
+        os_strcat(key_file_name, "\\");
+        os_strcat(key_file_name, fileData.cFileName);
+        key_file = fopen(key_file_name, "r");
+        if (key_file != NULL)
+        {
+            if (fgets(domainName, 512, key_file) != NULL)
+            {
+                /* Remove trailing newline char */
+                if (nl = strchr(domainName, '\n'))
+                {
+                    *nl = 0;
+                }
+                /* Compare domain name from key file with requested domain name */
+                if(os_strncasecmp(name, domainName, (os_uint32)strlen(name)) == 0)
+                {
+                    kfn = (char*)os_malloc(strlen(key_file_name) + 1);
+                    if (kfn != NULL)
+                    {
+                        os_strcpy(kfn, key_file_name);
+
+                        fgets(line, sizeof(line), key_file);
+                        fgets(line, sizeof(line), key_file);
+                        fgets(line, sizeof(line), key_file);
+                        fgets(line, sizeof(line), key_file);
+                        if (fgets(line, sizeof(line), key_file) != NULL)
+                        {
+                            sscanf(line, "%d", &domainId);
+                        }
+
+                        if (id == domainId)
+                        {
+                            last = 1;
+                        }
+                        else
+                        {
+                            kfn = NULL;
+                        }
+                    }
+
+                }
+            }
+            fclose(key_file);
+        }
+        else
+        {
+            OS_REPORT_1(OS_INFO, "os_findKeyFileByNameAndId", 0, "Failed to open key file: %s", key_file_name);
+        }
+
+        if (FindNextFile(fileHandle, &fileData) == 0)
+        {
+            last = 1;
+        }
+    }
+
+    FindClose(fileHandle);
+
+    if (kfn == NULL) {
+        OS_REPORT_1(OS_INFO, "os_findKeyFile", 0, "Could not find matching key file for domain: %s", name);
+    }
+
+    return kfn;
+}
+
+/** \brief Return list of processes defined in key file \b fileName
+ *         as an iterator contained in \b pidList
+ *
+ * \b returns 0 on success and 1 if key file not found or unreadable
+ */
+os_int32
+os_sharedMemoryListUserProcesses(
+    os_iter pidList,
+    const char * fileName)
+{
+    FILE *key_file;
+    BOOL result;
+    HANDLE hProcess;
+    os_char line[512];
+    os_int32 pidcount = 0;
+    os_int32 pidtemp;
+    os_int32 *ppid;
+    FILETIME timetmp;
+    FILETIME creationTime;
+    FILETIME exitTime;
+    FILETIME kernelTime;
+    FILETIME userTime;
+    os_int32 retVal = 0;
+
+    char pidstr[16];
+    char *listpidstr;
+
+    /* get creator pid and associated pids from fileName */
+
+    if (fileName != NULL)
+    {
+        key_file = fopen(fileName, "r");
+        if (key_file != NULL)
+        {
+            fgets(line, sizeof(line), key_file); /* domain name */
+            fgets(line, sizeof(line), key_file); /* address */
+            fgets(line, sizeof(line), key_file); /* size */
+            fgets(line, sizeof(line), key_file); /* implementation */
+
+            while (!feof(key_file))
+            {
+                timetmp.dwLowDateTime = 0;
+                timetmp.dwHighDateTime = 0;
+
+                if (fgets(line, sizeof(line), key_file) != NULL)
+                {
+                    if (strlen(line) > 8)
+                    {
+                        sscanf(line, "%d %d %d", &pidtemp, &timetmp.dwLowDateTime, &timetmp.dwHighDateTime);
+
+                    }
+                    else
+                    {
+                        sscanf(line, "%d", &pidtemp);
+                    }
+
+                    /* if creation times present in file then verify with os */
+                    if (timetmp.dwLowDateTime != 0 || timetmp.dwHighDateTime != 0)
+                    {
+                        hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pidtemp);
+                        result = GetProcessTimes(hProcess, &creationTime, &exitTime, &kernelTime, &userTime);
+                        if(result)
+                        {
+                            if(timetmp.dwLowDateTime== creationTime.dwLowDateTime &&
+                               timetmp.dwHighDateTime == creationTime.dwHighDateTime)
+                            {
+                                /* change pid to string to match iterator model */
+                                sprintf(pidstr,"%d",pidtemp);
+                                listpidstr =  os_strdup(pidstr);
+                                os_iterAppend(pidList, listpidstr);
+
+                            }
+                        }
+                        CloseHandle(hProcess);
+                    }
+                }
+
+                if (pidcount == 0)
+                {
+                    fgets(line, sizeof(line), key_file); /* skip domain id */
+                }
+
+                pidcount++;
+            }
+            fclose(key_file);
+        }
+        else
+        {
+            retVal = 1;    /* can't open file */
+        }
+    }
+    else
+    {
+        retVal = 1;    /* no file */
+    }
+
+    return retVal;
+}
+
+/** \brief frees memory used by iterator created by prior call to
+ *  \b listUserProcesses creating list in \b pidList
+ */
+os_int32
+os_sharedMemoryListUserProcessesFree(
+    os_iter pidList)
+{
+    char *pidstr;
+
+    pidstr = (char *) os_iterTakeFirst(pidList);
+    while (pidstr)
+    {
+        os_free(pidstr);
+        pidstr = (char *) os_iterTakeFirst(pidList);
+    }
+    return 0;
+
+}
+
+/** \brief Return list in \b nameList of running opensplice domains defined
+ * by presence of associated key files in relevant temporary directory
+ *
+ * \b returns 0 on success and 1 if key file not found or unreadable
+ */
+os_int32
+os_sharedMemoryListDomainNames(
+    os_iter nameList)
+{
+    HANDLE fileHandle;
+    WIN32_FIND_DATA fileData;
+    char key_file_name[MAX_PATH], domainId[512];
+    FILE *key_file;
+    char *kfn, *nl;
+    os_int32 last = 0;
+    os_int32 count = 0;
+    os_int32 retVal = 0;
+    char *name;
+
+    key_file = NULL;
+    kfn = NULL;
+    nl = NULL;
+
+    if (key_file_path == NULL) {
+        key_file_path = os_getTempDir();
+    }
+
+    if (key_file_path == NULL) {
+        OS_REPORT(OS_ERROR, "os_findKeyFile", 0, "Failed to determine temporary directory");
+        return 1;
+    }
+
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, key_file_prefix);
+    os_strcat(key_file_name, "*.tmp");
+
+    fileHandle = FindFirstFile(key_file_name, &fileData);
+
+    if (fileHandle == INVALID_HANDLE_VALUE) {
+        /* Try to communicate error message via thread-specific memory */
+        char *message;
+        os_size_t messageSize;
+
+        messageSize = sizeof(ERR_MESSAGE) + strlen(key_file_name);
+        /* Free any existing thread specific warnings */
+        os_threadMemFree(OS_THREAD_WARNING);
+        message = (char *)os_threadMemMalloc(OS_THREAD_WARNING, (os_int32)messageSize);
+        if (message) {
+            snprintf(message, messageSize, ERR_MESSAGE, key_file_name);
+        } else {
+            /* Allocation failed, use report mechanism */
+            OS_REPORT_1(OS_WARNING, "os_findKeyFile", 0, "Could not find any key file: %s", key_file_name);
+        }
+        return 1;
+    }
+
+    while (!last) {
+        os_strcpy(key_file_name, key_file_path);
+        os_strcat(key_file_name, "\\");
+        os_strcat(key_file_name, fileData.cFileName);
+        /* only files of ospXXXX.tmp name format */
+
+        key_file = fopen(key_file_name, "r");
+        if (key_file != NULL)
+        {
+            if (fgets(domainId, 512, key_file) != NULL)
+            {
+                /* Remove trailing newline char */
+                if (nl = strchr(domainId, '\n'))
+                {
+                    *nl = 0;
+                }
+
+                name = os_strdup(domainId);
+                os_iterAppend(nameList, name);
+
+            }
+            fclose(key_file);
+        }
+        else
+        {
+            last = 1;
+        }
+
+
+        if (FindNextFile(fileHandle, &fileData) == 0) {
+            last = 1;
+        }
+    }
+
+    FindClose(fileHandle);
+
+    return retVal;
+}
+
+/** \brief frees memory used by iterator created by prior call to
+ *  \b listDomainNames creating list in \b nameList
+ */
+os_int32
+os_sharedMemoryListDomainNamesFree(
+    os_iter nameList)
+{
+    char *name;
+
+    name = (char *) os_iterTakeFirst(nameList);
+    while (name)
+    {
+        os_free(name);
+        name = (char *) os_iterTakeFirst(nameList);
+    }
+    return 0;
+}
+
+/** \brief Removes tmp and dbf files from asscociated domain defined by
+ *  \b name
+ */
+os_int32
+os_destroyKeyFile(
+    const char *name)
+{
+    /*char *key_file_name;*/
+    char *dbf_file_name;
+    os_char *ptr;
+
+    /*key_file_name = os_findKeyFile(name);*/
+    if (name ==  NULL) {
+        return 1;
+    }
+    if (DeleteFile(name) == 0)
+    {
+        OS_REPORT_1(OS_ERROR, "os_destroyKeyFile", 0, "Can not Delete the key file %d", (int)GetLastError());
+        /*os_free(key_file_name);*/
+        return 1;
+    }
+
+    os_strcpy(dbf_file_name, name);
+    ptr = strchr(dbf_file_name, '.');
+    if (ptr != NULL)
+    {
+        dbf_file_name[ptr - dbf_file_name + 1] = 'D';
+        dbf_file_name[ptr - dbf_file_name + 2] = 'B';
+        dbf_file_name[ptr - dbf_file_name + 3] = 'F';
+
+        if (DeleteFile(dbf_file_name) == 0)
+        {
+            OS_REPORT_1(OS_ERROR, "os_destroyKeyFile", 0, "Can not Delete the DBF file %d", (int)GetLastError());
+            os_free(dbf_file_name);
+            return 1;
+        }
+    }
+    /*os_free(key_file_name);*/
+    os_free(dbf_file_name);
+    return 0;
+}
+
+/** \brief Windows specific temporary tmp and dbf file clean up
+ *  following any spliced termination other than through ospl tool
+ */
+void
+os_cleanKeyFiles(
+    void)
+{
+    HANDLE hFile;
+    HANDLE hProcess;
+    WIN32_FIND_DATA fileData;
+    os_char key_file_name [MAX_PATH];
+    os_char dbf_file_name [MAX_PATH];
+    os_char line[512];
+    os_char *ptr;
+    os_uint32 last = 0;
+    FILE *key_file;
+    os_uint32 creatorPid;
+    FILETIME creatorTime;
+    FILETIME creationTime;
+    FILETIME exitTime;
+    FILETIME kernelTime;
+    FILETIME userTime;
+    BOOL doClean = FALSE;
+    os_int32 procResult;
+    BOOL result;
+    os_iter pidList = NULL;
+    os_int32 userProc;
+    char *pidstr = NULL;
+
+    pidList = os_iterNew(NULL);
+    key_file_path = os_getTempDir();
+
+    os_strcpy(key_file_name, key_file_path);
+    os_strcat(key_file_name, "\\");
+    os_strcat(key_file_name, key_file_prefix);
+    os_strcat(key_file_name, "*.tmp");
+
+    hFile = FindFirstFile(key_file_name, &fileData);
+
+    if (hFile != INVALID_HANDLE_VALUE)
+    {
+        os_strcpy(key_file_name, key_file_path);
+        os_strcat(key_file_name, "\\");
+        os_strcat(key_file_name, fileData.cFileName);
+        key_file = fopen(key_file_name, "r");
+
+        while (!last)
+        {
+            doClean = FALSE;
+            if (key_file != NULL)
+            {
+                if (fgets(line, sizeof(line), key_file) != NULL) /* domain */
+                {
+                    fgets(line, sizeof(line), key_file);    /* address */
+                    fgets(line, sizeof(line), key_file);    /* size */
+                    fgets(line, sizeof(line), key_file);    /* implementation */
+
+                    creatorTime.dwLowDateTime = 0;
+                    creatorTime.dwHighDateTime = 0;
+
+                    if (fgets(line, sizeof(line), key_file) != NULL)     /* creator pid */
+                    {
+                        if (strlen(line) > 8)
+                        {
+                            sscanf(line, "%d %d %d", &creatorPid, &creatorTime.dwLowDateTime, &creatorTime.dwHighDateTime);
+                        }
+                        else
+                        {
+                            sscanf(line, "%d", &creatorPid);
+                        }
+                        fclose(key_file);
+
+                        hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, creatorPid);
+                        if (hProcess == NULL)
+                        {
+                            doClean = TRUE;
+                        }
+                        else
+                        {
+                            /* Only perform clean up if we opened a process that matches the spliced process we  expected (i.e.
+                             * if the creation time also matches) AND THE SPLICED PROCESS IS NO LONGER RUNNING
+                             */
+                            if (os_procCheckStatus((os_procId)hProcess, &procResult) != os_resultBusy)
+                            {
+                                creationTime.dwLowDateTime = 0;
+                                creationTime.dwHighDateTime = 0;
+                                result = TRUE;
+                                if (creatorTime.dwLowDateTime != 0 || creatorTime.dwHighDateTime != 0)
+                                {
+                                    result = GetProcessTimes(hProcess, &creationTime, &exitTime, &kernelTime, &userTime);
+                                }
+                                if(result)
+                                {
+                                    if(creatorTime.dwLowDateTime== creationTime.dwLowDateTime &&
+                                       creatorTime.dwHighDateTime == creationTime.dwHighDateTime)
+                                    {
+                                        doClean = TRUE;
+                                    }
+                                }
+                            }
+                            CloseHandle(hProcess);
+                        }
+                        if(doClean)
+                        {
+                            /* remove any associated processes */
+
+                            if (os_sharedMemoryListUserProcesses(pidList, key_file_name) == 0)
+                            {
+                                while ((pidstr = (char *)os_iterTakeFirst(pidList)) != NULL)
+                                {
+                                    userProc = atoi(pidstr);
+                                    os_procServiceDestroy(userProc, FALSE, 100);
+                                }
+                                os_sharedMemoryListUserProcessesFree(pidList);
+                            }
+
+                            os_remove (key_file_name);
+
+                            os_strcpy(dbf_file_name, key_file_name);
+                            ptr = strchr(dbf_file_name, '.');
+                            if (ptr != NULL)
+                            {
+                                dbf_file_name[ptr - dbf_file_name + 1] = 'D';
+                                dbf_file_name[ptr - dbf_file_name + 2] = 'B';
+                                dbf_file_name[ptr - dbf_file_name + 3] = 'F';
+                                os_remove(dbf_file_name);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    fclose(key_file);
+                }
+            }
+
+            if (FindNextFile(hFile, &fileData) == 0)
+            {
+                 last = 1;
+            }
+            else
+            {
+                os_strcpy(key_file_name, key_file_path);
+                os_strcat(key_file_name, "\\");
+                os_strcat(key_file_name, fileData.cFileName);
+                key_file = fopen(key_file_name, "r");
+            }
+        }   /* end while */
+    }
+    FindClose(hFile);
+
+    /* We now have to check for abandoned DBF files where there is no corresponding
+    *  tmp file.If there is a corresponding tmp file then it will be a valid pair
+    *  as we have already removed the invalid tmp files.
+    */
+
+    last = 0;
+    os_strcpy(dbf_file_name, key_file_path);
+    os_strcat(dbf_file_name, "\\");
+    os_strcat(dbf_file_name, key_file_prefix);
+    os_strcat(dbf_file_name, "*.DBF");
+
+    hFile = FindFirstFile(dbf_file_name, &fileData);
+
+    if (hFile != INVALID_HANDLE_VALUE)
+    {
+        os_strcpy(dbf_file_name, key_file_path);
+        os_strcat(dbf_file_name, "\\");
+        os_strcat(dbf_file_name, fileData.cFileName);
+
+        while (!last)
+        {
+            /* check that it does not have a matching tmp file, any matching tmp file will be valid */
+
+            os_strcpy(key_file_name, dbf_file_name);
+            ptr = strchr(key_file_name, '.');  /* assumes keeping existing file format */
+            if (ptr != NULL)
+            {
+                key_file_name[ptr - key_file_name + 1] = 't';
+                key_file_name[ptr - key_file_name + 2] = 'm';
+                key_file_name[ptr - key_file_name + 3] = 'p';
+            }
+
+            key_file = fopen(key_file_name, "r");
+            if (key_file == NULL)
+            {
+                /* there is no matching tmp file, delete the orphan DBF file */
+
+                os_remove(dbf_file_name);
+            }
+            else
+            {
+                fclose(key_file);
+            }
+
+            if (FindNextFile(hFile, &fileData) == 0)
+            {
+                last = 1;
+            }
+            else
+            {
+                os_strcpy(dbf_file_name, key_file_path);
+                os_strcat(dbf_file_name, "\\");
+                os_strcat(dbf_file_name, fileData.cFileName);
+            }
+        }
+    }
+    FindClose(hFile);
+}
+
 
 /** \brief Get the SHM map address from shm key file
  *
@@ -392,8 +1124,15 @@ os_getShmFile(
     DWORD pid;
     char buf[512];
     size_t key_file_name_len;
+    FILETIME creationTime;
+    FILETIME exitTime;
+    FILETIME kernelTime;
+    FILETIME userTime;
+    HANDLE hProcess;
+    BOOL result;
 
     key_file_name = os_findKeyFile(sharedHandle->name);
+
     if (key_file_name == NULL) {
         if (create == 0) {
             return NULL;
@@ -422,10 +1161,26 @@ os_getShmFile(
         }
 
         pid = GetCurrentProcessId();
-        snprintf(buf, sizeof(buf), "%s\n"PA_ADDRFMT"\n"PA_ADDRFMT"\nWIN-SHM\n%d\n",
-            sharedHandle->name, (PA_ADDRCAST)sharedHandle->attr.map_address, size, pid);
+        hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+        if(hProcess != INVALID_HANDLE_VALUE)
+        {
+            result = GetProcessTimes(hProcess, &creationTime, &exitTime, &kernelTime, &userTime);
+            if(!result)
+            {
+                creationTime.dwLowDateTime = 0;
+                creationTime.dwHighDateTime = 0;
+            }
+            CloseHandle(hProcess);
+        } else
+        {
+            creationTime.dwLowDateTime = 0;
+            creationTime.dwHighDateTime = 0;
+        }
+        snprintf(buf, sizeof(buf), "%s\n"PA_ADDRFMT"\n"PA_ADDRFMT"\nWIN-SHM\n%d %d %d\n%d\n",
+            sharedHandle->name, (PA_ADDRCAST)sharedHandle->attr.map_address, size, pid,
+            creationTime.dwLowDateTime, creationTime.dwHighDateTime, sharedHandle->id);
 
-        if (WriteFile((HANDLE)fileHandle, buf, strlen(buf), &written, NULL) == 0) {
+        if (WriteFile((HANDLE)fileHandle, buf, (DWORD)strlen(buf), &written, NULL) == 0) {
             OS_REPORT_1(OS_ERROR, "os_getShmFile", 0,
                     "WriteFile failed, System Error Code:  %d", (int)GetLastError());
             return NULL;
@@ -488,7 +1243,7 @@ os_getMapName(
     return map_name;
 }
 
-/** \brief Destory the key related to the name
+/** \brief Destroy the key related to the name
  *
  * The key file related to name is destroyed.
  * First \b os_destroyKey finds the path of the key
@@ -518,22 +1273,47 @@ os_destroyKey(
 }
 
 static os_result
+sharedMemoryGetNameFromId(
+    int id,
+    char **name)
+{
+    os_result rv;
+    os_int32 r;
+    r = os_findNameById(id,name);
+    if (r) {
+        rv = os_resultSuccess;
+    } else {
+        rv = os_resultFail;
+    }
+
+    return rv;
+}
+
+static os_result
 os_sharedMemoryCreateFile(
     os_sharedHandle sharedHandle,
     os_address size)
 {
     char *shm_file_name;
     char *map_object_name;
+    char key_name[MAX_PATH];
     HANDLE dd;
     HANDLE md;
     SECURITY_ATTRIBUTES security_attributes;
     BOOL sec_descriptor_ok;
 
     shm_file_name = os_getShmFile(sharedHandle, size, 1);
+    _splitpath(shm_file_name, NULL, NULL, key_name, NULL);
+    if (strlen(key_name) == 0) {
+        OS_REPORT_1(OS_ERROR, "OS Abstraction", 0,
+            "Failed to create key name for SHM file %s", shm_file_name);
+        os_free(shm_file_name);
+        return os_resultFail;
+    }
+
     dd = CreateFile(shm_file_name,
                     GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
                     NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
-
     if (dd == INVALID_HANDLE_VALUE) {
         OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
                 "Can not Create the database file (%s), System Error Code: %d",
@@ -541,9 +1321,9 @@ os_sharedMemoryCreateFile(
         os_free(shm_file_name);
         return os_resultFail;
     }
-
     os_free(shm_file_name);
-    if (SetFilePointer(dd, size, 0, FILE_BEGIN) == INVALID_SET_FILE_POINTER) {
+
+    if (SetFilePointer(dd, (LONG)size, 0, FILE_BEGIN) == INVALID_SET_FILE_POINTER) {
         OS_REPORT_1(OS_ERROR, "OS Abstraction", 0,
                 "Can not Set File Pointer %d", (int)GetLastError());
         CloseHandle((HANDLE)dd);
@@ -572,7 +1352,7 @@ os_sharedMemoryCreateFile(
                             NULL);
     if (sec_descriptor_ok)
     {
-        md = CreateFileMapping(dd, &security_attributes, PAGE_READWRITE, 0, size, map_object_name);
+        md = CreateFileMapping(dd, &security_attributes, PAGE_READWRITE, 0, (DWORD)size, map_object_name);
         LocalFree(security_attributes.lpSecurityDescriptor);
     }
 
@@ -583,7 +1363,7 @@ os_sharedMemoryCreateFile(
         os_isSharedMemGlobal = 0;
         /* get a local file mapping name instead  and create that */
         map_object_name = os_getMapName(sharedHandle->name, 0);
-        md = CreateFileMapping(dd, NULL, PAGE_READWRITE, 0, size, map_object_name);
+        md = CreateFileMapping(dd, NULL, PAGE_READWRITE, 0, (DWORD)size, map_object_name);
         if (md == NULL) {
             OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
                     "Can not Create mapping object (%s) %d",
@@ -594,6 +1374,8 @@ os_sharedMemoryCreateFile(
         }
     }
     os_free(map_object_name);
+    sharedHandle->key = (char*)os_malloc((strlen(key_name) * sizeof(char)) + 1);
+    os_strcpy(sharedHandle->key, key_name);
     sharedHandle->dataFile = dd;
     sharedHandle->mapObject = md;
     sharedHandle->size = size;
@@ -607,6 +1389,7 @@ os_sharedMemoryAttachFile(
 {
     char *shm_file_name;
     char *map_object_name;
+    char key_name[MAX_PATH];
     HANDLE dd;
     HANDLE md;
     void *address;
@@ -618,6 +1401,14 @@ os_sharedMemoryAttachFile(
         if (shm_file_name == NULL) {
             return os_resultFail;
         }
+        _splitpath(shm_file_name, NULL, NULL, key_name, NULL);
+        if (strlen(key_name) == 0) {
+            OS_REPORT_1(OS_ERROR, "OS Abstraction", 0,
+                "Failed to create key name for SHM file %s", shm_file_name);
+            os_free(shm_file_name);
+            return os_resultFail;
+        }
+
         dd = CreateFile(shm_file_name,
                         GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
                         NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -661,6 +1452,8 @@ os_sharedMemoryAttachFile(
                 return os_resultFail;
             }
         }
+        sharedHandle->key = (char*)os_malloc((strlen(key_name) * sizeof(char)) + 1);
+        os_strcpy(sharedHandle->key, key_name);
         os_free(map_object_name);
 
         sharedHandle->mapObject = md;
@@ -736,9 +1529,9 @@ os_sharedMemoryDestroyFile(
     sharedHandle->dataFile = 0;
     shm_file_name = os_getShmFile(sharedHandle, 0, 0);
     if (DeleteFile(shm_file_name) == 0) {
-        OS_REPORT_2(OS_ERROR, "OS Abstraction", 0,
-                "Can not delete data file (%s): System error code %d",
-                shm_file_name, (int)GetLastError());
+        OS_REPORT_3(OS_ERROR, "OS Abstraction", 0,
+                "Can not delete data file %s for domain %s (Error: %d)",
+                shm_file_name, sharedHandle->name, (int)GetLastError());
         os_free(shm_file_name);
         return os_resultFail;
     }
@@ -771,6 +1564,29 @@ os_sharedMemoryCreate(
 }
 
 os_result
+os_sharedMemoryGetNameFromId(
+    os_sharedHandle sharedHandle,
+    char **name)
+{
+    os_result result = os_resultFail;
+
+    assert(sharedHandle != NULL);
+
+    switch (sharedHandle->attr.sharedImpl) {
+    case OS_MAP_ON_FILE:
+        result = sharedMemoryGetNameFromId(sharedHandle->id, name);
+    break;
+    case OS_MAP_ON_SEG:
+        result = os_resultUnavailable;
+    break;
+    case OS_MAP_ON_HEAP:
+        result = os_resultUnavailable;
+    break;
+    }
+    return result;
+}
+
+os_result
 os_sharedMemoryDestroy(
     os_sharedHandle sharedHandle)
 {
@@ -778,6 +1594,7 @@ os_sharedMemoryDestroy(
 
     assert(sharedHandle != NULL);
     assert(sharedHandle->name != NULL);
+
     switch (sharedHandle->attr.sharedImpl) {
     case OS_MAP_ON_FILE:
         result = os_sharedMemoryDestroyFile (sharedHandle);
@@ -929,7 +1746,8 @@ os_sharedSize(
         result = os_resultUnavailable;
     break;
     case OS_MAP_ON_HEAP:
-        result = os_resultUnavailable;
+        *size = 0xFFFFFFFF; /* maximal address on 32bit systems */
+        result = os_resultSuccess;
     break;
     default:
     break;
@@ -937,3 +1755,74 @@ os_sharedSize(
     return result;
 }
 
+void
+os_sharedMemoryRegisterUserProcess(
+    os_char* domainName,
+    os_procId pid)
+{
+    char* keyFileName;
+    HANDLE fileHandle;
+    char buffer[512];
+    DWORD written;
+    BOOL writeResult;
+    DWORD winpid;
+    FILETIME creationTime;
+    FILETIME exitTime;
+    FILETIME kernelTime;
+    FILETIME userTime;
+    HANDLE hProcess;
+    BOOL result;
+
+    keyFileName = os_findKeyFile(domainName);
+    if (keyFileName == NULL)
+    {
+        OS_REPORT_1(OS_ERROR, "os_sharedMemoryRegisterUserProcess", 0, "Unable to register process with PID '%d' as a user of shared "
+            "memory. This only affects clean up procedures in case of later failure.", pid);
+    } else
+    {
+        /* Open the file for an atomic append */
+        fileHandle = CreateFile(keyFileName,
+                                FILE_APPEND_DATA,
+                                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                NULL,
+                                OPEN_EXISTING,
+                                FILE_ATTRIBUTE_NORMAL,
+                                NULL);
+        if(fileHandle == INVALID_HANDLE_VALUE)
+        {
+            OS_REPORT_2(OS_ERROR, "os_sharedMemoryRegisterUserProcess", 0,
+                    "CreateFile failed while trying to append to key file %s, "
+                    "System Error Code:  %d", keyFileName, (int)GetLastError());
+        } else
+        {
+            /* Fill the buffer with the pid info to be written */
+            winpid = (DWORD) os_procIdToInteger(pid);
+            hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, winpid);
+            if(hProcess != INVALID_HANDLE_VALUE)
+            {
+                result = GetProcessTimes(hProcess, &creationTime, &exitTime, &kernelTime, &userTime);
+                if(!result)
+                {
+                    creationTime.dwLowDateTime = 0;
+                    creationTime.dwHighDateTime = 0;
+                }
+                CloseHandle(hProcess);
+            } else
+            {
+                creationTime.dwLowDateTime = 0;
+                creationTime.dwHighDateTime = 0;
+            }
+            snprintf(buffer, sizeof(buffer), "%d %d %d\n", winpid, creationTime.dwLowDateTime, creationTime.dwHighDateTime);
+            /* Now write the buffer to the key file, appending it at the end
+             * as we opened the file with the FILE_APPEND_DATA flag
+             */
+            writeResult = WriteFile(fileHandle, buffer, (DWORD)strlen(buffer), &written, NULL);
+            if(writeResult == 0)
+            {
+                OS_REPORT_1(OS_ERROR, "os_sharedMemoryRegisterUserProcess", 0,
+                    "WriteFile failed, System Error Code:  %d", (int)GetLastError());
+            }
+            CloseHandle(fileHandle);
+        }
+    }
+}

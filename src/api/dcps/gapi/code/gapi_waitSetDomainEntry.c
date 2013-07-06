@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -52,7 +52,7 @@ _WaitSetDomainEntryRun(
 _WaitSetDomainEntry
 _WaitSetDomainEntryNew(
     _WaitSet waitset,
-    gapi_domainId_t domain_id)
+    gapi_domainName_t domain_id)
 {
     _WaitSetDomainEntry _this = NULL;
     gapi_domainParticipant dp = NULL;
@@ -65,7 +65,7 @@ _WaitSetDomainEntryNew(
         _this->running = FALSE;
         _this->condition_count = 0;
         _this->domainId = gapi_string_dup(domain_id);
-        dp = gapi_domainParticipantFactory_lookup_participant(
+        dp = gapi_domainParticipantFactory_lookup_participant_as_str(
                      gapi_domainParticipantFactory_get_instance(),
                      domain_id);
         assert(dp);

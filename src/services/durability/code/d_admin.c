@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -857,12 +857,11 @@ d_nameSpace
 d_adminGetNameSpaceForGroup(
         d_admin admin,
         d_partition partition,
-        d_topic topic,
-        d_durabilityKind kind)
+        d_topic topic)
 {
     d_nameSpace nameSpace;
     c_long i;
-    d_durabilityKind dkind;
+
     assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
     nameSpace = NULL;
 
@@ -872,15 +871,7 @@ d_adminGetNameSpaceForGroup(
         nameSpace = d_nameSpace(c_iterObject(admin->nameSpaces, i));
 
         if(d_nameSpaceIsIn(nameSpace, partition, topic) == TRUE){
-            dkind = d_nameSpaceGetDurabilityKind(nameSpace);
-
-            if(dkind != D_DURABILITY_ALL){
-                if( (!((dkind == D_DURABILITY_TRANSIENT) && (kind == D_DURABILITY_PERSISTENT))) &&
-                    (dkind != kind))
-                {
-                    nameSpace = NULL;
-                }
-            }
+         /* do nothing */
         } else {
             nameSpace = NULL;
         }
@@ -917,57 +908,22 @@ d_adminInNameSpace(
         d_nameSpace ns,
         d_partition partition,
         d_topic topic,
-        d_durabilityKind kind,
         c_bool aligner)
 {
     c_bool result;
-    d_durabilityKind dkind;
 
     result = FALSE;
-    dkind = d_nameSpaceGetDurabilityKind(ns);
 
-    switch(kind){
-        case D_DURABILITY_PERSISTENT:
-            switch(dkind){
-                case D_DURABILITY_ALL:
-                case D_DURABILITY_PERSISTENT:
-                case D_DURABILITY_TRANSIENT:
-                    result = TRUE;
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case D_DURABILITY_TRANSIENT:
-            switch(dkind){
-                case D_DURABILITY_ALL:
-                case D_DURABILITY_TRANSIENT:
-                    result = TRUE;
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case D_DURABILITY_ALL:
-            result = TRUE;
-            break;
-        default:
-            assert(FALSE);
-            break;
-    }
-    if(result == TRUE){
-        result = FALSE;
-
-        if(d_nameSpaceIsIn(ns, partition, topic) == TRUE){
-            if(aligner == TRUE) {
-                if(d_nameSpaceIsAligner(ns) == TRUE){
-                    result = TRUE;
-                }
-            } else {
+    if(d_nameSpaceIsIn(ns, partition, topic) == TRUE){
+        if(aligner == TRUE) {
+           if(d_nameSpaceIsAligner(ns) == TRUE){
                 result = TRUE;
-            }
+           }
+        } else {
+            result = TRUE;
         }
     }
+
     if(result == FALSE){
         result = isBuiltinGroup(partition, topic);
     }
@@ -978,8 +934,7 @@ c_bool
 d_adminGroupInAligneeNS(
     d_admin admin,
     d_partition partition,
-    d_topic topic,
-    d_durabilityKind kind)
+    d_topic topic)
 {
     d_nameSpace ns;
     c_bool inNameSpace;
@@ -993,7 +948,7 @@ d_adminGroupInAligneeNS(
     count       = c_iterLength(admin->nameSpaces);
     for(i=0; (i<count) && (inNameSpace == FALSE); i++){
         ns = d_nameSpace(c_iterObject(admin->nameSpaces, i));
-        inNameSpace = d_adminInNameSpace(ns, partition, topic, kind, FALSE);
+        inNameSpace = d_adminInNameSpace(ns, partition, topic, FALSE);
     }
     d_lockUnlock(d_lock(admin));
 
@@ -1008,8 +963,7 @@ c_bool
 d_adminGroupInActiveAligneeNS(
     d_admin admin,
     d_partition partition,
-    d_topic topic,
-    d_durabilityKind kind)
+    d_topic topic)
 {
     d_nameSpace ns;
     c_bool inNameSpace;
@@ -1023,7 +977,7 @@ d_adminGroupInActiveAligneeNS(
     count       = c_iterLength(admin->nameSpaces);
     for(i=0; (i<count) && (inNameSpace == FALSE); i++){
         ns = d_nameSpace(c_iterObject(admin->nameSpaces, i));
-        inNameSpace = d_adminInNameSpace(ns, partition, topic, kind, FALSE);
+        inNameSpace = d_adminInNameSpace(ns, partition, topic, FALSE);
 
         if(inNameSpace){
             if(d_nameSpaceGetAlignmentKind(ns) == D_ALIGNEE_ON_REQUEST){
@@ -1043,8 +997,7 @@ c_bool
 d_adminGroupInAlignerNS(
     d_admin admin,
     d_partition partition,
-    d_topic topic,
-    d_durabilityKind kind)
+    d_topic topic)
 {
     d_nameSpace ns;
     c_bool inNameSpace;
@@ -1059,7 +1012,7 @@ d_adminGroupInAlignerNS(
     count       = c_iterLength(admin->nameSpaces);
     for(i=0; (i<count) && (inNameSpace == FALSE); i++){
         ns = d_nameSpace(c_iterObject(admin->nameSpaces, i));
-        inNameSpace = d_adminInNameSpace(ns, partition, topic, kind, TRUE);
+        inNameSpace = d_adminInNameSpace(ns, partition, topic, TRUE);
     }
 
     d_lockUnlock(d_lock(admin));
@@ -1074,8 +1027,7 @@ c_bool
 d_adminGroupInInitialAligneeNS(
     d_admin admin,
     d_partition partition,
-    d_topic topic,
-    d_durabilityKind kind)
+    d_topic topic)
 {
     d_nameSpace ns;
     c_bool inNameSpace;
@@ -1091,7 +1043,7 @@ d_adminGroupInInitialAligneeNS(
 
     for(i=0; (i<count) && (inNameSpace == FALSE); i++){
         ns = d_nameSpace(c_iterObject(admin->nameSpaces, i));
-        inNameSpace = d_adminInNameSpace(ns, partition, topic, kind, FALSE);
+        inNameSpace = d_adminInNameSpace(ns, partition, topic, FALSE);
 
         if(inNameSpace == TRUE){
             switch(d_nameSpaceGetAlignmentKind(ns)){
@@ -1358,7 +1310,7 @@ d_adminLocalGroupsCompleteAction(
     c = d_groupGetCompleteness(group);
     boolData = (c_bool*)userData;
 
-    if(c != D_GROUP_COMPLETE){
+    if((c != D_GROUP_COMPLETE) && (c != D_GROUP_UNKNOWN)){
         result = FALSE;
         *boolData = FALSE;
     } else {
@@ -1466,6 +1418,41 @@ d_adminNameSpaceWalk(
     }
 }
 
+static void
+collectNsWalk(
+    d_nameSpace ns, void* userData)
+{
+    c_iter nameSpaces = (c_iter)userData;
+    if (ns)
+    {
+        d_objectKeep(d_object(ns));
+        c_iterInsert (nameSpaces, ns);
+    }
+}
+
+static void
+deleteNsWalk(
+   void* o, void* userData)
+{
+    d_objectFree(d_object(o), D_NAMESPACE);
+}
+
+c_iter d_adminNameSpaceCollect(
+    d_admin admin)
+{
+    c_iter result;
+    result = c_iterNew(NULL);
+    d_adminNameSpaceWalk(admin, collectNsWalk, result);
+    return result;
+}
+
+void d_adminNameSpaceCollectFree(
+    d_admin admin,
+    c_iter nameSpaces)
+{
+    c_iterWalk(nameSpaces, deleteNsWalk, NULL);
+    c_iterFree(nameSpaces);
+}
 
 void
 d_adminCleanupFellows(
@@ -1906,7 +1893,7 @@ d_adminCheckReaderRequestFulfilled(
 {
     c_bool result;
     d_readerRequest found;
-    v_reader reader;
+    v_reader reader, *readerPtr;
     v_handle handle;
     v_handleResult handleResult;
 
@@ -1922,7 +1909,8 @@ d_adminCheckReaderRequestFulfilled(
                 if(d_readerRequestAreGroupsComplete(found)){
                     found = d_tableRemove(admin->readerRequests, request);
                     handle = d_readerRequestGetHandle(found);
-                    handleResult = v_handleClaim(handle, (v_object*)&reader);
+                    readerPtr = &reader;
+                    handleResult = v_handleClaim(handle, (v_object*)readerPtr);
 
                     if(handleResult == V_HANDLE_OK){
                         v_readerNotifyHistoricalDataAvailable(reader);
@@ -1966,9 +1954,6 @@ d_nameSpaceCountMastersForRoleWalk (
     helper = (struct masterCountForRoleHelper*)userData;
     fellowRole = d_fellowGetRole(fellow);
 
-    /* Role for fellow should always be present at this point */
-    assert (helper->role);
-
     if (fellowRole) {
         if (!strcmp(fellowRole, helper->role)) {
             fellowNameSpace = d_fellowGetNameSpace (fellow, helper->nameSpace);
@@ -1996,7 +1981,7 @@ struct nameSpaceConflictHelper
     d_nameSpace fellowNameSpace;
     d_nameSpace oldFellowNameSpace;
     c_iter stateConflicts;
-    c_ulong conflict;
+    c_ulong conflictEvent;
 };
 
 static void
@@ -2027,6 +2012,10 @@ d_adminNameSpaceCheckConflicts(
     walkData.masterCount = 0;
     walkData.nameSpace = nameSpace;
     walkData.role = fellowRole;
+
+    /* Role for fellow should always be present at this point */
+    assert (walkData.role);
+
     d_adminFellowWalk (admin, d_nameSpaceCountMastersForRoleWalk, &walkData);
 
     /* Only take action when mastercount for role is exactly one */
@@ -2074,7 +2063,7 @@ d_adminNameSpaceCheckConflicts(
                         "Conflicting master found for namespace %s\n",
                         nameSpaceName);
 
-                helper->conflict = D_NAMESPACE_MASTER_CONFLICT;
+                helper->conflictEvent = D_NAMESPACE_MASTER_CONFLICT;
 
                 /* Report namespaces to let other fellows know that there was a conflicting master */
                 d_nameSpacesRequestListenerReportNameSpaces(nsrListener);
@@ -2090,18 +2079,18 @@ d_adminNameSpaceCheckConflicts(
                         nameSpaceName,
                         fellowRole);
 
-                helper->conflict = D_NAMESPACE_STATE_CONFLICT;
+                helper->conflictEvent = D_NAMESPACE_STATE_CONFLICT;
 
-            /* Conflict in other state? */
+            /* Conflict in other state? (note that fellowOtherStatesChanged without explicit stateConflicts is already covered by the above statement) */
             }else if (fellowOtherStatesChanged && stateConflicts) {
                 d_printTimedEvent(
                         helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
-                        "Conflicting state %d found for namespace %s from in one or more mergedStates\n",
+                        "Conflicting state %d found for namespace %s in one or more mergedStates\n",
                         fellowState->value,
                         nameSpaceName);
 
                 helper->stateConflicts = stateConflicts;
-                helper->conflict = D_NAMESPACE_STATE_CONFLICT;
+                helper->conflictEvent = D_NAMESPACE_STATE_CONFLICT;
             }else {
                 d_printTimedEvent(
                         helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
@@ -2120,7 +2109,7 @@ d_adminNameSpaceCheckConflicts(
                         nameSpaceName,
                         fellowRole);
 
-                helper->conflict = D_NAMESPACE_STATE_CONFLICT;
+                helper->conflictEvent = D_NAMESPACE_STATE_CONFLICT;
             }else {
                 d_printTimedEvent(
                         helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
@@ -2175,23 +2164,86 @@ d_adminReportMaster(
         helper.name = nameSpaceName;
         helper.fellowNameSpace = fellowNameSpace;
         helper.oldFellowNameSpace = oldFellowNameSpace;
-        helper.conflict = 0;
+        helper.conflictEvent = D_NONE;
         helper.stateConflicts = 0;
 
         /* Only check when I'm complete and fellow is past injecting persistent data */
         if ((durabilityState >= D_STATE_DISCOVER_PERSISTENT_SOURCE) && (d_fellowGetState(fellow) >= D_STATE_INJECT_PERSISTENT)) {
             d_adminNameSpaceCheckConflicts (admin, nameSpace, &helper);
 
-            /* If a conflict occured, create D_MASTER_CONFLICT event */
-            if (helper.conflict) {
+            /* If a conflict occured, create D_NAMESPACE_MASTER_CONFLICT or D_NAMESPACE_STATE_CONFLICT event */
+            if (helper.conflictEvent) {
                 /* Create copy from namespace (fellow namespace is likely to change) */
                 nameSpaceCopy = d_nameSpaceCopy (fellowNameSpace);
 
                 /* New conflict event */
-                d_adminNotifyListeners(admin, helper.conflict, NULL, nameSpaceCopy, NULL, helper.stateConflicts);
+                d_adminNotifyListeners(admin, helper.conflictEvent, NULL, nameSpaceCopy, NULL, helper.stateConflicts);
             }
         }
 
         d_nameSpaceFree (nameSpace);
+    }
+}
+
+void
+d_adminReportDelayedInitialSet (
+    d_admin admin,
+    d_nameSpace nameSpace,
+    d_fellow fellow)
+{
+    d_durability durability;
+    d_nameSpace localNameSpace;
+    d_quality q;
+    d_subscriber subscriber;
+    d_nameSpacesRequestListener nsrListener;
+    d_networkAddress addr;
+
+    subscriber = d_adminGetSubscriber(admin);
+    nsrListener = d_subscriberGetNameSpacesRequestListener(subscriber);
+    durability = admin->durability;
+    localNameSpace = d_adminGetNameSpace(admin, d_nameSpaceGetName(nameSpace));
+
+    /* Do not report when the namespace is not configured to allow delayed alignment. */
+    if(localNameSpace && d_nameSpaceGetDelayedAlignment(localNameSpace)) {
+
+        /* Get quality of local namespace */
+        q = d_nameSpaceGetInitialQuality(localNameSpace);
+
+        /* If own quality is non-zero, delayed alignment is not allowed. */
+        if(!(q.seconds || q.nanoseconds)) {
+
+            /* When the namespace-master is not confirmed, the service is determining masters, in which case this will resolve itself. */
+            if(d_nameSpaceIsMasterConfirmed(localNameSpace)) {
+
+                /* Set namespace state to pending - so incoming namespace messages will not re-trigger the namespacesListener. */
+                d_nameSpaceMasterPending(localNameSpace);
+
+                /* Set master to 0 */
+                addr = d_networkAddressNew(0,0,0);
+                d_nameSpaceSetMaster(localNameSpace, addr);
+                d_networkAddressFree(addr);
+
+                /* Let others know that I'm reconsidering my master */
+                d_nameSpacesRequestListenerReportNameSpaces(nsrListener);
+
+                d_printTimedEvent(
+                        durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
+                        "Delayed initial set discovered for namespace '%s'.\n",
+                        d_nameSpaceGetName(nameSpace));
+
+                /* Notify others that a delayed initial set is available */
+                d_adminNotifyListeners(admin, D_NAMESPACE_DELAYED_INITIAL, fellow, localNameSpace, NULL, NULL);
+            }
+        }else {
+            d_printTimedEvent(
+                    durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
+                    "No delayed alignment for local namespace '%s', local quality is non-zero.\n",
+                    d_nameSpaceGetName(nameSpace));
+        }
+    }else {
+        d_printTimedEvent(
+                durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
+                "No delayed alignment for local namespace '%s', namespace does not exist locally, or delayed alignment is not enabled.\n",
+                d_nameSpaceGetName(nameSpace));
     }
 }

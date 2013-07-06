@@ -1,20 +1,24 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef CCPP_UTILS_H
 #define CCPP_UTILS_H
 
-#include "gapi.h"
 #include "ccpp.h"
+#include "gapi.h"
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
+
+extern "C" {
+    OS_DCPS_API void ccpp_CallBack_DeleteUserData( void * userData, void * arg);
+}
 
 namespace DDS
 {
@@ -43,7 +47,7 @@ namespace DDS
     {
         to._maximum = from.maximum();
         to._length = from.length();
-        to._release = FALSE;
+        to._release = 0;
         if (to._maximum > 0){
           to._buffer = const_cast<GAPI_TYPE *>(from.get_buffer());
         } else {
@@ -72,22 +76,28 @@ namespace DDS
 
     typedef struct ccpp_UserData *ccpp_UserData_ptr;
 
-    struct ccpp_UserData : virtual public CORBA::LocalObject
+    struct ccpp_UserData : public LOCAL_REFCOUNTED_OBJECT
     {
 
         CORBA::Object_ptr ccpp_object;
         ::DDS::Listener_ptr ccpp_listener;
         ccpp_UserData_ptr ccpp_statusconditiondata;
+        bool isWeakRef;
 
         ccpp_UserData(
             CORBA::Object_ptr myObject,
             ::DDS::Listener_ptr myListener = NULL,
-            ::DDS::ccpp_UserData_ptr myStatusConditionData = NULL
+            ::DDS::ccpp_UserData_ptr myStatusConditionData = NULL,
+            bool weak = false
         ) : ccpp_object(myObject),
             ccpp_listener(myListener),
-            ccpp_statusconditiondata(myStatusConditionData)
+            ccpp_statusconditiondata(myStatusConditionData),
+            isWeakRef(weak)
         {
-            CORBA::Object::_duplicate(ccpp_object);
+            if (!isWeakRef)
+            {
+                CORBA::Object::_duplicate(ccpp_object);
+            }
             if (ccpp_listener)
             {
                 ::DDS::Listener::_duplicate(ccpp_listener);
@@ -106,7 +116,10 @@ namespace DDS
 
         virtual ~ccpp_UserData ()
         {
-            CORBA::release(ccpp_object);
+            if (!isWeakRef)
+            {
+                CORBA::release(ccpp_object);
+            }
             if (ccpp_listener)
             {
                 CORBA::release(ccpp_listener);
@@ -144,8 +157,6 @@ namespace DDS
 
     OS_DCPS_API void ccpp_BuiltinTopicKey_copyOut( const gapi_builtinTopicKey_t & from,
         ::DDS::BuiltinTopicKey_t &to);
-
-    OS_DCPS_API void ccpp_CallBack_DeleteUserData( void * entityData, void * args);
 
     OS_DCPS_API void ccpp_TimeStamp_copyIn(const ::DDS::Time_t & from, gapi_time_t & to);
 

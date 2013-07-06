@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,6 +15,113 @@
  * Implements shared memory management on basis of SVR4
  * shared memory segments
  */
+
+#ifdef OS_SHAREDMEM_SEG_DISABLE
+
+os_result 
+os_svr4_sharedMemoryAttach (
+    const char *name,
+    const os_sharedAttr *sharedAttr,
+    void **mapped_address)
+{
+    OS_UNUSED_ARG (sharedAttr);
+    OS_UNUSED_ARG (name);
+    OS_UNUSED_ARG (mapped_address);
+    return os_resultFail;
+}
+
+os_result os_svr4_sharedMemoryDestroy (const char *name)
+{
+    OS_UNUSED_ARG (name);
+    return os_resultFail;
+}
+
+os_result
+os_svr4_sharedMemoryCreate (
+    const char *name,
+    os_sharedAttr *sharedAttr,
+    os_address size,
+    const os_int32 id)
+{
+    OS_UNUSED_ARG (size);
+    OS_UNUSED_ARG (sharedAttr);
+    OS_UNUSED_ARG (name);
+    OS_UNUSED_ARG (id);
+    return os_resultFail;
+}
+
+os_result os_svr4_sharedMemoryDetach (const char *name, void *address)
+{
+    OS_UNUSED_ARG (address);
+    OS_UNUSED_ARG (name);
+    return os_resultFail;
+}
+
+os_result os_svr4_sharedSize (const char *name, os_address *size)
+{
+    OS_UNUSED_ARG (size);
+    OS_UNUSED_ARG (name);
+    return os_resultFail;
+}
+
+os_result os_svr4_sharedMemoryGetNameFromId (os_int32 id, char **name)
+{
+    OS_UNUSED_ARG (id);
+    OS_UNUSED_ARG (name);
+    return os_resultFail;
+}
+
+os_int32 os_svr4_listUserProcessesFree(os_iter pidList)
+{
+    OS_UNUSED_ARG (pidList);
+    return 0;
+}
+
+char * os_svr4_findKeyFileByNameAndId(const char *name, const int id)
+{
+    OS_UNUSED_ARG (id);
+    OS_UNUSED_ARG (name);
+    return NULL;
+}
+
+os_int32 os_svr4_listUserProcesses(os_iter pidList, const char * fileName)
+{
+    OS_UNUSED_ARG (pidList);
+    OS_UNUSED_ARG (fileName);
+    return 0;
+}
+
+char *os_svr4_findKeyFile(const char *name)
+{
+    OS_UNUSED_ARG (name);
+    return NULL;
+}
+
+os_int32 os_svr4_listDomainNames(os_iter nameList)
+{
+    OS_UNUSED_ARG (nameList);
+    return 0;
+}
+
+os_int32 os_svr4_listDomainNamesFree(os_iter nameList)
+{
+    OS_UNUSED_ARG (nameList);
+    return 0;
+}
+
+int os_svr4_destroyKeyFile(const char *name)
+{
+    OS_UNUSED_ARG (name);
+    return 0;
+}
+
+int os_svr4_destroyKey(const char *name)
+{
+    OS_UNUSED_ARG (name);
+    return 0;
+}
+
+#else
 
 #include "os_heap.h"
 #include "os_abstract.h"
@@ -35,16 +142,34 @@
 /** Defines the permissions for the created shared memory segment */
 #define OS_PERMISSION \
         (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
-
+#define OS_FILEPERMBITS (S_IRWXU | S_IRWXG | S_IRWXO)
 /** Defines the file format for the key file
  *
  * The key file defines on line 1 the identification of the shared memory
  * On line 2 the virtual address of the area is defined.
  * On the third line, the size of the shared memory is stored
  */
-static const char os_svr4_key_file_format[] = "spddskey_XXXXXX";
+const char os_svr4_key_file_format[] = "spddskey_XXXXXX";
 
-static int os_destroyKey(const char *name);
+/*static int os_destroyKey(const char *name);*/
+
+char *
+os_svr4_findKeyFile(
+    const char *name);
+
+char *
+os_svr4_findKeyFileByNameAndId(
+    const char *name,
+    const int id);
+
+int
+os_svr4_destroyKey(
+    const char *name);
+
+int
+os_svr4_findNameByIndex(
+    const int ix,
+    char **name);
 
 static int
 os_svr4_get_shmumask(void)
@@ -55,6 +180,8 @@ os_svr4_get_shmumask(void)
     umask(cmask);     /* Set it back to the original setting */
     return cmask;
 }
+
+
 
 static int
 os_svr4_get_kfumask(void)
@@ -94,6 +221,85 @@ os_svr4_matchKey(
     return rv;
 }
 
+static int
+os_svr4_matchKeyFileByIdAndName(
+    const char *key_file_name,
+    const int id,
+    const char *name)
+{
+    int f_id = 0;
+    FILE *key_file;
+    char line[512];
+    int rv =0;
+
+    if (key_file_name != NULL) {
+    key_file = fopen(key_file_name, "r");
+        if (key_file != NULL) {
+            if (fgets(line, sizeof(line), key_file) != NULL) { /* line 1 name */
+                if (strcmp(name, line) == 0) {
+                    rv = 1;
+                }
+            }
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           if (fgets(line, sizeof(line), key_file) != NULL) { /* line 6 id */
+               sscanf(line, "%d", &f_id);
+           }
+           fclose(key_file);
+        }
+    }
+    return (id == f_id && rv);
+}
+
+/** \brief Check if the contents of the identified key file
+ *         matches the identified id and and set the name
+ *
+ * \b os_svr4_getNameById tries to compare the contents of the identified
+ * key file in \b key_file_name with the identified \b id.
+ * On a match 1 will be returned and the domain name will be set,
+ * on a mismatch 0 will be returned and name will be NULL.
+ */
+int
+os_svr4_getNameById(
+    const char *key_file_name,
+    const int id,
+    char **name)
+{
+    int f_id = 0;
+    int retVal =0;
+    FILE *key_file;
+    char line[512];
+
+    if (key_file_name != NULL) {
+    key_file = fopen(key_file_name, "r");
+        if (key_file != NULL) {
+           if (fgets(line, sizeof(line), key_file) != NULL) { /* line 1 name */
+               *name =  os_strdup(line);
+           }
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           if (fgets(line, sizeof(line), key_file) != NULL) { /* line 6 id */
+               sscanf(line, "%d", &f_id);
+           }
+           fclose(key_file);
+           if (id != f_id) {
+               os_free(*name);
+               *name = NULL;
+           } else {
+               retVal =1;
+           }
+        }
+    }
+
+    return retVal;
+}
+
+
+
 /** \brief Return the file-path of the key file related
  *         to the identified shared memory
  *
@@ -112,7 +318,8 @@ os_svr4_matchKey(
  *
  * If no matching entry is found, NULL is returned to the caller.
  */
-static char *
+
+char *
 os_svr4_findKeyFile(
     const char *name)
 {
@@ -155,108 +362,262 @@ os_svr4_findKeyFile(
     return kfn;
 }
 
-/** \brief Remove shared memory remnants from a previous session
- *
- * \b os_svr4_removeFromPreviousSession tries to find remnants from a previous
- * session and to destroy them. Remnants to look for are the key file
- * and the shared memory segment.
- * Conditions to remove them are:
- * - The current user must be owner of the key file
- * - The shared memory segment may not have users attached
- *
- * If it is not valid to preceed further actions because
- * remnants could not be removed, 0 is resturned, else 1 is returned.
- */
-static int
-os_svr4_removeFromPreviousSession(
+char *
+os_svr4_findKeyFileByNameAndId(
     const char *name,
-    void *map_address,
-    os_address size)
+    const int id)
 {
+    DIR *key_dir;
+    struct dirent *entry;
     char *kfn = NULL;
-    int shmid;
-    int result = 1;
-    struct shmid_ds shmid_ds;
-    struct stat filestat;
-    key_t key;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
 
-    kfn = os_svr4_findKeyFile(name);
-    if (kfn) {
-        if (stat (kfn, &filestat) != -1) {
-            if (filestat.st_uid == getuid()) {
-                key = ftok(kfn, 'S');
-                if (key != -1) {
-                    shmid = shmget(key, 0, 0);
-                    if (shmid == -1) {
-                        if (errno == ENOENT) {
-                            /* No matching shared segment is found */
-                            unlink(kfn);
-                            if (ftok(kfn, 'S') != -1) {
-                                /* key file could not be removed */
-                                result = 0;
-                            }
-                        } else {
-                            OS_REPORT_3(OS_ERROR,
-                                        "os_svr4_removeFromPreviousSession", 1,
-                                        "Operation shmget failed with error (%d) = \"%s\"\n"
-                                        "Domain      : \"%s\"",
-                                        errno, strerror(errno), name);
-                            result = 0;
-                        }
-                    } else {
-                        if (shmctl(shmid, IPC_STAT, &shmid_ds) == -1) {
-                            OS_REPORT_3(OS_ERROR,
-                                        "os_svr4_removeFromPreviousSession", 1,
-                                        "Operation shmctl (IPC_STAT) failed with error (%d) = \"%s\"\n"
-                                        "Domain      : \"%s\"",
-                                        errno, strerror(errno), name);
-                            result = 0;
-                        } else if (shmid_ds.shm_nattch) {
-                            OS_REPORT_1(OS_WARNING,
-                                        "os_svr4_removeFromPreviousSession", 2,
-                                        "still users attached to Domain: (%s)",
-                                        name);
-                            result = 0;
-                        } else if (shmctl(shmid, IPC_RMID, NULL) == -1) {
-                            OS_REPORT_3(OS_ERROR,
-                                        "os_svr4_removeFromPreviousSession", 1,
-                                        "Operation shmctl (IPC_RMID) failed with error (%d) = \"%s\"\n"
-                                        "Domain      : \"%s\"",
-                                        errno, strerror(errno), name);
-                            result = 0;
-                        } else if (os_destroyKey(name) == -1) {
-                            result = 0;
-                        }
+    dir_name = os_getTempDir();
+    key_dir = opendir(dir_name);
+    if (key_dir) {
+        entry = readdir(key_dir);
+        while (entry != NULL) {
+            if (strncmp(entry->d_name, "spddskey_", 9) == 0) {
+                key_file_name_size = strlen(dir_name) + strlen(os_svr4_key_file_format) + 2;
+                key_file_name = os_malloc (key_file_name_size);
+                snprintf(key_file_name,
+                         key_file_name_size,
+                         "%s/%s",
+                         dir_name,
+                         entry->d_name);
+                if (os_svr4_matchKeyFileByIdAndName(key_file_name, id, name)) {
+                    kfn = os_malloc(strlen(key_file_name) + 1);
+                    if (kfn != NULL) {
+                        os_strcpy(kfn, key_file_name);
                     }
+                    entry = NULL;
                 } else {
-                    OS_REPORT_3(OS_ERROR,
-                                "os_svr4_removeFromPreviousSession", 1,
-                                "Operation ftok failed with error (%d) = \"%s\"\n"
-                                "Domain      : \"%s\"",
-                                errno, strerror(errno), name);
+                    entry = readdir(key_dir);
                 }
-	    } else {
-                OS_REPORT_1(OS_WARNING,
-                            "os_svr4_removeFromPreviousSession", 3,
-                            "Keyfile from previoues session is found but "
-                            "owned by a different user with id %d",
-                            filestat.st_uid);
-                result = 0;
-	    }
-        } else {
-            if (errno != ENOENT) {
-                OS_REPORT_3(OS_ERROR,
-                            "os_svr4_removeFromPreviousSession", 1,
-                            "Operation stat failed with error (%d) = \"%s\"\n"
-                            "Domain      : \"%s\"",
-                            errno, strerror(errno), name);
-                result = 0;
+                os_free (key_file_name);
+            } else {
+                entry = readdir(key_dir);
             }
         }
-        os_free(kfn);
+        closedir(key_dir);
     }
-    return result;
+    return kfn;
 }
+
+int
+os_svr4_findNameById(
+    const int id,
+    char **name)
+{
+    DIR *key_dir;
+    struct dirent *entry;
+    int rv =0;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
+
+    dir_name = os_getTempDir();
+    key_dir = opendir(dir_name);
+    if (key_dir) {
+        entry = readdir(key_dir);
+        while (entry != NULL) {
+            if (strncmp(entry->d_name, "spddskey_", 9) == 0) {
+                key_file_name_size = strlen(dir_name) + strlen(os_svr4_key_file_format) + 2;
+                key_file_name = os_malloc (key_file_name_size);
+                snprintf(key_file_name,
+                         key_file_name_size,
+                         "%s/%s",
+                         dir_name,
+                         entry->d_name);
+                if (os_svr4_getNameById(key_file_name, id, name)) {
+                    rv =1;
+                    entry = NULL;
+                } else {
+                    entry = readdir(key_dir);
+                }
+                os_free (key_file_name);
+            } else {
+                entry = readdir(key_dir);
+            }
+        }
+        closedir(key_dir);
+    }
+    return rv;
+}
+
+/** \brief Return list of processes defined in key file \b fileName
+ *         as an iterator contained in \b pidList
+ *
+ * \b linux key file format only supports creator pid entry in key file
+ *
+ * \b returns 0 on success and 1 if key file not found or unreadable
+ */
+os_int32
+os_svr4_listUserProcesses(
+    os_iter pidList,
+    const char * fileName)
+{
+    os_int32 pid;
+    FILE *key_file;
+    char line[512];
+    char pidstr[16];
+    char *listpidstr;
+    int i;
+
+    /* get pid fileName key file */
+
+    if (fileName != NULL)
+    {
+        key_file = fopen(fileName, "r");
+        if (key_file != NULL)
+        {
+            fgets(line, sizeof(line), key_file); /* domain name */
+            fgets(line, sizeof(line), key_file); /* address */
+            fgets(line, sizeof(line), key_file); /* size */
+            fgets(line, sizeof(line), key_file); /* implementation */
+            /* creator pid */
+            if (fgets(line, sizeof(line), key_file) != NULL)
+            {
+                i = sscanf(line, "%d", &pid);
+
+                /* change pid to string to match iterator model */
+                snprintf(pidstr,16,"%d",pid);
+                listpidstr =  os_strdup(pidstr);
+                os_iterAppend(pidList, listpidstr);
+            }
+
+            if (fclose(key_file) == 0)
+            {
+                return 0;
+            }
+            else
+            {
+                return 1;
+            }
+        }
+        else
+        {
+            return 1;
+        }
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+/** \brief frees memory used by iterator created by prior call to
+ *  \b os_svr4_listUserProcesses creating list in \b pidList
+ */
+os_int32
+os_svr4_listUserProcessesFree(
+    os_iter pidList)
+{
+    char *pidstr;
+
+    pidstr = (char *) os_iterTakeFirst(pidList);
+    while (pidstr)
+    {
+        os_free(pidstr);
+        pidstr = (char *) os_iterTakeFirst(pidList);
+    }
+    return 0;
+}
+
+/** \brief Return list in \b nameList of running opensplice domains defined
+ * by presence of associated key files in relevant temporary directory
+ *
+ * \b linux key file format only supports creator pid entry in key file
+ *
+ * \b returns 0 on success and 1 if key file not found or unreadable
+ */
+os_int32
+os_svr4_listDomainNames(
+    os_iter nameList)
+{
+    DIR *key_dir;
+    struct dirent *entry;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
+    FILE *key_file;
+    char line[512];
+    char *name;
+    os_int32 retVal = 0;
+
+    dir_name = os_getTempDir();
+    key_dir = opendir(dir_name);
+    if (key_dir)
+    {
+        entry = readdir(key_dir);
+        while (entry != NULL)
+        {
+            if (strncmp(entry->d_name, "spddskey_", 9) == 0)
+            {
+
+                key_file_name_size = strlen(dir_name) + strlen(os_posix_key_file_format) + 2;
+                key_file_name = os_malloc (key_file_name_size);
+
+                if (key_file_name != NULL)
+                {
+                    snprintf(key_file_name,
+                         key_file_name_size,
+                         "%s/%s",
+                         dir_name,
+                         entry->d_name);
+                    key_file = fopen(key_file_name, "r");
+                    if (key_file != NULL)
+                    {
+                       if (fgets(line, sizeof(line), key_file) != NULL)
+                       {
+                           /* line 1 domain name */
+                           name =  os_strdup(line);
+                           os_iterAppend(nameList, name);
+
+                       }
+                       if (fclose(key_file) != 0)
+                       {
+                            retVal = 1;
+                       }
+                    }
+                    else
+                    {
+                        retVal = 1;
+                    }
+                }
+                os_free (key_file_name);
+            }
+            entry = readdir(key_dir);
+        }
+        if (closedir(key_dir) != 0)
+        {
+            retVal = 1;
+        }
+    }
+
+    return retVal;
+}
+
+/** \brief frees memory used by iterator created by prior call to
+ *  \b os_svr4_listDomainNames creating list in \b nameList
+ */
+os_int32
+os_svr4_listDomainNamesFree(
+    os_iter nameList)
+{
+    char *name;
+
+    name = (char *) os_iterTakeFirst(nameList);
+    while (name)
+    {
+        os_free(name);
+        name = (char *) os_iterTakeFirst(nameList);
+    }
+    return 0;
+}
+
 
 /** \brief Get a SVR4 IPC key for a shared memory segment by name
  *
@@ -278,18 +639,18 @@ static key_t
 os_svr4_getKey(
     const char *name,
     void *map_address,
-    os_address size)
+    os_address size,
+    const int id)
 {
     int key_file_fd;
     char *key_file_name;
     unsigned int name_len;
     char buffer[50];
     key_t key;
-    int cmask;
-    int invalid_access;
+    int maxperm, reqperm;
     char * dir_name = NULL;
 
-    key_file_name = os_svr4_findKeyFile(name);
+    key_file_name = os_svr4_findKeyFileByNameAndId(name,id);
     if ((map_address != NULL) && (key_file_name == NULL)) {
         dir_name = os_getTempDir();
         name_len = strlen(dir_name) + strlen(os_svr4_key_file_format) + 2;
@@ -297,44 +658,33 @@ os_svr4_getKey(
         if (key_file_name != NULL) {
             snprintf(key_file_name, name_len, "%s/%s", dir_name, os_svr4_key_file_format);
             key_file_fd = mkstemp(key_file_name);
-            invalid_access = 0;
-            cmask = os_svr4_get_kfumask();
-            if ((cmask & (S_IWUSR | S_IRUSR)) &&
-                ((cmask & (S_IWUSR | S_IRUSR)) != ((S_IWUSR | S_IRUSR)))) {
-                cmask |= (S_IWUSR | S_IRUSR);
-                invalid_access = 1;
+            /* The inverse of the umask is the resulting maximum permission on a new file. */
+            maxperm = reqperm = ~os_svr4_get_kfumask() & OS_FILEPERMBITS;
+            /* For each of USR, GRP and OTH check if either one is set and set both if so. */
+            if (maxperm & (S_IWUSR | S_IRUSR)) {
+                reqperm |= (S_IWUSR | S_IRUSR);
             }
-            if ((cmask & (S_IWGRP | S_IRGRP)) &&
-                ((cmask & (S_IWGRP | S_IRGRP)) != ((S_IWGRP | S_IRGRP)))) {
-                cmask |= (S_IWGRP | S_IRGRP);
-                invalid_access = 1;
+            if (maxperm & (S_IWGRP | S_IRGRP)) {
+                reqperm |= (S_IWGRP | S_IRGRP);
             }
-            if ((cmask & (S_IWOTH | S_IROTH)) &&
-                ((cmask & (S_IWOTH | S_IROTH)) != ((S_IWOTH | S_IROTH)))) {
-                cmask |= (S_IWOTH | S_IROTH);
-                invalid_access = 1;
+            if (maxperm & (S_IWOTH | S_IROTH)) {
+                reqperm |= (S_IWOTH | S_IROTH);
             }
-            if (invalid_access) {
-                int pmask = os_svr4_get_kfumask();
-                OS_REPORT_7(OS_INFO,
+            if (maxperm != reqperm) {
+                OS_REPORT_3(OS_INFO,
                             "os_svr4_getKey", 1,
-                            "The user file-creation mask (0%o%o%o) set for the service specifies"
+                            "The user file-creation mask (%04o) set for the service specifies"
                             OS_REPORT_NL "exclusive read or write access for at least one of the access catagories."
                             OS_REPORT_NL "Read and write access should always be paired,"
-                            OS_REPORT_NL "both prohibit or granted for each access catagory."
+                            OS_REPORT_NL "both prohibit or granted for each access category."
                             OS_REPORT_NL "Therefore the service has set the user access permissions"
-                            OS_REPORT_NL "for the shared memory segment associated to this domain to (0%o%o%o).\n"
+                            OS_REPORT_NL "for the shared memory segment associated to this domain to (%04o).\n"
                             "Domain      : \"%s\"",
-                             (pmask & (S_IWUSR | S_IRUSR)) >> 6,
-                             (pmask & (S_IWGRP | S_IRGRP)) >> 3,
-                              pmask & (S_IWOTH | S_IROTH),
-                             (cmask & (S_IWUSR | S_IRUSR)) >> 6,
-                             (cmask & (S_IWGRP | S_IRGRP)) >> 3,
-                              cmask & (S_IWOTH | S_IROTH),
-                              name);
+                            ~maxperm & OS_FILEPERMBITS,
+                            reqperm & OS_PERMISSION,
+                            name);
             }
-
-            fchmod(key_file_fd, OS_PERMISSION & (~cmask));
+            fchmod(key_file_fd, reqperm & OS_PERMISSION);
             write(key_file_fd, name, strlen(name) + 1);
             write(key_file_fd, "\n", 1);
             snprintf(buffer, sizeof (buffer), PA_ADDRFMT"\n",
@@ -345,6 +695,8 @@ os_svr4_getKey(
             snprintf(buffer, sizeof (buffer), "SVR4-IPCSHM\n");
             write(key_file_fd, buffer, strlen(buffer));
             snprintf(buffer, sizeof (buffer), "%d\n", (int)getpid());
+            write(key_file_fd, buffer, strlen(buffer));
+            snprintf(buffer, sizeof (buffer), "%d\n", id);
             write(key_file_fd, buffer, strlen(buffer));
             setpgrp(); /* Make this process the session leader. */
             snprintf(buffer, sizeof (buffer), "%d\n", (int)getpgrp());
@@ -373,9 +725,11 @@ os_svr4_getMapAddress(
     const char *name)
 {
     char *key_file_name;
-    void *map_address = NULL;
+    os_address map_address;
     FILE *key_file;
     char line[512];
+
+    map_address = 0;
 
     key_file_name = os_svr4_findKeyFile(name);
     if (key_file_name != NULL) {
@@ -388,7 +742,7 @@ os_svr4_getMapAddress(
         }
         os_free(key_file_name);
     }
-    return map_address;
+    return (void*)map_address;
 }
 
 /** \brief Get the size of sharedmem
@@ -422,6 +776,39 @@ os_svr4_getSize(
     return size;
 }
 
+/** \brief Get a file id by name
+ *
+ * \b os_svr4_getIdFromName returns the id of the named shared memory object.
+ */
+static int
+os_svr4_getIdFromName(
+    const char *name)
+{
+    char *key_file_name;
+    int id = 0;
+    FILE *key_file;
+    char line[512];
+
+    key_file_name = os_svr4_findKeyFile(name);
+    if (key_file_name != NULL) {
+    key_file = fopen(key_file_name, "r");
+    if (key_file != NULL) {
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        sscanf(line, "%d", &id);
+        fclose(key_file);
+    }
+        os_free(key_file_name);
+    }
+    return id;
+}
+
+
+
 /** \brief Destroy the key related to the name
  *
  * The key file related to name is destroyed.
@@ -432,8 +819,9 @@ os_svr4_getSize(
  * Depending on the result of \b unlink, 0 or -1
  * is returned after \b key_file_name is freed.
  */
-static int
-os_destroyKey(
+
+int
+os_svr4_destroyKey(
     const char *name)
 {
     char *key_file_name;
@@ -457,6 +845,28 @@ os_destroyKey(
     return rv;
 }
 
+/** \brief Destroy the key file with filename name
+ */
+
+int
+os_svr4_destroyKeyFile(
+    const char *name)
+{
+    int rv = 0;
+
+    if (unlink(name) == -1 && errno != ENOENT)
+    {
+        OS_REPORT_3(OS_WARNING,
+                    "os_svr4_destroyKeyFile", 1,
+                    "Operation unlink failed with error (%d) = \"%s\"\n"
+                    "Domain      : \"%s\"",
+                    errno, strerror(errno), name);
+        rv = -1;
+    }
+    return rv;
+}
+
+
 /** \brief Create a named shared memory segment based upon
  *         SVR4 IPC shared memory segments
  *
@@ -472,11 +882,11 @@ os_result
 os_svr4_sharedMemoryCreate(
     const char *name,
     const os_sharedAttr *sharedAttr,
-    os_address size)
+    os_address size,
+    const int id)
 {
     int shmid;
-    int cmask;
-    int invalid_access;
+    int reqperm, maxperm;
     key_t key;
     os_result rv;
 
@@ -484,53 +894,41 @@ os_svr4_sharedMemoryCreate(
     if ((size % getpagesize()) != 0) {
         size += getpagesize() - (size % getpagesize());
     }
-    key = os_svr4_getKey(name, sharedAttr->map_address, size);
+    key = os_svr4_getKey(name, sharedAttr->map_address, size, id);
     if (key == -1) {
         rv = os_resultFail;
     } else {
         /* roundup to page boundaries */
         if ((size % getpagesize()) != 0) {
             size += getpagesize() - (size % getpagesize());
-	}
-        invalid_access = 0;
-        cmask = os_svr4_get_shmumask();
-        if ((cmask & (S_IWUSR | S_IRUSR)) &&
-            ((cmask & (S_IWUSR | S_IRUSR)) != ((S_IWUSR | S_IRUSR)))) {
-            cmask |= (S_IWUSR | S_IRUSR);
-            invalid_access = 1;
         }
-        if ((cmask & (S_IWGRP | S_IRGRP)) &&
-            ((cmask & (S_IWGRP | S_IRGRP)) != ((S_IWGRP | S_IRGRP)))) {
-            cmask |= (S_IWGRP | S_IRGRP);
-            invalid_access = 1;
+        /* The inverse of the umask is the resulting maximum permission on a new file. */
+        maxperm = reqperm = ~os_svr4_get_shmumask() & OS_FILEPERMBITS;
+        /* For each of USR, GRP and OTH check if either one is set and set both if so. */
+        if (maxperm & (S_IWUSR | S_IRUSR)) {
+            reqperm |= (S_IWUSR | S_IRUSR);
         }
-        if ((cmask & (S_IWOTH | S_IROTH)) &&
-            ((cmask & (S_IWOTH | S_IROTH)) != ((S_IWOTH | S_IROTH)))) {
-            cmask |= (S_IWOTH | S_IROTH);
-            invalid_access = 1;
+        if (maxperm & (S_IWGRP | S_IRGRP)) {
+            reqperm |= (S_IWGRP | S_IRGRP);
         }
-        if (invalid_access) {
-            int pmask = os_svr4_get_shmumask();
-            OS_REPORT_7(OS_INFO,
+        if (maxperm & (S_IWOTH | S_IROTH)) {
+            reqperm |= (S_IWOTH | S_IROTH);
+        }
+        if (maxperm != reqperm) {
+            OS_REPORT_3(OS_INFO,
                         "os_svr4_sharedMemoryCreate", 1,
-                        "The shared-memory-creation mask (0%o%o%o) set for the service specifies"
-                        OS_REPORT_NL "exclusive read or write access for at least one of the access catagories."
+                        "The shared-memory-creation mask (%04o) set for the service specifies"
+                        OS_REPORT_NL "exclusive read or write access for at least one of the access categories."
                         OS_REPORT_NL "Read and write access should always be paired,"
-                        OS_REPORT_NL "both prohibit or granted for each access catagory."
+                        OS_REPORT_NL "both prohibit or granted for each access category."
                         OS_REPORT_NL "Therefore the service has set the user access permissions"
-                        OS_REPORT_NL "for the shared memory segment associated to this domain to (0%o%o%o).\n"
+                        OS_REPORT_NL "for the shared memory segment associated to this domain to (%04o).\n"
                         "Domain      : \"%s\"",
-                         (pmask & (S_IWUSR | S_IRUSR)) >> 6,
-                         (pmask & (S_IWGRP | S_IRGRP)) >> 3,
-                          pmask & (S_IWOTH | S_IROTH),
-                         (cmask & (S_IWUSR | S_IRUSR)) >> 6,
-                         (cmask & (S_IWGRP | S_IRGRP)) >> 3,
-                          cmask & (S_IWOTH | S_IROTH),
-                          name);
-
+                         ~maxperm & OS_FILEPERMBITS,
+                         reqperm & OS_PERMISSION,
+                         name);
         }
-        shmid = shmget (key, size,
-                        IPC_CREAT | IPC_EXCL | (OS_PERMISSION & (~cmask)));
+        shmid = shmget (key, size, IPC_CREAT | IPC_EXCL | (reqperm & OS_PERMISSION) );
         if (shmid == -1) {
             OS_REPORT_4(OS_ERROR,
                         "os_svr4_sharedMemoryCreate", 1,
@@ -568,11 +966,11 @@ os_svr4_sharedMemoryDestroy(
     os_result rv;
     int result;
 
-    key = os_svr4_getKey(name, NULL, 0);
+    key = os_svr4_getKey(name, NULL, 0,os_svr4_getIdFromName(name));
     if (key == -1) {
         OS_REPORT_4(OS_ERROR,
                     "os_svr4_sharedMemoryDestroy", 1,
-                    "Operation os_svr4_getKey(%s,NULL,0) failed with error (%d) = \"%s\"\n"
+                    "Operation os_svr4_getKey(%d,NULL,0) failed with error (%d) = \"%s\"\n"
                     "Domain name : \"%s\"",
                     key, errno, strerror(errno), name);
         rv = os_resultFail;
@@ -608,7 +1006,7 @@ os_svr4_sharedMemoryDestroy(
                             "Domain name : \"%s\"",
                             shmid, errno, strerror(errno), name);
                 rv = os_resultFail;
-            } else if (os_destroyKey(name) == -1) {
+            } else if (os_svr4_destroyKey(name) == -1) {
                 OS_REPORT_1(OS_ERROR,
                             "os_svr4_sharedMemoryDestroy", 3,
                             "Failed to destroy shm key for Domain=\"%s\".",
@@ -616,11 +1014,13 @@ os_svr4_sharedMemoryDestroy(
                 rv = os_resultFail;
             } else {
                 rv = os_resultSuccess;
-	    }
+        }
         }
     }
     return rv;
 }
+
+
 
 /** \brief Attach to the SVR4 IPC shared memory segment related to name
  *
@@ -641,14 +1041,17 @@ os_svr4_sharedMemoryAttach(
     void **mapped_address)
 {
     key_t key;
-    int shmid, success;
+    int shmid;
     void *map_address;
     void *request_address;
     os_result rv;
 
-    key = os_svr4_getKey(name, NULL, 0);
+    OS_UNUSED_ARG(sharedAttr);
+
+    key = os_svr4_getKey(name, NULL, 0,os_svr4_getIdFromName(name));
+
     if (key == -1) {
-	rv = os_resultFail;
+        rv = os_resultFail;
     } else {
         request_address = os_svr4_getMapAddress(name);
         shmid = shmget(key, 0, 0);
@@ -657,11 +1060,10 @@ os_svr4_sharedMemoryAttach(
                         "os::svr4::os_svr4_sharedMemoryAttach", 1,
                         "Operation shmget(%d,0,0) failed."
                         OS_REPORT_NL "result = \"%s\" (%d)"
-			OS_REPORT_NL "Domain id = \"%s\" (0x%x)",
+            OS_REPORT_NL "Domain id = \"%s\" (0x%x)",
                         key,strerror(errno),errno, name,request_address);
             rv = os_resultFail;
-        }
-        else {
+        } else {
             map_address = shmat(shmid, request_address, SHM_RND);
             if (map_address != request_address) {
                 rv = os_resultFail;
@@ -737,5 +1139,23 @@ os_svr4_sharedSize(
     return rv;
 }
 
+os_result
+os_svr4_sharedMemoryGetNameFromId(
+    int id,
+    char **name)
+{
+    os_result rv;
+    os_int32 r;
+    r = os_svr4_findNameById(id,name);
+    if (r) {
+        rv = os_resultSuccess;
+    } else {
+        rv = os_resultFail;
+    }
+
+    return rv;
+}
+
 #undef OS_PERMISSION
 
+#endif /* OS_SHAREDMEM_SEG_DISABLE */

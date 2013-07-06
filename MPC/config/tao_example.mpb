@@ -1,0 +1,10 @@
+feature(!ospl_dcpsccpp) {
+    requires = dummy_label
+}
+
+feature(no_tao) {
+    requires = dummy_label
+}
+
+feature(ospl_dcpsccpp, !no_tao) : portableserver, anytypecode {
+}

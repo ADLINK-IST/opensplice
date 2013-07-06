@@ -47,13 +47,14 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactory_create_participant")]
         public static extern IntPtr create_participant(
             IntPtr _this,
-            string domainId,
+            int domainId,
             IntPtr qos,
             IntPtr a_listener,
             StatusKind mask,
             IntPtr thread_start_action,
             IntPtr thread_stop_action,
-            IntPtr thread_action_arg);
+            IntPtr thread_action_arg,
+            string name);
 
         /*     ReturnCode_t
          *     delete_participant(
@@ -71,7 +72,7 @@ namespace DDS.OpenSplice.Gapi
         [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactory_lookup_participant")]
         public static extern IntPtr lookup_participant(
             IntPtr _this,
-            string domainId);
+            int domainId);
 
         /*     ReturnCode_t
          *     set_qos(

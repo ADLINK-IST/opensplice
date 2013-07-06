@@ -1,0 +1,8 @@
+Requirements for fwctrl to work:
+
+- Netfilter needs to be enabled in Linux kernel and IPTables firewall needs to be installed
+- The user that runs the commands must have access to iptables-save and iptables-restore:
+    $ chmod u+s /sbin/iptables-save
+    $ chmod u+s /sbin/iptables-restore
+- For some reason iptables-save doesn't work if iptables itself was never run.
+    $ iptables -L (as root)

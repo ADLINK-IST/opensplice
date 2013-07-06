@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -95,9 +95,6 @@ v_entityEnable (
     v_entity e)
 {
     v_result result;
-    v_topic found;
-
-    found = NULL;
 
     assert(e != NULL);
     assert(C_TYPECHECK(e,v_entity));
@@ -108,11 +105,14 @@ v_entityEnable (
         e->enabled = TRUE;
         switch (v_objectKind(e)) {
         case K_TOPIC:
-            result = v_topicEnable(v_topic(e), &found);
-            if(found)
-            {
-                c_free(found);
-            }
+            /* TODO: OSPL-12.
+             * Topics are currently always created in an enabled state, so it makes no sense
+             * to try and enable them here. What is needed is that, when disabled topics are
+             * supported, we check whether the v_topicEnable fails, and if it does we return
+             * this fail to the user layer, which then needs to reroute its handle to the
+             * topic's precursor.
+             */
+            result = V_RESULT_OK;
         break;
         case K_WRITER:
             result = v_writerEnable(v_writer(e));
@@ -132,6 +132,7 @@ v_entityEnable (
         case K_NETWORKING:
         case K_DURABILITY:
         case K_CMSOAP:
+        case K_RNR:
         case K_NETWORKREADER:
         case K_GROUPQUEUE:
         case K_DATAVIEW:
@@ -241,6 +242,7 @@ v_entityWalkEntities(
     case K_DURABILITY:
     case K_NETWORKING:
     case K_CMSOAP:
+    case K_RNR:
         c_lockRead(&v_participant(e)->lock);
         r = c_setWalk(v_participant(e)->entities,(c_action)action,arg);
         c_lockUnlock(&v_participant(e)->lock);
@@ -310,7 +312,6 @@ v_entityWalkDependantEntities(
     c_bool (*action)(v_entity e, c_voidp arg),
     c_voidp arg)
 {
-    v_kernel kernel;
     c_bool r;
     v_entity entity;
     c_iter iter;
@@ -326,7 +327,6 @@ v_entityWalkDependantEntities(
 
     r = TRUE;
 
-    kernel = v_objectKernel(e);
     switch(v_objectKind(e)){
     case K_DATAREADER:
         if (v_reader(e)->subscriber != NULL) {
@@ -419,7 +419,7 @@ v_entityWalkDependantEntities(
 #ifdef DDS_268
                 if(r == TRUE){
                     c_lockRead(&v_publisher(entity)->lock);
-                    iter2 = c_select(v_publisher(entity)->writers, 0);
+                    iter2 = ospl_c_select(v_publisher(entity)->writers, 0);
                     c_lockUnlock(&v_publisher(entity)->lock);
 
                     entity2 = v_entity(c_iterTakeFirst(iter2));
@@ -454,7 +454,7 @@ v_entityWalkDependantEntities(
 #ifdef DDS_268
                     if(r == TRUE){
                         c_lockRead(&v_subscriber(entity)->lock);
-                        iter2 = c_select(v_subscriber(entity)->readers, 0);
+                        iter2 = ospl_c_select(v_subscriber(entity)->readers, 0);
                         c_lockUnlock(&v_subscriber(entity)->lock);
 
                         entity2 = v_entity(c_iterTakeFirst(iter2));
@@ -518,6 +518,7 @@ v_entityGetQos(
     case K_NETWORKING:
     case K_DURABILITY:
     case K_CMSOAP:
+    case K_RNR:
         qos = v_qos(c_keep(v_participant(e)->qos));
     break;
     case K_TOPIC:
@@ -571,6 +572,7 @@ v_entitySetQos(
     case K_NETWORKING:
     case K_DURABILITY:
     case K_CMSOAP:
+    case K_RNR:
         result = v_participantSetQos(v_participant(e), (v_participantQos)qos);
     break;
     case K_TOPIC:

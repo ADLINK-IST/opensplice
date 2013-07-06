@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Include>
+<%marker(top)%>
+<%foreach(platforms)%>
+<%foreach(configurations)%>
+<%if(!exclude)%>
+<%comment("Only put one component in a fragment. If, say, both the debug and release components are in the")%>
+<%comment("same fragment, and just the debug component is used in an installer, the release component will")%>
+<%comment("be identified as unused, and an error generated.  That is, it seems that referencing any component")%> 
+<%comment("in a fragment causes the entire fragment to be pulled in, and any unused component in the fragment will be flagged as an error")%>
+  <Fragment Id="<%normalize(configuration)%>_<%normalize(platform)%>_<%project_name%>">
+    <ComponentGroup Id="ComponentGroup.<%normalize(configuration)%>_<%normalize(platform)%>_<%if(exename || sharedname || staticname)%><%if(exename)%><%exename%><%else%><%libname_prefix%><%if(sharedname)%><%sharedname%><%else%><%staticname%><%endif%><%endif%><%else%><%project_name%><%endif%>">
+<%if(!no_binary)%>
+      <ComponentRef Id="<%normalize(configuration)%>_<%normalize(platform)%>_<%if(exename || sharedname || staticname)%><%if(exename)%><%exename%><%else%><%libname_prefix%><%if(sharedname)%><%sharedname%><%else%><%staticname%><%endif%><%endif%><%else%><%project_name%><%endif%><%if(exename)%><%exe_ext%><%else%><%dll_ext%><%endif%>" />
+<%endif%>
+<%foreach(cultures)%>
+<%if(compares(culture, _neutral_))%>
+<%comment("Do nothing here - the neutral culture will be built as the primary output of the project")%>
+<%else%>
+      <ComponentRef Id="<%normalize(configuration)%>_<%normalize(platform)%>_<%project_name%>_<%normalize(culture)%>" />
+<%endif%>
+<%endfor%>
+    </ComponentGroup>
+    
+    <DirectoryRef Id="INSTALLDIR">
+<%marker(component_top)%>
+<%if(!no_binary)%>
+      <Component Id="<%normalize(configuration)%>_<%normalize(platform)%>_<%if(exename || sharedname || staticname)%><%if(exename)%><%exename%><%else%><%libname_prefix%><%if(sharedname)%><%sharedname%><%else%><%staticname%><%endif%><%endif%><%else%><%project_name%><%endif%><%if(exename)%><%exe_ext%><%else%><%dll_ext%><%endif%>" Guid="*">
+        <File Id="<%normalize(configuration)%>_<%normalize(platform)%>_<%if(exename || sharedname || staticname)%><%if(exename)%><%exename%><%else%><%libname_prefix%><%if(sharedname)%><%sharedname%><%else%><%staticname%><%endif%><%endif%><%else%><%project_name%><%endif%><%if(exename)%><%exe_ext%><%else%><%dll_ext%><%endif%>"
+           Name="<%if(exename || sharedname || staticname)%><%if(exename)%><%exename%><%else%><%libname_prefix%><%if(sharedname)%><%sharedname%><%else%><%staticname%><%endif%><%endif%><%else%><%project_name%><%endif%><%if(exename)%><%exe_ext%><%else%><%dll_ext%><%endif%>"
+           Source="<%if(exename)%><%if(exeout)%><%full_path(exeout)%><%if(windows_style)%>/<%output_dir%><%endif%><%else%>./<%output_dir%><%endif%><%else%><%if(dllout)%><%full_path(dllout)%><%else%><%full_path(libout)%><%endif%>/<%output_dir%><%endif%>/<%if(exename || sharedname || staticname)%><%if(exename)%><%exename%><%else%><%libname_prefix%><%if(sharedname)%><%sharedname%><%else%><%staticname%><%endif%><%endif%><%else%><%project_name%><%endif%><%if(exename)%><%exe_ext%><%else%><%dll_ext%><%endif%>"
+           DiskId="<%diskid(1)%>" />
+      </Component>    
+<%endif%>
+
+<%foreach(cultures)%>
+<%if(compares(culture, _neutral_))%>
+<%comment("Do nothing here - the neutral culture will be built as the primary output of the project")%>
+<%else%>
+      <Directory Id="<%project_name%>.<%normalize(culture)%>.<%forcount%>" Name="<%culture%>">
+        <Component Id="<%normalize(configuration)%>_<%normalize(platform)%>_<%project_name%>_<%normalize(culture)%>" Guid="*">
+          <File Id="<%normalize(configuration)%>_<%normalize(platform)%>_<%project_name%>_<%normalize(culture)%>"
+             Name="<%project_name%>.resources.dll"
+             Source="<%if(exename)%><%if(exeout)%><%full_path(exeout)%><%if(windows_style)%>/<%output_dir%><%endif%><%else%>./<%output_dir%><%endif%><%else%><%if(dllout)%><%full_path(dllout)%><%else%><%full_path(libout)%><%endif%>/<%output_dir%><%endif%>/<%culture%>/<%project_name%>.resources.dll"
+             DiskId="<%diskid(1)%>" />
+        </Component>
+      </Directory>
+<%endif%>
+<%endfor%>
+
+<%marker(component_bottom)%>
+    </DirectoryRef>
+  </Fragment>
+
+<%endif%>
+<%endfor%>
+<%endfor%>
+<%marker(bottom)%>
+</Include>

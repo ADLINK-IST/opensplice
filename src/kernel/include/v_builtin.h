@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -34,6 +34,7 @@ extern "C" {
 #define V_BUILTIN_PARTITION       "__BUILT-IN PARTITION__"
 
 #define V_PARTICIPANTINFO_NAME   "DCPSParticipant"
+#define V_CMPARTICIPANTINFO_NAME "CMParticipant"
 #define V_TOPICINFO_NAME         "DCPSTopic"
 #define V_PUBLICATIONINFO_NAME   "DCPSPublication"
 #define V_SUBSCRIPTIONINFO_NAME  "DCPSSubscription"

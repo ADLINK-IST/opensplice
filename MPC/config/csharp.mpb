@@ -1,0 +1,18 @@
+// -*- MPC -*-
+// $Id:$
+
+project {
+  // This property is set when generatin c/cpp
+  specific (prop:cplusplus) {
+      requires += dummy_label
+  }
+
+  // This property is set when generating for java
+  specific (prop:java) {
+      requires += dummy_label
+  }
+
+  specific (! prop:windows) {
+      requires += dummy_label
+  }
+}

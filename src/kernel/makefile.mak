@@ -3,18 +3,18 @@
 
 TARGET_DLIB	:= $(DDS_KERNEL)
 ODL_MODULES	:= kernelModule
-EXTRACTED_LIB = libddscore
 
 include	$(OSPL_HOME)/setup/makefiles/target.mak
 
 CPPFLAGS	+= -DOSPL_BUILD_KERNEL
-CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
+CFLAGS      += $(SHCFLAGS) $(MTCFLAGS)
+CINCS		+= -I$(OSPL_HOME)/src/utilities/include
 CINCS		+= -I$(OSPL_HOME)/src/database/database/include
 CINCS		+= -I$(OSPL_HOME)/src/database/serialization/include
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS   += $(SHLDLIBS)
 
-LDLIBS	+= -l$(DDS_SERIALIZATION) -l$(DDS_DATABASE) -l$(DDS_OS)
+LDLIBS	+= -l$(DDS_SERIALIZATION) -l$(DDS_DATABASE) -l$(DDS_OS) -l$(DDS_UTIL)
 
 -include $(DEPENDENCIES)

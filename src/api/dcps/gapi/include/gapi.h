@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -179,6 +179,7 @@ gapi_sequence_get_release (
 #define GAPI_HANDLE_TYPE_NATIVE             gapi_long_long
 #define GAPI_HANDLE_NIL_NATIVE              0L
 #define GAPI_BUILTIN_TOPIC_KEY_TYPE_NATIVE  gapi_long
+#define GAPI_DOMAIN_ID_DEFAULT              0
 
 #define _TheParticipantFactory              gapi_domainParticipantFactory_get_instance()
 
@@ -187,9 +188,12 @@ gapi_sequence_get_release (
  */
 
 /*
- * typedef DOMAINID_TYPE_NATIVE DomainId_t;
+ * typedef DOMAINID_TYPE_NATIVE gapi_domainName_t;
  */
-typedef GAPI_DOMAINID_TYPE_NATIVE gapi_domainId_t;
+typedef GAPI_DOMAINID_TYPE_NATIVE gapi_domainName_t;
+
+typedef gapi_long gapi_domainId_int_t;
+
 
 /*
  * typedef HANDLE_TYPE_NATIVE InstanceHandle_t;
@@ -1407,6 +1411,11 @@ OS_API gapi_octet *gapi_octetSeq_allocbuf (gapi_unsigned_long len);
 typedef C_STRUCT(gapi_userDataQosPolicy) {
     gapi_octetSeq value;
 } gapi_userDataQosPolicy;
+/*
+typedef C_STRUCT(gapi_productDataPolicy) {
+    gapi_string value;
+} gapi_productDataPolicy;
+*/
 
 /*
  * struct TopicDataQosPolicy {
@@ -1683,6 +1692,27 @@ typedef C_STRUCT(gapi_entityFactoryQosPolicy) {
     gapi_boolean autoenable_created_entities;
 } gapi_entityFactoryQosPolicy;
 
+/* enum InvalidSampleVisibilityQosPolicyKind {
+ *     NO_INVALID_SAMPLES,
+ *     MINIMUM_INVALID_SAMPLES,
+ *     ALL_INVALID_SAMPLES
+ * };
+ */
+typedef enum
+{
+    GAPI_NO_INVALID_SAMPLES,
+    GAPI_MINIMUM_INVALID_SAMPLES,
+    GAPI_ALL_INVALID_SAMPLES
+} gapi_invalidSampleVisibilityQosPolicyKind;
+
+/* struct InvalidSampleVisibilityQosPolicy {
+ *     InvalidSampleVisibilityQosPolicyKind kind;
+ * };
+ */
+typedef C_STRUCT(gapi_invalidSampleVisibilityQosPolicy) {
+    gapi_invalidSampleVisibilityQosPolicyKind kind;
+} gapi_invalidSampleVisibilityQosPolicy;
+
 /* struct WriterDataLifecycleQosPolicy {
  *     boolean autodispose_unregistered_instances;
  * };
@@ -1701,6 +1731,7 @@ typedef C_STRUCT(gapi_readerDataLifecycleQosPolicy) {
     gapi_duration_t autopurge_nowriter_samples_delay;
     gapi_duration_t autopurge_disposed_samples_delay;
     gapi_boolean enable_invalid_samples;
+    gapi_invalidSampleVisibilityQosPolicy invalid_sample_visibility;
 } gapi_readerDataLifecycleQosPolicy;
 
 
@@ -2206,7 +2237,7 @@ gapi_topicBuiltinTopicData__copyIn (
     void *_from,
     void *_to);
 
-OS_API void
+OS_API v_result
 gapi_publicationBuiltinTopicData__copyOut (
     void *_from,
     void *_to);
@@ -2217,7 +2248,7 @@ gapi_publicationBuiltinTopicData__copyIn (
     void *_from,
     void *_to);
 
-OS_API void
+OS_API v_result
 gapi_subscriptionBuiltinTopicData__copyOut (
     void *_from,
     void *_to);
@@ -2561,11 +2592,19 @@ gapi_domainParticipant_ignore_subscription (
     gapi_domainParticipant _this,
     const gapi_instanceHandle_t handle);
 
+
 /*     DomainId_t
  *     get_domain_id();
  */
-OS_API gapi_domainId_t
+OS_API gapi_domainId_int_t
 gapi_domainParticipant_get_domain_id (
+    gapi_domainParticipant _this);
+
+/*     DomainId_t
+ *     get_domain_id_w_str();
+ */
+OS_API gapi_domainName_t
+gapi_domainParticipant_get_domain_id_as_str (
     gapi_domainParticipant _this);
 
 /*     ReturnCode_t
@@ -2766,13 +2805,14 @@ gapi_domainParticipantFactory_get_instance (
 OS_API gapi_domainParticipant
 gapi_domainParticipantFactory_create_participant (
     gapi_domainParticipantFactory _this,
-    const gapi_domainId_t domainId,
+    const gapi_domainId_int_t domainId,
     const gapi_domainParticipantQos *qos,
     const struct gapi_domainParticipantListener *a_listener,
     const gapi_statusMask mask,
     gapi_listenerThreadAction thread_start_action,
     gapi_listenerThreadAction thread_stop_action,
-    void *thread_action_arg);
+    void *thread_action_arg,
+    const char *name);
 
 /*     ReturnCode_t
  *     delete_participant(
@@ -2793,12 +2833,22 @@ gapi_domainParticipantFactory_delete_contained_entities(
 
 /*     DomainParticipant
  *     lookup_participant(
- *         in DomainId_t domainId);
+ *         in gapi_domainId_int_t domainId);
  */
 OS_API gapi_domainParticipant
 gapi_domainParticipantFactory_lookup_participant (
     gapi_domainParticipantFactory _this,
-    const gapi_domainId_t domainId);
+    const gapi_domainId_int_t domainId);
+
+/*     DomainParticipant
+ *     lookup_participant_w_str(
+ *         in gapi_domainName_t domainId);
+ *     Used in _WaitSetDomainEntryNew
+ */
+OS_API gapi_domainParticipant
+gapi_domainParticipantFactory_lookup_participant_as_str (
+    gapi_domainParticipantFactory _this,
+    const gapi_domainName_t domainId);
 
 /*     ReturnCode_t
  *     set_qos(
@@ -2837,14 +2887,15 @@ gapi_domainParticipantFactory_get_default_participant_qos (
     gapi_domainParticipantFactory _this,
     gapi_domainParticipantQos *qos);
 
+
 /*     Domain
  *     lookup_domain(
- *         in DomainId domain_id);
+ *         in gapi_domainId_int_t domain_id);
  */
 OS_API gapi_domain
 gapi_domainParticipantFactory_lookup_domain (
     gapi_domainParticipantFactory _this,
-    const gapi_domainId_t domain_id);
+    const gapi_domainId_int_t domain_id);
 
 
 /*     ReturnCode_t
@@ -3069,6 +3120,20 @@ gapi_topic_get_qos (
  */
 OS_API gapi_returnCode_t
 gapi_topic_dispose_all_data (
+    gapi_topic _this);
+
+/*     string
+ *     get_metadescription();
+ */
+OS_API gapi_string
+gapi_topic_get_metadescription (
+    gapi_topic _this);
+
+/*     string
+ *     get_keylist();
+ */
+OS_API gapi_string
+gapi_topic_get_keylist (
     gapi_topic _this);
 
 /*
@@ -4380,7 +4445,7 @@ typedef C_STRUCT(gapi_sampleInfo) {
     gapi_long sample_rank;
     gapi_long generation_rank;
     gapi_long absolute_generation_rank;
-    gapi_time_t arrival_timestamp;
+    gapi_time_t reception_timestamp;
 } gapi_sampleInfo;
 
 /*

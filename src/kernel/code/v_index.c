@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v__index.h"
@@ -32,11 +32,6 @@
 #include "v_instance.h"
 #include "v__statisticsInterface.h"
 
-#define _EXTENT_
-#ifdef _EXTENT_
-#include "c_extent.h"
-#endif
-
 #include "os_report.h"
 #include "os.h"
 
@@ -52,6 +47,9 @@ sampleTypeNew(
 
     assert(C_TYPECHECK(topic,v_topic));
     assert(topic);
+
+    name = NULL;
+    foundType = NULL;
 
     if (v_topicName(topic) == NULL) {
         OS_REPORT(OS_ERROR,
@@ -236,35 +234,32 @@ static c_array
 createKeyList(c_type instanceType, c_array keyList){
     int size, i;
     c_array newKeyList = NULL;
-    c_type fieldType;
 
     assert(instanceType);
 
     if(keyList){
-		size = c_arraySize(keyList);
+        size = c_arraySize(keyList);
 
-		fieldType = c_field_t(c_getBase(instanceType));
-		newKeyList = c_arrayNew(fieldType, size);
-		c_free(fieldType);
+        newKeyList = c_arrayNew(c_field_t(c_getBase(instanceType)), size);
 
-		if(newKeyList){
-			for(i = 0; i<size; i++){
-				c_field f = c_fieldNew(instanceType, PREFIX);
-				assert(f);
-				if(f){
-				    newKeyList[i] = c_fieldConcat(f, keyList[i]);
-				    c_free(f);
-				} else {
-				    OS_REPORT(OS_ERROR,
+        if(newKeyList){
+            for(i = 0; i<size; i++){
+                c_field f = c_fieldNew(instanceType, PREFIX);
+                assert(f);
+                if(f){
+                    newKeyList[i] = c_fieldConcat(f, keyList[i]);
+                    c_free(f);
+                } else {
+                    OS_REPORT(OS_ERROR,
                                 "createKeyList", 0,
                                 "Could not create c_field");
-				}
-			}
-		} else {
-			OS_REPORT(OS_ERROR,
-						"createKeyList", 0,
-						"Could not create array");
-		}
+                }
+            }
+        } else {
+            OS_REPORT(OS_ERROR,
+                        "createKeyList", 0,
+                        "Could not create array");
+        }
     }
     return newKeyList;
 }
@@ -277,7 +272,6 @@ v_indexInit(
     c_array keyList,
     v_reader reader)
 {
-    v_kernel kernel;
     c_property keyProperty;
     c_structure keyStructure;
     c_char fieldName[16];
@@ -324,7 +318,6 @@ v_indexInit(
         keyExpr = NULL;
     }
 
-    kernel = v_objectKernel(index);
     index->reader = reader;
     index->sourceKeyList = createKeyList(instanceType, keyList);
     index->messageKeyList = c_keep(keyList);    /* keyList is either topic->messageKeyList or a user-defined keylist */
@@ -334,10 +327,7 @@ v_indexInit(
     if(keyExpr){
         os_freea(keyExpr);
     }
-#ifdef _EXTENT_
-#define _COUNT_ (32)
-    index->objectExtent = c_extentSyncNew(instanceType,_COUNT_,TRUE);
-#endif
+    index->objectType = c_keep(instanceType);
 }
 
 /*#define prefix "sample.message.userData."*/

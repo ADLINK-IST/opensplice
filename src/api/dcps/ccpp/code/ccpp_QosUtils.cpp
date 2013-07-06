@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -111,7 +111,8 @@ namespace DDS
     static const DDS::ReaderDataLifecycleQosPolicy DEFAULT_READERDATALIFECYCLE_QOSPOLICY= {
         {DURATION_INFINITE_SEC, DURATION_INFINITE_NSEC},
         {DURATION_INFINITE_SEC, DURATION_INFINITE_NSEC},
-        true
+        true,
+        { MINIMUM_INVALID_SAMPLES }
     };
 
     static const DDS::SchedulingQosPolicy DEFAULT_SCHEDULING_QOSPOLICY= {
@@ -141,7 +142,7 @@ namespace DDS
 	};
 
 
-    static const DDS::DomainParticipantFactoryQos * const
+    static DDS::DomainParticipantFactoryQos * const
     initializeParticipantFactoryQos()
     {
         DDS::DomainParticipantFactoryQos *qos = new DDS::DomainParticipantFactoryQos();
@@ -149,18 +150,18 @@ namespace DDS
         return qos;
     }
 
-    static const DDS::DomainParticipantQos * const
+    static DDS::DomainParticipantQos * const
     initializeParticipantQos()
     {
         DDS::DomainParticipantQos *qos = new DDS::DomainParticipantQos();
         qos->user_data              = DEFAULT_USERDATA_QOSPOLICY;
         qos->entity_factory         = DEFAULT_ENTITYFACTORY_QOSPOLICY;
-	qos->watchdog_scheduling    = DEFAULT_SCHEDULING_QOSPOLICY;
-	qos->listener_scheduling    = DEFAULT_SCHEDULING_QOSPOLICY;
+        qos->watchdog_scheduling    = DEFAULT_SCHEDULING_QOSPOLICY;
+        qos->listener_scheduling    = DEFAULT_SCHEDULING_QOSPOLICY;
         return qos;
     }
 
-    static const DDS::TopicQos * const
+    static DDS::TopicQos * const
     initializeTopicQos()
     {
         DDS::TopicQos *qos          = new DDS::TopicQos();
@@ -180,7 +181,7 @@ namespace DDS
         return qos;
     }
 
-    static const DDS::PublisherQos * const
+    static DDS::PublisherQos * const
     initializePublisherQos()
     {
         DDS::PublisherQos *qos      = new DDS::PublisherQos();
@@ -191,7 +192,7 @@ namespace DDS
         return qos;
     }
 
-    static const DDS::SubscriberQos * const
+    static DDS::SubscriberQos * const
     initializeSubscriberQos()
     {
         DDS::SubscriberQos *qos     = new DDS::SubscriberQos();
@@ -203,7 +204,7 @@ namespace DDS
         return qos;
     }
 
-    static const DDS::DataReaderQos * const
+    static DDS::DataReaderQos * const
     initializeDataReaderQos()
     {
         DDS::DataReaderQos *qos     = new DDS::DataReaderQos();
@@ -225,7 +226,7 @@ namespace DDS
         return qos;
     }
 
-    static const DDS::DataReaderViewQos * const
+    static DDS::DataReaderViewQos * const
     initializeDataReaderViewQos()
     {
         DDS::DataReaderViewQos *qos = new DDS::DataReaderViewQos();
@@ -233,7 +234,7 @@ namespace DDS
         return qos;
     }
 
-    static const DDS::DataWriterQos * const
+    static DDS::DataWriterQos * const
     initializeDataWriterQos()
     {
         DDS::DataWriterQos *qos     = new DDS::DataWriterQos();
@@ -256,16 +257,16 @@ namespace DDS
 
             //static const DDS::DefaultQos UniqueInstance;
 
-    const DDS::DomainParticipantFactoryQos * const DDS::DefaultQos::ParticipantFactoryQosDefault      = DDS::initializeParticipantFactoryQos();
-    const DDS::DomainParticipantQos * const DDS::DefaultQos::ParticipantQosDefault      = DDS::initializeParticipantQos();
-    const DDS::TopicQos             * const DDS::DefaultQos::TopicQosDefault            = DDS::initializeTopicQos();
-    const DDS::PublisherQos         * const DDS::DefaultQos::PublisherQosDefault        = DDS::initializePublisherQos();
-    const DDS::SubscriberQos        * const DDS::DefaultQos::SubscriberQosDefault       = DDS::initializeSubscriberQos();
-    const DDS::DataReaderQos        * const DDS::DefaultQos::DataReaderQosDefault       = DDS::initializeDataReaderQos();
-    const DDS::DataReaderQos        * const DDS::DefaultQos::DataReaderQosUseTopicQos   = DDS::initializeDataReaderQos();
-    const DDS::DataReaderViewQos    * const DDS::DefaultQos::DataReaderViewQosDefault   = DDS::initializeDataReaderViewQos();
-    const DDS::DataWriterQos        * const DDS::DefaultQos::DataWriterQosDefault       = DDS::initializeDataWriterQos();
-    const DDS::DataWriterQos        * const DDS::DefaultQos::DataWriterQosUseTopicQos   = DDS::initializeDataWriterQos();
+    DDS::DomainParticipantFactoryQos_var DDS::DefaultQos::ParticipantFactoryQosDefault = DDS::initializeParticipantFactoryQos();
+    DDS::DomainParticipantQos_var        DDS::DefaultQos::ParticipantQosDefault        = DDS::initializeParticipantQos();
+    DDS::TopicQos_var                    DDS::DefaultQos::TopicQosDefault              = DDS::initializeTopicQos();
+    DDS::PublisherQos_var                DDS::DefaultQos::PublisherQosDefault          = DDS::initializePublisherQos();
+    DDS::SubscriberQos_var               DDS::DefaultQos::SubscriberQosDefault         = DDS::initializeSubscriberQos();
+    DDS::DataReaderQos_var               DDS::DefaultQos::DataReaderQosDefault         = DDS::initializeDataReaderQos();
+    DDS::DataReaderQos_var               DDS::DefaultQos::DataReaderQosUseTopicQos     = DDS::initializeDataReaderQos();
+    DDS::DataReaderViewQos_var           DDS::DefaultQos::DataReaderViewQosDefault     = DDS::initializeDataReaderViewQos();
+    DDS::DataWriterQos_var               DDS::DefaultQos::DataWriterQosDefault         = DDS::initializeDataWriterQos();
+    DDS::DataWriterQos_var               DDS::DefaultQos::DataWriterQosUseTopicQos     = DDS::initializeDataWriterQos();
 
 }
 
@@ -731,6 +732,7 @@ void DDS::ccpp_ReaderDataLifecycleQosPolicy_copyOut( const gapi_readerDataLifecy
   ccpp_Duration_copyOut(from.autopurge_nowriter_samples_delay, to.autopurge_nowriter_samples_delay);
   ccpp_Duration_copyOut(from.autopurge_disposed_samples_delay, to.autopurge_disposed_samples_delay);
   to.enable_invalid_samples = from.enable_invalid_samples;
+  ccpp_InvalidSampleVisibilityQosPolicy_copyOut(from.invalid_sample_visibility, to.invalid_sample_visibility);
 }
 
 void DDS::ccpp_ReaderDataLifecycleQosPolicy_copyIn( const DDS::ReaderDataLifecycleQosPolicy &from,
@@ -739,6 +741,8 @@ void DDS::ccpp_ReaderDataLifecycleQosPolicy_copyIn( const DDS::ReaderDataLifecyc
   ccpp_Duration_copyIn(from.autopurge_nowriter_samples_delay, to.autopurge_nowriter_samples_delay);
   ccpp_Duration_copyIn(from.autopurge_disposed_samples_delay, to.autopurge_disposed_samples_delay);
   to.enable_invalid_samples = from.enable_invalid_samples;
+  ccpp_InvalidSampleVisibilityQosPolicy_copyIn(from.invalid_sample_visibility, to.invalid_sample_visibility);
+
 }
 
 void DDS::ccpp_PresentationQosPolicy_copyOut( const gapi_presentationQosPolicy & from,
@@ -1239,4 +1243,46 @@ void DDS::ccpp_ViewKeyQosPolicy_copyOut(
 {
     to.use_key_list = from.use_key_list;
     DDS::ccpp_sequenceCopyOut(from.key_list, to.key_list);
+}
+
+void DDS::ccpp_InvalidSampleVisibilityQosPolicy_copyIn(
+    const DDS::InvalidSampleVisibilityQosPolicy &from,
+    gapi_invalidSampleVisibilityQosPolicy &to)
+{
+    switch(from.kind)
+    {
+      case DDS::NO_INVALID_SAMPLES:
+        to.kind = GAPI_NO_INVALID_SAMPLES;
+        break;
+      case DDS::MINIMUM_INVALID_SAMPLES:
+        to.kind = GAPI_MINIMUM_INVALID_SAMPLES;
+        break;
+      case DDS::ALL_INVALID_SAMPLES:
+        to.kind = GAPI_ALL_INVALID_SAMPLES;
+        break;
+      default:
+        // impossible to reach
+        break;
+    }
+}
+
+void DDS::ccpp_InvalidSampleVisibilityQosPolicy_copyOut(
+    const gapi_invalidSampleVisibilityQosPolicy &from,
+    DDS::InvalidSampleVisibilityQosPolicy &to)
+{
+    switch(from.kind)
+    {
+      case GAPI_NO_INVALID_SAMPLES:
+        to.kind = DDS::NO_INVALID_SAMPLES;
+        break;
+      case GAPI_MINIMUM_INVALID_SAMPLES:
+        to.kind = DDS::MINIMUM_INVALID_SAMPLES;
+        break;
+      case GAPI_ALL_INVALID_SAMPLES:
+        to.kind = DDS::ALL_INVALID_SAMPLES;
+        break;
+      default:
+        // impossible to reach
+        break;
+    }
 }

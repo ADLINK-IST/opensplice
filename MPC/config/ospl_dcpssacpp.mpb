@@ -1,6 +1,17 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_dcpssacpp_incl, ospl_dcpsgapi, ospl_base {
+project : ospl_dcpsgapi, ospl_base {
   lit_libs += dcpssacpp
+  requires += ospl_dcpssacpp
+}
+
+feature(!src_co) {
+  includes += $(OSPL_HOME)/include/dcps/C++/SACPP
+}
+
+feature(src_co) {
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/ccpp/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sacpp/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sacpp/bld/$(SPLICE_TARGET)
 }

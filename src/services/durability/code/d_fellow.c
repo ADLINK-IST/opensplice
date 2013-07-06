@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -59,15 +59,15 @@ d_fellowNew(
     d_serviceState state)
 {
     d_fellow fellow;
-    
+
     fellow = d_fellow(os_malloc(C_SIZEOF(d_fellow)));
     d_lockInit(d_lock(fellow), D_FELLOW, d_fellowDeinit);
-    
+
     if(fellow){
-        fellow->address = d_networkAddressNew(address->systemId, 
+        fellow->address = d_networkAddressNew(address->systemId,
                                               address->localId,
                                               address->lifecycleId);
-        
+
         fellow->communicationState  = D_COMMUNICATION_STATE_UNKNOWN;
         fellow->state               = state;
         fellow->lastStatusReport    = C_TIME_INFINITE;
@@ -84,20 +84,20 @@ d_fellowNew(
 
 /** This function sets groupsRequested to TRUE if it's not TRUE already and
  *  returns whether the boolean has been changed by this call.
- * 
- * @return TRUE if groupsRequested was set to TRUE and FALSE if it was set already. 
+ *
+ * @return TRUE if groupsRequested was set to TRUE and FALSE if it was set already.
  */
 c_bool
 d_fellowSetGroupsRequested(
     d_fellow fellow)
 {
     c_bool result;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->groupsRequested){
             result = FALSE;
         } else {
@@ -116,9 +116,9 @@ d_fellowGetGroupsRequested(
     d_fellow fellow)
 {
     c_bool result;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
         result = fellow->groupsRequested;
@@ -129,14 +129,13 @@ d_fellowGetGroupsRequested(
     return result;
 }
 
-
 d_networkAddress
 d_fellowGetAddress(
     d_fellow fellow)
-{   
+{
     d_networkAddress address = NULL;
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         address = d_networkAddressNew(fellow->address->systemId,
                                       fellow->address->localId,
@@ -149,9 +148,9 @@ void
 d_fellowSetAddress(
     d_fellow fellow,
     d_networkAddress address)
-{   
+{
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         fellow->address->systemId    = address->systemId;
         fellow->address->localId     = address->localId;
@@ -165,12 +164,12 @@ d_fellowDeinit(
     d_object object)
 {
     d_fellow fellow;
-    
+
     assert(d_objectIsValid(object, D_FELLOW) == TRUE);
-        
+
     if(object){
         fellow = d_fellow(object);
-        
+
         if(fellow->groups){
             d_tableFree(fellow->groups);
             fellow->groups = NULL;
@@ -195,7 +194,7 @@ d_fellowFree(
     d_fellow fellow)
 {
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockFree(d_lock(fellow), D_FELLOW);
     }
@@ -206,9 +205,9 @@ d_fellowGetState(
     d_fellow fellow)
 {
     d_serviceState state = D_STATE_INIT;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
        state = fellow->state;
     }
@@ -222,7 +221,7 @@ d_fellowUpdateStatus(
     d_timestamp timestamp)
 {
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
        d_lockLock(d_lock(fellow));
        fellow->lastStatusReport.seconds = timestamp.seconds;
@@ -239,21 +238,21 @@ d_fellowAddGroup(
 {
     c_bool result;
     d_group duplicate;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-    
+
     result = FALSE;
-    
+
     if(group && fellow){
         d_lockLock(d_lock(fellow));
-        
+
         if(!fellow->groups){
             fellow->groups = d_tableNew(d_groupCompare, d_groupFree);
         }
         duplicate = d_tableInsert(fellow->groups, group);
         d_lockUnlock(d_lock(fellow));
-        
+
         if(!duplicate){
             result = TRUE;
         }
@@ -267,7 +266,7 @@ d_fellowSetExpectedGroupCount(
     c_ulong count)
 {
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         fellow->expectedGroupCount = count;
     }
@@ -278,10 +277,10 @@ d_fellowGetExpectedGroupCount(
     d_fellow fellow)
 {
     c_long count;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
     count = -1;
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
         count = fellow->expectedGroupCount;
@@ -295,12 +294,12 @@ d_fellowGetGroupCount(
     d_fellow fellow)
 {
     c_ulong count;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->groups){
             count = d_tableSize(fellow->groups);
         } else {
@@ -321,10 +320,10 @@ d_fellowRemoveGroup(
     d_group result = NULL;
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
     assert(d_objectIsValid(d_object(group), D_GROUP) == TRUE);
-    
+
     if(group && fellow){
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->groups){
             result = d_tableRemove(fellow->groups, group);
         }
@@ -332,7 +331,7 @@ d_fellowRemoveGroup(
     }
     return result;
 }
-                                             
+
 d_group
 d_fellowGetGroup(
     d_fellow fellow,
@@ -345,16 +344,16 @@ d_fellowGetGroup(
     d_quality quality;
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
     found = NULL;
-    
+
     if(fellow){
         quality.seconds = 0;
         quality.nanoseconds = 0;
         dummy = d_groupNew(partition, topic, kind, D_GROUP_KNOWLEDGE_UNDEFINED, quality);
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->groups){
             found = d_tableFind(fellow->groups, dummy);
-            
+
             if(found){
                 d_objectKeep(d_object(found));
             }
@@ -363,7 +362,7 @@ d_fellowGetGroup(
         d_groupFree(dummy);
     }
     return found;
-    
+
 }
 
 c_bool
@@ -373,21 +372,21 @@ d_fellowGroupWalk(
     c_voidp userData)
 {
     c_bool result;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
     result = FALSE;
-    
+
     if(fellow){
         result = TRUE;
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->groups){
             d_tableWalk(fellow->groups, action, userData);
         }
         d_lockUnlock(d_lock(fellow));
     }
     return result;
-}   
+}
 
 int
 d_fellowCompare(
@@ -397,8 +396,8 @@ d_fellowCompare(
     int result;
 
     result = 0;
-    
-    if (fellow1 != fellow2) {    
+
+    if (fellow1 != fellow2) {
         if(fellow1->address->systemId < fellow2->address->systemId){
             result = -1;
         } else if(fellow1->address->systemId > fellow2->address->systemId){
@@ -427,9 +426,9 @@ d_fellowGetLastStatusReport(
     d_fellow fellow)
 {
     d_timestamp s;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow) {
        s.seconds = fellow->lastStatusReport.seconds;
        s.nanoseconds = fellow->lastStatusReport.nanoseconds;
@@ -446,7 +445,7 @@ d_fellowGetCommunicationState(
 {
     d_communicationState state = D_COMMUNICATION_STATE_UNKNOWN;
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow) {
         state = fellow->communicationState;
     }
@@ -459,18 +458,10 @@ d_fellowSetCommunicationState(
     d_communicationState state)
 {
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow) {
         fellow->communicationState = state;
     }
-}
-
-void
-d_fellowGroupFree(
-    d_group group)
-{
-    d_objectFree(d_object(group), D_GROUP);
-    d_groupFree(group);
 }
 
 c_bool
@@ -481,27 +472,27 @@ d_fellowAddNameSpace(
     c_bool result;
     d_nameSpace duplicate;
     d_networkAddress master;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
     assert(d_objectIsValid(d_object(nameSpace), D_NAMESPACE) == TRUE);
-    
+
     result = FALSE;
-    
+
     if(fellow && nameSpace){
         d_lockLock(d_lock(fellow));
-        
+
         if(!fellow->nameSpaces){
-            fellow->nameSpaces = d_tableNew(d_nameSpaceCompare, d_nameSpaceFree);
+            fellow->nameSpaces = d_tableNew(d_nameSpaceNameCompare, d_nameSpaceFree);
         }
         duplicate = d_tableInsert(fellow->nameSpaces, nameSpace);
-        
+
         if(duplicate){
             master = d_nameSpaceGetMaster(nameSpace);
             d_nameSpaceSetMaster(duplicate, master);
             d_networkAddressFree(master);
         }
         d_lockUnlock(d_lock(fellow));
-        
+
         if(!duplicate){
             result = TRUE;
         }
@@ -516,11 +507,11 @@ determineNameSpace(
 {
     struct findNameSpace* fn;
     c_bool proceed;
-    
+
     fn = (struct findNameSpace*)args;
     proceed = TRUE;
-    
-    if(d_nameSpaceCompatibilityCompare(nameSpace, fn->template) == 0){
+
+    if(d_nameSpaceNameCompare(nameSpace, fn->template) == 0){
         proceed = FALSE;
         fn->nameSpace = nameSpace;
     }
@@ -533,15 +524,15 @@ d_fellowGetNameSpace(
     d_nameSpace template)
 {
     struct findNameSpace fn;
-    
+
     fn.template  = template;
     fn.nameSpace = NULL;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->nameSpaces){
             d_tableWalk(fellow->nameSpaces, determineNameSpace, &fn);
         }
@@ -556,10 +547,10 @@ clearMaster(
     c_voidp args)
 {
     d_networkAddress addr;
-    
+
     if(nameSpace){
         addr = d_nameSpaceGetMaster(nameSpace);
-        
+
         if(d_networkAddressEquals(addr, d_networkAddress(args))){
             d_networkAddressFree(addr);
             addr = d_networkAddressUnaddressed();
@@ -576,10 +567,10 @@ d_fellowClearMaster(
     d_networkAddress master)
 {
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->nameSpaces){
             d_tableWalk(fellow->nameSpaces, clearMaster, master);
         }
@@ -593,12 +584,12 @@ d_fellowNameSpaceCount(
     d_fellow fellow)
 {
     c_ulong count;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->nameSpaces){
             count = d_tableSize(fellow->nameSpaces);
         } else {
@@ -616,12 +607,12 @@ d_fellowAreNameSpacesComplete(
     d_fellow fellow)
 {
     c_bool result;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->nameSpaces){
             if(fellow->expectedNameSpaces == d_tableSize(fellow->nameSpaces)){
                 result = TRUE;
@@ -647,9 +638,9 @@ d_fellowGetExpectedNameSpaces(
     d_fellow fellow)
 {
     c_ulong count = 0;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
         count = fellow->expectedNameSpaces;
@@ -664,7 +655,7 @@ d_fellowSetExpectedNameSpaces(
     c_ulong expected)
 {
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
         fellow->expectedNameSpaces = expected;
@@ -681,12 +672,12 @@ d_fellowNameSpaceWalk(
 {
     c_bool result;
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     result = TRUE;
 
     if(fellow){
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->nameSpaces){
             result = d_tableWalk(fellow->nameSpaces, action, userData);
         }
@@ -700,7 +691,7 @@ d_fellowRequestAdd(
     d_fellow fellow)
 {
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
         fellow->requestCount++;
@@ -715,7 +706,7 @@ d_fellowRequestRemove(
     d_fellow fellow)
 {
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
         assert(fellow->requestCount >= 1);
@@ -730,9 +721,9 @@ d_fellowRequestCountGet(
     d_fellow fellow)
 {
     c_ulong count = 0;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
         count = fellow->requestCount;
@@ -747,7 +738,7 @@ d_fellowRequestCountSet(
     c_ulong count)
 {
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         d_lockLock(d_lock(fellow));
         fellow->requestCount = count;
@@ -765,12 +756,12 @@ d_fellowIsCompleteForGroup(
 {
     c_bool result = FALSE;
     d_group group;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         group = d_fellowGetGroup(fellow, partition, topic, kind);
-        
+
         if(group){
             if(d_groupGetCompleteness(group) == D_GROUP_COMPLETE){
                 result = TRUE;
@@ -789,15 +780,15 @@ isAligner(
     c_voidp args)
 {
     struct alignerHelper* helper;
-    
+
     helper = (struct alignerHelper*)args;
-    
+
     helper->aligner = d_adminInNameSpace(
-                                            nameSpace, 
-                                            (d_partition)(helper->partition), 
-                                            (d_topic)(helper->topic), 
-                                            helper->kind, TRUE);
-    
+                                            nameSpace,
+                                            (d_partition)(helper->partition),
+                                            (d_topic)(helper->topic),
+                                            TRUE);
+
     return (!helper->aligner);
 }
 
@@ -810,20 +801,20 @@ d_fellowIsAlignerForGroup(
 {
     struct alignerHelper helper;
     d_fellowAlignStatus status;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         helper.partition = partition;
         helper.topic     = topic;
         helper.kind      = kind;
         helper.aligner   = FALSE;
-        
+
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->nameSpaces){
             d_tableWalk(fellow->nameSpaces, isAligner, &helper);
-        
+
             if(helper.aligner == FALSE){
                 status = D_ALIGN_FALSE;
             } else {
@@ -845,15 +836,15 @@ inNameSpace(
     c_voidp args)
 {
     struct alignerHelper* helper;
-    
+
     helper = (struct alignerHelper*)args;
-    
+
     helper->aligner = d_adminInNameSpace(
-                                            nameSpace, 
-                                            (d_partition)(helper->partition), 
-                                            (d_topic)(helper->topic), 
-                                            helper->kind, FALSE);
-    
+                                            nameSpace,
+                                            (d_partition)(helper->partition),
+                                            (d_topic)(helper->topic),
+                                            FALSE);
+
     return (!helper->aligner);
 }
 
@@ -866,22 +857,22 @@ d_fellowIsGroupInNameSpaces(
 {
     struct alignerHelper helper;
     c_bool result;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         helper.partition = partition;
         helper.topic     = topic;
         helper.kind      = kind;
         helper.aligner   = FALSE;
-        
+
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->nameSpaces){
             d_tableWalk(fellow->nameSpaces, inNameSpace, &helper);
         }
         result = helper.aligner;
-        
+
         d_lockUnlock(d_lock(fellow));
     } else {
         result = FALSE;
@@ -897,11 +888,11 @@ isNSAligner(
 {
     struct alignerNSHelper* helper;
     c_bool match;
-    
+
     helper = (struct alignerNSHelper*)args;
     match = d_nameSpaceCompatibilityCompare(nameSpace, helper->nameSpace);
-    
-    
+
+
     if(match == TRUE){
         helper->aligner = d_nameSpaceIsAligner(nameSpace);
     }
@@ -915,18 +906,18 @@ d_fellowIsAlignerForNameSpace(
 {
     struct alignerNSHelper helper;
     d_fellowAlignStatus status;
-    
+
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
-    
+
     if(fellow){
         helper.nameSpace = nameSpace;
         helper.aligner   = FALSE;
-        
+
         d_lockLock(d_lock(fellow));
-        
+
         if(fellow->nameSpaces){
             d_tableWalk(fellow->nameSpaces, isNSAligner, &helper);
-            
+
             if(helper.aligner == FALSE){
                 status = D_ALIGN_FALSE;
             } else {
@@ -957,7 +948,7 @@ d_fellowSetRole (
     }
 }
 
-c_string
+d_name
 d_fellowGetRole (
     d_fellow fellow)
 {

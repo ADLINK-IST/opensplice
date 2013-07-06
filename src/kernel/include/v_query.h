@@ -1,18 +1,19 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_QUERY_H
 #define V_QUERY_H
 
 #include "v_kernel.h"
+#include "v_readerSample.h"
 
 #if defined (__cplusplus)
 extern "C" {
@@ -35,6 +36,8 @@ extern "C" {
  * one of its subclasses.
  */
 #define v_query(o) (C_CAST(o,v_query))
+
+typedef c_bool (v_queryAction)(c_object o, c_voidp arg);
 
 OS_API v_query
 v_queryNew(
@@ -63,46 +66,48 @@ v_queryDeinit(
 OS_API c_bool
 v_queryRead(
     v_query q,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg);
 
 OS_API c_bool
 v_queryTake(
     v_query q,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg);
 
 OS_API c_bool
 v_queryReadInstance(
     v_query q,
     v_dataReaderInstance instance,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg);
 
 OS_API c_bool
 v_queryTakeInstance(
     v_query q,
     v_dataReaderInstance instance,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg);
 
 OS_API c_bool
 v_queryReadNextInstance(
     v_query q,
     v_dataReaderInstance instance,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg);
 
 OS_API c_bool
 v_queryTakeNextInstance(
     v_query q,
     v_dataReaderInstance instance,
-    c_action action,
+    v_readerSampleAction action,
     c_voidp arg);
 
 OS_API c_bool
 v_queryTest(
-    v_query q);
+    v_query q,
+    v_queryAction action,
+    c_voidp args);
 
 OS_API c_bool
 v_queryTriggerTest(

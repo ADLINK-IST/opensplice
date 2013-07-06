@@ -1,0 +1,10 @@
+#!/bin/bash
+if [ -f $1 ]
+then
+# Get the entries showing coverage totals and smash them into our format
+    GCOV_TOTALS=`grep 'headerCovTableEntry[Lo|Mid|Hi]' $1 | tr -d '\n'  | sed -e 's/[^0-9]*\([0-9][0-9]\)\.[0-9][^0-9]*\([0-9][0-9]\)\.[0-9][^0-9]*\([0-9][0-9]\)\.[0-9][^0-9]*/L:\1%_F:\2%_B:\3%/g'`
+# Check that it came out right
+    echo $GCOV_TOTALS | grep 'L:[0-9][0-9]%_F:[0-9][0-9]%_B:[0-9][0-9]%' || echo FAILED
+else
+    echo FAILED
+fi

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -78,29 +78,41 @@ v_leaseRenew (
     v_duration* leaseDuration);
 
 /**
- * \brief Stores the expiryTime and duration of the lease in the provided pointers.
- * These values are acquired within a lock, so both values will match each other.
- * Only non-NULL pointers will be filled.
- *
- * \param lease The lease to get the properties from
- * \param expiryTime If not NULL, the pointer will be filled with the
- *                   expiryTime of lease (out-param)
- * \param duration   If not NULL, the pointer will be filled with the
- *                   duration of lease (out-param)
- */
-void
-v_leaseGetExpiryAndDuration(
-    v_lease lease,
-    c_time *expiryTime,
-    v_duration *duration);
-
-/**
  * \brief This operation returns the expiry time of this lease.
  *
  * \param _this The lease object of which to get the expiry time . (!= NULL)
  */
 OS_API c_time
 v_leaseExpiryTime (
+    v_lease _this);
+
+/**
+ * \brief This operation returns the expiry time of this lease. Before this
+ * function is used the v_leaseLock operation must be called!
+ *
+ * \param _this The lease object of which to get the expiry time . (!= NULL)
+ */
+c_time
+v_leaseExpiryTimeNoLock(
+    v_lease _this);
+
+/**
+ * \brief This operation returns the lease duration.
+ *
+ * \param _this The lease object of which to get the duration. (!= NULL)
+ */
+v_duration
+v_leaseDuration(
+    v_lease _this);
+
+/**
+ * \brief This operation returns the lease duration. Before this
+ * function is used the v_leaseLock operation must be called
+ *
+ * \param _this The lease object of which to get the duration. (!= NULL)
+ */
+v_duration
+v_leaseDurationNoLock(
     v_lease _this);
 
 /**
@@ -122,16 +134,6 @@ v_leaseLock(
 void
 v_leaseUnlock(
     v_lease _this);
-
-/**
- * \brief This operation returns the expiry time of this lease. Before this
- * function is used the v_leaseLock operation must be called!
- *
- * \param _this The lease object of which to get the expiry time . (!= NULL)
- */
-c_time
-v_leaseExpiryTimeNoLock(
-    v_lease lease);
 
 /**
  * \brief This operation adds an observer to this lease. Before this function

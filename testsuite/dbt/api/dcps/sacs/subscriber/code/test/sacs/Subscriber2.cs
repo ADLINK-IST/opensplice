@@ -76,7 +76,7 @@ namespace test.sacs
                 return result;
             }
             rc = subscriber2.SetDefaultDataReaderQos(qos);
-            if (rc != DDS.ReturnCode.AlreadyDeleted)
+            if (rc != DDS.ReturnCode.AlreadyDeleted && rc != DDS.ReturnCode.BadParameter)
             {
                 result.Result = "Received RETCODE " + rc + " after setting a qos on a already deleted Subscriber(5).";
                 return result;

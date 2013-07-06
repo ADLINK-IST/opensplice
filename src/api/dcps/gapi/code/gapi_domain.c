@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -27,21 +27,31 @@ C_STRUCT(_Domain) {
 
 _Domain
 _DomainNew(
-    gapi_domainId_t domainId)
+    gapi_domainName_t domainId)
 {
    _Domain _this = NULL;
+
+   u_domain domain;
+   u_result uResult;
+   gapi_returnCode_t result;
 
    if (domainId)
    {
       _this = _DomainAlloc();
       if (_this)
       {
-          _this->domain = u_domainOpen((c_char *)domainId, 1);/* 1 = timeout */
-          if(!_this->domain)
-          {
-              _DomainFree(_this);
-              _this = NULL;
-          }
+         uResult = u_domainOpen(&domain, (c_char*)domainId,1);/* 1 = timeout */
+         result = kernelResultToApiResult(uResult);
+
+         if (result == GAPI_RETCODE_OK)
+	 {
+	    _this->domain = domain;
+         }
+         else
+         {
+            _DomainFree(_this);
+            _this = NULL;
+         }
       }
    }
    return _this;
@@ -55,7 +65,7 @@ _DomainFree(
     {
         if(_this->domain)
         {
-//            u_domainFree(_this->domain);
+/*            u_domainFree(_this->domain);*/
             _this->domain = NULL;
         }
         _ObjectDelete((_Object)_this);

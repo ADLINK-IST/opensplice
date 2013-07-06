@@ -1,0 +1,5 @@
+// -*- MPC -*-
+// $Id:$
+
+project : _repetitive_c_example_sub, sac_dcps_application, _repetitive_sac_example_base {
+}

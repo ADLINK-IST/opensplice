@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -32,6 +32,8 @@ static os_iter idlpp_metaList = NULL;
 #define IDL_TOKEN_OPEN 		'('
 #define IDL_TOKEN_CLOSE 	')'
 
+#define MAX_ULONG_STRLENGTH 10 /* Room for 9 digits, enough for 32-bit range. */
+
 C_CLASS(idl_meta);
 C_STRUCT(idl_meta) {
     idl_scope scope;
@@ -49,6 +51,8 @@ idl_genMeta(
     c_char *tmplPath;
     c_char *orbPath;
     c_char *metaXML;
+    c_char arrLengthStr[MAX_ULONG_STRLENGTH];
+    c_ulong nrElements;
     int tmplFile;
     struct os_stat tmplStat;
     unsigned int nRead;
@@ -67,7 +71,9 @@ idl_genMeta(
     idlpp_macroSet = idl_macroSetNew();
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("type_name", idl_scopeStackC(meta->scope, "_", meta->name)));
     metaXML = idl_genXMLmeta(meta->type);
-    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("meta-descriptor", idl_cutXMLmeta(metaXML)));
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("meta-descriptor", idl_cutXMLmeta(metaXML, &nrElements)));
+    snprintf(arrLengthStr, MAX_ULONG_STRLENGTH, "%d", nrElements);
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("meta-descriptorArrLength", arrLengthStr));
     os_free(metaXML);
 
     if (idl_fileCur() == NULL) {

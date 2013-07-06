@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,21 +9,20 @@
  *   for full copyright notice and license terms.
  *
  */
+
 #include "v__leaseManager.h"
-#include "v_time.h"
 #include "v__lease.h"
-#include "v_entity.h"
+
 #include "v_public.h"
-#include "v_observer.h"
-#include "v_observable.h"
-#include "v_event.h"
-#include "v__writer.h" /* for resending action */
-#include "v__group.h" /* for resending action */
-#include "v__dataReader.h" /* for deadline missed */
+#include "v_time.h"
+
 #include "v_serviceState.h"
-#include "v__spliced.h" /* for heartbeat */
+#include "v__dataReader.h"
+#include "v__writer.h"
+#include "v__spliced.h"
 
 #include "os_report.h"
+#include "os_abstract.h"
 
 /**
  * \brief The <code>v_leaseAction</code> cast method.
@@ -57,61 +56,55 @@ static void
 v_leaseManagerDeinit(
     v_leaseManager _this);
 
-struct findLeaseActionArg {
-    v_leaseAction action;
-    v_lease lease;
-};
-
 /**
- * \brief Walks over the set of leases being observed by this leaseManager
- * and returns the leaseAction object that is associated by the lease specified
- * in the arg ptr.
+ * \brief Walk function to find a leaseAction object containing
+ * a lease that matches the lease passed in arg, in the set of
+ * leases managed by a lease manager.
  *
  * \param o An element from the set, i.e., a v_leaseAction object.
- * \param arg The arg ptr which contains the 'findLeaseActionArg' struct with
- *            the lease object to search for.
+ * \param arg A pointer to a 'findLeaseActionArg' struct with the lease object to search for.
  *
- * \return TRUE if the leaseAction object being searched for is not yet found,
- * FALSE otherwise.
+ * \return FALSE if a matching leaseAction object is found, TRUE if not
  */
 static c_bool
 findLeaseAction(
     c_object o,
     c_voidp arg);
 
+struct findLeaseActionArg {
+    v_leaseAction action;
+    v_lease lease;
+};
+
 /**
- * \brief This function determines which of the leases in the set of observed
- * leases is the first lease to expire.
+ * \brief Walk function to find all expired leases in the set of leases
+ * managed by a lease manager.
  *
  * \param o An element from the set, i.e., a v_leaseAction object.
- * \param arg The v_leaseManager object.
+ * \param arg A pointer to a 'collectExpiredArg' struct containing relevant information
+ * and to store the collected data in.
  *
- * \return TRUE as we want to check every element in the set
+ * \return TRUE in all cases, such that all leases in the set are considered
  */
 static c_bool
-determineFirstLeaseToExpire(
+collectExpired(
     c_object o,
     c_voidp arg);
 
 struct collectExpiredArg {
     c_iter expiredLeases;
-    v_leaseAction firstLeaseToExpire;
-    c_time now;
+    c_time expiryTime;
 };
 
 /**
- * \brief This function determines which of the leases in the set of observed
- * leases has expired. This function also determines which of the leases will
- * expire first.
+ * \brief Walk function to determine which of the leases managed by a lease manager
+ * expires the first.
  *
  * \param o An element from the set, i.e., a v_leaseAction object.
- * \param arg The 'collectExpiredArg' struct containing relevant information
- * and to store the collected data in.
- *
- * \return TRUE as we want to check every element in the set
+ * \param arg Pointer to a c_time struct to hold the earliest expiry time
  */
 static c_bool
-collectExpired(
+calculateExpiryTime(
     c_object o,
     c_voidp arg);
 
@@ -130,32 +123,49 @@ v_leaseManagerProcessLeaseAction(
     c_time now);
 
 /**
- * \brief This function will set a boolean in the v_kernel object indicating that
- * the spliced has died. This action routine is called when a lease with the
- * V_LEASEACTION_SPLICED_DEATH_DETECTED action expires.
+ * \brief Walk function to find all leases that should be immediately
+ * processed in case of unexpected spliced termination. This is the
+ * case for leases with a SPLICED_DEATH_DETECTED or SERVICESTATE_EXPIRED
+ * lease action ID.
  *
- * \param leaseAction The leaseAction object containing the v_lease and
- *                    actionObject used within this action routine.
+ * \param o An element from the set, i.e., a v_leaseAction object.
+ * \param arg NULL
+ *
+ * \return TRUE in all cases, such that all leases in the set are considered
  */
-static void
-splicedDeathDetected(
-    v_leaseAction leaseAction);
+static c_bool
+splicedIsDead(
+    c_object o,
+    c_voidp arg);
+
+/* Lease expiry action routines */
 
 /**
- * \brief The action routine executed when a service state expires.
+ * \brief Lease action routine executed when a service state expires.
  *
  * \param leaseAction The leaseAction object containing the v_lease and
- *                    actionObject used within this action routine.
+ * actionObject used within this action routine.
  */
 static void
 serviceStateExpired(
     v_leaseAction leaseAction);
 
 /**
- * \brief The action routine executed when a deadline is missed for a reader.
+ * \brief Lease action routine executed when a lease with the
+ * SPICED_DEATH_DETECTED action expires.
  *
  * \param leaseAction The leaseAction object containing the v_lease and
- *                    actionObject used within this action routine.
+ * actionObject used within this action routine.
+ */
+static void
+splicedDeathDetected(
+    v_leaseAction leaseAction);
+
+/**
+ * \brief Lease action routine executed when a deadline is missed by a reader.
+ *
+ * \param leaseAction The leaseAction object containing the v_lease and
+ * actionObject used within this action routine.
  * \param now The current time.
  */
 static void
@@ -164,10 +174,10 @@ readerDeadlineMissed(
     c_time now);
 
 /**
- * \brief The action routine executed when a deadline is missed for a writer.
+ * \brief Lease action routine executed when a deadline is missed by a writer.
  *
  * \param leaseAction The leaseAction object containing the v_lease and
- *                    actionObject used within this action routine.
+ * actionObject used within this action routine.
  * \param now The current time.
  */
 static void
@@ -176,43 +186,43 @@ writerDeadlineMissed(
     c_time now);
 
 /**
- * \brief The action routine executed when a liveliness has been lost
+ * \brief Lease action routine executed when a writer loses liveliness.
  *
- * \param _this The leaseManager object to operate on, used when the action
- *              routine determines that the lease needs to be removed.
  * \param leaseAction The leaseAction object containing the v_lease and
- *                    actionObject used within this action routine.
+ * actionObject used within this action routine.
  */
 static void
-livelinessCheck(
-    v_leaseManager _this,
+writerLivelinessLost(
     v_leaseAction leaseAction);
 
 /**
- * \brief The action routine executed when the splice deamon needs to send a
- * heart beat.
+ * \brief Lease action routine executed when the splicedeamon needs to send a
+ * heartbeat.
  *
  * \param leaseAction The leaseAction object containing the v_lease and
- *                    actionObject used within this action routine.
+ * actionObject used within this action routine.
  */
 static void
 heartbeatSend(
     v_leaseAction leaseAction);
 
 /**
- * \brief The action routine executed when the splice deamon needs to check
- * heart beats of services.
+ * \brief Lease action routine executed when the splicedeamon needs to receive
+ * a heartbeat from a remote splicedaemon.
  *
  * \param leaseAction The leaseAction object containing the v_lease and
- *                    actionObject used within this action routine.
+ * actionObject used within this action routine.
  */
 static void
 heartbeatCheck(
     v_leaseAction leaseAction);
 
+
+
 /**************************************************************
  * constructor/destructor
  **************************************************************/
+
 v_leaseManager
 v_leaseManagerNew(
     v_kernel k)
@@ -222,11 +232,9 @@ v_leaseManagerNew(
     assert(C_TYPECHECK(k, v_kernel));
 
     _this = v_leaseManager(v_objectNew(k, K_LEASEMANAGER));
-    if(_this)
-    {
+    if(_this) {
         v_leaseManagerInit(_this);
-    } else
-    {
+    } else {
         OS_REPORT(OS_ERROR, "v_leaseManager", 0,
             "Failed to create a v_leaseManager object. "
             "Most likely not enough shared memory available "
@@ -248,7 +256,7 @@ v_leaseManagerInit(
     c_mutexInit(&_this->mutex, SHARED_MUTEX);
     c_condInit(&_this->cond, &_this->mutex, SHARED_COND);
     _this->quit = FALSE;
-    _this->firstLeaseToExpire = NULL;
+    _this->nextExpiryTime = C_TIME_INFINITE;
     _this->leases = c_setNew(v_kernelType(k, K_LEASEACTION));
 }
 
@@ -256,10 +264,8 @@ void
 v_leaseManagerFree(
     v_leaseManager _this)
 {
-    if (_this != NULL)
-    {
+    if (_this != NULL) {
         assert(C_TYPECHECK(_this, v_leaseManager));
-
         v_leaseManagerDeinit(_this);
         c_free(_this);
     }
@@ -270,21 +276,37 @@ v_leaseManagerDeinit(
     v_leaseManager _this)
 {
     v_leaseAction lease;
+    c_bool removed;
 
     assert(C_TYPECHECK(_this, v_leaseManager));
 
     c_mutexLock(&_this->mutex);
-    c_free(_this->firstLeaseToExpire);
-    _this->firstLeaseToExpire = NULL;
     lease = v_leaseAction(c_take(_this->leases));
     while (lease != NULL)
     {
+        /* Unregister self from the lease, we are no longer an observer */
+        v_leaseLock(lease->lease);
+        removed = v_leaseRemoveObserverNoLock(lease->lease, _this);
+        v_leaseUnlock(lease->lease);
+        if(removed == FALSE)
+        {
+            OS_REPORT_2(OS_ERROR,
+                "v_leaseManagerDeinit",0,
+                "Failed to remove leaseManager %p from the list of "
+                "observers of lease %p, while the lease WAS contained in "
+                "the list of leases managed by the leaseManager. This means "
+                "the administration has become inconsistent internally. "
+                "This is not a fatal error in itself, but points towards "
+                "a bug that could affect behaviour of OpenSpliceDDS",
+                _this,
+                lease);
+        } /* else everything is ok */
+
         c_free(lease);
         lease = v_leaseAction(c_take(_this->leases));
     }
     c_free(_this->leases);
     _this->leases = NULL;
-
     _this->quit = TRUE;
     c_condBroadcast(&_this->cond);
     c_mutexUnlock(&_this->mutex);
@@ -295,6 +317,7 @@ v_leaseManagerDeinit(
 /**************************************************************
  * register/deregister of leases
  **************************************************************/
+
 v_result
 v_leaseManagerRegister(
     v_leaseManager  _this,
@@ -303,11 +326,10 @@ v_leaseManagerRegister(
     v_public        actionObject,
     c_bool          repeatLease)
 {
-    c_bool obsAdded;
-    v_leaseAction leaseAction;
-    v_leaseAction found;
+    v_leaseAction leaseAction, foundLeaseAction;
     v_result result;
     v_kernel k;
+    c_bool observerAdded;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_leaseManager));
@@ -315,6 +337,8 @@ v_leaseManagerRegister(
     assert(C_TYPECHECK(lease, v_lease));
     assert(actionObject != NULL);
     assert(C_TYPECHECK(actionObject, v_public));
+
+    result = V_RESULT_OK;
 
     /* Step 1: Create a lease action object. This object will contain the relevant
      * information needed when reacting to an expired lease. This action information
@@ -324,107 +348,65 @@ v_leaseManagerRegister(
      */
     k = v_objectKernel(_this);
     leaseAction = v_leaseAction(v_objectNew(k, K_LEASEACTION));
-    if(!leaseAction)
-    {
-        OS_REPORT(OS_ERROR, "v_leaseManager", 0,
-            "Failed to create a v_leaseManager object. "
-            "Most likely not enough shared memory available to "
+    if(!leaseAction) {
+        OS_REPORT(OS_ERROR, "v_leaseManagerRegister", 0,
+            "Failed to create a v_leaseAction object. "
+            "Most likely not enough resources available to "
             "complete the operation.");
         result = V_RESULT_OUT_OF_MEMORY;
-    } else
-    {
+    } else {
         leaseAction->lease = v_lease(c_keep(lease));
         assert(leaseAction->lease);
         leaseAction->actionId = actionId;
         leaseAction->actionObject = v_publicHandle(actionObject);
         leaseAction->repeat = repeatLease;
-        /* Step 2: insert the leaseAction object into the set of leases. */
+
+        /* Step 2a: insert the leaseAction object into the set of leases. */
         c_mutexLock(&_this->mutex);
-        found = c_setInsert(_this->leases, leaseAction);
-        if(!found)
-        {
-            /* Because the leaseAction object was just allocated we only have
-             * to check if found is a NULL pointer. As it can never find the
-             * action already being present in the set.
-             */
-            OS_REPORT(OS_ERROR, "v_leaseManager", 0,
-                "Unable to register the lease to the list of "
-                "leases of the leaseManager object! Most likely not enough shared "
-                "memory available to complete the operation.");
-            result = V_RESULT_OUT_OF_MEMORY;
-            c_free(leaseAction);
-            leaseAction = NULL;
-        } else
-        {
-            assert(found == leaseAction);
-            /* Step 3: Determine if the newly inserted leaseAction will become the
-             * 'next lease to expire'. E.G., if the lease contained within the
-             * leaseAction object has an expiry time that is the closest to the
-             * present time compared to the other leases managed within this lease
-             * manager. To prevent the lease time from changing while we evaluate the
-             * lease we will lock the lease object.
+        foundLeaseAction = c_setInsert(_this->leases, leaseAction);
+        if(foundLeaseAction != leaseAction) {
+            OS_REPORT(OS_ERROR, "v_leaseManagerRegister", 0,
+                "Failed to insert the lease in the lease manager. "
+                "Most likely not enough resources available to "
+                "complete the operation.");
+            result = V_RESULT_INTERNAL_ERROR;
+        } else {
+            /* Step 2b: Now that the lease was successfully inserted into the lease manager,
+             * we need to register the leaseManager as an observer of the lease to ensure that the
+             * it is notified when the lease expiry time and/or duration is changed. To prevent the
+             * lease time from changing while we evaluate the lease we will lock the lease object.
              */
             v_leaseLock(lease);
-            if(!_this->firstLeaseToExpire)
-            {
-                _this->firstLeaseToExpire = c_keep(leaseAction);
-                /* head changed, so signal */
-                c_condBroadcast(&_this->cond);
-            } else if ((_this->firstLeaseToExpire->lease != lease) &&
-                       (c_timeCompare(v_leaseExpiryTime(_this->firstLeaseToExpire->lease),
-                                     v_leaseExpiryTimeNoLock(lease)) == C_GT))
-            {
-                c_free(_this->firstLeaseToExpire);
-                _this->firstLeaseToExpire = c_keep(leaseAction);
-                /* head changed, so signal */
-                c_condBroadcast(&_this->cond);
-            }/* else do nothing as the newly added lease expires after the firstLeaseToExpire */
-            /* Step 4: Now that the lease was successfully inserted into the lease manager,
-             * we need to register the leaseManager as an observer of the lease to ensure that the
-             * lease manager is notified if the lease expiry time and/or duration changes.
-             */
-            obsAdded = v_leaseAddObserverNoLock(lease, _this);
-            if(!obsAdded)
-            {
-                OS_REPORT(OS_ERROR, "v_leaseManager", 0,
-                    "Unable to register the lease manager to the list of "
-                    "observers of the lease object! Possibly not enough "
-                    "shared memory available to complete the operation.");
+            observerAdded = v_leaseAddObserverNoLock(lease, _this);
+            if (!observerAdded) {
+                OS_REPORT(OS_ERROR, "v_leaseManagerRegister", 0,
+                    "Failed to insert the lease manager as an observer of the lease. "
+                    "Most likely not enough resources available to "
+                    "complete the operation.");
                 result = V_RESULT_INTERNAL_ERROR;
-                v_leaseUnlock(lease);
                 /* Remove the lease from the leaseManager */
-                found = c_setRemove(_this->leases, leaseAction, NULL, NULL);
-                if(found != leaseAction)
-                {
-                    OS_REPORT(OS_ERROR, "v_leaseManager", 0,
-                        "Unable to unregister the lease to the list of "
-                        "leases of the leaseManager object after previous internal error!");
+                foundLeaseAction = c_setRemove(_this->leases, leaseAction, NULL, NULL);
+                if (foundLeaseAction != leaseAction) {
+                    OS_REPORT(OS_ERROR, "v_leaseManagerRegister", 0,
+                        "Failed to remove a lease from the lease manager");
                 }
-                c_free(leaseAction);
-                leaseAction = NULL;
-            } else
-            {
-                /* Now that the lease manager is in the observer list of the lease, we can unlock the lease
-                 * as from now on we will be notified of any changes to the lease expiry time and/or duration
-                 */
-                v_leaseUnlock(lease);
-                result = V_RESULT_OK;
             }
 
+            /* Step 3: If the newly registered lease expires before the
+             * current nextExpiryTime of the lease manager, the nextExpiryTime
+             * needs to be updated, to take into account the expiry of the
+             * new leaseAction.
+             */
+            if((result == V_RESULT_OK) &&
+               (c_timeCompare(lease->expiryTime, _this->nextExpiryTime) == C_LT)) {
+                _this->nextExpiryTime = lease->expiryTime;
+                c_condBroadcast(&_this->cond);
+            }
+            v_leaseUnlock(lease);
         }
         c_mutexUnlock(&_this->mutex);
     }
-    if(leaseAction)
-    {
-        /* Done with the leaseAction object in this operation. If the object is not a NULL
-         * pointer then everything went ok. The leases set of the leaseManager should be
-         * the only one maintaining a ref count now (and possibly the 'firstLeaseToExpire'
-         * attribute. But we do not need the leaseAction object in this operation anymore
-         * and we are not returning it, so we need to lower the ref count for the new operation
-         */
-        c_free(leaseAction);
-    }/* else do nothing */
-
+    c_free(leaseAction);
     return result;
 }
 
@@ -434,63 +416,48 @@ v_leaseManagerDeregister(
     v_lease lease)
 {
     struct findLeaseActionArg arg;
-    v_leaseAction found;
+    v_leaseAction foundLeaseAction;
     c_bool removed;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_leaseManager));
 
-    if (lease != NULL)
-    {
+    if (lease != NULL) {
         assert(C_TYPECHECK(lease, v_lease));
 
-        /* Step 1: Locate the leaseAction object based on the lease object */
+        /* Step 1: Get the leaseAction corresponding to the lease, from the set of leases */
         c_mutexLock(&_this->mutex);
         arg.lease = lease;
         arg.action = NULL;
         c_setWalk(_this->leases, findLeaseAction, &arg);
-        if(arg.action)
-        {
-            /* step 2a: If we found the action object, then remove it */
-            found = c_setRemove(_this->leases, arg.action, NULL, NULL);
-            assert(found == arg.action);
-            /* Step 2b: Remove the leaseManager from the list of observers of the
-             * lease object. Using explicit lock operations, to keep the
-             * v_leaseRemoveObserverNoLock operation consistent with the
-             * v_leaseAddObserverNoLock operation.
-             */
-            v_leaseLock(lease);
-            removed = v_leaseRemoveObserverNoLock(lease, _this);
-            v_leaseUnlock(lease);
-            if(removed == FALSE)
-            {
-                OS_REPORT_2(OS_ERROR,
-                    "v_leaseManagerDeregister",0,
-                    "Failed to remove leaseManager %p from the list of "
-                    "observers of lease %p, while the lease WAS contained in "
-                    "the list of leases managed by the leaseManager. This means "
-                    "the administration has become inconsistent internally. "
-                    "This is not a fatal error in itself, but points towards "
-                    "a bug that could affect behaviour of OpenSpliceDDS",
-                    _this,
-                    lease);
-            } /* else everything is ok */
-            /* step 3: If the removed action was the 'firstLeaseToExpire' then we need
-             * to redetermine the new 'firstLeaseToExpire'. Take note that no broadcast is done
-             * on the condition. Because the new 'firstLeaseToExpire' will always have a later
-             * expiry time, otherwise the one removed would not have been the first to expire.
-             * So as a result of not doing the broadcast the leaseManager will wake up and find no
-             * lease to be expired and continue as normal
-             */
-            if (arg.action == _this->firstLeaseToExpire)
-            {
-                c_free(_this->firstLeaseToExpire);
-                _this->firstLeaseToExpire = NULL;
-                c_setWalk(_this->leases, determineFirstLeaseToExpire, _this);
-            }
-            c_free(found); /* delete local reference */
-            c_free(arg.action);
-        }/* else the lease was not contained, so do nothing */
+        if(arg.action) {
+            /* step 2a: If the leaseAction object exists, remove it from the lease manager */
+        	foundLeaseAction = c_setRemove(_this->leases, arg.action, NULL, NULL);
+        	assert(foundLeaseAction == arg.action);
+
+        	/* Step 2b: Unregister the lease manager as observer of the
+			 * lease.
+			 */
+			 v_leaseLock(lease);
+			 removed = v_leaseRemoveObserverNoLock(lease, _this);
+			 v_leaseUnlock(lease);
+			 if (removed == FALSE) {
+				 OS_REPORT_2(OS_ERROR, "v_leaseManagerDeregister", 0,
+				         "Failed to unregister lease manager %p as an observer of lease %p, "
+				         "while the lease WAS contained in the set of leases managed by "
+				         "this lease manager.",
+				         _this, lease);
+             }
+
+			 /* Note: There is no need to update the nextExpiryTime of the lease manager here.
+			  * Possibly the lease manager wakes too early (because the deregistered lease was the
+			  * one responsible for setting the nextExpiryTime). But if we do determine a new
+			  * 'nextExpiryTime' here, we would also need to wake the lease manager to have it
+			  * taken into account.
+			  */
+			 c_free(foundLeaseAction);
+			 c_free(arg.action);
+        }
         c_mutexUnlock(&_this->mutex);
     }
 }
@@ -504,184 +471,117 @@ findLeaseAction(
     v_leaseAction action = v_leaseAction(o);
     struct findLeaseActionArg *a = (struct findLeaseActionArg *)arg;
 
-    if(action && action->lease == a->lease)
-    {
+    if (action && (action->lease == a->lease)) {
         a->action = c_keep(action);
         retVal = FALSE;
-    } else
-    {
-        retVal = TRUE;
+    } else {
+        retVal = TRUE; /* not found, continue walk */
     }
 
     return retVal;
 }
 
 c_bool
-determineFirstLeaseToExpire(
+splicedIsDead(
     c_object o,
     c_voidp arg)
 {
-    c_time headExpTime;
-    c_time leaseExpTime;
-    v_leaseAction leaseAction = v_leaseAction(o);
-    v_leaseManager lm = v_leaseManager(arg);
+    v_leaseAction action = v_leaseAction(o);
+    OS_UNUSED_ARG(arg);
 
-    if (lm->firstLeaseToExpire == NULL)
+    switch (action->actionId)
     {
-        lm->firstLeaseToExpire = c_keep(leaseAction);
-    } else
-    {
-        headExpTime = v_leaseExpiryTime(lm->firstLeaseToExpire->lease);
-        leaseExpTime = v_leaseExpiryTime(leaseAction->lease);
-        if (c_timeCompare(headExpTime, leaseExpTime) == C_GT)
-        {
-            c_free(lm->firstLeaseToExpire);
-            lm->firstLeaseToExpire = c_keep(leaseAction);
-        }
+        case V_LEASEACTION_SERVICESTATE_EXPIRED:
+            serviceStateExpired(action);
+        break;
+        /* Found an action registered for the death of spliced. Perform it. */
+        case V_LEASEACTION_SPLICED_DEATH_DETECTED:
+            splicedDeathDetected(action);
+        break;
+        default:
+        /* Do nothing for all other ids */
+        break;
     }
+
+    /* Keep going */
     return TRUE;
 }
 
 /**************************************************************
- * Main / notify fnctions
+ * Main / notify functions
  **************************************************************/
+
 void
 v_leaseManagerMain(
     v_leaseManager _this)
 {
     v_leaseAction leaseAction;
     c_time waitTime = C_TIME_ZERO;
-    c_time expTime;
-    v_duration duration;
     struct collectExpiredArg arg;
-    c_syncResult waitResult = SYNC_RESULT_SUCCESS;
+    c_syncResult waitResult;
+
+    arg.expiredLeases = NULL;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_leaseManager));
 
     c_mutexLock(&_this->mutex);
-    /* initialize the current time once before the loop */
-    arg.now = v_timeGet();
+    arg.expiryTime = v_timeGet();
     while (_this->quit == FALSE) {
-        if (_this->firstLeaseToExpire != NULL) {
-            v_leaseGetExpiryAndDuration(_this->firstLeaseToExpire->lease, &expTime, &duration);
-            if (c_timeCompare(expTime, C_TIME_INFINITE) != C_EQ) {
-                waitTime = c_timeSub(expTime, arg.now);
-                if (c_timeCompare(waitTime, C_TIME_ZERO) == C_GT) {
-                    waitResult = c_condTimedWait(&_this->cond, &_this->mutex, waitTime);
-                } else {
-                    /* If the duration specified with the lease is C_TIME_ZERO,
-                     * it is expected that the expiryTime lies in the past, so
-                     * only warn if an actual duration was specified. */
-                    if(c_timeCompare(duration, C_TIME_ZERO) != C_EQ){
-                        OS_REPORT(OS_WARNING, "v_leaseManager", 0,
-                            "The wait time has become negative! This means "
-                            "that the leaseManager could not wake up in time to "
-                            "evaluate the lease expiry statusses. This could be "
-                            "due to scheduling problems or clock alignment issues on "
-                            "multi core machines. The lease manager will continue to "
-                            "function normal after this though.");
-                    }
-                }
-            } else {
-                /* The shortest expiry time is from a lease with an infinite duration. So
-                 * wait indefinately
-                 */
-                waitResult = c_condWait(&_this->cond, &_this->mutex);
-            }
-        } else {
-            /* no leases registered, so wait until the first one is registered */
+        if (c_timeCompare(_this->nextExpiryTime, C_TIME_INFINITE) == C_EQ) {
+            /* The next expiry time is from a lease with an infinite duration, so wait indefinitely */
             waitResult = c_condWait(&_this->cond, &_this->mutex);
+        } else if (c_timeCompare(_this->nextExpiryTime, arg.expiryTime) >= C_EQ) {
+            /* The next expiry time is in the future, wait until that moment */
+            waitTime = c_timeSub(_this->nextExpiryTime, arg.expiryTime);
+            waitResult = c_condTimedWait(&_this->cond, &_this->mutex, waitTime);
+        } else {
+            /* The next expiry time lies in the past, log a warning and proceed as normal */
+            OS_REPORT(OS_WARNING, "v_leaseManagerMain", 0,
+                "The lease manager did not wake up in time and missed the "
+                "next expiry time. This means there are likely one or more "
+                "leases that will not be processed in time. This could be due "
+                "to scheduling problems or clock alignment issues on multi-core "
+                "machines. The lease manager will continue to function normally");
+            waitResult = SYNC_RESULT_SUCCESS;
         }
 
-        if (waitResult == SYNC_RESULT_FAIL)
-        {
+        if (waitResult == SYNC_RESULT_FAIL) {
             OS_REPORT(OS_CRITICAL, "v_leaseManagerMain", 0,
-                      "c_condTimedWait / c_condWait failed - thread will terminate");
-            break;
+                "c_condTimedWait / c_condWait failed - memory sync no longer viable - probable cause is death of spliced."
+                OS_REPORT_NL "Lease manager will terminate after performing any registered death-of-spliced actions.");
+                c_setWalk(_this->leases, (c_action)splicedIsDead, NULL);
+                break;
         }
 
-        /**
-         * First walk through the collection of leases and record all
-         * expired leases in an iterator. We cannot remove expired leases
-         * while walking through the set, since it interferes with the
-         * walk.
-         * Any lease with a repeat bool to TRUE  will automatically be renewed
-         * while collecting all the leases.
-         */
+        /* Collect expired leases */
         arg.expiredLeases = NULL;
-        arg.firstLeaseToExpire = NULL;
-        arg.now = v_timeGet();
+        arg.expiryTime = v_timeGet();
         c_setWalk(_this->leases, collectExpired, &arg);
 
-        c_free(_this->firstLeaseToExpire);
-        _this->firstLeaseToExpire = arg.firstLeaseToExpire;/* takes over ref count from arg object */
+        /* Process expired leases */
         c_mutexUnlock(&_this->mutex);
-
         leaseAction = v_leaseAction(c_iterTakeFirst(arg.expiredLeases));
         while (leaseAction != NULL) {
-            if(!leaseAction->repeat)
-            {
+            /* Either renew or unregister the lease */
+            if (leaseAction->repeat) {
+                v_leaseRenew(leaseAction->lease, NULL);
+            } else {
                 v_leaseManagerDeregister(_this, leaseAction->lease);
             }
-            v_leaseManagerProcessLeaseAction(_this, leaseAction, arg.now);
+            v_leaseManagerProcessLeaseAction(_this, leaseAction, arg.expiryTime);
             c_free(leaseAction);
             leaseAction = v_leaseAction(c_iterTakeFirst(arg.expiredLeases));
         }
         c_iterFree(arg.expiredLeases);
+
+        /* Calculate next expiry time of lease manager */
         c_mutexLock(&_this->mutex);
+        _this->nextExpiryTime = C_TIME_INFINITE;
+        c_setWalk(_this->leases, calculateExpiryTime, &_this->nextExpiryTime);
     }
-    _this->quit = FALSE; /* for a next time */
+    _this->quit = FALSE;
     c_mutexUnlock(&_this->mutex);
-}
-
-c_bool
-collectExpired(
-    c_object o,
-    c_voidp arg)
-{
-    v_leaseAction leaseAction = v_leaseAction(o);
-    struct collectExpiredArg *a = (struct collectExpiredArg *)arg;
-    c_time headExpTime;
-    c_time leaseExpTime;
-    c_bool setHead;
-    c_equality cmp;
-
-    setHead = TRUE;
-    leaseExpTime = v_leaseExpiryTime(leaseAction->lease);
-    /*
-     * A lease is expired if the expiry time is greater than or equal
-     * to the current time!
-     */
-    cmp = c_timeCompare(a->now, leaseExpTime);
-    if ((cmp ==  C_GT) || (cmp == C_EQ)) {
-        a->expiredLeases = c_iterInsert(a->expiredLeases, c_keep(leaseAction));
-        /* An expired lease can still become the next expirytime,
-         * if it should be repeated
-         */
-        if (leaseAction->repeat)
-        {
-            v_leaseRenew(leaseAction->lease, NULL);
-        } else
-        {
-            setHead = FALSE;
-        }
-    }
-    if (setHead) {
-        if (a->firstLeaseToExpire == NULL) {
-            a->firstLeaseToExpire = c_keep(leaseAction);
-        } else {
-            headExpTime = v_leaseExpiryTime(a->firstLeaseToExpire->lease);
-            leaseExpTime = v_leaseExpiryTime(leaseAction->lease);
-
-            if (c_timeCompare(headExpTime, leaseExpTime) == C_GT) {
-                c_free(a->firstLeaseToExpire);
-                a->firstLeaseToExpire = c_keep(leaseAction);
-            }
-        }
-    }
-
-    return TRUE;
 }
 
 c_bool
@@ -691,43 +591,146 @@ v_leaseManagerNotify(
     v_eventKind event)
 {
     struct findLeaseActionArg arg;
+    c_time expiryTime;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_leaseManager));
 
     c_mutexLock(&_this->mutex);
-    if (event & V_EVENT_LEASE_RENEWED) {
-        if (_this->firstLeaseToExpire) {
-            if (_this->firstLeaseToExpire->lease == lease) {
-                /* If the lease is the head we are forced to wake-up the
-                   thread, since we do not know the remaining sleeptime of the
-                   thread.
-                */
-                c_condBroadcast(&_this->cond);
-            } else {
-                arg.lease = lease;
-                arg.action = NULL;
-                c_setWalk(_this->leases, findLeaseAction, &arg);
-                if (arg.action) {
-                    /* determine if this is the new head */
-                    if (c_timeCompare(v_leaseExpiryTime(_this->firstLeaseToExpire->lease),
-                                      v_leaseExpiryTime(lease)) == C_GT) {
-                        c_free(_this->firstLeaseToExpire);
-                        _this->firstLeaseToExpire = c_keep(arg.action);
-                        c_condBroadcast(&_this->cond);
-                    }
-                    c_free(arg.action);
-                } /* else lease is not registered, so no interest in this update! */
+
+    if (_this->quit == FALSE) {
+        if (v_eventTest(event, V_EVENT_LEASE_RENEWED)) {
+            /* Check if the lease is registered by this lease manager */
+            arg.lease = lease;
+            arg.action = NULL;
+            assert(_this->leases);
+            c_setWalk(_this->leases, findLeaseAction, &arg);
+            if (arg.action) {
+                /* Check if the lease renewal resuls in an updated next expiry time */
+                expiryTime = v_leaseExpiryTime(lease);
+                if (c_timeCompare(expiryTime, _this->nextExpiryTime) == C_LT) {
+                    _this->nextExpiryTime = expiryTime;
+                    c_condBroadcast(&_this->cond);
+                }
+                c_free(arg.action);
             }
-        }
-    } else {
-        if (event & V_EVENT_TERMINATE) {
+
+        } else if (v_eventTest(event, V_EVENT_TERMINATE)) {
             _this->quit = TRUE;
             c_condBroadcast(&_this->cond);
+        } else {
+            OS_REPORT_1(OS_WARNING, "v_leaseManagerNotify", 0,
+                "Lease manager notified by unsupported event (%d)",
+                event);
         }
     }
     c_mutexUnlock(&_this->mutex);
 
+    return TRUE;
+}
+
+void
+v_leaseManagerProcessLeaseAction(
+    v_leaseManager _this,
+    v_leaseAction leaseAction,
+    c_time now)
+{
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this, v_leaseManager));
+    assert(leaseAction != NULL);
+    assert(C_TYPECHECK(leaseAction, v_leaseAction));
+
+    switch (leaseAction->actionId) {
+        case V_LEASEACTION_SERVICESTATE_EXPIRED:
+            serviceStateExpired(leaseAction);
+            break;
+        case V_LEASEACTION_READER_DEADLINE_MISSED:
+            readerDeadlineMissed(leaseAction, now);
+            break;
+        case V_LEASEACTION_WRITER_DEADLINE_MISSED:
+            writerDeadlineMissed(leaseAction, now);
+            break;
+        case V_LEASEACTION_LIVELINESS_CHECK:
+            writerLivelinessLost(leaseAction);
+            break;
+        case V_LEASEACTION_HEARTBEAT_SEND:
+            heartbeatSend(leaseAction);
+            break;
+        case V_LEASEACTION_HEARTBEAT_CHECK:
+            heartbeatCheck(leaseAction);
+            break;
+        case V_LEASEACTION_SPLICED_DEATH_DETECTED:
+            splicedDeathDetected(leaseAction);
+            break;
+        default:
+            OS_REPORT_3(OS_WARNING, "v_leaseManager", 0,
+                "Unknown lease action (%d) for lease %p within leaseManager %p. "
+                "Lease will be removed from lease manager",
+                leaseAction->actionId, leaseAction->lease, _this);
+            /* Remove lease from lease manager to prevent unneeded future wakeups of lease manager. */
+            v_leaseManagerDeregister(_this, leaseAction->lease);
+            break;
+    }
+}
+
+c_bool
+collectExpired(
+    c_object o,
+    c_voidp arg)
+{
+    v_leaseAction leaseAction = v_leaseAction(o);
+    struct collectExpiredArg *a = (struct collectExpiredArg *)arg;
+    c_time leaseExpiryTime;
+    v_duration leaseDuration;
+    c_time lag;
+    c_equality expired;
+
+    v_leaseLock(leaseAction->lease);
+    leaseExpiryTime = v_leaseExpiryTimeNoLock(leaseAction->lease);
+    leaseDuration = v_leaseDurationNoLock(leaseAction->lease);
+    v_leaseUnlock(leaseAction->lease);
+
+    /* Add to expiredLeases if the current expiry time is
+     * equal or later than the lease expiry time */
+    expired = c_timeCompare(a->expiryTime, leaseExpiryTime);
+    if (expired >= C_EQ) {
+        a->expiredLeases = c_iterInsert(a->expiredLeases, c_keep(leaseAction));
+
+        /* If the difference is larger than the lease duration, the lease
+         * was not renewed in time, thus lease processing is lagging behind
+         */
+
+        /* only print this warning for periodic leases as we cannot give information about a periodic (deadline) leases see OSPL-1681*/
+        if (leaseAction->repeat) {
+            lag = c_timeSub(c_timeSub(a->expiryTime, leaseExpiryTime), leaseDuration);
+            if (c_timeCompare(lag, leaseDuration) == C_GT) {
+                OS_REPORT_3(OS_WARNING, "v_leaseManager", 0,
+                    "Caution: processing of lease 0x" PA_ADDRFMT " is behind schedule (%u.%.9us). "
+                    "This is often an indication that the machine is too busy. "
+                    "The lease manager will continue to function normally.",
+                    (PA_ADDRCAST)leaseAction->lease, lag.seconds, lag.nanoseconds);
+            }
+        }
+    }
+
+    /* Keep going */
+    return TRUE;
+}
+
+c_bool
+calculateExpiryTime(
+    c_object o,
+    c_voidp arg)
+{
+    c_time leaseExpiryTime, *nextExpiryTime;
+    leaseExpiryTime = v_leaseExpiryTime(v_leaseAction(o)->lease);
+    nextExpiryTime = (c_time*)arg;
+
+    if (c_timeCompare(leaseExpiryTime, *nextExpiryTime) == C_LT) {
+        *nextExpiryTime = leaseExpiryTime;
+    }
+
+    /* Keep going */
     return TRUE;
 }
 
@@ -747,45 +750,28 @@ v_leaseManagerNotify(
  */
 
 void
-v_leaseManagerProcessLeaseAction(
-    v_leaseManager _this,
-    v_leaseAction leaseAction,
-    c_time now)
+serviceStateExpired(
+    v_leaseAction leaseAction)
 {
-    assert(_this != NULL);
-    assert(C_TYPECHECK(_this, v_leaseManager));
+    v_object o;
+    v_handleResult r;
+
     assert(leaseAction != NULL);
     assert(C_TYPECHECK(leaseAction, v_leaseAction));
 
-    switch (leaseAction->actionId)
-    {
-        case V_LEASEACTION_SERVICESTATE_EXPIRED:
-            serviceStateExpired(leaseAction);
-        break;
-        case V_LEASEACTION_READER_DEADLINE_MISSED:
-            readerDeadlineMissed(leaseAction, now);
-        break;
-        case V_LEASEACTION_WRITER_DEADLINE_MISSED:
-            writerDeadlineMissed(leaseAction, now);
-        break;
-        case V_LEASEACTION_LIVELINESS_CHECK:
-            livelinessCheck(_this, leaseAction);
-        break;
-        case V_LEASEACTION_HEARTBEAT_SEND:
-            heartbeatSend(leaseAction);
-        break;
-        case V_LEASEACTION_HEARTBEAT_CHECK:
-            heartbeatCheck(leaseAction);
-        break;
-        case V_LEASEACTION_SPLICED_DEATH_DETECTED:
-            splicedDeathDetected(leaseAction);
-        break;
-        default:
-            OS_REPORT_3(OS_WARNING, "v_leaseManager", 0,
-                        "Unknown lease action %d for lease %p within leaseManager %p", leaseAction->actionId, leaseAction->lease, _this);
-            /* lets remove lease from lease manager to prevent future wakeups of lease manager. */
-            v_leaseManagerDeregister(_this, leaseAction->lease);
-        break;
+    r = v_handleClaim(leaseAction->actionObject, &o);
+    if (r == V_HANDLE_OK) {
+        if (v_objectKind(o) == K_SERVICESTATE) {
+            v_serviceStateChangeState(v_serviceState(o), STATE_DIED);
+        } else {
+            OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
+                "Can't run lease action 'serviceStateExpired' on object kind %d", v_objectKind(o));
+        }
+        r = v_handleRelease(leaseAction->actionObject);
+        if(r != V_HANDLE_OK) {
+            OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
+                "Handle release failed with result code %d", r);
+        }
     }
 }
 
@@ -801,47 +787,20 @@ splicedDeathDetected(
     assert(C_TYPECHECK(leaseAction, v_leaseAction));
 
     r = v_handleClaim(leaseAction->actionObject, &o);
-    if (r == V_HANDLE_OK)
-    {
-        kernel = v_kernel(o);
-        kernel->splicedRunning = FALSE;
+    if (r == V_HANDLE_OK) {
+        if (v_objectKind(o) == K_KERNEL) {
+            kernel = v_kernel(o);
+            kernel->splicedRunning = FALSE;
+        } else {
+            OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
+                "Can't run lease action 'splicedDeathDetected' on object kind %d", v_objectKind(o));
+        }
         r = v_handleRelease(leaseAction->actionObject);
-        if(r != V_HANDLE_OK)
-        {
+        if(r != V_HANDLE_OK) {
             OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
                 "Handle release failed with result code %d ", r);
         }
-    } /* else just skip, since entity is already gone */
-
-}
-
-void
-serviceStateExpired(
-    v_leaseAction leaseAction)
-{
-    v_object o;
-    v_handleResult r;
-
-    assert(leaseAction != NULL);
-    assert(C_TYPECHECK(leaseAction, v_leaseAction));
-    r = v_handleClaim(leaseAction->actionObject, &o);
-    if (r == V_HANDLE_OK)
-    {
-        if (o->kind == K_SERVICESTATE)
-        {
-            v_serviceStateChangeState(v_serviceState(o), STATE_DIED);
-        } else
-        {
-            OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
-                "Lease action on unexpected object type: %d", o->kind);
-        }
-        r = v_handleRelease(leaseAction->actionObject);
-        if(r != V_HANDLE_OK)
-        {
-            OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
-                "Handle release failed with result code %d ", r);
-        }
-    } /* else just skip, since entity is already gone */
+    }
 }
 
 void
@@ -856,12 +815,15 @@ readerDeadlineMissed(
     assert(C_TYPECHECK(leaseAction, v_leaseAction));
 
     r = v_handleClaim(leaseAction->actionObject, &o);
-    if (r == V_HANDLE_OK)
-    {
-        v_dataReaderCheckDeadlineMissed(v_dataReader(o), now);
+    if (r == V_HANDLE_OK) {
+        if (v_objectKind(o) == K_DATAREADER) {
+            v_dataReaderCheckDeadlineMissed(v_dataReader(o), now);
+        } else {
+            OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
+                "Can't run lease action 'readerDeadlineMissed' on object kind %d", v_objectKind(o));
+        }
         r = v_handleRelease(leaseAction->actionObject);
-        if(r != V_HANDLE_OK)
-        {
+        if(r != V_HANDLE_OK) {
             OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
                 "Handle release failed with result code %d ", r);
         }
@@ -873,19 +835,22 @@ writerDeadlineMissed(
     v_leaseAction leaseAction,
     c_time now)
 {
-    v_object w;
+    v_object o;
     v_handleResult r;
 
     assert(leaseAction != NULL);
     assert(C_TYPECHECK(leaseAction, v_leaseAction));
 
-    r = v_handleClaim(leaseAction->actionObject, &w);
-    if (r == V_HANDLE_OK)
-    {
-        v_writerCheckDeadlineMissed(v_writer(w), now);
+    r = v_handleClaim(leaseAction->actionObject, &o);
+    if (r == V_HANDLE_OK) {
+        if (v_objectKind(o) == K_WRITER) {
+            v_writerCheckDeadlineMissed(v_writer(o), now);
+        } else {
+            OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
+                "Can't run lease action 'writerDeadlineMissed' on object kind %d", v_objectKind(o));
+        }
         r = v_handleRelease(leaseAction->actionObject);
-        if(r != V_HANDLE_OK)
-        {
+        if(r != V_HANDLE_OK) {
             OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
                 "Handle release failed with result code %d ", r);
         }
@@ -893,8 +858,7 @@ writerDeadlineMissed(
 }
 
 void
-livelinessCheck(
-    v_leaseManager _this,
+writerLivelinessLost(
     v_leaseAction leaseAction)
 {
     v_object o;
@@ -903,29 +867,19 @@ livelinessCheck(
     assert(leaseAction != NULL);
     assert(C_TYPECHECK(leaseAction, v_leaseAction));
 
-    /* Liveliness lease expired, so the reader/writer must be notified! */
     r = v_handleClaim(leaseAction->actionObject, &o);
-    if (r == V_HANDLE_OK)
-    {
-        v_writerNotifyLivelinessLost(v_writer(o));
-        if (v_objectKind(o) != K_WRITER)
-        {
-            OS_REPORT_1(OS_WARNING, "v_lease", 0,
-                        "entity %d has no liveliness policy",
-                        v_objectKind(o));
+    if (r == V_HANDLE_OK) {
+        if (v_objectKind(o) == K_WRITER) {
+            v_writerNotifyLivelinessLost(v_writer(o));
+        } else {
+            OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
+                "Can't run lease action 'livelinessCheck' on object kind %d", v_objectKind(o));
         }
         r = v_handleRelease(leaseAction->actionObject);
-        if(r != V_HANDLE_OK)
-        {
+        if(r != V_HANDLE_OK) {
             OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
                 "Handle release failed with result code %d ", r);
         }
-    } else
-    {
-        /* Corresponding reader/writer is already gone, so remove this lease
-         * from its leasemanager.
-         */
-        v_leaseManagerDeregister(_this, leaseAction->lease);
     }
 }
 
@@ -933,24 +887,26 @@ void
 heartbeatSend(
     v_leaseAction leaseAction)
 {
-    v_object sd;
+    v_object o;
     v_handleResult r;
 
     assert(leaseAction != NULL);
     assert(C_TYPECHECK(leaseAction, v_leaseAction));
 
-    r = v_handleClaim(leaseAction->actionObject, &sd);
-    if (r == V_HANDLE_OK)
-    {
-        v_splicedHeartbeat(v_spliced(sd));
+    r = v_handleClaim(leaseAction->actionObject, &o);
+    if (r == V_HANDLE_OK) {
+        if (v_objectKind(o) == K_SPLICED) {
+            v_splicedHeartbeat(v_spliced(o));
+        } else {
+            OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
+                "Can't run lease action 'heartbeatSend' on object kind %d", v_objectKind(o));
+        }
         r = v_handleRelease(leaseAction->actionObject);
-        if(r != V_HANDLE_OK)
-        {
+        if(r != V_HANDLE_OK) {
             OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
                 "Handle release failed with result code %d ", r);
         }
-    } else
-    {
+    } else {
         OS_REPORT(OS_ERROR, "heartbeatSend", 0,
             "Could not claim the splicedaemon!");
     }
@@ -960,25 +916,27 @@ void
 heartbeatCheck(
     v_leaseAction leaseAction)
 {
-    v_object sd;
+    v_object o;
     v_handleResult r;
 
     assert(leaseAction != NULL);
     assert(C_TYPECHECK(leaseAction, v_leaseAction));
 
-    r = v_handleClaim(leaseAction->actionObject, &sd);
-    if (r == V_HANDLE_OK)
-    {
-        v_splicedCheckHeartbeats(v_spliced(sd));
+    r = v_handleClaim(leaseAction->actionObject, &o);
+    if (r == V_HANDLE_OK) {
+        if (v_objectKind(o) == K_SPLICED) {
+            v_splicedCheckHeartbeats(v_spliced(o));
+        } else {
+            OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
+                "Can't run lease action 'heartbeatCheck' on object kind %d", v_objectKind(o));
+        }
         r = v_handleRelease(leaseAction->actionObject);
-        if(r != V_HANDLE_OK)
-        {
+        if(r != V_HANDLE_OK) {
             OS_REPORT_1(OS_WARNING, "v_leaseManager", 0,
                 "Handle release failed with result code %d ", r);
         }
-    } else
-    {
-        OS_REPORT(OS_ERROR, "heartbeatSend", 0,
+    } else {
+        OS_REPORT(OS_ERROR, "heartbeatCheck", 0,
             "Could not claim the splicedaemon!");
     }
 }

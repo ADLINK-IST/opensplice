@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -39,7 +39,7 @@ extern "C" {
 #define DEF_CMDLINE 1
 
 OS_API void init_preprocess(void);
-OS_API void preprocess(FILE *infile, char *infilename);
+OS_API void preprocess(FILE *infile, const char *infilename);
 OS_API int preprocess_getc(void);
 OS_API void Ifile (char *);
 OS_API void define (const char * name, int nargs, unsigned char * repl, int how);

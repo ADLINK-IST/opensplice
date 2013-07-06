@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os_report.h"
@@ -92,10 +92,10 @@ c_filterNew(
     q_expr predicate,
     c_value params[])
 {
-    c_filter filter;
+    c_qPred filter;
 
     c_qPredNew(type,NULL,predicate,params,(c_qPred *)&filter);
-    return filter;
+    return (c_filter)filter;
 }
 
 c_bool
@@ -725,19 +725,19 @@ c_qRangeListAnd(
                e.g. [*..5] AND [10..*] ~~> no value satisfies both ranges
                so the result is <x>, i.e. a list which no variable can satisfy */
             c_setRange(r1,r1->start,r1->startExpr,B_EXCLUDE,
-						  r1->start,r2->startExpr,B_EXCLUDE);
-			result = c_iterAppend(result,c_keep(r1));
-			while (r1 != NULL) {
-				c_free(r1);
-				r1 = c_iterTakeFirst(list1);
-			}
-			c_iterFree(list1);
-			while (r2 != NULL) {
-				c_free(r2);
-				r2 = c_iterTakeFirst(list2);
-			}
-			c_iterFree(list2);
-			return result;
+                          r1->start,r2->startExpr,B_EXCLUDE);
+            result = c_iterAppend(result,c_keep(r1));
+            while (r1 != NULL) {
+                c_free(r1);
+                r1 = c_iterTakeFirst(list1);
+            }
+            c_iterFree(list1);
+            while (r2 != NULL) {
+                c_free(r2);
+                r2 = c_iterTakeFirst(list2);
+            }
+            c_iterFree(list2);
+            return result;
         break;
         case C_LE:
             c_setRange(r1,r2->start,r2->startExpr,r2->startKind,
@@ -799,6 +799,7 @@ makeRange(
 
     startKind = B_UNDEFINED;
     endKind = B_UNDEFINED;
+    rangeList = NULL;
 
 #define _LEFT_PARAM_(e)  (c_qExpr(c_qFunc(e)->params[0]))
 #define _RIGHT_PARAM_(e) (c_qExpr(c_qFunc(e)->params[1]))
@@ -922,7 +923,7 @@ static c_iter
 makeRangeQuery(
     c_qExpr *expr)
 {
-	c_qExpr *leftPar,*rightPar;
+    c_qExpr *leftPar,*rightPar;
     c_iter leftList,rightList;
     c_qExpr e;
     c_iter rangeList;
@@ -1059,6 +1060,8 @@ optimizeExpr(
 {
     c_qExpr p1,p2;
     c_type type;
+
+    OS_UNUSED_ARG(fixed);
 
     p1 = c_qFunc(e)->params[0];
     p2 = c_qFunc(e)->params[1];
@@ -1292,7 +1295,7 @@ makeExprQuery(
     break;
     case T_VAR:
         id = q_getVar(e);
-        var = c_iterResolve(*varList,c_qVarCompare,&id);
+        var = c_iterResolve(*varList,(c_iterResolveCompare)c_qVarCompare,&id);
         if (var == NULL) {
             r = c_qExpr(c_new(c_qConstType(base)));
             if (r) {
@@ -1414,7 +1417,7 @@ makeKeyQuery (
         key->field = c_keep(field);
         key->expr = makeExprQuery(keyExpr,type,&KeyVarList,fixed);
         while ((var = c_iterTakeFirst(KeyVarList)) != NULL) {
-            foundVar = c_iterResolve(*varList,c_qVarCompare,&var->id);
+            foundVar = c_iterResolve(*varList,(c_iterResolveCompare)c_qVarCompare,&var->id);
             if (foundVar != NULL) {
                 foundKey = c_insert(foundVar->keys,key);
                 assert(foundKey == key);
@@ -1503,13 +1506,11 @@ c_qVarInit(
                 if (c_baseObject(type)->kind == M_ENUMERATION) {
                     l = c_enumValue(c_enumeration(type),v.is.String);
                     if (l != NULL) {
-#if 1
                         if (var->type == NULL) {
                             var->type = c_keep(type);
                         } else {
                             assert(var->type == type);
                         }
-#endif
                         parValue = l->value;
                         c_free(l);
                     } else {
@@ -1565,16 +1566,16 @@ c_qVarInit(
             }
         break;
         case V_LONGLONG:
-	    parValue.is.LongLong = os_atoll (v.is.String);
-	    if (errno) {
-		parValue.kind = V_UNDEFINED;
-	    }
+            parValue.is.LongLong = os_atoll (v.is.String);
+            if (errno) {
+                parValue.kind = V_UNDEFINED;
+            }
         break;
         case V_ULONGLONG:
-	    parValue.is.LongLong = os_atoll (v.is.String);
-	    if (errno) {
-		parValue.kind = V_UNDEFINED;
-	    }
+            parValue.is.LongLong = os_atoll (v.is.String);
+            if (errno) {
+                parValue.kind = V_UNDEFINED;
+            }
         break;
         case V_OBJECT:
             if (!sscanf(v.is.String,"%p",&parValue.is.Object)) {
@@ -1740,7 +1741,6 @@ c_qPredInitVars (
     c_qPred p,
     c_value params[])
 {
-    c_valueKind kind;
     c_long i,nrOfKeys;
     c_qPred orExpr;
 
@@ -1762,24 +1762,14 @@ c_qPredInitVars (
     nrOfKeys = c_arraySize(p->keyField);
     while (orExpr != NULL) {
         if (orExpr->expr != NULL) {
-            kind = c_qExprInitVars (orExpr->expr,
+            c_qExprInitVars (orExpr->expr,
                                     p->varList,
                                     params);
-#if 0
-            if (kind == V_UNDEFINED) {
-                return FALSE;
-            }
-#endif
         }
         for (i=0;i<nrOfKeys;i++) {
-            kind = c_qExprInitVars (c_qKey(orExpr->keyField[i])->expr,
+            c_qExprInitVars (c_qKey(orExpr->keyField[i])->expr,
                                     p->varList,
                                     params);
-#if 0
-            if (kind == V_UNDEFINED) {
-                return FALSE;
-            }
-#endif
         }
         orExpr = orExpr->next;
     }
@@ -2074,7 +2064,7 @@ setArg (
     case V_LONGLONG:
         v->is.LongLong = os_atoll (par);
         if (errno) {
-	    v->kind = V_UNDEFINED;
+            v->kind = V_UNDEFINED;
         }
     break;
     case V_ULONGLONG:
@@ -2365,7 +2355,7 @@ c_qExprPrint(
     c_qExpr q)
 {
     c_char* vi;
-        
+
     if (q == NULL) {
         return;
     }
@@ -2392,14 +2382,14 @@ c_qExprPrint(
                     metaName = c_metaName(c_metaObject(property));
                     printf("%s(" PA_ADDRFMT ")",
                            metaName,
-                           property->offset);
+                           (PA_ADDRCAST) property->offset);
                     c_free(metaName);
                 break;
                 case M_MEMBER:
                     member = c_member(path[i]);
                     printf("%s(" PA_ADDRFMT ")",
                            c_specifier(member)->name,
-                           member->offset);
+                           (PA_ADDRCAST) member->offset);
                 break;
                 default:
                     assert(FALSE);

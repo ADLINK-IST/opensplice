@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,10 +13,10 @@
 #ifndef OS_POSIX_MUTEX_H
 #define OS_POSIX_MUTEX_H
 
+#include <pthread.h>
 #if defined (__cplusplus)
 extern "C" {
 #endif
-#include <pthread.h>
 
 #ifdef OSPL_STRICT_MEM
    typedef struct os_os_mutex

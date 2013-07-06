@@ -29,6 +29,7 @@ d_policyNew (
     const char* namespace,
     c_bool aligner,
     d_alignmentKind alignmentKind,
+    c_bool delayedAlignment,
     d_durabilityKind durabilityKind)
 {
     d_policy policy;
@@ -47,6 +48,7 @@ d_policyNew (
         policy->aligner = aligner;
         policy->alignmentKind = alignmentKind;
         policy->durabilityKind = durabilityKind;
+        policy->delayedAlignment = delayedAlignment;
         policy->mergePolicyRules = NULL;
     }
     return policy;
@@ -191,4 +193,20 @@ d_policyGetMergePolicy(
     }
 
     return result;
+}
+
+/* Get policy for delayed alignment */
+c_bool
+d_policyGetDelayedAlignment (
+    d_policy policy)
+{
+    c_bool delayedAlignment;
+
+    delayedAlignment = FALSE;
+
+    if (d_objectIsValid(d_object(policy), D_POLICY)){
+        delayedAlignment = policy->delayedAlignment;
+    }
+
+    return delayedAlignment;
 }

@@ -22,7 +22,7 @@ IDL_FILES   := $(TOPIC_IDL) $(TOPIC_IDL2) $(INT_IDL) $(DCPS_IDL) $(DCPS_API_IDL)
 IDLPP       = $(WINCMD) idlpp
 IDL_INC_FLAGS= -I$(IDL_DIR)
 IDLPPFLAGS  := $(IDL_INC_FLAGS) -l cpp -C
-ifneq (,$(findstring win32,$(SPLICE_HOST)))
+ifneq (,$(or $(findstring win32,$(SPLICE_HOST)), $(findstring win64,$(SPLICE_HOST))))
 IDLPPFLAGS  += -P$(DECL_PREFIX),$(DECL_INCLUDE)
 endif
 

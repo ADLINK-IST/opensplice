@@ -1,0 +1,9 @@
+// $Id$
+//
+// Document template variables for templates templates/wb26.mpd.
+// Please try to keep this alphabetically sorted.
+//
+additional_natures = Eclipse natures that should appear in the .project file
+disable_subprojects = Disables generation of subprojects (.wrproject) and project references (.project)
+project_prefix = Prefix for the project names and the MPC-created directory that contains .project, .wrproject, etc.
+standard_build = Specify that you want to use standard build instead of flexible build (not tested with -type wb30)

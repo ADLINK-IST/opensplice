@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -82,6 +82,31 @@ u_waitsetPersistentSnapshotEventNew(
         u_waitsetPersistentSnapshotEvent(event)->source.serial      = source.serial;
     }
     return event;
+}
+
+u_waitsetEvent
+u_waitsetConnectWriterEventNew(
+    u_entity e,
+    c_ulong k,
+    v_handle source,
+    v_group group)
+{
+    u_waitsetEvent event;
+
+    event = (u_waitsetEvent)os_malloc(C_SIZEOF(u_waitsetConnectWriterEvent));
+
+    if (event) {
+        event->entity                 = e;
+        event->events                 = k;
+        event->kind                   = U_WAITSET_EVENT_CONNECT_WRITER;
+
+        u_waitsetConnectWriterEvent(event)->group              = group;
+        u_waitsetConnectWriterEvent(event)->source.server      = source.server;
+        u_waitsetConnectWriterEvent(event)->source.index       = source.index;
+        u_waitsetConnectWriterEvent(event)->source.serial      = source.serial;
+    }
+    return event;
+
 }
 
 u_waitsetEvent
@@ -174,6 +199,8 @@ u_waitsetEventFree(
                 {
                     os_free(u_waitsetPersistentSnapshotEvent(event)->uri);
                 }
+                break;
+            case U_WAITSET_EVENT_CONNECT_WRITER:
                 break;
             default:
                 break;

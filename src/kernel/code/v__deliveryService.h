@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -64,7 +64,7 @@ v_deliveryServiceDeinit(
     v_deliveryService _this);
 
 /* the following v_deliveryServiceSubscribe and v_deliveryServiceUnSubscribe
- * methods are defined by the v_reader interface and are required to 
+ * methods are defined by the v_reader interface and are required to
  * establish connectivity to communication partitions.
  */
 c_bool
@@ -126,5 +126,32 @@ v_deliveryServiceAckMessage (
     v_deliveryService _this,
     v_message message,
     v_gid gid);
+
+/* The v_deliveryServiceRemoveGuard method is called when a v_deliveryGuard
+ * is freed: it removes itself from the v_deliveryService guard-list.
+ * The guard-list is locked by this operation.
+ */
+v_result
+v_deliveryServiceRemoveGuard(
+    v_deliveryService _this,
+    v_deliveryGuard guard);
+
+/* The v_deliveryServiceAddGuard method is called when a v_deliveryGuard is
+ * created: it adds itself to the v_deliveryService guard-list.
+ * The guard-list is locked by this operation.
+ */
+v_result
+v_deliveryServiceAddGuard(
+    v_deliveryService _this,
+    v_deliveryGuard guard);
+
+/* The v_derliverServiceLookupGuard method can be called to lookup a guard in
+ * the guard-list of the v_deliveryService. The lookup is done based on the
+ * writerGID field of the supplied v_deliveryGuard 'template'.
+ */
+v_deliveryGuard
+v_deliveryServiceLookupGuard(
+    v_deliveryService _this,
+    v_deliveryGuard template);
 
 #endif

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -244,7 +244,6 @@ c_valueImage(
 {
     char buf[1024];
 
-#define _CASE_(l,f,t) case l: snprintf(buf,1024,f,value.is.t); break
     switch (value.kind) {
     case V_ADDRESS:
         {
@@ -271,11 +270,11 @@ c_valueImage(
             snprintf(buf,1024,"%s",os_ulltostr(value.is.ULongLong, &llstr[35]));
         }
     break;
-    _CASE_(V_SHORT,     "%d",Short);
-    _CASE_(V_LONG,      "%d",Long);
-    _CASE_(V_OCTET,     "%u",Octet);
-    _CASE_(V_USHORT,    "%u",UShort);
-    _CASE_(V_ULONG,     "%u",ULong);
+    case V_SHORT:     snprintf(buf,1024,"%d",value.is.Short); break;
+    case V_LONG:      snprintf(buf,1024,"%d",value.is.Long); break;
+    case V_OCTET:     snprintf(buf,1024,"%u",value.is.Octet); break;
+    case V_USHORT:    snprintf(buf,1024,"%u",value.is.UShort); break;
+    case V_ULONG:     snprintf(buf,1024,"%u",value.is.ULong); break;
     case V_CHAR:
     {
         unsigned char c = value.is.Char;
@@ -297,18 +296,16 @@ c_valueImage(
         }
     }
     break;
-    _CASE_(V_FLOAT,     "%0.7g",Float);
-    _CASE_(V_DOUBLE,    "%0.15g",Double);
-            snprintf(buf,1024,"0x"PA_ADDRFMT,(PA_ADDRCAST)value.is.Address);
+     case  V_FLOAT:     snprintf(buf,1024,"%0.7g",value.is.Float); break;
+     case  V_DOUBLE:    snprintf(buf,1024,"%0.15g",value.is.Double); break;
      case  V_WCHAR:     snprintf(buf,1024,"(a-wchar-value)"); break;
      case  V_WSTRING:   snprintf(buf,1024,"0x"PA_ADDRFMT, (PA_ADDRCAST)value.is.WString); break;
      case  V_FIXED:     snprintf(buf,1024,"0x"PA_ADDRFMT, (PA_ADDRCAST)value.is.Fixed); break;
      case  V_OBJECT:    snprintf(buf,1024,"0x"PA_ADDRFMT, (PA_ADDRCAST)value.is.Object); break;
      case  V_VOIDP:     snprintf(buf,1024,"0x"PA_ADDRFMT, (PA_ADDRCAST)value.is.Voidp); break;
-     case  V_UNDEFINED:  snprintf(buf,1024,"(an-undefined-value)"); break;
+     case  V_UNDEFINED: snprintf(buf,1024,"(an-undefined-value)"); break;
      default: assert(FALSE);
     }
-#undef _CASE_
     return os_strdup(buf);
 }
 

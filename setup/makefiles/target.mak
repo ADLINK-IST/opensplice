@@ -5,6 +5,20 @@ ifdef STATIC_LIB_ONLY
       TARGET_SLIB:=$(TARGET_DLIB)
       TARGET_DLIB=
    endif
+else
+ifdef DYNAMIC_LIB_ONLY
+   ifneq "$(TARGET_SLIB)" ""
+      TARGET_DLIB:=$(TARGET_SLIB)
+      TARGET_SLIB:=
+      LDFLAGS += $(SHLDFLAGS)
+   endif
+endif
+endif
+
+ifneq (,$(findstring vxworks5.5,$(SPLICE_TARGET)))
+FILTERED_LDLIBS = $(filter-out -ldds% -ldcps% -ldlrl% -l$(DDS_CMXML) -l$(DDS_CMCOMMON) -l$(DDS_CMJNI) -l$(DDS_COMMONSERV), $(LDLIBS))
+else
+FILTERED_LDLIBS = $(LDLIBS)
 endif
 
 ifdef TARGET_DLIB
@@ -14,15 +28,9 @@ ifneq "$(OBJECTS)" ""
 TARGET_LINK_DIR ?= $(SPLICE_LIBRARY_PATH)
 
 $(TARGET): $(OBJECTS)
-	$(LD_SO) $(LDFLAGS) $^ $(LDLIBS) -o $@
-ifneq (,$(findstring win,$(SPLICE_TARGET))) #windows
+	$(LD_SO) $(LDFLAGS) $^ $(FILTERED_LDLIBS) -o $@
+ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
 	ospl_wincmd mt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#2"
-endif
-ifneq (,$(findstring vxworks5,$(SPLICE_TARGET)))
-ifdef EXTRACTED_LIB
-	mkdir -p $(OSPL_HOME)/extract/$(EXTRACTED_LIB)/bld/$(SPLICE_TARGET)
-	cp $(OBJECTS) $(OSPL_HOME)/extract/$(EXTRACTED_LIB)/bld/$(SPLICE_TARGET)
-endif
 endif
 endif
 endif
@@ -46,14 +54,18 @@ TARGET := $(EXEC_PREFIX)$(TARGET_EXEC)$(EXEC_POSTFIX)
 TARGET_LINK_DIR	?= $(SPLICE_EXEC_PATH)
 
 $(TARGET): $(OBJECTS)
+ifneq (,$(findstring rtems,$(SPLICE_TARGET)))
+	$(LD_EXE) $(LDFLAGS) $@ $(OBJECTS)
+else
 ifneq (,$(findstring int5,$(SPLICE_TARGET)))
 	$(LD_EXE) $(LDFLAGS) $(OBJECTS) -o $@
 else
-	$(LD_EXE) $(LDFLAGS_EXE) $(LDFLAGS) $(OBJECTS) $(LDLIBS) $(LDLIBS_SYS) -o $@
+	$(LD_EXE) $(LDFLAGS_EXE) $(LDFLAGS) $(OBJECTS) $(FILTERED_LDLIBS) $(LDLIBS_SYS) -o $@
 endif
-ifneq (,$(findstring win,$(SPLICE_TARGET))) #windows
+ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
 	ospl_wincmd mt -manifest $(addsuffix .manifest, $(TARGET)) "-outputresource:$(TARGET);#1"
 endif 
+endif
 endif
 
 # Define the libpath CS_LIBS variable that that creates private links to the referenced libs. 
@@ -100,7 +112,7 @@ ifneq "$(CS_FILES)" ""
 # Remove old links first to make sure you always point to the most recent libraries.
 $(TARGET): $(CS_FILES)
 	@for FILE in $(CS_LIB_SRCS); do LFILE=`basename $${FILE}`; rm -f $${LFILE}; $(LN) $${FILE} $${LFILE}; done
-	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_EXEC) $(CS_LIBS) $(CS_FILES)
+	$(CSC) $(CSFLAGS) -out:$(TARGET) $(CSTARGET_EXEC) -r:System.dll $(CS_LIBS) $(CS_FILES)
 
 # Create additional local links to the referenced libraries in the directory of the executables. 
 CS_LIB_LINKS = $(addprefix $(TARGET_LINK_DIR)/, $(notdir $(CS_LIB_SRCS)))
@@ -153,7 +165,7 @@ WIN_PDB = $(TARGET_DLIB).pdb
 $(TARGET_LINK_FILE): $(TARGET)
 	rm -f $@
 	$(LN) `pwd`/$(TARGET) $@
-ifneq (,$(findstring win,$(SPLICE_TARGET)))
+ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
 	@rm -f $(TARGET_LINK_DIR)/$(WIN_LIB)
 	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
 	@if [ -f `pwd`/$(WIN_LIB) ]; then $(LN) `pwd`/$(WIN_LIB) $(TARGET_LINK_DIR)/$(WIN_LIB); fi
@@ -177,13 +189,23 @@ $(TARGET_LINK_FILE): $(TARGET)
 	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
 endif # TARGET_EXEC
 
+ifdef TARGET_EXEC_NOLN
+# .pdf files are copied conditionally, since they are not available for every configuration.
+WIN_PDB = $(TARGET_EXEC).pdb
+$(TARGET_LINK_FILE): $(TARGET)
+	rm -f $@
+	$(CP) `pwd`/$(TARGET) $@
+	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
+	@if [ -f `pwd`/$(WIN_PDB) ]; then $(CP) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
+endif # TARGET_EXEC_NOLN
+
 ifdef TARGET_CSLIB
 # .pdf and .lib files are copied conditionally, since they are not available for every configuration.
 WIN_PDB = $(CSDBG_PREFIX)$(TARGET_CSLIB)$(CSLIB_DBG_POSTFIX)
 $(TARGET_LINK_FILE): $(TARGET)
 	rm -f $@
 	$(LN) `pwd`/$(TARGET) $@
-ifneq (, $(findstring win, $(SPLICE_TARGET)))
+ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
 	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
 	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
 endif 
@@ -194,7 +216,7 @@ WIN_PDB = $(CSDBG_PREFIX)$(TARGET_CSEXEC)$(CSEXEC_DBG_POSTFIX)
 $(TARGET_LINK_FILE): $(TARGET)
 	rm -f $@
 	$(LN) `pwd`/$(TARGET) $@
-ifneq (, $(findstring win, $(SPLICE_TARGET)))
+ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
 	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
 	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
 endif 
@@ -205,7 +227,7 @@ WIN_PDB = $(CSDBG_PREFIX)$(TARGET_CSMOD)$(CSMOD_DBG_POSTFIX)
 $(TARGET_LINK_FILE): $(TARGET)
 	rm -f $@
 	$(LN) `pwd`/$(TARGET) $@
-ifneq (, $(findstring win, $(SPLICE_TARGET)))
+ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
 	@rm -f $(TARGET_LINK_DIR)/$(WIN_PDB)
 	@if [ -f `pwd`/$(WIN_PDB) ]; then $(LN) `pwd`/$(WIN_PDB) $(TARGET_LINK_DIR)/$(WIN_PDB); fi
 endif 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -26,15 +26,8 @@ sd_contextItemInit (
     item->scope        = NULL;
     item->parent       = NULL;
     item->children     = NULL;
-    item->dependencies = NULL;
     item->refcount     = 1;
 
-}
-
-static void
-sd_contextItemDeinit (
-    sd_contextItem item)
-{
 }
 
 static void
@@ -48,18 +41,12 @@ sd_contextItemScopeInit (
 
 }
 
-static void
-sd_contextItemScopeDeinit (
-    sd_contextItemScope item)
-{
-    assert(item);
-}
-
-void
+sd_contextItem
 sd_contextItemKeep (
     sd_contextItem item)
 {
     item->refcount++;
+    return item;
 }
 
 static sd_contextItem
@@ -395,6 +382,7 @@ sd_contextItemFree (
     sd_contextItem child;
 
     item->refcount--;
+
     if ( item->refcount == 0 ) {
         if ( item->children ) {
             child = sd_contextItem(sd_listTakeFirst(item->children));
@@ -422,11 +410,72 @@ sd_contextItemAddChild (
     }
 
     assert(item->children);
-    sd_listAppend(item->children, child);
-    sd_contextItemKeep(child);
+    sd_listAppend(item->children, sd_contextItemKeep(child));
     child->parent = item;
 }
 
+void
+sd_contextItemInsertChild (
+    sd_contextItem item,
+    sd_contextItem child)
+{
+    assert(item);
+    assert(child);
+
+    if ( item->children == NULL ) {
+        item->children = sd_listNew();
+    }
+
+    assert(item->children);
+    sd_listInsert(item->children, sd_contextItemKeep(child));
+    child->parent = item;
+}
+
+void
+sd_contextItemInsertChildAfter(
+    sd_contextItem item,
+    sd_contextItem child,
+    sd_contextItem after)
+{
+    assert(item);
+    assert(item->children);
+    assert(child);
+    assert(after);
+
+
+    assert(item->children);
+    sd_listInsertAt(item->children, sd_contextItemKeep(child), sd_listIndexOf(item->children, after)+1);
+    child->parent = item;
+}
+
+void
+sd_contextItemInsertChildBefore(
+    sd_contextItem item,
+    sd_contextItem child,
+    sd_contextItem before)
+{
+    assert(item);
+    assert(item->children);
+    assert(child);
+    assert(before);
+
+    sd_listInsertBefore(item->children, sd_contextItemKeep(child), before);
+    child->parent = item;
+}
+
+void
+sd_contextItemRemoveChild(
+    sd_contextItem item,
+    sd_contextItem child)
+{
+    assert(item);
+    assert(child);
+
+    if(item->children){
+        sd_listRemove(item->children, child);
+        sd_contextItemFree(child);
+    }
+}
 
 void
 sd_contextItemReplace (
@@ -467,7 +516,6 @@ typedef struct {
     sd_contextItemKind kind;
     sd_contextItem     item;
 } sd_contextItemFindArg;
-
 
 static c_bool
 sd_contextItemCompare (
@@ -649,7 +697,6 @@ sd_contextItemHasDependencies (
 
     return hasDependencies;
 }
-
 
 typedef struct sd_findItemByObject_s {
     c_metaObject   object;

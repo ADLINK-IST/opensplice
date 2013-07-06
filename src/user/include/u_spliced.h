@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -53,6 +53,10 @@ u_splicedBuiltinCAndMCommandDispatcher(
    u_spliced spliced);
 
 OS_API u_result
+u_splicedCAndMCommandDispatcherQuit(
+   u_spliced spliced);
+
+OS_API u_result
 u_splicedPrepareTermination(
     u_spliced spliced);
 
@@ -65,6 +69,12 @@ u_splicedStartHeartbeat(
 OS_API u_result
 u_splicedStopHeartbeat(
     u_spliced spliced);
+
+OS_API u_result
+u_splicedSetInProcess();
+
+OS_API c_bool
+u_splicedInProcess();
 
 #undef OS_API
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,11 +17,11 @@
 #include "u__usrClock.h"
 #include "u__user.h"
 
-#define U_CONF_USRCLOCK_SERVICENAME		"UserClockService"
-#define U_CONF_USRCLOCK_SERVICEMODULENAME	"UserClockModule"
-#define U_CONF_USRCLOCK_SERVICESTARTNAME	"UserClockStart"
-#define U_CONF_USRCLOCK_SERVICESTOPNAME		"UserClockStop"
-#define U_CONF_USRCLOCK_SERVICEQUERYNAME	"UserClockQuery"
+#define U_CONF_USRCLOCK_SERVICENAME         "UserClockService"
+#define U_CONF_USRCLOCK_SERVICEMODULENAME   "UserClockModule"
+#define U_CONF_USRCLOCK_SERVICESTARTNAME    "UserClockStart"
+#define U_CONF_USRCLOCK_SERVICESTOPNAME     "UserClockStop"
+#define U_CONF_USRCLOCK_SERVICEQUERYNAME    "UserClockQuery"
 
 #define U_USRCLOCK_STARTNAME_DEFAULT "clockStart"
 #define U_USRCLOCK_STOPNAME_DEFAULT  "clockStop"

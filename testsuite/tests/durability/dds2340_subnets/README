@@ -1,0 +1,15 @@
+This is a copy of the dd1583_mergepolicy scenario's. 
+
+The scenarios are exactly the same, only this version contains hardcoded host names. This is needed to run the test with nodes in multiple subnets. 
+
+Changes:
+- OpenSplice configuration files were adapted to use unicast networking with the specific hosts (+ DontRoute=false option)
+- The test scenarios were modified to use the correct configuration file per host, instead of the same file for all hosts.
+- The test scenarios were modified to use a different name/ID to distinguish the logfiles from the original mergepolicies test.
+
+To run this test on other hosts, one needs to place the appropriate config files in the 'etc' directory.
+Config file naming: 'config_dds2340-[scenarioId]-[STAF machinename].xml
+
+Added 17 Apr 2013 (PM):
+TODO: Recently the OpenSplice configuration parser was changed to also support environment variables for attributes, previously it only supported element contents. This means a set of generic config files could be created, where the GlobalPartition Address attribute is no longer hardcoded to suit specific machines, but is an environment variable:
+ <GlobalPartition Address="${OSPL_HOST1_PEERLIST}"/>. The same way environment variables are already used for other dynamic parts of the config file, i.e. service-executable names.

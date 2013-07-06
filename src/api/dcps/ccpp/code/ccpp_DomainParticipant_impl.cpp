@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,8 +9,8 @@
  *   for full copyright notice and license terms.
  *
  */
-#include "gapi.h"
 #include "ccpp_dds_dcps.h"
+#include "gapi.h"
 #include "ccpp_DomainParticipant_impl.h"
 #include "ccpp_QosUtils.h"
 #include "ccpp_Utils.h"
@@ -77,7 +77,7 @@ DDS::Publisher_ptr DDS::DomainParticipant_impl::create_publisher (
 
     if (proceed)
     {
-      if (&qos == DDS::DefaultQos::PublisherQosDefault)
+      if (&qos == &DDS::DefaultQos::PublisherQosDefault.in())
       {
         gapi_pqos = GAPI_PUBLISHER_QOS_DEFAULT;
       }
@@ -114,7 +114,7 @@ DDS::Publisher_ptr DDS::DomainParticipant_impl::create_publisher (
           {
             gapi_domainParticipantQos *dpqos = gapi_domainParticipantQos__alloc();
             gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                      DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                      ccpp_CallBack_DeleteUserData,NULL);
             if(dpqos){
                 if(gapi_domainParticipant_get_qos(_gapi_self, dpqos) == GAPI_RETCODE_OK){
                     if(dpqos->entity_factory.autoenable_created_entities) {
@@ -167,11 +167,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_publisher (
       if (os_mutexLock(&(pub->p_mutex)) == os_resultSuccess)
       {
         result = gapi_domainParticipant_delete_publisher(_gapi_self, pub->_gapi_self);
-        if (result == DDS::RETCODE_OK)
-        {
-          pub->_gapi_self = NULL;
-        }
-        else
+        if (result != DDS::RETCODE_OK)
         {
           OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to delete publisher");
         }
@@ -218,7 +214,7 @@ DDS::Subscriber_ptr DDS::DomainParticipant_impl::create_subscriber (
 
     if (proceed)
     {
-      if (&qos == DDS::DefaultQos::SubscriberQosDefault)
+      if (&qos == &DDS::DefaultQos::SubscriberQosDefault.in())
       {
         gapi_sqos = GAPI_SUBSCRIBER_QOS_DEFAULT;
       }
@@ -255,7 +251,7 @@ DDS::Subscriber_ptr DDS::DomainParticipant_impl::create_subscriber (
           {
             gapi_domainParticipantQos *dpqos = gapi_domainParticipantQos__alloc();
             gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                      DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                      ccpp_CallBack_DeleteUserData,NULL);
             if(dpqos){
                 if(gapi_domainParticipant_get_qos(_gapi_self, dpqos) == GAPI_RETCODE_OK){
                     if(dpqos->entity_factory.autoenable_created_entities) {
@@ -306,11 +302,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_subscriber (
       if (os_mutexLock(&(sub->s_mutex)) == os_resultSuccess)
       {
         result = gapi_domainParticipant_delete_subscriber(_gapi_self, sub->_gapi_self);
-        if (result == DDS::RETCODE_OK)
-        {
-          sub->_gapi_self = NULL;
-        }
-        else
+        if (result != DDS::RETCODE_OK)
         {
           OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to delete subscriber");
         }
@@ -359,7 +351,7 @@ DDS::Subscriber_ptr DDS::DomainParticipant_impl::get_builtin_subscriber (
           if (myUD)
           {
             gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                      DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                      ccpp_CallBack_DeleteUserData,NULL);
             if ( !initializeBuiltinTopicEntities(handle) )
             {
               OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to create BuiltinTopic entities");
@@ -436,7 +428,7 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::create_topic (
 
     if (proceed)
     {
-      if (&qos == DDS::DefaultQos::TopicQosDefault)
+      if (&qos == &DDS::DefaultQos::TopicQosDefault.in())
       {
         gapi_tqos = GAPI_TOPIC_QOS_DEFAULT;
       }
@@ -476,7 +468,7 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::create_topic (
           if (myUD)
           {
               gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                        DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                        ccpp_CallBack_DeleteUserData,NULL);
           }
           else
           {
@@ -517,11 +509,7 @@ DDS::ReturnCode_t DDS::DomainParticipant_impl::delete_topic (
     if (os_mutexLock(&(topic->t_mutex)) == os_resultSuccess)
     {
       result = gapi_domainParticipant_delete_topic(_gapi_self, topic->_gapi_self);
-      if (result == DDS::RETCODE_OK)
-      {
-//        topic->_gapi_self = NULL;
-      }
-      else
+      if (result != DDS::RETCODE_OK)
       {
         OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to delete topic");
       }
@@ -578,7 +566,7 @@ DDS::Topic_ptr DDS::DomainParticipant_impl::find_topic (
           if (myUD)
           {
             gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                      DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                      ccpp_CallBack_DeleteUserData,NULL);
           }
           else
           {
@@ -665,7 +653,7 @@ DDS::DomainParticipant_impl::unprotected_lookup_topicdescription (
         if (myUD)
         {
           gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                    DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                    ccpp_CallBack_DeleteUserData,NULL);
         }
         else
         {
@@ -714,7 +702,7 @@ DDS::ContentFilteredTopic_ptr DDS::DomainParticipant_impl::create_contentfiltere
           if (myUD)
           {
             gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                      DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                      ccpp_CallBack_DeleteUserData,NULL);
           }
           else
           {
@@ -752,11 +740,7 @@ DDS::DomainParticipant_impl::delete_contentfilteredtopic (
     if (os_mutexLock(&(contentFilteredTopic->cft_mutex)) == os_resultSuccess )
     {
       result = gapi_domainParticipant_delete_contentfilteredtopic(_gapi_self, handle);
-      if (result == DDS::RETCODE_OK)
-      {
-        contentFilteredTopic->__gapi_self = NULL;
-      }
-      else
+      if (result != DDS::RETCODE_OK)
       {
           OS_REPORT(OS_ERROR,
                     "DDS::DomainParticipant_impl::delete_contentfilteredtopic", 0,
@@ -811,7 +795,7 @@ DDS::DomainParticipant_impl::create_multitopic (
         if (myUD)
         {
           gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
-                                    DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                    ccpp_CallBack_DeleteUserData,NULL);
         }
         else
         {
@@ -856,11 +840,7 @@ DDS::DomainParticipant_impl::delete_multitopic (
     {
       result = gapi_domainParticipant_delete_multitopic(_gapi_self, handle);
 
-      if (result == DDS::RETCODE_OK)
-      {
-        multiTopic->__gapi_self = NULL;
-      }
-      else
+      if (result != DDS::RETCODE_OK)
       {
         OS_REPORT(OS_ERROR,
                   "DDS::DomainParticipant_impl::delete_multitopic", 0,
@@ -897,7 +877,7 @@ DDS::DomainParticipant_impl::set_qos (
 {
     DDS::ReturnCode_t result;
 
-    if (&qos == DDS::DefaultQos::ParticipantQosDefault)
+    if (&qos == &DDS::DefaultQos::ParticipantQosDefault.in())
     {
       result = gapi_domainParticipant_set_qos(_gapi_self, GAPI_PARTICIPANT_QOS_DEFAULT);
     }
@@ -1065,14 +1045,12 @@ DDS::DomainParticipant_impl::ignore_subscription (
   return gapi_domainParticipant_ignore_subscription(_gapi_self, handle);
 }
 
-char *
+DDS::DomainId_t
 DDS::DomainParticipant_impl::get_domain_id (
 ) THROW_ORB_EXCEPTIONS
 {
-  gapi_domainId_t di = gapi_domainParticipant_get_domain_id(_gapi_self);
-  CORBA::String_var the_domain_id = CORBA::string_dup(di);
-  gapi_free(di);
-  return the_domain_id._retn ();
+  gapi_domainId_int_t di = gapi_domainParticipant_get_domain_id(_gapi_self);
+  return di;
 }
 
 DDS::ReturnCode_t
@@ -1231,31 +1209,33 @@ struct copyInstanceHandle {
     DDS::InstanceHandleSeq *seq;
 };
 
-static c_bool
-copyInstanceHandle(
-    v_dataReaderInstance instance,
-    c_voidp arg)
-{
-    c_bool result = TRUE;
-    struct copyInstanceHandle *a = (struct copyInstanceHandle *)arg;
-    DDS::InstanceHandle_t ghandle;
-    os_uint32 length;
-    if (a->index ==0) {
-        length = c_count(v_dataReaderInstanceGetNotEmptyInstanceSet(instance));
-        if (length > a->seq->maximum()) {
-            a->seq->length(length); /* potentially reallocate */
+extern "C" {
+    static c_bool
+    copyInstanceHandle(
+        v_dataReaderInstance instance,
+        c_voidp arg)
+    {
+        c_bool result = TRUE;
+        struct copyInstanceHandle *a = (struct copyInstanceHandle *)arg;
+        DDS::InstanceHandle_t ghandle;
+        os_uint32 length;
+        if (a->index ==0) {
+            length = c_count(v_dataReaderInstanceGetNotEmptyInstanceSet(instance));
+            if (length > a->seq->maximum()) {
+                a->seq->length(length); /* potentially reallocate */
+            }
         }
+
+        ghandle = u_instanceHandleNew((v_public)instance);
+        if (a->index < a->seq->maximum()) {
+            (*a->seq)[a->index++] = ghandle;
+
+        } else {
+            /* error index out of bounds */
+        }
+
+        return result;
     }
-
-    ghandle = u_instanceHandleNew((v_public)instance);
-    if (a->index < a->seq->maximum()) {
-        (*a->seq)[a->index++] = ghandle;
-
-    } else {
-        /* error index out of bounds */
-    }
-
-    return result;
 }
 
 DDS::ReturnCode_t
@@ -1275,6 +1255,12 @@ DDS::DomainParticipant_impl::get_discovered_participants (
     return result;
 }
 
+extern "C" {
+  static void participant_topicDataCopyWrapper (void *_from, void *_to) {
+     __DDS_ParticipantBuiltinTopicData__copyOut(_from, _to);
+  }
+}
+
 DDS::ReturnCode_t
 DDS::DomainParticipant_impl::get_discovered_participant_data (
     DDS::ParticipantBuiltinTopicData & participant_data,
@@ -1287,7 +1273,7 @@ DDS::DomainParticipant_impl::get_discovered_participant_data (
     result = (DDS::ReturnCode_t)gapi_domainParticipant_get_discovered_participant_data(_gapi_self,
                                                                     &participant_data,
                                                                     participant_handle,
-                                                                    __DDS_ParticipantBuiltinTopicData__copyOut);
+                                                                    participant_topicDataCopyWrapper);
     return result;
 }
 
@@ -1308,6 +1294,12 @@ DDS::DomainParticipant_impl::get_discovered_topics (
     return result;
 }
 
+extern "C" {
+  static void topic_topicDataCopyWrapper (void *_from, void *_to) {
+     __DDS_TopicBuiltinTopicData__copyOut(_from, _to);
+  }
+}
+
 DDS::ReturnCode_t
 DDS::DomainParticipant_impl::get_discovered_topic_data (
     DDS::TopicBuiltinTopicData & topic_data,
@@ -1320,7 +1312,7 @@ DDS::DomainParticipant_impl::get_discovered_topic_data (
     result = (DDS::ReturnCode_t)gapi_domainParticipant_get_discovered_topic_data(_gapi_self,
                                                                     &topic_data,
                                                                     topic_handle,
-                                                                    __DDS_TopicBuiltinTopicData__copyOut);
+                                                                    topic_topicDataCopyWrapper);
     return result;
 }
 
@@ -1493,7 +1485,7 @@ DDS::DomainParticipant_impl::createBuiltinReader(
                         {
                             gapi_object_set_user_data(reader_handle,
                                                       (CORBA::Object *)myUD,
-                                                      DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                                      ccpp_CallBack_DeleteUserData,NULL);
                             status = true;
                         }
                     }

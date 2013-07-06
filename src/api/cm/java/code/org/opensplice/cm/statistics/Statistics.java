@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -28,14 +28,14 @@ public class Statistics {
     /**
      * The Entity, where the statistics belong to.
      */
-    private Entity entity;
+    private final Entity entity;
     
     private Time lastReset;
     
     /**
      * Set of Counter objects. &lt;String countername, Counter counter&gt; 
      */
-    private LinkedHashMap counters;
+    private final LinkedHashMap counters;
     
     /**
      * Constructs a new Statistics object.
@@ -70,7 +70,12 @@ public class Statistics {
     	counter.setName(name);
         counters.put(name, counter);
     }
-    
+
+    public void addString(StringValue name, String fieldName) {
+        name.setName(fieldName);
+        counters.put(fieldName, name);
+    }
+
     /**
      * Removes the supplied Counter from the Statistics. 
      * 

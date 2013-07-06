@@ -60,7 +60,7 @@ CPPFLAGS = $(ORB_SELECT_FLAGS) $(INCLUDE) $(ORB_CPP_FLAGS)
 # linker and linker flags (Only valid for gcc-linkers)
 LD_SO := $(CXX)
 SPLICE_LIBRARY_PATH := $(OSPL_HOME)/lib
-LD_FLAGS := -shared -fPIC -static-libgcc
+LD_FLAGS := -shared -m64 -fPIC -static-libgcc
 LD_LIBS  := -lc -lm -lpthread -lnsl -ldcpsgapi -lddsdatabase -lddsos -lstdc++ $(ORB_LDLIBS)
 
 # SPLICE IDL preprocessor and preprocessor flags

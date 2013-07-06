@@ -88,6 +88,7 @@ std_splitListFree(
         for (i=0; i<list->size; i++) {
             os_free(list->strings[i]);
         }
+        os_free(list->strings);
         os_free(list);
     }
 }
@@ -144,8 +145,7 @@ os_locate(
          * only check the permissions, otherwise search the file
          * in the PATH environment */
 
-        if ((*name == '.') ||
-            (strncmp(name, fsep, strlen(fsep)) == 0)) {
+        if ((*name == '.') || (strchr(name, *fsep) != NULL)) {
             osr = os_access(name, permission);
             if (osr == os_resultSuccess) {
                 result = os_strdup(name);

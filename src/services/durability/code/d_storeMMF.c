@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -10,9 +10,11 @@
  *
  */
 #include "os.h"
+#include "os_version.h"
 #include "os_stdlib.h"
 #include "os_cond.h"
 #include "d_misc.h"
+#include "d_admin.h"
 #include "d__storeMMF.h"
 #include "d_storeMMF.h"
 #include "d_storeMMFKernel.h"
@@ -49,8 +51,8 @@
 #include <limits.h>
 
 
-#define MMF_STORE_SNAPSHOT      "mmfStore"VERSION".ospl"
-#define MMF_STORE_FILENAME      "mmfStore"VERSION".ospl"
+#define MMF_STORE_SNAPSHOT      "mmfStore"OSPL_VERSION_STR".ospl"
+#define MMF_STORE_FILENAME      "mmfStore"OSPL_VERSION_STR".ospl"
 #define MMF_STORE_BACKUP_EXT    ".bak"
 #define MMF_STORE_DATABASE_NAME "OsplDurabilityDatabase"
 #define MMF_STORE_KERNEL_NAME   "OsplDurabilityKernel"
@@ -128,6 +130,8 @@ openExistingMMF(
                 kernel = d_storeMMFKernelAttach(base, MMF_STORE_KERNEL_NAME);
                 if (kernel != NULL) {
                     storeMMF->storeKernel = kernel;
+                    storeMMF->base = base;
+                    c_mmResume(c_baseMM(storeMMF->base));
                     result = D_STORE_RESULT_OK;
                 } else {
                     d_storeReport(store, D_LEVEL_SEVERE, "Kernel object not found in Memory Mapped File %s.\n", storeMMF->storeFilePath);
@@ -170,7 +174,7 @@ createNewMMF(
     c_base base;
     d_storeMMFKernel kernel;
     d_store store;
-    os_size_t size;
+    c_size size;
 
 
     store = d_store(storeMMF);
@@ -195,6 +199,7 @@ createNewMMF(
                 kernel = d_storeMMFKernelNew(base, MMF_STORE_KERNEL_NAME);
                 if (kernel != NULL) {
                     storeMMF->storeKernel = kernel;
+                    storeMMF->base = base;
                     result = D_STORE_RESULT_OK;
                 } else {
                     d_storeReport(store, D_LEVEL_SEVERE, "Failed to create Kernel object in Memory Mapped File %s.\n", storeMMF->storeFilePath);
@@ -288,7 +293,7 @@ updateGroupList(
 }
 
 d_storeMMF
-d_storeNewMMF()
+d_storeNewMMF(u_participant participant)
 {
     d_storeMMF storeMMF;
     d_store store;
@@ -343,6 +348,7 @@ d_storeDeinitMMF(
         storeMMF = d_storeMMF(object);
 
         if(storeMMF->mmfHandle){
+            c_mmSuspend(c_baseMM(storeMMF->base));
             os_mmfDetach(storeMMF->mmfHandle);
             os_mmfClose(storeMMF->mmfHandle);
             os_mmfDestroyHandle(storeMMF->mmfHandle);
@@ -490,6 +496,7 @@ d_storeCloseMMF(
             destroyGroupList(storeMMF);
 
             os_mmfSync(storeMMF->mmfHandle);
+            c_mmSuspend(c_baseMM(storeMMF->base));
             os_mmfDetach(storeMMF->mmfHandle);
             os_mmfClose(storeMMF->mmfHandle);
             os_mmfDestroyHandle(storeMMF->mmfHandle);
@@ -552,7 +559,7 @@ d_storeActionStartMMF(
                 assert(FALSE);
             }
         }
-    	d_lockUnlock(d_lock(store));
+        d_lockUnlock(d_lock(store));
     } else {
         result = D_STORE_RESULT_ILL_PARAM;
     }
@@ -566,6 +573,7 @@ d_storeActionStopMMF(
     d_storeResult result;
     os_time diff_time;
     os_result osr;
+    d_durability durability;
 
     assert(d_objectIsValid(d_object(store), D_STORE));
     assert(store->type == D_STORE_TYPE_MEM_MAPPED_FILE);
@@ -580,7 +588,14 @@ d_storeActionStopMMF(
         }
 
         if((d_storeMMF(store)->actionsInProgress == 0) && (osr == os_resultSuccess)){
-            os_mmfSync(d_storeMMF(store)->mmfHandle);
+            durability = d_adminGetDurability(store->admin);
+
+            if(d_durabilityGetState(durability) == D_STATE_COMPLETE){
+                /* Only sync to disk if alignment is complete. Otherwise the
+                 * service will revert to the backup after restart anyway.
+                 */
+                os_mmfSync(d_storeMMF(store)->mmfHandle);
+            }
 
             /* Code used to benchmark MMF store (DDS1582) */
             if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
@@ -717,7 +732,6 @@ d_storeGroupStoreMMF(
         } else {
             result = d_storeMMFKernelAddGroupInfo(d_storeMMFGetKernel(store),
                     dgroup);
-            os_mmfSync(d_storeMMF(store)->mmfHandle);
         }
         d_lockUnlock(d_lock(store));
     } else {
@@ -738,11 +752,11 @@ d_storeMessageStoreMMF(
     /* Code used to benchmark MMF store (DDS1582) */
     if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
     {
-    	if(action_started)
-    	{
-    		first_time = os_timeGet();
-    		action_started = FALSE;
-    	}
+        if(action_started)
+        {
+                first_time = os_timeGet();
+                action_started = FALSE;
+        }
     }
     /* end of benchmark code */
 
@@ -773,7 +787,7 @@ d_storeMessageStoreMMF(
                     os_condSignal(&(d_storeMMF(store)->actionCondition));
                 }
                 result = d_groupInfoWrite(group, store, msg, sample);
-                /*os_mmfSync(d_storeMMF(store)->mmfHandle);*/
+                /*os_mmfSync(d_storeMMF(store)->mmfHandle); -- only sync on stop action. */
                 c_free(group);
             } else {
                 result = D_STORE_RESULT_PRECONDITION_NOT_MET;
@@ -787,7 +801,7 @@ d_storeMessageStoreMMF(
     /* Code used to benchmark MMF store (DDS1582) */
     if (store->config && (((c_ulong)D_LEVEL_FINEST) >= ((c_ulong)store->config->tracingVerbosityLevel)))
     {
-    	last_time = os_timeGet();
+        last_time = os_timeGet();
     }
     /* end of benchmark code */
 
@@ -870,7 +884,7 @@ d_storeInstanceExpungeMMF(
 
             if(group){
                 result = d_groupInfoExpungeInstance(group, store, msg);
-                os_mmfSync(d_storeMMF(store)->mmfHandle);
+                /* os_mmfSync(d_storeMMF(store)->mmfHandle); */
                 c_free(group);
             } else {
                 result = D_STORE_RESULT_PRECONDITION_NOT_MET;
@@ -909,7 +923,7 @@ d_storeMessageExpungeMMF(
 
             if(group){
                 result = d_groupInfoExpungeSample(group, store, msg);
-                os_mmfSync(d_storeMMF(store)->mmfHandle);
+                /* os_mmfSync(d_storeMMF(store)->mmfHandle); */
                 c_free(group);
             } else {
                 result = D_STORE_RESULT_PRECONDITION_NOT_MET;
@@ -947,7 +961,7 @@ d_storeDeleteHistoricalDataMMF(
 
             if(group){
                 result = d_groupInfoDeleteHistoricalData(group, store, msg);
-                os_mmfSync(d_storeMMF(store)->mmfHandle);
+                /* os_mmfSync(d_storeMMF(store)->mmfHandle); */
                 c_free(group);
             } else {
                 result = D_STORE_RESULT_PRECONDITION_NOT_MET;
@@ -1250,6 +1264,7 @@ d_storeCreatePersistentSnapshotMMF(
                 originalPath = storeMMF->storeFilePath;
                 storeMMF->storeFilePath = NULL;
                 os_mmfSync(storeMMF->mmfHandle);
+                c_mmSuspend(c_baseMM(storeMMF->base));
                 os_mmfDetach(storeMMF->mmfHandle);
                 os_mmfClose(storeMMF->mmfHandle);
                 os_mmfDestroyHandle(storeMMF->mmfHandle);
@@ -1273,6 +1288,7 @@ d_storeCreatePersistentSnapshotMMF(
                                 (c_string)partitionExpr, (c_string)topicExpr);
 
                         os_mmfSync(storeMMF->mmfHandle);
+                        c_mmSuspend(c_baseMM(storeMMF->base));
                         os_mmfDetach(storeMMF->mmfHandle);
                         os_mmfClose(storeMMF->mmfHandle);
                     } else {

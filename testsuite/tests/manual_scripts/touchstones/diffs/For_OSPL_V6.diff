@@ -1,0 +1,201 @@
+Index: ddshelp/java/ddshelp/ParticipantMgr.java
+===================================================================
+--- ddshelp/java/ddshelp/ParticipantMgr.java	(revision 17)
++++ ddshelp/java/ddshelp/ParticipantMgr.java	(working copy)
+@@ -26,7 +26,7 @@
+ 
+ public class ParticipantMgr {
+     private final static DomainParticipantFactory sm_factory = DomainParticipantFactory.get_instance();
+-    private String m_domain_id;
++    private int m_domain_id;
+     private DomainParticipant m_participant;
+ 
+     public ParticipantMgr() {}
+@@ -39,7 +39,7 @@
+ 	return m_participant;
+     }
+ 
+-    public void	create(String domain_id,
++    public void	create(int domain_id,
+ 		       DomainParticipantQos participant_qos) {
+ 	destroy();
+ 	m_domain_id = domain_id;
+@@ -52,7 +52,7 @@
+ 	      "DomainParticipantFactory::create_participant");
+     }
+ 
+-    public void	create(String domain_id) {
++    public void	create(int domain_id) {
+ 	create(domain_id,
+ 	       PARTICIPANT_QOS_DEFAULT.value);
+     }
+@@ -63,7 +63,7 @@
+ 	    check(retcode,
+ 		  "DomainParticipantFactory::delete_participant");
+ 	    m_participant = null;
+-	    m_domain_id = null;
++	    m_domain_id = DOMAIN_ID_DEFAULT.value;
+ 	}
+     }
+ 
+@@ -71,7 +71,7 @@
+ 		      String operation) {
+ 	DDSError.check(retcode,
+ 		       operation,
+-		       m_domain_id);
++		       "");
+     }
+ 
+     public void check(Object object,
+@@ -80,6 +80,6 @@
+ 	DDSError.check(object,
+ 		       description,
+ 		       operation,
+-		       m_domain_id);
++		       "");
+     }
+ }
+Index: ddshelp/cpp/ParticipantMgr.cpp
+===================================================================
+--- ddshelp/cpp/ParticipantMgr.cpp	(revision 17)
++++ ddshelp/cpp/ParticipantMgr.cpp	(working copy)
+@@ -32,14 +32,14 @@
+ {
+   destroy();
+ 
+-  m_domain_id = string_dup(domain_id);
++  m_domain_id = domain_id;
+ 
+   if (!sm_factory)
+     {
+       sm_factory = DomainParticipantFactory::get_instance();
+       if (!sm_factory)
+ 	{
+-	  throw DDSError("returned 0", "DomainParticipantFactory::get_instance", m_domain_id);
++	  throw DDSError("returned 0", "DomainParticipantFactory::get_instance", "");
+ 	}
+     }
+ 
+@@ -49,7 +49,7 @@
+ 						 ANY_STATUS);
+   if (!m_participant)
+     {
+-      throw DDSError("DOMAIN_NOT_RUNNING", "DomainParticipantFactory::create_participant", m_domain_id);
++      throw DDSError("DOMAIN_NOT_RUNNING", "DomainParticipantFactory::create_participant", "");
+     }
+ }
+ 
+@@ -63,7 +63,7 @@
+       ReturnCode_t retcode = sm_factory->delete_participant(m_participant);
+       if (retcode != RETCODE_OK)
+ 	{
+-	  throw DDSError(retcode, "DomainParticipantFactory::delete_participant", m_domain_id);
++	  throw DDSError(retcode, "DomainParticipantFactory::delete_participant", "");
+ 	}
+ 
+       m_participant = 0;
+Index: touchstone/java/touchstone/Processor.java
+===================================================================
+--- touchstone/java/touchstone/Processor.java	(revision 17)
++++ touchstone/java/touchstone/Processor.java	(working copy)
+@@ -31,7 +31,7 @@
+     private final String m_application_name;
+     private final int m_application_id;
+     private final int m_group_id;
+-    private final String m_domain_id;
++    private final int m_domain_id;
+     /* private int m_random_id; */
+ 
+     private final Time_tHolder m_time; // REVISIT - locking?
+@@ -197,7 +197,7 @@
+     public Processor(String application_name,
+ 		     int application_id,
+ 		     int group_id,
+-		     String domain_id) {
++		     int domain_id) {
+ 	// System.out.println("Processor.Processor()");
+ 
+ 	m_application_name = application_name;
+@@ -535,7 +535,7 @@
+ 	return m_group_id;
+     }
+ 
+-    public String domain_id() {
++    public int domain_id() {
+ 	return m_domain_id;
+     }
+ 
+Index: touchstone/java/touchstone/Main.java
+===================================================================
+--- touchstone/java/touchstone/Main.java	(revision 17)
++++ touchstone/java/touchstone/Main.java	(working copy)
+@@ -22,6 +22,8 @@
+ 
+ package touchstone;
+ 
++import DDS.DOMAIN_ID_DEFAULT;
++
+ class Main {
+     private static Processor sm_processor;
+ 
+@@ -49,7 +51,7 @@
+ 	    sm_processor = new Processor(application_name,
+ 					 application_id,
+ 					 group_id,
+-					 null);
++					 DOMAIN_ID_DEFAULT.value);
+ 
+ 	    sm_processor.run();
+ 	    // System.out.println("run returned");
+Index: touchstone/c/touchstone.c
+===================================================================
+--- touchstone/c/touchstone.c	(revision 17)
++++ touchstone/c/touchstone.c	(working copy)
+@@ -98,7 +98,7 @@
+ static long group_id = 0;
+ /* static unsigned long random_id = 0; */
+
+-static DDS_DomainId_t               DDSTouchStoneDomain      = DDS_OBJECT_NIL;
++static DDS_DomainId_t               DDSTouchStoneDomain      = DDS_DOMAIN_ID_DEFAULT;
+ static DDS_DomainParticipantFactory DDSTouchStoneFactory     = DDS_OBJECT_NIL;
+ static DDS_DomainParticipant        DDSTouchStoneParticipant = DDS_OBJECT_NIL;
+ static DDS_Subscriber               DDSTouchStoneSubscriber  = DDS_OBJECT_NIL;
+Index: touchstone/cpp/Main.cpp
+===================================================================
+--- touchstone/cpp/Main.cpp	(revision 17)
++++ touchstone/cpp/Main.cpp	(working copy)
+@@ -72,7 +72,7 @@
+       Processor processor(argv[0],
+ 			  application_id,
+ 			  group_id,
+-			  0);
++			  DDS::DOMAIN_ID_DEFAULT);
+       processor_ptr = &processor;
+ 
+       processor.run();
+Index: tools/recorder.c
+===================================================================
+--- tools/recorder.c	(revision 17)
++++ tools/recorder.c	(working copy)
+@@ -49,7 +49,7 @@
+ static char *DDSTouchStoneCommandPartition = "DDSTouchStoneCommands";
+ /* static char *DDSTouchStoneReportPartition =  "DDSTouchStoneReports"; */ /* Not used */
+ 
+-static DDS_DomainId_t               RecorderDomain      = DDS_OBJECT_NIL;
++static DDS_DomainId_t               RecorderDomain      = DDS_DOMAIN_ID_DEFAULT;
+ static DDS_DomainParticipantFactory RecorderFactory     = DDS_OBJECT_NIL;
+ static DDS_DomainParticipant        RecorderParticipant = DDS_OBJECT_NIL;
+ static DDS_Subscriber               RecorderSubscriber  = DDS_OBJECT_NIL;
+Index: tools/watcher.c
+===================================================================
+--- tools/watcher.c	(revision 17)
++++ tools/watcher.c	(working copy)
+@@ -36,7 +36,7 @@
+ /* static char *DDSTouchStoneCommandPartition = "DDSTouchStoneCommands"; */ /* Not used */
+ static char *DDSTouchStoneReportPartition =  "DDSTouchStoneReports";
+ 
+-static DDS_DomainId_t               WatcherDomain      = DDS_OBJECT_NIL;
++static DDS_DomainId_t               WatcherDomain      = DDS_DOMAIN_ID_DEFAULT;
+ static DDS_DomainParticipantFactory WatcherFactory     = DDS_OBJECT_NIL;
+ static DDS_DomainParticipant        WatcherParticipant = DDS_OBJECT_NIL;
+ static DDS_Subscriber               WatcherSubscriber  = DDS_OBJECT_NIL;

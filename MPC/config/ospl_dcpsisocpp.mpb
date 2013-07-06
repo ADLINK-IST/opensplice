@@ -1,0 +1,18 @@
+// -*- MPC -*-
+// $Id:$
+
+project : ospl_dcpssacpp, ospl_base {
+  libs += dcpsisocpp
+  requires += ospl_dcpsisocpp
+  // BOOST_ROOT always there 'just in case' & for user re-builds
+  // Don't remove the trailing /. It can end in -I""
+  includes += $(BOOST_ROOT)/.
+}
+
+feature(!src_co) {
+   includes += $(OSPL_HOME)/include/dcps/C++/isocpp
+}
+
+feature(src_co) {
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/isocpp/include
+}

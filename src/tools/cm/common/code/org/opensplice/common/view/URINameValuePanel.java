@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -21,21 +21,22 @@ import javax.swing.JFrame;
 import javax.swing.JTextField;
 
 import org.opensplice.common.util.Config;
+import org.opensplice.common.util.Report;
 
 public class URINameValuePanel extends FileNameValuePanel {
     public URINameValuePanel(
-            String fieldName, 
-            String defaultValue, 
+            String fieldName,
+            String defaultValue,
             boolean emptyInputAllowed,
             String browseText,
             JFrame parent)
     {
         super(fieldName, defaultValue, emptyInputAllowed, browseText, parent, null, null);
     }
-    
+
     public URINameValuePanel(
-            String fieldName, 
-            String defaultValue, 
+            String fieldName,
+            String defaultValue,
             boolean emptyInputAllowed,
             String browseText,
             JFrame parent,
@@ -44,14 +45,15 @@ public class URINameValuePanel extends FileNameValuePanel {
     {
         super(fieldName, defaultValue, emptyInputAllowed, browseText, parent, labelDim, fieldDim);
     }
-    
+
+    @Override
     public void actionPerformed(ActionEvent e) {
         CommonFileChooser chooser = Config.getInstance().getFileChooser();
         int returnVal;
-        
+
         chooser.setSelectedFile(new File((String)defaultValue));
         chooser.setMultiSelectionEnabled(false);
-        
+
         if(filter != null){
             chooser.setFileFilter(filter);
             chooser.setAcceptAllFileFilterUsed(false);
@@ -59,13 +61,13 @@ public class URINameValuePanel extends FileNameValuePanel {
         try{
             returnVal = chooser.showDialog(parent, browseText);
         } catch(Exception exc){
-            System.err.println(exc.getMessage());
+             Report.getInstance().writeErrorLog(exc.getMessage());
             returnVal = JFileChooser.CANCEL_OPTION;
         }
-        
+
         if (returnVal == JFileChooser.APPROVE_OPTION) {
             String value = chooser.getSelectedFile().toURI().toString();
-            
+
             if(value != null){
                 if((value.startsWith("file:/")) && (!value.startsWith("file://"))){
                     if((System.getProperty("os.name").indexOf("Windows")) == -1){
@@ -79,6 +81,6 @@ public class URINameValuePanel extends FileNameValuePanel {
             }
             ((JTextField)field).setText(value);
         }
-        
+
     }
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -12,7 +12,7 @@
 /**
  * @file
  * This module generates CORBA C++ CopyOut functions. It handles input types
- * that match the SPLICE-DDS database  format and  writes the data into
+ * that match the OpenSpliceDDS database  format and  writes the data into
  * data types that match the IDL/C++ mapping as specified by the OMG.
  */
 
@@ -94,10 +94,10 @@ idl_valueFromLabelVal(
         break;
         case V_BOOLEAN:
         /* QAC EXPECT 3416; No side effect here */
-            if (idl_labelValueVal(idl_labelValue(labelVal)).is.Boolean == TRUE) {
-                snprintf(labelName, (size_t)sizeof(labelName), "TRUE");
+            if (idl_labelValueVal(idl_labelValue(labelVal)).is.Boolean == OS_C_TRUE) {
+                snprintf(labelName, (size_t)sizeof(labelName), "OS_C_TRUE");
             } else {
-                snprintf(labelName, (size_t)sizeof(labelName), "FALSE");
+                snprintf(labelName, (size_t)sizeof(labelName), "OS_C_FALSE");
             }
         break;
         default:
@@ -1032,7 +1032,7 @@ idl_arrayLoopCopy(
  *
  * @todo When the struct (not a union) does not contain a reference or union,
  * a plain memory copy could be used because the memory map is the same in CORBA
- * and SPLICE-DDS
+ * and OpenSpliceDDS
  *
  * @param typeArray The type specification for the array which holds
  * the basic type as wel as the size for each dimension. The first dimension
@@ -1210,7 +1210,7 @@ idl_seqIndex(
  *
  * Structure types (not unions) that do not contain any reference types (or unions)
  * are copied via a plain memory copy because the sequence elements are
- * located in consequtive memory with the same memory map for C++ CORBA and SPLICE-DDS.
+ * located in consequtive memory with the same memory map for C++ CORBA and OpenSpliceDDS.
  * These cases are identified by idl_isContiguous()
  *
  * @param typeSpec The specification of the actual type of the sequence

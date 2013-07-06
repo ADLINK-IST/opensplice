@@ -1,0 +1,16 @@
+Index: makefiles/MakeWin.tools.bat
+===================================================================
+--- makefiles/MakeWin.tools.bat	(revision 17)
++++ makefiles/MakeWin.tools.bat	(working copy)
+@@ -47,8 +47,8 @@
+ 
+ FOR %%f IN (%GENERATED_C_SOURCE%) DO %C_COMPILER% /nologo %OS_INCLUDES% %DDS_C_INCLUDES% /c "%TOUCHSTONE_HOME%\%GEN_DIR%\%%f.c" /Fo%OBJ_DIR%\%%f.obj
+ FOR %%f IN (%OS_SOURCE%) DO %C_COMPILER% /nologo %OS_INCLUDES% %DDS_C_INCLUDES% /c "%OS_DIR%\%%f.c" /Fo%OBJ_DIR%\%%f.obj
+-FOR %%f IN (%TOOLSHELPERS%) DO %C_COMPILER% /wd4996 /nologo %VENDOR_INCLUDES% %DDS_C_INCLUDES% %GEN_INCLUDES% %OS_INCLUDES% /c "%TOOLS_DIR%\%%f.c" /Fo%OBJ_DIR%\%%f.obj
+-FOR %%f IN (%TOOLS%) DO %C_COMPILER% /wd4996 /Dstrcasecmp=strcmpi /nologo %VENDOR_INCLUDES% %DDS_C_INCLUDES% %GEN_INCLUDES% %OS_INCLUDES% /c "%TOOLS_DIR%\%%f.c" /Fo%OBJ_DIR%\%%f.obj
++FOR %%f IN (%TOOLSHELPERS%) DO %C_COMPILER% /wd4996 /nologo %VENDOR_INCLUDES% %DDS_C_INCLUDES% %GEN_INCLUDES% %OS_INCLUDES% /c "%TOOLS_DIR%\%%f.c" /Fo%OBJ_DIR%\%%f.obj
++FOR %%f IN (%TOOLS%) DO %C_COMPILER% /wd4996 /Dstrcasecmp=strcmpi /nologo %VENDOR_INCLUDES% %DDS_C_INCLUDES% %GEN_INCLUDES% %OS_INCLUDES% /c "%TOOLS_DIR%\%%f.c" /Fo%OBJ_DIR%\%%f.obj
+ 
+ IF NOT EXIST %BIN_DIR% MD %BIN_DIR%
+ FOR %%f in (%TOOLS%) DO %C_LINKER% /NOLOGO %OBJ_DIR%\%%f.obj %LINKOBJS% %OS_LDLIBS% %DDS_C_LDLIBS% /OUT:%BIN_DIR%\%%f.exe
+\ No newline at end of file

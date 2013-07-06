@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,9 +9,9 @@
  *   for full copyright notice and license terms.
  *
  */
+#include "ccpp_Publisher_impl.h"
 #include "gapi.h"
 #include "ccpp_dds_dcps.h"
-#include "ccpp_Publisher_impl.h"
 #include "ccpp_Topic_impl.h"
 #include "ccpp_DataWriter_impl.h"
 #include "ccpp_ListenerUtils.h"
@@ -86,11 +86,11 @@ DDS::Publisher_impl::create_datawriter (
 
     if (proceed)
     {
-      if (&qos == DDS::DefaultQos::DataWriterQosDefault)
+      if (&qos == &DDS::DefaultQos::DataWriterQosDefault.in())
       {
         gapi_dwqos = GAPI_DATAWRITER_QOS_DEFAULT;
       }
-      else if (&qos == DDS::DefaultQos::DataWriterQosUseTopicQos)
+      else if (&qos == &DDS::DefaultQos::DataWriterQosUseTopicQos.in())
       {
         gapi_dwqos = GAPI_DATAWRITER_QOS_USE_TOPIC_QOS;
       }
@@ -151,7 +151,7 @@ DDS::Publisher_impl::create_datawriter (
                   {
                     gapi_publisherQos *pqos = gapi_publisherQos__alloc();
                     gapi_object_set_user_data(writer_handle, (CORBA::Object *)myUD,
-                                              DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                              ccpp_CallBack_DeleteUserData,NULL);
                     if(pqos){
                         if(gapi_publisher_get_qos(_gapi_self, pqos) == GAPI_RETCODE_OK){
                             if(pqos->entity_factory.autoenable_created_entities) {
@@ -226,11 +226,7 @@ DDS::Publisher_impl::delete_datawriter (
     if (os_mutexLock(&(dataWriter->dw_mutex)) == os_resultSuccess)
     {
       result = gapi_publisher_delete_datawriter(_gapi_self, dataWriter->_gapi_self);
-      if (result == DDS::RETCODE_OK)
-      {
-        dataWriter->_gapi_self = NULL;
-      }
-      else
+      if (result != DDS::RETCODE_OK)
       {
         OS_REPORT(OS_ERROR,
                   "DDS::Publisher_impl::delete_datawriter", 0,
@@ -319,7 +315,7 @@ DDS::Publisher_impl::set_qos (
 {
   DDS::ReturnCode_t result;
 
-  if (&qos == DDS::DefaultQos::PublisherQosDefault)
+  if (&qos == &DDS::DefaultQos::PublisherQosDefault.in())
   {
     result = gapi_publisher_set_qos(_gapi_self, GAPI_PUBLISHER_QOS_DEFAULT );
   }

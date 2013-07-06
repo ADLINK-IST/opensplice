@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -57,6 +57,7 @@ v_builtinWritersDisable(
     _this->writers[V_PUBLICATIONINFO_ID] = NULL;
     _this->writers[V_TOPICINFO_ID] = NULL;
     _this->writers[V_PARTICIPANTINFO_ID] = NULL;
+    _this->writers[V_CMPARTICIPANTINFO_ID] = NULL;
     _this->writers[V_SUBSCRIPTIONINFO_ID] = NULL;
     _this->writers[V_C_AND_M_COMMAND_ID] = NULL;
     _this->writers[V_HEARTBEATINFO_ID] = NULL;
@@ -105,6 +106,14 @@ v_builtinNew(
             tQos->reliability.max_blocking_time.seconds = 0;
             tQos->reliability.max_blocking_time.nanoseconds = 100000000;
             tQos->durabilityService.service_cleanup_delay = C_TIME_ZERO;
+
+            /* make the history qos to have keep all and unlimited depth so
+             * that samples that are marked for resend don't get squeezed
+             * out of the writer's history
+             */
+            tQos->history.kind = V_HISTORY_KEEPALL;
+            tQos->history.depth = V_LENGTH_UNLIMITED;
+
             if (_this->kernelQos->builtin.enabled) {
                 if (!error) {
                     _this->topics[V_PARTICIPANTINFO_ID] =
@@ -123,6 +132,22 @@ v_builtinNew(
                     }
                 }
                 if (!error) {
+                   _this->topics[V_CMPARTICIPANTINFO_ID] =
+                          v_topicNew(kernel, V_CMPARTICIPANTINFO_NAME,
+                                     "kernelModule::v_participantCMInfo",
+                                     "key.localId,key.systemId", tQos);
+                   error = (_this->topics[V_CMPARTICIPANTINFO_ID] == NULL);
+                   if (error) {
+                       OS_REPORT_1(OS_ERROR,
+                                   "kernel::v_builtin::v_builtinNew", 0,
+                                   "Operation failed because v_topicNew failed for:"
+                                   OS_REPORT_NL "Topic: \"%s"
+                                   OS_REPORT_NL "Type: \"kernelModule::v_participantCMInfo\""
+                                   OS_REPORT_NL "Key(s): \"key.localId,key.systemId\"",
+                                   V_CMPARTICIPANTINFO_NAME);
+                   }
+                }
+                if (!error) {
                     _this->topics[V_SUBSCRIPTIONINFO_ID] =
                            v_topicNew(kernel, V_SUBSCRIPTIONINFO_NAME,
                                       "kernelModule::v_subscriptionInfo",
@@ -138,21 +163,21 @@ v_builtinNew(
                                     V_SUBSCRIPTIONINFO_NAME);
                     }
                 }
-                if (!error) {
-                    _this->topics[V_PUBLICATIONINFO_ID] =
-                       v_topicNew(kernel, V_PUBLICATIONINFO_NAME,
-                                  "kernelModule::v_publicationInfo",
-                                  "key.localId,key.systemId", tQos);
-                    error = (_this->topics[V_PUBLICATIONINFO_ID] == NULL);
-                    if (error) {
-                        OS_REPORT_1(OS_ERROR,
-                                    "kernel::v_builtin::v_builtinNew", 0,
-                                    "Operation failed because v_topicNew failed for:"
-                                    OS_REPORT_NL "Topic: \"%s"
-                                    OS_REPORT_NL "Type: \"kernelModule::v_publicationInfo\""
-                                    OS_REPORT_NL "Key(s): \"key.localId,key.systemId\"",
-                                    V_PUBLICATIONINFO_NAME);
-                    }
+            }
+            if (!error) {
+                _this->topics[V_PUBLICATIONINFO_ID] =
+                   v_topicNew(kernel, V_PUBLICATIONINFO_NAME,
+                              "kernelModule::v_publicationInfo",
+                              "key.localId,key.systemId", tQos);
+                error = (_this->topics[V_PUBLICATIONINFO_ID] == NULL);
+                if (error) {
+                    OS_REPORT_1(OS_ERROR,
+                                "kernel::v_builtin::v_builtinNew", 0,
+                                "Operation failed because v_topicNew failed for:"
+                                OS_REPORT_NL "Topic: \"%s"
+                                OS_REPORT_NL "Type: \"kernelModule::v_publicationInfo\""
+                                OS_REPORT_NL "Key(s): \"key.localId,key.systemId\"",
+                                V_PUBLICATIONINFO_NAME);
                 }
             }
             if (!error) {
@@ -278,6 +303,12 @@ v_builtinNew(
             if (wQos) {
                 wQos->durability.kind = V_DURABILITY_TRANSIENT;
                 wQos->reliability.kind = V_RELIABILITY_RELIABLE;
+                /* make the history qos to have keep all and unlimited depth so
+                 * that samples that are marked for resend don't get squeezed
+                 * out of the writer's history
+                 */
+                wQos->history.kind = V_HISTORY_KEEPALL;
+                wQos->history.depth = V_LENGTH_UNLIMITED;
 
                 /* for the built-in topic DCPSTopic the built-in writer must
                  * define wQos->lifecycle.autodispose_unregistered_instance =
@@ -305,10 +336,10 @@ v_builtinNew(
 
                     if (kernel->qos->builtin.enabled) {
                         _this->writers[V_PUBLICATIONINFO_ID] =
-                         v_writerNew(_this->publisher,
-                                     V_PUBLICATIONINFO_NAME "PublicationInfoWriter",
-                                     _this->topics[V_PUBLICATIONINFO_ID],
-                                     wQos, TRUE);
+                             v_writerNew(_this->publisher,
+                                         V_PUBLICATIONINFO_NAME "PublicationInfoWriter",
+                                         _this->topics[V_PUBLICATIONINFO_ID],
+                                         wQos, TRUE);
                         error = (_this->writers[V_PUBLICATIONINFO_ID] == NULL);
                         if (error) {
                             OS_REPORT_2(OS_ERROR,
@@ -318,22 +349,36 @@ v_builtinNew(
                                         OS_REPORT_NL "Topic: \"%s",
                                         V_PUBLICATIONINFO_NAME "PublicationInfoWriter",
                                         V_PUBLICATIONINFO_NAME);
-                        } else {
-                            _this->writers[V_PARTICIPANTINFO_ID] =
-                                 v_writerNew(_this->publisher,
-                                             V_PARTICIPANTINFO_NAME "ParticipantInfoWriter",
-                                             _this->topics[V_PARTICIPANTINFO_ID],
-                                             wQos, TRUE);
-                            error = (_this->writers[V_PARTICIPANTINFO_ID] == NULL);
-                            if (error) {
-                                OS_REPORT_2(OS_ERROR,
-                                            "kernel::v_builtin::v_builtinNew", 0,
-                                            "Operation failed because v_writerNew failed for:"
-                                            OS_REPORT_NL "Name: \"%s"
-                                            OS_REPORT_NL "Topic: \"%s",
-                                            V_PARTICIPANTINFO_NAME "ParticipantInfoWriter",
-                                            V_PARTICIPANTINFO_NAME);
-                            }
+                        }
+                        _this->writers[V_PARTICIPANTINFO_ID] =
+                             v_writerNew(_this->publisher,
+                                         V_PARTICIPANTINFO_NAME "ParticipantInfoWriter",
+                                         _this->topics[V_PARTICIPANTINFO_ID],
+                                         wQos, TRUE);
+                        error = (_this->writers[V_PARTICIPANTINFO_ID] == NULL);
+                        if (error) {
+                            OS_REPORT_2(OS_ERROR,
+                                        "kernel::v_builtin::v_builtinNew", 0,
+                                        "Operation failed because v_writerNew failed for:"
+                                        OS_REPORT_NL "Name: \"%s"
+                                        OS_REPORT_NL "Topic: \"%s",
+                                        V_PARTICIPANTINFO_NAME "ParticipantInfoWriter",
+                                        V_PARTICIPANTINFO_NAME);
+                        }
+                        _this->writers[V_CMPARTICIPANTINFO_ID] =
+                            v_writerNew(_this->publisher,
+                                     V_CMPARTICIPANTINFO_NAME "ParticipantCMInfoWriter",
+                                     _this->topics[V_CMPARTICIPANTINFO_ID],
+                                     wQos, TRUE);
+                        error = (_this->writers[V_CMPARTICIPANTINFO_ID] == NULL);
+                        if (error) {
+                            OS_REPORT_2(OS_ERROR,
+                                    "kernel::v_builtin::v_builtinNew", 0,
+                                    "Operation failed because v_writerNew failed for:"
+                                    OS_REPORT_NL "Name: \"%s"
+                                    OS_REPORT_NL "Topic: \"%s",
+                                    V_CMPARTICIPANTINFO_NAME "CMParticipantCMInfoWriter",
+                                    V_CMPARTICIPANTINFO_NAME);
                         }
                         if (!error) {
                             _this->writers[V_SUBSCRIPTIONINFO_ID] =
@@ -353,12 +398,36 @@ v_builtinNew(
                             }
                         }
                     } else {
-                        _this->writers[V_PUBLICATIONINFO_ID] = NULL;
                         _this->writers[V_PARTICIPANTINFO_ID] = NULL;
+                        _this->writers[V_CMPARTICIPANTINFO_ID] = NULL;
                         _this->writers[V_SUBSCRIPTIONINFO_ID] = NULL;
+
+                        /* If the resources consumed by builtin topics are unwanted,
+                         * then do not write the v_publicationInfo samples as TRANSIENT
+                         * data but as VOLATILE data instead.
+                         */
+                        wQos->durability.kind = V_DURABILITY_VOLATILE;
+
+                        _this->writers[V_PUBLICATIONINFO_ID] =
+                             v_writerNew(_this->publisher,
+                                         V_PUBLICATIONINFO_NAME "PublicationInfoWriter",
+                                         _this->topics[V_PUBLICATIONINFO_ID],
+                                         wQos, TRUE);
+                        wQos->durability.kind = V_DURABILITY_TRANSIENT;
+                        error = (_this->writers[V_PUBLICATIONINFO_ID] == NULL);
+                        if (error) {
+                            OS_REPORT_2(OS_ERROR,
+                                        "kernel::v_builtin::v_builtinNew", 0,
+                                        "Operation failed because v_writerNew failed for:"
+                                        OS_REPORT_NL "Name: \"%s"
+                                        OS_REPORT_NL "Topic: \"%s",
+                                        V_PUBLICATIONINFO_NAME "PublicationInfoWriter",
+                                        V_PUBLICATIONINFO_NAME);
+                        }
                     }
                 }
                 if (!error) {
+                    wQos->durability.kind = V_DURABILITY_VOLATILE;
                     _this->writers[V_HEARTBEATINFO_ID] =
                          v_writerNew(_this->publisher,
                                      V_HEARTBEATINFO_NAME "HeartbeatInfoWriter",
@@ -376,6 +445,7 @@ v_builtinNew(
                     }
                 }
                 if (!error) {
+                    wQos->durability.kind = V_DURABILITY_VOLATILE;
                     _this->writers[V_C_AND_M_COMMAND_ID] =
                          v_writerNew(_this->publisher,
                                      V_C_AND_M_COMMAND_NAME "Writer",
@@ -393,7 +463,6 @@ v_builtinNew(
                     }
                 }
                 if (!error) {
-                    wQos->durability.kind = V_DURABILITY_VOLATILE;
                     wQos->lifecycle.autodispose_unregistered_instances = FALSE;
 
                     _this->writers[V_DELIVERYINFO_ID] =
@@ -433,6 +502,11 @@ v_builtinNew(
                     msg = v_builtinCreateParticipantInfo(_this,
                                                          _this->participant);
                     v_writerWrite(_this->writers[V_PARTICIPANTINFO_ID],
+                                  msg,time,NULL);
+                    c_free(msg);
+                    msg = v_builtinCreateCMParticipantInfo(_this,
+                                                         _this->participant);
+                    v_writerWrite(_this->writers[V_CMPARTICIPANTINFO_ID],
                                   msg,time,NULL);
                     c_free(msg);
                 }
@@ -476,6 +550,105 @@ v_builtinNew(
     return _this;
 }
 
+#define PROCNAME_SIZE (128)
+#define XML_SIZE (1024)
+v_message
+v_builtinCreateCMParticipantInfo (
+    v_builtin _this,
+    v_participant p)
+{
+    v_message msg;
+    v_topic topic;
+    struct v_participantCMInfo *info;
+    char *xml_description, *participantName;
+    char procName[PROCNAME_SIZE];
+    os_int32 parNameLength =0;
+    os_int32 procNameLength =0;
+
+    c_base base = c_getBase(c_object(p));
+    os_int pid =0;
+
+    assert(p != NULL);
+    assert(C_TYPECHECK(p,v_participant));
+    assert(C_TYPECHECK(_this,v_builtin));
+
+    /* Pre condition checking */
+    if (p == NULL) {
+        OS_REPORT_2(OS_ERROR,
+                    "kernel::v_builtin::v_builtinCreateCMParticipantInfo", 0,
+                    "Operation failed pre condition not met. _this = 0x%x, participant = 0x%x",
+                    _this,p);
+        return NULL;
+    }
+
+    if (_this && (_this->kernelQos->builtin.enabled)) {
+        if (p->qos != NULL) {
+            topic = v_builtinTopicLookup(_this, V_CMPARTICIPANTINFO_ID);
+            if (topic) {
+                msg = v_topicMessageNew(topic);
+                if (msg != NULL) {
+                    procNameLength = os_procGetProcessName(procName,PROCNAME_SIZE);
+                    /* If truncation occurred procNameLength >= PROCNAME_SIZE; we don't
+                     * care about truncation, but want to use the proper (truncated)
+                     * length in that case. */
+                    if(procNameLength >= PROCNAME_SIZE){
+                        procNameLength = PROCNAME_SIZE - 1;
+                    }
+                    participantName = v_entityName(p);
+                    pid = os_procIdToInteger(os_procIdSelf());
+                    info = v_builtinParticipantCMInfoData(_this,msg);
+                    info->key = v_publicGid(v_public(p));
+
+                    /* generate xml for productDataPolicy
+                     * xml_description buffer needs at least 120 characters for xml tags
+                     * this includes the PID value.
+                     * ExecName contains at least strlen(procName) characters
+                     * ParticipantName contains at lease strlen(pTempName) characters
+                     */
+                    if (participantName) {
+                        parNameLength = strlen(participantName);
+                    }
+                    xml_description = (char*)os_malloc(procNameLength+parNameLength+120);
+                    os_sprintf (xml_description,
+                                "<Product><ExecName><![CDATA[%s]]></ExecName>"
+                                "<ParticipantName><![CDATA[%s]]></ParticipantName>"
+                                "<PID>%i</PID></Product>",
+                                procName,
+                                participantName ? participantName : "",
+                                pid ? pid : 0
+                                );
+                    info->product.value = c_stringNew(base,xml_description);
+
+                    if (xml_description) {
+                        os_free(xml_description);
+                        xml_description = NULL;
+                    }
+                } else {
+                    OS_REPORT(OS_ERROR,
+                              "kernel::v_builtin::v_builtinCreateCMParticipantInfo", 0,
+                              "Failed to create built-in CMParticipant topic message");
+                    msg = NULL;
+                }
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "kernel::v_builtin::v_builtinCreateCMParticipantInfo", 0,
+                          "Failed to lookup built-in CMParticipant topic");
+                msg = NULL;
+            }
+        } else {
+            OS_REPORT(OS_ERROR,
+                      "kernel::v_builtin::v_builtinCreateCMParticipantInfo", 0,
+                      "Failed to produce built-in CMParticipant topic");
+            msg = NULL;
+        }
+    }
+    else
+    {
+        msg = NULL;
+    }
+    return msg;
+}
+
 v_message
 v_builtinCreateParticipantInfo (
     v_builtin _this,
@@ -511,6 +684,7 @@ v_builtinCreateParticipantInfo (
                     info->key = v_publicGid(v_public(p));
                     info->user_data.size = size;
                     info->user_data.value = NULL;
+
                     type = c_octet_t(c_getBase(c_object(p)));
                     if (size > 0) {
                         info->user_data.value = c_arrayNew(type, size);
@@ -759,155 +933,158 @@ v_builtinCreatePublicationInfo (
         assert(FALSE);
         return NULL;
     }
-    if (_this && (_this->kernelQos->builtin.enabled)) {
-        publisher = v_publisher(writer->publisher);
-        if (publisher == NULL) {
-            OS_REPORT(OS_ERROR,
-                      "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
-                      "Internal error DataWriter has no Publisher reference.");
-            assert(FALSE);
-            return NULL;
-        }
-        builtinTopic = v_builtinTopicLookup(_this,V_PUBLICATIONINFO_ID);
-        if (builtinTopic == NULL) {
-            OS_REPORT_2(OS_ERROR,
-                        "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
-                        "Operation v_builtinTopicLookup(\"V_PUBLICATIONINFO_ID\") failed."
-                        OS_REPORT_NL "_this = 0x%x, topic = 0x%x",
-                       _this, writer);
-            assert(FALSE);
-            return NULL;
-        }
-        str = c_metaScopedName(c_metaObject(v_topicDataType(writer->topic)));
-        if (str == NULL) {
-            OS_REPORT_2(OS_ERROR,
-                        "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
-                        "Operation c_metaScopedName(writer->topic->type) failed."
-                        OS_REPORT_NL "_this = 0x%x, writer = 0x%x",
-                        _this,writer);
-            assert(FALSE);
-            return NULL;
-        }
-        msg = v_topicMessageNew(builtinTopic);
-        if (msg == NULL) {
-            OS_REPORT(OS_ERROR,
-                        "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
-                        "Failed to create built-in \"V_TOPICINFO_ID\" topic message");
-            assert(FALSE);
-            return NULL;
-        }
-        info = v_builtinPublicationInfoData(_this,msg);
-        base = c_getBase(c_object(writer));
-        info->type_name = c_stringNew(base, str);
-        os_free(str);
-        if (info->type_name == NULL) {
-            OS_REPORT_4(OS_ERROR,
-                        "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
-                        "Operation c_stringNew(base=0x%x, str=\"%s\") failed."
-                        OS_REPORT_NL "_this = 0x%x, writer = 0x%x",
-                        base, str, _this, writer);
-            c_free(msg);
-            msg = NULL;
-            assert(FALSE);
-        }
-        if (msg != NULL) {
-            partitions = c_splitString(publisher->qos->partition, ",");
-            length = c_iterLength(partitions);
-            type = c_string_t(base);
-            if (length > 0) {
-                info->partition.name = c_arrayNew(type, length);
-                if (info->partition.name != NULL) {
-                    i = 0;
-                    str = (c_char *)c_iterTakeFirst(partitions);
-                    while (str != NULL) {
-                        assert(i < length);
-                        info->partition.name[i++] = c_stringNew(base, str);
-                        os_free(str);
-                        str = (c_char *)c_iterTakeFirst(partitions);
-                    }
-                } else {
-                    OS_REPORT_2(OS_ERROR,
-                                "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
-                                "c_arrayNew(type=0x%x, length=%d) failed",
-                                type, length);
-                    c_free(msg);
-                    msg = NULL;
-                    assert(FALSE);
-                }
-            } else {
-                length = 1;
-                info->partition.name = c_arrayNew(type, length);
-                if (info->partition.name != NULL) {
-                    info->partition.name[0] = c_stringNew(base, "");
-                } else {
-                    OS_REPORT_2(OS_ERROR,
-                                "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
-                                "c_arrayNew(type=0x%x, length=%d) failed",
-                                type, length);
-                    c_free(msg);
-                    msg = NULL;
-                    assert(FALSE);
-                }
-            }
-            c_iterFree(partitions);
-            c_free(type);
-        }
-
-        if (msg != NULL) {
-            writerQos = writer->qos;
-            /* copy qos */
-            info->durability         = writerQos->durability;
-            info->deadline           = writerQos->deadline;
-            info->latency_budget     = writerQos->latency;
-            info->liveliness         = writerQos->liveliness;
-            info->reliability        = writerQos->reliability;
-            info->lifespan           = writerQos->lifespan;
-            info->ownership          = writerQos->ownership;
-            info->ownership_strength = writerQos->strength;
-            info->destination_order  = writerQos->orderby;
-            info->lifecycle          = writerQos->lifecycle;
-
-            if (writerQos->userData.size > 0) {
-                type = c_octet_t(base);
-                info->user_data.value = c_arrayNew(type, writerQos->userData.size);
-                if (info->user_data.value != NULL) {
-                    memcpy(info->user_data.value,
-                           writerQos->userData.value,
-                           writerQos->userData.size);
-                } else {
-                    OS_REPORT_2(OS_ERROR,
-                                "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
-                                "c_arrayNew(type=0x%x, length=%d) failed",
-                                type, writerQos->userData.size);
-                    c_free(msg);
-                    msg = NULL;
-                    assert(FALSE);
-                }
-                c_free(type);
-            } else {
-                info->user_data.value = NULL;
-            }
-        }
-        if (msg != NULL) {
-            info->presentation = publisher->qos->presentation;
-            info->group_data.value = c_keep(publisher->qos->groupData.value);
-
-            p = v_participant(publisher->participant);
-            /* p == NULL : is a valid use-case (according to legacy code) */
-            info->participant_key = v_publicGid(v_public(p));
-
-            topicQos = v_topicGetQos(writer->topic);
-            info->topic_data.value  = c_keep(topicQos->topicData.value);
-            info->key = v_publicGid(v_public(writer));
-            info->topic_name = c_keep(v_topicName(writer->topic));
-
-            c_free(topicQos);
-
-            info->alive = writer->alive;
-        }
-    } else {
-        msg = NULL;
+    publisher = v_publisher(writer->publisher);
+    if (publisher == NULL) {
+        OS_REPORT(OS_ERROR,
+                  "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
+                  "Internal error DataWriter has no Publisher reference.");
+        assert(FALSE);
+        return NULL;
     }
+    builtinTopic = v_builtinTopicLookup(_this,V_PUBLICATIONINFO_ID);
+    if (builtinTopic == NULL) {
+        OS_REPORT_2(OS_ERROR,
+                    "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
+                    "Operation v_builtinTopicLookup(\"V_PUBLICATIONINFO_ID\") failed."
+                    OS_REPORT_NL "_this = 0x%x, topic = 0x%x",
+                   _this, writer);
+        assert(FALSE);
+        return NULL;
+    }
+    str = c_metaScopedName(c_metaObject(v_topicDataType(writer->topic)));
+    if (str == NULL) {
+        OS_REPORT_2(OS_ERROR,
+                    "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
+                    "Operation c_metaScopedName(writer->topic->type) failed."
+                    OS_REPORT_NL "_this = 0x%x, writer = 0x%x",
+                    _this,writer);
+        assert(FALSE);
+        return NULL;
+    }
+    msg = v_topicMessageNew(builtinTopic);
+    if (msg == NULL) {
+        OS_REPORT(OS_ERROR,
+                    "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
+                    "Failed to create built-in \"V_TOPICINFO_ID\" topic message");
+        assert(FALSE);
+        return NULL;
+    }
+    info = v_builtinPublicationInfoData(_this,msg);
+    base = c_getBase(c_object(writer));
+    info->type_name = c_stringNew(base, str);
+    os_free(str);
+    if (info->type_name == NULL) {
+        OS_REPORT_4(OS_ERROR,
+                    "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
+                    "Operation c_stringNew(base=0x%x, str=\"%s\") failed."
+                    OS_REPORT_NL "_this = 0x%x, writer = 0x%x",
+                    base, str, _this, writer);
+        c_free(msg);
+        msg = NULL;
+        assert(FALSE);
+    }
+    if (msg != NULL) {
+        partitions = c_splitString(publisher->qos->partition, ",");
+        length = c_iterLength(partitions);
+        type = c_string_t(base);
+        if (length > 0) {
+            info->partition.name = c_arrayNew(type, length);
+            if (info->partition.name != NULL) {
+                i = 0;
+                str = (c_char *)c_iterTakeFirst(partitions);
+                while (str != NULL) {
+                    assert(i < length);
+                    info->partition.name[i++] = c_stringNew(base, str);
+                    os_free(str);
+                    str = (c_char *)c_iterTakeFirst(partitions);
+                }
+            } else {
+                OS_REPORT_2(OS_ERROR,
+                            "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
+                            "c_arrayNew(type=0x%x, length=%d) failed",
+                            type, length);
+                c_free(msg);
+                msg = NULL;
+                assert(FALSE);
+            }
+        } else {
+            length = 1;
+            info->partition.name = c_arrayNew(type, length);
+            if (info->partition.name != NULL) {
+                info->partition.name[0] = c_stringNew(base, "");
+            } else {
+                OS_REPORT_2(OS_ERROR,
+                            "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
+                            "c_arrayNew(type=0x%x, length=%d) failed",
+                            type, length);
+                c_free(msg);
+                msg = NULL;
+                assert(FALSE);
+            }
+        }
+        c_iterFree(partitions);
+        c_free(type);
+    }
+
+    if (msg != NULL) {
+        writerQos = writer->qos;
+        /* copy qos */
+        info->durability         = writerQos->durability;
+        info->deadline           = writerQos->deadline;
+        info->latency_budget     = writerQos->latency;
+        info->liveliness         = writerQos->liveliness;
+        info->reliability        = writerQos->reliability;
+        info->lifespan           = writerQos->lifespan;
+        info->ownership          = writerQos->ownership;
+        info->ownership_strength = writerQos->strength;
+        info->destination_order  = writerQos->orderby;
+        info->lifecycle          = writerQos->lifecycle;
+
+        if (writerQos->userData.size > 0) {
+            type = c_octet_t(base);
+            info->user_data.value = c_arrayNew(type, writerQos->userData.size);
+            if (info->user_data.value != NULL) {
+                memcpy(info->user_data.value,
+                       writerQos->userData.value,
+                       writerQos->userData.size);
+            } else {
+                OS_REPORT_2(OS_ERROR,
+                            "kernel::v_builtin::v_builtinCreatePublicationInfo", 0,
+                            "c_arrayNew(type=0x%x, length=%d) failed",
+                            type, writerQos->userData.size);
+                c_free(msg);
+                msg = NULL;
+                assert(FALSE);
+            }
+            c_free(type);
+        } else {
+            info->user_data.value = NULL;
+        }
+    }
+    if (msg != NULL) {
+        info->presentation = publisher->qos->presentation;
+        info->group_data.value = c_keep(publisher->qos->groupData.value);
+
+        p = v_participant(publisher->participant);
+        /* p == NULL : is a valid use-case (according to legacy code) */
+        info->participant_key = v_publicGid(v_public(p));
+
+        topicQos = v_topicGetQos(writer->topic);
+        info->topic_data.value  = c_keep(topicQos->topicData.value);
+        info->key = v_publicGid(v_public(writer));
+        info->topic_name = c_keep(v_topicName(writer->topic));
+
+        c_free(topicQos);
+
+        info->alive = writer->alive;
+    }
+
+    topicQos = v_topicGetQos(writer->topic);
+    info->topic_data.value  = c_keep(topicQos->topicData.value);
+
+    c_free(topicQos);
+
+    info->alive = writer->alive;
     return msg;
 }
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -94,7 +94,7 @@ checkParameters (
     /* If length is unlimited, but release is true, maxSamples equals the
      * maximum for the sequence (scdds2032).
      */
-    else if ((maxSamples == DDS_LENGTH_UNLIMITED) && infoSeq->_release) {
+    else if ((maxSamples == DDS_LENGTH_UNLIMITED) && infoSeq->_maximum > 0) {
     	maxSamples = infoSeq->_maximum;
     }
 

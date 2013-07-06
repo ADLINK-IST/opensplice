@@ -113,6 +113,10 @@ ODL_Identifier          [a-zA-Z_][a-zA-Z0-9_]*
 "["                     { pc(); return IDLTOK_LEPAR; }
 "]"                     { pc(); return IDLTOK_REPAR; }
 
+"@annotation"			{ pc(); return IDLTOK_ANNOTATION; }
+"@"						{ pc(); return IDLTOK_AT; }
+"//@"					{ pc(); return IDLTOK_AT_POST; }
+
 {Float_Literal1}        |
 {Float_Literal2}        |
 {Float_Literal3}        |
@@ -256,6 +260,7 @@ extractToken(const char *_String)
    if (!compareStrings(_String, "local"       ) ) return IDLTOK_LOCAL;
    if (!compareStrings(_String, "long"        ) ) return IDLTOK_LONG;
    if (!compareStrings(_String, "manages"     ) ) return IDLTOK_MANAGES;
+   if (!compareStrings(_String, "map"         ) ) return IDLTOK_MAP;
    if (!compareStrings(_String, "module"      ) ) return IDLTOK_MODULE;
    if (!compareStrings(_String, "multiple"    ) ) return IDLTOK_MULTIPLE;
    if (!compareStrings(_String, "native"      ) ) return IDLTOK_NATIVE;
@@ -421,6 +426,11 @@ preprocessor_directive(char *str)
                     }
                 }
                 idl_stacDefAdd (idl_stacDefDefGet(), scope, typeName, valueString);
+            }
+        } else if(pragmaName && strcmp(pragmaName, "stream") == 0) {
+            typeName = c_iterTakeFirst(pragmaItems);
+            if (typeName && (idl_checkKeyListTypeName(scope, typeName, yyerror) == 0)) {
+                idl_streamsDefAdd(idl_streamsDefDefGet(), scope, typeName);
             }
         }
     }

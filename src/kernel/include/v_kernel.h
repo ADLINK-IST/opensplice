@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -76,6 +76,7 @@ typedef enum {
     V_RESULT_CLASS_MISMATCH,
     V_RESULT_DETACHING,
     V_RESULT_TIMEOUT,
+    V_RESULT_OUT_OF_RESOURCES,
     V_RESULT_INCONSISTENT_QOS,
     V_RESULT_IMMUTABLE_POLICY,
     V_RESULT_PRECONDITION_NOT_MET,
@@ -106,6 +107,20 @@ v_kernelDetach (
 OS_API c_long
 v_kernelUserCount (
     v_kernel _this);
+
+OS_API c_long
+v_kernelNetworkCount (
+    v_kernel _this);
+
+OS_API void
+v_kernelSetNetworkCount (
+    v_kernel _this,
+    c_long count);
+
+OS_API v_result
+v_kernelWaitForDurabilityAvailability(
+    v_kernel _this,
+    c_time timeout);
 
 OS_API v_partition
 v_addPartition (

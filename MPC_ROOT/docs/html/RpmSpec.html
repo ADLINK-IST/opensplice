@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta name="id" content=
+  "$Id$">
+  <link rel="STYLESHEET" href="MakeProjectCreator.css" charset="ISO-8859-1"
+  type="text/css">
+
+  <title>MPC: RpmSpec Type</title>
+</head>
+
+<body>
+<div>
+  <h1 class="Head1">RpmSpec Type documentation</h1>
+
+  <div>
+    <h3 class="Head2">Background/Abstract</h3>
+    <ul>
+    <li class="body">The <em>RpmSpec Type</em> generates
+    <samp>.spec</samp> files suitable for use by the <samp><a
+    href="http://docs.fedoraproject.org/en-US/Fedora_Draft_Documentation/0.1/html/RPM_Guide/ch-rpmbuild.html">rpmbuild</a></samp>
+    utility to build and package.  It additionally creates a Bourne
+    shell script that automates creation of source tarball and proper
+    dependency-order building/packaging of <samp>.spec</samp> files.
+    </li>
+
+    <li class="body">The RpmSpec type refines the existing
+    <em>aggregated workspace</em> MPC concept, as well as introduces
+    the ability to have <samp>specific</samp> clauses inside
+    workspace declarations (<samp>.mwc</samp> files).  Consequently,
+    workspace files utilizing these new features are not
+    backwards-compatible with prior releases of MPC.</li>
+    
+    <li class="body">Since RPM is primarily Linux-based, RpmSpec only
+    officially supports use on Linux-based systems.  It <em>may</em>
+    work on platforms for which an RPM port exists, but such success
+    would be coincidental and neither intended, tested, nor
+    guaranteed.</li>
+    </ul>
+  </div>
+
+  <div>
+    <h3 class="Head2">Pre-requisites</h3>
+    <ul>
+      <li class="body">The following software items are required and
+    in the execution path (as well as any of their respective dependencies):
+      <dl>
+        <dt>RPM</dt>
+        <dd>Minimum of version 4.7.1 recommended (not tested with
+    other versions).</dd>
+       <dt>Development toolchain</dt>
+        <dd>This can be the standard development toolchain. Packaging
+    for other architectures is supported if the toolchain in the path
+    is a cross-compiler for that architecture.</dd>
+     </dl>
+   </ul>
+ </div>
+
+  <div>
+    <h3 class="Head2">Usage</h3>
+    The RpmSpec type refines an existing concept in MPC known as
+    <em><a
+    href="MakeProjectCreator.html#AggregatedWorkspace">aggregate
+    workspaces</a></em> to define package scopes.  When
+    <code>mwc.pl</code> is run on a top-level workspace with
+    <code>-type rpmspec</code>, each aggregated workspace is presumed
+    to define the scope of a package that will become an RPM.
+    Inter-project dependencies that exist between any projects known to
+    the top-level workspace automatically turn into inter-package
+    dependencies in RPMs.
+    
+   <h4>Generic workflow</h4>
+    <div align="center">
+   <img src="rpmworkflow.png" alt="rpm workflow"/>
+      <h6 align="center">Figure: RPM Workflow</h6>
+    </div>
+    Presuming <code>.mwc</code> files already exist, and that
+    inter-project dependencies are complete and well-formed (i.e.,
+    contain sufficient <samp>after</samp> statements to insure proper
+    build ordering):
+   <ol>
+     <li>Use the command <samp>mwc.pl -type rpmspec <em>top-level-workspace.mwc</em></samp> to generate
+    <code>.spec</code> files and <samp>*_rpm.sh</samp> builder script.</li>
+
+     <li>Run the <code><em>top-level-workspace</em>_rpm.sh</code>
+    script to build/package.</li>
+  </ol>
+ </div>
+
+ <div>
+  <h3 class="Head2">Adapting/Writing Projects for Packaging</h3>
+   <h4><a name="mwcnotes"></a>Creating Workspaces</h4>
+   <p>The RpmSpec type uses <a
+    href="MakeProjectCreator.html#AggregatedWorkspace">aggregate
+    workspaces</a> to define the scope of a package.  In other words,
+   defining a package involves writing a <samp>.mwc</samp> file that
+   includes all the projects that should go into that package.
+   An additional <samp>.mwc</samp> file must be written for each
+   additional package.  Finally, these <em>package</em> workspaces get
+   aggregated into a workspace.
+
+   <p>RPM packages require extra information not needed by "normal"
+   MPC projects or workspaces.  This information is defined in a
+   <samp>specific</samp> clause in the workspace for the
+   <samp>rpmspec</samp> type, e.g.,
+
+   <pre class="codeexample">
+// top-level workspace
+workspace {
+  specific (rpmspec) {
+    rpm_version = 1.0
+    rpm_release = 1
+  }
+  package1.mwc
+  package2.mwc
+}
+</pre>
+   Details on the variables allowed in the <samp>specific</samp>
+   clause can be found in the <a href="../templates/rpmspec.txt">
+   <samp>$MPC_ROOT/docs/templates/rpmspec.txt</samp></a> file.
+   
+   <p>If you use workspaces as a part of
+   building right now, you may wish to write additional
+   workspace files specifically for packaging via RPM.
+
+   <h4><a name="installready"></a>Making Projects
+   <em>Install-Ready</em></h4>
+   
+   MPC-assisted packaging requires some attention from the developer
+   in order to yield its full potential.  What this means is that in
+   order for a project to avail itself to be packaged, it must take
+   care to insure that any collateral (such as files) that it needs to
+   end up in the package get installed via MPC's <em>install</em> feature.
+   Note that this feature is currently only implemented within the
+   <samp>gnuace</samp> project type.
+
+   Typically, this involves inheriting from the <samp>install</samp>
+   base project in order to enable auto-generation of installation
+   rules in the makefiles.  MPC defaults to making educated guesses as
+   to what files should be installed (e.g., for an <samp>exe</samp>
+   project, it figures that the executable should be installed), but a
+   developer can augment or replace MPC's guesses using
+   <samp>Install*_Files</samp> groupings.  See the documentation on
+   the <samp>gnuace</samp> installation feature for details.
+  </div>
+</div>
+
+<div>
+   <h3 class="Head2">Notes</h3>
+  <h4><a name="rpmnotes"></a>Notes on Generated RPMs</h4>
+   <ol>
+     <li>RPMs are relocatable using the <code>--prefix</code> or
+   <code>--relocate</code> options to <code>rpm</code>.</li>
+     <li>The RpmSpec type has no control over where the RPM system performs
+     it's "work" (building, staging,
+   packaging, etc.).  In the
+   past, this was often <samp>/usr/src/redhat</samp>, though your
+   system may be configured differently.<br/><samp>rpmbuild</samp>
+   holds this directory in its <em>_topdir</em> configuration
+   variable. To see the value of <em>_topdir</em> on
+   your system, execute the following command:<br/>
+   <pre class="codeexample">
+<b>$ rpmbuild --showrc | grep '_topdir[^}]'</b>
+-14: _topdir	%{getenv:HOME}/rpmbuild
+</pre>
+   </li>
+
+     <li>Binary RPMs land in <samp><em>_topdir</em>/RPMS</samp>.</li>
+     <li>Source RPMs land in <samp><em>_topdir</em>/SRPMS</samp>.</li>
+   </ol>
+
+   <h4><a name="scriptnotes"></a>Notes on Generated Script</h4>
+   <ol>
+     <li>The script takes one optional argument
+     indicating the architecture for which it should create packages.
+     The script makes no attempt to "find" a toolchain for that
+     architecture, instead presuming that whatever toolchain is
+     needed can be found in the PATH or is specified in the
+     <code>.spec</code> file.</li>
+     
+     <li>The script performs a build/install activity for each package.
+   Installation is not into the running system, but rather into a
+   "fake" area.  Installation is necessary to satisfy inter-package
+   dependency requirements.<br/>The location of the "fake" area
+   defaults to <samp>/tmp/mpcrpm</samp> but can be changed by setting the
+   <samp>&lt;%rpm_mpc_temp%&gt;</samp> in a workspace
+   <samp>specific</samp> clause, typically in the top-level
+   workspace.</li>
+
+   
+   </ol>
+</div>
+
+
+
+<hr>
+<!-- hhmts start --> Last modified: Fri Jan 14 09:09:04 CST 2011 <!-- hhmts end -->
+</body> </html>

@@ -1,4 +1,4 @@
-# default values for directory and idl-files to process 
+# default values for directory and idl-files to process
 IDL_DIR     ?= ../../code
 IDL_FILES   ?= $(notdir $(wildcard $(IDL_DIR)/*.idl))
 vpath %.idl     $(IDL_DIR)
@@ -15,7 +15,7 @@ IDL_HELP_FILES = $(IDL_FILES:%.idl=%SplHelp.c)
 IDL_STDH_FILES = $(IDL_FILES:%.idl=%.h) $(IDL_FILES:%.idl=%Dcps.h) $(IDL_FILES:%.idl=%SplDcps.h) $(IDL_FILES:%.idl=%SacDcps.h)
 IDL_STDC_FILES = $(IDL_FILES:%.idl=%SplDcps.c) $(IDL_FILES:%.idl=%SacDcps.c)
 
-# This determines what/how it will be processed 
+# This determines what/how it will be processed
 # IDL_H will be generated before the actual compile  (may even include C-file like ..SplLoad.c)
 # IDL_O will be linked into the final target
 IDL_H		= $(IDL_STDH_FILES)

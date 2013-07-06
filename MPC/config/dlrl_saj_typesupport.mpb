@@ -1,0 +1,37 @@
+// -*- MPC -*-
+// $Id:$
+
+project : saj_typesupport {
+}
+
+feature(!src_co) {
+  Define_Custom(DLRLTypes) {
+    automatic_in              = 1
+    automatic_out             = 1
+    command               = <%quote%>$(OSPL_HOME)/bin/ospldcg<%quote%>
+    libpath               = $(OSPL_HOME)/bin<%pathsep%>$(OSPL_HOME)/lib
+    inputext               = .idl
+    keyword dlrl_types_flags = commandflags
+    output_follows_input = 0
+  }
+
+  dlrl_types_flags += \
+    -I <%quote%>$(OSPL_HOME)<%slash%>etc<%slash%>idl<%quote%> -l JAVA
+}
+
+feature(src_co) {
+  Define_Custom(DLRLTypes) {
+    automatic_in              = 1
+    automatic_out             = 1
+    // Seems ospldcg.BAT doesn't even exist until install is built
+    // We're gonna need java on the path for this but it's best we can do and better than $OSPL_HOME/bin/ospl_dcg
+    command               = java -DOSPL_HOME=<%quote%>$(OSPL_HOME_NORMALIZED)<%quote%> -classpath <%quote%>$(OSPL_HOME_NORMALIZED)/jar/$(SPLICE_TARGET)/ospldcg.jar<%quote%> DCG.Control.DCGStarter
+    libpath               = $(OSPL_HOME_NORMALIZED)/exec/$(SPLICE_HOST)<%pathsep%>$(OSPL_HOME_NORMALIZED)/lib/$(SPLICE_HOST)
+    inputext               = .idl
+    keyword dlrl_types_flags = commandflags
+    output_follows_input = 0
+  }
+
+  dlrl_types_flags += \
+    -I <%quote%>$(OSPL_HOME_NORMALIZED)/etc/dcg<%quote%> -l JAVA
+}

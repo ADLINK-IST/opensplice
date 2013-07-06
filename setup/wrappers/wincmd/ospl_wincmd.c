@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -14,15 +14,17 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define MAX_ARGS 512
+#define VSB_CONFIG_FILE_STRING "-D_VSB_CONFIG_FILE=\""
 
 extern char **environ;
 typedef char *cptr;
 static cptr newargs[MAX_ARGS];
 static int argNum = 0;
 
-void addarg( char *pattern, char *val )
+void addarg( const char *pattern, const char *val )
 {
    char *winval;
    int newlen;
@@ -42,7 +44,47 @@ void addarg( char *pattern, char *val )
    }
 }
 
-void fixenv( char *envname )
+void addjavapaths (char *val)
+{
+   char *winval = NULL;
+   char *nextpath;
+   char *val1;
+   int newlen = 0;
+
+   val1 = strdup (val); /* strtok is destructive */
+   nextpath = strtok (val1, ":");
+   while (nextpath)
+   {
+      newlen += cygwin32_posix_to_win32_path_list_buf_size (nextpath) + 1;
+      nextpath = strtok (NULL, ":");
+   }
+   free (val1);
+
+   if (newlen)
+   {
+      winval = malloc (newlen);
+      nextpath = strtok (val, ":");
+      cygwin32_conv_to_win32_path (nextpath, winval);
+      while (nextpath = strtok (NULL, ":"))
+      {
+         strcat (winval, ";");
+         cygwin32_conv_to_win32_path (nextpath, winval + strlen (winval));
+      }
+   }
+   else
+   {
+      winval = "";
+   }
+   newargs [argNum++] = winval;
+   if (argNum+1 >= MAX_ARGS)
+   {
+      fprintf(stderr, "Error: ospl_wincmd Max number args exceeded\n");
+      fflush(stderr);
+      exit (1);
+   }
+}
+
+void fixenv( const char *envname )
 {
    char *winval;
    int newlen;
@@ -82,20 +124,22 @@ int main( int argc, char ** argv)
       char *arg = argv[count];
       if ( arg[0] == '-' )
       {
-	 if ( !strcmp( exe, "arpentium" ) 
+	 if ( !strcmp( exe, "arpentium" )
 	      || !strcmp( exe, "arppc" ) )
 	 {
             addarg( "%s", argv[count] );
-	    fixenv( "WIND_HOME");
-	 } 
-	 else if ( !strcmp( exe, "ccpentium" ) 
-	      || !strcmp( exe, "c++pentium" )
-	      || !strcmp( exe, "ldpentium" )
-	      || !strcmp( exe, "c++ppc" )
-	      || !strcmp( exe, "ccppc" )
-	      || !strcmp( exe, "ldppc" ))
+            fixenv( "WIND_HOME");
+         }
+         else if ( !strcmp( exe, "ccpentium" )
+              || !strcmp( exe, "c++pentium" )
+              || !strcmp( exe, "cpppentium" )
+              || !strcmp( exe, "ldpentium" )
+              || !strcmp( exe, "c++ppc" )
+              || !strcmp( exe, "cppppc" )
+              || !strcmp( exe, "ccppc" )
+              || !strcmp( exe, "ldppc" ))
          {
-	    fixenv( "WIND_HOME");
+            fixenv( "WIND_HOME");
             switch ( arg[1] )
             {
                case 'I' :
@@ -124,6 +168,22 @@ int main( int argc, char ** argv)
                   }
                   break;
                }
+               case 'D' :
+               {
+                  if ( strncmp( arg, VSB_CONFIG_FILE_STRING, strlen(VSB_CONFIG_FILE_STRING) ) == 0 )
+                  {
+                     char *tmp= strdup(&arg[strlen(VSB_CONFIG_FILE_STRING)]);
+                     tmp[strlen(tmp)-1] = '\0'; /* strip off trailing double quote */
+                     addarg( VSB_CONFIG_FILE_STRING "%s\"",tmp  );
+                     free( tmp );
+                     break;
+                  }
+                  else
+                  {
+                     addarg( "%s", argv[count] );
+                  }
+                  break;
+               }
                default:
                {
                   addarg( "%s", argv[count] );
@@ -132,6 +192,8 @@ int main( int argc, char ** argv)
          }
          else if ( !strcmp( exe, "idlpp" )
               || !strcmp( exe, "tao_idl" )
+              || !strcmp( exe, "rmipp" )
+              || !strcmp( exe, "odlpp" )
          )
          {
             switch ( arg[1] )
@@ -176,6 +238,21 @@ int main( int argc, char ** argv)
             else if (!strncmp( arg, "-outputresource:", 16 ))
             {
                addarg( "-outputresource:%s", &arg[16]);
+            }
+            else
+            {
+               addarg( "%s", argv[count] );
+            }
+         }
+         else if ( !strcmp( exe, "Csc" ))
+         {
+            if (!strncmp( arg, "-out:", 5 ))
+            {
+               addarg( "-out:%s", &arg[5]);
+            }
+            else if (!strncmp( arg, "-reference:", 11 ))
+            {
+               addarg( "-reference:%s", &arg[11]);
             }
             else
             {
@@ -234,6 +311,33 @@ int main( int argc, char ** argv)
                {
                   addarg( "%s", argv[count] );
                }
+            }
+         }
+         else if (!strcmp (exe, "java" )
+                   || !strcmp( exe, "javac" )
+                   || !strcmp( exe, "javah" ))
+         {
+            if ( !strcmp (arg, "-cp")
+                  || !strcmp( arg, "-classpath")
+                  || !strcmp( arg, "-sourcepath")
+                  || !strcmp( arg, "-endorseddirs")
+                  || !strcmp( arg, "-bootclasspath"))
+            {
+               addarg ("%s", arg);
+               addjavapaths (argv[++count]);
+            }
+            else if (!strcmp (arg, "-d"))
+            {
+               addarg ("%s", arg);
+               addarg ("%s", argv[++count]);
+            }
+            else if (arg[1] == 'I') /* JacORB IDL compiler opt */
+            {
+                  addarg( "-I%s", &arg[2] );
+            }
+            else
+            {
+               addarg( "%s", argv[count] );
             }
          }
          else

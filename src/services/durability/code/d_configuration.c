@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -44,6 +44,7 @@ d_configurationNew(
     c_char*       attrValue;
     c_bool        success;
 
+    OS_UNUSED_ARG(domainId);
     config = d_configuration(os_malloc(C_SIZEOF(d_configuration)));
     d_objectInit(d_object(config), D_CONFIGURATION, d_configurationDeinit);
 
@@ -106,21 +107,34 @@ d_configurationNew(
                 }
                 element = u_cfElement(c_iterTakeFirst(iter));
             }
-            d_configurationInit(config, service, domainElement, found);
+
+            if(d_configurationInit(config, service, domainElement, found)) {
+                os_free(config);
+                config = NULL;
+            }
 
             if(found){
                 u_cfElementFree(found);
-            }else {
-                OS_REPORT_1(OS_WARNING, D_CONTEXT, 0,
-                                "No DurabilityService configurations found for serviceName '%s'. Defaults applied.",
-                                serviceName);
+            } else {
+                if(found){
+                    u_cfElementFree(found);
+                }else {
+                    OS_REPORT_1(OS_WARNING, D_CONTEXT, 0,
+                                    "No DurabilityService configurations found for serviceName '%s'. Defaults applied.",
+                                    serviceName);
+                }
             }
-
             if(domainElement){
                 u_cfElementFree(domainElement);
             }
             c_iterFree(iter);
             u_cfElementFree(cfg);
+        } else {
+            /* Load default configuration values */
+            d_configurationInit(config, service, 0, 0);
+        }
+        if(config){
+            d_configurationReport(config, service);
         }
     }
     return config;
@@ -142,6 +156,14 @@ d_configurationDeinit(
 
         if(configuration->persistentStoreDirectory){
             os_free(configuration->persistentStoreDirectory);
+        }
+        if (configuration->persistentKVStoreStorageType) {
+            os_free(configuration->persistentKVStoreStorageType);
+            configuration->persistentKVStoreStorageType = NULL;
+        }
+        if (configuration->persistentKVStoreStorageParameters) {
+            os_free(configuration->persistentKVStoreStorageParameters);
+            configuration->persistentKVStoreStorageParameters = NULL;
         }
         if(configuration->policies){
             policy = d_policy(c_iterTakeFirst(configuration->policies));
@@ -219,6 +241,11 @@ d_configurationFree(
 }
 
 void
+d_configurationSetBuiltinTopicsEnabled(
+    d_configuration config,
+    c_bool enabled);
+
+int
 d_configurationInit(
     d_configuration config,
     d_durability durability,
@@ -228,9 +255,11 @@ d_configurationInit(
     d_nameSpace ns;
     d_policy policy;
     c_long i;
-    c_bool found;
+
+    int result;
 
     u_domain domain = NULL;
+    result = 0;
 
     if(config != NULL){
         /** First apply all defaults. */
@@ -239,11 +268,13 @@ d_configurationInit(
 
         domain = u_participantDomain(u_participant(d_durabilityGetService(durability)));
 
-        config->persistentStoreDirectory    = NULL;
-        config->persistentStoreMode         = D_STORE_TYPE_XML;
-        config->persistentMMFStoreAddress   = 0;
-        config->persistentMMFStoreSize      = 10485760;
-        if(domain)
+        config->persistentStoreDirectory           = NULL;
+        config->persistentStoreMode                = D_STORE_TYPE_XML;
+        config->persistentKVStoreStorageType       = NULL;
+        config->persistentKVStoreStorageParameters = NULL;
+        config->persistentMMFStoreAddress          = 0x80000000;
+        config->persistentMMFStoreSize             = 10485760;
+        if(domain && !os_serviceGetSingleProcess())
         {
             config->persistentMMFStoreAddress   = (c_address)u_domainMemoryAddress(domain) + u_domainMemorySize(domain);
             config->persistentMMFStoreSize      = u_domainMemorySize(domain) * 2;
@@ -264,12 +295,14 @@ d_configurationInit(
         config->timeAlignment               = TRUE;
         config->startTime                   = os_timeGet();
         config->networkMaxWaitCount         = D_DEFAULT_NETWORK_MAX_WAITCOUNT;
+        config->builtinTopicsEnabled        = TRUE;
         config->role                        = NULL;
+        config->builtinTopicsEnabled        = TRUE;
 
         d_configurationSetTime(&(config->heartbeatExpiryTime), D_DEFAULT_HEARTBEAT_EXPIRY_TIME);
         config->heartbeatExpiry = D_DEFAULT_HEARTBEAT_EXPIRY_TIME;
-        d_configurationSetTime(&(config->heartbeatUpdateInterval), D_DEFAULT_HEARTBEAT_UPDATE_INTERVAL*D_DEFAULT_HEARTBEAT_EXPIRY_TIME);
-        d_configurationSetTime(&(config->livelinessUpdateInterval), D_DEFAULT_LIVELINESS_UPDATE_INTERVAL*D_DEFAULT_HEARTBEAT_EXPIRY_TIME);
+        d_configurationSetTime(&(config->heartbeatUpdateInterval), D_DEFAULT_HEARTBEAT_UPDATE_FACTOR*D_DEFAULT_HEARTBEAT_EXPIRY_TIME);
+        d_configurationSetTime(&(config->livelinessUpdateInterval), D_DEFAULT_LIVELINESS_UPDATE_FACTOR*D_DEFAULT_LIVELINESS_EXPIRY_TIME);
         config->livelinessExpiry            = D_DEFAULT_LIVELINESS_EXPIRY_TIME;
         d_configurationSetDuration(&(config->livelinessExpiryTime), D_DEFAULT_LIVELINESS_EXPIRY_TIME);
 
@@ -312,6 +345,7 @@ d_configurationInit(
                 d_configurationValueFloat  (config, domainElement, "Lease/ExpiryTime/#text", d_configurationSetLivelinessExpiryTime);
                 d_configurationSetLivelinessUpdateFactor(config, domainElement, "Lease/ExpiryTime", "update_factor");
                 d_configurationValueString(config, domainElement, "Role/#text", d_configurationSetRole);
+                d_configurationAttrValueBoolean(config, domainElement, "BuiltinTopics", "enabled", d_configurationSetBuiltinTopicsEnabled);
             } else {
                 OS_REPORT(OS_WARNING, D_CONTEXT, 0,
                     "No Domain configuration found. Applying default Lease and Role...");
@@ -328,8 +362,10 @@ d_configurationInit(
             d_configurationValueULong  (config, element, "Persistent/QueueSize/#text", d_configurationSetPersistentQueueSize);
             d_configurationValueString (config, element, "Persistent/StoreMode/#text", d_configurationSetPersistentStoreMode);
 
+            d_configurationResolvePersistentKVConfig (config, element, "Persistent/KeyValueStore");
+
             d_configurationValueULong  (config, element, "Persistent/SmpCount/#text", d_configurationSetPersistentSMPCount);
-            d_configurationValueSize (config, element, "Persistent/MemoryMappedFileStore/Size/#text", d_configurationSetPersistentMMFStoreSize);
+            d_configurationValueSize   (config, element, "Persistent/MemoryMappedFileStore/Size/#text", d_configurationSetPersistentMMFStoreSize);
             d_configurationValueMemAddr (config, element, "Persistent/MemoryMappedFileStore/Address/#text", d_configurationSetPersistentMMFStoreAddress);
 
             d_configurationValueULong  (config, element, "Persistent/StoreOptimizeInterval/#text", d_configurationSetOptimizeUpdateInterval);
@@ -380,43 +416,180 @@ d_configurationInit(
 
             config->policies = d_configurationResolvePolicies (element, "NameSpaces/Policy");
             config->nameSpaces = d_configurationResolveNameSpaces(config, element, "NameSpaces/NameSpace");
+            if ((config->policies == NULL) || (config->nameSpaces == NULL)) {
+                result = 1;
+            }
         } else {
             d_printTimedEvent(durability, D_LEVEL_CONFIG, D_THREAD_MAIN,
                 "Configuration defaults applied. No actual one found...\n");
         }
 
-        if(c_iterLength(config->policies) == 0) {
-            /* If no policies are found, create a default policy for all namespaces */
-            policy = d_policyNew("*", TRUE, D_ALIGNEE_INITIAL, D_DURABILITY_ALL);
-            config->policies = c_iterInsert(config->policies, policy);
-        }
-
-        if (c_iterLength(config->nameSpaces) == 0) {
-            /* If no namespaces are found, create a default namespace for all partitions */
-            ns = d_nameSpaceNew(config, "NoName");
-            config->nameSpaces = c_iterInsert (config->nameSpaces, ns);
-            d_nameSpaceAddElement (ns, "NoName", "*", "*");
-        } else {
-            /* Make sure the V_BUILTIN_PARTITION is part of the namespace */
-            found = FALSE;
-
-            for(i=0; i<c_iterLength(config->nameSpaces) && !found; i++){
-                found = d_configurationInNameSpace(
-                        d_nameSpace(c_iterObject(config->nameSpaces, i)),
-                        V_BUILTIN_PARTITION, "x", D_DURABILITY_TRANSIENT, TRUE);
+        if (!result) {
+            if(c_iterLength(config->policies) == 0) {
+                /* If no policies are found, create a default policy for all namespaces */
+                policy = d_policyNew("*", TRUE, D_ALIGNEE_INITIAL, FALSE, D_DURABILITY_ALL);
+                config->policies = c_iterInsert(config->policies, policy);
             }
 
-            if(!found){
-                /* Create new namespace for builtin partition (will automatically select policy) */
-                ns = d_nameSpaceNew_w_policy(config, "AutoBuiltinPartition", TRUE, D_ALIGNEE_INITIAL, D_DURABILITY_TRANSIENT);
-                d_nameSpaceAddElement(ns, "NoName", V_BUILTIN_PARTITION, "*");
-                config->nameSpaces = c_iterInsert(config->nameSpaces, ns);
+            if(config->nameSpaces) {
+                if (c_iterLength(config->nameSpaces) == 0) {
+                    /* If no namespaces are found, create a default namespace for all partitions */
+                    ns = d_nameSpaceNew(config, "defaultNameSpace");
+                    config->nameSpaces = c_iterInsert (config->nameSpaces, ns);
+                    d_nameSpaceAddElement (ns, "NoName", "*", "*");
+                } else {
+                    c_bool found;
+                    d_nameSpace ns;
+
+                    /* Make sure the V_BUILTIN_PARTITION is part of the namespace */
+                    found = FALSE;
+                    ns = NULL;
+
+                    for(i=0; i<c_iterLength(config->nameSpaces) && !found; i++){
+                        ns = d_nameSpace(c_iterObject(config->nameSpaces, i));
+                        found = d_configurationInNameSpace(
+                                ns,
+                                V_BUILTIN_PARTITION, V_TOPICINFO_NAME, TRUE);
+                        if(!found) {
+                            ns = NULL;
+                        }
+                    }
+                    /* If DCPSTopic is not found, don't bother looking for the others. If it is found, look for the
+                     * other topics in the same namespace.
+                     * If builtin-topics are not enabled, just create namespace for DCPSTopic. */
+                    if(config->builtinTopicsEnabled) {
+                        if(found) {
+                            found = d_configurationInNameSpace(
+                                    ns,
+                                    V_BUILTIN_PARTITION, V_PARTICIPANTINFO_NAME, TRUE);
+                        }
+
+                        if(found) {
+                            found = d_configurationInNameSpace(
+                                    ns,
+                                    V_BUILTIN_PARTITION, V_PUBLICATIONINFO_NAME, TRUE);
+                        }
+
+                        if(found) {
+                            found = d_configurationInNameSpace(
+                                    ns,
+                                    V_BUILTIN_PARTITION, V_SUBSCRIPTIONINFO_NAME, TRUE);
+                        }
+                        if(found) {
+                            found = d_configurationInNameSpace(
+                                    ns,
+                                    V_BUILTIN_PARTITION, V_CMPARTICIPANTINFO_NAME, TRUE);
+                        }
+                    }
+
+                    if(!found) {
+                        if(ns) {
+                            d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_MAIN,
+                                "DCPSParticipant, DCPSTopic, DCPSPublication, DCPSSubscription, CMParticipant should all be in the same namespace.\n");
+                            OS_REPORT(OS_ERROR, D_CONTEXT, 0,
+                                "DCPSParticipant, DCPSTopic, DCPSPublication, DCPSSubscription, CMParticipant should all be in the same namespace.");
+                            result = -1;
+                        }else {
+                            /* Create new namespace for builtin partition (will automatically select policy) */
+                            ns = d_nameSpaceNew_w_policy(config, "AutoBuiltinTopics", TRUE, D_ALIGNEE_INITIAL, FALSE, D_DURABILITY_TRANSIENT);
+                            d_nameSpaceAddElement(ns, "NoName", V_BUILTIN_PARTITION, V_TOPICINFO_NAME);
+
+                            /* Only add these groups to the namespace when builtin-topics are enabled */
+                            if(config->builtinTopicsEnabled) {
+                                d_nameSpaceAddElement(ns, "NoName", V_BUILTIN_PARTITION, V_PARTICIPANTINFO_NAME);
+                                d_nameSpaceAddElement(ns, "NoName", V_BUILTIN_PARTITION, V_PUBLICATIONINFO_NAME);
+                                d_nameSpaceAddElement(ns, "NoName", V_BUILTIN_PARTITION, V_SUBSCRIPTIONINFO_NAME);
+                                d_nameSpaceAddElement(ns, "NoName", V_BUILTIN_PARTITION, V_CMPARTICIPANTINFO_NAME);
+                            }
+                            config->nameSpaces = c_iterInsert(config->nameSpaces, ns);
+                        }
+                    }
+                }
+            } else {
+                /* If no namespaces are found, create a default namespace for all partitions */
+                ns = d_nameSpaceNew(config, "defaultNameSpace");
+                config->nameSpaces = c_iterInsert (config->nameSpaces, ns);
+                d_nameSpaceAddElement (ns, "NoName", "*", "*");
             }
         }
-
-        d_configurationReport(config, durability);
     }
+
+    return result;
 }
+
+static void
+d_configurationReportPolicy(
+    c_voidp object,
+    c_voidp userData)
+{
+    d_policy policy;
+    d_durability durability;
+    const c_char* aligner;
+    const c_char* alignee;
+    const c_char* kind;
+    const c_char* name;
+    const c_char* delayed;
+
+    policy = d_policy(object);
+    durability = d_durability(userData);
+
+    switch(d_policyGetDurabilityKind(policy)){
+        case D_DURABILITY_ALL:
+            kind = "ALL";
+            break;
+        case D_DURABILITY_PERSISTENT:
+            kind = "PERSISTENT";
+            break;
+        case D_DURABILITY_TRANSIENT:
+            kind = "TRANSIENT";
+            break;
+        case D_DURABILITY_TRANSIENT_LOCAL:
+            kind = "TRANSIENT_LOCAL";
+            break;
+        default:
+            kind = "NOT_VALID";
+            assert(FALSE);
+            break;
+    }
+    switch(d_policyGetAlignmentKind(policy)){
+        case D_ALIGNEE_INITIAL:
+            alignee = "INITIAL";
+            break;
+        case D_ALIGNEE_LAZY:
+            alignee = "LAZY";
+            break;
+        case D_ALIGNEE_ON_REQUEST:
+            alignee = "ON_REQUEST";
+            break;
+        default:
+            alignee = "<<UNKNOWN>>";
+            assert(FALSE);
+            break;
+    }
+
+    if(d_policyGetAligner(policy)){
+        aligner = "TRUE";
+    } else {
+        aligner = "FALSE";
+    }
+    if(d_policyGetDelayedAlignment(policy)){
+        delayed = "TRUE";
+    } else {
+        delayed = "FALSE";
+    }
+    name = d_policyGetNameSpace(policy);
+
+    d_printEvent(durability, D_LEVEL_CONFIG,
+                "    - Policy:\n" \
+                "        - NameSpace        : %s\n" \
+                "        - Aligner          : %s\n" \
+                "        - Alignee          : %s\n" \
+                "        - DurabilityKind   : %s\n" \
+                "        - DelayedAlignment : %s\n",
+                name, aligner, alignee, kind, delayed);
+
+}
+
 
 static void
 d_configurationNameSpacesCombine(
@@ -425,15 +598,16 @@ d_configurationNameSpacesCombine(
 {
     d_nameSpace ns;
     d_durability durability;
-    c_char* partitions;
+    c_char* partitionTopic;
     c_char* name;
 
+    const c_char* aligner;
     const c_char* alignee;
     const c_char* kind;
 
     ns = d_nameSpace(object);
     durability = d_durability(userData);
-    partitions = d_nameSpaceGetPartitions(ns);
+    partitionTopic = d_nameSpaceGetPartitionTopics(ns);
 
     switch(d_nameSpaceGetDurabilityKind(ns)){
         case D_DURABILITY_ALL:
@@ -444,6 +618,9 @@ d_configurationNameSpacesCombine(
             break;
         case D_DURABILITY_TRANSIENT:
             kind = "TRANSIENT";
+            break;
+        case D_DURABILITY_TRANSIENT_LOCAL:
+            kind = "TRANSIENT_LOCAL";
             break;
         default:
             kind = "NOT_VALID";
@@ -465,17 +642,27 @@ d_configurationNameSpacesCombine(
             assert(FALSE);
             break;
     }
+
+    if(d_nameSpaceIsAligner(ns)){
+        aligner = "TRUE";
+    } else {
+        aligner = "FALSE";
+    }
+
     name = d_nameSpaceGetName(ns);
 
     d_printEvent(durability, D_LEVEL_CONFIG,
                 "    - NameSpace:\n" \
-                "        - Name           : %s\n" \
-                "        - AlignmentKind  : %s\n" \
-                "        - DurabilityKind : %s\n" \
-                "        - Partitions     : %s\n",
-                name, alignee, kind, partitions);
+                "        - Name             : %s\n" \
+                "        - Aligner          : %s\n" \
+                "        - Alignee          : %s\n" \
+                "        - DurabilityKind   : %s\n" \
+                "        - PartitionTopic   : %s\n" \
+                "        - DelayedAlignment : %s\n",
+                name, aligner, alignee, kind, partitionTopic,
+                d_nameSpaceGetDelayedAlignment(ns) ? "TRUE" : "FALSE");
 
-    os_free(partitions);
+    os_free(partitionTopic);
 
     return;
 }
@@ -493,7 +680,8 @@ isBuiltinGroup(
         if( (strcmp(topic, V_PARTICIPANTINFO_NAME) == 0) ||
             (strcmp(topic, V_TOPICINFO_NAME) == 0) ||
             (strcmp(topic, V_PUBLICATIONINFO_NAME) == 0) ||
-            (strcmp(topic, V_SUBSCRIPTIONINFO_NAME) == 0))
+            (strcmp(topic, V_SUBSCRIPTIONINFO_NAME) == 0) ||
+            (strcmp(topic, V_CMPARTICIPANTINFO_NAME) == 0) )
         {
             result = TRUE;
         }
@@ -581,6 +769,9 @@ d_configurationReport(
         case D_STORE_TYPE_UNKNOWN:
             pstoreMode = "UNKNOWN";
             break;
+        case D_STORE_TYPE_KV:
+            pstoreMode = "KV";
+            break;
         default:
             assert(FALSE);
             pstoreMode = "UNKNOWN";
@@ -605,13 +796,15 @@ d_configurationReport(
 
     d_printEvent(durability, D_LEVEL_CONFIG,
             "- Persistent.StoreDirectory                   : %s\n" \
-            "- Persistent.StoreMode                        : %s\n" \
+            "- Persistent.StoreMode                        : %s%s%s\n" \
             "- Persistent.MemoryMappedFile.Size            : %u\n" \
             "- Persistent.MemoryMappedFile.Address         : %#x\n" \
             "- Persistent.SmpCount                         : %u\n" \
             "- Persistent.QueueSize                        : %u\n"
             , pstoreDir
             , pstoreMode
+            , config->persistentKVStoreStorageType ? ":" : ""
+            , config->persistentKVStoreStorageType ? config->persistentKVStoreStorageType : ""
             , config->persistentMMFStoreSize
             , config->persistentMMFStoreAddress
             , config->persistentThreadCount
@@ -810,11 +1003,23 @@ d_configurationReport(
             , config->networkMaxWaitCount
             );
 
+    if(config->builtinTopicsEnabled == TRUE){
+        d_printEvent(durability, D_LEVEL_CONFIG,
+                "- BuiltinTopics.enabled                       : TRUE\n");
+    } else {
+        d_printEvent(durability, D_LEVEL_CONFIG,
+                "- BuiltinTopics.enabled                       : FALSE\n");
+    }
+
     d_tableWalk(config->networkServiceNames, d_configurationServiceNamesCombine, durability);
 
     d_printEvent(durability, D_LEVEL_CONFIG,
             "- NameSpaces                                  :\n");
     c_iterWalk(config->nameSpaces, d_configurationNameSpacesCombine, durability);
+
+    d_printEvent(durability, D_LEVEL_CONFIG,
+            "- Policies                                    :\n");
+    c_iterWalk(config->policies, d_configurationReportPolicy, durability);
 
 }
 
@@ -870,11 +1075,11 @@ d_configurationSetLivelinessUpdateFactor(
             success = u_cfElementAttributeFloatValue(expiryElement, updateFactorName, &sec);
 
             if(success == TRUE){
-                if (sec < D_MINIMUM_LIVELINESS_UPDATE_INTERVAL) {
-                    sec = D_MINIMUM_LIVELINESS_UPDATE_INTERVAL;
+                if (sec < D_MINIMUM_LIVELINESS_UPDATE_FACTOR) {
+                    sec = D_MINIMUM_LIVELINESS_UPDATE_FACTOR;
                 }
-                if (sec > D_MAXIMUM_LIVELINESS_UPDATE_INTERVAL) {
-                    sec = D_MAXIMUM_LIVELINESS_UPDATE_INTERVAL;
+                if (sec > D_MAXIMUM_LIVELINESS_UPDATE_FACTOR) {
+                    sec = D_MAXIMUM_LIVELINESS_UPDATE_FACTOR;
                 }
                 sec = config->livelinessExpiry * sec;
                 d_configurationSetTime(&(config->livelinessUpdateInterval), sec);
@@ -1017,11 +1222,11 @@ d_configurationSetHeartbeatUpdateFactor(
             success = u_cfElementAttributeFloatValue(expiryElement, updateFactorName, &sec);
 
             if(success == TRUE){
-                if (sec < D_MINIMUM_HEARTBEAT_UPDATE_INTERVAL) {
-                    sec = D_MINIMUM_HEARTBEAT_UPDATE_INTERVAL;
+                if (sec < D_MINIMUM_HEARTBEAT_UPDATE_FACTOR) {
+                    sec = D_MINIMUM_HEARTBEAT_UPDATE_FACTOR;
                 }
-                if (sec > D_MAXIMUM_HEARTBEAT_UPDATE_INTERVAL) {
-                    sec = D_MAXIMUM_HEARTBEAT_UPDATE_INTERVAL;
+                if (sec > D_MAXIMUM_HEARTBEAT_UPDATE_FACTOR) {
+                    sec = D_MAXIMUM_HEARTBEAT_UPDATE_FACTOR;
                 }
                 sec = config->heartbeatExpiry * sec;
                 d_configurationSetTime(&(config->heartbeatUpdateInterval), sec);
@@ -1031,6 +1236,14 @@ d_configurationSetHeartbeatUpdateFactor(
         }
         c_iterFree(elements);
     }
+}
+
+void
+d_configurationSetBuiltinTopicsEnabled(
+    d_configuration config,
+    c_bool enabled)
+{
+    config->builtinTopicsEnabled = enabled;
 }
 
 void
@@ -1510,7 +1723,9 @@ d_configurationSetPersistentStoreMode(
             if(os_strcasecmp(storeModeName, "XML") == 0){
                 config->persistentStoreMode = D_STORE_TYPE_XML;
             } else if(os_strcasecmp(storeModeName, "MMF") == 0){
-				config->persistentStoreMode = D_STORE_TYPE_MEM_MAPPED_FILE;
+                config->persistentStoreMode = D_STORE_TYPE_MEM_MAPPED_FILE;
+            } else if(os_strcasecmp(storeModeName, "KV") == 0 || os_strncasecmp(storeModeName, "KV:", 3) == 0){
+                config->persistentStoreMode = D_STORE_TYPE_KV;
             } else {
                 config->persistentStoreMode = D_STORE_TYPE_XML;
             }
@@ -1518,31 +1733,101 @@ d_configurationSetPersistentStoreMode(
     }
 }
 
+static c_char *
+d_configurationGetOptionStringValue (
+    u_cfElement element)
+{
+    c_char  *value = NULL;
+    c_iter   iter;
+    u_cfNode node;
+
+    iter = u_cfElementGetChildren(element);
+
+    if(c_iterLength(iter) != 0){
+        node = u_cfNode(c_iterTakeFirst(iter));
+        if (u_cfNodeKind(node) == V_CFDATA){
+            (void) u_cfDataStringValue(u_cfData(node), &value);
+        }
+        u_cfNodeFree(node);
+    }
+
+    c_iterFree(iter);
+
+    return value;
+}
+
+
+void
+d_configurationSetPersistentKVStorageParameters (
+    d_configuration  config,
+    const c_char * parameters)
+{
+    if (config) {
+        if (parameters != NULL) {
+            if(config->persistentKVStoreStorageParameters) {
+                d_free(config->persistentKVStoreStorageParameters);
+                config->persistentKVStoreStorageParameters = NULL;
+            }
+            config->persistentKVStoreStorageParameters = os_strdup(parameters);
+        }
+    }
+}
+
+void
+d_configurationResolvePersistentKVConfig (
+    d_configuration config,
+    u_cfElement elementParent,
+    const c_char *elementName)
+{
+    c_iter       iter;
+    u_cfElement  element;
+    c_char      *value;
+    c_bool       found;
+
+    iter = u_cfElementXPath(elementParent, elementName);
+    element = (u_cfElement)c_iterTakeFirst(iter);
+
+    while (element) {
+        found = u_cfElementAttributeStringValue(element, "type", &value);
+        if (found) {
+            if (config->persistentKVStoreStorageType) {
+                os_free(config->persistentKVStoreStorageType);
+            }
+            config->persistentKVStoreStorageType = value;
+        }
+        d_configurationValueString (config, element, "StorageParameters/#text", d_configurationSetPersistentKVStorageParameters);
+        u_cfElementFree(element);
+        element = (u_cfElement)c_iterTakeFirst(iter);
+    }
+    c_iterFree(iter);
+}
+
+
 void
 d_configurationSetPersistentMMFStoreAddress(
     d_configuration  config,
     c_address address)
 {
-	if (config) {
-		config->persistentMMFStoreAddress = address;
-	}
+        if (config) {
+                config->persistentMMFStoreAddress = address;
+        }
 
 }
 
 void
 d_configurationSetPersistentMMFStoreSize(
     d_configuration  config,
-    os_size_t size)
+    c_size size)
 {
-	os_size_t _size;
-	_size = size;
+        c_size _size;
+        _size = size;
 
-	if (config) {
-		if(size < D_MINIMUM_PERSISTENT_MMF_STORE_SIZE){
-			_size = D_MINIMUM_PERSISTENT_MMF_STORE_SIZE;
-		}
-		config->persistentMMFStoreSize = _size;
-	}
+        if (config) {
+                if(size < D_MINIMUM_PERSISTENT_MMF_STORE_SIZE){
+                        _size = D_MINIMUM_PERSISTENT_MMF_STORE_SIZE;
+                }
+                config->persistentMMFStoreSize = _size;
+        }
 }
 
 void
@@ -1642,35 +1927,6 @@ d_configurationSetTime(
 }
 
 void
-d_configurationResolvePartitionTopic(
-    d_nameSpace  nameSpace,
-    u_cfElement  element,
-    c_char *     name,
-    const c_char * tag,
-    const c_char * topic )
-{
-    c_iter   iter;
-    u_cfData data;
-    c_char * partition;
-    c_bool   found;
-
-    iter = u_cfElementXPath(element, tag);
-    data = u_cfData(c_iterTakeFirst(iter));
-
-    while(data) {
-        found = u_cfDataStringValue(data, &partition);
-
-        if (found == TRUE) {
-            d_nameSpaceAddElement(nameSpace, name, partition, topic);
-            os_free(partition);
-        }
-        u_cfDataFree(data);
-        data = u_cfData(c_iterTakeFirst(iter));
-    }
-    c_iterFree(iter);
-}
-
-void
 d_configurationResolvePartition(
     d_nameSpace nameSpace,
     u_cfElement element,
@@ -1713,6 +1969,49 @@ d_configurationResolvePartition(
     }
     c_iterFree(iter);
 }
+
+void
+d_configurationResolvePartitionTopic(
+    d_nameSpace nameSpace,
+    u_cfElement element,
+    c_char* name,
+    const c_char* tag)
+{
+    c_iter iter, iter2;
+    u_cfElement partitionElement;
+    u_cfNode data;
+    c_ulong size;
+    c_bool found;
+    c_char* partitionTopic;
+
+    iter = u_cfElementXPath(element, tag);
+    partitionElement = u_cfElement(c_iterTakeFirst(iter));
+
+    while(partitionElement){
+        iter2 = u_cfElementGetChildren(partitionElement);
+        size = c_iterLength(iter2);
+
+        if(size != 0){
+            data = u_cfNode(c_iterTakeFirst(iter2));
+
+            if(u_cfNodeKind(data) == V_CFDATA){
+                found = u_cfDataStringValue(u_cfData(data), &partitionTopic);
+                if (found == TRUE) {
+                    d_nameSpaceAddElement(nameSpace, name, partitionTopic, NULL);
+                    os_free(partitionTopic);
+                }
+            }
+            u_cfNodeFree(data);
+        } else {
+            d_nameSpaceAddElement(nameSpace, name, "*.*", NULL);
+        }
+        c_iterFree(iter2);
+        u_cfElementFree(partitionElement);
+        partitionElement = u_cfElement(c_iterTakeFirst(iter));
+    }
+    c_iterFree(iter);
+}
+
 
 void
 d_configurationAttrValueLong(
@@ -1939,36 +2238,36 @@ d_configurationValueSize(
 
 void
 d_configurationValueMemAddr(
-	    d_configuration configuration,
-	    u_cfElement  element,
-	    const char * tag,
-	    void         (* const setAction)(d_configuration config, c_address addr) )
+            d_configuration configuration,
+            u_cfElement  element,
+            const char * tag,
+            void         (* const setAction)(d_configuration config, c_address addr) )
 {
-	    c_iter   iter;
-	    u_cfData data;
-	    c_bool   found;
-	    c_char *   str;
-	    c_address addr;
+            c_iter   iter;
+            u_cfData data;
+            c_bool   found;
+            c_char *   str;
+            c_address addr;
 
-	    iter = u_cfElementXPath(element, tag);
-	    data = u_cfData(c_iterTakeFirst(iter));
+            iter = u_cfElementXPath(element, tag);
+            data = u_cfData(c_iterTakeFirst(iter));
 
-	    while (data) {
-	        found = u_cfDataStringValue(data, &str);
-	        if (found == TRUE) {
-				if ( (strlen(str) > 2) &&
-					 (strncmp("0x", str, 2) == 0) ) {
-					sscanf(str, "0x" PA_ADDRFMT, &addr);
-				} else {
-					sscanf(str, PA_ADDRFMT, &addr);
-				}
-	            setAction(configuration, addr);
-	            os_free(str);
-	        }
-	        u_cfDataFree(data);
-	        data = u_cfData(c_iterTakeFirst(iter));
-	    }
-	    c_iterFree(iter);
+            while (data) {
+                found = u_cfDataStringValue(data, &str);
+                if (found == TRUE) {
+                                if ( (strlen(str) > 2) &&
+                                         (strncmp("0x", str, 2) == 0) ) {
+                                        sscanf(str, "0x" PA_ADDRFMT, &addr);
+                                } else {
+                                        sscanf(str, PA_ADDRFMT, &addr);
+                                }
+                    setAction(configuration, addr);
+                    os_free(str);
+                }
+                u_cfDataFree(data);
+                data = u_cfData(c_iterTakeFirst(iter));
+            }
+            c_iterFree(iter);
 }
 
 void
@@ -2059,60 +2358,21 @@ d_configurationInNameSpace(
     d_nameSpace ns,
     d_partition partition,
     d_topic topic,
-    d_durabilityKind kind,
     c_bool aligner)
 {
     c_bool result;
-    d_durabilityKind dkind;
-
     result = FALSE;
-    dkind = d_nameSpaceGetDurabilityKind(ns);
 
-    switch(kind){
-        case D_DURABILITY_PERSISTENT:
-            switch(dkind){
-                case D_DURABILITY_ALL:
-                case D_DURABILITY_PERSISTENT:
-                case D_DURABILITY_TRANSIENT:
-                    result = TRUE;
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case D_DURABILITY_TRANSIENT:
-            switch(dkind){
-                case D_DURABILITY_ALL:
-                case D_DURABILITY_TRANSIENT:
-                    result = TRUE;
-                    break;
-                default:
-                    break;
-            }
-            break;
-        case D_DURABILITY_ALL:
-            result = TRUE;
-            break;
-        default:
-            assert(FALSE);
-            break;
-    }
-    if(result == TRUE){
-        result = FALSE;
-
-        if(d_nameSpaceIsIn(ns, partition, topic) == TRUE){
-            if(aligner == TRUE) {
-                if(d_nameSpaceIsAligner(ns) == TRUE){
-                    result = TRUE;
-                }
-            } else {
+    if(d_nameSpaceIsIn(ns, partition, topic) == TRUE){
+        if(aligner == TRUE) {
+            if(d_nameSpaceIsAligner(ns) == TRUE){
                 result = TRUE;
             }
+        } else {
+            result = TRUE;
         }
     }
-    if(result == FALSE){
-        result = isBuiltinGroup(partition, topic);
-    }
+
     return result;
 }
 
@@ -2143,8 +2403,12 @@ d_configurationResolveMergePolicies(
                 mergeType = D_MERGE_MERGE;
             }else if (os_strcasecmp (mergeType_str, "DELETE") == 0){
                 mergeType = D_MERGE_DELETE;
+                OS_REPORT(OS_ERROR, D_CONTEXT, 0,
+                    "Replace and Delete mergepolicies are not yet supported.");
             }else if (os_strcasecmp (mergeType_str, "REPLACE") == 0){
                 mergeType = D_MERGE_REPLACE;
+                OS_REPORT(OS_ERROR, D_CONTEXT, 0,
+                    "Replace and Delete mergepolicies are not yet supported.");
             }
             os_free (mergeType_str);
         }
@@ -2175,11 +2439,13 @@ d_configurationResolvePolicies(
     u_cfElement         element;
     c_char *            durabilityKind;
     c_char *            aligner;
+    c_char *            delayedAlignment;
     c_char *            alignmentKind;
     c_char *            namespace;
     c_bool              found;
     d_policy            policy;
     c_bool              isAligner;
+    c_bool              delayAlignmentEnabled;
     d_alignmentKind     akind;
     d_durabilityKind    dkind;
     c_long              length;
@@ -2221,6 +2487,20 @@ d_configurationResolvePolicies(
             isAligner = TRUE;
         }
 
+        /* Parse aligner element */
+        found = u_cfElementAttributeStringValue(element, "delayedAlignment", &delayedAlignment);
+        if (found){
+            if (os_strcasecmp(delayedAlignment, "TRUE") == 0){
+                delayAlignmentEnabled = TRUE;
+            }else {
+                delayAlignmentEnabled = FALSE;
+            }
+            os_free(delayedAlignment);
+        }else
+        {
+            delayAlignmentEnabled = FALSE;
+        }
+
         /* Parse alignment kind element */
         found = u_cfElementAttributeStringValue(element, "alignee", &alignmentKind);
         if(found){
@@ -2251,7 +2531,7 @@ d_configurationResolvePolicies(
         }
 
         /* Create new policy */
-        policy = d_policyNew (namespace, isAligner, akind, dkind);
+        policy = d_policyNew (namespace, isAligner, akind, delayAlignmentEnabled, dkind);
         os_free(namespace);
 
         /* Resolve merge policies */
@@ -2346,6 +2626,7 @@ d_configurationResolveNameSpaces(
     c_bool      found;
     d_nameSpace ns;
     c_long length;
+    c_bool noError;
 
     /* For deprecated configuration */
     c_bool              isAligner;
@@ -2360,8 +2641,9 @@ d_configurationResolveNameSpaces(
     akind = D_ALIGNEE_INITIAL;
     dkind = D_DURABILITY_ALL;
     isAligner = TRUE;
+    noError = TRUE;
 
-    while (element) {
+    while (element && noError) {
         useDeprecated =
                 useDeprecated || resolveNameSpaceDeprecated (
                                             element,
@@ -2374,33 +2656,45 @@ d_configurationResolveNameSpaces(
         if(!found){
             length = c_iterLength(result);
             name = os_malloc(17);
-
             os_sprintf(name, "NoName%d", length);
-
             useDeprecated = TRUE;
         }
 
         /* If deprecated, create namespace with private policy */
         if (useDeprecated){
-
-            /* Verify that new and old configurations are not mixed */
-            if (c_iterLength (config->policies)) {
-                OS_REPORT(OS_ERROR, D_CONTEXT, 0,
-                    "Durability namespace configuration uses both deprecated and new notation. See deployment manual.");
-            }else {
-                OS_REPORT(OS_WARNING, D_CONTEXT, 0,
-                    "Durability namespace configuration uses deprecated notation. See deployment manual.");
-            }
-
-            ns = d_nameSpaceNew_w_policy (config, name, isAligner, akind, dkind);
+            ns = d_nameSpaceNew_w_policy (config, name, isAligner, akind, FALSE, dkind);
         }else {
             ns = d_nameSpaceNew(config, name);
         }
-
         os_free(name);
-        d_configurationResolvePartition(ns, element, "NoName", "Partition", "*");
-        result = c_iterInsert(result, ns);
 
+        if(ns) {
+            d_configurationResolvePartition(ns, element, "NoName", "Partition", "*");
+            d_configurationResolvePartitionTopic(ns, element, "NoName", "PartitionTopic");
+            result = c_iterInsert(result, ns);
+        } else {
+            ns = d_nameSpace(c_iterTakeFirst(result));
+
+            while(ns){
+                d_nameSpaceFree(ns);
+                ns = d_nameSpace(c_iterTakeFirst(result));
+            }
+            c_iterFree(result);
+            result = NULL;
+            noError = FALSE;
+        }
+        u_cfElementFree(element);
+
+        if(noError){
+            element = (u_cfElement)c_iterTakeFirst(iter);
+        }
+    }
+    /* Not all elements may have been taken from iter and freed in previous
+     * loop. Ensuring clean-up here.
+     */
+    element = (u_cfElement)c_iterTakeFirst(iter);
+
+    while(element){
         u_cfElementFree(element);
         element = (u_cfElement)c_iterTakeFirst(iter);
     }

@@ -1,0 +1,15 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+NAME=Listener
+SUB_PARAMS=
+PUB_PARAMS=
+
+startOSPL
+
+runZero $NAME $SUB_PARAMS $PUB_PARAMS
+
+checkResultZero $SUB_RESULT $PUB_RESULT $NAME
+
+stopOSPL

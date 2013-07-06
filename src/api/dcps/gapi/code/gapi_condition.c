@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,7 +15,7 @@
 #include "u_waitset.h"
 
 #include "gapi_condition.h"
-#include "gapi_dataReader.h"
+#include "gapi_fooDataReader.h"
 #include "gapi_dataReaderView.h"
 #include "gapi_subscriber.h"
 #include "gapi_structured.h"
@@ -248,71 +248,9 @@ _ReadConditionGetTriggerValue(
 {
     _ReadCondition readcondition = _ReadCondition(condition);
 
-    return u_queryTriggerTest(readcondition->uQuery);
-}
-
-gapi_returnCode_t
-_ReadConditionInit(
-    _ReadCondition _this,
-    const gapi_sampleStateMask sample_states,
-    const gapi_viewStateMask view_states,
-    const gapi_instanceStateMask instance_states,
-    _DataReader datareader,
-    _DataReaderView datareaderview)
-{
-    gapi_returnCode_t result = GAPI_RETCODE_OK;
-    gapi_expression expr;
-    u_dataView uDataView;
-
-/** _Condition part is initialized in New() function */
-    _this->dataReader = datareader;
-    _this->dataReaderView = datareaderview;
-    _this->readerMask.sampleStateMask = 0U;
-    _this->readerMask.viewStateMask = 0U;
-    _this->readerMask.instanceStateMask = 0U;
-
-    if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-        _this->readerMask.sampleStateMask = sample_states;
-    }
-    if (view_states != GAPI_ANY_VIEW_STATE) {
-        _this->readerMask.viewStateMask = view_states;
-    }
-    if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-        _this->readerMask.instanceStateMask = instance_states;
-    }
-
-    if (datareaderview) {
-        uDataView = u_dataView(_DataReaderViewUreaderView(datareaderview));
-
-        expr = gapi_createReadExpression(u_entity(uDataView),
-                                         &_this->readerMask);
-        if (expr) {
-            _this->uQuery = gapi_expressionCreateQuery(expr,
-                                                       u_reader(uDataView),
-                                                       NULL,
-                                                       NULL);
-            gapi_expressionFree(expr);
-        }
-    } else {
-        u_reader uReader = u_reader(_DataReaderUreader(datareader));
-
-        expr = gapi_createReadExpression(u_entity(uReader),
-                                         &_this->readerMask);
-        if (expr) {
-            _this->uQuery = gapi_expressionCreateQuery(expr,
-                                                       uReader,
-                                                       NULL,
-                                                       NULL);
-            gapi_expressionFree(expr);
-        }
-    }
-    if (_this->uQuery) {
-        u_entitySetUserData(u_entity(_this->uQuery),_this);
-        _Condition(_this)->uEntity = u_entity(_this->uQuery);
-    } else {
-        result = GAPI_RETCODE_ERROR;
-    }
-    return result;
+    return u_queryTest(readcondition->uQuery,
+                       gapi_matchesReaderMask,
+                       &readcondition->readerMask);
 }
 
 void
@@ -339,15 +277,16 @@ _ReadConditionNew(
     _DataReaderView datareaderview)
 {
     _ReadCondition _this;
-    gapi_expression expr;
     u_reader      uReader;
     u_dataView    uDataView;
+    q_expr        predicate;
 
-/* The datareader and the datareaderview (should) share
- * a baseclass and therefore it is not necessary to have
- * both a datareader and a datareaderview as properties.
- * Run-time the right owner can be determined
- */
+
+    /* The datareader and the datareaderview (should) share
+     * a baseclass and therefore it is not necessary to have
+     * both a datareader and a datareaderview as properties.
+     * At run-time the right owner can be determined
+     */
     _this = _ReadConditionAlloc();
     if ( _this != NULL ) {
         if (datareaderview != NULL) {
@@ -361,46 +300,23 @@ _ReadConditionNew(
         }
         _this->dataReader = datareader;
         _this->dataReaderView = datareaderview;
-        _this->readerMask.sampleStateMask   = 0U;
-        _this->readerMask.viewStateMask     = 0U;
-        _this->readerMask.instanceStateMask = 0U;
-        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-            _this->readerMask.sampleStateMask = sample_states;
-        }
-        if (view_states != GAPI_ANY_VIEW_STATE) {
-            _this->readerMask.viewStateMask = view_states;
-        }
-        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-            _this->readerMask.instanceStateMask = instance_states;
-        }
+        _this->readerMask.sampleStateMask = sample_states;
+        _this->readerMask.viewStateMask = view_states;
+        _this->readerMask.instanceStateMask = instance_states;
 
+        predicate = q_parse("1=1");
         if (datareaderview) {
             uDataView = u_dataView(_DataReaderViewUreaderView(datareaderview));
-
-            expr = gapi_createReadExpression(u_entity(uDataView),
-                                             &_this->readerMask);
-
-            if (expr != NULL) {
-                _this->uQuery = gapi_expressionCreateQuery(expr,
-                                                           u_reader(uDataView),
-                                                           NULL,
-                                                           NULL);
-                gapi_expressionFree(expr);
+            if ( predicate != NULL ) {
+                _this->uQuery = u_queryNew(u_reader(uDataView), NULL, predicate, NULL);
             }
         } else {
             uReader = u_reader(_DataReaderUreader(datareader));
-
-            expr = gapi_createReadExpression(u_entity(uReader),
-                                             &_this->readerMask);
-
-            if (expr != NULL) {
-                _this->uQuery = gapi_expressionCreateQuery(expr,
-                                                           uReader,
-                                                           NULL,
-                                                           NULL);
-                gapi_expressionFree(expr);
+            if ( predicate != NULL ) {
+                _this->uQuery = u_queryNew(uReader, NULL, predicate, NULL);
             }
         }
+        q_dispose(predicate);
         if (_this->uQuery != NULL) {
             u_entitySetUserData(u_entity(_this->uQuery),_this);
             _Condition(_this)->uEntity = u_entity(_this->uQuery);
@@ -570,18 +486,9 @@ _QueryConditionNew(
         }
         _this->_parent.dataReader = datareader;
         _this->_parent.dataReaderView = datareaderview;
-        _this->_parent.readerMask.sampleStateMask = 0U;
-        _this->_parent.readerMask.viewStateMask = 0U;
-        _this->_parent.readerMask.instanceStateMask = 0U;
-        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-            _this->_parent.readerMask.sampleStateMask = sample_states;
-        }
-        if (view_states != GAPI_ANY_VIEW_STATE) {
-            _this->_parent.readerMask.viewStateMask = view_states;
-        }
-        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-            _this->_parent.readerMask.instanceStateMask = instance_states;
-        }
+        _this->_parent.readerMask.sampleStateMask = sample_states;
+        _this->_parent.readerMask.viewStateMask = view_states;
+        _this->_parent.readerMask.instanceStateMask = instance_states;
         _this->query_expression = gapi_string_dup(query_expression);
         _this->query_parameters = gapi_stringSeq_dup(query_parameters);
 
@@ -589,7 +496,6 @@ _QueryConditionNew(
 
         _this->expression =
             gapi_createQueryExpression(u_entity(uReader),
-                                       &_this->_parent.readerMask,
                                        _this->query_expression);
         if (_this->expression) {
             if (datareaderview) {
@@ -737,12 +643,22 @@ _StatusConditionGetTriggerValue(
 {
     _StatusCondition statuscondition = _StatusCondition(_this);
     gapi_statusMask currentStatus;
-    gapi_entity entity;
     gapi_boolean result = FALSE;
 
-    entity = (gapi_entity)_EntityHandle(_this->entity);
-    currentStatus = gapi_entity_get_status_changes(entity) &
-                    statuscondition->enabledStatusMask;
+    /* We are accessing the entity 'status' attribute here, but we do not lock
+    * the entity. This is safe as we do have the condition locked at this point.
+    * and the entity can not be gone as long as the condition is locked.
+    * the 'status' attribute of the entity is just a statusMask and even if
+    * it were to already be reset it would be safe to access.
+    */
+    if(_this->entity)
+    {
+        currentStatus = _StatusGetCurrentStatus(_this->entity->status) &
+                 statuscondition->enabledStatusMask;
+    } else
+    {
+        currentStatus = GAPI_STATUS_KIND_NULL;
+    }
     if (currentStatus) {
         result = TRUE;
     }

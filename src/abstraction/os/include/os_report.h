@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef OS_REPORT_H
@@ -32,49 +32,118 @@ extern "C" {
  */
 #define OS_REPORT_NL "\n              "
 
+/*
+Note - in the below the check of reportType against os_reportVerbosity is also present
+in os_report. By duplicating it we avoid putting the call onto the stack and evaluating
+args if not necessary.
+*/
 #define OS_REPORT(type,context,code,description) \
-    os_report(type,context,__FILE__,__LINE__,code,description)
+    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description)
 
 #define OS_REPORT_1(type,context,code,description,a1) \
-    os_report(type,context,__FILE__,__LINE__,code,description,a1)
+    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1)
 
 #define OS_REPORT_2(type,context,code,description,a1,a2) \
-    os_report(type,context,__FILE__,__LINE__,code,description,a1,a2)
+    if (type >= os_reportVerbosity)  os_report(type,context,__FILE__,__LINE__,code,description,a1,a2)
 
 #define OS_REPORT_3(type,context,code,description,a1,a2,a3) \
-    os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3)
+    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3)
 
 #define OS_REPORT_4(type,context,code,description,a1,a2,a3,a4) \
-    os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4)
+    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4)
 
 #define OS_REPORT_5(type,context,code,description,a1,a2,a3,a4,a5) \
-    os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5)
+    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5)
 
 #define OS_REPORT_6(type,context,code,description,a1,a2,a3,a4,a5,a6) \
-    os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6)
+    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6)
 
 #define OS_REPORT_7(type,context,code,description,a1,a2,a3,a4,a5,a6,a7) \
-    os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6,a7)
+    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6,a7)
 
 #define OS_REPORT_8(type,context,code,description,a1,a2,a3,a4,a5,a6,a7,a8) \
-    os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6,a7,a8)
+    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6,a7,a8)
 
 #define OS_REPORT_9(type,context,code,description,a1,a2,a3,a4,a5,a6,a7,a8,a9) \
-    os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6,a7,a8,a9)
+    if (type >= os_reportVerbosity) os_report(type,context,__FILE__,__LINE__,code,description,a1,a2,a3,a4,a5,a6,a7,a8,a9)
 
 typedef void * os_IReportService_s;
 
 typedef void * os_reportPlugin;
 
+/**
+ * 'Base' of all ::os_report event data structures.
+ * It's anticipated that the contents might be added to so it's desirable
+ * to do something to enable various version compatibility
+ */
+struct os_reportEventBase_s
+{
+    /** The version of the data struct in use */
+    os_uint32 version;
+};
+/**
+ * Generic ::os_report event data pointer
+ */
+typedef struct os_reportEventBase_s* os_reportEvent;
+
+/**
+* These types are an ordered series of incremental 'importance' (to the user)
+* levels.
+* @see os_reportVerbosity
+*/
 typedef enum os_reportType {
+    OS_DEBUG,
     OS_INFO,
     OS_WARNING,
+    OS_API_INFO,
     OS_ERROR,
     OS_CRITICAL,
     OS_FATAL,
     OS_REPAIRED,
-    OS_API_INFO
+    OS_NONE
 } os_reportType;
+
+/**
+ * The information that is made available to a plugged in logger
+ * via its TypedReport symbol.
+ */
+struct os_reportEventV1_s
+{
+    /** The version of this struct i.e. 1. */
+    os_uint32 version;
+    /** The type / level of this report.
+     * @see os_reportType */
+    os_reportType reportType;
+    /** Context information relating to where the even was generated.
+     * May contain a function or compnent name or a stacktrace */
+    const char* reportContext;
+    /** The source file name where the report even was generated */
+    const char* fileName;
+    /** The source file line number where the report was generated */
+    os_int32 lineNo;
+    /** An integer code associated with the event. */
+    os_int32 code;
+    /** A description of the reported event */
+    const char *description;
+    /** A string identifying the thread the event occured in */
+    const char* threadDesc;
+    /** A string identifying the process the event occured in */
+    const char* processDesc;
+};
+
+#define OS_REPORT_EVENT_V1 1
+
+/**
+ * Pointer to an os_reportEventV1_s struct.
+ * @see os_reportEventV1_s
+ */
+typedef struct os_reportEventV1_s* os_reportEventV1;
+
+/**
+* Labels corresponding to os_reportType values.
+* @see os_reportType
+*/
+OS_API extern const char *os_reportTypeText [];
 
 typedef struct os_reportInfo_s {
     char *reportContext;
@@ -83,6 +152,14 @@ typedef struct os_reportInfo_s {
     os_int32 reportCode;
     char *description;
 } os_reportInfo;
+
+/* Docced in impl file */
+OS_API extern os_reportType os_reportVerbosity;
+
+OS_API void
+os_reportInit(os_boolean forceReInit);
+
+OS_API void os_reportExit();
 
 OS_API void
 os_report(
@@ -153,7 +230,43 @@ os_reportRegisterPlugin(
     const char *initialize_method_name,
     const char *argument,
     const char *report_method_name,
+    const char *typedreport_method_name,
     const char *finalize_method_name,
+    os_boolean suppressDefaultLogs,
+    os_reportPlugin *plugin);
+
+typedef void *os_reportPlugin_context;
+
+typedef int
+(*os_reportPlugin_initialize)(
+    const char *argument,
+    os_reportPlugin_context *context);
+
+typedef int
+(*os_reportPlugin_report)(
+    os_reportPlugin_context context,
+    const char *report);
+
+/**
+ * Function pointer type for a plugged in report method
+ * taking a typed report event
+ */
+typedef int
+(*os_reportPlugin_typedreport)(
+    os_reportPlugin_context context,
+    os_reportEvent report);
+
+typedef int
+(*os_reportPlugin_finalize)(
+    os_reportPlugin_context context);
+
+OS_API os_int32
+os_reportInitPlugin(
+    const char *argument,
+    os_reportPlugin_initialize initFunction,
+    os_reportPlugin_finalize finalizeFunction,
+    os_reportPlugin_report reportFunction,
+    os_reportPlugin_typedreport typedReportFunction,
     os_boolean suppressDefaultLogs,
     os_reportPlugin *plugin);
 
@@ -164,6 +277,23 @@ os_reportUnregisterPlugin(
 OS_API void
 os_reportDisplayLogLocations();
 
+/* docced in implementation file */
+OS_API char*
+os_reportErrnoToString(int errNo);
+
+OS_API char *
+os_reportGetInfoFileName(void);
+
+OS_API char *
+os_reportGetErrorFileName(void);
+
+OS_API os_result
+os_reportSetVerbosity(
+    const char* newVerbosityString);
+
+OS_API void
+os_reportSetDoAppend(
+    os_boolean shouldAppend);
 
 
 

@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<OpenSplice>
+  <Domain>
+    <Name>TestDomain_dds2342</Name>
+    <Database>
+      <Size>10485760</Size>
+    </Database>
+    <Lease>
+      <ExpiryTime update_factor="0.05">60.0</ExpiryTime>
+    </Lease>
+    <Service enabled="true" name="durability">
+        <Command>${OSPL_DEXEC}</Command>
+    </Service>
+    <Service enabled="true" name="networking">
+        <Command>${OSPL_NWEXEC}</Command>
+    </Service>
+  </Domain>
+  <NetworkService name="networking">
+    <Partitioning>
+      <GlobalPartition Address="broadcast"/>
+    </Partitioning>
+    <Channels>
+      <Channel default="true" enabled="true" name="BestEffort" reliable="false">
+        <PortNr>${OSPL_BESTEFFORT_PORT}</PortNr>
+      </Channel>
+      <Channel enabled="true" name="Reliable" reliable="true">
+        <PortNr>${OSPL_RELIABLE_PORT}</PortNr>
+      </Channel>
+    </Channels>
+    <Discovery enabled="true">
+      <PortNr>${OSPL_DISCOVERY_PORT}</PortNr>
+    </Discovery>
+  </NetworkService>
+  <DurabilityService name="durability">
+    <Network>
+      <InitialDiscoveryPeriod>2.0</InitialDiscoveryPeriod>
+      <Alignment>
+        <TimeAlignment>FALSE</TimeAlignment>
+        <RequestCombinePeriod>
+          <Initial>2.5</Initial>
+          <Operational>0.1</Operational>
+        </RequestCombinePeriod>
+      </Alignment>
+      <WaitForAttachment maxWaitCount="10">
+        <ServiceName>networking</ServiceName>
+      </WaitForAttachment>
+    </Network>
+    <NameSpaces>
+      <NameSpace name="defaultNamespace">
+        <Partition>*</Partition>
+      </NameSpace>
+      <Policy alignee="Initial" aligner="True" durability="Transient" nameSpace="defaultNamespace" delayedAlignment="true"/>
+    </NameSpaces>
+    <Tracing>
+      <OutputFile>${OSPL_DURABILITY_TRACE}</OutputFile>
+      <Verbosity>FINEST</Verbosity>
+      <Timestamps>true</Timestamps>
+    </Tracing>
+    <Persistent>
+      <StoreDirectory>${OSPL_PSTORE}</StoreDirectory>
+    </Persistent>
+  </DurabilityService>
+</OpenSplice>

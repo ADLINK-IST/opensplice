@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -42,6 +42,7 @@ alwaysFalse(
 {
     v_group *groupFound = (v_group *)arg;
 
+    OS_UNUSED_ARG(requested);
     assert(groupFound != NULL);
     assert(*groupFound == NULL); /* out param */
 
@@ -60,7 +61,6 @@ v_groupSetCreate(
     v_group group, found;
     C_STRUCT(v_event) event;
     v_kernel kernel;
-    c_bool groupExists;
     C_STRUCT(v_group) dummyGroup;
 
     assert(set != NULL);
@@ -75,7 +75,7 @@ v_groupSetCreate(
     memset(&dummyGroup, 0, sizeof(dummyGroup));
     dummyGroup.partition = partition;
     dummyGroup.topic = topic;
-    groupExists = FALSE;
+
     /* Note: the following call does not execute the actual remove because
      *       the alwaysFalse function returns FALSE */
     found = NULL;
@@ -151,7 +151,7 @@ v_groupSetSelect(
     if (q == NULL) {
         list = NULL;
     } else {
-        list = c_select(q,0);
+        list = ospl_c_select(q,0);
     }
     c_lockUnlock(&set->lock);
     assert(q != NULL);
@@ -235,7 +235,7 @@ v_groupSetLookup(
     if (q == NULL) {
         list = NULL;
     } else {
-        list = c_select(q,0);
+        list = ospl_c_select(q,0);
     }
     c_lockUnlock(&set->lock);
     assert(q != NULL);

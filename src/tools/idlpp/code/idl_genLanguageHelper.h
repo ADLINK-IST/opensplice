@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -47,5 +47,8 @@ c_char *idl_languageId(const char *identifier);
 c_char *idl_scopeStackLanguage(idl_scope scope, const char *name);
 c_char *idl_corbaLanguageTypeFromTypeSpec(idl_typeSpec typeSpec);
 c_char *idl_genLanguageConstGetter(void);
+
+void idl_setIsISOCpp(os_boolean itIs);
+os_boolean idl_getIsISOCpp();
 
 #endif /* IDL_GENLANGUAGEHELPER_H */

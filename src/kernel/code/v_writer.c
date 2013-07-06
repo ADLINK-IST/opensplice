@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -42,7 +42,7 @@
 #include "v_writerInstance.h"
 #include "v_writerSample.h"
 #include "v_writerCache.h"
-#include "v_groupInstance.h"
+#include "v__groupInstance.h"
 #include "v_event.h"
 #include "v_qos.h"
 #include "v_policy.h"
@@ -51,16 +51,13 @@
 #include "v_writerStatistics.h"
 #include "v_message.h"
 
-#define _EXTENT_
-#ifdef _EXTENT_
-#include "c_extent.h"
-#endif
-
 #include "c_iterator.h"
 #include "c_stringSupport.h"
 
 #include "os_report.h"
 #include "os.h"
+
+#include "stdio.h"
 
 #define _INTRANSIT_DECAY_COUNT_ (3)
 
@@ -76,6 +73,7 @@ static const char* v_writeResultStr[] = {
     "PRE_NOT_MET",
     "ERROR",
     "TIMEOUT",
+    "OUT_OF_RESOURCES",
     "REJECTED",
     "COUNT"};
 
@@ -97,6 +95,12 @@ deadlineUpdate(
     instance->deadlineCount = 0;
 }
 
+/* Boolean expression yielding true if writer is synchronous. Abstracts away
+ * from the implementation detail that w is synchronous is it has a delivery-
+ * guard. This can be changed to an expression evaluating the qos of the writer
+ * instead. */
+#define v_writerIsSynchronous(w) (w->deliveryGuard)
+
 static void
 v_writerGroupSetInit (
     struct v_writerGroupSet *set)
@@ -104,24 +108,28 @@ v_writerGroupSetInit (
     set->firstGroup = NULL;
 }
 
+/* TODO: generate new-writer event */
+
 static v_writerGroup
 v_writerGroupSetAdd (
-    struct v_writerGroupSet *set,
+    v_writer w,
     v_group g)
 {
     c_type type;
     v_writerGroup proxy;
     v_kernel kernel;
+    C_STRUCT(v_event) event;
+    struct v_writerGroupSet *set;
 
+    set = &w->groupSet;
     kernel = v_objectKernel(g);
-
     type = v_kernelType(kernel,K_WRITERGROUP);
     proxy = c_new(type);
 
     if (proxy) {
         proxy->group = c_keep(g);
         proxy->next = set->firstGroup;
-	    proxy->targetCache = v_writerCacheNew(kernel, V_CACHE_CONNECTION);
+            proxy->targetCache = v_writerCacheNew(kernel, V_CACHE_CONNECTION);
         set->firstGroup = proxy;
     } else {
         OS_REPORT(OS_ERROR,
@@ -129,6 +137,18 @@ v_writerGroupSetAdd (
                   "Failed to allocate proxy.");
         assert(FALSE);
     }
+
+    /* Connect writer event
+     *
+     * This event is introduced for durability to be able to act on a writer connecting to a group, which
+     * signals that that group is being written to. For durability, this is a trigger to mark the
+     * corresponding namespace with an infinite quality, which causes potential delayed alignment actions
+     * of late-joining persistent sources to be discarded.
+     */
+    event.kind = V_EVENT_CONNECT_WRITER;
+    event.source = v_publicHandle(v_public(w));
+    event.userData = g;
+    v_observableNotify(v_observable(kernel),&event);
 
     return c_keep(proxy);
 }
@@ -240,6 +260,21 @@ keepSample (
     }
 }
 
+/**
+ * Implements blocking of writer on resource-limits. If w is a synchronous
+ * writer, it will not block at all and just return V_WRITE_OUT_OF_RESOURCES
+ * immediately (dds2810). Otherwise, if max-blocking time is not INFINITE
+ * (!w->infWait) a wait will be done until until. In case max-blocking time is
+ * INFINITE this method will wait indefinately.
+ * @param w The writer that needs to wait
+ * @param until The time to wait maximally (only needs to be set to a valid time
+ * if w is not synchronous or max-blocking time is not INFINITE.
+ * @return the result of the wait:
+ *  - V_WRITE_OUT_OF_RESOURCES iff v_writerIsSynchronous(w)
+ *  - V_WRITE_TIMEOUT iff max-blocking time !INFINITE and a timeout occurred
+ *  - V_WRITE_SUCCESS if no timeout occurred
+ *  - V_WRITE_PRE_NOT_MET if the writer was deleted during the wait
+ */
 static v_writeResult
 doWait (
     v_writer w,
@@ -249,23 +284,30 @@ doWait (
     c_ulong flags;
     v_writeResult result;
 
-    if (w->infWait == FALSE) {
-        relTimeOut = c_timeSub(until, v_timeGet());
-        if (c_timeCompare(relTimeOut,C_TIME_ZERO) == C_GT) {
-            flags = v__observerTimedWait(v_observer(w), relTimeOut);
+    if(v_writerIsSynchronous(w)){
+        /* In case the writer is synchronous, there will be no blocking on
+         * resource limits. In this case the write will immediately return
+         * with OUT_OF_RESOURCES. See dds2810 for more details. */
+        result = V_WRITE_OUT_OF_RESOURCES;
+    } else {
+        if (w->infWait == FALSE) {
+            relTimeOut = c_timeSub(until, v_timeGet());
+            if (c_timeCompare(relTimeOut,C_TIME_ZERO) == C_GT) {
+                flags = v__observerTimedWait(v_observer(w), relTimeOut);
+            } else {
+                flags = V_EVENT_TIMEOUT;
+            }
         } else {
-            flags = V_EVENT_TIMEOUT;
+            flags = v__observerWait(v_observer(w));
         }
-    } else {
-        flags = v__observerWait(v_observer(w));
-    }
-    if (flags & V_EVENT_OBJECT_DESTROYED) {
-        result = V_WRITE_PRE_NOT_MET;
-    } else {
-        if (flags & V_EVENT_TIMEOUT) {
-            result = V_WRITE_TIMEOUT;
+        if (flags & V_EVENT_OBJECT_DESTROYED) {
+            result = V_WRITE_PRE_NOT_MET;
         } else {
-            result = V_WRITE_SUCCESS;
+            if (flags & V_EVENT_TIMEOUT) {
+                result = V_WRITE_TIMEOUT;
+            } else {
+                result = V_WRITE_SUCCESS;
+            }
         }
     }
     return result;
@@ -294,7 +336,7 @@ groupWrite(
     assert(C_TYPECHECK(proxy,v_writerGroup));
 
     instance = NULL;
-    result = v_groupWrite(proxy->group, message, &instance, V_NETWORKID_LOCAL);
+    result = v_groupWrite(proxy->group, message, &instance, V_NETWORKID_LOCAL, &a->resendScope);
     if (instance != NULL) {
         item = v_writerCacheItemNew(proxy->targetCache,instance);
         v_writerCacheInsert(proxy->targetCache,item);
@@ -306,10 +348,7 @@ groupWrite(
         if ((result == V_WRITE_REJECTED) ||
             (a->result == V_WRITE_SUCCESS)) {
             a->result = result;
-            /* Force resend to all because v_groupWrite does not return
-             * the resend scope.
-             */
-            a->rejectScope = V_RESEND_ALL;
+            a->rejectScope = a->resendScope;
         }
     }
 
@@ -324,15 +363,17 @@ groupInstanceWrite (
     v_writeResult result;
     v_writerCacheItem item;
     struct groupWriteArg *a = (struct groupWriteArg *)arg;
+    c_voidp instancePtr;
 
     item = v_writerCacheItem(node);
-	if (item->instance) {
-        result = v_groupInstanceWrite(item->instance,v_message(a->message));
+        if (item->instance) {
+            instancePtr = &(item->instance);
+        result = v_groupInstanceWrite(item->instance,instancePtr,v_message(a->message), &a->resendScope);
         if (result != V_WRITE_SUCCESS) {
             if ((result == V_WRITE_REJECTED) ||
                 (a->result == V_WRITE_SUCCESS)) {
                 a->result = result;
-                a->rejectScope = V_RESEND_ALL;
+                a->rejectScope = a->resendScope;
             }
         }
     }
@@ -348,15 +389,19 @@ groupInstanceResend (
     v_writerCacheItem item;
     v_resendScope scope;
     struct groupWriteArg *a = (struct groupWriteArg *)arg;
+    c_voidp instancePtr;
 
     item = v_writerCacheItem(node);
 
-	if (item->instance) {
+        if (item->instance) {
         scope = a->resendScope;
+        instancePtr = &(item->instance);
         result = v_groupInstanceResend(item->instance,
+                                       instancePtr,
                                        v_message(a->message),
                                        &scope);
         a->rejectScope |= scope;
+
         if (result != V_WRITE_SUCCESS) {
             if ((result == V_WRITE_REJECTED) ||
                 (a->result == V_WRITE_SUCCESS)) {
@@ -404,7 +449,7 @@ connectInstance(
     grouparg.message = message;
     grouparg.instance = i;
     grouparg.result = V_WRITE_SUCCESS;
-    grouparg.resendScope = V_RESEND_ALL;
+    grouparg.resendScope = V_RESEND_NONE;
     groupWrite(proxy, &grouparg);
 
     c_free(message);
@@ -428,6 +473,7 @@ writeGroupInstance(
     c_bool result;
     v_writeResult wr;
     v_groupInstance instance;
+    v_resendScope resendScope = V_RESEND_NONE;
 
     instance = v_groupInstance(item->instance);
     if (instance) {
@@ -435,13 +481,15 @@ writeGroupInstance(
             /* I will never get a rejected status, since datareaders don't
              * need to store the message.
              * I can get an INTRANSIT status, in case of an unreliable network.
-             * Again we accep the fact that we will temporarily exceed resource
+             * Again we accept the fact that we will temporarily exceed resource
              * limits.
              */
             wr = v_groupWrite(instance->group,
                               a->message,
                               &instance,
-                              V_NETWORKID_ANY);
+                              V_NETWORKID_ANY,
+                              &resendScope);
+            assert(wr < V_WRITE_COUNT); /* TODO: remove variable or check it properly. */
             result = FALSE;
         } else {
             result = TRUE;
@@ -581,7 +629,7 @@ writerResend(
         grouparg.message = message;
         grouparg.instance = instance;
         grouparg.result = V_WRITE_SUCCESS;
-        grouparg.resendScope = V_RESEND_ALL;
+        grouparg.resendScope = V_RESEND_NONE;
         grouparg.rejectScope = 0;
 
         if (implicit) {
@@ -621,7 +669,7 @@ writerWrite(
     grouparg.message = message;
     grouparg.instance = instance;
     grouparg.result = V_WRITE_SUCCESS;
-    grouparg.resendScope = V_RESEND_ALL;
+    grouparg.resendScope = V_RESEND_NONE;
     grouparg.rejectScope = 0;
 
     if (v_publisherIsSuspended(v_publisher(writer->publisher))) {
@@ -783,9 +831,30 @@ assertLiveliness (
     if (w->alive == FALSE) {
         kernel = v_objectKernel(w);
         w->alive = TRUE;
-        builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
-        v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
-        c_free(builtinMsg);
+        if (kernel->builtin && kernel->builtin->kernelQos->builtin.enabled) {
+            builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+            v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+            c_free(builtinMsg);
+        }
+    }
+}
+
+static void
+updateTransactionInformation(
+     v_writer w,
+     v_message message)
+{
+    /* If the operation is part of a coherent set of changes we need to keep
+     * track of this message, in case it ends up being the last message sent
+     * within the transaction.  In that case, it is cloned and resent in
+     * v_writerCoherentEnd with the transaction information set
+     */
+
+    if (w->transactionId != 0) {
+        if (w->transactionsLastMessage != NULL) {
+            c_free (w->transactionsLastMessage);
+        }
+        w->transactionsLastMessage = c_keep (message);
     }
 }
 
@@ -801,6 +870,8 @@ writerDispose(
     v_writerQos qos;
     c_time until,now;
     c_bool implicit = FALSE;
+
+    until = C_TIME_ZERO;
 
     assert(C_TYPECHECK(w,v_writer));
     assert(C_TYPECHECK(message,v_message));
@@ -840,7 +911,9 @@ writerDispose(
            (w->count >= qos->resource.max_samples)) {
         result = doWait(w,until);
         if (result != V_WRITE_SUCCESS) {
-            if(result == V_WRITE_TIMEOUT) {
+            if(result == V_WRITE_TIMEOUT || result == V_WRITE_OUT_OF_RESOURCES) {
+                /* Both results are a case of (immediate) timeout, so are counted
+                 * in this statistic. */
                 v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
             }
             return result;
@@ -859,7 +932,7 @@ writerDispose(
             if ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
                    (c_count(w->instances) > qos->resource.max_instances) &&
                    (result == V_WRITE_SUCCESS)) {
-                result = V_WRITE_TIMEOUT;
+                result = v_writerIsSynchronous(w) ? V_WRITE_OUT_OF_RESOURCES : V_WRITE_TIMEOUT;
             }
             if (result == V_WRITE_SUCCESS) {
                 v_publicInit(v_public(instance));
@@ -906,11 +979,17 @@ writerDispose(
         message->sequenceNumber = w->sequenceNumber++;
         deadlineUpdate(w, instance);
         v_stateSet(instance->state, L_DISPOSED);
+
+        /* Now that all attributes of the message are populated, store the
+         * message if required for operating as part of a transaction */
+        updateTransactionInformation(w, message);
+
         result = writerWrite(instance,message,implicit);
         UPDATE_WRITER_STATISTICS(w, instance, oldState);
     } else if(result == V_WRITE_TIMEOUT){
         v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
     }
+
     return result;
 }
 
@@ -932,6 +1011,7 @@ writerUnregister(
     assert(C_TYPECHECK(message,v_message));
     assert(message != NULL);
 
+    until = C_TIME_ZERO;
     result = V_WRITE_SUCCESS;
 
     v_statisticsULongValueInc(v_writer, numberOfUnregisters, w);
@@ -1045,7 +1125,7 @@ writerUnregister(
             if (sample) {
                 v_writerSampleResend(sample,V_RESEND_ALL);
                 keepSample(w,instance,sample);
-                v_writerInstanceUnregister(instance);
+                c_free(sample);
                 UPDATE_WRITER_STATISTICS(w, instance, oldState);
             }
         }
@@ -1054,38 +1134,13 @@ writerUnregister(
     return result;
 }
 
-static void
-unregisterAllInstances(
-    v_writer w)
-{
-    c_time time;
-    c_iter instanceList;
-    v_writerInstance instance;
-    v_message message;
-
-    assert(C_TYPECHECK(w, v_writer));
-
-    time = v_timeGet();
-
-    instanceList = c_select(w->instances, 0);
-    instance = v_writerInstance(c_iterTakeFirst(instanceList));
-    while (instance != NULL) {
-        message = v_writerInstanceCreateMessage(instance);
-        writerUnregister(w, message, time, instance);
-        c_free(message);
-
-        c_free(instance);
-        instance = v_writerInstance(c_iterTakeFirst(instanceList));
-    }
-    c_iterFree(instanceList);
-}
-
 void
 v_writerAssertByPublisher(
     v_writer w)
 {
     v_kernel kernel;
     v_message builtinMsg;
+    c_bool writeBuiltinSample = FALSE;
 
     assert(w != NULL);
     assert(C_TYPECHECK(w,v_writer));
@@ -1095,15 +1150,18 @@ v_writerAssertByPublisher(
         kernel = v_objectKernel(w);
         if (w->alive == FALSE) {
             w->alive = TRUE;
-            builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin, w);
-        } else {
-            builtinMsg = NULL;
+            if (kernel->builtin && kernel->builtin->kernelQos->builtin.enabled) {
+                writeBuiltinSample = TRUE;
+            }
         }
         v_observerUnlock(v_observer(w));
 
         v_leaseRenew(w->livelinessLease, &(w->qos->liveliness.lease_duration));
-        v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
-        c_free(builtinMsg);
+        if (writeBuiltinSample) {
+            builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin, w);
+            v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+            c_free(builtinMsg);
+        }
     }
 }
 
@@ -1122,7 +1180,7 @@ publish(
     kernel = v_objectKernel(w);
     g = v_groupSetCreate(kernel->groupSet,d,w->topic);
 
-    proxy = v_writerGroupSetAdd(&w->groupSet,g);
+    proxy = v_writerGroupSetAdd(writer,g);
     c_tableWalk(w->instances, connectInstance, proxy);
     c_free(proxy);
 }
@@ -1391,13 +1449,11 @@ v_writerInit(
     os_free(keyExpr);
     sampleType = createWriterSampleType(topic);
     writer->messageField = c_metaResolveProperty(sampleType,"message");
-#ifdef _EXTENT_
-#define _COUNT_ (32)
-    writer->instanceExtent = c_extentNew(instanceType,_COUNT_);
-    writer->sampleExtent   = c_extentNew(sampleType,_COUNT_);
-#endif
+    writer->instanceType = c_keep (instanceType);
+    writer->sampleType   = c_keep (sampleType);
     c_free(instanceType);
     c_free(sampleType);
+    writer->transactionsLastMessage = NULL;
 
     participant = v_participant(p->participant);
     assert(participant != NULL);
@@ -1480,7 +1536,7 @@ v_writerEnable(
         assert(writer->publisher != NULL);
         participant = v_participant(v_publisher(writer->publisher)->participant);
         assert(participant != NULL);
-        
+
         /* Register with the lease manager for periodic resending
          * This has to be done for all kinds of reliability because
          * dispose-messages always have to be sent reliably */
@@ -1539,10 +1595,12 @@ v_writerEnable(
         }
 
         initMsgQos(writer);
-        builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin, writer);
+        if (kernel->builtin && kernel->builtin->kernelQos->builtin.enabled) {
+            builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin, writer);
+            v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+            c_free(builtinMsg);
+        }
         v_observerUnlock(v_observer(writer));
-        v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
-        c_free(builtinMsg);
     }
     return result;
 }
@@ -1604,11 +1662,10 @@ v_writerFree(
         v_deliveryGuardFree(w->deliveryGuard);
         w->deliveryGuard = NULL;
     }
-
     v_leaseManagerDeregister(kernel->livelinessLM, w->livelinessLease);
 
     if (p != NULL) {
-        v_participantResendManagerRemoveWriter(v_participant(p->participant), w);
+        v_participantResendManagerRemoveWriterBlocking(v_participant(p->participant), w);
         v_publisherRemoveWriter(p,w);
     } else {
         OS_REPORT(OS_ERROR,"v_writerFree",0,
@@ -1668,8 +1725,7 @@ v_writerPublishGroup(
 
     if (group->topic == writer->topic) {
         v_observerLock(v_observer(writer));
-
-        proxy = v_writerGroupSetAdd(&writer->groupSet,group);
+        proxy = v_writerGroupSetAdd(writer,group);
         c_tableWalk(writer->instances, connectInstance, proxy);
         c_free(proxy);
 
@@ -1788,9 +1844,11 @@ v_writerNotifyChangedQos(
         c_iterWalk(arg->removedPartitions, unpublish, w);
     }
     kernel = v_objectKernel(w);
-    builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
-    v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
-    c_free(builtinMsg);
+    if (kernel->builtin && kernel->builtin->kernelQos->builtin.enabled) {
+        builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+        v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+        c_free(builtinMsg);
+    }
     v_observerUnlock(v_observer(w));
 }
 
@@ -1812,15 +1870,16 @@ v_writerSetQos(
     result = v_writerQosSet(w->qos, qos, v_entity(w)->enabled, &cm);
     if ((result == V_RESULT_OK) && (cm != 0)) {
         initMsgQos(w);
-        builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
         if (cm & V_POLICY_BIT_DEADLINE) {
-            v_deadLineInstanceListSetDuration(w->deadlineList,
-                                              w->qos->deadline.period);
+            v_deadLineInstanceListSetDuration(w->deadlineList, w->qos->deadline.period);
         }
         v_writerGroupSetWalk(&w->groupSet, reconnectToGroup, (c_voidp)w);
+        if (kernel->builtin && kernel->builtin->kernelQos->builtin.enabled) {
+            builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+            v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+            c_free(builtinMsg);
+        }
         v_observerUnlock(v_observer(w));
-        v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
-        c_free(builtinMsg);
     } else {
         v_observerUnlock(v_observer(w));
     }
@@ -1851,14 +1910,16 @@ v_writerNotifyLivelinessLost(
     }
     w->alive = FALSE;
     kernel = v_objectKernel(w);
-    builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
 
     v_observerUnlock(v_observer(w));
     /* suspend liveliness check */
     v_leaseRenew(w->livelinessLease, &(duration));
 
-    v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
-    c_free(builtinMsg);
+    if (kernel->builtin && kernel->builtin->kernelQos->builtin.enabled) {
+        builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+        v_writeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+        c_free(builtinMsg);
+    }
 }
 
 /**************************************************************
@@ -1904,11 +1965,6 @@ v_writerRegister(
     message->writerGID = v_publicGid(v_public(w));
     message->writerInstanceGID = v_publicGid(NULL);
     message->transactionId = w->transactionId;
-#if 0
-    if (w->transactionId != 0) {
-        w->transactionCount++;
-    }
-#endif
     qos = w->qos;
     if (!w->infWait) {
         until = c_timeAdd(now, qos->reliability.max_blocking_time);
@@ -1943,7 +1999,7 @@ v_writerRegister(
         if ((w->qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
                (c_tableCount(w->instances) > w->qos->resource.max_instances) &&
                (result == V_WRITE_SUCCESS)) {
-            result = V_WRITE_TIMEOUT;
+            result = v_writerIsSynchronous(w) ? V_WRITE_OUT_OF_RESOURCES : V_WRITE_TIMEOUT;
         }
         if (result == V_WRITE_SUCCESS) {
             v_publicInit(v_public(instance));
@@ -1969,6 +2025,10 @@ v_writerRegister(
     }
     v_observerUnlock(v_observer(w));
 
+    /* Rewrite internal return code which is for use only in the kernel */
+    if ( result == V_WRITE_REJECTED ) {
+       result = V_WRITE_SUCCESS;
+    }
     return result;
 }
 
@@ -2007,13 +2067,17 @@ v_writerUnregister(
     assert(message != NULL);
 
     v_observerLock(v_observer(w));
-    message->transactionId = w->transactionId;
-    if (w->transactionId != 0) {
-        w->transactionCount++;
+    if (w->transactionId == 0) {
+        result = writerUnregister(w, message, timestamp, instance);
+    } else {
+        result = V_WRITE_PRE_NOT_MET;
     }
-    result = writerUnregister(w, message, timestamp, instance);
     v_observerUnlock(v_observer(w));
 
+    /* Rewrite internal return code which is for use only in the kernel */
+    if ( result == V_WRITE_REJECTED ) {
+       result = V_WRITE_SUCCESS;
+    }
     return result;
 }
 
@@ -2033,6 +2097,8 @@ v_writerWrite(
     enum v_livelinessKind livKind;
     C_STRUCT(v_event) event;
     v_deliveryWaitList waitlist;
+
+    until = C_TIME_ZERO;
 
     assert(C_TYPECHECK(w,v_writer));
     assert(C_TYPECHECK(message,v_message));
@@ -2079,7 +2145,9 @@ v_writerWrite(
         }
         result = doWait(w,until);
         if (result != V_WRITE_SUCCESS) {
-            if(result == V_WRITE_TIMEOUT){
+            if(result == V_WRITE_TIMEOUT || result == V_WRITE_OUT_OF_RESOURCES) {
+                /* Both results are a case of (immediate) timeout, so are counted
+                 * in this statistic. */
                 v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
             }
             v_observerUnlock(v_observer(w));
@@ -2100,7 +2168,7 @@ v_writerWrite(
             if ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
                 (c_tableCount(w->instances) > qos->resource.max_instances) &&
                 (result == V_WRITE_SUCCESS)) {
-                result = V_WRITE_TIMEOUT;
+                result = v_writerIsSynchronous(w) ? V_WRITE_OUT_OF_RESOURCES : V_WRITE_TIMEOUT;
             }
             if (result == V_WRITE_SUCCESS) {
                 v_publicInit(v_public(instance));
@@ -2149,13 +2217,18 @@ v_writerWrite(
         v_state oldState = instance->state;
         message->writerInstanceGID = v_publicGid(v_public(instance));
         message->sequenceNumber = w->sequenceNumber++;
-        if (w->deliveryGuard != NULL) {
+        if (v_writerIsSynchronous(w)) {
             /* Collect all currently known connected synchronous DataReaders */
             waitlist = v_deliveryWaitListNew(w->deliveryGuard,message);
             if (waitlist) {
                 v_stateSet(v_nodeState(message),L_SYNCHRONOUS);
             }
         }
+
+        /* Now that all attributes of the message are populated, store the
+         * message if required for operating as part of a transaction */
+        updateTransactionInformation(w, message);
+
         result = writerWrite(instance,message,implicit);
 #if 0
         if (result == V_WRITE_SUCCESS) {
@@ -2197,6 +2270,10 @@ v_writerWrite(
         v_deliveryWaitListFree(waitlist);
     }
 
+    /* Rewrite internal return code which is for use only in the kernel */
+    if ( result == V_WRITE_REJECTED ) {
+       result = V_WRITE_SUCCESS;
+    }
     return result;
 }
 
@@ -2218,7 +2295,7 @@ v_writerDispose(
     waitlist = NULL;
     v_observerLock(v_observer(_this));
 
-    if (_this->deliveryGuard != NULL) {
+    if (v_writerIsSynchronous(_this)) {
         waitlist = v_deliveryWaitListNew(_this->deliveryGuard,message);
     }
     result = writerDispose(_this,message,timestamp,instance);
@@ -2239,6 +2316,10 @@ v_writerDispose(
         v_deliveryWaitListFree(waitlist);
     }
 
+    /* Rewrite internal return code which is for use only in the kernel */
+    if ( result == V_WRITE_REJECTED ) {
+       result = V_WRITE_SUCCESS;
+    }
     return result;
 }
 
@@ -2261,6 +2342,8 @@ v_writerWriteDispose(
     assert(C_TYPECHECK(w,v_writer));
     assert(C_TYPECHECK(message,v_message));
     assert(message != NULL);
+
+    until = C_TIME_ZERO;
 
     v_observerLock(v_observer(w));
     v_statisticsULongValueInc(v_writer, numberOfWrites, w);
@@ -2312,7 +2395,7 @@ v_writerWriteDispose(
             if ((qos->resource.max_instances != V_LENGTH_UNLIMITED) &&
                    (c_tableCount(w->instances) > qos->resource.max_instances) &&
                    (result == V_WRITE_SUCCESS)) {
-                result = V_WRITE_TIMEOUT;
+                result = v_writerIsSynchronous(w) ? V_WRITE_OUT_OF_RESOURCES : V_WRITE_TIMEOUT;
             }
             if (result == V_WRITE_SUCCESS) {
                 v_publicInit(v_public(instance));
@@ -2360,9 +2443,14 @@ v_writerWriteDispose(
         message->sequenceNumber = w->sequenceNumber++;
         deadlineUpdate(w, instance);
         v_stateSet(instance->state, L_DISPOSED);
-        if (w->deliveryGuard != NULL) {
+        if (v_writerIsSynchronous(w)) {
             waitlist = v_deliveryWaitListNew(w->deliveryGuard,message);
         }
+
+        /* Now that all attributes of the message are populated, store the
+         * message if required for operating as part of a transaction */
+        updateTransactionInformation(w, message);
+
         result = writerWrite(instance,message,implicit);
         if (result == V_WRITE_SUCCESS) {
             v_deliveryWaitListFree(waitlist);
@@ -2394,6 +2482,10 @@ v_writerWriteDispose(
         v_deliveryWaitListFree(waitlist);
     }
 
+    /* Rewrite internal return code which is for use only in the kernel */
+    if ( result == V_WRITE_REJECTED ) {
+       result = V_WRITE_SUCCESS;
+    }
     return result;
 }
 
@@ -2435,8 +2527,8 @@ v_writerUnPublish(
 
 v_result
 v_writerWaitForAcknowledgments(
-	v_writer w,
-	v_duration timeout)
+        v_writer w,
+        v_duration timeout)
 {
     v_result result;
     c_time curTime, endTime, waitTime;
@@ -2538,7 +2630,7 @@ resendInstance(
                                       groupInstanceResend,
                                       &grouparg);
                     } else {
-                        grouparg.resendScope = V_RESEND_ALL;
+                        grouparg.resendScope = V_RESEND_NONE;
                         v_writerCacheWalk(instance->targetCache,
                                       groupInstanceWrite,
                                       &grouparg);
@@ -2597,14 +2689,6 @@ v_writerResend(
 
     v_observerLock(v_observer(writer));
 
-    if (v_writerPublisher(writer) == NULL) {
-        /* The DataWriter is being deleted.
-         * apparently this resend thread hasn't noticed it.
-         * skip operation.
-         */
-        v_observerUnlock(v_observer(writer));
-        return;
-    }
     c_tableWalk(writer->resendInstances,(c_action)resendInstance,&emptyList);
     length = c_iterLength(emptyList);
     while ((instance = c_iterTakeFirst(emptyList)) != NULL) {
@@ -2811,9 +2895,9 @@ v_writerCheckDeadlineMissed(
             }
             /* do not use deadlineUpdate(w, instance);
              * since it will also reset instance->deadlineCount
-	         v_deadLineInstanceListUpdate(w->deadlineList,
+                 v_deadLineInstanceListUpdate(w->deadlineList,
                                             v_instance(instance));
-	         */
+                 */
         }
         /* do not use deadlineUpdate(w, instance);
          * since it will also reset instance->deadlineCount */
@@ -3005,37 +3089,71 @@ v_writerCoherentEnd (
     v_writer _this)
 {
     v_message message;
-    v_writerInstance instance;
+    v_writerInstance instance, dummy;
     v_result result;
+    v_writeResult wResult;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_writer));
 
     v_observerLock(v_observer(_this));
 
+    /* This function does not instantiate a message from scratch but instead
+     * creates a clone of the last message sent.  This is so that the act
+     * of completing a transaction actually (re)sends the last message.
+     * The reader will then replace the previously sent message with this one,
+     * indicating that the transaction is complete. See OSPL-1013.
+     */
+
     if (_this->transactionId != 0) {
-        /* Here write special modified message to publish coherent set size. */
-        /* Create a register message, so the instance pipeline is constructed! */
-        instance = c_read(_this->instances);
-        message = v_writerInstanceCreateMessage(instance);
-        if (message) {
-            v_nodeState(message) = L_TRANSACTION;
-            message->writeTime = v_timeGet();
-            message->writerGID = v_publicGid(v_public(_this));
-            message->sequenceNumber = _this->transactionCount;
-            message->writerInstanceGID = v_publicGid(v_public(instance));
-            message->qos = c_keep(_this->relQos);
-            message->transactionId = _this->transactionId;
-            writerWrite(instance,message,FALSE);
-            result = V_RESULT_OK;
-        } else {
-            OS_REPORT(OS_ERROR,
-                      "v_writerCoherentEnd", 0,
-                      "Could not allocate resources for end transaction message");
-            result = V_RESULT_PRECONDITION_NOT_MET;
+        if (_this->transactionsLastMessage) {
+            dummy = v_writerInstanceNew(_this, _this->transactionsLastMessage);
+            instance = c_find(_this->instances, dummy);
+            c_free(dummy);
+            assert(instance);
+
+            c_cloneIn(v_topicMessageType(_this->topic), _this->transactionsLastMessage, (c_voidp*)&(message));
+            c_free (_this->transactionsLastMessage);
+            _this->transactionsLastMessage = NULL;
+            if (message) {
+                v_stateSet(v_nodeState(message), L_TRANSACTION);
+                /* This message needs to describe the number of transactions delivered so far:
+                 * The design for OSPL-1013 states that the current transactionId (32-bits)
+                 * should also be used for storing the number of messages belonging to the
+                 * transaction. In order not to limit the number of messages that can
+                 * belong to a transaction too much, we propose that 24 bits are used
+                 * for the number of transaction messages, and 8 bits for the unique
+                 * transaction's id. (Note that the id is always evaluated in combination
+                 * with the writer's GID, so 256 unique id's seems to be enough). That
+                 * means that we propose to shift the number of transaction messages 8
+                 * bits to the left and then add the transaction's unique id, which is
+                 * always increased by one with a modulo of 256.
+                 */
+                message->transactionId = V_MESSAGE_SET_TRANSACTION_ID(_this->transactionId,_this->transactionCount);
+                message->sequenceNumber = _this->sequenceNumber++;
+                wResult = writerWrite(instance,message,FALSE);
+                if (wResult == V_WRITE_SUCCESS || wResult == V_WRITE_REJECTED) {
+                  result = V_RESULT_OK;
+                } else {
+                  OS_REPORT_1(OS_ERROR,
+                              "v_writerCoherentEnd", 0,
+                              "Received unexpected writeResult from writerWrite(): %d", wResult);
+                  result = V_RESULT_PRECONDITION_NOT_MET;
+                }
+                c_free (message);
+                result = V_RESULT_OK;
+            } else {
+                OS_REPORT(OS_ERROR,
+                          "v_writerCoherentEnd", 0,
+                          "Could not allocate resources for end transaction message");
+                result = V_RESULT_PRECONDITION_NOT_MET;
+            }
+            c_free(instance);
         }
+        /* Even if the transactionsLastMessage is NULL (indicating that no samples
+         * were sent during the transaction), the transaction should still be ended
+         * so set transactionId to 0 */
         _this->transactionId = 0;
-        c_free(instance);
     } else {
         result = V_RESULT_PRECONDITION_NOT_MET;
     }

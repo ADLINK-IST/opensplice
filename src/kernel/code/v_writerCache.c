@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -19,13 +19,11 @@ v_writerCacheNew (
     v_kernel kernel,
     v_cacheKind kind)
 {
-    c_base base;
     c_type type;
     v_cache cache;
 
     assert(C_TYPECHECK(kernel,v_kernel));
 
-    base = c_getBase(kernel);
     type = c_keep(v_kernelType(kernel,K_WRITERCACHEITEM));
     cache = v_cacheNew(kernel, type,kind);
     c_free(type);

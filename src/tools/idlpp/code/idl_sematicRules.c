@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -10,33 +10,33 @@
  *
  */
 /*
-//  * 1	Introduction
+//  * 1 Introduction
 //  *
-//  *      This document analyses the semantic checks required for the SPLICE-DDS IDL pre-processor on the IDL input.
+//  *      This document analyses the semantic checks required for the OpenSpliceDDS IDL pre-processor on the IDL input.
 //  *      The analysis is based upon OMG Spec "The Common Object Request Broker: Archtecture and Specification", V2.3.1.
 //  *      Semantic rules are identified by a [] enclosed number.
 //  *
-//  * 2	Generic
+//  * 2 Generic
 //  *
-//  *      [1]	OMG IDL file must have "idl" extension. (3-3 3.1)
+//  *      [1]  OMG IDL file must have "idl" extension. (3-3 3.1)
 //  *               function: Will not be checked
 //  *
-//  *      [2]	OMG IDL uses ASCII charset. (3-3 3.1)
+//  *      [2]  OMG IDL uses ASCII charset. (3-3 3.1)
 //  *               function: Will not be checked
 //  *
-//  *      [3]	OMG IDL identifiers consist of an arbitrary long sequence of ASCII alphabetic, digit and underscore
+//  *      [3]  OMG IDL identifiers consist of an arbitrary long sequence of ASCII alphabetic, digit and underscore
 //  *           characters. (3-6 3.2.3)
 //  *               function: Is checked by the scanner
 //  *
-//  *      [4]	OMG IDL identifiers must start with an ASCII alphabetic character. (3-6 3.2.3)
+//  *      [4]  OMG IDL identifiers must start with an ASCII alphabetic character. (3-6 3.2.3)
 //  *               function: Is checked by the scanner
 //  *
-//  *      [5]	Uppercase and lowercase characters are treated as the same letter, but OMG IDL identifiers that only
+//  *      [5]  Uppercase and lowercase characters are treated as the same letter, but OMG IDL identifiers that only
 //  *           differ in case collide. Identifiers for a given definition must be spelled identically with respect
 //  *           to the case. (3-6 3.2.3)
 //  *               funtion: idl_checkReferencedIdentifier
 //  *
-//  *      [6]	An identifier may be used only once within a namespace. There is only one namespace for each
+//  *      [6]  An identifier may be used only once within a namespace. There is only one namespace for each
 //  *           identifier in each scope. (3-6 3.2.3)
 //  *           A type name may be redefined in a nested scope. (3-50 3.15.3)
 //  *               function: idl_checkModuleDefinition
@@ -47,122 +47,122 @@
 //  *               function: idl_checkExceptionDefinition
 //  *               function: idl_checkOperationDefinition
 //  *
-//  * 3	Constant Declaration
+//  * 3 Constant Declaration
 //  *
-//  *      [7]	The <scoped_name> in the <const_type> production must be a previously defined name of an <integer_type>,
+//  *      [7]  The <scoped_name> in the <const_type> production must be a previously defined name of an <integer_type>,
 //  *           <char_type>, <wide_char_type>, <boolean_type>, <floating_pt_type>, <string_type>, <wide_string_type>,
 //  *           <octet_type>, or <enum_type> constant. (3-29 3.9.2)
 //  *               function: checked by the parser
 //  *
-//  *      [8]	An infix operator can combine two integers, floats or fixeds, but not mixtures of these. (3-29 3.9.2)
+//  *      [8]  An infix operator can combine two integers, floats or fixeds, but not mixtures of these. (3-29 3.9.2)
 //  *               function: idl_checkBinaryExpression
 //  *
-//  *      [9]	Infix operators are applicable only to integer, float and fixed types. (3-29 3.9.2)
+//  *      [9]  Infix operators are applicable only to integer, float and fixed types. (3-29 3.9.2)
 //  *               function: idl_checkBinaryExpression
 //  *
-//  *      [10]	It is an error if a sub-expression of an integer or float constant declaration exceeds the precision
+//  *      [10] It is an error if a sub-expression of an integer or float constant declaration exceeds the precision
 //  *           of the target type. (3-29 3.9.2)
 //  *               function: idl_checkBinaryExpression
 //  *
-//  *      [11]	Unary '+' and '-' and binary '*', '/', '+' and '-' are applicable in floating-point and fixed-point
+//  *      [11] Unary '+' and '-' and binary '*', '/', '+' and '-' are applicable in floating-point and fixed-point
 //  *           expressions. (3-30 3.9.2)
 //  *               function: idl_checkUnaryExpression
 //  *
-//  *      [12]	Unary '+', '-' and '~' and binary '*', '/', '%', '+', '-', '<<', '>>', '&', '|' and '^' operations
+//  *      [12] Unary '+', '-' and '~' and binary '*', '/', '%', '+', '-', '<<', '>>', '&', '|' and '^' operations
 //  *           are applicable in integer expressions. (3-30 3.9.2)
 //  *               function: idl_checkUnaryExpression
 //  *               function: idl_checkBinaryExpression
 //  *
-//  *      [13]	The right hand operand value of the ">>" and "<<" binary operator must be in the range 0..63. (3-31 3.9.2)
+//  *      [13] The right hand operand value of the ">>" and "<<" binary operator must be in the range 0..63. (3-31 3.9.2)
 //  *               function: idl_checkBinaryExpression
 //  *
-//  *      [14]	<positive_int_const> must evaluate to a positive integer constant.  (3-31 3.9.2)
+//  *      [14] <positive_int_const> must evaluate to a positive integer constant.  (3-31 3.9.2)
 //  *               function: idl_checkConstantDeclaration
 //  *
-//  *      [15]	Values for an octet constant outside the range 0..255 shall cause a compile-time error. (3-31 3.9.2)
+//  *      [15] Values for an octet constant outside the range 0..255 shall cause a compile-time error. (3-31 3.9.2)
 //  *               function: idl_checkConstantDeclaration
 //  *
-//  *      [16]	The constant name for the right hand side of an enumerated constant definition must denote one of the
+//  *      [16] The constant name for the right hand side of an enumerated constant definition must denote one of the
 //  *           enumerators defined for the enumerated type of the constant. (3-31 3.9.2)
 //  *               function: idl_checkConstantDeclaration
 //  *
-//  *      [17]	The char data type can take an 8 bit quantity (0-255). (3-34 3.10.1.3)
+//  *      [17] The char data type can take an 8 bit quantity (0-255). (3-34 3.10.1.3)
 //  *               function: idl_checkConstantDeclaration
 //  *
-//  *      [18]	The boolean data type can take one of the values "TRUE" and "FALSE". (3-34 3.10.1.5)
+//  *      [18] The boolean data type can take one of the values "TRUE" and "FALSE". (3-34 3.10.1.5)
 //  *               function: idl_checkConstantDeclaration
 //  *
-//  * 4	Type Declaration
+//  * 4 Type Declaration
 //  *
-//  *      [19]	The <scoped_name> in <simple_type_spec> must be a previously defined type. (3-31 3.10)
+//  *      [19] The <scoped_name> in <simple_type_spec> must be a previously defined type. (3-31 3.10)
 //  *               funtion: Checked by the parser
 //  *
 //  * 4.1 Constructed Type
 //  *
-//  *      [20]	The only recursion allowed is via the use of the sequence template type. (3-35 3.10.2)
+//  *      [20] The only recursion allowed is via the use of the sequence template type. (3-35 3.10.2)
 //  *
 //  * 4.2 Structures
 //  *
-//  *      [21]	Structure member declarators in a particular structure must be unique. (3-35 3.10.2.1)
+//  *      [21] Structure member declarators in a particular structure must be unique. (3-35 3.10.2.1)
 //  *               function: idl_checkStructDeclaratorDefinition
 //  *
 //  * 4.3 Discriminated Unions
 //  *
-//  *      [22]	The <const_exp> in a <case_label> must be consistent with the <switch_type_spec>. (3-36 3.10.2.2)
+//  *      [22] The <const_exp> in a <case_label> must be consistent with the <switch_type_spec>. (3-36 3.10.2.2)
 //  *               function: idl_checkConstantOperand
 //  *
-//  *      [23]	A default case can appear at most once. (3-36 3.10.2.2)
+//  *      [23] A default case can appear at most once. (3-36 3.10.2.2)
 //  *               function: idl_checkUnionCaseDefinition
 //  *
-//  *      [24]	The <scoped_name> in the <switch_type_spec> must be a previously defined integer, char, boolean
+//  *      [24] The <scoped_name> in the <switch_type_spec> must be a previously defined integer, char, boolean
 //  *           or enum type. (3-36 3.10.2.2)
 //  *               function: idl_checkUnionCaseDefinition
 //  *
-//  *      [25]	Case labels must match or be automatically castable to the defined type of the discriminator
+//  *      [25] Case labels must match or be automatically castable to the defined type of the discriminator
 //  *           (see table 3-12). (3-36 3.10.2.2)
 //  *               function: idl_checkConstantOperand
 //  *
-//  *      [26]	Element declarators in a particular union must be unique. (3-37 3.10.2.2)
+//  *      [26] Element declarators in a particular union must be unique. (3-37 3.10.2.2)
 //  *               function: idl_checkUnionDeclaratorDefinition
 //  *
-//  *      [27]	If the <switch_type_spec> is an <enum_type>, the identifier for the enumeration is in the scope of
+//  *      [27] If the <switch_type_spec> is an <enum_type>, the identifier for the enumeration is in the scope of
 //  *           the union; as a result, it must be distinct from the element declarators (3-37 3.10.2.2).
 //  *               function: idl_checkUnionDeclaratorDefinition
 //  *
-//  *      [28]	It is illegal to specify a union with the default case label if the set of case labels completely
+//  *      [28] It is illegal to specify a union with the default case label if the set of case labels completely
 //  *           covers the possible values for the discriminant. (IDL to Java Language Mapping Specification 1-21 1.9)
 //  *               function: idl_checkUnionDeclaratorDefinition
 //  *
 //  * 4.4 Enumerations
 //  *
-//  *      [29]	A maximum of 2^32 identifiers may be specified. (3-37 3.10.2.3)
+//  *      [29] A maximum of 2^32 identifiers may be specified. (3-37 3.10.2.3)
 //  *               function: idl_checkEnumerationElementCount
 //  *
 //  * 4.5 Template Types
 //  *
-//  *      [30]	Value of <positive_int_const> must evaluate to a positive integer constant. (3-38 3.10.3.1)
+//  *      [30] Value of <positive_int_const> must evaluate to a positive integer constant. (3-38 3.10.3.1)
 //  *               function: idl_checkIntegerPositive
 //  *
-//  *      [31]	Value of <positive_int_const> must evaluate to a positive integer constant. (3-38 3.10.3.2)
+//  *      [31] Value of <positive_int_const> must evaluate to a positive integer constant. (3-38 3.10.3.2)
 //  *               function: idl_checkIntegerPositive
 //  *
-//  *      [32]	Value of <positive_int_const> must evaluate to a positive integer constant. (3-39 3.10.3.3)
+//  *      [32] Value of <positive_int_const> must evaluate to a positive integer constant. (3-39 3.10.3.3)
 //  *               function: idl_checkIntegerPositive
 //  *
 //  * 4.6 Complex Declarator
 //  *
-//  *      [33]	Value of <positive_int_const> must evaluate to a positive integer constant. (3-39 3.10.4.1)
+//  *      [33] Value of <positive_int_const> must evaluate to a positive integer constant. (3-39 3.10.4.1)
 //  *               function: idl_checkIntegerPositive
 //  *
-//  * 5	Keylist
+//  * 5 Keylist
 //  *
 //  *      The following syntax is assumed: #pragma keylist <scoped_name> <member_declarator>*
 //  *
-//  *      [34]	The <scoped_name> must be the name a previously defined type of which the actual type is a
+//  *      [34] The <scoped_name> must be the name a previously defined type of which the actual type is a
 //  *           structure type or an union type.
 //  *               function: idl_checkKeyListTypeName
 //  *
-//  *      [35]	The <member_declarator> is the name of a member of the structure that is specified with <scoped_name>.
+//  *      [35] The <member_declarator> is the name of a member of the structure that is specified with <scoped_name>.
 //  *               function: idl_checkKeyListFieldName
 //  *
 //  *      [36] The syntax should also allow ',' as seperator for the <member_declarator>
@@ -199,7 +199,7 @@
  * Local Defines
  *************************************************************************************************/
 
-#define IDL_MAX_ERRORSIZE	512
+#define IDL_MAX_ERRORSIZE       512
 
 /*************************************************************************************************
  * Local Type Definitions
@@ -332,7 +332,7 @@ idl_checkReferencedIdentifierInScope (
     /* rule [5] */
     if (scope) {
         mo = c_metaObject(c_metaFindByName (scope, name, CQ_METAOBJECTS | CQ_CASEINSENSITIVE));
-	    if (mo) {
+            if (mo) {
             if (strcmp(mo->name, name) != 0) {
                 result++;
                 snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_Spelling], mo->name);
@@ -358,7 +358,7 @@ idl_checkNonDeclaratorDefinition(
     int result = 0;
 
     mo = c_metaObject (c_metaFindByName (scope, name, CQ_METAOBJECTS | CQ_CASEINSENSITIVE | CQ_FIXEDSCOPE));
-    if (mo) {
+    if (mo && c_isFinal(mo)) {
         if (strcmp (mo->name, name) != 0) {
             result++;
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_RedeclarationSpelling], name, mo->name);
@@ -382,26 +382,26 @@ idl_checkLiteral(
     int result = 0;
 
     switch (c_baseObject(type)->kind) {
-	case M_COLLECTION:
-	    if (c_collectionType(type)->kind == C_STRING) {
+        case M_COLLECTION:
+            if (c_collectionType(type)->kind == C_STRING) {
             /* string */
             if (value.kind != V_STRING) {
                 result++;
                 snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict], "string");
                 rf(errorBuffer);
             }
-	    } else {
+            } else {
             /* unexpected collection kind */
-	    }
-	    break;
-	case M_PRIMITIVE:
-	    switch (c_primitive(type)->kind) {
-		case P_BOOLEAN:
-		    if (value.kind != V_BOOLEAN) {
+            }
+            break;
+        case M_PRIMITIVE:
+            switch (c_primitive(type)->kind) {
+                case P_BOOLEAN:
+                    if (value.kind != V_BOOLEAN) {
                 result++;
                 snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict], "boolean");
-		        rf(errorBuffer);
-		    } else {
+                        rf(errorBuffer);
+                    } else {
                 if (value.is.Boolean > 1) {
                     /* value out of range */
                     result++;
@@ -409,39 +409,39 @@ idl_checkLiteral(
                     rf(errorBuffer);
                 }
             }
-		    break;
-		case P_CHAR:
-		    if (value.kind != V_CHAR) {
+                    break;
+                case P_CHAR:
+                    if (value.kind != V_CHAR) {
                 result++;
                 snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict], "char");
-		        rf(errorBuffer);
-		    } else {
+                        rf(errorBuffer);
+                    } else {
                 /* value check is not required */
-		    }
-		    break;
-		case P_OCTET:
-		    if (value.kind != V_LONGLONG) {
+                    }
+                    break;
+                case P_OCTET:
+                    if (value.kind != V_LONGLONG) {
                 result++;
                 snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict], "octet");
-		        rf(errorBuffer);
-		    } else {
+                        rf(errorBuffer);
+                    } else {
                 if ((value.is.LongLong < 0) || (value.is.LongLong > 255)) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
                              "not within range 0..255");
                     rf(errorBuffer);
                 }
-		    }
-		    break;
-		case P_SHORT:
-		    if (value.kind != V_LONGLONG) {
+                    }
+                    break;
+                case P_SHORT:
+                    if (value.kind != V_LONGLONG) {
                 if (value.kind != V_OCTET) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict],
                         "short");
                     rf(errorBuffer);
                 }
-		    } else {
+                    } else {
                 if (value.is.LongLong < C_MIN_SHORT(LL)) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
@@ -455,15 +455,15 @@ idl_checkLiteral(
                         rf(errorBuffer);
                     }
                 }
-		    }
-		    break;
-		case P_USHORT:
-		    if (value.kind != V_LONGLONG) {
+                    }
+                    break;
+                case P_USHORT:
+                    if (value.kind != V_LONGLONG) {
                 if (value.kind != V_OCTET) {
-			        result++;
+                                result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict],
                         "unsigned short");
-		            rf(errorBuffer);
+                            rf(errorBuffer);
                 }
             } else {
                 if (value.is.LongLong < (long long)C_MIN_USHORT(LL)) {
@@ -480,14 +480,14 @@ idl_checkLiteral(
                     }
                 }
             }
-		    break;
-		case P_LONG:
-		    if (value.kind != V_LONGLONG) {
+                    break;
+                case P_LONG:
+                    if (value.kind != V_LONGLONG) {
                 if (value.kind != V_OCTET) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict],
                              "long");
-		            rf(errorBuffer);
+                            rf(errorBuffer);
                 }
             } else {
                 if (value.is.LongLong < C_MIN_LONG(LL)) {
@@ -504,16 +504,16 @@ idl_checkLiteral(
                     }
                 }
             }
-		    break;
-		case P_ULONG:
-		    if (value.kind != V_LONGLONG) {
+                    break;
+                case P_ULONG:
+                    if (value.kind != V_LONGLONG) {
                 if (value.kind != V_OCTET) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict],
                              "unsigned long");
-		            rf(errorBuffer);
+                            rf(errorBuffer);
                 }
-		    } else {
+                    } else {
                 if (value.is.LongLong < (long long)C_MIN_ULONG(LL)) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
@@ -527,34 +527,34 @@ idl_checkLiteral(
                         rf(errorBuffer);
                     }
                 }
-		    }
-		    break;
-		case P_LONGLONG:
-		    if (value.kind != V_LONGLONG) {
+                    }
+                    break;
+                case P_LONGLONG:
+                    if (value.kind != V_LONGLONG) {
                 if (value.kind != V_OCTET) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict],
                              "long long");
-		            rf(errorBuffer);
+                            rf(errorBuffer);
                 }
-		    }
-		    break;
-		case P_ULONGLONG:
-		    if (value.kind != V_LONGLONG) {
+                    }
+                    break;
+                case P_ULONGLONG:
+                    if (value.kind != V_LONGLONG) {
                 if (value.kind != V_OCTET) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict],
                              "unsigned long long");
-		            rf(errorBuffer);
+                            rf(errorBuffer);
                 }
-		    }
-		    break;
-		case P_FLOAT:
-		    if (value.kind != V_DOUBLE) {
+                    }
+                    break;
+                case P_FLOAT:
+                    if (value.kind != V_DOUBLE) {
                 result++;
                 snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict], "float");
-		        rf(errorBuffer);
-		    } else {
+                        rf(errorBuffer);
+                    } else {
                 if (value.is.Double < -C_MAX_FLOAT) {
                     result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantRangeConflict],
@@ -577,23 +577,23 @@ idl_checkLiteral(
                         }
                     }
                 }
-		    }
-		    break;
-		case P_DOUBLE:
-		    if (value.kind != V_DOUBLE) {
+                    }
+                    break;
+                case P_DOUBLE:
+                    if (value.kind != V_DOUBLE) {
                 result++;
                 snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantTypeConflict], "double");
-		        rf(errorBuffer);
-		    }
-		    break;
-		default:
-		    /* unexpected literal kind */
-		    break;
-	    }
-	    break;
-	default:
-	    /* unexpected base object kind */
-	    break;
+                        rf(errorBuffer);
+                    }
+                    break;
+                default:
+                    /* unexpected literal kind */
+                    break;
+            }
+            break;
+        default:
+            /* unexpected base object kind */
+            break;
     }
 
     return result;
@@ -670,7 +670,7 @@ idl_checkUnaryExpression(
                 result = idl_checkLiteral(type, *aggregated, rf);
             }
         }
-	break;
+        break;
     case E_MINUS:
         if (cc != idl_Float && cc != idl_Integer) {
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_IllegalUnaryOperator], "-", "float and integer");
@@ -688,7 +688,7 @@ idl_checkUnaryExpression(
                 result = idl_checkLiteral (type, *aggregated, rf);
             }
         }
-	break;
+        break;
     case E_NOT:
         if (cc != idl_Integer) {
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_IllegalUnaryOperator], "~", "integer");
@@ -701,10 +701,10 @@ idl_checkUnaryExpression(
                 result = idl_checkLiteral (type, *aggregated, rf);
             }
         }
-	break;
+        break;
     default:
         printf ("idl_checkUnaryExpression: Illegal unary operator %d\n", kind);
-	break;
+        break;
     }
     return result;
 }
@@ -758,14 +758,14 @@ idl_checkBinaryExpression(
                             result = idl_checkLiteral (type, *aggregated, rf);
                         }
                     }
-	            } else {
+                    } else {
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_IllegalBinaryOperator], "*", "float and integer");
                     rf(errorBuffer);
                     result++;
                 }
             }
         }
-	break;
+        break;
     case E_DIV:
         if (ccl != ccr) {
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantExprConflict], "/", "float or integer");
@@ -799,7 +799,7 @@ idl_checkBinaryExpression(
                 }
             }
         }
-	break;
+        break;
     case E_PLUS:
         if (ccl != ccr) {
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantExprConflict], "+", "float or integer");
@@ -833,7 +833,7 @@ idl_checkBinaryExpression(
                 }
             }
         }
-	break;
+        break;
     case E_MINUS:
         if (ccl != ccr) {
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantExprConflict], "-", "float or integer");
@@ -867,7 +867,7 @@ idl_checkBinaryExpression(
                 }
             }
         }
-	break;
+        break;
     case E_MOD:
         if (ccl != ccr) {
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantExprConflict], "%", "integer");
@@ -896,7 +896,7 @@ idl_checkBinaryExpression(
                 }
             }
         }
-	break;
+        break;
     case E_AND:
         if (ccl != ccr) {
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantExprConflict], "&", "integer");
@@ -925,7 +925,7 @@ idl_checkBinaryExpression(
                 }
             }
         }
-	break;
+        break;
     case E_OR:
         if (ccl != ccr) {
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantExprConflict], "|", "integer");
@@ -954,7 +954,7 @@ idl_checkBinaryExpression(
                 }
             }
         }
-	break;
+        break;
     case E_XOR:
         if (ccl != ccr) {
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantExprConflict], "^", "integer");
@@ -983,7 +983,7 @@ idl_checkBinaryExpression(
                 }
             }
         }
-	break;
+        break;
     case E_SHIFTLEFT:
         if (ccl != ccr) {
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantExprConflict], "<<", "integer");
@@ -1015,7 +1015,7 @@ idl_checkBinaryExpression(
                 }
             }
         }
-	break;
+        break;
     case E_SHIFTRIGHT:
         if (ccl != ccr) {
             snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_ConstantExprConflict], ">>", "integer");
@@ -1047,10 +1047,10 @@ idl_checkBinaryExpression(
                 }
             }
         }
-	break;
+        break;
     default:
         printf("idl_checkBinaryExpression: Illegal binary operator %d\n", kind);
-	break;
+        break;
     }
 
     return result;
@@ -1114,10 +1114,10 @@ idl_checkClassFromConstant(
         switch (c_literal(operand)->value.kind) {
         case V_BOOLEAN:
             cc = idl_Boolean;
-	    break;
+            break;
         case V_OCTET:
             cc = idl_Octet;
-	    break;
+            break;
         case V_SHORT:
         case V_LONG:
         case V_LONGLONG:
@@ -1125,17 +1125,17 @@ idl_checkClassFromConstant(
         case V_ULONG:
         case V_ULONGLONG:
             cc = idl_Integer;
-	    break;
+            break;
         case V_FLOAT:
         case V_DOUBLE:
             cc = idl_Float;
-	    break;
+            break;
         case V_CHAR:
             cc = idl_Char;
-	    break;
+            break;
         case V_STRING:
             cc = idl_String;
-	    break;
+            break;
         default:
             cc = idl_Other;
         }
@@ -1249,7 +1249,6 @@ checkUnsupportedTypeUsage(
     case M_PARAMETER:
     case M_RELATION:
     case M_BASE:
-    case M_EXTENT:
     case M_COUNT:
     default:
         a->unsupported = TRUE;
@@ -1345,7 +1344,6 @@ checkUnsupportedTypeUsage(
             case M_PARAMETER:
             case M_RELATION:
             case M_BASE:
-            case M_EXTENT:
             case M_COUNT:
             default:
                 a->unsupported = TRUE;
@@ -1442,7 +1440,7 @@ idl_checkStructDeclaratorDefinition(
                 }
                 rf(errorBuffer);
                 result++;
-	       }
+               }
         }
         type = c_specifier(c_iterObject(iter, i))->type;
         if (!CQ_KIND_IN_MASK(c_metaObject(type), CQ_TYPEOBJECTS)) {
@@ -1548,28 +1546,28 @@ idl_checkUnionCaseDefinition(
         case P_BOOLEAN:
             switchTypeError = FALSE;
             rangeMax = 2ULL-1ULL;
-	    break;
+            break;
         case P_CHAR:
         case P_WCHAR:
             switchTypeError = FALSE;
             rangeMax = 256ULL-1ULL;
-	    break;
+            break;
         case P_SHORT:
         case P_USHORT:
             switchTypeError = FALSE;
             rangeMax = (2ULL^16)-1ULL;
-	    break;
+            break;
         case P_LONG:
         case P_ULONG:
             switchTypeError = FALSE;
             rangeMax = (2ULL^32)-1ULL;
-	    break;
+            break;
         case P_LONGLONG:
         case P_ULONGLONG:
             /* no action, this is OK */
             switchTypeError = FALSE;
             rangeMax = 0xffffffffffffffffLL;
-	    break;
+            break;
         default:
             /* Error */
             switchTypeError = TRUE;
@@ -1653,7 +1651,7 @@ idl_checkConstantDeclaration(
                 }
             }
         }
-	break;
+        break;
     case M_ENUMERATION:
         if (c_baseObject(operand)->kind == M_CONSTANT) {
             /* rule [16] */
@@ -1697,7 +1695,7 @@ idl_checkConstantDeclaration(
     break;
     case M_TYPEDEF:
         result = idl_checkConstantDeclaration(scope, c_typeActualType(type), constant, rf);
-	break;
+        break;
     default:
         printf ("idl_checkConstantDeclaration: Unexpected type %d\n", c_baseObject(type)->kind);
     }
@@ -1837,10 +1835,10 @@ idl_checkKeyListTypeName(
                  */
                 mo = c_metaObject(c_typeActualType(c_type(mo)));
                 if (!CQ_KIND_IN_MASK(mo, CQ_UNION | CQ_STRUCTURE)) {
-    	            result++;
+                    result++;
                     snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_IllegalKeyType]);
                     rf(errorBuffer);
-	            } else {
+                    } else {
                     arg.unsupported = FALSE;
                     arg.typeName = NULL;
                     arg.context = ut_stackNew(256);
@@ -1856,9 +1854,9 @@ idl_checkKeyListTypeName(
             }
         } else {
             result++;
-	        snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_UndeclaredIdentifier], name);
-    	    rf(errorBuffer);
-	   }
+                snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_UndeclaredIdentifier], name);
+            rf(errorBuffer);
+           }
     }
     return result;
 }
@@ -2066,7 +2064,7 @@ idl_checkConstantOperand(
                 printf ("idl_checkConstantDeclaration: Illegal string constant value type\n");
             }
         }
-	break;
+        break;
     case M_ENUMERATION:
         if (c_baseObject(operand)->kind == M_CONSTANT) {
             /* rule [16] */
@@ -2108,7 +2106,7 @@ idl_checkConstantOperand(
     break;
     case M_TYPEDEF:
         result = idl_checkConstantOperand(scope, c_typeActualType(type), operand, rf);
-	break;
+        break;
     default:
         printf("idl_checkConstantOperand: Unexpected type %d\n", c_baseObject(type)->kind);
     }

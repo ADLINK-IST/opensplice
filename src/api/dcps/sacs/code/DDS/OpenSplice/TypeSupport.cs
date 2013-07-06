@@ -19,16 +19,89 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using DDS;
 using DDS.OpenSplice.CustomMarshalers;
 
 namespace DDS.OpenSplice
 {
-    public abstract class TypeSupport : SacsSuperClass, ITypeSupport
+    /**
+     * The TypeSupportFactory is a helper class for TypeSupport, to which it can delegate
+     * the creation of typed DataWriters and DataReaders. 
+     * This functionality is split across 2 different classes to avoid cyclic dependencies:
+     * the original TypeSupport can only be deleted by the garbage collector, so gapi cannot
+     * store a normal backRef to it since that would introduce a memory leak. However, a weak
+     * backRef would allow the original TypeSupport object to be garbage collected when it is
+     * needed to insantiate a typed Reader/Writer. 
+     * By splitting it up into 2 separate classes, the original TypeSupport may be garbage 
+     * collected at any time, but the gapi may hold on to its TypeSupportFactory for as 
+     * long as it wants. 
+     * NOTE: To make the TypeSupportFactory available to gapi, the backRef pointer is not
+     * used to point to the original TypeSupport, but rather to its TypeSupportFactory.  
+     */
+    public abstract class TypeSupportFactory
+    {
+        private IntPtr handleSelf = IntPtr.Zero;
+        private DeleteEntityActionDelegate deleteEntityAction;
+       
+        public abstract DataWriter CreateDataWriter(IntPtr gapiPtr);
+
+        public abstract DataReader CreateDataReader(IntPtr gapiPtr);
+        
+        public TypeSupportFactory()
+        {
+           deleteEntityAction = DeleteEntityAction;
+        }
+        
+        internal void SetPeer(IntPtr gapiPtr)
+        {
+            GCHandleType backRefType;
+
+            backRefType = GCHandleType.Normal;
+            
+            // Get the GCHandle for the current C# object and cache the IntPtr of the GCHandle
+            // in the UserData field of its gapi pointer.
+            GCHandle tmpGCHandle = GCHandle.Alloc(this, backRefType);
+            handleSelf = GCHandle.ToIntPtr(tmpGCHandle);
+            Gapi.Entity.set_user_data(gapiPtr, handleSelf, deleteEntityAction, IntPtr.Zero);
+        }
+        
+        internal static TypeSupportFactory fromUserData(IntPtr gapiPtr)
+        {
+            TypeSupportFactory tsFactory = null;
+
+            // Check whether the gapiPtr contains a valid pointer.
+            if (gapiPtr != IntPtr.Zero)
+            {
+                // get the user data out of the gapi object
+                IntPtr managedIntPtr = Gapi.Entity.get_user_data(gapiPtr);
+
+                // Check whether the userData contains a valid pointer.
+                if (managedIntPtr != IntPtr.Zero)
+                {
+                    // If so, get the relevant C# Object.
+                    GCHandle tmpGCHandle = GCHandle.FromIntPtr(managedIntPtr);
+                    tsFactory = tmpGCHandle.Target as TypeSupportFactory;
+                }
+            }
+
+            return tsFactory;
+        }
+
+        
+        internal void DeleteEntityAction(IntPtr entityData, IntPtr arg)
+        {
+            GCHandle tmpGCHandle = GCHandle.FromIntPtr(handleSelf);
+            tmpGCHandle.Free();
+            handleSelf = IntPtr.Zero;
+        }
+    }
+    
+    public abstract class TypeSupport : ITypeSupport
     {
         public abstract string TypeName { get; }
         public abstract string KeyList { get; }
-        public abstract string Description { get; }
+        public abstract string[] Description { get; }
         public Type TypeSpec
         {
             get
@@ -37,12 +110,11 @@ namespace DDS.OpenSplice
             }
         }
 
-        public abstract DataWriter CreateDataWriter(IntPtr gapiPtr);
-
-        public abstract DataReader CreateDataReader(IntPtr gapiPtr);
-
         protected Type dataType = null;
 
+        private IntPtr gapiPeer = IntPtr.Zero;
+        public IntPtr GapiPeer { get { return gapiPeer; } }
+        
         protected delegate void DummyOperationDelegate();
         protected DummyOperationDelegate dummyOperationDelegate;
 
@@ -51,21 +123,26 @@ namespace DDS.OpenSplice
         // will pass a fake delegate, and then internally use the real copyOut, this
         // may give better performance anyways, since we won't have to convert the
         // IntPtr to a Delegate for every ReaderCopy invocation.
-        public void DummyOperation()//)IntPtr from, IntPtr to, int offset)
+        public void DummyOperation()
         { }
 
         /*
          * Constructor for a TypeSupport that uses the specified (custom) Marshaler.
          */
-        public TypeSupport(Type dataType)
+        public TypeSupport(Type dataType, TypeSupportFactory tsFactory)
         {
             this.dataType = dataType;
+            
+            System.Text.StringBuilder descriptor = new System.Text.StringBuilder();
+            foreach (string s in Description) {
+               descriptor.Append(s);
+            }
 
             this.dummyOperationDelegate = new DummyOperationDelegate(DummyOperation);
-            IntPtr ptr = Gapi.FooTypeSupport.alloc(
+            this.gapiPeer = Gapi.FooTypeSupport.alloc(
                TypeName,                    // Original IDL type name
                KeyList,
-               Description,
+               descriptor.ToString(),
                IntPtr.Zero,                 // type_load
                dummyOperationDelegate,      // copyIn: delay initialization until marshaler present
                dummyOperationDelegate,      // copyOut: delay initialization until marshaler present
@@ -75,9 +152,9 @@ namespace DDS.OpenSplice
                dummyOperationDelegate);     // reader copy: delay initialization until marshaler present
 
             // Base class handles everything.
-            if (ptr != IntPtr.Zero)
+            if (GapiPeer != IntPtr.Zero)
             {
-                SetPeer(ptr, true);
+                tsFactory.SetPeer(GapiPeer);
             }
             else
             {

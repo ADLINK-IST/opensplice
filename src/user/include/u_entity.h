@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -187,6 +187,10 @@ u_entityParticipant (
  * Entity object in a safe manner with respect to the liveliness of the
  * Kernel Entity object and calling process.
  *
+ * The action is regarded as a 'read'-action within the scope of protecting
+ * memory-resources. If the action allocates shared-memory, u_entityWriteAction
+ * should be used instead.
+ *
  * \param _this The User layer Entity object where this method operates on.
  * \param action The action method that will be executed upon the associated
  *               Kernel Entity object.
@@ -196,6 +200,33 @@ u_entityParticipant (
  */
 OS_API u_result
 u_entityAction (
+    u_entity _this,
+    void (*action)(v_entity e, c_voidp arg),
+    c_voidp arg);
+
+/**
+ * \brief The User Layer Entity Action method for actions allocating SHM.
+ *
+ * This method provides a generic access method to the associated Kernel
+ * Entity object.
+ * The given action method will be executed upon the associated Kernel
+ * Entity object in a safe manner with respect to the liveliness of the
+ * Kernel Entity object and calling process.
+ *
+ * The action is regarded as a 'write'-action within the scope of protecting
+ * memory-resources.
+ *
+ * \see u_entityAction
+ *
+ * \param _this The User layer Entity object where this method operates on.
+ * \param action The action method that will be executed upon the associated
+ *               Kernel Entity object.
+ * \param arg The argument that will be passed to the action method upon
+ *            execution.
+ * \return The execution result of the action method.
+ */
+OS_API u_result
+u_entityWriteAction (
     u_entity _this,
     void (*action)(v_entity e, c_voidp arg),
     c_voidp arg);

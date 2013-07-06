@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -79,13 +79,9 @@ c_char*
 cmx_publisherInit(
     v_publisher entity)
 {
-    char buf[512];
-    v_publisher publisher;
-    
-    publisher = v_publisher(entity);
-    os_sprintf(buf, "<kind>PUBLISHER</kind>");
-    
-    return (c_char*)(os_strdup(buf));
+    assert(C_TYPECHECK(entity, v_publisher));
+
+    return (c_char*)(os_strdup("<kind>PUBLISHER</kind>"));
 }
 
 const c_char*

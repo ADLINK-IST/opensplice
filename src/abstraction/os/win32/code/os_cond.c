@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -19,9 +19,11 @@
 
 #include "os_cond.h"
 #include "os_stdlib.h"
-#include "code/os__debug.h"
-#include "code/os__service.h"
-#include "code/os__sharedmem.h"
+#include "os_report.h"
+#include "os_init.h"
+#include "os__debug.h"
+#include "os__service.h"
+#include "os__sharedmem.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -38,7 +40,11 @@
 
 /************ PRIVATE ****************/
 static LONG
+#ifdef _WIN64
+InterlockedAndAquire(
+#else
 InterlockedAnd(
+#endif
     __inout LONG volatile *t,
     __in LONG mask)
 {
@@ -48,12 +54,17 @@ InterlockedAnd(
     do {
         i = j;
         j = InterlockedCompareExchange(t,i&mask,i);
+
     } while (i != j);
     return j;
 }
 
 static LONG
+#ifdef _WIN64
+InterlockedOrAquire(
+#else
 InterlockedOr(
+#endif
     __inout LONG volatile *t,
     __in LONG mask)
 {
@@ -174,27 +185,36 @@ condTimedWait(
 
     result = os_resultSuccess;
     if (cond->scope == OS_SCOPE_SHARED) {
-        _snprintf(name, sizeof(name), "%s%s%d%d",
+        if (_snprintf(name, sizeof(name), "%s%s%d%s",
             (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
             OS_SERVICE_SEM_NAME_PREFIX,
             cond->qId,
-            os_getShmBaseAddressFromPointer(cond));
+            os_getShmDomainKeyForPointer((void*)cond)) <= 0) {
+            OS_REPORT_1(OS_ERROR, "condTimedWait", 0,
+                "Semaphore name exceeds maximum allowed length (%d)", OS_SERVICE_ENTITY_NAME_MAX);
+            return os_resultFail;
+        }
 
         hQueue = OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, name);
         if (hQueue == NULL) {
-            OS_DEBUG_2("condTimedWait", "OpenSemaphore %s failed %d", name, (int)GetLastError());
+            OS_DEBUG_2("condTimedWait", "OpenSemaphore with name %s failed (Error: %d)", name, (int)GetLastError());
             assert(0);
             return os_resultFail;
         }
 
-        _snprintf(name, sizeof(name), "%s%s%d%d",
+        if (_snprintf(name, sizeof(name), "%s%s%d%s",
             (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
             OS_SERVICE_EVENT_NAME_PREFIX,
             mutex->id,
-            os_getShmBaseAddressFromPointer(cond));
+            os_getShmDomainKeyForPointer((void*)cond)) <= 0) {
+            OS_REPORT_1(OS_ERROR, "condTimedWait", 0,
+                "Event name exceeds maximum allowed length (%d)", OS_SERVICE_ENTITY_NAME_MAX);
+            return os_resultFail;
+        }
+
         hMtx = OpenEvent(EVENT_ALL_ACCESS, FALSE, name);
         if (hMtx == NULL) {
-            OS_DEBUG_2("condTimedWait", "OpenEvent %s failed %d", name, (int)GetLastError());
+            OS_DEBUG_2("condTimedWait", "OpenEvent with name %s failed (Error: %d)", name, (int)GetLastError());
             CloseHandle(hQueue);
             assert(0);
             return os_resultFail;
@@ -248,20 +268,25 @@ condSignal(
 
     if (cond->scope == OS_SCOPE_SHARED) {
 
-        _snprintf(name, sizeof(name), "%s%s%d%d",
+        if (_snprintf(name, sizeof(name), "%s%s%d%s",
             (os_sharedMemIsGlobal() ? OS_SERVICE_GLOBAL_NAME_PREFIX : ""),
             OS_SERVICE_SEM_NAME_PREFIX,
             cond->qId,
-            os_getShmBaseAddressFromPointer(cond));
+            os_getShmDomainKeyForPointer((void*)cond)) <= 0) {
+            OS_REPORT_1(OS_ERROR, "condSignal", 0,
+                "Semaphore name exceeds maximum allowed length (%d)", OS_SERVICE_ENTITY_NAME_MAX);
+            return os_resultFail;
+        }
 
         hQueue = OpenSemaphore(SEMAPHORE_ALL_ACCESS, FALSE, name);
         if (hQueue == NULL) {
-            OS_DEBUG_2("condSignal", "OpenSemaphore %s failed %d", name, (int)GetLastError());
+            OS_DEBUG_2("condSignal", "OpenSemaphore with name %s failed (Error: %d)", name, (int)GetLastError());
             assert(0);
             return os_resultFail;
         }
+
     } else {
-        hQueue       = (HANDLE)cond->qId;
+        hQueue = (HANDLE)cond->qId;
     }
 
     oldState = InterlockedOr(&cond->state, mask);
@@ -295,6 +320,11 @@ condSignal(
  * In case the scope attribute is \b OS_SCOPE_SHARED, the posix
  * condition variable "pshared" attribute is set to \b PTHREAD_PROCESS_SHARED
  * otherwise it is set to \b PTHREAD_PROCESS_PRIVATE.
+ *
+ * When in single process mode, a request for a SHARED variable will
+ * implictly create a PRIVATE equivalent.  This is an optimisation
+ * because there is no need for "shared" multi process variables in
+ * single process mode.
  */
 os_result
 os_condInit (
@@ -309,6 +339,12 @@ os_condInit (
 
     cond->scope = condAttr->scopeAttr;
     cond->state = 0;
+
+    /* In single process mode only "private" variables are required */
+    if (os_serviceGetSingleProcess ()) {
+        cond->scope = OS_SCOPE_PRIVATE;
+    }
+
     if (cond->scope == OS_SCOPE_SHARED) {
         result = getSem(cond);
         if (result != os_resultSuccess) {
@@ -387,7 +423,7 @@ os_condTimedWait (
     assert (mutex != NULL);
     assert (time != NULL);
 
-    wait_time = time->tv_sec * 1000 + time->tv_nsec / 1000000;
+    wait_time = (DWORD)time->tv_sec * 1000 + time->tv_nsec / 1000000;
 
     return condTimedWait(cond, mutex, wait_time);
 }

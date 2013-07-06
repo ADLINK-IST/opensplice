@@ -1,6 +1,12 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_ddskernel_incl, ospl_ddsserialization, ospl_base {
+project : ospl_ddsserialization, ospl_base {
   lit_libs += ddskernel
+}
+
+feature(src_co) {
+  includes += $(OSPL_HOME_NORMALIZED)/src/kernel/include
+  includes += $(OSPL_HOME_NORMALIZED)/src/kernel/bld/$(SPLICE_TARGET)
+  includes += $(OSPL_HOME_NORMALIZED)/src/kernel/code
 }

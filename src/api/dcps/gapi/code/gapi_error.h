@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -57,8 +57,9 @@
 #define GAPI_QOS_POLICY_ATTRIBUTE_USE_LIFESPAN_ID                           26
 #define GAPI_QOS_POLICY_ATTRIBUTE_SCHEDULING_CLASS_ID                       27
 #define GAPI_QOS_POLICY_ATTRIBUTE_SCHEDULING_PRIORITY_KIND_ID               28
-#define GAPI_QOS_POLICY_ATTRIBUTE_MAX_ID                                    29
-#define GAPI_QOS_POLICY_ATTRIBUTE_ENABLE_INVALID_SAMPLES_ID                 30
+#define GAPI_QOS_POLICY_ATTRIBUTE_ENABLE_INVALID_SAMPLES_ID                 29
+#define GAPI_QOS_POLICY_ATTRIBUTE_INVALID_SAMPLE_VISIBILITY_ID              30
+#define GAPI_QOS_POLICY_ATTRIBUTE_MAX_ID                                    31
 
 
 /* Entity methods */
@@ -333,6 +334,20 @@ gapi_context_getErrorMessage(
                     gapi_context_getQosPolicyName(policyId), \
                     gapi_context_getQosAttributeName(attributeId), \
                     gapi_context_getErrorMessage(errcode))
+
+#define gapi_errorDeprecatedQosPolicy(context,dQosId,dPolicyId,dAttributeId,qosId,policyId,attributeId) \
+        OS_REPORT_8(OS_API_INFO, ERROR_CONTEXT, \
+                    GAPI_ERRORCODE_UNDEFINED, \
+                    "%s::%s %s.%s.%s is deprecated and will be replaced by %s.%s.%s\n" \
+                    "Mixed usage of a deprecated policy and its replacement counterpart will trigger an inconsistent QoS error!", \
+                    gapi_context_getEntityName(context), \
+                    gapi_context_getMethodName(context), \
+                    gapi_context_getQosName(dQosId), \
+                    gapi_context_getQosPolicyName(dPolicyId), \
+                    gapi_context_getQosAttributeName(dAttributeId), \
+                    gapi_context_getQosName(qosId), \
+                    gapi_context_getQosPolicyName(policyId), \
+                    gapi_context_getQosAttributeName(attributeId))
 
 void
 gapi_typeParseError (

@@ -1,0 +1,8 @@
+// $Id$
+//
+// Document template variables for templates templates/wb26wrmakefile.mpd.
+// Please try to keep this alphabetically sorted.
+//
+buildspecs = List of possible build specifications
+dll_prefix = Prefix for shared/dynamic libraries
+platform_makefilevars = Platform-specific variables that should have \ to / translation done in the makefile

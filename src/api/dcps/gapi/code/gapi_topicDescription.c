@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -332,11 +332,20 @@ _TopicDescriptionGetTypeSupport (
     _TopicDescription topicDescr)
 {
     _TypeSupport typeSupport = NULL;
+    _Topic topic;
+    _DomainParticipant participant = NULL;
     
     assert(topicDescr);
 
+    if (_ObjectGetKind(_Object(topicDescr)) == OBJECT_KIND_CONTENTFILTEREDTOPIC) {
+        topic = _ContentFilteredTopicGetRelatedTopic(_ContentFilteredTopic(topicDescr));
+        participant = _EntityParticipant(_Entity(topic));
+    } else {
+        participant = _EntityParticipant(_Entity(topicDescr));
+    }
+
     typeSupport = _DomainParticipantFindType(
-                      _EntityParticipant(_Entity(topicDescr)),
+                      participant,
                       topicDescr->type_name);
     return typeSupport;
 }

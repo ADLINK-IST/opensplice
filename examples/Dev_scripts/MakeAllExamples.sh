@@ -39,14 +39,7 @@ echo "**************************************************************************
 echo "*** Building in C++ Corba/OpenFusion... **********************************************************************************"
 echo "**************************************************************************************************************************"
 
-./MakeOneExample.sh ../dcps/ContentFilteredTopic/C++/Corba/OpenFusion/Posix "../../../../../../Dev_scripts" 
-./MakeOneExample.sh ../dcps/QueryCondition/C++/Corba/OpenFusion/Posix "../../../../../../Dev_scripts"
-./MakeOneExample.sh ../dcps/Durability/C++/Corba/OpenFusion/Posix "../../../../../../Dev_scripts"
 ./MakeOneExample.sh ../dcps/HelloWorld/C++/Corba/OpenFusion/Posix "../../../../../../Dev_scripts"
-./MakeOneExample.sh ../dcps/Lifecycle/C++/Corba/OpenFusion/Posix "../../../../../../Dev_scripts"
-./MakeOneExample.sh ../dcps/Listener/C++/Corba/OpenFusion/Posix "../../../../../../Dev_scripts"
-./MakeOneExample.sh ../dcps/Ownership/C++/Corba/OpenFusion/Posix "../../../../../../Dev_scripts"
-./MakeOneExample.sh ../dcps/WaitSet/C++/Corba/OpenFusion/Posix "../../../../../../Dev_scripts"
 
 echo "**************************************************************************************************************************"
 echo "*** Building in Java... **************************************************************************************************"
@@ -67,14 +60,7 @@ echo "**************************************************************************
 echo "*** Building in Java Corba/JacORB... *************************************************************************************"
 echo "**************************************************************************************************************************"
 
-./MakeOneExample_Java.sh ../dcps/ContentFilteredTopic/Java/Corba/JacORB/Posix "../../../../../../Dev_scripts" 
-./MakeOneExample_Java.sh ../dcps/QueryCondition/Java/Corba/JacORB/Posix "../../../../../../Dev_scripts"
-./MakeOneExample_Java.sh ../dcps/Durability/Java/Corba/JacORB/Posix "../../../../../../Dev_scripts"
 ./MakeOneExample_Java.sh ../dcps/HelloWorld/Java/Corba/JacORB/Posix "../../../../../../Dev_scripts"
-./MakeOneExample_Java.sh ../dcps/Lifecycle/Java/Corba/JacORB/Posix "../../../../../../Dev_scripts"
-./MakeOneExample_Java.sh ../dcps/Listener/Java/Corba/JacORB/Posix "../../../../../../Dev_scripts"
-./MakeOneExample_Java.sh ../dcps/Ownership/Java/Corba/JacORB/Posix "../../../../../../Dev_scripts"
-./MakeOneExample_Java.sh ../dcps/WaitSet/Java/Corba/JacORB/Posix "../../../../../../Dev_scripts"
 
 echo "**************************************************************************************************************************" >> ./MakeAllExamples.log
 echo "**************************************************************************************************************************" >> ./MakeAllExamples.log

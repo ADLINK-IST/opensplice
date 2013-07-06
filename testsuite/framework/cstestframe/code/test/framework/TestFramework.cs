@@ -134,7 +134,7 @@ namespace Test.Framework
             {
                 tcWriter = new StreamWriter(tcFileName, true);
             }
-            catch (System.IO.IOException e)
+            catch (System.IO.IOException)
             {
                 //File could not be created.
                 //Sharpen.Runtime.printStackTrace(e);

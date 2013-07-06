@@ -1,4 +1,4 @@
-%{ 
+%{
 #include <os_stdlib.h>
 #include <os_heap.h>
 #include <c_typebase.h>
@@ -11,6 +11,7 @@
 #include "idl_keyDef.h"
 #include "idl_catsDef.h"
 #include "idl_stacDef.h"
+#include "idl_streamsDef.h"
 #include "idl_sematicRules.h"
 #include "idl_unsupported.h"
 #include "dds_cpp.h"
@@ -34,7 +35,7 @@
 #define yy_scan_string       idl_base_yy_scan_string
 #define yy_scan_buffer       idl_base_yy_scan_buffer
 #define yy_init_buffer       idl_base_yy_init_buffer
-#define yy_flush_buffer      idl_base_yy_flush_buffer 
+#define yy_flush_buffer      idl_base_yy_flush_buffer
 #define yy_switch_to_buffer  idl_base_yy_switch_to_buffer
 #define yy_delete_buffer     idl_base_yy_delete_buffer
 #define yy_create_buffer     idl_base_yy_create_buffer
@@ -56,6 +57,8 @@
 void *object;
 void *topLevel;
 c_metaObject scope;
+c_metaObject scopeInternal;
+c_metaObject annotationScope;
 
 #define P_OBJECT  (c_type)metaResolve(scope, "c_object")
 #define P_INTEGER (c_type)metaResolve(scope, "c_longlong")
@@ -128,7 +131,7 @@ declareUnsupportedType(
     c_metaObject scope,
     char *name,
     enum idl_unsupported_type unsupportedType);
-    
+
 static int
 checkTypeDefs(
     c_metaObject scope,
@@ -138,8 +141,13 @@ static c_metaObject
 metaResolve(
     c_metaObject scope,
     const char *name);
-    
-static c_result 
+
+static c_metaObject
+metaResolveAnnotation(
+	c_metaObject scope,
+	const char* name);
+
+static c_result
 metaFinalize(
     c_metaObject o);
 
@@ -149,7 +157,7 @@ getScopedTypeName(
     const c_type type,
     const char *separator,
     c_scopeWhen scopeWhen);
-    
+
 static c_char *
 getScopedConstName(
     const c_metaObject scope,
@@ -193,7 +201,7 @@ extern FILE *yyin;
 
 %token
     // A
-    IDLTOK_AMPER IDLTOK_ANY IDLTOK_ATTRIBUTE IDLTOK_ABSTRACT
+    IDLTOK_AMPER IDLTOK_ANY IDLTOK_ATTRIBUTE IDLTOK_ABSTRACT IDLTOK_ANNOTATION IDLTOK_AT IDLTOK_AT_POST
     // B
     IDLTOK_BOOLEAN
     // C
@@ -220,7 +228,7 @@ extern FILE *yyin;
     IDLTOK_LONG IDLTOK_LPAR IDLTOK_LRPAR IDLTOK_LEPAR
     IDLTOK_LEFT IDLTOK_LIST IDLTOK_LOCAL
     // M
-    IDLTOK_MINUS IDLTOK_MODULE IDLTOK_MULTIPLE IDLTOK_MANAGES
+    IDLTOK_MINUS IDLTOK_MODULE IDLTOK_MULTIPLE IDLTOK_MANAGES IDLTOK_MAP
     // N
     IDLTOK_NATIVE
     // O
@@ -253,16 +261,17 @@ extern FILE *yyin;
 
 %type <Object>
     /* PropertyName AttributeName */
-    ConstType TypeSpec SimpleTypeSpec BaseTypeSpec 
+    AnnAttr_noAnn
+    ConstType TypeSpec SimpleTypeSpec BaseTypeSpec ElementTypeSpec ElementTypeSpec_noAnnPost
     TemplateTypeSpec /* CollType */ ConstrTypeSpec
-    IntegerType SignedInt SignedLongLongInt SignedLongInt 
+    IntegerType SignedInt SignedLongLongInt SignedLongInt
     SignedShortInt UnsignedInt UnsignedLongLongInt
-    UnsignedLongInt UnsignedShortInt StructType UnionType
+    UnsignedLongInt UnsignedShortInt StructType UnionType UnionType_noAnn
     FloatingPtType BooleanType OctetType CharType AnyType
-    SwitchTypeSpec Case CaseLabel EnumType Enumerator SimpleDeclarator
-    SequenceType StringType ArrayDeclarator /* DomainType */ ComplexDeclarator
+    SwitchTypeSpec SwitchTypeSpec_noAnnPost SwitchTypeName Case Case_noAnnPost CaseLabel EnumType Enumerator Enumerator_noAnn SimpleDeclarator
+    SequenceType MapType StringType ArrayDeclarator /* DomainType */ ComplexDeclarator
     OpTypeSpec ParameterDcls ParamDcl
-    ImportedScope ScopedName /* ElementSpec */
+    ImportedScope ScopedName AnnotationName AnnotationScopedName /* ElementSpec */
     ConstExp OrExpr XOrExpr AndExpr ShiftExpr AddExpr MultExpr UnaryExpr
     PrimaryExpr Literal Declarator
     SL
@@ -271,16 +280,19 @@ extern FILE *yyin;
     ValueForwardDcl ValueBoxDcl ValueAbsDcl ValueHeader
 
 %type <List>
-    /* PropertyList AttributeNameList */ InheritanceSpec 
-    Declarators Member MemberList SwitchBody CaseLabelList EnumeratorList 
+    /* PropertyList AttributeNameList */ InheritanceSpec
+    Declarators Member Member_noAnnPost Member_noAnn MemberList SwitchBody CaseLabelList EnumeratorList EnumeratorList_noAnnPost
     ArraySizeList ParamDclList ScopedNameList
     OptMemberList /* TypePropertyList */
     /* OptTypePropertyList */ StringLiteralList
-    StructHeader UnionHeader
+    StructHeader StructHeader_noAnn UnionHeader
     InterfaceNameList ValueNameList
 
 %type <Mode>
     ParamAttribute
+
+%type <String>
+	ArrayIdentifier ArrayIdentifier_noAnnPost
 
 %%
 
@@ -314,6 +326,7 @@ ImportedScope: // (101)
 
 Definition: // (2)
       TypeDcl IDLTOK_SEMI
+    | TypeDcl IDLTOK_SEMI AnnApplPost
     | ConstDcl IDLTOK_SEMI
     | ExceptDcl IDLTOK_SEMI
     | Interface IDLTOK_SEMI
@@ -324,7 +337,140 @@ Definition: // (2)
     | Event IDLTOK_SEMI
     | Component IDLTOK_SEMI
     | HomeDcl IDLTOK_SEMI
+    | Annotation IDLTOK_SEMI
+    | Annotation IDLTOK_SEMI AnnApplPost
     ;
+
+Annotation:
+	  AnnDcl
+	| AnnFwdDcl
+	;
+
+AnnDcl:
+	  AnnHeader IDLTOK_LPAR AnnBody IDLTOK_RPAR
+{ scope = scope->definedIn;}
+
+AnnFwdDcl:
+	  IDLTOK_ANNOTATION IDLTOK_LOCAL IDLTOK_INTERFACE Identifier
+{
+	scope = declareMetaObject(scope,$4,M_ENUMERATION);
+}
+    | IDLTOK_ANNOTATION IDLTOK_LRPAR IDLTOK_RRPAR IDLTOK_LOCAL IDLTOK_INTERFACE Identifier
+{
+	scope = declareMetaObject(scope,$6,M_ENUMERATION);
+}
+
+
+AnnHeader:
+	  AnnFwdDcl
+	| AnnFwdDcl AnnInheritanceSpec
+	;
+
+AnnBody:
+	  AnnAttr
+	| AnnBody AnnAttr
+	;
+
+AnnInheritanceSpec:
+	  IDLTOK_COLON AnnotationName
+	;
+
+
+AnnotationScopedName: // AnnotationScopedName also looks in the ::<_ospl_internal> scope for built-in annotations
+      Identifier
+        {
+          idl_checkReferencedIdentifier(scope,$1,yyerror);
+          $$ = (void *)metaResolveAnnotation(scope,$1);
+          if ($$ == NULL) {
+            yyerror("Undefined identifier");
+            YYABORT;
+          }
+        }
+    | IDLTOK_DOUBLE_COLON Identifier
+        {
+          idl_checkReferencedIdentifier(topLevel,$2,yyerror);
+          $$ = (void *)metaResolveAnnotation(topLevel,$2);
+          if ($$ == NULL) {
+            yyerror("Undefined identifier");
+            YYABORT;
+          }
+        }
+    | ScopedName IDLTOK_DOUBLE_COLON Identifier
+        {
+          idl_checkReferencedIdentifier($1,$3,yyerror);
+          $$ = (void *)metaResolveAnnotation($1,$3);
+          if ($$ == NULL) {
+            yyerror("Undefined identifier");
+            YYABORT;
+          }
+        }
+    ;
+
+
+AnnotationName:
+	  AnnotationScopedName
+	;
+
+AnnAttr:
+	  AnnAttr_noAnnPost
+	| AnnAttr_noAnnPost AnnApplPost
+	;
+
+AnnAttr_noAnnPost:
+	  AnnAttr_noAnn
+	| AnnAppl AnnAttr_noAnn
+	;
+
+AnnAttr_noAnn:
+	  IDLTOK_ATTRIBUTE ParamTypeSpec SimpleDeclarator IDLTOK_SEMI
+{	$$ = c_metaDeclare(scope, c_declaratorName($3), M_ATTRIBUTE);}
+	| IDLTOK_ATTRIBUTE ParamTypeSpec SimpleDeclarator IDLTOK_DEFAULT ConstExp IDLTOK_SEMI
+{	$$ = c_metaDeclare(scope, c_declaratorName($3), M_ATTRIBUTE);}
+
+AnnAppl:
+	  IDLTOK_AT AnnApplDcl
+	;
+
+AnnApplPost:
+      IDLTOK_AT_POST AnnApplDcl
+	;
+
+AnnotationDclName:
+	  AnnotationName
+{
+	annotationScope = c_metaObject($1);
+}
+
+AnnApplDcl:
+	  AnnotationName
+	| AnnotationDclName IDLTOK_LRPAR IDLTOK_RRPAR {annotationScope = NULL;}
+	| AnnotationDclName IDLTOK_LRPAR AnnApplParams IDLTOK_RRPAR {annotationScope = NULL;}
+	;
+
+AnnApplParams:
+	  ConstExp
+	| AnnApplParamsList
+	;
+
+AnnApplParamsList:
+	  AnnApplParam
+	| AnnApplParamsList IDLTOK_COMMA AnnApplParam
+	;
+
+AnnApplParam:
+	  Identifier IDLTOK_EQUAL ConstExp
+{
+	c_metaObject o;
+	if(!(o = c_metaResolve(annotationScope, $1))) {
+		yyerror("Unresolved annotation parameter");
+		YYABORT;
+	}
+
+	if(o->definedIn != annotationScope) {
+		yyerror("Resolved parameter identifier not in annotation scope");
+		YYABORT;
+	}
+}
 
 HomeDcl: // (126)
       HomeHeader HomeBody
@@ -511,7 +657,7 @@ ValueBoxDcl: // (15)
 
 ValueAbsDcl: // (16)
       IDLTOK_ABSTRACT IDLTOK_VALUETYPE Identifier IDLTOK_LPAR Exports IDLTOK_RPAR
-        { $$ = declareUnsupportedType(scope, $3, IDL_UNSUP_VALUETYPE); }  
+        { $$ = declareUnsupportedType(scope, $3, IDL_UNSUP_VALUETYPE); }
     | IDLTOK_ABSTRACT IDLTOK_VALUETYPE Identifier ValueInheritanceSpec IDLTOK_LPAR Exports IDLTOK_RPAR
         { $$ = declareUnsupportedType(scope, $3, IDL_UNSUP_VALUETYPE); }
     ;
@@ -618,7 +764,7 @@ Module: // (3)
 
 ModuleHeader: // (3)
       IDLTOK_MODULE Identifier IDLTOK_LPAR
-        { 
+        {
           if (idl_checkModuleDefinition (scope, $2,yyerror)) {
             YYABORT;
           }
@@ -639,7 +785,7 @@ InterfaceDcl: // (5)
 
 InterfaceHeader: // (7)
       IDLTOK_INTERFACE Identifier
-        { 
+        {
           if (idl_checkInterfaceDefinition(scope, $2, yyerror)) {
             YYABORT;
           }
@@ -647,7 +793,7 @@ InterfaceHeader: // (7)
           idl_fileMapAssociation(idl_fileMapDefGet(), c_object(scope), file_name);
         }
     | IDLTOK_INTERFACE Identifier IDLTOK_COLON InheritanceSpec
-        { 
+        {
           if (idl_checkInterfaceDefinition(scope, $2, yyerror)) {
             YYABORT;
           }
@@ -655,7 +801,7 @@ InterfaceHeader: // (7)
           idl_fileMapAssociation(idl_fileMapDefGet(), c_object(scope), file_name);
         }
     | InterfaceAttribute IDLTOK_INTERFACE Identifier
-        { 
+        {
           if (idl_checkInterfaceDefinition(scope, $3, yyerror)) {
             YYABORT;
           }
@@ -683,7 +829,7 @@ ForwardDcl: // (6)
                                  file_name);
         }
     | InterfaceAttribute IDLTOK_INTERFACE Identifier
-	{ 
+	{
           if (idl_checkInterfaceDefinition(scope, $3, yyerror)) {
               YYABORT;
           }
@@ -726,7 +872,7 @@ InheritanceSpec: // (10) ":" is defined by caller
 
 ScopedName: // (12)
       Identifier
-        { 
+        {
           idl_checkReferencedIdentifier(scope,$1,yyerror);
           $$ = (void *)metaResolve(scope,$1);
           if ($$ == NULL) {
@@ -735,7 +881,7 @@ ScopedName: // (12)
           }
         }
     | IDLTOK_DOUBLE_COLON Identifier
-        { 
+        {
           idl_checkReferencedIdentifier(topLevel,$2,yyerror);
           $$ = (void *)metaResolve(topLevel,$2);
           if ($$ == NULL) {
@@ -744,7 +890,7 @@ ScopedName: // (12)
           }
         }
     | ScopedName IDLTOK_DOUBLE_COLON Identifier
-        { 
+        {
           idl_checkReferencedIdentifier($1,$3,yyerror);
           $$ = (void *)metaResolve($1,$3);
           if ($$ == NULL) {
@@ -756,7 +902,7 @@ ScopedName: // (12)
 
 ConstDcl: // (27)
       IDLTOK_CONST ConstType Identifier IDLTOK_EQUAL ConstExp
-        { 
+        {
           if (idl_checkConstantDefinition(scope,$3,yyerror)) {
 	        YYABORT;
           }
@@ -789,7 +935,7 @@ ConstExp: // (29)
 OrExpr: // (30)
       XOrExpr
     | OrExpr IDLTOK_VERT XOrExpr
-        { 
+        {
           $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_OR;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -802,7 +948,7 @@ OrExpr: // (30)
 XOrExpr: // (31)
       AndExpr
     | XOrExpr IDLTOK_HAT AndExpr
-        { 
+        {
           $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_XOR;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -815,7 +961,7 @@ XOrExpr: // (31)
 AndExpr: // (32)
       ShiftExpr
     | AndExpr IDLTOK_AMPER ShiftExpr
-        { 
+        {
           $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_AND;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -828,7 +974,7 @@ AndExpr: // (32)
 ShiftExpr: // (33)
       AddExpr
     | ShiftExpr IDLTOK_DOUBLE_RIGHT AddExpr
-      { 
+      {
         $$ = c_metaDefine(scope,M_EXPRESSION);
         c_expression($$)->kind = E_SHIFTRIGHT;
         c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -850,7 +996,7 @@ ShiftExpr: // (33)
 AddExpr: // (34)
       MultExpr
     | AddExpr IDLTOK_PLUS MultExpr
-      { 
+      {
         $$ = c_metaDefine(scope,M_EXPRESSION);
         c_expression($$)->kind = E_PLUS;
         c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -872,7 +1018,7 @@ AddExpr: // (34)
 MultExpr: // (35)
       UnaryExpr
     | MultExpr IDLTOK_TIMES UnaryExpr
-        { 
+        {
           $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_MUL;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -881,7 +1027,7 @@ MultExpr: // (35)
           idl_fileMapAssociation(idl_fileMapDefGet(), $$, file_name);
         }
     | MultExpr IDLTOK_SLASH UnaryExpr
-        { 
+        {
           $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_DIV;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,2);
@@ -902,7 +1048,7 @@ MultExpr: // (35)
 
 UnaryExpr: // (36)(37)
       IDLTOK_MINUS PrimaryExpr
-        { 
+        {
           $$ = c_metaDefine(scope,M_EXPRESSION);
           c_expression($$)->kind = E_MINUS;
           c_expression($$)->operands = c_arrayNew(P_OBJECT,1);
@@ -937,7 +1083,7 @@ PrimaryExpr: // (38)
 
 Literal: // (39)(40)
       IntegerLiteral
-        { 
+        {
           $$ = c_metaDefine(scope,M_LITERAL);
           c_literal($$)->value = c_longlongValue($1);
           idl_fileMapAssociation(idl_fileMapDefGet(), $$, file_name);
@@ -987,7 +1133,7 @@ Literal: // (39)(40)
 
 PositiveIntConst: // (41)
       ConstExp
-        { 
+        {
           if (idl_checkPositiveInt(scope,$1,yyerror)) {
             YYABORT;
           }
@@ -1005,7 +1151,7 @@ TypeDcl: // (42)(43)
           if (checkTypeDefs(scope,$3)) {
               YYABORT;
           }
-          typeDefs = c_bindTypes(scope,$3,$2); 
+          typeDefs = c_bindTypes(scope,$3,$2);
           declareTypeDefs(scope, typeDefs);
         }
     | StructType { }
@@ -1016,8 +1162,14 @@ TypeDcl: // (42)(43)
     ;
 
 ConstrForwardDcl: // (99)
-      IDLTOK_STRUCT Identifier { }
-    | IDLTOK_UNION Identifier  { }
+      IDLTOK_STRUCT Identifier
+      {
+      	idl_fileMapAssociation(idl_fileMapDefGet(), c_baseObject(declareMetaObject(scope, $2, M_STRUCTURE)), file_name);
+      }
+    | IDLTOK_UNION Identifier
+      {
+      	idl_fileMapAssociation(idl_fileMapDefGet(), c_baseObject(declareMetaObject(scope, $2, M_STRUCTURE)), file_name);
+      }
     ;
 
 TypeSpec: // (44)
@@ -1052,6 +1204,7 @@ BaseTypeSpec: // (46)
 
 TemplateTypeSpec: // (47)
     SequenceType
+    | MapType
     | StringType
     | WideStringType
     | FixedPtType
@@ -1189,7 +1342,7 @@ FixedPtType: // (96)
 
 StructType: // (69)
       StructHeader IDLTOK_LPAR MemberList IDLTOK_RPAR
-        { 
+        {
           if (idl_checkStructDeclaratorDefinition(scope,$3,yyerror)) {
             YYABORT;
           }
@@ -1204,7 +1357,12 @@ StructType: // (69)
         }
     ;
 
-StructHeader: // (69)
+StructHeader:
+	  StructHeader_noAnn
+	| AnnAppl StructHeader_noAnn {$$ = $2;}
+	;
+
+StructHeader_noAnn: // (69)
       IDLTOK_STRUCT Identifier
         {
           if (idl_checkTypeDefinition(scope,$2,yyerror)) {
@@ -1212,7 +1370,11 @@ StructHeader: // (69)
           }
           scope = declareMetaObject(scope,$2,M_STRUCTURE);
         }
-    ;
+    | IDLTOK_STRUCT Identifier IDLTOK_COLON ScopedName
+        {
+        	yyerror("Structure inheritance will be supported in a future version.");
+        	YYABORT;
+        }
 
 MemberList: // (70)
       Member
@@ -1220,15 +1382,35 @@ MemberList: // (70)
         { $$ = c_iterConcat($1,$2); }
     ;
 
-Member: // (71)
+Member:
+	  Member_noAnnPost
+	| Member_noAnnPost AnnApplPost
+	;
+
+Member_noAnnPost:
+	  Member_noAnn
+	| AnnAppl Member_noAnn {$$ = $2;}
+	;
+
+Member_noAnn: // (71)
       TypeSpec Declarators IDLTOK_SEMI
-        { 
-          $$ = c_bindMembers(scope,$2,$1);
-          declareMembers(scope, $$);
+        {
+        	if(c_isFinal($1)) {
+          		$$ = c_bindMembers(scope,$2,$1);
+          		declareMembers(scope, $$);
+          	}else {
+          		yyerror("Illegal use of incomplete type (see 3.11.2.3 in OMG IDL specification).");
+          		YYABORT;
+          	}
         }
     ;
 
-UnionType: // (72)
+UnionType:
+	  UnionType_noAnn
+	| AnnAppl UnionType_noAnn {$$ = $2;}
+	;
+
+UnionType_noAnn: // (72)
       UnionHeader IDLTOK_SWITCH IDLTOK_LRPAR SwitchTypeSpec IDLTOK_RRPAR IDLTOK_LPAR SwitchBody IDLTOK_RPAR
         {
           if (idl_checkUnionDeclaratorDefinition(scope,$4,$7,yyerror)) {
@@ -1248,7 +1430,7 @@ UnionType: // (72)
 
 UnionHeader: // (72)
       IDLTOK_UNION Identifier
-        { 
+        {
           if (idl_checkTypeDefinition (scope,$2,yyerror)) {
             YYABORT;
           }
@@ -1256,18 +1438,32 @@ UnionHeader: // (72)
         }
     ;
 
-SwitchTypeSpec: // (73)
+SwitchTypeName: // (73)
       IntegerType
         { c_union(scope)->switchType = $1; }
     | CharType
+        { c_union(scope)->switchType = $1; }
+    | WideCharType
         { c_union(scope)->switchType = $1; }
     | BooleanType
         { c_union(scope)->switchType = $1; }
     | EnumType
         { c_union(scope)->switchType = $1; }
+    | OctetType
+        { c_union(scope)->switchType = $1; }
     | ScopedName
         { c_union(scope)->switchType = $1; }
     ;
+
+SwitchTypeSpec_noAnnPost:
+	  SwitchTypeName
+	| AnnAppl SwitchTypeName { $$ = $2; }
+	;
+
+SwitchTypeSpec:
+	  SwitchTypeSpec_noAnnPost
+	| SwitchTypeSpec_noAnnPost AnnApplPost
+	;
 
 SwitchBody: // (74)
       Case
@@ -1280,21 +1476,26 @@ SwitchBody: // (74)
  * Case will always result a iter with the following layout:
  * - the first element is always the ElementSpec (read d_attribute)
  * - when no elements follow the first element is the default case,
- *   otherwise the remaining elements are caselabels 
+ *   otherwise the remaining elements are caselabels
  *   (read d_constant)
  */
 /*
-Case: 
+Case:
       CaseLabelList ElementSpec IDLTOK_SEMI
-        { 
+        {
           $$ = $2;
           c_unionCase($$)->labels = c_metaArray(scope,$1,M_LITERAL);
         }
     ;
 */
-Case: // (75)(77)
+Case:
+	  Case_noAnnPost
+	| Case_noAnnPost AnnApplPost
+	;
+
+Case_noAnnPost: // (75)(77)
       CaseLabelList TypeSpec Declarator IDLTOK_SEMI
-        { 
+        {
           $$ = c_unionCaseNew(scope, c_declaratorName($3), c_declaratorType($3,$2), $1);
           declareType(scope, $2);
         }
@@ -1308,10 +1509,14 @@ CaseLabelList: // (76)
     ;
 
 CaseLabel: // (76)
-      IDLTOK_CASE ConstExp IDLTOK_COLON
+      IDLTOK_CASE // Lookup expression in scope of switchType
+      		{$<Object>$ = scope; scope = c_metaObject(c_union(scope)->switchType)->definedIn;} 
+      		ConstExp
+      		{scope = $<Object>2;} 
+      		IDLTOK_COLON
         {
-          idl_checkConstantOperand (scope, c_union(scope)->switchType,c_operand($2),yyerror);
-          $$ = c_operandValue($2);
+          idl_checkConstantOperand (scope, c_union(scope)->switchType,c_operand($3),yyerror);
+          $$ = c_operandValue($3);
         }
     | IDLTOK_DEFAULT IDLTOK_COLON
         { $$ = NULL; }
@@ -1327,7 +1532,7 @@ ElementSpec:
 
 EnumType: // (78)
       IDLTOK_ENUM Identifier IDLTOK_LPAR EnumeratorList IDLTOK_RPAR
-        { 
+        {
           if (idl_checkTypeDefinition (scope,$2,yyerror)) {
             YYABORT;
           }
@@ -1338,21 +1543,38 @@ EnumType: // (78)
         }
     ;
 
-EnumeratorList: // (78)
+EnumeratorList:
+	  EnumeratorList_noAnnPost
+	| EnumeratorList_noAnnPost AnnApplPost
+	;
+
+EnumeratorList_noAnnPost: // (78)
       Enumerator
         { $$ = c_iterNew($1); }
     | Enumerator IDLTOK_COMMA EnumeratorList
-        { 
+        {
           $$ = c_iterInsert($3,$1);
+          if (idl_checkEnumerationElementCount($$,yyerror)) {
+            YYABORT;
+          }
+        }
+    | Enumerator IDLTOK_COMMA AnnApplPost EnumeratorList
+        {
+          $$ = c_iterInsert($4,$1);
           if (idl_checkEnumerationElementCount($$,yyerror)) {
             YYABORT;
           }
         }
     ;
 
-Enumerator: // (79)
+Enumerator:
+	  Enumerator_noAnn
+	| AnnAppl Enumerator_noAnn {$$ = $2;}
+	;
+
+Enumerator_noAnn: // (79)
       Identifier
-        { 
+        {
           if (idl_checkEnumerationElementDefinition (scope,$1,yyerror)) {
             YYABORT;
           }
@@ -1362,7 +1584,7 @@ Enumerator: // (79)
     ;
 
 SequenceType: // (80)
-      IDLTOK_SEQUENCE IDLTOK_LEFT SimpleTypeSpec IDLTOK_COMMA PositiveIntConst IDLTOK_RIGHT
+      IDLTOK_SEQUENCE IDLTOK_LEFT ElementTypeSpec IDLTOK_COMMA PositiveIntConst IDLTOK_RIGHT
         {
           $$ = c_metaDefine(getCollectionScope(scope,$3),M_COLLECTION);
           c_collectionType($$)->kind = C_SEQUENCE;
@@ -1373,7 +1595,7 @@ SequenceType: // (80)
           idl_fileMapAssociation(idl_fileMapDefGet(), $$, file_name);
         }
     | IDLTOK_SEQUENCE IDLTOK_LEFT SimpleTypeSpec IDLTOK_RIGHT
-        { 
+        {
           $$ = c_metaDefine(getCollectionScope(scope,$3),M_COLLECTION);
           c_collectionType($$)->kind = C_SEQUENCE;
           c_collectionType($$)->maxSize = 0;
@@ -1384,9 +1606,31 @@ SequenceType: // (80)
         }
     ;
 
+MapType:
+	  IDLTOK_MAP IDLTOK_LEFT SimpleTypeSpec IDLTOK_COMMA ElementTypeSpec IDLTOK_COMMA PositiveIntConst IDLTOK_RIGHT
+{
+	yyerror("Maptypes will be supported in a future version.");
+	YYABORT;
+}
+	| IDLTOK_MAP IDLTOK_LEFT SimpleTypeSpec IDLTOK_COMMA ElementTypeSpec IDLTOK_RIGHT
+{
+	yyerror("Maptypes will be supported in a future version.");
+	YYABORT;
+}
+
+ElementTypeSpec:
+	  ElementTypeSpec_noAnnPost
+	| ElementTypeSpec AnnApplPost
+	;
+
+ElementTypeSpec_noAnnPost:
+	  SimpleTypeSpec
+	| AnnAppl SimpleTypeSpec {$$ = $2;}
+	;
+
 StringType: // (81)
       IDLTOK_STRING IDLTOK_LEFT PositiveIntConst IDLTOK_RIGHT
-        { 
+        {
           $$ = c_metaDefine(scope,M_COLLECTION);
           c_collectionType($$)->kind = C_STRING;
           c_collectionType($$)->maxSize = (c_long)$3->value.is.LongLong;
@@ -1412,9 +1656,19 @@ FixedPtConstType: // (97)
     ;
 
 ArrayDeclarator: // (83)
-      Identifier ArraySizeList
+      ArrayIdentifier ArraySizeList
         { $$ = c_declaratorNew($1,$2); }
     ;
+
+ArrayIdentifier:
+	  ArrayIdentifier_noAnnPost
+	| ArrayIdentifier_noAnnPost AnnApplPost
+	;
+
+ArrayIdentifier_noAnnPost:
+	  Identifier
+	| AnnAppl Identifier {$$ = $2;}
+	;
 
 ArraySizeList: // (83)
       FixedArraySize
@@ -1435,15 +1689,15 @@ IDL-conformant correction to ODMG 2.0: ATTRIBUTE Type Name1, Name2, ...
 /*
 AttrDcl:
       IDLTOK_READONLY IDLTOK_ATTRIBUTE DomainType Declarators
-        { 
+        {
           c_iter attributes;
-          attributes = c_bindAttributes(scope,$4,$3,TRUE); 
+          attributes = c_bindAttributes(scope,$4,$3,TRUE);
           declareAttributes(scope, attributes);
         }
     | IDLTOK_ATTRIBUTE DomainType Declarators
         {
           c_iter attributes;
-          attributes = c_bindAttributes(scope,$3,$2,FALSE); 
+          attributes = c_bindAttributes(scope,$3,$2,FALSE);
           declareAttributes(scope, attributes);
         }
     ;
@@ -1508,7 +1762,7 @@ ExceptionList: // (111) "(" and ")" are defined by caller
 
 ExceptDcl: // (86)
       IDLTOK_EXCEPTION Identifier IDLTOK_LPAR OptMemberList IDLTOK_RPAR
-        { 
+        {
           if (idl_checkExceptionDefinition (scope, $2, yyerror)) {
             YYABORT;
           }
@@ -1528,7 +1782,7 @@ OptMemberList: // (86)
 
 OpDcl: // (87)
       OpAttribute OpTypeSpec Identifier ParameterDcls RaisesExpr ContextExpr
-//      { 
+//      {
 //        if (idl_checkOperationDefinition (scope, $3, yyerror)) {
 //          YYABORT;
 //        }
@@ -1569,7 +1823,7 @@ ParamDclList: // (90)
 
 ParamDcl: // (91)
       ParamAttribute SimpleTypeSpec Declarator
-        { 
+        {
           $$ = c_metaDefine(scope,M_PARAMETER);
           c_specifier($$)->name = $3;
           c_specifier($$)->type = $2;
@@ -1628,7 +1882,7 @@ int yywrap()
 */
 
 int
-yyerror ( char *text ) 
+yyerror ( char *text )
 {
     printf("*** DDS error in file %s: %s near the token %s (line: %d, column: %d)\n",
            file_name, text, yytext, parser_line, parser_column);
@@ -1643,6 +1897,7 @@ idl_idlinit(c_module schema)
     idl_keyDef keyDef;
     idl_catsDef catsDef;
     idl_stacDef stacDef;
+    idl_streamsDef streamsDef;
 
     topLevel = schema;
     scope = topLevel;
@@ -1654,6 +1909,8 @@ idl_idlinit(c_module schema)
     idl_catsDefDefSet(catsDef);
     stacDef = idl_stacDefNew();
     idl_stacDefDefSet(stacDef);
+    streamsDef = idl_streamsDefNew();
+    idl_streamsDefDefSet(streamsDef);
 }
 
 int
@@ -1741,7 +1998,7 @@ declareIfArray(
 
 static void
 declareMemberIfArray(
-    void *o, 
+    void *o,
     c_iterActionArg arg)
 {
     c_member member;
@@ -1752,7 +2009,7 @@ declareMemberIfArray(
 
     declareIfArray(scope, c_specifier(member)->type);
 }
-    
+
 static void
 declareMembers(
     c_metaObject scope,
@@ -1828,8 +2085,11 @@ declareMetaObject(
 
     found = c_metaObject(c_metaDeclare(scope,name,kind));
     if (found == NULL) {
-        printf("***DDS parse error %s redeclared at line: %d\n", name, parser_line);
-        exit(-1);
+    	found = c_metaResolve(scope, name);
+    	if(c_isFinal(found)) {
+        	printf("***DDS parse error %s redeclared at line: %d\n", name, parser_line);
+	        exit(-1);
+	    }
     }
     return found;
 }
@@ -1856,7 +2116,7 @@ os_nanoSleep(delay);
     }
     return o;
 }
-    
+
 
 static c_metaObject
 metaResolve(
@@ -1866,8 +2126,35 @@ metaResolve(
     c_metaObject found;
     found = c_metaResolve(scope,name);
     if (found == NULL) {
-        printf("***DDS parse error %s undefined at line: %d\n", name, parser_line);
+        printf("***DDS parse error %s undefined at line: %d (searching from scope '%s')\n", name, parser_line, scope->name);
         exit(-1);
+    }
+    return found;
+}
+
+static c_metaObject
+metaResolveAnnotation(
+	c_metaObject scope,
+	const char *name)
+{
+    c_metaObject found;
+    found = c_metaResolve(scope,name);
+    if (found == NULL) {
+        /* Lookup _ospl_internal scope */
+    	if(!scopeInternal) {
+            scopeInternal = c_metaResolve(topLevel, "_ospl_internal");
+    		if(!scopeInternal) {
+                printf("***DDS parse error ::_ospl_internal undefined at line: %d\n", parser_line);
+    			exit(-1);
+    		}
+    	}
+
+        /* Lookup object in <_ospl_internal> scope */
+    	found = c_metaResolve(scopeInternal, name);
+        if(!found) {
+            printf("***DDS parse error %s undefined at line: %d (searching from scope '%s')\n", name, parser_line, scope->name);
+	        exit(-1);
+        }
     }
     return found;
 }
@@ -1914,7 +2201,7 @@ getCollKindName(
     const c_collectionType c)
 {
     c_char *result;
-                                                                                                                            
+
 #define _CASE_(k) case k: result = os_strdup(#k); break
     switch(c->kind) {
     _CASE_(C_ARRAY);
@@ -1932,7 +2219,7 @@ getCollKindName(
     break;
     }
 #undef _CASE_
-                                                                                                                            
+
     return result;
 }
 
@@ -1946,7 +2233,7 @@ getCollAnonName(
     c_char *kind;
     c_char *subTypeName;
     c_long resultSize;
-                                                                                                                            
+
     kind = getCollKindName(c);
     subTypeName = getScopedTypeName(c_metaObject(c->subType)->definedIn, c->subType,
                                       separator, C_SCOPE_ALWAYS);
@@ -1966,7 +2253,7 @@ getCollAnonName(
             snprintf(result, (size_t)resultSize, "%s<%s>", kind, subTypeName);
         }
     }
-                                                                                                                            
+
     return result;
 }
 
@@ -1980,7 +2267,7 @@ getScopedTypeName(
     c_char *typeName, *result, *tmp;
     c_long tmpSize;
     c_metaObject scop = scope;
-                                                                                                                            
+
     typeName = c_metaName(c_metaObject(type));
     if (!typeName && (c_baseObject(type)->kind == M_COLLECTION)) {
         typeName = getCollAnonName(scope, c_collectionType(type),
@@ -2015,7 +2302,7 @@ getScopedConstName(
     c_char *name, *moduleName, *result = NULL;
     c_metaObject module;
     c_long resultSize;
-                                                                                                                            
+
     name = c_metaName(c_metaObject(c));
     if (name) {
         module = c_metaModule(c_metaObject(c));
@@ -2032,6 +2319,6 @@ getScopedConstName(
             result = os_strdup(name);
         }
     }
-                                                                                                                            
+
     return result;
 }

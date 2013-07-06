@@ -1,0 +1,24 @@
+// -*- MPC -*-
+// $Id$
+//
+// Any of these platforms can set using value_template platforms=
+// when generating solutions/projects.
+//
+//platforms = Win32 x64
+
+platforms = Win32 x64
+default_platform = Win32
+PlatformToolset = v110
+
+Win32 {
+  output_subdir    = I386
+}
+
+x64 {
+  output_subdir    = AMD64
+  cpu_defines      = _AMD64_
+  platform_defines = _WIN64
+  TargetMachine    = "0"             // We let VC++ figure it out for us.
+  link_options     = /machine:AMD64
+}
+

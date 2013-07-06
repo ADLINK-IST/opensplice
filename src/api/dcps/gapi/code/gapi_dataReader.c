@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -135,7 +135,6 @@ _DataReaderInit (
     const gapi_statusMask mask,
     const u_dataReader uReader)
 {
-    gapi_expression expr;
     c_bool noError;
 
     noError = ((_this != NULL) &&
@@ -172,19 +171,6 @@ _DataReaderInit (
         _this->reader_mask.sampleStateMask   = (c_long)0;
         _this->reader_mask.viewStateMask     = (c_long)0;
         _this->reader_mask.instanceStateMask = (c_long)0;
-
-        expr = gapi_createReadExpression(u_entity(uReader),
-                                         &_this->reader_mask);
-        noError = (expr != NULL);
-
-        if (noError) {
-            _this->uQuery = gapi_expressionCreateQuery(expr,
-                                                       u_reader(uReader),
-                                                       NULL,
-                                                       NULL);
-            gapi_expressionFree(expr);
-            noError = (_this->uQuery != NULL);
-        }
     }
     if (noError) {
         _Status status;
@@ -312,8 +298,6 @@ _DataReaderFree (
     _EntityClaim(status);
     _StatusDeinit(status);
 
-    u_queryFree(_this->uQuery);
-
     gapi_loanRegistry_free(_this->loanRegistry);
 
     /* Following the user layer reader object is deleted after the entity
@@ -341,7 +325,7 @@ _DataReaderPrepareDelete (
 
     assert(_this);
 
-    if (u_readerQueryCount(U_READER_GET(_this)) > 1) {
+    if (u_readerQueryCount(U_READER_GET(_this)) > 0) {
         gapi_errorReport(context, GAPI_ERRORCODE_CONTAINS_CONDITIONS);
         result = FALSE;
     }
@@ -533,18 +517,8 @@ gapi_dataReader_delete_contained_entities (
                     _ObjectReadClaimNotBusy(_Object(condition));
                     _ConditionFree(condition);
                 } else {
-                    if (e == u_entity(datareader->uQuery)) {
-                        datareader->uQuery = NULL;
-                        ur = u_queryFree(u_query(e));
-                        if (ur == U_RESULT_OK) {
-                            result = GAPI_RETCODE_OK;
-                        } else {
-                            result = GAPI_RETCODE_BAD_PARAMETER;
-                        }
-                    } else {
-                        assert(condition);
-                        result = GAPI_RETCODE_BAD_PARAMETER;
-                    }
+                    assert(condition);
+                    result = GAPI_RETCODE_BAD_PARAMETER;
                 }
                 e = c_iterTakeFirst(entities);
             }
@@ -1302,7 +1276,7 @@ _DataReader_get_matched_publications (
 {
     u_result uResult;
     uResult = u_readerGetMatchedPublications(
-                  U_DATAREADER_GET(_this),
+                  U_READER_GET(_this),
                   copy_matched_publication,
                   publication_handles);
     return kernelResultToApiResult(uResult);
@@ -1340,7 +1314,7 @@ _DataReader_get_matched_publication_data (
 {
     u_result uResult;
     uResult = u_readerGetMatchedPublicationData(
-                  U_DATAREADER_GET(_this),
+                  U_READER_GET(_this),
                   publication_handle,
                   gapi_publicationBuiltinTopicData__copyOut,
                   publication_data);
@@ -1389,10 +1363,6 @@ _DataReaderTriggerNotify (
     listenerData = status->callbackInfo.listenerData;
 
     if ( callback && listenerData ) {
-        _this->reader_mask.sampleStateMask   = GAPI_NOT_READ_SAMPLE_STATE;
-        _this->reader_mask.viewStateMask     = 0U;
-        _this->reader_mask.instanceStateMask = 0U;
-
         if (u_dataReaderDataAvailableTest(U_DATAREADER_GET(_this))) {
             handle = _EntityHandle(_this);
             _EntitySetBusy(_this);
@@ -1450,21 +1420,6 @@ gapi_dataReader_get_default_datareaderview_qos (
     return result;
 }
 
-static c_bool
-readerHasDataAvailable (
-    v_entity e,
-    c_voidp arg)
-{
-    c_bool *dataAvailable = (c_bool *)arg;
-    c_bool result = TRUE;
-
-    if ( (v_statusGetMask(e->status) & V_EVENT_DATA_AVAILABLE) != 0 ) {
-        *dataAvailable = TRUE;
-        result = FALSE;
-    }
-    return result;
-}
-
 static void
 checkDataAvailability(
     v_entity e,
@@ -1472,21 +1427,7 @@ checkDataAvailability(
 {
     c_bool *dataAvailable = (c_bool *)arg;
 
-    if ( v_objectKind(e) == K_SUBSCRIBER ) {
-        c_setWalk(v_subscriber(e)->readers,
-                  (c_action)readerHasDataAvailable, arg);
-    } else {
-        *dataAvailable = ((v_statusGetMask(e->status) &
-                           V_EVENT_DATA_AVAILABLE) != 0);
-
-        /* A DDS 1.2 requirement is that once the status is accessed it should be reset.
-         * This status is reset in a different manner to the plain communication statuses
-         * which call "_DataReader_get_requested_deadline_missed_status", for example, with
-         * a TRUE parameter to reset the status.
-         */
-
-        v_statusReset(e->status, V_EVENT_DATA_AVAILABLE);
-    }
+    *dataAvailable = ((v_statusGetMask(e->status) & V_EVENT_DATA_AVAILABLE) != 0);
 }
 
 static void
@@ -1515,6 +1456,13 @@ _DataReaderGetKeyValue (
                     (u_readerAction)_this->copy_out,
                     instance);
     result = kernelResultToApiResult(uResult);
+
+    /* The OpenSplice user-layer may have detected that the instance has been deleted (expired),
+     * but the DDS Spec. requires a PRECONDITION_NOT_MET result code if the instance handle is not registered
+     */
+    if (result == GAPI_RETCODE_ALREADY_DELETED) {
+        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+    }
 
     REMOVE_COPYOUTCACHE(_this->copy_cache, instance);
 

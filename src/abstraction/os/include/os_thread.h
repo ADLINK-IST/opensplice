@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /****************************************************************
@@ -20,15 +20,15 @@
  *  \brief Thread management - create threads
  */
 
-#if defined (__cplusplus)
-extern "C" {
-#endif
-
 #include "os_defs.h"
 
 /* include OS specific header file			*/
 #include "include/os_thread.h"
 #include "os_if.h"
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 #ifdef OSPL_BUILD_OS
 #define OS_API OS_API_EXPORT
@@ -38,7 +38,7 @@ extern "C" {
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
 /* Number of slots in Thread Private Memory */
-#define OS_THREAD_MEM_ARRAY_SIZE (6)
+#define OS_THREAD_MEM_ARRAY_SIZE (8)
 
 typedef enum os_threadMemoryIndex {
     OS_THREAD_CLOCK_OFFSET,
@@ -46,7 +46,9 @@ typedef enum os_threadMemoryIndex {
     OS_THREAD_JVM,
     OS_THREAD_PROTECT,
     OS_THREAD_API_INFO,
-    OS_THREAD_WARNING 
+    OS_THREAD_WARNING,
+    OS_THREAD_ALLOCATOR_STATE,
+    OS_THREAD_NAME
 } os_threadMemoryIndex;
 
 /** \brief Platform dependent thread identification
@@ -238,7 +240,7 @@ os_threadAttrInit(
 OS_API void *
 os_threadMemMalloc(
     os_int32 index,
-    os_int32 size);
+    os_size_t size);
 
 /** \brief Free thread private memory
  *

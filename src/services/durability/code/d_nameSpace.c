@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -240,11 +240,36 @@ d_nameSpaceCompatibilityCompare(
     } else if(!ns2->elements){
         r = 1;
     } else {
-        partitions1 = d_nameSpaceGetPartitions(ns1);
-        partitions2 = d_nameSpaceGetPartitions(ns2);
+        partitions1 = d_nameSpaceGetPartitionTopics(ns1);
+        partitions2 = d_nameSpaceGetPartitionTopics(ns2);
         r = strcmp(partitions1, partitions2);
         os_free(partitions1);
         os_free(partitions2);
+    }
+    return r;
+}
+
+int
+d_nameSpaceNameCompare(
+    d_nameSpace ns1,
+    d_nameSpace ns2)
+{
+    int r;
+
+    if((!ns1) && (!ns2)){
+        r = 0;
+    } else if(!ns1){
+        r = -1;
+    } else if(!ns2){
+        r = 1;
+    } else if((!ns1->name) && (!ns2->name)){
+        r = 0;
+    } else if(!ns1->name){
+        r = -1;
+    } else if(!ns2->name){
+        r = 1;
+    } else {
+        r = strcmp(ns1->name, ns2->name);
     }
     return r;
 }
@@ -266,6 +291,23 @@ d_nameSpaceGetName(
         name = nameSpace->name;
     }
     return name;
+}
+
+c_bool
+d_nameSpaceGetDelayedAlignment(
+    d_nameSpace nameSpace)
+{
+    c_bool result;
+
+    result = FALSE;
+
+    if (isANameSpace(nameSpace)) {
+        if(nameSpace->policy) {
+            result = nameSpace->policy->delayedAlignment;
+        }
+    }
+
+    return result;
 }
 
 d_policy
@@ -388,13 +430,17 @@ d_nameSpaceAddElement(
         } else {
             partition = (char *)d_malloc(strlenPartitionTopic, "Partition");
             if (partition) {
-               os_strncpy(partition, partitionTopic, strlenPartitionTopic);
-                topic = partition;
+                os_strncpy(partition, partitionTopic, strlenPartitionTopic);
+                /* Make topic point to last character in partition string.
+                 * partition points to first character and strlenPartitionTopic
+                 * includes '\0', so subtract 2 to point to last character.
+                 */
+                topic = partition + (strlenPartitionTopic-2);
 
                 /* QAC EXPECT 2106,3123; */
-                while ((*topic != '.') && (*topic != 0)) {
+                while ((*topic != '.') && (topic != partitionTopic)) {
                     /* QAC EXPECT 0489; */
-                    topic++;
+                    topic--;
                 }
                 /* QAC EXPECT 2106,3123; */
                 if (*topic == '.') {
@@ -524,7 +570,7 @@ d_nameSpaceFree(
 /* Failure will result in the service quitting */
 d_nameSpace
 d_nameSpaceNew(
-    d_configuration config,
+    d_configuration config, /* config may be NULL, so 'dummy' namespace objects can be created. */
     const char * name)
 {
     d_nameSpace     nameSpace;
@@ -533,7 +579,13 @@ d_nameSpaceNew(
     nameSpace = NULL;
     assert (name);
 
-    policy = d_nameSpaceFindPolicy (config, name);
+    /* If no configuration is provided, do not lookup a policy. */
+    if(config) {
+        policy = d_nameSpaceFindPolicy (config, name);
+    }else {
+        policy = NULL;
+    }
+
     if (policy)
     {
         d_objectKeep (d_object(policy)); /* Explicit keep of policy */
@@ -553,11 +605,14 @@ d_nameSpaceNew(
             nameSpace->master               = d_networkAddressUnaddressed();
             nameSpace->masterState			= D_STATE_COMPLETE;
             nameSpace->masterConfirmed		= FALSE;
-            nameSpace->mergeState           = d_mergeStateNew(config->role, 0);
+            if(config) { /* Do not create mergestate if no policy is provided. */
+                nameSpace->mergeState       = d_mergeStateNew(config->role, 0);
+            }else {
+                nameSpace->mergeState       = NULL;
+            }
             nameSpace->mergedRoleStates     = d_tableNew(d_mergeStateCompare, d_mergeStateFree);
          }
     }
-
     return nameSpace;
 }
 
@@ -569,6 +624,7 @@ d_nameSpaceNew_w_policy(
     const char * name,
     c_bool aligner,
     d_alignmentKind alignmentKind,
+    c_bool delayedAlignment,
     d_durabilityKind durabilityKind)
 {
     d_nameSpace    nameSpace;
@@ -584,7 +640,7 @@ d_nameSpaceNew_w_policy(
         } else {
             nameSpace->name = os_strdup("NoName");
         }
-        nameSpace->policy               = d_policyNew (name, aligner, alignmentKind, durabilityKind);
+        nameSpace->policy               = d_policyNew (name, aligner, alignmentKind, delayedAlignment, durabilityKind);
         nameSpace->elements             = d_tableNew(elementCompare, elementFree);
         nameSpace->quality.seconds      = 0;
         nameSpace->quality.nanoseconds  = 0;
@@ -593,6 +649,9 @@ d_nameSpaceNew_w_policy(
         nameSpace->masterConfirmed      = FALSE;
         nameSpace->mergeState           = d_mergeStateNew(config->role, 0);
         nameSpace->mergedRoleStates     = d_tableNew(d_mergeStateCompare, d_mergeStateFree);
+        /* Add the created policy to the configuration */
+        config->policies = c_iterInsert(config->policies, d_objectKeep(d_object(nameSpace->policy)));
+
     }
 
     return nameSpace;
@@ -652,16 +711,16 @@ d_nameSpaceReplaceMergeStates(
 
 d_nameSpace
 d_nameSpaceFromNameSpaces(
-    d_configuration config,
     d_nameSpaces ns)
 {
     d_nameSpace nameSpace = NULL;
-    c_char *partitions, *temp;
+    c_char *partitionTopics, *partitionTopic, *partition, *topic, *savePtr;
     d_quality quality;
     c_bool aligner;
     d_alignmentKind alignmentKind;
     d_durabilityKind durabilityKind;
     os_uint32 i;
+    int count;
 
     if(ns){
         nameSpace = d_nameSpace(d_malloc((os_uint32)C_SIZEOF(d_nameSpace), "NameSpace"));
@@ -681,6 +740,7 @@ d_nameSpaceFromNameSpaces(
                                                 NULL,
                                                 aligner,
                                                 alignmentKind,
+                                                FALSE,
                                                 durabilityKind);
             quality                        = d_nameSpacesGetInitialQuality(ns);
             nameSpace->quality.seconds     = quality.seconds;
@@ -692,14 +752,52 @@ d_nameSpaceFromNameSpaces(
             nameSpace->masterState		   = D_STATE_COMPLETE;
             nameSpace->elements            = d_tableNew(elementCompare, elementFree);
 
-            partitions = d_nameSpacesGetPartitions(ns);
-            temp = strtok(partitions, ",");
+            partitionTopics = d_nameSpacesGetPartitions(ns);
 
-            while(temp){
-                d_nameSpaceAddElement(nameSpace, "element", temp, "*");
-                temp = strtok(NULL, ",");
+           /* Legacy versions of the product send a comma-separated list of partitions wheras
+            * newer versions of the product send a comma-separated list of partition-topic
+            * combinations where the partition and topic are separated by a '.'. In the former
+            * case one should interpret the topic expression to be '*'. Additionally, new
+            * versions only send the partition-expression in case the topic-expression is
+            * '*' for backwards compatibility reasons. Obviously, the topic-expression
+            * needs to be interpreted as '*' in that case as well.
+            */
+            partitionTopic = os_strtok_r(partitionTopics, ",", &savePtr);
+
+            while(partitionTopic){
+                /* Allocate worst-case sizes for partition and topic expression. */
+                partition = os_malloc(strlen(partitionTopic) + 1);
+                topic = os_malloc(strlen(partitionTopic) + 1);
+
+                if (partition && topic) {
+
+                    /* Match partition and topic parts of the expression.*/
+                    count = sscanf(partitionTopic, "%[^.].%[^.]", partition, topic);
+
+                    /* The partition-topic expression may not have a topic part and
+                     * in that case will not contain a '.' character. The count
+                     * will then be 1. Use '*' as topic-expression in that
+                     * case.
+                     */
+                    if(count < 2){
+                        os_sprintf(topic, "*");
+
+                        /* In case count is less than 1, no partition could be
+                         * found either. Match all partitions in that case by
+                         * using '*'.
+                         */
+                        if(count < 1){
+                            os_sprintf(partition, "*");
+                        }
+                    }
+                    d_nameSpaceAddElement(nameSpace, "element", partition, topic);
+                }
+                os_free(partition);
+                os_free(topic);
+
+                partitionTopic = os_strtok_r(NULL, ",", &savePtr);
             }
-            os_free(partitions);
+            os_free(partitionTopics);
 
             nameSpace->masterConfirmed = ns->masterConfirmed;
 
@@ -839,6 +937,26 @@ d_nameSpaceMasterIsMe(
     return result;
 }
 
+c_string d_elementGetExpression(
+    d_element element) {
+    c_string result;
+    int size;
+
+    size = element->strlenPartition + element->strlenTopic + 1;
+    if(element->topic) {
+        size++; /* For the '.' */
+    }
+    result = d_malloc(size, "element expression");
+
+    if(element->topic) {
+        sprintf(result, "%s.%s", element->partition, element->topic);
+    }else {
+        sprintf(result, "%s", element->partition);
+    }
+
+    return result;
+}
+
 void
 d_nameSpaceElementWalk(
     d_nameSpace nameSpace,
@@ -858,6 +976,7 @@ d_nameSpaceGetPartitions(
 
     data.kind = D_NS_COUNT;
     data.count = 0;
+    data.ns = nameSpace;
     d_tableWalk(nameSpace->elements, d_nameSpaceGetPartitionsAction, &data);
 
     if(data.count == 0){
@@ -873,6 +992,73 @@ d_nameSpaceGetPartitions(
     return data.value;
 }
 
+/** This function returns a comma-separated list of partition-topic expressions.
+  * Partition- and topic-expressions are separated by a dot.
+  * Legacy versions of the durability service do not support the topic
+  * part of the expression and are expecting a comma-separated list of partition
+  * expressions. To allow interoperability between legacy and new versions, the
+  * new versions will use a "*" as topic-expression when interpreting partition-
+  * expressions and also they will leave out the topic-expression if it is '*'.
+  * This allows interoperability between new and legacy when only <Partition>
+  * configuration is used in name-space configurations.
+  */
+c_char*
+d_nameSpaceGetPartitionTopics(
+    d_nameSpace nameSpace)
+{
+    struct d_nameSpaceHelper data;
+
+    data.kind = D_NS_COUNT;
+    data.count = 0;
+    data.ns = nameSpace;
+    d_tableWalk(nameSpace->elements, d_nameSpaceGetPartitionTopicsAction, &data);
+
+    if(data.count == 0){
+        data.value = os_malloc(1);
+        *data.value = '\0';
+    } else {
+        data.kind = D_NS_COPY;
+        data.value = os_malloc(data.count + 1);
+        *data.value = '\0';
+        d_tableWalk(nameSpace->elements, d_nameSpaceGetPartitionTopicsAction, &data);
+    }
+
+    return data.value;
+}
+
+struct d_nameSpaceLookupPartitionHelper {
+    d_element found;
+    d_partition partition;
+};
+
+static c_bool
+d_nameSpaceComparePartitionAction(
+    d_element e,
+    void* args)
+{
+    struct d_nameSpaceLookupPartitionHelper* data;
+    data = args;
+
+    if(!strcmp(data->partition, e->partition)) {
+        data->found = e;
+    }
+    return data->found == NULL;
+}
+
+static d_element
+d_nameSpaceLookupPartition(
+    d_nameSpace nameSpace,
+    d_partition partition)
+{
+    struct d_nameSpaceLookupPartitionHelper walkData;
+
+    walkData.found = NULL;
+    walkData.partition = partition;
+    d_tableWalk(nameSpace->elements, d_nameSpaceComparePartitionAction, &walkData);
+    return walkData.found;
+}
+
+
 c_bool
 d_nameSpaceGetPartitionsAction(
     d_element element,
@@ -882,15 +1068,54 @@ d_nameSpaceGetPartitionsAction(
 
     data = (struct d_nameSpaceHelper*)args;
 
+    /* Because of the recently added functionality to support partition.topic expressions to identify
+     * the scope of a namespace, partitions can have more than one occurrence in the d_nameSpace->elements list. To
+     * prevent double entries in the partitionstring, lookup the first occurrence of a partition(!) in the elements-list
+     * and add it only when it equals the current element. */
+    if(element == d_nameSpaceLookupPartition(data->ns, element->partition)) {
+        switch(data->kind){
+            case D_NS_COUNT:
+                data->count += element->strlenPartition + 1;
+                break;
+            case D_NS_COPY:
+                if(strlen(data->value)){
+                    os_strcat(data->value, ",");
+                }
+                os_strcat(data->value, element->partition);
+
+                break;
+        }
+    }
+    return TRUE;
+}
+
+c_bool
+d_nameSpaceGetPartitionTopicsAction(
+    d_element element,
+    c_voidp args)
+{
+    struct d_nameSpaceHelper* data;
+
+    data = (struct d_nameSpaceHelper*)args;
+
     switch(data->kind){
         case D_NS_COUNT:
-            data->count += element->strlenPartition + 1;
+            if(!element->topic) {
+                data->count += element->strlenTopic + element->strlenPartition + 1;
+            }else {
+                data->count += element->strlenTopic + element->strlenPartition + 1 + 1;
+            }
             break;
         case D_NS_COPY:
-            if(strlen(data->value) == 0){
-                os_sprintf(data->value, "%s", element->partition);
+            if(strlen(data->value)){
+                os_strcat(data->value, ",");
+            }
+            if(!element->topic || !strcmp("*", element->topic)) {
+                os_strcat(data->value, element->partition);
             } else {
-                os_sprintf(data->value, "%s,%s", data->value, element->partition);
+                os_strcat(data->value, element->partition);
+                os_strcat(data->value, ".");
+                os_strcat(data->value, element->topic);
             }
             break;
     }

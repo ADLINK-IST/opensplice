@@ -1,0 +1,20 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+get_libjsig
+
+startOSPL
+
+echo "=== Launching Listener "
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP ListenerDataSubscriber > subResult.txt &
+
+sleep 5
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath $OSPL_HOME/jar/dcpssaj.jar:classes:$SPLICE_EXTRA_CP ListenerDataPublisher > pubResult.txt
+sleep 10
+
+listenerCheckResult
+
+stopOSPL

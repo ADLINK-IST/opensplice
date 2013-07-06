@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -281,12 +281,19 @@ u_dispatcherAppendListener(
     return result;
 }
 
+struct compareArg {
+    u_listenerCallback listener;
+};
+
 static c_equality
 compare(
-    u_listener listenerA,
-    u_dispatcherListener listenerB)
+    c_voidp o,
+    c_iterResolveCompareArg arg)
 {
-    if (listenerA->listener == listenerB) {
+    u_listener listenerA = (u_listener) o;
+    struct compareArg *cArg = (struct compareArg*) arg;
+
+    if (listenerA->listener == cArg->listener) {
         return C_EQ;
     } else {
         return C_NE;
@@ -302,10 +309,12 @@ u_dispatcherRemoveListener(
     v_observer ko;
     os_threadId tid;
     u_result result = U_RESULT_OK;
+    struct compareArg arg;
 
     if ((_this != NULL) && (listener != NULL)) {
         os_mutexLock(&_this->mutex);
-        ul = c_iterResolve(_this->listeners,compare,(void *)listener);
+        arg.listener = listener;
+        ul = (u_listener) c_iterResolve(_this->listeners, compare, &arg);
         tid = _this->threadId;
         if (ul != NULL) {
             c_iterTake(_this->listeners, ul);

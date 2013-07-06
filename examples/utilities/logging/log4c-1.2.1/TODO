@@ -1,0 +1,45 @@
+
+Last updated: 12 Nov 2006
+
+- new log4j naming conventions: category -> logger
+- multiple appenders per category
+- improve errors in configuration file parser
+- location_info is broken (need macro ?)
+- remove initialization of log4c when library is loaded (compatibility
+  issues)
+  . Currently printing some reminder messages in the init and fini sections with gcc.
+  I guess we ditch those just before the release of 1.2 ?  Or always leave em in the 
+  debug version...
+- add void* to location_info
+- thread safe ?
+  . see the "Log4C Developers Guide" for a discussion of the issues
+  and some sugggestions for fixing them. 
+- expat:
+  . behavior with autoconf is to use expat if it's there.  That's ok but
+  there needs to be an option so that prevents it being picked up--otherwise
+  it's hard for release engineers to control what they manufacture with Log4C. 
+- what is the stauts of the macosx build files--do they work with the latest workspace ?
+- improve sd/error.c
+  . currently the sd_debug are functions...is that costly in the optimized build even if
+  the body is empty ?
+- docs needs an update
+  . home web page needs to be synced up to 1.1.0, link to latest API doc,
+    and the draft developers guide.
+  . Could probably use a "Log4C Internals" doc as well
+- rolling file appender:
+  . take a file lock as well as the mutex.  That would protect
+  the file from other processes that might access it.
+- msvc:  
+  . the mapping of pthread to the native Windows thread functrions is done
+   by macros definined in sd_xplatform.h.  This works ok...but the join/cancel macros
+   are not returning the right values.
+  . two of the tests in the test_rc program are failing...need to look at that.
+  . In category.h we make a special case for some of the inline functions on windows.
+  This is not really required as the __inline (or __forceinline) directoves exist on windows.
+  So we could just define inline to be __inline in sd_xplatform.h.
+- tests:
+  . write a test program focused on lifecycle management of log4C objects.
+  For example it can open, append, close in a loop to make sure everything works and
+  ther eare no memory leaks.  What about log4c_init, log4c_fini in a loop...not sure what that
+  gives...not ethat the base types are not freed by log4c_fini....
+

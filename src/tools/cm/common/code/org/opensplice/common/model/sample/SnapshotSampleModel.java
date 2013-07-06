@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,8 +13,9 @@ package org.opensplice.common.model.sample;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 
 import org.opensplice.cm.CMException;
 import org.opensplice.cm.DataTypeUnsupportedException;
@@ -70,6 +71,7 @@ public abstract class SnapshotSampleModel extends SampleModel{
      * Reads a Sample from its reader.
      * @throws SampleModelSizeException
      */
+    @Override
     public Sample read() throws CommonException, SampleModelSizeException {
         Sample result = null;
         this.checkSize();
@@ -97,6 +99,7 @@ public abstract class SnapshotSampleModel extends SampleModel{
      * Takes a Sample from its reader.
      * @throws SampleModelSizeException
      */
+    @Override
     public Sample take() throws CommonException, SampleModelSizeException {
         Sample result = null;
         this.checkSize();
@@ -135,6 +138,7 @@ public abstract class SnapshotSampleModel extends SampleModel{
         return result;
     }
     
+    @Override
     public Sample readNext() throws CommonException, SampleModelSizeException{
         throw new CommonException("readNext not supported for snapshots.");
     }
@@ -151,13 +155,14 @@ public abstract class SnapshotSampleModel extends SampleModel{
     protected abstract Topic getTopic() throws CommonException;
     protected abstract String getPartitions() throws CommonException;
     
+    @Override
     public synchronized int export(File file) throws CommonException{
         Topic top;
         TopicQoS qos;
         QoSSerializer ser;
         String xmlQos;
         SampleSerializer sampleSer;
-        FileWriter fw;
+        OutputStreamWriter fw = null;
         Sample sample;
         int i = 0;
                 
@@ -176,43 +181,45 @@ public abstract class SnapshotSampleModel extends SampleModel{
             ser = DataTransformerFactory.getQoSSerializer(DataTransformerFactory.XML);
             sampleSer = DataTransformerFactory.getSampleSerializer(DataTransformerFactory.XML);
             
-            fw = new FileWriter(file, false);
+            fw = new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8");
             top = this.getTopic();
             
-            qos = (TopicQoS)top.getQoS();
-            xmlQos = ser.serializeQoS(qos);
-           
-            fw.write("<splice_data><partitions>");
-            String parts = this.getPartitions();
-            
-            if(parts != null){
-                fw.write(parts);
-            }
-            fw.write("</partitions><topic><name>");
-            fw.write(top.getName());
-            fw.write("</name><typeName>");
-            fw.write(top.getTypeName());
-            fw.write("</typeName><keyList>");
-            
-            if(top.getKeyList() != null){
-                fw.write(top.getKeyList());
-            }
-            fw.write("</keyList><qos>");
-            fw.write(xmlQos);
-            fw.write("</qos><metadata>");
-            fw.write(this.userDataModel.getUserDataType().toXML());
-            fw.write("</metadata></topic><data>");
-            
-            do{
-                sample = userDataModel.getDataAt(i);
-                
-                if(sample != null){
-                    fw.write(sampleSer.serializeSample(sample));
+            if (top != null) {
+                qos = (TopicQoS) top.getQoS();
+                xmlQos = ser.serializeQoS(qos);
+
+                fw.write("<splice_data><partitions>");
+                String parts = this.getPartitions();
+
+                if (parts != null) {
+                    fw.write(parts);
                 }
-                i++;
-            } while(sample != null);
-            
-            fw.write("</data></splice_data>");
+                fw.write("</partitions><topic><name>");
+                fw.write(top.getName());
+                fw.write("</name><typeName>");
+                fw.write(top.getTypeName());
+                fw.write("</typeName><keyList>");
+                
+                if (top.getKeyList() != null) {
+                    fw.write(top.getKeyList());
+                }
+                fw.write("</keyList><qos>");
+                fw.write(xmlQos);
+                fw.write("</qos><metadata>");
+                fw.write(this.userDataModel.getUserDataType().toXML());
+                fw.write("</metadata></topic><data>");
+
+                do {
+                    sample = userDataModel.getDataAt(i);
+
+                    if (sample != null) {
+                        fw.write(sampleSer.serializeSample(sample));
+                    }
+                    i++;
+                } while (sample != null);
+
+                fw.write("</data></splice_data>");
+            }
             fw.flush();
             fw.close();
         } catch (FileNotFoundException e) {
@@ -223,6 +230,14 @@ public abstract class SnapshotSampleModel extends SampleModel{
             throw new CommonException(ce.getMessage());
         } catch (TransformationException te) {
             throw new CommonException(te.getMessage());
+        } finally {
+            if (fw != null) {
+                try {
+                    fw.close();
+                } catch (IOException ie) {
+                    throw new CommonException(ie.getMessage());
+                }
+            }
         }
         return i-1;
     }

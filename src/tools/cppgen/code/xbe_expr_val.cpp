@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -54,5 +54,5 @@ be_expr_val::be_expr_val (UTL_String *s) : AST_Expression (s)
 be_expr_val::be_expr_val (char c) : AST_Expression (c)
 {}
 
-be_expr_val::be_expr_val (double d, char * str) : AST_Expression (d, str)
+be_expr_val::be_expr_val (double d, const char * str) : AST_Expression (d, str)
 {}

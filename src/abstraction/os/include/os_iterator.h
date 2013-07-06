@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef OS_ITERATOR_H
@@ -28,10 +28,13 @@ extern "C" {
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
+/**
+ * @def NULL
+ * @bug OSPL-2272 We should not export a defintion of NULL */
 #ifndef NULL
 #define NULL ((void *)0)
 #endif
-   
+
 OS_CLASS(os_iter);
 
 typedef enum os_equality {

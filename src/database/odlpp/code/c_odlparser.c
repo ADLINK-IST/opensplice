@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -51,9 +51,15 @@ main(
     }
 
     base = c_create("preprocessor",NULL,0, 0);
-    c_odlinit(c_module(base));
-    c_odlparse(argv[fileIndex]);
-    c_gen_C(c_module(base), scopedNames);
+    if(base)
+    {
+        c_odlinit(c_module(base));
+        c_odlparse(argv[fileIndex]);
+        c_gen_C(c_module(base), scopedNames);
+    } else
+    {
+        printf("Failed to create the database.\n");
+    }
 
     if (os_serviceStop() != os_resultSuccess) {
         printf("Failed to stop mutex service\n");

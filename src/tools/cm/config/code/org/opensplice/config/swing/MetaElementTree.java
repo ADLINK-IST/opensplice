@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -30,12 +30,13 @@ import org.opensplice.common.view.StatusPanel;
 import org.opensplice.config.meta.MetaElement;
 import org.opensplice.config.meta.MetaNode;
 
+@SuppressWarnings("serial")
 public class MetaElementTree extends JTree implements TreeCellRenderer, TreeSelectionListener{
-    private DefaultMutableTreeNode rootNode;
-    private MetaElement rootElement;
-    private DefaultTreeModel model;
-    private DefaultTreeCellRenderer initialRenderer;
-    private StatusPanel status;
+    private final DefaultMutableTreeNode rootNode;
+    private final MetaElement rootElement;
+    private final DefaultTreeModel model;
+    private final DefaultTreeCellRenderer initialRenderer;
+    private final StatusPanel status;
     
     public MetaElementTree(MetaElement rootElement, StatusPanel status){
         super();
@@ -58,7 +59,7 @@ public class MetaElementTree extends JTree implements TreeCellRenderer, TreeSele
                             ((DefaultMutableTreeNode)this.rootNode.getFirstChild()).getPath()));
         }
         this.getSelectionModel().addTreeSelectionListener(this);
-        this.setSelectionPath(new TreePath(((DefaultMutableTreeNode)this.rootNode).getPath()));
+        this.setSelectionPath(new TreePath(this.rootNode.getPath()));
     }
     
     private void initElement(DefaultMutableTreeNode parent, MetaElement element){
@@ -73,6 +74,7 @@ public class MetaElementTree extends JTree implements TreeCellRenderer, TreeSele
         }
     }
     
+    @Override
     public Component getTreeCellRendererComponent(JTree tree, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
         Component result = null;
         JLabel temp;
@@ -116,11 +118,16 @@ public class MetaElementTree extends JTree implements TreeCellRenderer, TreeSele
     }
     
     public MetaElement getMetaNodeAt(int x, int y) {
+        MetaElement retVal = null;
         TreePath path = this.getClosestPathForLocation(x, y);
-        this.setSelectionPath(path);
-        return (MetaElement)((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();
+        if (path != null) {
+            this.setSelectionPath(path);
+            retVal = (MetaElement)((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();
+        }
+        return retVal;
     }
 
+    @Override
     public void valueChanged(TreeSelectionEvent e) {
         MetaElement me = this.getSelectedMetaElement();
         

@@ -1,28 +1,28 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-#include "gapi.h"
 #include "ccpp_StatusCondition_impl.h"
+#include "gapi.h"
 #include "ccpp_Utils.h"
 #include "os_report.h"
 
-DDS::StatusCondition_impl::StatusCondition_impl( 
+DDS::StatusCondition_impl::StatusCondition_impl(
   gapi_condition _gapi_handle
-) : DDS::Condition_impl(_gapi_handle) 
+) : DDS::Condition_impl(_gapi_handle)
 {
   os_mutexAttr mutexAttr = { OS_SCOPE_PRIVATE };
   if (os_mutexInit(&sc_mutex, &mutexAttr) != os_resultSuccess)
   {
     OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to create mutex");
-  } 
+  }
 }
 
 DDS::StatusCondition_impl::~StatusCondition_impl( )

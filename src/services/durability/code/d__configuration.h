@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -25,17 +25,17 @@ extern "C" {
 #define D_DEFAULT_LIVELINESS_EXPIRY_TIME            ((float)10.0e0)
 #define D_MAXIMUM_LIVELINESS_EXPIRY_TIME            ((float)2147483647.2147483647)
 
-#define D_MINIMUM_LIVELINESS_UPDATE_INTERVAL        ((float)0.05e0)
-#define D_DEFAULT_LIVELINESS_UPDATE_INTERVAL        ((float)0.1e0)
-#define D_MAXIMUM_LIVELINESS_UPDATE_INTERVAL        ((float)0.9e0)
+#define D_MINIMUM_LIVELINESS_UPDATE_FACTOR          ((float)0.01e0)
+#define D_DEFAULT_LIVELINESS_UPDATE_FACTOR          ((float)0.2e0)
+#define D_MAXIMUM_LIVELINESS_UPDATE_FACTOR          ((float)1.0e0)
 
-#define D_MINIMUM_HEARTBEAT_UPDATE_INTERVAL         ((float)0.1e0)
-#define D_DEFAULT_HEARTBEAT_UPDATE_INTERVAL         ((float)0.2e0)
-#define D_MAXIMUM_HEARTBEAT_UPDATE_INTERVAL         ((float)0.9e0)
+#define D_MINIMUM_HEARTBEAT_UPDATE_FACTOR           ((float)0.1e0)
+#define D_DEFAULT_HEARTBEAT_UPDATE_FACTOR           ((float)0.25e0)
+#define D_MAXIMUM_HEARTBEAT_UPDATE_FACTOR           ((float)0.9e0)
 
-#define D_MINIMUM_HEARTBEAT_EXPIRY_TIME             ((float)01.0e0)
-#define D_DEFAULT_HEARTBEAT_EXPIRY_TIME             ((float)10.0e0)
-#define D_MAXIMUM_HEARTBEAT_EXPIRY_TIME             ((float)20.0e0)
+#define D_MINIMUM_HEARTBEAT_EXPIRY_TIME             ((float)0.2e0)
+#define D_DEFAULT_HEARTBEAT_EXPIRY_TIME             ((float)4.0e0)
+#define D_MAXIMUM_HEARTBEAT_EXPIRY_TIME             ((float)2147483647.2147483647)
 
 #define D_MINIMUM_TIMING_INITIAL_WAIT_PERIOD        ((float)0.10e0)
 #define D_DEFAULT_TIMING_INITIAL_WAIT_PERIOD        ((float)3.000e0)
@@ -98,7 +98,7 @@ extern "C" {
 
 #define D_DEFAULT_ROLE                              "DefaultRole"
 
-void            d_configurationInit                             (d_configuration config,
+int            d_configurationInit                             (d_configuration config,
                                                                  d_durability durability,
                                                                  u_cfElement domainElement,
                                                                  u_cfElement element);
@@ -229,11 +229,18 @@ void            d_configurationSetPersistentStoreDirectory  (d_configuration con
 void            d_configurationSetPersistentStoreMode       (d_configuration  config,
                                                              const c_char * storeModeName);
 
+void            d_configurationResolvePersistentKVConfig    (d_configuration config,
+                                                             u_cfElement elementParent,
+                                                             const c_char *elementName);
+
+void            d_configurationSetPersistentKVStorageParameters (d_configuration  config,
+                                                                 const c_char * parameters);
+
 void            d_configurationSetPersistentMMFStoreAddress	(d_configuration  config,
                                                             c_address address);
 
 void            d_configurationSetPersistentMMFStoreSize    (d_configuration  config,
-                                                            os_size_t size);
+                                                            c_size size);
 
 void            d_configurationSetPersistentQueueSize       (d_configuration config,
                                                              c_ulong size);
@@ -246,6 +253,9 @@ void            d_configurationSetPersistentStoreSessionTime(d_configuration con
 
 void            d_configurationSetPersistentSMPCount        (d_configuration config,
                                                              c_ulong count);
+
+void            d_configurationSetBuiltinTopicsEnabled      (d_configuration config,
+                                                             c_bool enabled);
 
 void            d_configurationSetDuration                  (v_duration * timeOut,
                                                              c_float seconds );
@@ -269,8 +279,7 @@ void            d_configurationResolvePartition             (d_nameSpace  nameSp
 void            d_configurationResolvePartitionTopic        (d_nameSpace  nameSpace,
                                                              u_cfElement  element,
                                                              c_char *     name,
-                                                             const c_char * tag,
-                                                             const c_char * topic);
+                                                             const c_char * tag);
 
 void            d_configurationAttrValueLong                (d_configuration configuration,
                                                              u_cfElement  element,

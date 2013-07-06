@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -29,7 +29,8 @@ v_groupQueueNew(
     v_subscriber subscriber,
     const c_char* name,
     c_ulong maxSize,
-    v_readerQos qos)
+    v_readerQos qos,
+    c_iter expr)
 {
     v_kernel kernel;
     v_groupQueue queue;
@@ -42,7 +43,7 @@ v_groupQueueNew(
 
     if (q != NULL) {
         queue = v_groupQueue(v_objectNew(kernel,K_GROUPQUEUE));
-        v_groupQueueInit(queue, subscriber, name, maxSize, q);
+        v_groupQueueInit(queue, subscriber, name, maxSize, q, expr);
         c_free(q); /* ref now in v_reader(queue)->qos */
     } else {
         OS_REPORT(OS_ERROR,
@@ -60,7 +61,8 @@ v_groupQueueInit(
     v_subscriber subscriber,
     const c_char *name,
     c_ulong maxSize,
-    v_readerQos qos)
+    v_readerQos qos,
+    c_iter expr)
 {
     assert(C_TYPECHECK(queue, v_groupQueue));
     assert(C_TYPECHECK(subscriber, v_subscriber));
@@ -72,7 +74,7 @@ v_groupQueueInit(
     queue->size    = 0;
     queue->markerReached = FALSE;
 
-    v_groupStreamInit(v_groupStream(queue), name, subscriber, qos);
+    v_groupStreamInit(v_groupStream(queue), name, subscriber, qos, expr);
 }
 
 void
@@ -211,9 +213,8 @@ v_groupQueueWrite(
     switch(action->kind){
     case V_GROUP_ACTION_REGISTER:             /*fallthrough on purpose.*/
     case V_GROUP_ACTION_UNREGISTER:           /*fallthrough on purpose.*/
-    case V_GROUP_ACTION_DISPOSE_ALL:
-    	/*Do not handle register & unregister * dispose_all messages*/
-    	break;
+        /*Do not handle register & unregister messages*/
+        break;
     case V_GROUP_ACTION_WRITE:                /*fallthrough on purpose.*/
     case V_GROUP_ACTION_DISPOSE:              /*fallthrough on purpose.*/
     case V_GROUP_ACTION_LIFESPAN_EXPIRE:      /*fallthrough on purpose.*/

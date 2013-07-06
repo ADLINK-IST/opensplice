@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -26,9 +26,9 @@ d_storeMMFKernelGetTopicInfo(
     c_value keyValue;
 
     keyValue = c_stringValue((c_string)topic);
-    result = c_tableFind(_this->topics, &keyValue);
+    result = c_tableFind(_this->topics, &keyValue); /* c_tableFind already performs keep. */
 
-    return c_keep(result);
+    return result;
 }
 
 typedef struct groupWalkArg {
@@ -198,7 +198,7 @@ d_storeMMFKernelNew (
         c_free(type);
 
         /* bind storeKernel */
-        found = c_bind(kernel, name);
+        found = ospl_c_bind(kernel, name);
         assert(found == kernel);
      } else {
          OS_REPORT(OS_ERROR,
@@ -220,9 +220,9 @@ d_storeMMFKernelGetGroupInfo(
 
     keyValues[0] = c_stringValue((c_string)partition);
     keyValues[1] = c_stringValue((c_string)topic);
-    result = c_tableFind(_this->groups, keyValues);
+    result = c_tableFind(_this->groups, keyValues); /* c_tableFind already performs keep. */
 
-    return c_keep(result);
+    return result;
 }
 
 d_storeResult
@@ -403,7 +403,7 @@ d_storeMMFKernelBackup(
     d_storeResult result;
 
     if(kernel && nameSpace){
-        groups = c_select(kernel->groups, 0);
+        groups = ospl_c_select(kernel->groups, 0);
         group = d_groupInfo(c_iterTakeFirst(groups));
         result = D_STORE_RESULT_OK;
 
@@ -424,6 +424,7 @@ d_storeMMFKernelBackup(
                             result = D_STORE_RESULT_ERROR;
                         }
                     }
+                    c_free(backup);
                 }
             }
             c_free(group);
@@ -448,7 +449,7 @@ d_storeMMFKernelBackupRestore(
     d_storeResult result;
 
     if(kernel && nameSpace){
-        groups = c_select(kernel->backup, 0);
+        groups = ospl_c_select(kernel->backup, 0);
         group = d_groupInfo(c_iterTakeFirst(groups));
         result = D_STORE_RESULT_OK;
 
@@ -497,7 +498,7 @@ d_storeMMFKernelDeleteNonMatchingGroups(
 
     if(_this && partitionExpr && topicExpr){
         result = D_STORE_RESULT_OK;
-        groups = c_select(_this->groups, 0);
+        groups = ospl_c_select(_this->groups, 0);
         group = d_groupInfo(c_iterTakeFirst(groups));
 
         while(group){

@@ -16,7 +16,6 @@
 //  You should have received a copy of the GNU Lesser General Public
 //  License along with OpenSplice DDS Community Edition; if not, write to the Free Software
 //  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-
 // Csharp backend
 // PTF C# mapping for IDL
 // File /Users/Jcm/Documents/Ecllipse_WS/CSharpDDS/generated/dds_dcps.cs
@@ -437,17 +436,17 @@ namespace DDS
     public interface IDomainParticipantFactory
     {
         /// <summary>
-        /// This operation creates a DomainParticipant using the specified URI.
+        /// This operation creates a DomainParticipant using the specified ID.
         /// </summary>
         /// <remarks>This operation behaves similarly to the spec operation but substitutes default values
         /// for the missing parameters. These are: default Qos for Qos parameters and null listeners with 0
         /// mask for listener parameters.
         /// </remarks>
-        /// <param name="domainId">The specified URI used to create the DomainParticipant</param>
+        /// <param name="domainId">The specified ID used to create the DomainParticipant</param>
         /// <returns>The newly created DomainParticipant. In case of an error a null is returned.</returns>
-        IDomainParticipant CreateParticipant(string domainId);
+        IDomainParticipant CreateParticipant(DomainId domainId);
         /// <summary>
-        /// This operation creates a DomainParticipant using the specified URI, listener and mask for listener parameter.
+        /// This operation creates a DomainParticipant using the specified ID, listener and mask for listener parameter.
         /// </summary>
         /// <remarks>This operation behaves similarly to the spec operation but substitutes default values
         /// for the missing parameters. These are: default Qos for Qos parameters and null listeners with 0
@@ -456,17 +455,16 @@ namespace DDS
         /// <param name="listener"></param>
         /// <param name="mask"></param>
         /// <returns>The newly created DomainParticipant. In case of an error a null is returned.</returns>
-        IDomainParticipant CreateParticipant(string domainId,
+        IDomainParticipant CreateParticipant(DomainId domainId,
             IDomainParticipantListener listener, StatusKind mask);
-        IDomainParticipant CreateParticipant(string domainId, DomainParticipantQos qos);
+        IDomainParticipant CreateParticipant(DomainId domainId, DomainParticipantQos qos);
         /// <summary>
         /// This operation creates a new DomainParticipant which will join the domain 
         /// identified by domainId, and attaches the optionally specified 
         /// DomainParticipantListener to it.
         /// </summary>
         /// <param name="domainId">The ID of the Domain to which the 
-        /// DomainParticipant is joined. This should be a URI to the location of the 
-        /// configuration file that identifies the configuration details of the Domain.</param>
+        /// DomainParticipant is joined.</param>
         /// <param name="listener">The DomainParticipantListener instance which will be attached to the new 
         /// DomainParticipant. It is permitted to use null as the value of the listener: 
         /// this behaves as a DomainParticipantListener whose operations perform no action.</param>
@@ -475,7 +473,7 @@ namespace DDS
         /// <param name="mask">a bit-mask in which each bit enables the invocation of the 
         /// DomainParticipantListener for a certain status.</param>
         /// <returns>The newly created DomainParticipant. In case of an error a null is returned.</returns>
-        IDomainParticipant CreateParticipant(string domainId, DomainParticipantQos qos,
+        IDomainParticipant CreateParticipant(DomainId domainId, DomainParticipantQos qos,
             IDomainParticipantListener listener, StatusKind mask);
         /// <summary>
         /// This operation deletes the specified DomainParticipant.
@@ -504,21 +502,14 @@ namespace DDS
         /// This operation retrieves a previously created DomainParticipant belonging to
         /// the specified domainId. If no such DomainParticipant exists, the operation will
         /// return NULL.
-        /// The domainId used to search for a specific DomainParticipant must be
-        /// identic a l t o the domainId that was used to create that specific
-        /// DomainParticipant: a NULL pointer will not be resolved on this level. That
-        /// means that a DomainParticipant that was created using a domainId set to NULL
-        /// will not be found if you try to look it up using a hard-coded URI that has the same
-        /// contents as the environment variable OSPL_URI.
         /// If multiple DomainParticipant entities belonging to the specified domainId
         /// exist, then the operation will return one of them. It is not specified which one.
         /// </remarks>
         /// <param name="domainId">the ID of the Domain for which a joining DomainParticipant 
-        /// should be retrieved. This should be a URI to the location of the configuration file that 
-        /// identifies the configuration details of the Domain.</param>
+        /// should be retrieved.</param>
         /// <returns>The retrieved DomainParticipant. If no such DomainParticipant is found 
         /// a null is returned.</returns>
-        IDomainParticipant LookupParticipant(string domainId);
+        IDomainParticipant LookupParticipant(DomainId domainId);
         /// <summary>
         /// This operation sets the default DomainParticipantQos of the DomainParticipantFactory.
         /// </summary>
@@ -1228,7 +1219,7 @@ namespace DDS
         /// <summary>
         /// This property returns the DomainId of the Domain to which this DomainParticipant is attached.
         /// </summary>
-        string DomainId { get; }
+        DomainId DomainId { get; }
         /// <summary>
         /// This operation asserts the liveliness for the DomainParticipant.
         /// </summary>
@@ -1458,7 +1449,10 @@ namespace DDS
         /// </list>
         /// </returns>
         ReturnCode GetCurrentTime(out Time currentTime);
+        
+        [Obsolete("This is a proprietary OpenSplice DDS function that is not supposed to be used by applications.")]
         ITypeSupport GetTypeSupport(string registeredName);
+        [Obsolete("This is a proprietary OpenSplice DDS function that is not supposed to be used by applications.")]
         ITypeSupport LookupTypeSupport(string registeredTypeName);
         
         /// <summary>
@@ -1584,7 +1578,7 @@ namespace DDS
     {
         ReturnCode RegisterType(IDomainParticipant domain, string typeName);
         string TypeName { get; }
-        string Description { get; }
+        string[] Description { get; }
         string KeyList { get; }
     }
 

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -36,55 +36,6 @@ static void *(* ptr_malloc)(size_t) = malloc;
 static void (* ptr_free)(void *) = free;
 static void *(* ptr_realloc)(void *,size_t) = realloc;
 
-static os_uint64 alloc_cum = 0ULL;
-static os_uint64 alloc_delta = 0ULL;
-static os_uint64 alloc_count = 0ULL;
-static os_uint64 dealloc_count = 0ULL;
-
-/** \brief Return amount of cummulative allocated memory
- */
-os_uint64
-os_heapAllocCum (void)
-{
-    return alloc_cum;
-}
-
-/** \brief Return amount of allocated memory since previous query
- */
-os_uint64
-os_heapAlloc (void)
-{
-    unsigned long long v;
-
-    v = alloc_delta;
-    alloc_delta = 0ULL;
-    return v;
-}
-
-/** \brief Return count of allocated memory segments
- */
-os_uint64
-os_heapAllocCount (void)
-{
-    return alloc_count;
-}
-
-/** \brief Return count of deallocated memory segments
- */
-os_uint64
-os_heapDeallocCount (void)
-{
-    return dealloc_count;
-}
-
-/** \brief Reset counters for allocation interval statistics
- */
-void
-os_heapReset (void)
-{
-    alloc_delta = 0ULL;
-}
-
 #ifdef OSPL_STRICT_MEM
 static uint32_t alloccnt = 0ULL;
 #endif
@@ -100,9 +51,7 @@ os_malloc (
     os_size_t size)
 {
     char *ptr;
-    alloc_delta += (os_uint32)size;
-    alloc_cum += (os_uint32)size;
-    alloc_count++;
+
 #ifdef OSPL_STRICT_MEM
     /* Allow 24 bytes so we can store the allocation size, magic number and malloc count, ( and keep alignement ) */
     ptr = ptr_malloc((size_t)size+24);
@@ -141,7 +90,7 @@ os_realloc(
 
        for ( i = 0; i+7 < origsize; i++ )
        {
-          assert( OS_MAGIC_SIG_CHECK( &ptr[i] ) );
+          assert( OS_MAGIC_SIG_CHECK( &ptr[i] ) && "Realloc of memory containing mutex or Condition variable" );
        }
        ptr -= 24;
     }
@@ -184,7 +133,6 @@ os_free (
 {
     if (ptr != NULL) 
     {
-        dealloc_count++;
 #ifdef OSPL_STRICT_MEM
         {
           size_t i;
@@ -199,7 +147,7 @@ os_free (
           *(((uint64_t*)ptr)-1) = OS_FREE_MAGIC_SIG;
           for ( i = 0; i+7 < memsize; i++ ) 
           {
-            assert( OS_MAGIC_SIG_CHECK( &cptr[i] ) );
+            assert( OS_MAGIC_SIG_CHECK( &cptr[i] ) && "Free of memory containing Mutex or Condition variable");
           }
           ptr = cptr - 24;
         }

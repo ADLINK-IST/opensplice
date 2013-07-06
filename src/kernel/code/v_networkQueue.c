@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -200,12 +200,12 @@ v_networkQueueWrite(
     c_time now;
     c_ulong priorityLookingFor;
     c_equality eq;
-    c_bool newMarkerCreated = FALSE;
     c_bool sendNow = FALSE;
    
     V_MESSAGE_STAMP(msg,readerInsertTime); 
 
     c_mutexLock(&queue->mutex);
+    sendBefore = C_TIME_ZERO;
 
     /* numberOfSamplesArrived statistics */
     v_networkQueueStatisticsAdd(numberOfSamplesArrived,queue->statistics);
@@ -284,7 +284,6 @@ v_networkQueueWrite(
     }
     /* Insert after end of list */
     if (marker == NULL) {
-        newMarkerCreated = TRUE;
         if (queue->freeStatusMarkers == NULL) {
             marker = v_networkStatusMarker(c_new(queue->statusMarkerType));
             if (marker == NULL) {

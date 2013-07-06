@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -21,7 +21,7 @@
 os_result
 os_mmfCreate(
     os_mmfHandle mmfHandle,
-    os_uint32 size)
+    os_address size)
 {
     os_result result = os_resultFail;
     assert(mmfHandle != NULL);

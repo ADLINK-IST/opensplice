@@ -89,18 +89,20 @@ namespace DDS
 
 
         public IDomainParticipant CreateParticipant(
-            string domainId)
+            DomainId domainId)
         {
             return CreateParticipant(domainId, null, 0);
         }
 
         public IDomainParticipant CreateParticipant(
-            string domainId,
+            DomainId domainId,
             IDomainParticipantListener listener,
             StatusKind mask)
         {
             IDomainParticipant participant = null;
+            string className = null;
 
+             
             if (listener != null)
             {
                 OpenSplice.Gapi.gapi_domainParticipantListener gapiListener;
@@ -119,7 +121,8 @@ namespace DDS
                             mask,
                             IntPtr.Zero,
                             IntPtr.Zero,
-                            IntPtr.Zero);
+                            IntPtr.Zero,
+                            className);
                     if (gapiParticipant != IntPtr.Zero)
                     {
                         participant = new OpenSplice.DomainParticipant(gapiParticipant, listenerHelper);
@@ -137,7 +140,8 @@ namespace DDS
                     mask,
                     IntPtr.Zero,
                     IntPtr.Zero,
-                    IntPtr.Zero);
+                    IntPtr.Zero,
+                    className);
 
                 if (gapiParticipant != IntPtr.Zero)
                 {
@@ -162,7 +166,7 @@ namespace DDS
         }
 
         public IDomainParticipant CreateParticipant(
-            string domainId,
+            DomainId domainId,
             DomainParticipantQos qos)
         {
             return CreateParticipant(domainId, qos, null, 0);
@@ -170,12 +174,13 @@ namespace DDS
 
         
         public IDomainParticipant CreateParticipant(
-            string domainId,
+            DomainId domainId,
             DomainParticipantQos qos,
             IDomainParticipantListener listener,
             StatusKind mask)
         {
             IDomainParticipant participant = null;
+            string className = null;
 
             using (OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler marshaler = 
                     new OpenSplice.CustomMarshalers.DomainParticipantQosMarshaler())
@@ -200,7 +205,8 @@ namespace DDS
                                     mask,
                                     IntPtr.Zero,
                                     IntPtr.Zero,
-                                    IntPtr.Zero);
+                                    IntPtr.Zero,
+                                    className);
                             if (gapiParticipant != IntPtr.Zero)
                             {
                                 participant = new OpenSplice.DomainParticipant(gapiParticipant, listenerHelper);
@@ -218,7 +224,8 @@ namespace DDS
                             mask,
                             IntPtr.Zero,
                             IntPtr.Zero,
-                            IntPtr.Zero);
+                            IntPtr.Zero,
+                            className);
                         if (gapiParticipant != IntPtr.Zero)
                         {
                             participant = new OpenSplice.DomainParticipant(gapiParticipant);
@@ -258,7 +265,7 @@ namespace DDS
             return result;
         }
         
-        public IDomainParticipant LookupParticipant(string domainId)
+        public IDomainParticipant LookupParticipant(DomainId domainId)
         {
             IntPtr gapiDP = OpenSplice.Gapi.DomainParticipantFactory.lookup_participant(GapiPeer, domainId);
             IDomainParticipant participant = (IDomainParticipant)SacsSuperClass.fromUserData(gapiDP);

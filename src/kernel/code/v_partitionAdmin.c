@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -88,7 +88,7 @@ v__partitionAdminRemove(
     params[0] = c_stringValue((char *)partitionName);
     q = c_queryNew(da->partitions, expr, params);
     q_dispose(expr);
-    list = c_select(q,0);
+    list = ospl_c_select(q,0);
     assert(c_iterLength(list) <= 1);
     partition = v_partition(c_iterTakeFirst(list));
     if (partition) {
@@ -124,7 +124,7 @@ v_partitionAdminRemoveExpression(
     params[0] = c_stringValue((char *)partitionExpr);
     q = c_queryNew(da->partitionInterests, expr, params);
     q_dispose(expr);
-    list = c_select(q,0);
+    list = ospl_c_select(q,0);
     assert(c_iterLength(list) <= 1);
     partitionInterest = v_partitionInterest(c_iterTakeFirst(list));
     while (partitionInterest) {
@@ -254,11 +254,9 @@ v_partitionAdminNew(
     v_kernel kernel)
 {
     v_partitionAdmin da;
-    c_base base;
 
     assert(C_TYPECHECK(kernel,v_kernel));
 
-    base = c_getBase(kernel);
     da = v_partitionAdmin(v_objectNew(kernel, K_DOMAINADMIN));
     if (da != NULL) {
         da->partitions         = c_tableNew(v_kernelType(kernel, K_DOMAIN),"name");
@@ -456,7 +454,7 @@ v_partitionAdminExists(
     found = c_find(da->partitions,&template);
     c_mutexUnlock(&da->mutex);
     c_free(template.name);
-    
+
     if (found) {
         c_free(found);
         return TRUE;
@@ -481,7 +479,7 @@ v_partitionAdminLookup(
     params[0] = c_stringValue((c_char *)partitionExpr);
     c_mutexLock(&da->mutex);
     q = c_queryNew(da->partitions,expr,params);
-    list = c_select(q,0);
+    list = ospl_c_select(q,0);
     c_mutexUnlock(&da->mutex);
     q_dispose(expr);
     c_free(q);

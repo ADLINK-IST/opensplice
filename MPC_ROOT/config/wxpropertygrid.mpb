@@ -1,0 +1,9 @@
+// $Id$
+project: wxadvanced {
+  specific(prop:windows) {                                  
+    Debug::lit_libs   += wx$(WX_PORT)$(WX_VERSION)$(WX_UNICODE)d_propgrid
+    Release::lit_libs += wx$(WX_PORT)$(WX_VERSION)$(WX_UNICODE)_propgrid
+  } else {
+    lit_libs += wx_$(WX_PORT)$(WX_UNICODE)_propgrid$(WX_VERSION)
+  }
+}

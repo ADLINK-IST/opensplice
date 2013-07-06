@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -28,9 +28,10 @@
 #include "v__statisticsInterface.h"
 #include "v_message.h"
 #include "v__messageQos.h"
-#include "c_extent.h"
+#include "c_misc.h"
 #include "os_report.h"
 #include "v__kernel.h"
+#include "v_collection.h"
 
 /* For debugging purposes... */
 #ifndef NDEBUG
@@ -55,18 +56,26 @@
 
 #ifndef NDEBUG
 #define CHECK_INSTANCE_CONSISTENCY(_this) \
-    if (v_dataReaderInstanceOldest(_this) == NULL && v_dataReaderInstanceStateTest(_this, L_STATECHANGED)){ \
-        printf("Warning at line %d empty instance while L_STATECHANGED is set\n", __LINE__); \
+    if (v_dataReaderInstanceOldest(_this) == NULL && v_dataReaderInstanceNewest(_this) != NULL) {               \
+        printf("Warning at line %d v_dataReaderInstanceOldest = NULL, "                                         \
+               "but v_dataReaderInstanceNewest != NULL\n", __LINE__);                                           \
+    }                                                                                                           \
+    if (v_dataReaderInstanceNewest(_this) == NULL && v_dataReaderInstanceOldest(_this) != NULL) {               \
+        printf("Warning at line %d v_dataReaderInstanceNewest = NULL, "                                         \
+               "but v_dataReaderInstanceOldest != NULL\n", __LINE__);                                           \
+    }                                                                                                           \
+    if ((v_reader(v_dataReaderInstanceReader(_this))->qos->lifecycle.enable_invalid_samples) &&                 \
+        (v_dataReaderInstanceOldest(_this) == NULL && v_dataReaderInstanceStateTest(_this, L_STATECHANGED))) {  \
+        printf("Warning at line %d empty instance while STATECHANGE has occurred\n", __LINE__);                 \
     }
+
+
 #else
 #define CHECK_INSTANCE_CONSISTENCY(_this)
 #endif
 
 #ifndef NDEBUG
 #define CHECK_COUNT(_this) v_dataReaderInstanceCheckCount(_this)
-#else
-#define CHECK_COUNT(_this)
-#endif
 
 static void
 v_dataReaderInstanceCheckCount(
@@ -77,6 +86,7 @@ v_dataReaderInstanceCheckCount(
     v_dataReaderSample currentSample;
 
     assert(C_TYPECHECK(_this, v_dataReaderInstance));
+    assert(_this->sampleCount >= _this->accessibleCount);
 
     currentSample = v_dataReaderInstanceOldest(_this);
 
@@ -89,6 +99,10 @@ v_dataReaderInstanceCheckCount(
     }
     assert(writeFound == _this->sampleCount);
 }
+
+#else
+#define CHECK_COUNT(_this)
+#endif
 
 static c_bool
 writeSlave(
@@ -131,6 +145,55 @@ CreateTypedInvalidMessage(
 }
 
 static void
+invalidSamplesPurgeUntil(
+    v_dataReaderInstance _this,
+    v_dataReaderSample bookmark)
+{
+    v_dataReaderSample sample, next;
+
+    /* Loop through all samples of the instance. */
+    sample = v_dataReaderInstanceOldest(_this);
+    while (sample != bookmark)
+    {
+        /* Remember the next sample (in case the current one gets purged.) */
+        next = sample->newer;
+
+        /* Purge samples that are invalid and not part of an unfinished transaction. */
+        if(!v_readerSampleTestStateOr(sample,L_TRANSACTION | L_VALIDDATA))
+        {
+            v_dataReaderSampleTake(sample, NULL, NULL);
+        }
+
+        /* Iterate to the next sample. */
+        sample = next;
+    }
+}
+
+static void
+invalidSampleResetEventCounters(
+    v_dataReaderSample sample,
+    v_dataReader reader)
+{
+    /* Loop through all remaining samples starting with the current one. */
+    while (sample)
+    {
+        /* Invalid samples that have not yet been read but have already
+         * communicated the instance state change should no longer be
+         * represented in the notReadCount. So for all remaining invalid
+         * samples that are NOT_READ, we decrease the notReadCount and
+         * and raise the L_READ flag to indicate that these samples
+         * should no longer influence the notReadCount.
+         */
+        if (!v_readerSampleTestStateOr(sample, L_VALIDDATA | L_READ | L_LAZYREAD))
+        {
+            reader->notReadCount--;
+            v_readerSampleSetState(sample, L_READ);
+        }
+        sample = v_dataReaderSample(sample->newer);
+    }
+}
+
+static void
 updateIntermediateInstanceAndSampleState(
         v_dataReaderInstance _this,
         v_message message,
@@ -159,6 +222,14 @@ updateIntermediateInstanceAndSampleState(
      * the states will be performed when the transaction is completed.
      */
     if (!v_readerSampleTestState(sample,L_TRANSACTION)){
+        /* If a valid sample does not belong to a transaction, then
+         * increase the accessibleCount variable.
+         */
+        if (v_stateTest(msgState, L_WRITE))
+        {
+            _this->accessibleCount++;
+        }
+
         /* If the sample is a an UNREGISTER, it might need to set increase the
          * noWritersCount, but only if the older sample was not a dispose.
          * However, if the previous sample was both a DISPOSE and an UNREGISTER,
@@ -180,12 +251,10 @@ updateIntermediateInstanceAndSampleState(
                         s = s->newer;
                         s->noWritersCount++;
                     }
-                    /* Only set the instance state to NEW, if the newer samples
-                     * have not yet been accessed before.
-                     */
-                    if (!v_readerSampleTestStateOr(sample->newer, L_LAZYREAD | L_READ))
+                    v_dataReaderInstanceStateSetMask(_this, L_NEW | L_STATECHANGED);
+                    if (hasValidSampleAccessible(_this))
                     {
-                        v_dataReaderInstanceStateSet(_this, L_NEW);
+                        v_dataReaderInstanceStateSet(_this, L_TRIGGER);
                     }
                 }
             }
@@ -206,7 +275,7 @@ updateIntermediateInstanceAndSampleState(
                 s->disposeCount++;
             }
 
-            /* Intermediate sample, so there is always newer sample. */
+            /* Intermediate sample, so there is always a newer sample. */
             nextMsg = v_dataReaderSampleMessage(sample->newer);
             nextMsgState = v_nodeState(nextMsg);
             if (v_stateTest(nextMsgState, L_UNREGISTER) &&
@@ -220,14 +289,14 @@ updateIntermediateInstanceAndSampleState(
                     s->noWritersCount--;
                 }
             }
-            /* Only set the instance state to NEW, if the newer samples
-             * have not yet been accessed before.
-             */
-            if (!v_readerSampleTestStateOr(sample->newer, L_LAZYREAD | L_READ))
+            v_dataReaderInstanceStateSetMask(_this, L_NEW | L_STATECHANGED);
+            if (hasValidSampleAccessible(_this))
             {
-                v_dataReaderInstanceStateSet(_this, L_NEW);
+                v_dataReaderInstanceStateSet(_this, L_TRIGGER);
             }
         }
+        v_deadLineInstanceListUpdate(v_dataReader(v_index(_this->index)->reader)->deadLineList,
+                                     v_instance(_this));
     }
 }
 
@@ -238,9 +307,9 @@ updateFinalInstanceAndSampleState(
     v_dataReaderSample sample,
     c_bool isTransactionFlush)
 {
-    v_reader reader;
+    v_reader reader = v_reader(v_index(_this->index)->reader);
     v_state msgState = v_nodeState(message);
-
+    c_bool generationEnd = FALSE;
 
     /* Valid samples that are part of a transaction that is still in progress do
      * count for resource limits, so update sample count no matter if this
@@ -261,11 +330,19 @@ updateFinalInstanceAndSampleState(
     /* Do not update states for an unfinished transaction. The update of
      * the states will be performed when the transaction is completed.
      */
-    if (!v_readerSampleTestState(sample,L_TRANSACTION)){
+    if (!v_readerSampleTestState(sample,L_TRANSACTION))
+    {
+        /* If a valid sample does not belong to a transaction, then
+         * increase the accessibleCount variable.
+         */
+        if (v_stateTest(msgState, L_WRITE))
+        {
+            _this->accessibleCount++;
+        }
+
         /* If the instance is empty and the reader has subscriber defined keys,
          * then the instance must raise its L_NEW flag.
          */
-        reader = v_reader(v_index(_this->index)->reader);
         if (v_dataReaderInstanceStateTest(_this, L_EMPTY) &&
                 reader->qos->userKey.enable)
         {
@@ -291,8 +368,7 @@ updateFinalInstanceAndSampleState(
             {
                 v_dataReaderInstanceStateClear(_this, L_NOWRITERS);
             }
-            v_dataReaderInstanceStateSet(_this, L_NEW);
-            v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+            v_dataReaderInstanceStateSetMask(_this, L_NEW | L_STATECHANGED);
         }
 
         /* If the instance is currently in a DISPOSED state, then inserting this
@@ -318,8 +394,7 @@ updateFinalInstanceAndSampleState(
                  * is being processed.
                  */
                 v_dataReaderInstanceStateClear(_this, L_DISPOSED);
-                v_dataReaderInstanceStateSet(_this, L_NEW);
-                v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                v_dataReaderInstanceStateSetMask(_this, L_NEW | L_STATECHANGED);
             }
         }
 
@@ -329,6 +404,13 @@ updateFinalInstanceAndSampleState(
         sample->disposeCount = _this->disposeCount;
         sample->noWritersCount = _this->noWritersCount;
 
+        /*
+         * Update the last insertion time if time_based_filter QoS is set,
+         * and message does not have disposed or unregister flags
+         */
+        if (!v_stateTestOr(msgState, L_DISPOSED | L_UNREGISTER)) {
+            _this->lastInsertionTime = sample->insertTime;
+        }
 
         /* Now process all flags that have currently been raised on the
          * message. Since the sample belongs to the most recent lifecycle,
@@ -336,27 +418,112 @@ updateFinalInstanceAndSampleState(
          */
         if (v_stateTest(msgState, L_DISPOSED))
         {
+            /* Re-initialize the time-based filter */
+            _this->lastInsertionTime = C_TIME_ZERO;
+
             /* If the instance was already in a DISPOSED state, then this
              * new DISPOSE message cannot be considered a state change.
              */
             if (!v_dataReaderInstanceStateTest(_this, L_DISPOSED))
             {
-                v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                v_dataReaderInstanceStateSetMask(_this, (L_DISPOSED | L_STATECHANGED));
+
+                /* If the sample is valid, the update constitutes a readable
+                 * state change for which observers need to be triggered.
+                 *
+                 * If the sample is invalid, it may become piggy-backed
+                 * onto a valid sample, triggering the observers to
+                 * communicate its state change, but masking the invalid
+                 * sample itself. The sample should increase notReadCount,
+                 * but decrease it back when its instance state change has
+                 * been processed.
+                 *
+                 * If the sample is invalid and cannot be piggy-backed
+                 * onto a valid sample, then it may only be communicated
+                 * to the observers when the reader has indicated that
+                 * it is prepared to receive invalid samples.
+                 */
+                if (v_stateTest(msgState, L_WRITE) ||
+                        reader->qos->lifecycle.enable_invalid_samples ||
+                        hasValidSampleAccessible(_this))
+                {
+                    v_dataReaderInstanceStateSet(_this, L_TRIGGER);
+                }
+                generationEnd = TRUE; /* Indicate that this generation has ended. */
             }
-            v_dataReaderInstanceStateSet(_this, L_DISPOSED);
         }
         if (v_stateTest(msgState, L_UNREGISTER))
         {
+            /* Unregister messages are not expected to contain valid data. */
+            assert(v_stateTestNot(msgState, L_WRITE));
+
+            /* Re-initialize the time-based filter */
+            _this->lastInsertionTime = C_TIME_ZERO;
+
             /* If the message also has the DISPOSED flag set, then do not
              * set the instance state to NOWRITERS.
              */
             if (!v_dataReaderInstanceStateTest(_this, L_DISPOSED))
             {
-                v_dataReaderInstanceStateSet(_this, L_NOWRITERS);
-                v_dataReaderInstanceStateSet(_this, L_STATECHANGED);
+                v_dataReaderInstanceStateSetMask(_this, (L_NOWRITERS | L_STATECHANGED));
+                /* If the sample is valid, the update constitutes a readable
+                 * state change for which observers need to be triggered.
+                 *
+                 * If the sample is invalid, it may become piggy-backed
+                 * onto a valid sample, triggering the observers to
+                 * communicate its state change, but masking the invalid
+                 * sample itself. The sample should increase notReadCount,
+                 * but decrease it back when its instance state change has
+                 * been processed.
+                 *
+                 * If the sample is invalid and cannot be piggy-backed
+                 * onto a valid sample, then it may only be communicated
+                 * to the observers when the reader has indicated that
+                 * it is prepared to receive invalid samples.
+                 */
+                if (v_stateTest(msgState, L_WRITE) ||
+                        reader->qos->lifecycle.enable_invalid_samples ||
+                        hasValidSampleAccessible(_this))
+                {
+                    v_dataReaderInstanceStateSet(_this, L_TRIGGER);
+                }
+                generationEnd = TRUE; /* Indicate that this generation has ended. */
             }
             v_instanceRemove(v_instance(_this)); /* deadline */
         }
+        /* If the sample is a readable sample and it does not belong to an
+         * unfinished transaction, then it should always trigger its observers.
+         */
+        if (v_stateTest(msgState, L_WRITE))
+        {
+            v_dataReaderInstanceStateSet(_this, L_TRIGGER);
+        }
+
+        /* If a sample is responsible for setting a trigger, then it should
+         * also increase the notReadCount. Note that a sample can trigger
+         * the instance for multiple reasons at the same time, yet the
+         * notReadCount may only be increased once.
+         * If the sample does not increase the notReadCount, then it should
+         * also not decrease it afterwards. For that reason we set its L_READ
+         * flag, to indicate that it does not impact the notReadCount.
+         */
+        if (v_dataReaderInstanceStateTest(_this, L_TRIGGER))
+        {
+            v_dataReader(reader)->notReadCount++;
+        }
+        else
+        {
+            v_readerSampleSetState(sample, L_READ);
+        }
+    }
+    /* In case this generation is ended, remove the readerInstance from the deadline list.
+     * Otherwise update the instance in the deadline list.
+     */
+    if (generationEnd) {
+        v_instanceRemove(v_instance(_this));
+    } else {
+        v_deadLineInstanceListUpdate(v_dataReader(reader)->deadLineList,
+                                     v_instance(_this));
     }
 }
 
@@ -385,12 +552,14 @@ InsertSample(
     messageState = v_nodeState(message);
     if (qos->orderby.kind == V_ORDERBY_SOURCETIME)
     {
-        if (c_timeCompare(message->writeTime, _this->lastConsumed.sourceTimestamp) == C_LT ||
-            (
-                c_timeCompare(message->writeTime, _this->lastConsumed.sourceTimestamp) == C_EQ &&
-                v_gidCompare(message->writerGID, _this->lastConsumed.gid) == C_LT
-            )
-        )
+        equality = c_timeCompare(message->writeTime, _this->lastConsumed.sourceTimestamp);
+        if (equality == C_EQ && v_gidCompare(message->writerGID, _this->lastConsumed.gid) == C_EQ)
+        {
+            CHECK_COUNT(_this);
+            return V_DATAREADER_DUPLICATE_SAMPLE;
+        }
+        if (equality == C_LT ||
+                (equality == C_EQ && v_gidCompare(message->writerGID, _this->lastConsumed.gid) == C_LT))
         {
             CHECK_COUNT(_this);
             return V_DATAREADER_SAMPLE_LOST;
@@ -590,42 +759,22 @@ InsertSample(
                                 /* Push out the oldest sample in the history
                                  * until we've at least removed one L_WRITE
                                  * message, because only those ones are taken
-                                 * into account for depth (calledsampleCount
+                                 * into account for depth (called sampleCount
                                  * here).
                                  */
                                 do
                                 {
                                     oldest = v_dataReaderInstanceOldest(_this);
-                                    v_dataReaderInstanceSetOldest(_this,
-                                                            oldest->newer);
-                                    if (oldest->newer)
-                                    {
-                                        v_dataReaderSample(oldest->newer)->older = oldest->older;
-                                    }
-                                    else
-                                    {
-                                        /* oldest = newest */
-                                        /* in this use case always set to NULL. */
-                                        v_dataReaderInstanceSetNewest(_this,
-                                                                oldest->older);
-                                    }
-                                    oldest->newer = NULL;
-                                    oldest->older = NULL;
-                                    v_dataReaderSampleWipeViews(oldest);
-
                                     if (*sample == oldest)
                                     {
                                         *sample = NULL;
                                         proceed = FALSE;
                                     }
-                                    else if (v_dataReaderSampleMessageStateTest(
-                                                                oldest, L_WRITE))
+                                    else if (v_readerSampleTestState(oldest, L_VALIDDATA))
                                     {
-                                        _this->sampleCount--;
                                         proceed = FALSE;
                                     }
-                                    v_dataReaderSampleRemoveFromLifespanAdmin(oldest);
-                                    v_dataReaderSampleFree(oldest);
+                                    v_dataReaderInstanceSampleRemove(_this, oldest);
                                 } while(proceed);
 
                                 v_statisticsULongValueInc(v_reader,
@@ -718,6 +867,7 @@ InsertSample(
             }
         }
     }
+
     return V_DATAREADER_INSERTED;
 }
 
@@ -742,12 +892,15 @@ v_dataReaderInstanceInit (
 
     assert(_this->sampleCount == 0);
 
+    qos = v_reader(index->reader)->qos;
+
     /* The first insert will increase to 0 times noWriter state. */
     v_instanceInit(v_instance(_this));
     _this->instanceState                = L_EMPTY | L_NOWRITERS;
     _this->noWritersCount               = -1;
     _this->disposeCount                 = 0;
     _this->sampleCount                  = 0;
+    _this->accessibleCount              = 0;
     _this->liveliness                   = 0;
     _this->hasBeenAlive                 = FALSE;
     _this->epoch                        = C_TIME_ZERO;
@@ -755,10 +908,11 @@ v_dataReaderInstanceInit (
     v_gidSetNil(_this->lastConsumed.gid);
     _this->purgeInsertionTime           = C_TIME_ZERO;
     _this->userDataDataReaderInstance   = NULL;
+    _this->lastInsertionTime            = C_TIME_ZERO;
     v_dataReaderInstanceSetOldest(_this,NULL);
     v_dataReaderInstanceSetNewest(_this,NULL);
 
-    qos = v_reader(index->reader)->qos;
+
 
     /* only if ownership is exclusive the owner must be set! */
      if (qos->ownership.kind == V_OWNERSHIP_EXCLUSIVE) {
@@ -817,23 +971,12 @@ v_dataReaderInstanceSetEpoch (
 }
 
 void
-v_dataReaderInstanceFree(
-    v_dataReaderInstance _this)
-{
-    if (c_refCount(_this) == 1) {
-        v_dataReaderInstanceDeinit(_this);
-    }
-    c_free(_this);
-}
-
-void
 v_dataReaderInstanceDeinit(
     v_dataReaderInstance _this)
 {
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
     CHECK_COUNT(_this);
 
-    v_groupCacheDeinit(_this->sourceCache);
     v_instanceDeinit(v_instance(_this));
 }
 
@@ -844,6 +987,7 @@ v_dataReaderInstanceWrite (
 {
     v_writeResult result;
     v_dataReaderEntry entry;
+    v_dataReaderInstance* thisPtr;
 
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
     assert(C_TYPECHECK(msg,v_message));
@@ -854,7 +998,8 @@ v_dataReaderInstanceWrite (
         result = V_WRITE_SUCCESS;
     } else {
         entry = v_dataReaderEntry(v_index(_this->index)->entry);
-        result = v_dataReaderEntryWrite(entry, msg, (v_instance *)&_this);
+        thisPtr = &_this;
+        result = v_dataReaderEntryWrite(entry, msg, (v_instance *)thisPtr);
     }
 
     return result;
@@ -920,10 +1065,8 @@ v_dataReaderInstanceInsert(
     v_dataReaderSample sample;
     v_index index;
     v_state messageState;
-    v_state instanceState;
     c_equality equality;
     v_dataReader reader;
-    v_dataReaderEntry entry;
     v_readerQos qos;
     c_long msg_strength;
     v_gid msg_gid;
@@ -940,7 +1083,6 @@ v_dataReaderInstanceInsert(
 
     index = v_index(_this->index);
     reader = v_dataReader(index->reader);
-    entry = v_dataReaderEntry(index->entry);
     qos = v_reader(reader)->qos;
     sample = NULL;
 
@@ -972,15 +1114,6 @@ v_dataReaderInstanceInsert(
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
     CHECK_INSTANCE_CONSISTENCY(_this);
-
-    /* scdds2146: ES: Get the state of the datareader instance now as it will
-     * be possibly modified in the next piece of code to set the dispose bit
-     * in the instance state. And to determine correct dispose counters
-     * later on we need to know what the instance state was before any dispose
-     * information is changed within the instance so we can determine if the
-     * instance went from an ALIVE state to a NOT_ALIVE_DISPOSED state.
-     */
-    instanceState = v_dataReaderInstanceState(_this);
 
     if (v_stateTest(messageState, L_UNREGISTER))
     {
@@ -1120,10 +1253,28 @@ v_dataReaderInstanceInsert(
         }
     }
 
-
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
     CHECK_INSTANCE_CONSISTENCY(_this);
+
+    /* Filter out messages that violate the time based filter minimum separation time,
+     * if the message state is not disposed or unregister and the time_based_filter QoS is enabled
+     * Messages part of a transaction are filtered if/when a transaction flush occurs.
+     */
+    if (!(v_stateTestOr(messageState, L_DISPOSED | L_UNREGISTER | L_TRANSACTION)) &&
+        (c_timeCompare(qos->pacing.minSeperation, C_TIME_ZERO) != C_EQ)) {
+#ifdef _NAT_
+        equality = c_timeCompare(v_timeGet(),
+            c_timeAdd(_this->lastInsertionTime, qos->pacing.minSeparation));
+#else
+        equality = c_timeCompare(message->allocTime,
+            c_timeAdd(_this->lastInsertionTime, qos->pacing.minSeperation));
+#endif /* _NAT_ */
+        if (equality == C_LT) {
+            CHECK_COUNT(_this);
+            return V_DATAREADER_FILTERED_OUT;
+        }
+    }
 
     /* When no message has been inserted yet, handle all other types of messages. */
     if (result == V_DATAREADER_UNDETERMINED)
@@ -1134,7 +1285,6 @@ v_dataReaderInstanceInsert(
             return result;
         }
     }
-
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
@@ -1153,20 +1303,14 @@ v_dataReaderInstanceInsert(
     CHECK_COUNT(_this);
     CHECK_INSTANCE_CONSISTENCY(_this);
 
-    if ((v_dataReaderInstanceStateTest(_this, L_STATECHANGED) ||
-         v_stateTest(messageState,L_WRITE)))
+    if (v_dataReaderInstanceStateTest(_this, L_TRIGGER))
     {
+        V_MESSAGE_STAMP(message,readerDataAvailableTime);
 
-        if ((qos->lifecycle.enable_invalid_samples) || (sample != NULL))
-        {
-            V_MESSAGE_STAMP(message,readerDataAvailableTime);
-
-            V_MESSAGE_STAMP(message, readerInstanceTime);
-            v_dataReaderNotifyDataAvailable(reader, sample);
-        }
+        V_MESSAGE_STAMP(message, readerInstanceTime);
+        v_dataReaderInstanceStateClear(_this, L_TRIGGER);
+        v_dataReaderNotifyDataAvailable(reader, sample);
     }
-    v_deadLineInstanceListUpdate(v_dataReader(reader)->deadLineList,
-                                 v_instance(_this));
 
     /* reader internal state of the data has been modified.
      * so increase readers update count.
@@ -1183,12 +1327,26 @@ v_dataReaderInstanceInsert(
     return V_DATAREADER_INSERTED;
 }
 
+static c_bool
+setWalkRequired(
+    c_object query,
+    c_voidp arg)
+{
+    v_dataReaderQuery q = v_dataReaderQuery(query);
+    OS_UNUSED_ARG(arg);
+
+    q->walkRequired = TRUE;
+
+    return TRUE;
+}
+
 void
 v_dataReaderInstanceFlushTransaction(
     v_dataReaderInstance _this,
     c_ulong transactionId)
 {
     v_dataReaderSample sample, nextSample;
+    v_dataReader reader;
     c_bool found;
 
     sample = v_dataReaderInstanceOldest(_this);
@@ -1224,11 +1382,23 @@ v_dataReaderInstanceFlushTransaction(
                     /* Apply final state otherwise. */
                     updateFinalInstanceAndSampleState(_this,
                             v_dataReaderSampleMessage(sample), sample, TRUE);
+
+                    /* Obtain the reader so we can set the walkRequired flag
+                     * on each of the attached queries - see OSPL-1013 */
+                    reader = v_dataReaderInstanceReader(_this);
+                    if (reader != NULL)
+                    {
+                        c_walk(v_collection(reader)->queries,setWalkRequired,NULL);
+                    }
                 }
             }
         }
         sample = sample->newer;
     }
+
+    /* Ensure that the L_TRIGGER state of the instance is reset, since
+     * transactionListUpdate calls v_dataReaderNotifyDataAvailable: */
+    v_dataReaderInstanceStateClear(_this, L_TRIGGER);
 }
 
 void
@@ -1276,10 +1446,15 @@ v_dataReaderInstanceAbortTransaction(
 c_bool
 v_dataReaderInstanceTest(
     v_dataReaderInstance _this,
-    c_query query)
+    c_query query,
+    v_queryAction action,
+    c_voidp args)
 {
-    v_dataReaderSample sample, newestSample;
+    v_dataReaderSample sample, newestSample, prevSample;
     c_bool sampleSatisfies = FALSE;
+    v_dataReader r;
+    v_state msgState;
+    v_message msg;
 
     assert(_this);
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
@@ -1296,44 +1471,128 @@ v_dataReaderInstanceTest(
     {
         return FALSE;
     }
-    if (query == NULL)
-    {
-        return TRUE;
-    }
-    if (v_dataReaderInstanceSampleCount(_this) == 0)
-    {
-        if (v_dataReaderInstanceStateTest(_this, L_STATECHANGED))
-        {
-            /* The sample is invalid, but not yet processed. This could
-             * indicate a relevant, but not yet processed state change.
-             */
-            return TRUE;
-        }
-        else
-        {
-            /* Sample is invalid, but already processed. */
-            return FALSE;
-        }
-    }
+
     newestSample = v_dataReaderInstanceNewest(_this);
     sample = v_dataReaderInstanceOldest(_this);
+    if (!hasValidSampleAccessible(_this))
+    {
+        /* Only pass invalid samples in case the L_STATECHANGED is set. */
+        if (v_dataReaderInstanceStateTest(_this, L_STATECHANGED))
+        {
+            /* No valid samples exist, so there must be at least one invalid
+             * sample. So pick the the most recent one at newest, unless
+             * that's an UNREGISTER which is preceded by a DISPOSE without
+             * UNREGISTER, since then the DISPOSE should be communicated.
+             */
+            sample = v_dataReaderInstanceNewest(_this);
+            assert(sample);
+            assert(!v_readerSampleTestState(sample, L_VALIDDATA) ||
+                    v_readerSampleTestState(sample,L_TRANSACTION));
+
+            /* Samples that are part of an unfinished transaction may not
+             * be shown. This algorithm must ensure that it provides the
+             * latest DISPOSE that is not part of a transaction or the
+             * latest UNREGISTER if no DISPOSE is applicable.
+             *
+             * As a 1st step find the newest sample that is not part
+             * of an unfinished transaction.
+             */
+            while(v_readerSampleTestState(sample,L_TRANSACTION) &&
+                    sample->older)
+            {
+                sample = sample->older;
+            }
+            /* See if we found an invalid sample that is not part of an
+             * unfinished transaction.
+             */
+            if (!v_readerSampleTestState(sample,L_TRANSACTION))
+            {
+                msg = v_dataReaderSampleMessage(sample);
+                msgState = v_nodeState(msg);
+
+                /* Check if our sample is a DISPOSE event. */
+                if((!v_stateTest(msgState, L_DISPOSED)) && (sample->older))
+                {
+                    prevSample = sample->older;
+
+                    /* Find the previous event that is not part of an
+                     * unfinished transaction.
+                     */
+                    while(v_readerSampleTestState(prevSample,L_TRANSACTION) &&
+                            prevSample->older)
+                    {
+                        prevSample = prevSample->older;
+                    }
+                    msg = v_dataReaderSampleMessage(prevSample);
+                    msgState = v_nodeState(msg);
+
+                    /* If our found event is not part of an unfinished
+                     * transaction and is a DISPOSE event, this is the
+                     * one we need to present. If not, the originally
+                     * found UNREGISTER is the one to present.
+                     */
+                    if ((!v_readerSampleTestState(prevSample,L_TRANSACTION)) &&
+                        v_stateTest(msgState, L_DISPOSED))
+                    {
+                        sample = prevSample;
+                    }
+                }
+
+                /* Only pass this sample if it has not been READ before and if
+                 * the reader has not disabled invalid samples.
+                 */
+                r = v_dataReaderInstanceReader(_this);
+                if (!v_readerSampleTestStateOr(sample, L_READ | L_LAZYREAD) &&
+                        v_reader(r)->qos->lifecycle.enable_invalid_samples)
+                {
+                    sampleSatisfies = action(sample, args);
+                }
+            }
+        }
+
+        CHECK_EMPTINESS(_this);
+        CHECK_COUNT(_this);
+        CHECK_INSTANCE_CONSISTENCY(_this);
+
+        return sampleSatisfies;
+    }
+
     while ((sample != NULL) && (sampleSatisfies == FALSE))
     {
         /* Invalid samples will not be offered when the instance has valid
          * samples as well. Therefore invalid samples cannot match the query
-         * when sampleCount > 0.
+         * when accessibleCount > 0.
          */
         if (v_readerSampleTestState(sample, L_VALIDDATA))
         {
-            /* The history samples are swapped with the first sample to make
-               sample-evaluation on instance level work.
-            */
-            if (sample != newestSample) {
-                v_dataReaderInstanceSetNewest(_this,sample);
+            /* If a query has been passed, evaluate the sample against the
+             * query. If not, then make sure the sample is evaluated against
+             * the action routine.
+             */
+            if (query)
+            {
+                /* The history samples are swapped with the first sample to make
+                   sample-evaluation on instance level work.
+                */
+                if (sample != newestSample) {
+                    v_dataReaderInstanceSetNewest(_this,sample);
+                }
+                sampleSatisfies = c_queryEval(query,_this);
+                if (sample != newestSample) {
+                    v_dataReaderInstanceSetNewest(_this,newestSample);
+                }
             }
-            sampleSatisfies = c_queryEval(query,_this);
-            if (sample != newestSample) {
-                v_dataReaderInstanceSetNewest(_this,newestSample);
+            else
+            {
+                sampleSatisfies = TRUE;
+            }
+
+            /* If a sample passed the query, then check whether it matches the
+             * optional condition passed by the action routine. (This condition
+             * can for example check for matching lifecycle states.)
+             */
+            if (sampleSatisfies && action != NULL) {
+                sampleSatisfies = action(sample, args);
             }
         }
         sample = sample->newer;
@@ -1346,18 +1605,20 @@ v_dataReaderInstanceTest(
     return sampleSatisfies;
 }
 
-c_bool
+v_actionResult
 v_dataReaderSampleRead(
     v_dataReaderSample sample,
     v_readerSampleAction action,
     c_voidp arg)
 {
     v_dataReaderInstance instance;
-    v_message untypedMsg;
+    v_dataReaderSample orgSample;
+    c_type sampleType;
     v_state state;
     v_state mask;
-    c_bool proceed = TRUE;
+    v_actionResult result;
 
+    orgSample = NULL;
     instance = v_dataReaderSampleInstance(sample);
 
     CHECK_EMPTINESS(instance);
@@ -1390,48 +1651,73 @@ v_dataReaderSampleRead(
      */
     if (!v_readerSampleTestState(sample, L_VALIDDATA))
     {
-        untypedMsg = v_dataReaderSampleMessage(sample);
+        /* This is a hack to make a shallow copy of the sample. This only works
+         * because we manually keep all known references of v_dataReaderSample
+         * except for its v_message field, which will be replaced. Of course
+         * this is hard to maintain when v_dataReaderSample will be extended to
+         * contain other references in the future. Since v_dataReaderSample expects
+         * a v_message with userData from its meta-data, copying the sample using
+         * c_copyIn will result in an illegal attempt to copy userData from a
+         * v_message that doesn't have any.
+         * TODO: This code should be removed as soon as scdds2975 has been solved.
+         */
+        orgSample = sample;
+        sampleType = c_typeActualType(c_getType(orgSample));
+        sample = c_new(sampleType);
+        memcpy(sample, orgSample, sampleType->size);
+        c_keep(sample->_parent._parent.next);
+        c_keep(sample->older);
+        /* Original message was memcopied and thus not kept. Therefore do not use c_free. */
         v_dataReaderSampleTemplate(sample)->message =
-            CreateTypedInvalidMessage(instance, untypedMsg);
+            CreateTypedInvalidMessage(instance, v_dataReaderSampleMessage(orgSample));
+        /* Hack ends here. */
     }
     V_MESSAGE_STAMP(v_dataReaderSampleMessage(sample), readerReadTime);
-    proceed = action(v_readerSample(sample), arg);
+    result = action(v_readerSample(sample), arg);
     V_MESSAGE_STAMP(v_dataReaderSampleMessage(sample), readerCopyTime);
     V_MESSAGE_REPORT(v_dataReaderSampleMessage(sample),
                      v_dataReaderInstanceDataReader(instance));
+
     /* If the message was temporarily switched, switch it back. */
     if (!v_readerSampleTestState(sample, L_VALIDDATA))
     {
-        c_free(v_dataReaderSampleMessage(sample));
-        v_dataReaderSampleTemplate(sample)->message = untypedMsg;
+        c_free(sample);
+        sample = orgSample;
     }
 
-    v_dataReaderInstanceStateClear(instance, L_NEW);
-    v_dataReaderInstanceStateClear(instance, L_STATECHANGED);
-
-    if (!v_readerSampleTestState(sample, L_READ))
-    {
-        v_dataReaderInstanceReader(instance)->notReadCount--;
-        v_readerSampleSetState(sample,L_LAZYREAD);
-    }
-
-    /* reader internal state of the data has been modified.
-     * so increase readers update count.
-     * This value is used by queries to determine if a query
-     * needs to be re-evaluated.
+    /* A sample is considered 'skipped' if the action routine invoked above
+     * does not want to keep track of the sample (for example because it
+     * didn't match its readerMasks). In that case, it sets the 'skip' flag
+     * to true, which indicates that those samples should be considered
+     * 'untouched' and therefore their instance and sample states should
+     * not be modified.
      */
-    v_dataReaderInstanceReader(instance)->updateCnt++;
+    if (v_actionResultTestNot(result, V_SKIP))
+    {
+        V_MESSAGE_REPORT(v_dataReaderSampleMessage(_this),
+                         v_dataReaderInstanceDataReader(instance));
+        v_dataReaderInstanceStateClear(instance, L_NEW);
+        v_dataReaderInstanceStateClear(instance, L_STATECHANGED);
+        if (!v_readerSampleTestState(sample, L_READ)) {
+            v_dataReaderInstanceReader(instance)->notReadCount--;
+            v_readerSampleSetState(sample, L_LAZYREAD);
+        }
+        /* reader internal state of the data has been modified.
+         * so increase readers update count.
+         */
+        v_dataReaderInstanceReader(instance)->updateCnt++;
 
-    /* The instance state can have changed, so update the statistics */
-    v_statisticsULongValueInc(v_reader,
-                              numberOfSamplesRead,
-                              v_dataReaderInstanceReader(instance));
+        /* The instance state can have changed, so update the statistics */
+        v_statisticsULongValueInc(v_reader,
+                                  numberOfSamplesRead,
+                                  v_dataReaderInstanceReader(instance));
 
-    CHECK_EMPTINESS(instance);
-    CHECK_COUNT(instance);
-    CHECK_INSTANCE_CONSISTENCY(instance);
+        CHECK_EMPTINESS(instance);
+        CHECK_COUNT(instance);
+        CHECK_INSTANCE_CONSISTENCY(instance);
+    }
 
-    return proceed;
+    return result;
 }
 
 c_bool
@@ -1441,11 +1727,10 @@ v_dataReaderInstanceReadSamples(
     v_readerSampleAction action,
     c_voidp arg)
 {
-    v_dataReaderSample sample, newestSample, prevSample;
-    v_message msg, prevMsg;
-    v_state msgState;
-    c_bool proceed = TRUE;
+    v_dataReaderSample sample, newestSample;
+    v_actionResult result = V_PROCEED;
     c_bool sampleSatisfies;
+    int nrSamplesRead = 0;
     c_ulong readId;
     v_dataReader r;
 
@@ -1458,82 +1743,45 @@ v_dataReaderInstanceReadSamples(
     /* If no valid nor invalid samples exist, then skip further actions. */
     if (_this && !v_dataReaderInstanceEmpty(_this))
     {
-        /* Check the number of L_VALID samples. If there are none, check to
-         * see whether any invalid samples need to be communicated.
+        r = v_dataReaderInstanceReader(_this);
+
+        /* Check the number of accessible L_VALID samples. If there are none,
+         * check to see whether any invalid samples need to be communicated.
          */
-        if (_this->sampleCount == 0)
+        if (!hasValidSampleAccessible(_this))
         {
-            /* Only pass invalid samples in case the L_STATECHANGED is set. */
-            if (v_dataReaderInstanceStateTest(_this, L_STATECHANGED))
+            /* Only pass invalid samples in case the L_STATECHANGED is set and
+             * in case the reader is allowed to return invalid samples.
+             */
+            if (v_dataReaderInstanceStateTest(_this, L_STATECHANGED) &&
+                    v_reader(r)->qos->lifecycle.enable_invalid_samples)
             {
                 /* No valid samples exist, so there must be at least one invalid
-                 * sample. So pick the the most recent one at newest, unless
-                 * that's an UNREGISTER which is preceded by a DISPOSE without
-                 * UNREGISTER, since then the DISPOSE should be communicated.
+                 * sample that still needs to be processed. So walk through all
+                 * samples and skip the ones that are part of an unfinished
+                 * transaction or that have been accessed previously.
                  */
-                sample = v_dataReaderInstanceNewest(_this);
+                sample = v_dataReaderInstanceOldest(_this);
                 assert(sample);
-                assert(!v_readerSampleTestState(sample, L_VALIDDATA));
-
-
-                /* Samples that are part of an unfinished transaction may not
-                 * be shown. This algorithm must ensure that it provides the
-                 * latest DISPOSE that is not part of a transaction or the
-                 * latest UNREGISTER if no DISPOSE is applicable.
-                 *
-                 * As a 1st step find the newest sample that is not part
-                 * of an unfinished transaction.
-                 */
-                while(v_readerSampleTestState(sample,L_TRANSACTION) &&
-                        sample->older)
+                assert(!v_readerSampleTestState(sample, L_VALIDDATA) ||
+                        v_readerSampleTestState(sample, L_TRANSACTION));
+                while(sample != NULL &&
+                        v_readerSampleTestStateOr(sample,L_TRANSACTION | L_READ | L_LAZYREAD))
                 {
-                    sample = sample->older;
+                    sample = sample->newer;
                 }
-                /* See if we found an invalid sample that is not part of an
-                 * unfinished transaction.
+                /* If a sample is found matching the criteria, then consume it.
                  */
-                if (!v_readerSampleTestState(sample,L_TRANSACTION))
+                if (sample)
                 {
-                    msg = v_dataReaderSampleMessage(sample);
-                    msgState = v_nodeState(msg);
+                    result = v_dataReaderSampleRead(sample, action, arg);
 
-                    /* Check if our sample is a DISPOSE event. */
-                    if((!v_stateTest(msgState, L_DISPOSED)) && (sample->older))
-                    {
-                        prevSample = sample->older;
-
-                        /* Find the previous event that is not part of an
-                         * unfinished transaction.
-                         */
-                        while(v_readerSampleTestState(prevSample,L_TRANSACTION) &&
-                                prevSample->older)
-                        {
-                            prevSample = prevSample->older;
-                        }
-                        prevMsg = v_dataReaderSampleMessage(prevSample);
-                        msgState = v_nodeState(prevMsg);
-
-                        /* If our found event is not part of an unfinished
-                         * transaction and is a DISPOSE event, this is the
-                         * one we need to present. If not, the originally
-                         * found UNREGISTER is the one to present.
-                         */
-                        if ((!v_readerSampleTestState(prevSample,L_TRANSACTION)) &&
-                            v_stateTest(msgState, L_DISPOSED))
-                        {
-                            sample = prevSample;
-                        }
-                    }
-
-                    /* Only pass this sample if it has not been READ before and if
-                     * the reader has not disabled invalid samples.
+                    /* Reset the event counters for all remaining invalid samples in this
+                     * instance if they have communicated their instance state change.
                      */
-                    r = v_dataReaderInstanceReader(_this);
-                    if (!v_readerSampleTestStateOr(sample, L_READ | L_LAZYREAD) &&
-                            v_reader(r)->qos->lifecycle.enable_invalid_samples)
+                    if (v_actionResultTestNot(result, V_SKIP))
                     {
-                        proceed = v_dataReaderSampleRead(sample, action, arg);
-                        assert(!v_dataReaderInstanceStateTest(_this, L_STATECHANGED));
+                        invalidSampleResetEventCounters(v_dataReaderInstanceOldest(_this), r);
                     }
                 }
             }
@@ -1542,12 +1790,12 @@ v_dataReaderInstanceReadSamples(
             CHECK_COUNT(_this);
             CHECK_INSTANCE_CONSISTENCY(_this);
 
-            return proceed;
+            return v_actionResultTest(result, V_PROCEED);
         }
         readId = v_dataReaderInstanceDataReader(_this)->readCnt;
         newestSample = v_dataReaderInstanceNewest(_this);
         sample = v_dataReaderInstanceOldest(_this);
-        while ((sample != NULL) && (proceed == TRUE)) {
+        while (sample != NULL && v_actionResultTest(result, V_PROCEED)) {
             if (!v_readerSampleTestState(sample,L_TRANSACTION) &&
                 (sample->readId != readId))
             {
@@ -1580,10 +1828,22 @@ v_dataReaderInstanceReadSamples(
                 if (sampleSatisfies && v_readerSampleTestState(sample, L_VALIDDATA))
                 {
                     sample->readId = readId;
-                    proceed = v_dataReaderSampleRead(sample, action, arg);
+                    result = v_dataReaderSampleRead(sample, action, arg);
+                    if (v_actionResultTestNot(result, V_SKIP))
+                    {
+                        nrSamplesRead++;
+                    }
                 }
             }
             sample = sample->newer;
+        }
+
+        /* Reset the event counters for all remaining invalid samples in this
+         * instance if they have communicated their instance state change.
+         */
+        if (nrSamplesRead > 0)
+        {
+            invalidSampleResetEventCounters(v_dataReaderInstanceOldest(_this), r);
         }
     }
 
@@ -1591,18 +1851,18 @@ v_dataReaderInstanceReadSamples(
     CHECK_COUNT(_this);
     CHECK_INSTANCE_CONSISTENCY(_this);
 
-    return proceed;
+    return v_actionResultTest(result, V_PROCEED);
 }
 
 
-c_bool
+v_actionResult
 v_dataReaderInstanceWalkSamples(
     v_dataReaderInstance _this,
     v_readerSampleAction action,
     c_voidp arg)
 {
     v_dataReaderSample sample;
-    c_bool proceed = TRUE;
+    v_actionResult result = V_PROCEED;
 
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
 
@@ -1615,9 +1875,9 @@ v_dataReaderInstanceWalkSamples(
         if (!v_dataReaderInstanceEmpty(_this))
         {
             sample = v_dataReaderInstanceOldest(_this);
-            while ((sample != NULL) && (proceed == TRUE))
+            while ((sample != NULL) && v_actionResultTest(result, V_PROCEED))
             {
-                proceed = action(v_readerSample(sample),arg);
+                result = action(v_readerSample(sample), arg);
                 sample = sample->newer;
             }
             CHECK_COUNT(_this);
@@ -1625,22 +1885,136 @@ v_dataReaderInstanceWalkSamples(
             CHECK_INSTANCE_CONSISTENCY(_this);
         }
     }
-    return proceed;
+    return result;
 }
 
+void
+v_dataReaderInstanceSampleRemove(
+    v_dataReaderInstance _this,
+    v_dataReaderSample sample)
+{
+    v_message msg = v_dataReaderSampleMessage(sample);
+
+    assert(_this->sampleCount >= 0);
+    if (v_readerSampleTestState(sample, L_VALIDDATA))
+    {
+        CHECK_COUNT(_this);
+        _this->sampleCount--;
+        if (!v_readerSampleTestState(sample, L_TRANSACTION))
+        {
+            /* As long as the L_TRANSACTION bit is set, the accessibleCount has
+             * not been increased and therefore it should not be decreased if the
+             * sample is removed */
+            _this->accessibleCount--;
+        }
+        assert (_this->accessibleCount >= 0);
+    }
+    /* Remove sample from history. */
+    if (sample->older)
+    {
+        assert(v_dataReaderInstanceOldest(_this) != sample);
+        v_dataReaderSample(sample->older)->newer = sample->newer;
+    }
+    else
+    {
+        /* sample = oldest */
+        assert(v_dataReaderInstanceOldest(_this) == sample);
+        v_dataReaderInstanceSetOldest(_this,sample->newer);
+    }
+    if (sample->newer)
+    {
+        assert(v_dataReaderInstanceNewest(_this) != sample);
+        v_dataReaderSample(sample->newer)->older = sample->older;
+    }
+    else
+    {
+        /* sample = newest */
+        assert(v_dataReaderInstanceNewest(_this) == sample);
+        v_dataReaderInstanceSetNewest(_this,sample->older);
+    }
+    CHECK_INSTANCE_CONSISTENCY(_this);
+
+    /* If instance becomes empty, then modify states accordingly. */
+    if (v_dataReaderInstanceOldest(_this) == NULL)
+    {
+        v_dataReaderInstanceStateClear(_this, L_NEW);
+        v_dataReaderInstanceStateClear(_this, L_STATECHANGED);
+        v_dataReaderInstanceStateSet(_this, L_EMPTY);
+    }
+
+    /* Remove the sample from all administrations. */
+    sample->newer = NULL;
+    sample->older = NULL;
+    v_dataReaderSampleWipeViews(sample);
+    v_dataReaderSampleRemoveFromLifespanAdmin(sample);
+    if (!v_readerSampleTestStateOr(sample, L_READ | L_LAZYREAD | L_TRANSACTION))
+    {
+        v_dataReader r = v_dataReaderInstanceReader(_this);
+        r->notReadCount--;
+    }
+
+    /* If the consumed sample is newer than the previously consumed
+     * sample, then update the history bookmark to indicate that
+     * all samples prior to the current sample have been consumed.
+     */
+    if (c_timeCompare(msg->writeTime, _this->lastConsumed.sourceTimestamp) == C_GT ||
+       (
+            c_timeCompare(msg->writeTime, _this->lastConsumed.sourceTimestamp) == C_EQ &&
+            v_gidCompare(msg->writerGID, _this->lastConsumed.gid) == C_GT
+       )
+    )
+    {
+        _this->lastConsumed.sourceTimestamp = msg->writeTime;
+        _this->lastConsumed.gid = msg->writerGID;
+    }
+
+    /* Free the sample itself. */
+    v_readerSampleSetState(sample, L_REMOVED);
+    v_dataReaderSampleFree(sample);
+}
+
+/*
+ * This function checks whether a sample is still contained in the
+ * dataReaderInstance. It is not enough to check the instance pointer
+ * of the dataReaderSample, because the sample under investigation
+ * might just have been taken from the dataReaderInstance but still
+ * have its its instance pointer pointing towards the instance.
+ * This is for example the case when data is taken but the language
+ * specific copyOut functions still need to copy the data outside
+ * the reader locks.
+ */
 c_bool
+v_dataReaderInstanceContainsSample(
+        v_dataReaderInstance _this,
+        v_dataReaderSample sample)
+{
+    c_bool result = FALSE;
+
+    assert(v_dataReaderSampleInstance(sample) == _this);
+    if (v_dataReaderSampleInstance(sample) == _this &&
+            !v_readerSampleTestState(sample, L_REMOVED))
+    {
+        result = TRUE;
+    }
+    return result;
+}
+
+
+v_actionResult
 v_dataReaderSampleTake(
     v_dataReaderSample sample,
     v_readerSampleAction action,
     c_voidp arg)
 {
     v_dataReaderInstance instance;
-    v_message untypedMsg;
+    v_dataReaderSample orgSample;
+    c_type sampleType;
     v_state state;
     v_state mask;
-    c_bool proceed = TRUE;
+    v_actionResult result = 0;
     v_dataReader r;
 
+    orgSample = NULL;
     instance = v_dataReaderSampleInstance(sample);
 
     CHECK_COUNT(instance);
@@ -1668,9 +2042,14 @@ v_dataReaderSampleTake(
         v_readerSampleClearState(sample,L_LAZYREAD);
     }
 
-    /* Check for an action routine. */
+
+    /* An action routine is provided in case the sample needs to be returned
+     * to the user. If an action routine is not provided, it means the sample
+     * needs to be removed from the administration, so the reader should be
+     * modified accordingly. That means the 'proceed' flag should be set in
+     * that case.
+     */
     V_MESSAGE_STAMP(v_dataReaderSampleMessage(sample),readerReadTime);
-    untypedMsg = v_dataReaderSampleMessage(sample);
     if (action)
     {
         /* If the sample contains an untyped invalid message, then temporarily
@@ -1679,104 +2058,82 @@ v_dataReaderSampleTake(
          */
         if (!v_readerSampleTestState(sample, L_VALIDDATA))
         {
+            /* This is a hack to make a shallow copy of the sample. This only works
+             * because we manually keep all known references of v_dataReaderSample
+             * except for its v_message field, which will be replaced. Of course
+             * this is hard to maintain when v_dataReaderSample will be extended to
+             * contain other references in the future. Since v_dataReaderSample expects
+             * a v_message with userData from its meta-data, copying the sample using
+             * c_copyIn will result in an illegal attempt to copy userData from a
+             * v_message that doesn't have any.
+             * TODO: This code should be removed as soon as scdds2975 has been solved.
+             */
+            orgSample = sample;
+            sampleType = c_typeActualType(c_getType(orgSample));
+            sample = c_new(sampleType);
+            memcpy(sample, orgSample, sampleType->size);
+            c_keep(sample->_parent._parent.next);
+            c_keep(sample->older);
+            /* Original message was memcopied and thus not kept. Therefore do not use c_free. */
             v_dataReaderSampleTemplate(sample)->message =
-                CreateTypedInvalidMessage(instance, untypedMsg);
+                CreateTypedInvalidMessage(instance, v_dataReaderSampleMessage(orgSample));
+            /* Hack ends here. */
         }
         /* Invoke the action routine with the typed sample. */
-        proceed = action(v_readerSample(sample), arg);
+        result = action(v_readerSample(sample), arg);
 
         /* If the message was temporarily switched, switch it back. */
         if (!v_readerSampleTestState(sample, L_VALIDDATA))
         {
-            c_free(v_dataReaderSampleMessage(sample));
-            v_dataReaderSampleTemplate(sample)->message = untypedMsg;
+            c_free(sample);
+            sample = orgSample;
         }
     }
     else
     {
-        proceed = TRUE;
+        v_actionResultSet(result, V_PROCEED);
     }
 
-    V_MESSAGE_STAMP(v_dataReaderSampleMessage(sample),readerCopyTime);
-    V_MESSAGE_REPORT(v_dataReaderSampleMessage(sample),
-                     v_dataReaderInstanceDataReader(instance));
-
-    /* If the consumed sample is newer than the previously consumed
-     * sample, then update the history bookmark to indicate that
-     * all samples prior to the current sample have been consumed.
+    /* A sample is considered 'skipped' if the action routine invoked above
+     * does not want to keep track of the sample (for example because it
+     * didn't match its readerMasks). In that case, it sets the 'skip' flag
+     * to true, which indicates that those samples should be considered
+     * 'untouched' and therefore their instance and sample states should
+     * not be modified.
      */
-    if (c_timeCompare(untypedMsg->writeTime, instance->lastConsumed.sourceTimestamp) == C_GT ||
-       (
-            c_timeCompare(untypedMsg->writeTime, instance->lastConsumed.sourceTimestamp) == C_EQ &&
-            v_gidCompare(untypedMsg->writerGID, instance->lastConsumed.gid) == C_GT
-       )
-    )
+    if (v_actionResultTestNot(result, V_SKIP))
     {
-        instance->lastConsumed.sourceTimestamp = untypedMsg->writeTime;
-        instance->lastConsumed.gid = untypedMsg->writerGID;
-    }
+        V_MESSAGE_STAMP(v_dataReaderSampleMessage(sample),readerCopyTime);
+        V_MESSAGE_REPORT(v_dataReaderSampleMessage(sample),
+                         v_dataReaderInstanceDataReader(instance));
 
 
-    if (r->views != NULL)
-    {
-        v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
-    }
-    if(action)
-    {
-        v_dataReaderInstanceStateClear(instance, L_NEW);
-    }
-    assert(instance->sampleCount >= 0);
-    if (v_readerSampleTestState(sample, L_VALIDDATA))
-    {
-        instance->sampleCount--;
-    }
-    /* Remove sample from history. */
-    if (sample->older)
-    {
-        assert(v_dataReaderInstanceOldest(instance) != sample);
-        v_dataReaderSample(sample->older)->newer = sample->newer;
-    }
-    else
-    {
-        /* sample = oldest */
-        assert(v_dataReaderInstanceOldest(instance) == sample);
-        v_dataReaderInstanceSetOldest(instance,sample->newer);
-    }
-    if (sample->newer)
-    {
-        assert(v_dataReaderInstanceNewest(instance) != sample);
-        v_dataReaderSample(sample->newer)->older = sample->older;
-    }
-    else
-    {
-        /* sample = newest */
-        assert(v_dataReaderInstanceNewest(instance) == sample);
-        v_dataReaderInstanceSetNewest(instance,sample->older);
-    }
-    sample->newer = NULL;
-    sample->older = NULL;
-    v_dataReaderSampleRemoveFromLifespanAdmin(sample);
-    v_dataReaderSampleFree(sample);
+        if(action)
+        {
+            v_dataReaderInstanceStateClear(instance, L_NEW);
+            v_dataReaderInstanceStateClear(instance, L_STATECHANGED);
+        }
 
-    v_dataReaderInstanceStateClear(instance, L_STATECHANGED);
+        v_dataReaderInstanceSampleRemove(instance, sample);
 
-    if (v_dataReaderInstanceEmpty(instance))
-    {
-        assert(instance->sampleCount == 0);
-        v_dataReaderInstanceStateSet(instance, L_EMPTY);
-    }
+        if (v_dataReaderInstanceEmpty(instance))
+        {
+            assert(instance->sampleCount == 0);
+            assert(instance->accessibleCount == 0);
+            v_dataReaderInstanceStateSet(instance, L_EMPTY);
+        }
 
-    /* reader internal state of the data has been modified.
-     * so increase readers update count.
-     * This value is used by queries to determine if a query
-     * needs to be re-evaluated.
-     */
-    v_dataReader(r)->updateCnt++;
+        /* reader internal state of the data has been modified.
+         * so increase readers update count.
+         * This value is used by queries to determine if a query
+         * needs to be re-evaluated.
+         */
+        v_dataReader(r)->updateCnt++;
 
-    if (r->triggerValue)
-    {
-        v_dataReaderTriggerValueFree(r->triggerValue);
-        r->triggerValue = NULL;
+        if (r->triggerValue) {
+            v_dataReaderTriggerValueFree(r->triggerValue);
+            r->triggerValue = NULL;
+        }
     }
 
     /* The instance state can have changed, so update the statistics */
@@ -1785,7 +2142,7 @@ v_dataReaderSampleTake(
     CHECK_COUNT(instance);
     CHECK_EMPTINESS(instance);
     CHECK_INSTANCE_CONSISTENCY(instance);
-    return proceed;
+    return result;
 }
 
 c_bool
@@ -1795,12 +2152,11 @@ v_dataReaderInstanceTakeSamples(
     v_readerSampleAction action,
     c_voidp arg)
 {
-    v_dataReaderSample sample, next, newestSample, prevSample;
-    c_bool proceed = TRUE;
+    v_dataReaderSample sample, next, newestSample;
+    v_actionResult result = V_PROCEED;
     c_bool sampleSatisfies;
+    int nrSamplesTaken = 0;
     c_ulong readId;
-    v_message msg, prevMsg;
-    v_state msgState;
     v_dataReader r;
 
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
@@ -1811,110 +2167,69 @@ v_dataReaderInstanceTakeSamples(
 
     if (_this && !v_dataReaderInstanceEmpty(_this))
     {
-        /* Check the number of L_VALID samples. If there are none, check to
-         * see whether any invalid samples need to be communicated.
+        r = v_dataReaderInstanceReader(_this);
+
+        /* Check the number of accessible L_VALID samples. If there are none,
+         * check to see whether any invalid samples need to be communicated.
          */
-        if (_this->sampleCount == 0)
+        if (!hasValidSampleAccessible(_this))
         {
-            /* Only pass invalid samples in case the L_STATECHANGED is set. */
-            if (v_dataReaderInstanceStateTest(_this, L_STATECHANGED))
+            /* Only pass invalid samples in case the L_STATECHANGED is set and
+             * in case the reader is allowed to return invalid samples.
+             */
+            if (v_dataReaderInstanceStateTest(_this, L_STATECHANGED) &&
+                    v_reader(r)->qos->lifecycle.enable_invalid_samples)
             {
                 /* No valid samples exist, so there must be at least one invalid
-                 * sample. So pick the the most recent one at newest, unless
-                 * that's an UNREGISTER which is preceded by a DISPOSE without
-                 * UNREGISTER, since then the DISPOSE should be communicated.
+                 * sample that still needs to be processed. So walk through all
+                 * samples and skip the ones that are part of an unfinished
+                 * transaction or that have been accessed previously.
                  */
-                sample = v_dataReaderInstanceNewest(_this);
+                sample = v_dataReaderInstanceOldest(_this);
                 assert(sample);
-                assert(!v_readerSampleTestState(sample, L_VALIDDATA));
-
-                /* Samples that are part of an unfinished transaction may not
-                 * be shown. This algorithm must ensure that it provides the
-                 * latest DISPOSE that is not part of a transaction or the
-                 * latest UNREGISTER if no DISPOSE is applicable.
-                 *
-                 * As a 1st step find the newest sample that is not part
-                 * of an unfinished transaction.
-                 */
-                while(v_readerSampleTestState(sample,L_TRANSACTION) &&
-                        sample->older)
+                assert(!v_readerSampleTestState(sample, L_VALIDDATA) ||
+                        v_readerSampleTestState(sample, L_TRANSACTION));
+                while(sample != NULL &&
+                        v_readerSampleTestStateOr(sample,L_TRANSACTION | L_READ | L_LAZYREAD))
                 {
-                    sample = sample->older;
+                    sample = sample->newer;
                 }
-                /* See if we found an invalid sample that is not part of an
-                 * unfinished transaction.
+                /* If a sample is found matching the criteria, then consume it.
                  */
-                if (!v_readerSampleTestState(sample,L_TRANSACTION))
+                if (sample)
                 {
-                    msg = v_dataReaderSampleMessage(sample);
-                    msgState = v_nodeState(msg);
+                    result = v_dataReaderSampleTake(sample, action, arg);
 
-                    /* Check if our sample is a DISPOSE event. */
-                    if((!v_stateTest(msgState, L_DISPOSED)) && (sample->older))
-                    {
-                        prevSample = sample->older;
-
-                        /* Find the previous event that is not part of an
-                         * unfinished transaction.
-                         */
-                        while(v_readerSampleTestState(prevSample,L_TRANSACTION) &&
-                                prevSample->older)
-                        {
-                            prevSample = prevSample->older;
-                        }
-                        prevMsg = v_dataReaderSampleMessage(prevSample);
-                        msgState = v_nodeState(prevMsg);
-
-                        /* If our found event is not part of an unfinished
-                         * transaction and is a DISPOSE event, this is the
-                         * one we need to present. If not, the originally
-                         * found UNREGISTER is the one to present.
-                         */
-                        if ((!v_readerSampleTestState(prevSample,L_TRANSACTION)) &&
-                            v_stateTest(msgState, L_DISPOSED))
-                        {
-                            sample = prevSample;
-                        }
-                    }
-
-                    /* Only pass this sample if it has not been READ before and if
-                     * the reader has not disabled invalid samples.
+                    /* If the invalid sample has been able to communicate its instance
+                     * state, then trash all the remaining invalid samples that are not
+                     * part of an unfinished transaction (i.e. up to newest->next which
+                     * is always NULL).
                      */
-                    r = v_dataReaderInstanceReader(_this);
-                    if (!v_readerSampleTestStateOr(sample, L_READ | L_LAZYREAD) &&
-                            v_reader(r)->qos->lifecycle.enable_invalid_samples)
+                    if (v_actionResultTestNot(result, V_SKIP))
                     {
-                        proceed = v_dataReaderSampleRead(sample, action, arg);
-                        assert(!v_dataReaderInstanceStateTest(_this, L_STATECHANGED));
+                        invalidSamplesPurgeUntil(_this, NULL);
                     }
                 }
             }
-
-            /* Now trash all the remaining (invalid) samples that are not part
-             * of an unfinished transaction.
-             */
-            sample = v_dataReaderInstanceOldest(_this);
-            while (sample != NULL)
+            else
             {
-                next = sample->newer;
-
-                /* Check whether transaction is in progress for this sample. */
-                if(!v_readerSampleTestState(sample,L_TRANSACTION))
-                {
-                    v_dataReaderSampleTake(sample, NULL, NULL);
-                }
-                sample = next;
+                /* If the instance contains only invalid samples whose state-change has
+                 * already been communicated, then these invalid samples have no further
+                 * purpose and can be purged.
+                 */
+                invalidSamplesPurgeUntil(_this, NULL);
             }
+
             CHECK_EMPTINESS(_this);
             CHECK_COUNT(_this);
             CHECK_INSTANCE_CONSISTENCY(_this);
 
-            return proceed;
+            return v_actionResultTest(result, V_PROCEED);
         }
         readId = v_dataReaderInstanceDataReader(_this)->readCnt;
         newestSample = v_dataReaderInstanceNewest(_this);
         sample = v_dataReaderInstanceOldest(_this);
-        while ((proceed == TRUE) && (sample != NULL))
+        while (sample != NULL && v_actionResultTest(result, V_PROCEED))
         {
             next = sample->newer;
             if (!v_readerSampleTestState(sample,L_TRANSACTION) &&
@@ -1951,16 +2266,12 @@ v_dataReaderInstanceTakeSamples(
                     if (v_readerSampleTestState(sample, L_VALIDDATA))
                     {
                         sample->readId = readId;
-                        proceed = v_dataReaderSampleTake(sample, action, arg);
-                        assert(!v_dataReaderInstanceStateTest(_this, L_STATECHANGED));
+                        result = v_dataReaderSampleTake(sample, action, arg);
+                        if (v_actionResultTestNot(result, V_SKIP))
+                        {
+                            nrSamplesTaken++;
+                        }
                         CHECK_EMPTINESS(_this);
-                    }
-                    else
-                    {
-                        /* When taking samples, all invalid samples up till the
-                         * first valid sample can be removed.
-                         */
-                        v_dataReaderSampleTake(sample, NULL, NULL);
                     }
                 }
             }
@@ -1970,12 +2281,23 @@ v_dataReaderInstanceTakeSamples(
         if (v_dataReaderInstanceEmpty(_this)) {
               assert(!v_dataReaderInstanceStateTest(_this, L_STATECHANGED));
         }
+
+        /* If invalid samples have been able to communicate their state change,
+         * then purge all invalid samples up to the last consumed, and reset
+         * the event counter for all invalid samples that follow it.
+         */
+        if (nrSamplesTaken > 0)
+        {
+            invalidSamplesPurgeUntil(_this, sample);
+            invalidSampleResetEventCounters(sample, r);
+        }
+
     }
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
     CHECK_INSTANCE_CONSISTENCY(_this);
 
-    return proceed;
+    return v_actionResultTest(result, V_PROCEED);
 }
 
 void
@@ -1985,8 +2307,6 @@ v_dataReaderInstancePurge(
     c_long noWritersCount)
 {
     v_dataReaderSample sample;
-    v_dataReaderSample latestToPurge = NULL;
-    v_dataReader r;
 
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
     /* Algorithm doesn't handle scanning for disposed- AND nowriterscount. */
@@ -1998,7 +2318,6 @@ v_dataReaderInstancePurge(
 
     if ((_this != NULL) && !v_dataReaderInstanceEmpty(_this))
     {
-        r = v_dataReaderInstanceReader(_this);
         /* Start with the oldest generation, so begin with oldest. */
         sample = v_dataReaderInstanceOldest(_this);
 
@@ -2006,21 +2325,9 @@ v_dataReaderInstancePurge(
         {
             while ((sample != NULL) && (sample->disposeCount <= disposedCount))
             {
-                if (v_readerSampleTestState(sample, L_VALIDDATA))
-                {
-                    /* Do not decrease sample count on invalid sample */
-                    _this->sampleCount--;
-                }
-
-                if (r->views != NULL)
-                {
-                    v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
-                }
-
-                v_dataReaderSampleRemoveFromLifespanAdmin(sample);
-
-                latestToPurge = sample;
-                sample = sample->newer;
+                v_dataReaderSample nextSample = sample->newer;
+                v_dataReaderInstanceSampleRemove(_this, sample);
+                sample = nextSample;
             }
         }
 
@@ -2028,65 +2335,10 @@ v_dataReaderInstancePurge(
         {
             while ((sample != NULL) && (sample->noWritersCount <= noWritersCount))
             {
-                if (v_readerSampleTestState(sample, L_VALIDDATA))
-                {
-                    /* Do not decrease sample count on invalid sample */
-                    _this->sampleCount--;
-                }
-
-                if (r->views != NULL)
-                {
-                    v_dataReaderSampleWipeViews(v_dataReaderSample(sample));
-                }
-
-                v_dataReaderSampleRemoveFromLifespanAdmin(sample);
-
-                latestToPurge = sample;
-                sample = sample->newer;
+                v_dataReaderSample nextSample = sample->newer;
+                v_dataReaderInstanceSampleRemove(_this, sample);
+                sample = nextSample;
             }
-        }
-        /* now latestToPurge points to the sample in the history from where
-         * we need to purge.
-         */
-        if (sample == NULL)
-        {   /* instance becomes empty, purge all */
-            assert(_this->sampleCount == 0);
-            sample = v_dataReaderInstanceNewest(_this);
-            v_dataReaderSampleFree(sample);
-            v_dataReaderInstanceSetOldest(_this,NULL);
-            v_dataReaderInstanceSetNewest(_this,NULL);
-            v_dataReaderInstanceStateClear(_this, L_NEW);
-            v_dataReaderInstanceStateSet(_this, L_EMPTY);
-            v_dataReaderInstanceStateClear(_this, L_STATECHANGED);
-
-            /* reader internal state of the data has been modified.
-             * so increase readers update count.
-             * This value is used by queries to determine if a query
-             * needs to be re-evaluated.
-             */
-            v_dataReader(r)->updateCnt++;
-
-            if (r->triggerValue)
-            {
-                v_dataReaderTriggerValueFree(r->triggerValue);
-                r->triggerValue = NULL;
-            }
-        }
-        else
-        {
-            /* Everything older then (including) latestToPurge can be purged */
-            if (latestToPurge != NULL)
-            {
-               v_dataReaderInstanceSetOldest(_this, sample);
-               /* newer is c_voidp, but break link anyway */
-               latestToPurge->newer = NULL;
-               sample->older = NULL; /* reference transfered to latestToPurge */
-               /* Free latestToPurge (and all older samples, since older-pointers
-                * are managed.
-                */
-               v_dataReaderSampleFree(latestToPurge);
-               /* The instance state is in correct state, so no update needed. */
-            } /* else nothing to purge! */
         }
     }
 
@@ -2134,7 +2386,7 @@ v_dataReaderInstanceGetNotEmptyInstanceCount(
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
 
     if (_this != NULL) {
-        result = c_count(v_index(_this->index)->notEmptyList);
+        result = (c_ulong) c_count(v_index(_this->index)->notEmptyList);
     }
 
     return result;
@@ -2164,8 +2416,10 @@ v_dataReaderInstanceUnregister (
     v_message msg = NULL;
     v_dataReaderResult result = V_DATAREADER_INSERTED;
     v_writeResult writeResult;
+    v_dataReaderInstance* thisPtr;
     c_bool autoDispose = v_messageQos_isAutoDispose(unregistration->qos);
     assert(C_TYPECHECK(_this,v_dataReaderInstance));
+
 
     CHECK_COUNT(_this);
     CHECK_EMPTINESS(_this);
@@ -2193,7 +2447,8 @@ v_dataReaderInstanceUnregister (
 
             /* Insert the invalid message into the dataReaderInstance. */
             entry = v_dataReaderEntry(v_index(_this->index)->entry);
-            writeResult = v_dataReaderEntryWrite(entry, msg, (v_instance *)&_this);
+            thisPtr = &_this;
+            writeResult = v_dataReaderEntryWrite(entry, msg, (v_instance *)thisPtr);
             c_free(msg);
             if (writeResult != V_WRITE_SUCCESS)
             {

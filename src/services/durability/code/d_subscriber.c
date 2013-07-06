@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -24,7 +24,6 @@
 #include "d_groupRemoteListener.h"
 #include "d_groupLocalListener.h"
 #include "d_statusListener.h"
-#include "d_statusRequestListener.h"
 #include "d_sampleRequestListener.h"
 #include "d_sampleChainListener.h"
 #include "d_nameSpacesRequestListener.h"
@@ -40,25 +39,7 @@
 #include "u_dispatcher.h"
 #include "v_event.h"
 #include "os_heap.h"
-
-static void
-collectNsWalk(
-    d_nameSpace ns, void* userData)
-{
-    c_iter nameSpaces = (c_iter)userData;
-    if (ns)
-    {
-        d_objectKeep(d_object(ns));
-        c_iterInsert (nameSpaces, ns);
-    }
-}
-
-static void
-deleteNsWalk(
-   void* o, void* userData)
-{
-    d_objectFree(d_object(o), D_NAMESPACE);
-}
+#include "os_report.h"
 
 static c_char*
 getPersistentPartitionExpression(
@@ -73,12 +54,11 @@ getPersistentPartitionExpression(
     c_iter nameSpaces;
 
     result = NULL;
-    nameSpaces = c_iterNew(NULL);
 
     assert (admin);
 
     /* Collect namespaces */
-    d_adminNameSpaceWalk (admin, collectNsWalk, nameSpaces);
+    nameSpaces = d_adminNameSpaceCollect(admin);
 
     if(admin){
         length = 0;
@@ -122,8 +102,7 @@ getPersistentPartitionExpression(
             }
         }
 
-        c_iterWalk(nameSpaces, deleteNsWalk, NULL);
-        c_iterFree(nameSpaces);
+        d_adminNameSpaceCollectFree(admin, nameSpaces);
     }
 
     if(result){
@@ -193,7 +172,11 @@ d_subscriberNew(
     v_subscriberQos subscriberQos, psubscriberQos;
     c_char*         partitionExpr;
     struct initialQualityWalkData walkData;
-
+    d_storeResult       result;
+    d_nameSpace         nameSpace;
+    c_iter              nameSpaces;
+    c_bool              nsComplete;
+    d_durabilityKind    dkind;
 
     subscriber = NULL;
 
@@ -220,6 +203,50 @@ d_subscriberNew(
 
         if(subscriber->persistentStore) {
             if(psubscriberQos->partition){
+
+                /* Collect nameSpaces from admin. */
+                nameSpaces = d_adminNameSpaceCollect(admin);
+
+                /* Loop nameSpaces */
+                while((nameSpace = c_iterTakeFirst(nameSpaces))) {
+                    dkind = d_nameSpaceGetDurabilityKind(nameSpace);
+
+                    /* Walk only over persistent nameSpaces */
+                    if((dkind == D_DURABILITY_PERSISTENT) || (dkind == D_DURABILITY_ALL)){
+
+                        /* If persistent nameSpace is not complete, restore backup */
+                        result = d_storeNsIsComplete (subscriber->persistentStore, nameSpace, &nsComplete);
+                        if ( (result == D_STORE_RESULT_OK) && !nsComplete)
+                        {
+                            /* Incomplete namespace, restore backup. */
+                            d_printTimedEvent(durability, D_LEVEL_WARNING,
+                                D_THREAD_GROUP_LOCAL_LISTENER,
+                                "Namespace '%s' is incomplete, trying to restore backup.\n",
+                                d_nameSpaceGetName(nameSpace));
+
+                            if (d_storeRestoreBackup (subscriber->persistentStore, nameSpace) != D_STORE_RESULT_OK)
+                            {
+                                d_printTimedEvent(durability, D_LEVEL_WARNING,
+                                    D_THREAD_GROUP_LOCAL_LISTENER,
+                                    "Backup for namespace '%s' could not be restored as no complete backup did exist on disk. Marking namespace as incomplete and continuing.\n",
+                                    d_nameSpaceGetName(nameSpace));
+
+                                OS_REPORT_1(OS_WARNING, D_CONTEXT_DURABILITY, 0,
+                                    "Backup for namespace '%s' could not be restored as no complete backup did exist on disk. Marking namespace as incomplete and continuing.\n",
+                                    d_nameSpaceGetName (nameSpace));
+
+                                /* If backup fails, mark master state for nameSpace !D_STATE_COMPLETE */
+                                d_nameSpaceSetMasterState (nameSpace, D_STATE_INIT);
+                            }
+                        }
+                    }
+                    d_nameSpaceFree(nameSpace);
+                }
+
+                /* Free nameSpaces iterator */
+                assert(c_iterLength(nameSpaces) == 0);
+                c_iterFree(nameSpaces);
+
                 subscriber->persistentSubscriber = u_subscriberNew(u_participant(d_durabilityGetService(durability)),
                                                                    config->subscriberName,
                                                                    psubscriberQos,
@@ -244,7 +271,6 @@ d_subscriberNew(
             subscriber->groupLocalListener        = NULL;
             subscriber->groupRemoteListener       = NULL;
             subscriber->groupsRequestListener     = NULL;
-            subscriber->statusRequestListener     = NULL;
             subscriber->sampleRequestListener     = NULL;
             subscriber->sampleChainListener       = NULL;
             subscriber->nameSpacesRequestListener = NULL;
@@ -253,6 +279,7 @@ d_subscriberNew(
             subscriber->deleteDataListener        = NULL;
         } else {
             d_subscriberFree(subscriber);
+            subscriber = NULL;
         }
         d_subscriberQosFree(subscriberQos);
         d_subscriberQosFree(psubscriberQos);
@@ -296,12 +323,7 @@ d_subscriberDeinit(
             d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "groupsRequestListener freed\n");
             subscriber->groupsRequestListener = NULL;
         }
-        if(subscriber->statusRequestListener){
-            d_statusRequestListenerFree(subscriber->statusRequestListener);
-            d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "statusRequestListener freed\n");
-            subscriber->statusRequestListener = NULL;
-        }
-        if(subscriber->sampleRequestListener){
+       if(subscriber->sampleRequestListener){
             d_sampleRequestListenerFree(subscriber->sampleRequestListener);
             d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN, "sampleRequestListener freed\n");
             subscriber->sampleRequestListener = NULL;
@@ -517,36 +539,6 @@ d_subscriberSetGroupsRequestListenerEnabled(
             result = d_groupsRequestListenerStart(subscriber->groupsRequestListener);
         } else {
             result = d_groupsRequestListenerStop(subscriber->groupsRequestListener);
-        }
-    }
-    return result;
-}
-
-void
-d_subscriberInitStatusRequestListener(
-    d_subscriber subscriber)
-{
-    assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-
-    if(!subscriber->statusRequestListener){
-        subscriber->statusRequestListener = d_statusRequestListenerNew(subscriber);
-        assert(subscriber->statusRequestListener);
-    }
-}
-
-c_bool
-d_subscriberSetStatusRequestListenerEnabled(
-    d_subscriber subscriber,
-    c_bool enable)
-{
-    c_bool result = FALSE;
-    assert(d_objectIsValid(d_object(subscriber), D_SUBSCRIBER) == TRUE);
-
-    if(subscriber){
-        if(enable == TRUE){
-            result = d_statusRequestListenerStart(subscriber->statusRequestListener);
-        } else {
-            result = d_statusRequestListenerStop(subscriber->statusRequestListener);
         }
     }
     return result;

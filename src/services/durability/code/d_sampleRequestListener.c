@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -27,12 +27,16 @@
 #include "d_group.h"
 #include "d_misc.h"
 #include "v_group.h"
+#include "v_builtin.h"
 #include "v_time.h"
 #include "v_state.h"
 #include "v_historicalDataRequest.h"
+#include "v_groupInstance.h"
 #include "sd_serializer.h"
 #include "sd_serializerBigE.h"
 #include "os_heap.h"
+#include "os_report.h"
+#include "c_misc.h"
 #include "d_actionQueue.h"
 
 static d_sampleRequestHelper
@@ -162,8 +166,20 @@ d_sampleRequestListenerAddRequest(
             } else {
                 timeToAct = os_timeAdd(os_timeGet(), config->initialRequestCombinePeriod);
             }
-            found = d_sampleRequestHelperNew(listener, request, timeToAct);
-            listener->requests = c_iterAppend(listener->requests, found);
+
+            if ((strcmp(request->partition, V_BUILTIN_PARTITION) == 0) &&
+                (strcmp(request->topic, V_TOPICINFO_NAME) == 0))
+            {
+                d_sampleRequestHelper first = d_sampleRequestHelper(c_iterObject(listener->requests, 0));
+                if (first) {
+                    timeToAct = first->timeToAct;
+                }
+                found = d_sampleRequestHelperNew(listener, request, timeToAct);
+                listener->requests = c_iterInsert(listener->requests, found);
+            } else {
+                found = d_sampleRequestHelperNew(listener, request, timeToAct);
+                listener->requests = c_iterAppend(listener->requests, found);
+            }
             found = NULL;
         }
 
@@ -195,6 +211,9 @@ d_sampleRequestListenerAnswer(
     d_sampleRequest request;
     d_alignerStatistics stats;
     v_historicalDataRequest vrequest;
+    v_message vmessage;
+    v_groupInstance instance;
+    v_registration unregister;
     struct v_resourcePolicy resourceLimits;
 
     listener        = helper->listener;
@@ -244,7 +263,7 @@ d_sampleRequestListenerAnswer(
     } else {
         sendData = d_adminGroupInAlignerNS(
                                 admin, request->partition,
-                                request->topic, request->durabilityKind);
+                                request->topic);
     }
     d_messageSetAddressee(d_message(sampleChain), data.addressee);
 
@@ -255,6 +274,7 @@ d_sampleRequestListenerAnswer(
         data.publisher   = publisher;
         data.serializer  = sd_serializerBigENewTyped(vgroup->topic->messageType);
         data.list        = c_iterNew(NULL);
+        data.instances   = c_iterNew(NULL);
 
         if(d_sampleRequestHasCondition(request)){
             d_printTimedEvent(durability, D_LEVEL_INFO,
@@ -295,11 +315,70 @@ d_sampleRequestListenerAnswer(
         object = c_iterTakeFirst(data.list);
 
         while(object){
-            d_sampleRequestListenerWriteBead(object, &data);
+            instance = c_iterTakeFirst(data.instances);
+            assert(instance);
+
+            if(c_instanceOf(object, "v_registration")){
+                unregister = (v_registration)object;
+                vmessage = v_groupInstanceCreateMessage(instance);
+
+                if (vmessage){
+                    vmessage->writerGID = unregister->writerGID;
+                    vmessage->qos = c_keep(unregister->qos);
+                    vmessage->writeTime = unregister->writeTime;
+
+                    v_stateSet(v_nodeState(vmessage), L_UNREGISTER);
+
+                    d_sampleRequestListenerWriteBead(vmessage, &data);
+
+                    c_free(vmessage);
+                } else {
+                    d_printTimedEvent(durability, D_LEVEL_SEVERE,
+                        D_THREAD_SAMPLE_REQUEST_LISTENER,
+                        "Failed to allocate message, alignment for group %s.%s to fellow %u will be incomplete.\n",
+                        request->partition, request->topic,
+                        d_message(request)->senderAddress.systemId);
+
+                    OS_REPORT(OS_ERROR,
+                            "durability::d_sampleRequestListenerAnswer", 0,
+                            "Failed to allocate message, alignment will be incomplete");
+                }
+            } else {
+                v_message msg = v_message(object);
+                assert(msg != NULL);
+
+                if (v_stateTest(v_nodeState(msg), L_WRITE) ||
+                        c_getType(msg) != v_kernelType(v_objectKernel(instance), K_MESSAGE)) {
+                    d_sampleRequestListenerWriteBead(msg, &data);
+                } else {
+                    /* If the message is a mini-message without keys, temporarily replace it with
+                     * a typed message that does include the keys. That way the bead becomes self-
+                     * describing and so the receiving node can deduct its instance again.
+                     */
+                    msg = v_groupInstanceCreateTypedInvalidMessage(instance, msg);
+                    if (msg) {
+                        d_sampleRequestListenerWriteBead(msg, &data);
+                        c_free(msg);
+                    } else {
+                        d_printTimedEvent(durability, D_LEVEL_SEVERE,
+                            D_THREAD_SAMPLE_REQUEST_LISTENER,
+                            "Failed to allocate message, alignment for group %s.%s to fellow %u will be incomplete.\n",
+                            request->partition, request->topic,
+                            d_message(request)->senderAddress.systemId);
+
+                        OS_REPORT(OS_ERROR,
+                                "durability::d_sampleRequestListenerAnswer", 0,
+                                "Failed to allocate message, alignment will be incomplete");
+                    }
+                }
+            }
+            c_free(instance);
             c_free(object);
             object = c_iterTakeFirst(data.list);
         }
+        assert(c_iterLength(data.instances) == 0 );
         c_iterFree(data.list);
+        c_iterFree(data.instances);
         sd_serializerFree(data.serializer);
     } else {
         d_printTimedEvent(durability, D_LEVEL_FINE,
@@ -314,7 +393,7 @@ d_sampleRequestListenerAnswer(
     if(group){
         sampleChain->msgBody._u.link.completeness = d_groupGetCompleteness(group);
     } else {
-        sampleChain->msgBody._u.link.completeness = D_GROUP_UNKNOWN;
+        sampleChain->msgBody._u.link.completeness = D_GROUP_KNOWLEDGE_UNDEFINED;
     }
 
     d_publisherSampleChainWrite(publisher, sampleChain, data.addressee);
@@ -381,9 +460,12 @@ sendAction(
             }
 
             if(listener->mayProceed == TRUE){
+
                 helper = d_sampleRequestListenerTakeActiveRequest(listener);
 
-                if(helper){
+                while (helper && !d_durabilityMustTerminate(durability)){
+                    d_listenerUnlock(d_listener(listener));
+
                     d_printTimedEvent(durability, D_LEVEL_FINE,
                             D_THREAD_SAMPLE_REQUEST_LISTENER,
                             "Now sending data for group %s.%s to fellow(s) %u.\n",
@@ -393,6 +475,9 @@ sendAction(
 
                     d_sampleRequestListenerAnswer(helper);
                     d_sampleRequestHelperFree(helper);
+
+                    d_listenerLock(d_listener(listener));
+                    helper = d_sampleRequestListenerTakeActiveRequest(listener);
                 }
             }
             d_listenerUnlock(d_listener(listener));
@@ -525,10 +610,12 @@ d_sampleRequestListenerAction(
     d_admin admin;
     d_sampleRequest request;
     d_sampleChain sampleChain;
-    d_networkAddress addr;
+    d_networkAddress addr, addressee;
     d_publisher publisher;
+    d_configuration config;
     d_fellow fellow;
     d_alignerStatistics stats;
+    d_name fellowRole;
 
     assert(d_listenerIsValid(d_listener(listener), D_SAMPLE_REQ_LISTENER));
 
@@ -541,6 +628,13 @@ d_sampleRequestListenerAction(
                     message->senderAddress.localId,
                     message->senderAddress.lifecycleId);
     fellow     = d_adminGetFellow(admin, addr);
+
+    fellowRole = d_fellowGetRole(fellow);
+    config = d_durabilityGetConfiguration(durability);
+    addressee = d_networkAddressNew(
+                        message->addressee.systemId,
+                        message->addressee.localId,
+                        message->addressee.lifecycleId);
     stats      = d_alignerStatisticsNew();
 
     stats->alignerRequestsReceivedDif = 1;
@@ -564,16 +658,34 @@ d_sampleRequestListenerAction(
 
             sampleChain->msgBody._d = LINK;
             sampleChain->msgBody._u.link.nrSamples = 0;
-            sampleChain->msgBody._u.link.completeness = D_GROUP_UNKNOWN;
+            sampleChain->msgBody._u.link.completeness = D_GROUP_KNOWLEDGE_UNDEFINED;
             d_publisherSampleChainWrite(publisher, sampleChain, addr);
             d_sampleChainFree(sampleChain);
         }
 
         stats->alignerRequestsIgnoredDif = 1;
+    }
+    /* If this request was sent to everyone, it is meant for everyone with
+     * the same role as the role of the sender. Therefore ignore
+     * the request if my role is not the same as the role of the sender
+     */
+    else if(d_networkAddressIsUnaddressed(addressee)
+            && fellowRole && strcmp(config->role, fellowRole) != 0)
+    {
+        d_printTimedEvent(durability, D_LEVEL_FINE,
+                D_THREAD_SAMPLE_REQUEST_LISTENER,
+                "Received sample request for group %s.%s from fellow %u, but "
+                "my role is '%s' whereas the role of the sender is '%s'. "
+                "Therefore the request is not meant for me and I am ignoring "
+                "this request.\n",
+                request->partition, request->topic,
+                d_message(request)->senderAddress.systemId,
+                config->role, fellowRole);
+        d_fellowFree(fellow);
     } else {
         d_printTimedEvent(durability, D_LEVEL_FINE,
             D_THREAD_SAMPLE_REQUEST_LISTENER,
-            "Received sample request for group %s.%s from fellow %u, addding it to queue.\n",
+            "Received sample request for group %s.%s from fellow %u, adding it to queue.\n",
             request->partition, request->topic,
             d_message(request)->senderAddress.systemId);
         d_sampleRequestListenerAddRequest(d_sampleRequestListener(listener), request);
@@ -581,6 +693,7 @@ d_sampleRequestListenerAction(
     }
     d_durabilityUpdateStatistics(durability, d_statisticsUpdateAligner, stats);
     d_alignerStatisticsFree(stats);
+    d_networkAddressFree(addressee);
     d_networkAddressFree(addr);
 
     return;
@@ -589,35 +702,67 @@ d_sampleRequestListenerAction(
 c_bool
 d_sampleRequestListenerAddList(
     c_object object,
+    v_groupInstance instance,
+    v_groupFlushType flushType,
     c_voidp userData)
 {
     v_message message;
+    v_registration registration;
     struct writeBeadHelper *data;
     c_bool process;
     c_equality timeCompared;
     c_object objectToAdd;
 
-    message = (v_message)object;
     data = (struct writeBeadHelper*)userData;
     process = TRUE;
 
-    if(data->checkTimeRange){
-        timeCompared = c_timeCompare(message->writeTime, data->request->endTime);
+    switch(flushType){
+    case V_GROUP_FLUSH_REGISTRATION:
+        registration = (v_registration)object;
+        if(data->checkTimeRange){
+            timeCompared = c_timeCompare(registration->writeTime, data->request->endTime);
 
-        if(timeCompared == C_GT) {
-            process = FALSE;
-        } else if(data->request->withTimeRange == TRUE){
-            timeCompared = c_timeCompare(message->writeTime, data->request->beginTime);
+            if(timeCompared == C_GT) {
+                process = FALSE;
+            } else if(data->request->withTimeRange == TRUE){
+                timeCompared = c_timeCompare(registration->writeTime, data->request->beginTime);
 
-            if (timeCompared == C_LT) {
-                process = FALSE;  /* produced before the time-range */
+                if (timeCompared == C_LT) {
+                    process = FALSE;  /* produced before the time-range */
+                }
             }
         }
+        break;
+    case V_GROUP_FLUSH_MESSAGE:
+        message = (v_message)object;
+
+        if(data->checkTimeRange){
+            timeCompared = c_timeCompare(message->writeTime, data->request->endTime);
+
+            if(timeCompared == C_GT) {
+                process = FALSE;
+            } else if(data->request->withTimeRange == TRUE){
+                timeCompared = c_timeCompare(message->writeTime, data->request->beginTime);
+
+                if (timeCompared == C_LT) {
+                    process = FALSE;  /* produced before the time-range */
+                }
+            }
+        }
+        break;
+    default:
+        process = FALSE;
+        OS_REPORT(OS_ERROR, "durability::d_sampleRequestListenerAddList", 0,
+                "Internal error (received unknown message type)");
+        break;
     }
 
     if(process == TRUE) {
-        objectToAdd = c_keep(message);
-        data->list = c_iterInsert(data->list, objectToAdd);
+        objectToAdd = c_keep(object);
+        data->list = c_iterAppend(data->list, objectToAdd);
+
+        objectToAdd = c_keep(instance);
+        data->instances = c_iterAppend(data->instances, objectToAdd);
     } else {
         data->skipCount++;
     }

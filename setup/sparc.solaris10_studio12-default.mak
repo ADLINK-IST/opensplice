@@ -12,6 +12,10 @@ LD_SO            = $(CXX) -G
 LD_EXE           = $(CC)
 LD_CXX           = $(CXX)
 
+# Flags for static and dynamic linking
+LD_FLAGS_STATIC = -Bstatic
+LD_FLAGS_DYNAMIC = -Bdynamic
+
 # GNU yacc
 YACC		 = bison
 
@@ -37,6 +41,14 @@ GCPP		 = $(CXX) $(CFLAGS)
 
 #Javac
 JCC		= javac
+JCFLAGS_JACORB   = -endorseddirs "$(JACORB_HOME)/lib/endorsed"
+JACORB_INC       =
+
+ifdef JAVA_COMPATJAR
+ifneq (,$(JAVA_COMPATJAR))
+JCFLAGS_COMPAT   = -source 1.6 -target 1.6 -bootclasspath "$(JAVA_COMPATJAR)"
+endif
+endif
 
 #JAR
 JAR		= jar
@@ -47,27 +59,27 @@ JAVAH_FLAGS      = -force
 
 #Java
 JAVA		= java
-JAVA_SRCPATH_SEP= :
 JAVA_LDFLAGS	= -L"$(JAVA_HOME)/jre/lib/sparc"
 JAVA_LDFLAGS	+= -L"$(JAVA_HOME)/jre/lib/sparc/client"
 JAVA_LDFLAGS	+= -L"$(JAVA_HOME)/jre/lib/sparc/native_threads"
 JAVA_INCLUDE	= -I"$(JAVA_HOME)/include"
 JAVA_INCLUDE	+= -I"$(JAVA_HOME)/include/solaris"
-		
+
 #soapcpp2
 SOAPCPP		= soapcpp2
 
 # Identify compiler flags for building shared libraries
-SHCFLAGS         = -G -xcode=pic32 
+SHCFLAGS         = -G -xcode=pic32
 
 # Values of compiler flags can be overruled
-CFLAGS_OPT       = -O -xarch=v8 -DNDEBUG 
+CFLAGS_OPT       = -O -xarch=v8 -DNDEBUG
 CFLAGS_DEBUG     = -g -DDEBUG -D_TYPECHECK_
 CFLAGS_STRICT	 = -DSPARC -D_REENTRANT
 
 # Set compiler options for single threaded process
-CFLAGS		 = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -DVERSION=\"$(PACKAGE_VERSION)\" $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) -features=extensions
+CFLAGS		 = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
+CXXFLAGS	 = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) -features=extensions
+
 
 # Set CPP flags
 #CPPFLAGS	 = -D__GNUC__   # defined because CPP on SPARC solaris
@@ -90,7 +102,7 @@ SHLDFLAGS	 = -G -xcode=pic32
 # Set library context
 LDLIBS		 = -lsocket -lnsl -ldl -lintl -lpthread -lrt -lm
 # Set library context for building shared libraries
-SHLDLIBS	 = -lsocket -lnsl -Bdynamic -ldl -lintl -lpthread -lrt 
+SHLDLIBS	 = -lsocket -lnsl -Bdynamic -ldl -lintl -lpthread -lrt
 
 # Set component specific libraries that are platform dependent
 LDLIBS_CXX =
@@ -98,7 +110,7 @@ LDLIBS_NW = -lsocket -lnsl
 LDLIBS_OS = -lrt -lpthread -ldl
 LDLIBS_CMS = -lxnet -lnsl -lsocket
 LDLIBS_ZLIB = -lz
-LDFLAGS_ZLIB = 
+LDFLAGS_ZLIB =
 CINCS_ZLIB =
 
 #enable XPG5 plus extensions
@@ -113,7 +125,7 @@ SLIB_PREFIX = lib
 SLIB_POSTFIX = .a
 DLIB_PREFIX = lib
 DLIB_POSTFIX = .so
-EXEC_PREFIX = 
-EXEC_POSTFIX = 
+EXEC_PREFIX =
+EXEC_POSTFIX =
 INLINESRC_POSTFIX = .i
 

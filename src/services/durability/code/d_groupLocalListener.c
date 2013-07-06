@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -87,7 +87,6 @@ checkNameSpaces(
     struct checkNameSpacesHelper *helper;
     d_communicationState state;
     d_networkAddress fellowAddress;
-    os_time retryTime;
 
     helper = (struct checkNameSpacesHelper*)args;
     state = d_fellowGetCommunicationState (fellow);
@@ -97,16 +96,20 @@ checkNameSpaces(
      * when retryTime eventually exceeds and the fellow is still in the list.
      * */
     if (state == D_COMMUNICATION_STATE_APPROVED) {
-        c_iterTake(helper->retryFellows, fellow);
+        d_fellow retryFellow;
+        retryFellow = c_iterTake(helper->retryFellows, fellow);
+        if(retryFellow) {
+            d_objectFree(d_object(retryFellow), D_FELLOW);
+        }
     } else {
         if (!c_iterContains(helper->retryFellows, fellow)) {
             fellowAddress = d_fellowGetAddress(fellow);
             d_messageSetAddressee(d_message(helper->request), fellowAddress);
             d_publisherNameSpacesRequestWrite(helper->publisher, helper->request, fellowAddress);
             /* Increase retrytime, in case this is a new fellow give it a fair chance to respond */
-            retryTime = os_timeGet();
-            helper->retryDelay = os_timeAdd(retryTime, helper->retryDelay);
-            c_iterAppend(helper->retryFellows, fellow);
+            helper->retryTime = os_timeAdd(os_timeGet(), helper->retryDelay);
+            d_objectKeep((d_object)fellow);
+            helper->retryFellows = c_iterAppend(helper->retryFellows, fellow);
             d_networkAddressFree(fellowAddress);
         }
     }
@@ -119,6 +122,7 @@ checkNameSpacesRemoveFellowAction(
    void* o, void* userData)
 {
     d_adminRemoveFellow((d_admin)userData, (d_fellow)o);
+    d_objectFree((d_object)o, D_FELLOW);
 }
 
 d_groupLocalListener
@@ -776,10 +780,15 @@ determineNewMaster(
             if(isAligner){
                 if(d_networkAddressIsUnaddressed(m->master)){
                     replace = TRUE;
-                } else if((m->masterState <= D_STATE_DISCOVER_PERSISTENT_SOURCE) && (fellowState > D_STATE_DISCOVER_PERSISTENT_SOURCE)) {
-                    replace = TRUE;
-                } else if((m->masterState > D_STATE_DISCOVER_PERSISTENT_SOURCE) && (fellowState <= D_STATE_DISCOVER_PERSISTENT_SOURCE)) {
-                    replace = FALSE;
+
+                /* This behavior is undesired when delayedAlignment is active */
+                } else if(!d_nameSpaceGetDelayedAlignment(m->nameSpace)) {
+                    if((m->masterState <= D_STATE_DISCOVER_PERSISTENT_SOURCE) && (fellowState > D_STATE_DISCOVER_PERSISTENT_SOURCE)) {
+                        replace = TRUE;
+                    } else if((m->masterState > D_STATE_DISCOVER_PERSISTENT_SOURCE) && (fellowState <= D_STATE_DISCOVER_PERSISTENT_SOURCE)) {
+                        replace = FALSE;
+                    }
+
                 } else if(quality.seconds > m->masterQuality.seconds){
                     replace = TRUE;
                 } else if(quality.seconds == m->masterQuality.seconds){
@@ -860,11 +869,13 @@ d_groupLocalListenerDetermineMasters(
     sleepTime.tv_sec = 0;
     sleepTime.tv_nsec = 100000000;
     mastership.durability = durability;
+    mastership.masterQuality.seconds = 0;
+    mastership.masterQuality.nanoseconds = 0;
 
     checkNsHelper.request = d_nameSpacesRequestNew(admin);
-    checkNsHelper.retryFellows = c_iterNew(NULL);
+    checkNsHelper.retryFellows = NULL;
     checkNsHelper.publisher = publisher;
-    checkNsHelper.retryDelay = os_timeAdd(configuration->heartbeatUpdateInterval, configuration->heartbeatUpdateInterval);
+    checkNsHelper.retryDelay = configuration->heartbeatExpiryTime;
 
     do {
         conflicts = FALSE;
@@ -1085,10 +1096,12 @@ d_groupLocalListenerDetermineMasters(
 
             d_printTimedEvent(durability, D_LEVEL_INFO,
                        D_THREAD_GROUP_LOCAL_LISTENER,
-                       "Waiting twice the heartbeat period: 2*%f seconds.\n",
-                       os_timeToReal(configuration->heartbeatUpdateInterval));
+                       "Waiting the heartbeat expiry period: %f seconds.\n",
+                       os_timeToReal(configuration->heartbeatExpiryTime));
 
             proceed = FALSE;
+
+            assert(!checkNsHelper.retryFellows);
 
             while((d_durabilityMustTerminate(durability) == FALSE) && (proceed == FALSE)) {
                 os_nanoSleep(sleepTime);
@@ -1103,6 +1116,8 @@ d_groupLocalListenerDetermineMasters(
                         if(os_timeCompare(os_timeGet(), checkNsHelper.retryTime) > 0) {
                             /* There hasn't been a new incomplete fellow for the last 2*heartbeat period, remove any remaining incomplete fellows */
                             c_iterWalk(checkNsHelper.retryFellows, checkNameSpacesRemoveFellowAction, (void*)admin);
+                            c_iterFree(checkNsHelper.retryFellows);
+                            checkNsHelper.retryFellows = NULL;
                             proceed = TRUE;
                         }
                     } else {
@@ -1132,6 +1147,29 @@ d_groupLocalListenerDetermineMasters(
                            "Confirming master: Fellow '%d' is the master for nameSpace '%s'.\n",
                            master->systemId,
                            d_nameSpaceGetName(nameSpace));
+
+                    /* Get masterfellow */
+                    fellow = d_adminGetFellow(admin, master);
+                    if(fellow) {
+                        d_nameSpace fellowNamespace;
+                        d_quality q;
+
+                        /* Get fellow namespace */
+                        fellowNamespace = d_fellowGetNameSpace(fellow, nameSpace);
+
+                        q = d_nameSpaceGetInitialQuality(fellowNamespace);
+
+                        /* Set quality of namespace to quality of master */
+                        d_nameSpaceSetInitialQuality(nameSpace, q);
+
+                        d_printTimedEvent(durability, D_LEVEL_FINEST,
+                               D_THREAD_GROUP_LOCAL_LISTENER,
+                               "Quality of namespace '%s' set to %d.%.9u.\n",
+                               d_nameSpaceGetName(nameSpace),
+                               q.seconds,
+                               q.nanoseconds);
+                        d_fellowFree(fellow);
+                    }
                 }
                 d_networkAddressFree(master);
                 d_nameSpaceMasterConfirmed (nameSpace);
@@ -1141,9 +1179,7 @@ d_groupLocalListenerDetermineMasters(
     } while ((conflicts == TRUE) && (d_durabilityMustTerminate(durability) == FALSE));
 
     d_nameSpacesRequestFree(checkNsHelper.request);
-    c_iterFree(checkNsHelper.retryFellows);
-
-    os_mutexUnlock(&listener->masterLock);
+    assert(!checkNsHelper.retryFellows);
 
     d_durabilityUpdateStatistics(durability, d_statisticsUpdateConfiguration, admin);
     myState = d_durabilityGetState(durability);
@@ -1176,21 +1212,10 @@ collectNameSpaces(
 }
 
 static void
-collectNsWalk(
-    d_nameSpace ns, void* userData)
-{
-    c_iter nameSpaces = (c_iter)userData;
-    if (ns)
-    {
-        d_objectKeep(d_object(ns));
-        c_iterInsert (nameSpaces, ns);
-    }
-}
-
-static void
 deleteNsWalk(
    void* o, void* userData)
 {
+    OS_UNUSED_ARG(userData);
     d_objectFree(d_object(o), D_NAMESPACE);
 }
 
@@ -1205,7 +1230,7 @@ initPersistentData(
     d_group group;
     d_configuration configuration;
     u_participant participant;
-    d_storeResult result, result2;
+    d_storeResult result;
     d_groupList list, next;
     c_long i, length;
     d_nameSpace nameSpace;
@@ -1213,7 +1238,6 @@ initPersistentData(
     c_iter nameSpaces;
     c_bool attached;
     v_group vgroup;
-    c_bool nsComplete;
     os_time waitTime;
     c_ulong count;
 
@@ -1222,12 +1246,11 @@ initPersistentData(
     subscriber    = d_adminGetSubscriber(admin);
     store         = d_subscriberGetPersistentStore(subscriber);
     configuration = d_durabilityGetConfiguration(durability);
-    nameSpaces    = c_iterNew(NULL);
     participant   = u_participant(d_durabilityGetService(durability));
     result        = d_storeGroupsRead(store, &list);
 
     /* Collect namespaces from admin */
-    d_adminNameSpaceWalk(admin, collectNsWalk, (c_voidp)nameSpaces);
+    nameSpaces = d_adminNameSpaceCollect(admin);
     length        = c_iterLength(nameSpaces);
 
     if(result == D_STORE_RESULT_OK){
@@ -1240,35 +1263,11 @@ initPersistentData(
                 dkind = d_nameSpaceGetDurabilityKind(nameSpace);
 
                 if((dkind == D_DURABILITY_PERSISTENT) || (dkind == D_DURABILITY_ALL)){
+                    os_time t = os_timeGet();
+
                     next = list;
 
                     d_durabilitySetState(durability, D_STATE_INJECT_PERSISTENT);
-
-                    /* If namespace is not complete & may contain persistent data, restore backup */
-                    result2 = d_storeNsIsComplete (store, nameSpace, &nsComplete);
-                    if ( (result2 == D_STORE_RESULT_OK) && !nsComplete)
-                    {
-                        /* If master, start injecting own persistent data */
-                        d_printTimedEvent(durability, D_LEVEL_WARNING,
-                            D_THREAD_GROUP_LOCAL_LISTENER,
-                            "Namespace '%s' is incomplete, restoring backup\n",
-                            d_nameSpaceGetName(nameSpace));
-
-                    	if (d_storeRestoreBackup (store, nameSpace) != D_STORE_RESULT_OK)
-                    	{
-                            d_printTimedEvent(durability, D_LEVEL_WARNING,
-                                D_THREAD_GROUP_LOCAL_LISTENER,
-                                "Backup for namespace '%s' failed, marking masterState incomplete\n",
-                                d_nameSpaceGetName(nameSpace));
-
-                            OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
-                            		"Backup for namespace '%s' failed, marking masterState incomplete\n",
-                            		d_nameSpaceGetName (nameSpace));
-
-                            /* If backup fails, mark master state for namespace !D_STATE_COMPLETE */
-                            d_nameSpaceSetMasterState (nameSpace, D_STATE_INIT);
-                    	}
-                    }
 
                     /* Loop (persistent) groups, inject data from group */
                     while(next) {
@@ -1337,6 +1336,8 @@ initPersistentData(
                         }
                         next = d_groupList(next->next);
                     }
+                    d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_GROUP_LOCAL_LISTENER,
+                                                  "Initializing persistent data took %f sec\n", os_timeToReal(os_timeSub(os_timeGet(), t)));
                 }
             } else {
             	/* If not master, backup old persistent data (would be overwritten otherwise) */
@@ -1359,9 +1360,10 @@ initPersistentData(
                             "Could not read groups from persistent store. Persistent data not injected.\n");
     }
 
+    d_storeGroupListFree(store, list);
+
     /* Free namespace list */
-    c_iterWalk (nameSpaces, deleteNsWalk, NULL);
-    c_iterFree(nameSpaces);
+    d_adminNameSpaceCollectFree(admin, nameSpaces);
 }
 
 /*
@@ -1381,10 +1383,9 @@ initMasters(
     admin = d_listenerGetAdmin(d_listener(listener));
     durability = d_adminGetDurability(admin);
     configuration = d_durabilityGetConfiguration(durability);
-    nameSpaces = c_iterNew(NULL);
 
     /* Collect namespaces from admin */
-    d_adminNameSpaceWalk(admin, collectNsWalk, (c_voidp)nameSpaces);
+    nameSpaces = d_adminNameSpaceCollect(admin);
 
     /* Initialize with namespaces from configuration */
     d_groupLocalListenerDetermineMasters(listener, nameSpaces);
@@ -1406,8 +1407,7 @@ initMasters(
     }
 
     /* Free namespace list */
-    c_iterWalk (nameSpaces, deleteNsWalk, NULL);
-    c_iterFree(nameSpaces);
+    d_adminNameSpaceCollectFree(admin, nameSpaces);
 }
 
 struct fellowState {
@@ -1458,7 +1458,7 @@ fellowStateWalk (
 	fellowStateObject->state = d_fellowGetState (fellow);
 
 	/* Copy namespace states */
-	fellowStateObject->nameSpaces = d_tableNew(d_nameSpaceCompare, d_nameSpaceFree);
+	fellowStateObject->nameSpaces = d_tableNew(d_nameSpaceNameCompare, d_nameSpaceFree);
 	d_fellowNameSpaceWalk (fellow, fellowStateCopyNsWalk, fellowStateObject->nameSpaces);
 
 	/* Insert fellow state */
@@ -1475,6 +1475,7 @@ fellowStateCleanWalk (
 {
     struct fellowState* fellowStateObject;
 
+    OS_UNUSED_ARG(arg);
     fellowStateObject = (struct fellowState*)o;
 
 	d_networkAddressFree(fellowStateObject->address);
@@ -1566,6 +1567,8 @@ markNameSpace (
                 /* Copy mergestate of namespace */
                 d_nameSpaceSetMergeState(nameSpace, d_nameSpaceGetMergeState(fellowNameSpace, NULL));
 			}
+
+			d_nameSpaceFree(dummy);
 
 			break;
 		}
@@ -1692,7 +1695,7 @@ handleGroupAlignmentWalk (
     listener    = walkData->listener;
 
     /* Compare namespace in walkdata with namespace from group */
-    nameSpace = d_adminGetNameSpaceForGroup(admin, partition, topic, dkind);
+    nameSpace = d_adminGetNameSpaceForGroup(admin, partition, topic);
     if (!d_nameSpaceCompare (walkData->nameSpace, nameSpace))
     {
         /* Start alignment of group when namespaces are equal */
@@ -1704,6 +1707,18 @@ handleGroupAlignmentWalk (
 
     os_free (partition);
     os_free (topic);
+}
+
+static void
+setGroupIncomplete (
+    void* o,
+    c_voidp userData)
+{
+    d_group group;
+
+    group = d_group(o);
+
+    d_groupSetIncomplete(group);
 }
 
 static c_bool
@@ -1735,7 +1750,7 @@ handleMergeAlignment(
     d_topic topic;
     d_durabilityKind dkind;
     d_networkAddress fellowAddress;
-    c_bool inNameSpace;
+    c_bool inNameSpace, success;
     d_chain chain;
     c_time stamp, networkAttachTime, zeroTime;
     d_sampleRequest request;
@@ -1751,7 +1766,7 @@ handleMergeAlignment(
     d_adminGroupWalk(admin, collectGroups, groups);
 
     mergeAction = d_mergeActionNew(fellowNameSpace, fellow, newState);
-    d_nameSpaceFree (fellowNameSpace);
+
     d_mergeStateFree (newState);
 
     group = d_group(c_iterTakeFirst(groups));
@@ -1797,10 +1812,24 @@ handleMergeAlignment(
         groupCount,
         fellowAddress->systemId,
         d_nameSpaceGetName(fellowNameSpace));
-    d_networkAddressFree(fellowAddress);
 
-    d_sampleChainListenerInsertMergeAction(listener->sampleChainListener,
-            mergeAction);
+    success = d_sampleChainListenerInsertMergeAction(
+            listener->sampleChainListener, mergeAction);
+
+    if(success == FALSE){
+        d_mergeActionFree(mergeAction);
+
+        d_printTimedEvent(durability, D_LEVEL_INFO,
+                D_THREAD_GROUP_LOCAL_LISTENER,
+                "Merge of '%d' groups with fellow '%d' for "\
+                "nameSpace '%s' is already in progress, so not "\
+                "issuing new request.\n",
+                groupCount,
+                fellowAddress->systemId,
+                d_nameSpaceGetName(fellowNameSpace));
+    }
+    d_networkAddressFree(fellowAddress);
+    d_nameSpaceFree (fellowNameSpace);
 
     return;
 }
@@ -2136,6 +2165,95 @@ applyMergePolicy(
     return callAgain;
 }
 
+typedef struct applyDelayedAlignment_t {
+    d_groupLocalListener listener;
+    d_nameSpace nameSpace;
+    d_fellow fellow;
+}applyDelayedAlignment_t;
+
+static c_bool
+applyDelayedAlignment (
+    d_action action,
+    c_bool terminate)
+{
+    c_iter nameSpaces;
+    d_admin admin;
+    d_durability durability;
+    d_groupLocalListener listener;
+    d_fellow fellow;
+    d_nameSpace ns;
+    applyDelayedAlignment_t* actionData;
+    d_networkAddress master;
+    d_fellow masterFellow;
+    d_quality q;
+    c_bool callAgain = TRUE;
+    struct nsGroupAlignWalkData walkData;
+
+    actionData = (applyDelayedAlignment_t*)d_actionGetArgs(action);
+    listener = actionData->listener;
+    durability  = d_adminGetDurability(d_listenerGetAdmin(d_listener(listener)));
+    admin = d_listenerGetAdmin(d_listener(listener));
+    fellow = actionData->fellow;
+    ns = actionData->nameSpace;
+
+    /* Only do action when fellow has reached discover_persistent_source state, so master-selection is synced. */
+    if(d_fellowGetState(actionData->fellow) >= D_STATE_DISCOVER_PERSISTENT_SOURCE) {
+
+        /* Re-determine master for namespace */
+        nameSpaces = c_iterNew(ns);
+        determineNewMasters (listener, NULL, nameSpaces);
+        c_iterFree(nameSpaces);
+
+        /* If I am not the new master, and the namespace quality of the new master is not infinite, I will
+         * request alignment for the namespace. */
+
+        /* Get master */
+        master = d_nameSpaceGetMaster(ns);
+
+        /* Get fellow namespace */
+        masterFellow = d_adminGetFellow(admin, master);
+
+        if(masterFellow) {
+            /* Re-align groups */
+            if(d_durabilityMustTerminate(durability) == FALSE){
+                walkData.durability = durability;
+                walkData.listener = listener;
+                walkData.nameSpace = ns;
+                walkData.groups = c_iterNew(NULL);
+                admin = d_listenerGetAdmin(d_listener(listener));
+
+                /* Collect groups */
+                d_adminGroupWalk (admin, nsCollectGroupWalk, &walkData);
+
+                /* Set completeness of group back to incomplete again */
+                c_iterWalk(walkData.groups, setGroupIncomplete, 0);
+
+                /* Align groups */
+                c_iterWalk (walkData.groups, handleGroupAlignmentWalk, &walkData);
+
+                /* Namespace has no longer zero-quality, set it to infinite so it can't be written to anymore. */
+                q = C_TIME_INFINITE;
+                d_nameSpaceSetInitialQuality(ns, q);
+            }
+
+        }else {
+            d_printTimedEvent(durability, D_LEVEL_INFO,
+                        D_THREAD_GROUP_LOCAL_LISTENER,
+                        "Fellow '%d' lost before starting delayed alignment, or I have become master.\n",
+                        master->systemId);
+        }
+        callAgain = FALSE;
+        d_networkAddressFree(master);
+    }else {
+        d_printTimedEvent(durability, D_LEVEL_INFO,
+                   D_THREAD_GROUP_LOCAL_LISTENER,
+                   "Redo applyDelayedAlignment (namespace %s) - fellow not yet in DISCOVER_PERSISTENT_SOURCE state.\n",
+                   d_nameSpaceGetName(ns));
+    }
+
+    return callAgain;
+}
+
 static c_bool
 notifyNameSpaceEvent(
     c_ulong event,
@@ -2161,6 +2279,8 @@ notifyNameSpaceEvent(
     c_iter fellowStates;
     c_iter nameSpaces;
 
+    OS_UNUSED_ARG(fellow);
+    OS_UNUSED_ARG(group);
     if (event == D_NAMESPACE_NEW)
     {
         listener = d_groupLocalListener(userData);
@@ -2231,7 +2351,7 @@ notifyNameSpaceEvent(
             mergeHelper->conflictStates = (c_iter)eventUserData;
             action = d_actionNew(os_timeGet(), sleepTime, applyMergePolicy, mergeHelper);
             d_actionQueueAdd(listener->actionQueue, action);
-
+            d_fellowFree(masterFellow);
         }else {
             d_printTimedEvent(durability, D_LEVEL_INFO,
                         D_THREAD_GROUP_LOCAL_LISTENER,
@@ -2241,8 +2361,32 @@ notifyNameSpaceEvent(
             /* Free namespace event object */
             d_nameSpaceFree (ns);
         }
-
         d_free (master);
+
+    /* Late-joining node with initial data joined */
+    }else if (event & D_NAMESPACE_DELAYED_INITIAL) {
+        applyDelayedAlignment_t* actionData;
+        d_fellow adminFellow;
+        d_networkAddress fellowAddr;
+
+        listener = d_groupLocalListener(userData);
+        admin = d_listenerGetAdmin(d_listener(listener));
+
+        fellowAddr = d_fellowGetAddress(fellow);
+        adminFellow = d_adminGetFellow(admin, fellowAddr);
+        d_networkAddressFree(fellowAddr);
+
+        actionData = malloc(sizeof(applyDelayedAlignment_t));
+        actionData->listener = listener;
+        actionData->nameSpace = ns;
+        actionData->fellow = adminFellow;
+
+        sleepTime.tv_sec = 1;
+        sleepTime.tv_nsec = 0;
+
+        /* Post delayed alignment action */
+        action = d_actionNew(os_timeGet(), sleepTime, applyDelayedAlignment, actionData);
+        d_actionQueueAdd(listener->actionQueue, action);
     }
 
     return TRUE;
@@ -2273,6 +2417,9 @@ notifyFellowEvent(
     c_iter nameSpaces, nsCollect;
     struct masterHelper *helper;
 
+    OS_UNUSED_ARG(ns);
+    OS_UNUSED_ARG(group);
+    OS_UNUSED_ARG(eventUserData);
     listener      = d_groupLocalListener(userData);
     admin         = d_listenerGetAdmin(d_listener(listener));
     durability    = d_adminGetDurability(admin);
@@ -2310,8 +2457,7 @@ notifyFellowEvent(
                     "Fellow '%d' removed, checking whether new master must be determined.\n",
                     fellowAddress->systemId);
 
-        nsCollect = c_iterNew(NULL);
-        d_adminNameSpaceWalk(admin, collectNsWalk, nsCollect);
+        nsCollect = d_adminNameSpaceCollect(admin);
         length        = c_iterLength(nsCollect);
 
         for(i=0; (i<length) && (d_durabilityMustTerminate(durability) == FALSE); i++) {
@@ -2358,8 +2504,7 @@ notifyFellowEvent(
         }
 
         /* Free namespace list */
-        c_iterWalk (nsCollect, deleteNsWalk, NULL);
-        c_iterFree(nsCollect);
+        d_adminNameSpaceCollectFree(admin, nsCollect);
     }
 
     d_networkAddressFree(fellowAddress);
@@ -2404,7 +2549,7 @@ d_groupLocalListenerInit(
                                         listener);
 
     listener->nameSpaceListener = d_eventListenerNew(
-                                        D_NAMESPACE_NEW | D_NAMESPACE_MASTER_CONFLICT | D_NAMESPACE_STATE_CONFLICT,
+                                        D_NAMESPACE_NEW | D_NAMESPACE_MASTER_CONFLICT | D_NAMESPACE_STATE_CONFLICT | D_NAMESPACE_DELAYED_INITIAL,
                                         notifyNameSpaceEvent,
                                         listener);
 }
@@ -2617,6 +2762,112 @@ d_groupLocalReaderRequestAction(
     return callAgain;
 }
 
+/* Lookup namespace */
+typedef struct lookupNameSpace_t {
+    v_group group;
+    d_nameSpace namespace;
+}lookupNameSpace_t;
+static void lookupNamespace(d_nameSpace ns, void* data) {
+    lookupNameSpace_t* userData;
+
+    userData = (lookupNameSpace_t*)data;
+
+    if(!userData->namespace) {
+        if(d_nameSpaceIsIn(ns, v_entity(userData->group->partition)->name, v_entity(userData->group->topic)->name)) {
+            userData->namespace = ns;
+        }
+    }
+}
+
+/* Set namespace quality to infinite. This behavior supports delayed alignment functionality. */
+static void markGroupNamespaceWritten(d_admin admin, v_group group) {
+    lookupNameSpace_t walkData;
+    d_quality q;
+    d_durability durability;
+
+    durability = d_adminGetDurability(admin);
+
+    /* Lookup namespace */
+    walkData.group = group;
+    walkData.namespace = 0;
+    d_adminNameSpaceWalk(admin, lookupNamespace, &walkData);
+
+    /* Check if namespace is found */
+    if(!walkData.namespace) {
+        d_printTimedEvent(durability, D_LEVEL_WARNING,
+                D_THREAD_GROUP_LOCAL_LISTENER,
+                "Namespace not found for group '%s.%s' not found in administration (cannot update namespace quality).\n",
+                v_entity(group->partition)->name, v_entity(group->topic)->name);
+        return;
+    }
+
+    /* Set quality to infinite when delayed alignment is enabled. */
+    if(d_nameSpaceGetDelayedAlignment(walkData.namespace)) {
+        q = d_nameSpaceGetInitialQuality(walkData.namespace);
+        if((q.seconds != C_TIME_INFINITE.seconds) && (q.nanoseconds != C_TIME_INFINITE.nanoseconds)) {
+            /* Create infinite quality */
+            q = C_TIME_INFINITE;
+
+            /* Set quality to infinite */
+            d_nameSpaceSetInitialQuality(walkData.namespace, q);
+
+            /* Report that quality of namespace is set to infinite */
+            d_printTimedEvent(durability, D_LEVEL_INFO,
+                    D_THREAD_GROUP_LOCAL_LISTENER,
+                    "Quality of namespace '%s' is set to infinite.\n",
+                    d_nameSpaceGetName(walkData.namespace));
+        }
+    }
+}
+
+static void
+d_groupLocalListenerHandleReaderRequest(
+    d_groupLocalListener listener,
+    v_handle source,
+    c_char* filter,
+    c_char** filterParams,
+    c_long filterParamCount,
+    struct v_resourcePolicy* resourceLimits,
+    c_time minSourceTimestamp,
+    c_time maxSourceTimestamp)
+{
+    d_admin admin;
+    d_durability durability;
+    d_readerRequest readerRequest;
+    os_time sleepTime;
+    struct readerRequestHelper* requestHelper;
+    d_action action;
+    c_bool added;
+
+    admin = d_listenerGetAdmin(d_listener(listener));
+    durability = d_adminGetDurability(admin);
+
+    readerRequest = d_readerRequestNew(admin, source, filter, filterParams,
+                    filterParamCount, *resourceLimits,
+                    minSourceTimestamp, maxSourceTimestamp);
+    added = d_adminAddReaderRequest(admin, readerRequest);
+
+    if(added){
+        d_printTimedEvent(durability, D_LEVEL_FINER,
+                D_THREAD_GROUP_LOCAL_LISTENER,
+                "Received historicalDataRequest from reader [%d, %d]\n",
+                source.index, source.serial);
+
+        sleepTime.tv_sec  = 0;
+        sleepTime.tv_nsec = 500 * 1000 * 1000; /* 500ms*/
+        requestHelper = (struct readerRequestHelper*)
+                            os_malloc(sizeof(struct readerRequestHelper));
+        requestHelper->admin = admin;
+        requestHelper->listener = d_groupLocalListener(listener);
+        requestHelper->request = readerRequest;
+
+        action = d_actionNew(os_timeGet(),
+                sleepTime, d_groupLocalReaderRequestAction, requestHelper);
+        d_actionQueueAdd(listener->actionQueue, action);
+    }
+    return;
+}
+
 c_ulong
 d_groupLocalListenerAction(
     u_dispatcher o,
@@ -2632,9 +2883,7 @@ d_groupLocalListenerAction(
     u_waitsetHistoryRequestEvent hre;
     u_waitsetPersistentSnapshotEvent pse;
     os_time sleepTime;
-    d_readerRequest readerRequest;
     struct deleteHistoricalDataHelper* data;
-    struct readerRequestHelper* requestHelper;
     struct createPersistentSnapshotHelper* snapshotHelper;
 
     if (o && userData) {
@@ -2653,27 +2902,11 @@ d_groupLocalListenerAction(
         if((event->events & V_EVENT_HISTORY_REQUEST) == V_EVENT_HISTORY_REQUEST){
             hre = u_waitsetHistoryRequestEvent(event);
 
-            d_printTimedEvent(durability, D_LEVEL_FINER,
-                    D_THREAD_GROUP_LOCAL_LISTENER,
-                    "Received historicalDataRequest from reader [%d, %d]\n",
-                    hre->source.index, hre->source.serial);
-            readerRequest = d_readerRequestNew(admin,
-                            hre->source, hre->filter, hre->filterParams,
-                            hre->filterParamsCount, hre->resourceLimits,
-                            hre->minSourceTimestamp, hre->maxSourceTimestamp);
-            d_adminAddReaderRequest(admin, readerRequest);
-
-            sleepTime.tv_sec  = 0;
-            sleepTime.tv_nsec = 500 * 1000 * 1000; /* 500ms*/
-            requestHelper = (struct readerRequestHelper*)
-                                os_malloc(sizeof(struct readerRequestHelper));
-            requestHelper->admin = admin;
-            requestHelper->listener = d_groupLocalListener(listener);
-            requestHelper->request = readerRequest;
-
-            action = d_actionNew(os_timeGet(),
-                    sleepTime, d_groupLocalReaderRequestAction, requestHelper);
-            d_actionQueueAdd(queue, action);
+            d_groupLocalListenerHandleReaderRequest(
+                    d_groupLocalListener(listener), hre->source, hre->filter,
+                    hre->filterParams, hre->filterParamsCount,
+                    &(hre->resourceLimits), hre->minSourceTimestamp,
+                    hre->maxSourceTimestamp);
         }
 
         if((event->events & V_EVENT_HISTORY_DELETE) == V_EVENT_HISTORY_DELETE){
@@ -2717,10 +2950,15 @@ d_groupLocalListenerAction(
             action = d_actionNew(os_timeGet(), sleepTime, d_groupCreatePersistentSnapshotAction, snapshotHelper);
             d_actionQueueAdd(queue, action);
         }
+        if((event->events & V_EVENT_CONNECT_WRITER) == V_EVENT_CONNECT_WRITER) {
+            admin = d_listenerGetAdmin(listener);
 
+            /* Set namespace quality to infinite */
+            markGroupNamespaceWritten(admin, u_waitsetConnectWriterEvent(event)->group);
+        }
     }
-    return event->events;
 
+    return event->events;
 }
 
 c_bool
@@ -2746,7 +2984,7 @@ d_groupLocalListenerStart(
 
     assert(d_listenerIsValid(d_listener(listener), D_GROUP_LOCAL_LISTENER));
 
-    /* Setup listener for NEW_GROUP, HISTORY_DELETE and HISTORY_REQUEST events */
+    /* Setup listener for CONNECT_WRITER, NEW_GROUP, HISTORY_DELETE, HISTORY_REQUEST and PERSISTENT_SNAPSHOT events */
     if(listener){
         d_listenerLock(d_listener(listener));
         durability  = d_adminGetDurability(d_listenerGetAdmin(d_listener(listener)));
@@ -2759,7 +2997,7 @@ d_groupLocalListenerStart(
 
             if(ur == U_RESULT_OK){
                 ur = u_dispatcherSetEventMask(dispatcher,
-                        mask | V_EVENT_NEW_GROUP | V_EVENT_HISTORY_DELETE | V_EVENT_HISTORY_REQUEST | V_EVENT_PERSISTENT_SNAPSHOT);
+                        mask | V_EVENT_CONNECT_WRITER | V_EVENT_NEW_GROUP | V_EVENT_HISTORY_DELETE | V_EVENT_HISTORY_REQUEST | V_EVENT_PERSISTENT_SNAPSHOT);
 
                 if(ur == U_RESULT_OK){
                     admin      = d_listenerGetAdmin(d_listener(listener));
@@ -2772,7 +3010,7 @@ d_groupLocalListenerStart(
                     listener->waitsetData = d_waitsetEntityNew(
                                     "groupLocalListener",
                                     dispatcher, action,
-                                    V_EVENT_NEW_GROUP | V_EVENT_HISTORY_DELETE | V_EVENT_HISTORY_REQUEST | V_EVENT_PERSISTENT_SNAPSHOT,
+                                    V_EVENT_CONNECT_WRITER | V_EVENT_NEW_GROUP | V_EVENT_HISTORY_DELETE | V_EVENT_HISTORY_REQUEST | V_EVENT_PERSISTENT_SNAPSHOT,
                                     attr, listener);
                     wsResult = d_waitsetAttach(waitset, listener->waitsetData);
 
@@ -2792,8 +3030,9 @@ d_groupLocalListenerStart(
 
                         if(store != NULL){
                             initPersistentData(listener);
+                            d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_GROUP_LOCAL_LISTENER, "Persistency has been enabled...\n");
                         } else {
-                            OS_REPORT(OS_INFO, D_CONTEXT, 0, "Persistence not enabled!");
+                            d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_GROUP_LOCAL_LISTENER, "Persistency has not been enabled...\n");
                         }
                         os_mutexUnlock(&listener->masterLock);
                         d_durabilitySetState(durability, D_STATE_DISCOVER_LOCAL_GROUPS);
@@ -2908,7 +3147,7 @@ d_groupLocalListenerNewGroupLocalAction(
     d_durability durability;
     d_listener listener;
 
-    if (o && event && V_EVENT_NEW_GROUP) {
+    if (o && (event & V_EVENT_NEW_GROUP)) {
         if (userData) {
             listener   = d_listener(userData);
             assert(d_listenerIsValid(d_listener(listener), D_GROUP_LOCAL_LISTENER));
@@ -3098,6 +3337,7 @@ d_groupLocalListenerHandleAlignment(
     d_storeResult       result;
     d_chain             chain;
     d_adminStatisticsInfo info;
+    d_nameSpace          groupNameSpace;
 
     assert(d_listenerIsValid(d_listener(listener), D_GROUP_LOCAL_LISTENER));
 
@@ -3116,7 +3356,7 @@ d_groupLocalListenerHandleAlignment(
 
         if(readerRequest){
             requestRemote = FALSE;
-            nameSpace = d_adminGetNameSpaceForGroup(admin, partition, topic, dkind);
+            nameSpace = d_adminGetNameSpaceForGroup(admin, partition, topic);
 
             if(nameSpace){
                 akind = d_nameSpaceGetAlignmentKind(nameSpace);
@@ -3181,10 +3421,10 @@ d_groupLocalListenerHandleAlignment(
                             chain, TRUE);
 
             }
-        } else if(d_adminGroupInActiveAligneeNS(admin, partition, topic, dkind) == TRUE){
+        } else if(d_adminGroupInActiveAligneeNS(admin, partition, topic) == TRUE){
             if(completeness != D_GROUP_COMPLETE){
                 if(dkind == D_DURABILITY_PERSISTENT){
-                    nameSpace = d_adminGetNameSpaceForGroup(admin, partition, topic, dkind);
+                    nameSpace = d_adminGetNameSpaceForGroup(admin, partition, topic);
                     assert(nameSpace);
                     akind     = d_nameSpaceGetAlignmentKind(nameSpace);
                     inject    = d_nameSpaceMasterIsMe(nameSpace, admin);
@@ -3313,13 +3553,32 @@ d_groupLocalListenerHandleAlignment(
                                 chain, TRUE);
                 }
             }
-        } else if(d_adminGroupInAligneeNS(admin, partition, topic, dkind) == TRUE){
+        } else if(d_adminGroupInAligneeNS(admin, partition, topic) == TRUE){
             d_sampleChainListenerReportGroup(listener->sampleChainListener, localGroup);
+            /*For those topics in a on_request namespace, they will be marked unaligned*/
+            groupNameSpace = d_adminGetNameSpaceForGroup(admin,
+                                                         d_groupGetPartition(localGroup),
+                                                         d_groupGetTopic(localGroup));
+
+            if((d_nameSpaceGetAlignmentKind(groupNameSpace) == D_ALIGNEE_ON_REQUEST)
+                && (d_groupIsBuiltinGroup(localGroup) != TRUE)) {
+
+                d_groupSetUnaligned(localGroup);
+
+                d_printTimedEvent(durability, D_LEVEL_FINE,
+                D_THREAD_GROUP_LOCAL_LISTENER,
+                "Group %s.%s is transient group in the namespace with " \
+                "on_request policy will be marked unaligned.\n",
+                partition, topic);
+            }
         } else {
             d_printTimedEvent(durability, D_LEVEL_FINE,
                             D_THREAD_GROUP_LOCAL_LISTENER,
-                            "Group %s.%s not in alignee namespace, so no alignment action taken.\n",
+                            "Group %s.%s not in alignee namespace, so no " \
+                            "alignment action taken.\n",
                             partition, topic);
+            d_groupSetUnaligned(localGroup);
+
             /*update statistics*/
             info = d_adminStatisticsInfoNew();
             info->kind = D_ADMIN_STATISTICS_GROUP;

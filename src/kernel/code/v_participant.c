@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -182,6 +182,7 @@ v_participantInit(
     c_condInit(&p->resendCond, &p->resendMutex, SHARED_COND);
     writerProxyType = v_kernelType(kernel,K_PROXY);
     p->resendWriters = c_tableNew(writerProxyType, "source.index,source.serial");
+    p->resendIteration = 0;
 
     p->builtinSubscriber = NULL;
     if (!v_observableAddObserver(v_observable(kernel),v_observer(p), NULL)) {
@@ -207,6 +208,10 @@ v_participantInit(
      */
     builtinMsg = v_builtinCreateParticipantInfo(kernel->builtin,p);
     v_writeBuiltinTopic(kernel, V_PARTICIPANTINFO_ID, builtinMsg);
+
+    /* publish Builtin Topic CMParticipant */
+    builtinMsg = v_builtinCreateCMParticipantInfo(kernel->builtin,p);
+    v_writeBuiltinTopic(kernel, V_CMPARTICIPANTINFO_ID, builtinMsg);
     c_free(builtinMsg);
 }
 
@@ -244,6 +249,14 @@ v_participantFree(
 
         builtinMsg = v_builtinCreateParticipantInfo(kernel->builtin,p);
         v_unregisterBuiltinTopic(kernel, V_PARTICIPANTINFO_ID, builtinMsg);
+        c_free(builtinMsg);
+
+        builtinMsg = v_builtinCreateCMParticipantInfo(kernel->builtin,p);
+        v_writeDisposeBuiltinTopic(kernel, V_CMPARTICIPANTINFO_ID, builtinMsg);
+        c_free(builtinMsg);
+
+        builtinMsg = v_builtinCreateCMParticipantInfo(kernel->builtin,p);
+        v_unregisterBuiltinTopic(kernel, V_CMPARTICIPANTINFO_ID, builtinMsg);
         c_free(builtinMsg);
 
         if (p->builtinSubscriber) {
@@ -352,6 +365,8 @@ v_participantConnectNewGroup (
 {
     v_group g;
 
+    OS_UNUSED_ARG(event);
+
     c_mutexLock(&_this->newGroupListMutex);
     g = c_take(_this->newGroupList);
     while (g) {
@@ -444,6 +459,7 @@ v_participantNotify(
      * For consistency _this must be locked by v_observerLock(_this) before
      * calling this method.
      */
+    OS_UNUSED_ARG(userData);
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_participant));
 
@@ -465,6 +481,7 @@ v_participantNotify(
         case V_EVENT_HISTORY_DELETE:
         case V_EVENT_HISTORY_REQUEST:
         case V_EVENT_PERSISTENT_SNAPSHOT:
+        case V_EVENT_CONNECT_WRITER:
             /*Do nothing here.*/
         break;
         default:
@@ -501,7 +518,6 @@ v_participantGetBuiltinSubscriber(
     v_subscriberQos sQos;
     v_readerQos rQos;
     v_kernel kernel;
-    c_bool create_builtin_readers = FALSE;
 
     assert(p != NULL);
     assert(C_TYPECHECK(p, v_participant));
@@ -520,7 +536,6 @@ v_participantGetBuiltinSubscriber(
                                                sQos, TRUE);
         v_subscriberQosFree(sQos);
 
-        create_builtin_readers = TRUE;
         c_mutexUnlock(&p->builtinLock);
 
         assert(p->builtinSubscriber != NULL);
@@ -575,6 +590,10 @@ v_participantSetQos(
         c_lockUnlock(&p->lock);
         v_writeBuiltinTopic(kernel, V_PARTICIPANTINFO_ID, builtinMsg);
         c_free(builtinMsg);
+
+        builtinMsg = v_builtinCreateCMParticipantInfo(kernel->builtin,p);
+        v_writeBuiltinTopic(kernel, V_CMPARTICIPANTINFO_ID, builtinMsg);
+        c_free(builtinMsg);
     } else {
         c_lockUnlock(&p->lock);
     }
@@ -600,47 +619,56 @@ v_participantResendManagerMain(
     c_iter writerProxies;
     v_proxy wp;
     v_writer w;
+    v_writer *wPtr;
     v_handleResult r;
     c_time waitTime = { RESEND_SECS, RESEND_NANOSECS };
     c_syncResult waitResult = SYNC_RESULT_SUCCESS;
 
-    assert(C_TYPECHECK(p,v_participant));
 
+    assert(C_TYPECHECK(p,v_participant));
     c_mutexLock(&p->resendMutex);
+
     while (!p->resendQuit) {
 
-        if (c_count(p->resendWriters) == 0) {
-            waitResult = c_condWait(&p->resendCond, &p->resendMutex);
-        } else {
-            waitResult = c_condTimedWait(&p->resendCond, &p->resendMutex, waitTime);
-        }
-
-        if (waitResult == SYNC_RESULT_FAIL)
-        {
-            OS_REPORT(OS_CRITICAL, "v_participantResendManagerMain", 0,
-                      "c_condTimedWait / c_condWait failed - thread will terminate");
-            p->resendQuit = TRUE;
-        }
-
-        if (!p->resendQuit) {
-            writerProxies = c_select(p->resendWriters, 0);
-            c_mutexUnlock(&p->resendMutex);
-            wp = v_proxy(c_iterTakeFirst(writerProxies));
-            while (wp != NULL) {
-                r = v_handleClaim(wp->source,(v_object *)&w);
-                if (r == V_HANDLE_OK) {
-                    assert(C_TYPECHECK(w,v_writer));
-                    v_writerResend(w);
-                    v_handleRelease(wp->source);
-                }
-                c_free(wp);
-                wp = v_proxy(c_iterTakeFirst(writerProxies));
+        writerProxies = ospl_c_select(p->resendWriters, 0);
+        c_mutexUnlock(&p->resendMutex);
+        wp = v_proxy(c_iterTakeFirst(writerProxies));
+        while (wp != NULL) {
+            wPtr = &w;
+            r = v_handleClaim(wp->source,(v_object *)wPtr);
+            if (r == V_HANDLE_OK) {
+                assert(C_TYPECHECK(w,v_writer));
+                v_writerResend(w);
+                v_handleRelease(wp->source);
+            } else {
+              assert (0);
             }
-            c_iterFree(writerProxies);
+            c_free(wp);
+            wp = v_proxy(c_iterTakeFirst(writerProxies));
+        }
+        c_iterFree(writerProxies);
 
-            c_mutexLock(&p->resendMutex);
-        } /* already quiting */
+        c_mutexLock(&p->resendMutex);
+        p->resendIteration++;
+        c_condBroadcast (&p->resendCond); /* usually, no-one's listening */
+        if (!p->resendQuit) {
+            if (c_count(p->resendWriters) == 0) {
+                waitResult = c_condWait(&p->resendCond, &p->resendMutex);
+            } else {
+                waitResult = c_condTimedWait(&p->resendCond, &p->resendMutex, waitTime);
+            }
+
+            if (waitResult == SYNC_RESULT_FAIL)
+            {
+                OS_REPORT(OS_CRITICAL, "v_participantResendManagerMain", 0,
+                          "c_condTimedWait / c_condWait failed - thread will terminate");
+                p->resendQuit = TRUE;
+            }
+        }
     }
+
+    p->resendIteration++;
+    c_condBroadcast (&p->resendCond);
     c_mutexUnlock(&p->resendMutex);
 }
 
@@ -689,6 +717,30 @@ v_participantResendManagerRemoveWriter(
     c_mutexLock(&p->resendMutex);
     found = c_remove(p->resendWriters, &wp, NULL, NULL);
     c_free(found); /* remove local reference transferred from collection */
+    c_mutexUnlock(&p->resendMutex);
+}
+
+void
+v_participantResendManagerRemoveWriterBlocking(
+    v_participant p,
+    v_writer w)
+{
+    C_STRUCT(v_proxy) wp;
+    v_proxy found;
+    c_ulong resendIteration;
+
+    wp.source = v_publicHandle(v_public(w));
+    wp.userData = NULL;
+    c_mutexLock(&p->resendMutex);
+    resendIteration = p->resendIteration;
+    found = c_remove(p->resendWriters, &wp, NULL, NULL);
+    if (found)
+    {
+        c_free(found); /* remove local reference transferred from collection */
+        while (resendIteration == p->resendIteration) {
+          c_condWait (&p->resendCond, &p->resendMutex);
+        }
+    }
     c_mutexUnlock(&p->resendMutex);
 }
 

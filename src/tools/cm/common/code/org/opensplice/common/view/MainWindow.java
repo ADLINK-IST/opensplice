@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -146,36 +146,4 @@ public abstract class MainWindow extends JFrame implements ModelListener{
         return (JMenuItem[])(items.toArray(new JMenuItem[items.size()]));
     }
     
-    protected JMenuItem[] getRemoteConnectionItems(ActionListener al){
-        JMenuItem temp;
-        String uri;
-        String displayUri = null;
-        ArrayList items = new ArrayList();
-        
-        for(int i=0; i<4; i++){
-            uri = Config.getInstance().getProperty("connection_remote_" + i);
-            
-            if(uri != null){
-                temp = new JMenuItem();
-                temp.setActionCommand("open_connection_" + uri);
-                
-                if(uri.length() > 50){
-                    displayUri = uri.substring(0, 25) + "..." + 
-                                    uri.substring(uri.length() - 25);
-                } else {
-                    displayUri = uri;
-                }
-                
-                temp.setText(displayUri);
-                temp.setAccelerator(KeyStroke.getKeyStroke(Integer.toString(i+1).charAt(0), java.awt.Event.SHIFT_MASK, false));
-                temp.setToolTipText(uri);
-                
-                if(al != null){
-                    temp.addActionListener(al);
-                }
-                items.add(temp);
-            }
-        }
-        return (JMenuItem[])(items.toArray(new JMenuItem[items.size()]));
-    }
 }

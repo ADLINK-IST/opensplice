@@ -1,0 +1,14 @@
+// -*- MPC -*-
+// $Id:$
+
+project : ospl_base, ospl_ddsserialization {
+  lit_libs += ddsrrstorage
+}
+
+feature(!src_co) {
+
+}
+
+feature(src_co) {
+
+}

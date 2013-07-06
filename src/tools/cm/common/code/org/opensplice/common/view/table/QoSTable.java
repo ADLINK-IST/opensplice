@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,7 +11,14 @@
  */
 package org.opensplice.common.view.table;
 
+import java.awt.Component;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+
+import javax.swing.DefaultCellEditor;
+import javax.swing.JCheckBox;
 import javax.swing.JTable;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 import javax.swing.table.TableModel;
 
@@ -25,6 +32,7 @@ import org.opensplice.cm.Writer;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.controller.QoSTableCellRenderer;
 import org.opensplice.common.controller.QoSTableEditor;
+import org.opensplice.common.model.table.AutoColumnResize;
 import org.opensplice.common.model.table.qos.EntityQoSTableModel;
 import org.opensplice.common.model.table.qos.ParticipantQoSTableModel;
 import org.opensplice.common.model.table.qos.PublisherQoSTableModel;
@@ -48,6 +56,8 @@ import org.opensplice.common.view.StatusPanel;
  * @date Jan 11, 2005 
  */
 public class QoSTable extends JTable {
+
+    private static final long serialVersionUID = 6266656845093565028L;
     private QoSTableEditor editor = null;
     
     /**
@@ -91,57 +101,94 @@ public class QoSTable extends JTable {
         TableModel model = this.getModel();
         TableColumnModel tcm = this.getColumnModel();
         
+        int valueColumn = tcm.getColumnCount() - 1;
+        int fieldColumn = tcm.getColumnCount() - 2;
+        int nameColumn = tcm.getColumnCount() - 3;
+        QoSTableCellRenderer r = new QoSTableCellRenderer();
+        editor = new QoSTableEditor(this);
+
         if(model instanceof ParticipantQoSTableModel){
-            tcm.getColumn(0).setPreferredWidth(165);
-            tcm.getColumn(0).setMaxWidth(165);
-            tcm.getColumn(1).setPreferredWidth(165);
-            tcm.getColumn(1).setMaxWidth(165);
+            tcm.getColumn(nameColumn).setPreferredWidth(165);
+            tcm.getColumn(nameColumn).setMaxWidth(165);
+            tcm.getColumn(fieldColumn).setPreferredWidth(165);
+            tcm.getColumn(fieldColumn).setMaxWidth(165);
         } else if(model instanceof PublisherQoSTableModel){
-            tcm.getColumn(0).setPreferredWidth(110);
-            tcm.getColumn(0).setMaxWidth(110);
-            tcm.getColumn(1).setPreferredWidth(165);
-            tcm.getColumn(1).setMaxWidth(165);
+            if (nameColumn != 0) {
+                TableColumn tc = tcm.getColumn(0);
+                tc.setCellEditor(new CheckBoxEditor(new JCheckBox()));
+                tc.setCellRenderer(this.getDefaultRenderer(Boolean.class));
+                tcm.getColumn(0).setPreferredWidth(30);
+                tcm.getColumn(0).setMaxWidth(30);
+            }
+            tcm.getColumn(nameColumn).setPreferredWidth(165);
+            tcm.getColumn(nameColumn).setMaxWidth(165);
+            tcm.getColumn(fieldColumn).setPreferredWidth(210);
+            tcm.getColumn(fieldColumn).setMaxWidth(210);
+            tcm.getColumn(valueColumn).setPreferredWidth(170);
         } else if(model instanceof SubscriberQoSTableModel){
-            tcm.getColumn(0).setPreferredWidth(110);
-            tcm.getColumn(0).setMaxWidth(110);
-            tcm.getColumn(1).setPreferredWidth(165);
-            tcm.getColumn(1).setMaxWidth(165);
+            if (nameColumn != 0) {
+                TableColumn tc = tcm.getColumn(0);
+                tc.setCellEditor(new CheckBoxEditor(new JCheckBox()));
+                tc.setCellRenderer(this.getDefaultRenderer(Boolean.class));
+                tcm.getColumn(0).setPreferredWidth(30);
+                tcm.getColumn(0).setMaxWidth(30);
+            }
+            tcm.getColumn(nameColumn).setPreferredWidth(165);
+            tcm.getColumn(nameColumn).setMaxWidth(165);
+            tcm.getColumn(fieldColumn).setPreferredWidth(210);
+            tcm.getColumn(fieldColumn).setMaxWidth(210);
+            tcm.getColumn(valueColumn).setPreferredWidth(170);
         } else if(model instanceof TopicQoSTableModel){
-            tcm.getColumn(0).setPreferredWidth(145);
-            tcm.getColumn(0).setMaxWidth(145);
-            tcm.getColumn(1).setPreferredWidth(170);
-            tcm.getColumn(1).setMaxWidth(170);
+            tcm.getColumn(nameColumn).setPreferredWidth(145);
+            tcm.getColumn(nameColumn).setMaxWidth(145);
+            tcm.getColumn(fieldColumn).setPreferredWidth(170);
+            tcm.getColumn(fieldColumn).setMaxWidth(170);
         } else if(model instanceof ReaderQoSTableModel){
-            tcm.getColumn(0).setPreferredWidth(165);
-            tcm.getColumn(0).setMaxWidth(165);
-            tcm.getColumn(1).setPreferredWidth(210);
-            tcm.getColumn(1).setMaxWidth(210);
-            tcm.getColumn(2).setPreferredWidth(170);
+            if (nameColumn != 0) {
+                TableColumn tc = tcm.getColumn(0);
+                tc.setCellEditor(new CheckBoxEditor(new JCheckBox()));
+                tc.setCellRenderer(this.getDefaultRenderer(Boolean.class));
+                tcm.getColumn(0).setPreferredWidth(30);
+                tcm.getColumn(0).setMaxWidth(30);
+            }
+            tcm.getColumn(nameColumn).setPreferredWidth(165);
+            tcm.getColumn(nameColumn).setMaxWidth(165);
+            tcm.getColumn(fieldColumn).setPreferredWidth(210);
+            tcm.getColumn(fieldColumn).setMaxWidth(210);
+            tcm.getColumn(valueColumn).setPreferredWidth(170);
         } else if(model instanceof WriterQoSTableModel){
-            tcm.getColumn(0).setPreferredWidth(160);
-            tcm.getColumn(0).setMaxWidth(160);
-            tcm.getColumn(1).setPreferredWidth(225);
-            tcm.getColumn(1).setMaxWidth(225);
-            tcm.getColumn(2).setPreferredWidth(170);
+            if (nameColumn != 0) {
+                TableColumn tc = tcm.getColumn(0);
+                tc.setCellEditor(new CheckBoxEditor(new JCheckBox()));
+                tc.setCellRenderer(this.getDefaultRenderer(Boolean.class));
+                tcm.getColumn(0).setPreferredWidth(30);
+                tcm.getColumn(0).setMaxWidth(30);
+            }
+            tcm.getColumn(nameColumn).setPreferredWidth(160);
+            tcm.getColumn(nameColumn).setMaxWidth(160);
+            tcm.getColumn(fieldColumn).setPreferredWidth(225);
+            tcm.getColumn(fieldColumn).setMaxWidth(225);
+            tcm.getColumn(valueColumn).setPreferredWidth(170);
         }
         
         this.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         this.setCellSelectionEnabled(false);
         this.getTableHeader().setReorderingAllowed(false);
         this.setSurrendersFocusOnKeystroke(true);
-        editor = new QoSTableEditor(this);
-        this.getColumnModel().getColumn(2).setCellEditor(editor);
+        
+        this.getColumnModel().getColumn(valueColumn).setCellEditor(editor);
         ((EntityQoSTableModel)this.getModel()).setEditor(editor);
         
         if(status != null){
             editor.setStatusListener(status);
         }
-        QoSTableCellRenderer r = new QoSTableCellRenderer();
-        this.getColumnModel().getColumn(0).setCellRenderer(r);
-        this.getColumnModel().getColumn(1).setCellRenderer(r);
-        this.getColumnModel().getColumn(2).setCellRenderer(r);
+
+        this.getColumnModel().getColumn(nameColumn).setCellRenderer(r);
+        this.getColumnModel().getColumn(fieldColumn).setCellRenderer(r);
+        this.getColumnModel().getColumn(valueColumn).setCellRenderer(r);
     }
     
+
     public void setStatusListener(StatusPanel  _status){
         editor.setStatusListener(_status);
     }
@@ -154,6 +201,8 @@ public class QoSTable extends JTable {
      */
     public boolean update(){
         EntityQoSTableModel tableModel = (EntityQoSTableModel)this.getModel();
+        AutoColumnResize.adjustColumnSizeForColumn(this, tableModel.getColumnCount() - 1);
+        /* resize the table to fit the largest value entered by the user */
         return tableModel.update();
     }
     
@@ -198,8 +247,34 @@ public class QoSTable extends JTable {
         this.setModel(tableModel);
     }
     
+
+    @Override
     public void setEnabled(boolean enabled){
         this.editor.cancelCellEditing();
         super.setEnabled(enabled);
+    }
+
+    public static class CheckBoxEditor extends DefaultCellEditor implements ItemListener {
+
+        private static final long serialVersionUID = -2457258823026697455L;
+        private final JCheckBox checkBox;
+
+        public CheckBoxEditor(JCheckBox cb) {
+            super(cb);
+            checkBox = cb;
+            checkBox.addItemListener(this);
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            checkBox.setSelected((Boolean) value);
+            return super.getTableCellEditorComponent(table, value, isSelected, row, column);
+        }
+
+        @Override
+        public void itemStateChanged(ItemEvent e) {
+            this.fireEditingStopped();
+        }
+
     }
 }

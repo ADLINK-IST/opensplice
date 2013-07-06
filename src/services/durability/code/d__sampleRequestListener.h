@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,6 +15,7 @@
 
 #include "d__types.h"
 #include "d__readerListener.h"
+#include "v_group.h"
 #include "sd_serializer.h"
 
 #if defined (__cplusplus)
@@ -31,6 +32,8 @@ C_STRUCT(d_sampleRequestListener){
 
 struct writeBeadHelper{
     c_iter list;
+    c_iter instances;
+
     d_sampleRequest request;
     c_ulong count;
     c_ulong writeCount;
@@ -70,6 +73,8 @@ c_bool              d_sampleRequestListenerWriteBead    (c_object object,
                                                          c_voidp userData);
 
 c_bool              d_sampleRequestListenerAddList      (c_object object,
+                                                         v_groupInstance instance,
+                                                         v_groupFlushType flushType,
                                                          c_voidp userData);
 
 /*************HELPER FUNCTIONS******************/

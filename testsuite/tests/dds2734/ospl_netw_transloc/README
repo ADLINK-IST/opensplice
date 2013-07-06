@@ -1,0 +1,14 @@
+To view the test case description please use the
+dds2734/doc/OSPL_NETW_TRANSLOC.xls document
+
+Prerequisites, assumptions, constraints:
+
+    This test uses application publisher/subscriber from directory ./application/exec
+    It must be built before running this test.
+
+HOWTO RUN:
+    Using STAXMon tool:
+        1. Start STAXMon.
+        2. Select to execute the "dds2734\ospl_netw_transloc\run_test.xml" script.
+
+    Test logs for the test are in "log" sub-folders for each sub-testcase.

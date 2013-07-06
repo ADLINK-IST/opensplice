@@ -1,0 +1,39 @@
+// -*- MPC -*-
+// $Id:$
+
+project {
+  Define_Custom(RMITypes) {
+    automatic_in              = 1
+    automatic_out             = 1
+    inputext                  = .idl
+    generic_pre_extension = _Topics
+    generic_outputext     = .idl
+    keyword rmi_types_flags = commandflags
+    output_follows_input = 0
+  }
+}
+
+feature(!src_co) {
+  Modify_Custom(RMITypes) {
+    command                   = <%quote%>$(OSPL_HOME)<%slash%>bin<%slash%>rmipp<%quote%>
+    libpath                   = $(OSPL_HOME)<%slash%>bin<%pathsep%>$(OSPL_HOME)<%slash%>lib
+  }
+   rmi_types_flags += \
+    -I <%quote%>$(OSPL_HOME)<%slash%>etc<%slash%>idl<%quote%> -l java
+}
+
+feature(!src_co, cross_compile) {
+  Modify_Custom(RMITypes) {
+    libpath               = $(OSPL_HOME)<%slash%>bin<%pathsep%>$(OSPL_HOME)<%slash%>host<%slash%>lib
+  }
+}
+
+feature(src_co) {
+  Modify_Custom(RMITypes) {
+    command                   = <%quote%>$(OSPL_HOME_NORMALIZED)/exec/$(SPLICE_HOST)/rmipp<%quote%>
+    libpath                   = $(OSPL_HOME_NORMALIZED)/exec/$(SPLICE_HOST)<%pathsep%>$(OSPL_HOME_NORMALIZED)/lib/$(SPLICE_HOST)
+  }
+
+  rmi_types_flags += \
+    -I <%quote%>$(OSPL_HOME_NORMALIZED)/etc/idl<%quote%> -I <%quote%>$(OSPL_OUTER_HOME_NORMALIZED)/src/services/rmi/idl<%quote%> -l java
+}

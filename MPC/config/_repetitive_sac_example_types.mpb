@@ -1,0 +1,12 @@
+// -*- MPC -*-
+// $Id:$
+
+project : _example_dcps_type_lib, sac_typesupport, c_or_cplusplus_example {
+    TypeSupport_Files {
+        ../../idl
+    }
+
+     Documentation_Files {
+        ../../.
+    }
+}

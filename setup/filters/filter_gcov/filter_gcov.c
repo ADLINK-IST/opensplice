@@ -485,8 +485,8 @@ void show_statistics (
 	printf ("%-40s    branch exec    lines exec    calls exec   mf\n", cs->name);
 	printf ("========================================================================================\n");
 	show_filestat (cs, &bc, &lc, &cc, &fc);
-        printf ("        %d files fail on limit of 80% branch coverage\n", cs->files_fail_on_limit);
-        printf ("        %d files pass on limit of 80% branch coverage\n", cs->files_pass_on_limit);
+        printf ("        %d files fail on limit of 80%% branch coverage\n", cs->files_fail_on_limit);
+        printf ("        %d files pass on limit of 80%% branch coverage\n", cs->files_pass_on_limit);
         printf ("        %d files fail extra if untouched functions are regarded\n", cs->files_fail_untouched_functions);
         tot_files_fail_on_limit += cs->files_fail_on_limit;
         tot_files_pass_on_limit += cs->files_pass_on_limit;

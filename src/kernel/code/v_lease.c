@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -10,20 +10,18 @@
  *
  */
 
-#include "os_report.h"
-
-#include "v__kernel.h"
 #include "v__lease.h"
 #include "v__leaseManager.h"
+
 #include "v_time.h"
 #include "v_event.h"
-#include "v_entity.h"
-#include "v_public.h"
+
+#include "os_report.h"
 
 /* For design information, see v_leaseManager.c */
 
 /**************************************************************
- * Private functions
+ * Private function/struct declarations
  **************************************************************/
 static void
 v_leaseInit(
@@ -47,8 +45,7 @@ v_leaseNew(
     v_lease _this;
 
     _this = v_lease(v_objectNew(k, K_LEASE));
-    if(_this)
-    {
+    if(_this) {
         v_leaseInit(_this, k, leaseDuration);
     }
     return _this;
@@ -60,11 +57,10 @@ v_leaseInit(
     v_kernel k,
     v_duration leaseDuration)
 {
-    if (_this != NULL)
-    {
+    if (_this != NULL) {
         assert(C_TYPECHECK(_this, v_lease));
 
-        c_mutexInit(&_this->mutex,SHARED_MUTEX);
+        c_mutexInit(&_this->mutex, SHARED_MUTEX);
         _this->expiryTime = c_timeAdd(v_timeGet(), leaseDuration);
         _this->duration = leaseDuration;
         _this->observers = c_setNew(v_kernelType(k, K_LEASEMANAGER));
@@ -80,11 +76,9 @@ v_leaseDeinit(
     assert(lease != NULL);
     assert(C_TYPECHECK(lease,v_lease));
 
-    if (lease != NULL)
-    {
+    if (lease != NULL) {
         lm = v_leaseManager(c_take(lease->observers));
-        while (lm != NULL)
-        {
+        while (lm != NULL) {
             c_free(lm);
             lm = v_leaseManager(c_take(lease->observers));
         }
@@ -92,8 +86,9 @@ v_leaseDeinit(
         lease->observers = NULL;
     }
 }
+
 /**************************************************************
- * Protected functions
+ * Local functions
  **************************************************************/
 
 void
@@ -118,69 +113,36 @@ v_leaseUnlock(
 
 void
 v_leaseRenew(
-    v_lease lease,
+    v_lease _this,
     v_duration* leaseDuration /* may be NULL */)
 {
-    c_iter observers = NULL;
+    c_iter observers;
     v_leaseManager observer;
-    c_time newExpiryTime;
-    c_equality cmp;
 
-    if (lease != NULL) {
-        assert(C_TYPECHECK(lease, v_lease));
+    if (_this != NULL) {
+        assert(C_TYPECHECK(_this, v_lease));
 
-        v_leaseLock(lease);
-        /* Is a new lease duration provided, if so replace the current lease
-         * duration with the new one
-         */
-        if(leaseDuration != NULL)
-        {
-            lease->duration = *leaseDuration;
-        } /* else do nothing */
-        /* Calculate the new expiry time */
-        newExpiryTime = c_timeAdd(v_timeGet(), lease->duration);
-        /* Is the new expiryTime earlier then the current expiryTime? */
-        cmp = c_timeCompare(newExpiryTime, lease->expiryTime);
-        /* Always replace the current expiry time with the new expiryTime */
-        lease->expiryTime = newExpiryTime;
-        /* If the new expiryTime is earlier then the previous expiryTime. Then
-         * this means the observers must be notified so they can take the
-         * earlier expiryTime into account
-         */
-        if (cmp == C_LT)
-        {
-
-            /* Collect all observers, so they can be notified of the lease change
-             * Must do a seperate collect as the lease mutex is 'lower' then the
-             * leaseManager mutex. So to prevent deadlock we can not directly notify
-             * the lease manager as we walk the collection
-             */
-            if(lease->observers)
-            {
-                c_walk(lease->observers, v_leaseCollectObservers, &observers);
-            }
-            v_leaseUnlock(lease);
-            if(observers)
-            {
-                observer = v_leaseManager(c_iterTakeFirst(observers));
-                while (observer != NULL)
-                {
-                    v_leaseManagerNotify(
-                        observer,
-                        lease,
-                        V_EVENT_LEASE_RENEWED);
-                    c_free(observer);
-                    observer = v_leaseManager(c_iterTakeFirst(observers));
-                }
-                c_iterFree(observers);
-            }
-        } else
-        {
-            /* No need to notify observers, the new expiryTime is not earlier
-             * then what it was before.
-             */
-            v_leaseUnlock(lease);
+        v_leaseLock(_this);
+        /* If a duration is supplied, replace the current lease duration */
+        if(leaseDuration != NULL) {
+            _this->duration = *leaseDuration;
         }
+
+        /* Update the expiryTime */
+        _this->expiryTime = c_timeAdd(v_timeGet(), _this->duration);
+
+        /* Notify observers */
+        observers = NULL;
+        c_walk(_this->observers, v_leaseCollectObservers, &observers);
+        v_leaseUnlock(_this);
+
+        observer = v_leaseManager(c_iterTakeFirst(observers));
+        while (observer != NULL) {
+            v_leaseManagerNotify(observer, _this, V_EVENT_LEASE_RENEWED);
+            c_free(observer);
+            observer = v_leaseManager(c_iterTakeFirst(observers));
+        }
+        c_iterFree(observers);
     }
 }
 
@@ -191,56 +153,66 @@ v_leaseCollectObservers(
 {
     c_iter *observers = (c_iter*)arg;
     *observers = c_iterInsert(*observers, c_keep(o));
+
     return TRUE;
 }
 
-void
-v_leaseGetExpiryAndDuration(
-    v_lease lease,
-    c_time *expiryTime,
-    v_duration *duration)
+v_duration
+v_leaseDuration(
+    v_lease _this)
 {
-    assert(lease != NULL);
-    assert(C_TYPECHECK(lease, v_lease));
+    v_duration duration;
 
-    if(expiryTime || duration){
-        v_leaseLock(lease);
-        if(expiryTime){
-            *expiryTime = lease->expiryTime;
-        }
-        if(duration){
-            *duration = lease->duration;
-        }
-        v_leaseUnlock(lease);
-    }
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this, v_lease));
+
+    v_leaseLock(_this);
+    duration = v_leaseDurationNoLock(_this);
+    v_leaseUnlock(_this);
+
+    return duration;
+}
+
+v_duration
+v_leaseDurationNoLock(
+    v_lease _this)
+{
+    v_duration duration;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this, v_lease));
+
+    duration = _this->duration;
+
+    return duration;
 }
 
 c_time
 v_leaseExpiryTime(
-    v_lease lease)
+    v_lease _this)
 {
     c_time expTime;
 
-    assert(lease != NULL);
-    assert(C_TYPECHECK(lease, v_lease));
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this, v_lease));
 
-    v_leaseLock(lease);
-    expTime = v_leaseExpiryTimeNoLock(lease);
-    v_leaseUnlock(lease);
+    v_leaseLock(_this);
+    expTime = v_leaseExpiryTimeNoLock(_this);
+    v_leaseUnlock(_this);
 
     return expTime;
 }
 
 c_time
 v_leaseExpiryTimeNoLock(
-    v_lease lease)
+    v_lease _this)
 {
     c_time expTime;
 
-    assert(lease != NULL);
-    assert(C_TYPECHECK(lease, v_lease));
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this, v_lease));
 
-    expTime = lease->expiryTime;
+    expTime = _this->expiryTime;
 
     return expTime;
 }
@@ -258,22 +230,19 @@ v_leaseAddObserverNoLock(
     assert(observer != NULL);
     assert(C_TYPECHECK(observer, v_leaseManager));
 
-    if(_this->observers)
-    {
+    if(_this->observers) {
         found = c_setInsert(_this->observers, observer);
-        if (found == observer)
-        {
+        if (found == observer) {
             added = TRUE;
-        } else
-        {
+        } else {
             added = FALSE;
         }
-    } else
-    {
+    } else {
         added = FALSE;
     }
     return added;
 }
+
 
 c_bool
 v_leaseRemoveObserverNoLock(
@@ -288,19 +257,16 @@ v_leaseRemoveObserverNoLock(
     assert(observer != NULL);
     assert(C_TYPECHECK(observer, v_leaseManager));
 
-    if(_this->observers)
-    {
+    if(_this->observers) {
         found = c_setRemove(_this->observers, observer, NULL, NULL);
-        if (found == observer)
-        {
+        if (found == observer) {
             removed = TRUE;
             /* delete local reference */
             c_free(observer);
         } else {
             removed = FALSE;
         }
-    } else
-    {
+    } else {
         removed = FALSE;
     }
     return removed;

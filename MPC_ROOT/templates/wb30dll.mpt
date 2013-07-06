@@ -1,0 +1,74 @@
+// $Id$
+
+
+
+conditional_include "wb26dll"
+
+additional_natures = org.eclipse.cdt.core.cnature org.eclipse.cdt.core.ccnature
+project_prefix = wb_
+
+platform = Native
+
+// platforms
+
+Native {
+  no_platform_in_wrproject = 1
+  platform_name =
+  project_type = ApplicationProject
+  enable_subprojects = 1
+
+  exe_ext =
+  dll_ext = .so
+  dll_prefix = lib
+  ar = ar
+  ar_flags = crus
+  librarian_objects = %Objects%
+  exe_buildtool = C++-Linker
+  dll_buildtool = C++-Linker
+
+  buildspecs = Linux-gnu-native-3.x-4.x  Windows-gnu-native-3.x-4.x
+  default_buildspec = Linux-gnu-native-3.x-4.x
+
+  wrprj_macros = TOOL_PATH LIBPATH LIBS ADAPT_DEPS
+}
+
+
+// buildspecs
+
+Linux-gnu-native-3.x-4.x {
+  cxx = g++
+  cc = gcc
+  platform_asflags = -MD -MP
+  platform_cxxflags = -MD -MP
+  platform_ccflags = -MD -MP
+  ass_flags = -x assembler -fno-builtin -Wall
+  cxx_flags = -ansi -fno-builtin -Wall
+  c_flags = -ansi -fno-builtin -Wall
+  ass_dbgflags = -g
+  cxx_dbgflags = -g
+  c_dbgflags = -g
+  pic = -fPIC
+  shflags = -shared
+}
+
+Windows-gnu-native-3.x-4.x {
+  exe_ext = .exe
+  cxxlnk_derivedsigs = *.exe
+  clnk_derivedsigs = *.exe
+  dll_prefix =
+  dll_ext = .dll
+  cxx = g++
+  cc = gcc
+  platform_asflags = -MD -MP
+  platform_cxxflags = -MD -MP
+  platform_ccflags = -MD -MP
+  ass_flags = -x assembler -fno-builtin -Wall
+  cxx_flags = -fno-builtin -Wall //-ansi not supported with MinGW
+  c_flags = -fno-builtin -Wall //-ansi not supported with MinGW
+  ass_dbgflags = -g
+  cxx_dbgflags = -g
+  c_dbgflags = -g
+  shflags = -shared
+}
+
+conditional_include "user_wb30dll"

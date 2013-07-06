@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,6 +13,7 @@
 #include "idl_scope.h"
 #include "idl_genSplHelper.h"
 #include "idl_genJavaHelper.h"
+#include "idl_genLanguageHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_keyDef.h"
 
@@ -81,18 +82,54 @@ idl_genInterface(
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("scoped-actual-type-name", idl_corbaJavaTypeFromTypeSpec(typeSpec)));
     idl_macroSetAdd(idlpp_macroSet, idl_macroNew("key-list", idl_keyResolve(idl_keyDefDefGet(), scope, name)));
 
-    snprintf(pname, sizeof (pname), "%s%s", idl_javaId(name), class_base);
-    idl_openJavaPackage(scope, pname);
-    if (idl_fileCur() == NULL) {
-        return -1;
-    }
-    if (idl_scopeStackSize(scope) > 0) {
-        idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava (scope, ".", NULL));
-        idl_fileOutPrintf(idl_fileCur(), "\n");
-    }
-    /* Prepare Interface class */
-    if (generateInterfaceClass) {
-        snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%s.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
+
+    /* Generate only in standalone mode */
+    if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
+        snprintf(pname, sizeof (pname), "%s%s", idl_javaId(name), class_base);
+        idl_openJavaPackage(scope, pname);
+        if (idl_fileCur() == NULL) {
+            return -1;
+        }
+        if (idl_scopeStackSize(scope) > 0) {
+            idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava (scope, ".", NULL));
+            idl_fileOutPrintf(idl_fileCur(), "\n");
+        }
+        /* Prepare Interface class */
+        if (generateInterfaceClass) {
+            snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%s.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
+            /* QAC EXPECT 3416; No side effects here */
+            if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
+                (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
+                printf ("No template found or protection violation (%s)\n", tmplFileName);
+                return -1;
+            }
+            /* QAC EXPECT 5007; will not use wrapper */
+            idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+            tmplFile = open(tmplFileName, O_RDONLY);
+            nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
+            memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+            close(tmplFile);
+            idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
+            idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
+
+            te = idl_tmplExpNew(idlpp_macroSet);
+            idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
+            idl_streamInFree(idlpp_inStream);
+            idl_tmplExpFree(te);
+        }
+        idl_closeJavaPackage();
+
+        snprintf(pname, sizeof(pname), "%s%sHolder", idl_javaId(name), class_base);
+        idl_openJavaPackage(scope, pname);
+        if (idl_fileCur() == NULL) {
+            return -1;
+        }
+        if (idl_scopeStackSize(scope) > 0) {
+            idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
+            idl_fileOutPrintf(idl_fileCur(), "\n");
+        }
+        /* Prepare typeSupportHolder class */
+        snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sHolder.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
         /* QAC EXPECT 3416; No side effects here */
         if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
             (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
@@ -112,104 +149,72 @@ idl_genInterface(
         idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
         idl_streamInFree(idlpp_inStream);
         idl_tmplExpFree(te);
-    }
-    idl_closeJavaPackage();
+        idl_closeJavaPackage();
 
-    snprintf(pname, sizeof(pname), "%s%sHolder", idl_javaId(name), class_base);
-    idl_openJavaPackage(scope, pname);
-    if (idl_fileCur() == NULL) {
-        return -1;
-    }
-    if (idl_scopeStackSize(scope) > 0) {
-        idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
-        idl_fileOutPrintf(idl_fileCur(), "\n");
-    }
-    /* Prepare typeSupportHolder class */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sHolder.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
-    /* QAC EXPECT 3416; No side effects here */
-    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
-        (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
-        printf ("No template found or protection violation (%s)\n", tmplFileName);
-        return -1;
-    }
-    /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
-    tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
-    close(tmplFile);
-    idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
-    idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
+        snprintf(pname, sizeof(pname), "%s%sHelper", idl_javaId(name), class_base);
+        idl_openJavaPackage(scope, pname);
+        if (idl_fileCur() == NULL) {
+            return -1;
+        }
+        if (idl_scopeStackSize(scope) > 0) {
+            idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
+            idl_fileOutPrintf(idl_fileCur(), "\n");
+        }
+        /* Prepare typeSupportHelper class */
+        snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sHelper.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
+        /* QAC EXPECT 3416; No side effects here */
+        if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
+            (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
+            printf ("No template found or protection violation (%s)\n", tmplFileName);
+            return -1;
+        }
+        /* QAC EXPECT 5007; will not use wrapper */
+        idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+        tmplFile = open(tmplFileName, O_RDONLY);
+        nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
+        memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+        close(tmplFile);
+        idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
+        idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
 
-    te = idl_tmplExpNew(idlpp_macroSet);
-    idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
-    idl_streamInFree(idlpp_inStream);
-    idl_tmplExpFree(te);
-    idl_closeJavaPackage();
+        te = idl_tmplExpNew(idlpp_macroSet);
+        idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
+        idl_streamInFree(idlpp_inStream);
+        idl_tmplExpFree(te);
+        idl_closeJavaPackage();
 
-    snprintf(pname, sizeof(pname), "%s%sHelper", idl_javaId(name), class_base);
-    idl_openJavaPackage(scope, pname);
-    if (idl_fileCur() == NULL) {
-        return -1;
-    }
-    if (idl_scopeStackSize(scope) > 0) {
-        idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
-        idl_fileOutPrintf(idl_fileCur(), "\n");
-    }
-    /* Prepare typeSupportHelper class */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sHelper.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
-    /* QAC EXPECT 3416; No side effects here */
-    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
-        (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
-        printf ("No template found or protection violation (%s)\n", tmplFileName);
-        return -1;
-    }
-    /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
-    tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
-    close(tmplFile);
-    idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
-    idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
+        snprintf(pname, sizeof(pname), "%s%sOperations", idl_javaId(name), class_base);
+        idl_openJavaPackage(scope, pname);
+        if (idl_fileCur() == NULL) {
+            return (idl_abort);
+        }
+        if (idl_scopeStackSize(scope) > 0) {
+            idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
+            idl_fileOutPrintf(idl_fileCur(), "\n");
+        }
+        /* Prepare typeSupportOperations class */
+        snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sOperations.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
+        /* QAC EXPECT 3416; No side effects here */
+        if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
+            (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
+            printf ("No template found or protection violation (%s)\n", tmplFileName);
+            return -1;
+        }
+        /* QAC EXPECT 5007; will not use wrapper */
+        idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
+        tmplFile = open(tmplFileName, O_RDONLY);
+        nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
+        memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
+        close(tmplFile);
+        idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
+        idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
 
-    te = idl_tmplExpNew(idlpp_macroSet);
-    idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
-    idl_streamInFree(idlpp_inStream);
-    idl_tmplExpFree(te);
-    idl_closeJavaPackage();
-
-    snprintf(pname, sizeof(pname), "%s%sOperations", idl_javaId(name), class_base);
-    idl_openJavaPackage(scope, pname);
-    if (idl_fileCur() == NULL) {
-        return (idl_abort);
+        te = idl_tmplExpNew(idlpp_macroSet);
+        idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
+        idl_streamInFree(idlpp_inStream);
+        idl_tmplExpFree(te);
+        idl_closeJavaPackage();
     }
-    if (idl_scopeStackSize(scope) > 0) {
-        idl_fileOutPrintf(idl_fileCur(), "package %s;\n", idl_scopeStackJava(scope, ".", NULL));
-        idl_fileOutPrintf(idl_fileCur(), "\n");
-    }
-    /* Prepare typeSupportOperations class */
-    snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ctmpl%sOperations.java", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR, class_base);
-    /* QAC EXPECT 3416; No side effects here */
-    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
-        (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
-        printf ("No template found or protection violation (%s)\n", tmplFileName);
-        return -1;
-    }
-    /* QAC EXPECT 5007; will not use wrapper */
-    idlpp_template = os_malloc((size_t)((int)tmplStat.stat_size+1));
-    tmplFile = open(tmplFileName, O_RDONLY);
-    nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
-    memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
-    close(tmplFile);
-    idlpp_macroAttrib = idl_macroAttribNew(IDL_TOKEN_START, IDL_TOKEN_OPEN, IDL_TOKEN_CLOSE);
-    idlpp_inStream = idl_streamInNew(idlpp_template, idlpp_macroAttrib);
-
-    te = idl_tmplExpNew(idlpp_macroSet);
-    idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
-    idl_streamInFree(idlpp_inStream);
-    idl_tmplExpFree(te);
-    idl_closeJavaPackage();
 
     if (generateInterfaceClass) {
         /* Implementation with Impl extension */
@@ -349,7 +354,9 @@ idl_structureOpen(
         idl_genInterface(scope, name, "DataReader", idl_typeSpec(structSpec), TRUE);
         idl_genInterface(scope, name, "DataReaderView", idl_typeSpec(structSpec), TRUE);
         idl_genInterface(scope, name, "DataWriter", idl_typeSpec(structSpec), TRUE);
-        idl_genTypeSeqHolder(scope, name, idl_typeSpec(structSpec));
+        if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
+            idl_genTypeSeqHolder(scope, name, idl_typeSpec(structSpec));
+        }
     }
     return idl_abort;
 }
@@ -366,7 +373,9 @@ idl_unionOpen(
         idl_genInterface(scope, name, "DataReader", idl_typeSpec(unionSpec), TRUE);
         idl_genInterface(scope, name, "DataReaderView", idl_typeSpec(unionSpec), TRUE);
         idl_genInterface(scope, name, "DataWriter", idl_typeSpec(unionSpec), TRUE);
-        idl_genTypeSeqHolder(scope, name, idl_typeSpec(unionSpec));
+        if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
+            idl_genTypeSeqHolder(scope, name, idl_typeSpec(unionSpec));
+        }
     }
     return idl_abort;
 }
@@ -385,7 +394,9 @@ idl_typedefOpenClose(
             idl_genInterface(scope, name, "DataReader", idl_typeSpec(defSpec), TRUE);
             idl_genInterface(scope, name, "DataReaderView", idl_typeSpec(defSpec), TRUE);
             idl_genInterface(scope, name, "DataWriter", idl_typeSpec(defSpec), TRUE);
-            idl_genTypeSeqHolder(scope, name, idl_typeDefActual(defSpec));
+            if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
+                idl_genTypeSeqHolder(scope, name, idl_typeDefActual(defSpec));
+            }
         }
     }
 }

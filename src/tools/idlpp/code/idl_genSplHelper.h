@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -15,6 +15,17 @@
 #include "c_typebase.h"
 
 #include "idl_program.h"
+
+enum idl_boundsCheckFailKind {
+    CASE,
+    DISCRIMINATOR,
+    MEMBER,
+    ELEMENT
+};
+
+void idl_boundsCheckFail (enum idl_boundsCheckFailKind kind, idl_scope scope, idl_typeSpec type, const c_char* name);
+
+void idl_boundsCheckFailNull (enum idl_boundsCheckFailKind kind, idl_scope scope, idl_typeSpec type, const c_char* name);
 
 void idl_printIndent (c_long indent);
 

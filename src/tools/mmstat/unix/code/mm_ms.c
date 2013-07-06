@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -13,6 +13,7 @@
 #include "c_base.h"
 #include "c__base.h"
 #include "os_stdlib.h"
+#include "os_abstract.h"
 
 #include "mm_ms.h"
 
@@ -46,22 +47,22 @@
 #define MM_MS_D_FMT_WIDTH               "%11"
 #define MM_MS_D_AVAILABLE_HDR           "D-avail"
 #define MM_MS_D_AVAILABLE_HDR_FMT       MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_AVAILABLE_FMT           MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_AVAILABLE_FMT           MM_MS_D_FMT_WIDTH PA_PRIdSIZE
 #define MM_MS_D_USED_HDR                "D-used"
 #define MM_MS_D_USED_HDR_FMT            MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_USED_FMT                MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_USED_FMT                MM_MS_D_FMT_WIDTH PA_PRIdSIZE
 #define MM_MS_D_PREALLOCATED_HDR        "D-prealloc"
 #define MM_MS_D_PREALLOCATED_HDR_FMT    MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_PREALLOCATED_FMT        MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_PREALLOCATED_FMT        MM_MS_D_FMT_WIDTH PA_PRIdSIZE
 #define MM_MS_D_MAXUSED_HDR             "D-maxUsed"
 #define MM_MS_D_MAXUSED_HDR_FMT         MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_MAXUSED_FMT             MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_MAXUSED_FMT             MM_MS_D_FMT_WIDTH PA_PRIdSIZE
 #define MM_MS_D_FAILS_HDR               "D-fails"
 #define MM_MS_D_FAILS_HDR_FMT           MM_MS_D_FMT_WIDTH "s"
 #define MM_MS_D_FAILS_FMT               MM_MS_D_FMT_WIDTH "d"
 #define MM_MS_D_REUSABLE_HDR            "D-reusable"
 #define MM_MS_D_REUSABLE_HDR_FMT        MM_MS_D_FMT_WIDTH "s"
-#define MM_MS_D_REUSABLE_FMT            MM_MS_D_FMT_WIDTH "d"
+#define MM_MS_D_REUSABLE_FMT            MM_MS_D_FMT_WIDTH PA_PRIdSIZE
 #define MM_MS_D_COUNT_HDR               "D-count"
 #define MM_MS_D_COUNT_HDR_FMT           MM_MS_D_FMT_WIDTH "s"
 #define MM_MS_D_COUNT_FMT               MM_MS_D_FMT_WIDTH "d"
@@ -160,7 +161,6 @@ monitor_msAction (
     char extra[70];
     c_mm mm;
     c_mmStatus s;
-    c_mmStatus ms,ls;
     c_base base;
     monitor_ms msData;
 
@@ -168,8 +168,6 @@ monitor_msAction (
     base = c_getBase(entity);
     mm = c_baseMM(base);
     s = c_mmState(mm, msData->preallocated);
-    ms = c_mmMapState(mm);
-    ls = c_mmListState(mm);
 
     if (msData->rawMode == FALSE) {
         time (&ct);
@@ -215,7 +213,7 @@ monitor_msAction (
                         MM_MS_D_MAXUSED_HDR,
                         MM_MS_D_REUSABLE_HDR,
                         MM_MS_D_FAILS_HDR);
-                msData->header = 1;
+                msData->header = 15;
             } else if(msData->preallocated){
                 printf (MM_MS_TIME_BUF_HDR_FMT
                         MM_MS_AVAILABLE_HDR_FMT
@@ -314,10 +312,10 @@ monitor_msAction (
     } else {
         char _size[32], _used[32], _maxUsed[32], _reusable[32];
 
-        to_string(ls.size + ls.garbage + ms.garbage, _size);
-        to_string(ls.used + ms.used, _used);
-        to_string(ls.maxUsed + ms.maxUsed, _maxUsed);
-        to_string(ls.garbage + ms.garbage, _reusable);
+        to_string(s.size + s.garbage, _size);
+        to_string(s.used, _used);
+        to_string(s.maxUsed, _maxUsed);
+        to_string(s.garbage, _reusable);
 
         if(msData->preallocated){
             char _preallocated[32];
@@ -336,12 +334,12 @@ monitor_msAction (
                    ,
                    timbuf,
                    _size,
-                   ls.count + ms.count,
+                   s.count,
                    _used,
                    _preallocated,
                    _maxUsed,
                    _reusable,
-                   ls.fails + ms.fails,
+                   s.fails,
                    extra);
         } else {
             printf(MM_MS_TIME_BUF_FMT
@@ -355,13 +353,15 @@ monitor_msAction (
                    ,
                    timbuf,
                    _size,
-                   ls.count + ms.count,
+                   s.count,
                    _used,
                    _maxUsed,
                    _reusable,
-                   ls.fails + ms.fails,
+                   s.fails,
                    extra);
         }
     }
+    fflush(stdout);
+
     msData->header--;
 }

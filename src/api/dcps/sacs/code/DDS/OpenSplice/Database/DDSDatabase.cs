@@ -53,11 +53,11 @@ namespace DDS.OpenSplice.Database
     {
         // from c_base.h
 
-		//OS_API void
-		//c_free (
-		//    c_object object);
-		[DllImport("ddsdatabase", EntryPoint = "c_free")]
-		public static extern IntPtr free(IntPtr _this);
+        //OS_API void
+        //c_free (
+        //    c_object object);
+        [DllImport("ddsdatabase", EntryPoint = "c_free")]
+        public static extern IntPtr free(IntPtr _this);
 
         //OS_API c_string
         //c_stringNew (
@@ -86,10 +86,10 @@ namespace DDS.OpenSplice.Database
         [DllImport("ddsdatabase", EntryPoint = "c_arrayNew")]
         public static extern IntPtr arrayNew(IntPtr subType, int size);
 
-		//OS_API c_array
-		//c_newArray (
-		//    c_collectionType arrayType,
-		//    c_long size);
+        //OS_API c_array
+        //c_newArray (
+        //    c_collectionType arrayType,
+        //    c_long size);
         [DllImport("ddsdatabase", EntryPoint = "c_newBaseArrayObject")]
         public static extern IntPtr newArray(IntPtr collectionType, int size);
 
@@ -117,20 +117,27 @@ namespace DDS.OpenSplice.Database
         [DllImport("ddsdatabase", EntryPoint = "c_metaResolve")]
         public static extern IntPtr metaResolve(IntPtr scope, string name);
 
+        //OS_API c_specifier
+        //c_metaResolveSpecifier(
+        //    c_metaObject scope,
+        //    const c_char *name);
+        [DllImport("ddsdatabase", EntryPoint = "c_metaResolveSpecifier")]
+        public static extern IntPtr metaResolveSpecifier(IntPtr scope, string name);
+
         //OS_API c_long
         //c_arraySize(
         //    c_array _this);
         [DllImport("ddsdatabase", EntryPoint = "c_arraySize")]
         public static extern int arraySize(IntPtr _this);
 
-		//OS_API c_type
-		//c_metaArrayTypeNew(
-		//    c_metaObject scope,
-		//    const c_char *name,
-		//    c_type subType,
-		//    c_long maxSize);
-		[DllImport("ddsdatabase", EntryPoint = "c_metaArrayTypeNew")]
-		public static extern IntPtr metaArrayTypeNew(IntPtr scope, string name, IntPtr subType, int maxSize);
+        //OS_API c_type
+        //c_metaArrayTypeNew(
+        //    c_metaObject scope,
+        //    const c_char *name,
+        //    c_type subType,
+        //    c_long maxSize);
+        [DllImport("ddsdatabase", EntryPoint = "c_metaArrayTypeNew")]
+        public static extern IntPtr metaArrayTypeNew(IntPtr scope, string name, IntPtr subType, int maxSize);
 
         //OS_API c_type
         //c_metaSequenceTypeNew(
@@ -146,6 +153,20 @@ namespace DDS.OpenSplice.Database
         //    c_object object);
         [DllImport("ddsdatabase", EntryPoint = "c_getType")]
         public static extern IntPtr getType(IntPtr _object);
+
+        //OS_API c_type
+        //c_typeActualType (
+        //    c_type type);
+        [DllImport("ddsdatabase", EntryPoint = "c_typeActualType")]
+        public static extern IntPtr typeActualType(IntPtr _type);
+
+        //#define c_specifierType(_this) \
+        //        c_type(c_specifier(_this)->type)
+        public static IntPtr specifierType(IntPtr _this)
+        {
+            c_specifier specifier = Marshal.PtrToStructure(_this, typeof(c_specifier)) as c_specifier;
+            return specifier.type;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -181,7 +202,7 @@ namespace DDS.OpenSplice.Database
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public class c_member
+    public class c_specifier
     {
         //c_metaKind kind
         public int kind;
@@ -190,7 +211,11 @@ namespace DDS.OpenSplice.Database
         public IntPtr name;
         //c_type type;
         public IntPtr type;
+    }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public class c_member : c_specifier
+    {
         //c_address offset;      /* implementation memory mapping */
         public IntPtr offset;
     }

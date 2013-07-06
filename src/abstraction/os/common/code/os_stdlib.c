@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os_stdlib.h"
@@ -14,7 +14,9 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#ifndef PIKEOS_POSIX
 #include <strings.h>
+#endif
 #include <string.h>
 #include <errno.h>
 #include <ctype.h>
@@ -61,12 +63,19 @@ os_access(
     os_int32 permission)
 {
     os_result result;
-
+#ifdef VXWORKS_RTP
+    /* The access function is broken for vxworks RTP for some filesystems
+       so best ignore the result, and assume the user has correct permissions */
+    (void) file_path;
+    (void) permission;
+    result = os_resultSuccess;
+#else
     if (access (file_path, permission) == 0) {
         result = os_resultSuccess;
     } else {
         result = os_resultFail;
     }
+#endif
     return result;
 }
 
@@ -136,15 +145,6 @@ os_strncpy(
    return strncpy(s1, s2, num);
 }
 
-size_t os_strnlen(char *ptr, size_t maxlen)
-{
-   size_t len;
-   for ( len = 0; len < maxlen && ptr[len] != '\0'; len++ )
-   {
-   }
-   return(len);
-}
-
 int
 os_sprintf(
     char *s,
@@ -153,13 +153,13 @@ os_sprintf(
 {
    int result;
    va_list args;
-   
+
    va_start(args, format);
-   
+
    result = vsprintf(s, format, args);
 
    va_end(args);
-   
+
    return result;
 }
 
@@ -185,23 +185,20 @@ digit_value(
         if (val >= base) {
             val = -1;
         }
+    } else if (digit >= 'a' && digit <= 'z') {
+        val = digit - 'a' + 10;
+        if (val >= base) {
+            val = -1;
+        }
+    } else if (digit >= 'A' && digit <= 'Z') {
+        val = digit - 'A' + 10;
+        if (val >= base) {
+            val = -1;
+        }
     } else {
-    	if (digit >= 'a' && digit <= 'z') {
-            val = digit - 'a';
-            if (val >= base) {
-            	val = -1;
-            }
-        } else {
-        	if (digit >= 'A' && digit <= 'Z') {
-                val = digit - 'A';
-                if (val >= base) {
-                    val = -1;
-                }
-            } else {
-                val = -1;
-            }
-    	}
+        val = -1;
     }
+
     return (long long)val;
 }
 
@@ -227,11 +224,9 @@ os_strtoll(
     if (*str == '-') {
         sign = -1LL;
         str++;
-    } else {
-        if (*str == '+') {
-            sign = 1LL;
-            str++;
-    	}
+    } else if (*str == '+') {
+        sign = 1LL;
+        str++;
     }
     if (base == 0) {
         /* determine radix from string str */
@@ -244,44 +239,31 @@ os_strtoll(
             /* base = 8, 10 or 16 */
             if (*str == '\0') {
                 base = 10;
+            } else if (*str == 'x' || *str == 'X') {
+                base = 16;
+                str++;
+            } else if (*str >= '0' || *str <= '7') {
+                base = 8;
             } else {
-                if (*str == 'x' || *str == 'X') {
-                    base = 16;
-                    str++;
-                } else {
-                    if (*str >= '0' || *str <= '7') {
-                        base = 8;
-                    } else {
-                    	errno = EINVAL;
-                    	return value;
-                    }
-            	}
-            }
-        } else {
-            if (*str >= '1' || *str <= '9') {
-                base = 10;
-            }
-        }
-    } else {
-        if (base < 2) {
-            /* invalid radix */
-            errno = EINVAL;
-            return value;
-        } else {
-            if (base > 36) {
-                /* invalid radix */
                 errno = EINVAL;
                 return value;
-            } else {
-                if (base == 16) {
-                    /* Check if prefixed by 0x or 0X */
-                    if ((*str == '0') &&
-                        (*(str+1) == 'x' || *(str+1) == 'X')) {
-                        str++;
-                        str++;
-                    }
-                }
             }
+        } else if (*str >= '1' || *str <= '9') {
+            base = 10;
+        }
+    } else if (base < 2) {
+        /* invalid radix */
+        errno = EINVAL;
+        return value;
+    } else if (base > 36) {
+        /* invalid radix */
+        errno = EINVAL;
+        return value;
+    } else if (base == 16) {
+        /* Check if prefixed by 0x or 0X */
+        if (*str == '0' && (*(str+1) == 'x' || *(str+1) == 'X')) {
+            str++;
+            str++;
         }
     }
     radix = (long long)base;
@@ -321,16 +303,16 @@ os_lltostr(
     lval = value / 10LL;
     if (sign < 0) {
         endptr--;
-        *endptr = '0' + ((lval * 10LL) - value);
+        *endptr = '0' + (char)((lval * 10LL) - value);
     } else {
         endptr--;
-        *endptr = '0' + (value - (lval * 10LL));
+        *endptr = '0' + (char)(value - (lval * 10LL));
     }
     value = lval * sign;
     while (value > 0LL) {
         lval = value / 10LL;
         endptr--;
-        *endptr = '0' + (value - (lval * 10LL));
+        *endptr = '0' + (char)(value - (lval * 10LL));
         value = lval;
     }
     if (sign < 0) {
@@ -557,13 +539,7 @@ os_getTempDir()
     return dir_name;
 }
 
-char * os_strerror(int errnum, char *buf, size_t n)
-{
-    strerror_r(errnum, buf, n);
-    return buf;
-}
-
-ssize_t os_write(int fd, const void *buf, size_t count)
+os_ssize_t os_write(int fd, const void *buf, size_t count)
 {
   return write(fd, buf, count);
 }

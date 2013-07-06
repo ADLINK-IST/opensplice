@@ -1,0 +1,29 @@
+digraph rpmpackaging {
+        rankdir=LR;
+
+        subgraph cluster_completeprocess {
+                // rpmbuild output
+                rpmbuild [shape="box"];
+                
+                rpmbuild -> SRPM;
+                rpmbuild -> bRPM;
+                
+                
+                // inputs to rpmbuild
+                specfile -> rpmbuild ;
+                tarball -> rpmbuild ;
+                
+                mwc [shape="box" label="mwc.pl"];
+                rpmscript [shape="box" label="*_rpm.sh script"];
+                
+                mwc -> specfile;
+                mwc -> rpmscript;
+                rpmscript -> tarball;
+
+                mwcfiles [label=".mwc files"];
+
+                mwcfiles -> mwc;
+
+                
+        }
+}

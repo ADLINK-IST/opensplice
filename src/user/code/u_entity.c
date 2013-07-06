@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -44,6 +44,7 @@
 #include "v_networking.h"
 #include "v_durability.h"
 #include "v_cmsoap.h"
+#include "v_rnr.h"
 #include "v_dataReader.h"
 #include "v_dataReaderQuery.h"
 #include "v_dataViewQuery.h"
@@ -140,6 +141,7 @@ u_entityNew(
     case K_NETWORKING:
     case K_DURABILITY:
     case K_CMSOAP:
+    case K_RNR:
     case K_SERVICE:        _NEW_(u_service, U_SERVICE);               break;
     case K_SPLICED:        _NEW_(u_spliced, U_SERVICE);               break;
     case K_WAITSET:        _NEW_(u_waitset, U_WAITSET);               break;
@@ -270,6 +272,7 @@ u_entityDeinit(
 {
     v_entity o;
     u_result r;
+    os_result osr;
     u_domain domain;
 
     if (_this == NULL) {
@@ -304,6 +307,7 @@ u_entityDeinit(
                         case K_NETWORKING:       _FREE_(v_networking);
                         case K_DURABILITY:       _FREE_(v_durability);
                         case K_CMSOAP:           _FREE_(v_cmsoap);
+                        case K_RNR:              _FREE_(v_rnr);
                         case K_SERVICESTATE:   /* Is never freed! */
                         break;
                         case K_DELIVERYSERVICE:
@@ -362,7 +366,13 @@ u_entityDeinit(
         _this->gid = v_publicGid(NULL);
         _this->participant = NULL;
         _this->userData = NULL;
-        os_mutexDestroy(&_this->mutex);
+        /* Since this call needs to be done in locked condition, the mutex needs
+         * to be unlocked here before destroying. */
+        os_mutexUnlock(&_this->mutex);
+        if((osr = os_mutexDestroy(&_this->mutex)) != os_resultSuccess){
+            OS_REPORT_1(OS_ERROR, "user::u_entity::u_entityDeinit", 0, "Operation os_mutexDestroy failed, result: %s\n", os_resultImage(osr));
+        }
+
     }
     return U_RESULT_OK;
 }
@@ -371,13 +381,12 @@ c_bool
 u_entityDereference(
     u_entity _this)
 {
-    c_long refCount = -1;
+    os_uint32 refCount = 1;
 
     /* Precondition: entity must be locked. */
     if (_this) {
         if (_this->refCount > 0) {
-            pa_decrement(&_this->refCount);
-            refCount = _this->refCount;
+            refCount = pa_decrement(&_this->refCount);
         }
     }
     return (refCount == 0);
@@ -540,19 +549,25 @@ u_entityClaimCommon(
 
                     base = c_getBase(c_object(*ke));
                     status = c_baseGetMemThresholdStatus(base);
-                    if(isService && status == C_MEMTHRESHOLD_SERV_REACHED)
+                    if(isService)
                     {
-                        if(!serviceWarningGiven)
+                        if (status == C_MEMTHRESHOLD_SERV_REACHED)
                         {
-                            serviceWarningGiven = OS_TRUE;
-                            OS_REPORT(OS_WARNING, "u_entityClaimCommon", 0,
-                                  "Unable to complete claim for service. Shared "
-                                  "memory has run out. You can try to free up some "
-                                  "memory by terminating (a) DDS application(s).");
-
+                            if(!serviceWarningGiven)
+                            {
+                                serviceWarningGiven = OS_TRUE;
+                                OS_REPORT(OS_WARNING, "u_entityClaimCommon", 0,
+                                      "Unable to complete claim for service. Shared "
+                                      "memory has run out. You can try to free up some "
+                                      "memory by terminating (a) DDS application(s).");
+                            }
+                            r = U_RESULT_OUT_OF_MEMORY;
                         }
-                        r = U_RESULT_OUT_OF_MEMORY;
-                    } else if(status == C_MEMTHRESHOLD_APP_REACHED)
+                        else
+                        {
+                            r = U_RESULT_OK;
+                        }
+                    } else if(status != C_MEMTHRESHOLD_OK) /* APP- or SERVICE-threshold reached */
                     {
                         if(!appWarningGiven)
                         {
@@ -819,6 +834,26 @@ u_entityAction(
 }
 
 u_result
+u_entityWriteAction(
+    u_entity _this,
+    void (*action)(v_entity e, c_voidp arg),
+    c_voidp arg)
+{
+    u_result result;
+    v_entity ke;
+
+    result = u_entityWriteClaim(_this, &ke);
+
+    if(result == U_RESULT_OK){
+        action(ke,arg);
+        u_entityRelease(_this);
+        result = U_RESULT_OK;
+    }
+    return result;
+}
+
+
+u_result
 u_entityWalkEntities(
     u_entity _this,
     c_bool (*action)(v_entity e, c_voidp arg),
@@ -867,10 +902,16 @@ u_entityWalkDependantEntities(
             result = U_RESULT_INTERRUPTED;
         }
     } else {
-        OS_REPORT_1(OS_ERROR,
-                    "u_entityWalkDependantEntities", 0,
-                    "u_entityClaim failed: entity kind = %s",
-                    u_kindImage(u_entityKind(_this)));
+        if (_this) {
+            OS_REPORT_1(OS_ERROR,
+                        "u_entityWalkDependantEntities", 0,
+                        "u_entityClaim failed: entity kind = %s",
+                        u_kindImage(u_entityKind(_this)));
+        }else {
+            OS_REPORT(OS_ERROR,
+                        "u_entityWalkDependantEntities", 0,
+                        "u_entityClaim failed: entity = nil");
+        }
     }
     return result;
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -104,7 +104,7 @@ idl_moduleOpen(
 
     /* Generate the C# code that opens the namespace. */
     idl_printIndent(indent_level);
-    idl_fileOutPrintf(idl_fileCur(), "namespace %s\n", idl_CsharpId(name, csUserData->customPSM));
+    idl_fileOutPrintf(idl_fileCur(), "namespace %s\n", idl_CsharpId(name, csUserData->customPSM, FALSE));
     idl_printIndent(indent_level);
     idl_fileOutPrintf(idl_fileCur(), "{\n");
 
@@ -175,7 +175,7 @@ idl_structureOpen(
         action = idl_abort;
     } else {
         /* Translate the name of the struct into a valid C# identifier. */
-        c_char *structName = idl_CsharpId(name, csUserData->customPSM);
+        c_char *structName = idl_CsharpId(name, csUserData->customPSM, FALSE);
 
         /* Generate the Database representation of the datatype. */
         idl_generateDatabaseRepresentation(structSpec, structName, csUserData);
@@ -297,7 +297,7 @@ idl_cTypeToCSharp(
         if (idl_isPredefined(memberTypeName)) {
             dbType = os_strdup(idl_translateIfPredefined(memberTypeName));
         } else {
-            dbType = idl_CsharpId(memberTypeName, csUserData->customPSM);
+            dbType = idl_CsharpId(memberTypeName, csUserData->customPSM, TRUE);
         }
         break;
     case M_COLLECTION:
@@ -453,23 +453,23 @@ idl_generateDatabaseRepresentation (
     /* Loop over the attributes of the datatype and process each attribute. */
     for (i = 0; i < nrMembers; i++) {
         c_char *dbType;
+        c_char *memberTypeName;
 
         /* Get the meta-data of the attribute from the database. */
         c_member structMember = c_structureMember(structType, i);
         c_type memberType = c_memberType(structMember);
-        c_char *memberTypeName = idl_scopeStackFromCType(memberType);
         c_char *memberName = idl_CsharpId(
                 c_specifierName(structMember),
-                csUserData->customPSM);
+                csUserData->customPSM,
+                FALSE);
 
         /* Dereference possible typedefs first. */
         while (c_baseObjectKind(memberType) == M_TYPEDEF) {
-            os_free(memberTypeName);
             memberType = c_typeDef(memberType)->alias;
-            memberTypeName = idl_scopeStackFromCType(memberType);
         }
 
         /* Now find and generate the corresponding database representation. */
+        memberTypeName = idl_scopeStackFromCType(memberType);
         dbType = idl_cTypeToCSharp(memberType, memberTypeName, csUserData);
 
         /* generate the the database representation for the attribute.  */
@@ -492,6 +492,22 @@ idl_generateDatabaseRepresentation (
     idl_printIndent(indent_level);
     idl_fileOutPrintf (idl_fileCur(), "#endregion\n\n");
 }
+
+static void
+idl_determineFullyScopedName(
+        c_type structType)
+{
+    c_char *fullyScopedName = c_metaScopedName(c_metaObject(structType));
+
+    /* Generate the code to obtain the fully-scoped name of the datatype. */
+    idl_printIndent(indent_level);
+    idl_fileOutPrintf(
+            idl_fileCur(),
+            "public static readonly string fullyScopedName = \"%s\";\n",
+            fullyScopedName);
+    os_free(fullyScopedName);
+}
+
 
 static void
 idl_determineOffsets(
@@ -518,7 +534,8 @@ idl_determineOffsets(
         c_member structMember = c_structureMember(structType, i);
         c_char *memberName = idl_CsharpId(
                 c_specifierName(structMember),
-                csUserData->customPSM);
+                csUserData->customPSM,
+                FALSE);
         idl_printIndent(indent_level);
         idl_fileOutPrintf(
                 idl_fileCur(),
@@ -547,7 +564,8 @@ idl_CreateAttributes(
         c_char *memberTypeName = idl_scopeStackFromCType(memberType);
         c_char *memberName = idl_CsharpId(
                         c_specifierName(structMember),
-                        csUserData->customPSM);
+                        csUserData->customPSM,
+                        FALSE);
         if (idl_isPredefined(memberTypeName)) {
             isPredefined = TRUE;
         }
@@ -629,7 +647,8 @@ idl_CreateInitEmbeddedMarshalers(
         c_char *memberTypeName = idl_scopeStackFromCType(memberType);
         c_char *memberName = idl_CsharpId(
                         c_specifierName(structMember),
-                        csUserData->customPSM);
+                        csUserData->customPSM,
+                        FALSE);
         if (idl_isPredefined(memberTypeName)) {
             isPredefined = TRUE;
         }
@@ -657,7 +676,7 @@ idl_CreateInitEmbeddedMarshalers(
         case M_STRUCTURE:
             if (!idl_isPredefined(memberTypeName)) {
                 os_char *prevTypeName = memberTypeName;
-                memberTypeName = idl_CsharpId(prevTypeName, csUserData->customPSM);
+                memberTypeName = idl_CsharpId(prevTypeName, csUserData->customPSM, FALSE);
                 os_free(prevTypeName);
                 idl_printIndent(indent_level);
                 idl_fileOutPrintf(idl_fileCur(), "if (attr%dMarshaler == null) {\n",i);
@@ -952,9 +971,18 @@ idl_CreateArrayMemberWrite(
             indent_level++;
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(),
-                    "%s = DDS.OpenSplice.Database.c.resolve(basePtr, \"%s\");\n",
-                    seqTypeName,
-                    c_metaScopedName(c_metaObject(collType)));
+                    "IntPtr memberOwnerType = DDS.OpenSplice.Database.c.resolve(basePtr, fullyScopedName);\n");
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "IntPtr specifier = DDS.OpenSplice.Database.c.metaResolveSpecifier(memberOwnerType, \"%s\");\n",
+                    fieldName);
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "IntPtr specifierType = DDS.OpenSplice.Database.c.specifierType(specifier);\n");
+            idl_printIndent(indent_level);
+            idl_fileOutPrintf(idl_fileCur(),
+                    "%s = DDS.OpenSplice.Database.c.typeActualType(specifierType);\n",
+                    seqTypeName);
             indent_level--;
             idl_printIndent(indent_level);
             idl_fileOutPrintf(idl_fileCur(), "}\n");
@@ -1186,7 +1214,8 @@ idl_CreateCopyIn(
         c_type memberType = c_memberType(structMember);
         c_char *memberName = idl_CsharpId(
                         c_specifierName(structMember),
-                        csUserData->customPSM);
+                        csUserData->customPSM,
+                        FALSE);
         idl_CreateStructMemberWrite(memberType, memberName, i, csUserData);
         os_free(memberName);
     }
@@ -1304,7 +1333,7 @@ idl_CreateArrayMemberReadInnerLoopBody(
         } else {
             /* Get the CSharp specific name of the member type. */
             c_char *prevColTypeName = colTypeName;
-            colTypeName = idl_CsharpId(prevColTypeName, csUserData->customPSM);
+            colTypeName = idl_CsharpId(prevColTypeName, csUserData->customPSM, FALSE);
             os_free(prevColTypeName);
 
             idl_printIndent(indent_level);
@@ -1561,7 +1590,7 @@ idl_CreateStructMemberRead(
         {
             /* Get the CSharp specific name of the member type. */
             c_char *prevTypeName = memberTypeName;
-            memberTypeName = idl_CsharpId(prevTypeName, csUserData->customPSM);
+            memberTypeName = idl_CsharpId(prevTypeName, csUserData->customPSM, FALSE);
             os_free(prevTypeName);
 
             /* Pick a holder for the read result. */
@@ -1710,7 +1739,8 @@ idl_CreateCopyOut(
         c_type memberType = c_memberType(structMember);
         c_char *memberName = idl_CsharpId(
                         c_specifierName(structMember),
-                        csUserData->customPSM);
+                        csUserData->customPSM,
+                        FALSE);
         idl_CreateStructMemberRead(memberType, memberName, i, csUserData);
         os_free(memberName);
     }
@@ -1745,6 +1775,7 @@ idl_generateMarshaler (
     indent_level++;
 
     /* Create the constructor of the Marshaler. */
+    idl_determineFullyScopedName(structType);
     idl_determineOffsets(structType, structName, csUserData);
     idl_CreateAttributes(structType, structName, csUserData);
     idl_CreateInitEmbeddedMarshalers(structType, structName, csUserData);

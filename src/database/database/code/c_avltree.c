@@ -1,24 +1,25 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 /***********************************************************************
  *
  * Object-name   : avltree
  * Component     : standard
- * 
+ *
  * Implementation: All tree algorithms are implemeted iterative instead
- *                 of recursive to improve performance. 
+ *                 of recursive to improve performance.
  *
  ***********************************************************************/
 #include "c_avltree.h"
+#include "c__mmbase.h"
 #include <assert.h>
 
 /**
@@ -54,7 +55,7 @@
  *
  * left and right are references to left and right elements within the tree.
  * height represents the height of the node seen from the bottom of the tree.
- **/ 
+ **/
 
 #define TONODE(t,d) ((c_avlNode)(((c_address)(d))+(t)->offset))
 #define TODATA(t,n) ((void *)(((c_address)(n))-(t)->offset))
@@ -89,16 +90,37 @@ c_avlTreeRebalance (
             c_long heightleftright = heightof(nodeleftright);
             if (heightof(nodeleftleft) >= heightleftright) {
                 node->left = nodeleftright; nodeleft->right = node;
+                nodeleft->parent = node->parent; node->parent = nodeleft;
+                if(nodeleftright)
+                    nodeleftright->parent = node;
                 nodeleft->height = 1 + (node->height = 1 + heightleftright);
-                *nodeplace = nodeleft;
+                if(nodeleft->parent == NULL)
+                    *nodeplace = nodeleft;
+                else if (node == nodeleft->parent->left)
+                    nodeleft->parent->left = nodeleft;
+                else
+                    nodeleft->parent->right = nodeleft;
             } else {
+                nodeleftright->parent = node->parent;
                 nodeleft->right = nodeleftright->left;
+                if (nodeleft->right)
+                    nodeleft->right->parent = nodeleft;
                 node->left = nodeleftright->right;
+                if (node->left)
+                    node->left->parent = node;
                 nodeleftright->left = nodeleft;
+                nodeleft->parent = nodeleftright;
                 nodeleftright->right = node;
+                node->parent = nodeleftright;
                 nodeleft->height = node->height = heightleftright;
                 nodeleftright->height = heightleft;
-                *nodeplace = nodeleftright;
+
+                if (nodeleftright->parent == NULL)
+                    *nodeplace = nodeleftright;
+                else if (node == nodeleftright->parent->left)
+                    nodeleftright->parent->left = nodeleftright;
+                else
+                    nodeleftright->parent->right = nodeleftright;
             }
         } else if ((heightleft + 1) < heightright) {
             c_avlNode noderightright = noderight->right;
@@ -106,16 +128,37 @@ c_avlTreeRebalance (
             c_long heightrightleft = heightof(noderightleft);
             if (heightof(noderightright) >= heightrightleft) {
                 node->right = noderightleft; noderight->left = node;
+                noderight->parent = node->parent; node->parent = noderight;
+                if(noderightleft)
+                    noderightleft->parent = node;
                 noderight->height = 1 + (node->height = 1 + heightrightleft);
-                *nodeplace = noderight;
+                if(noderight->parent == NULL)
+                    *nodeplace = noderight;
+                else if (node == noderight->parent->right)
+                    noderight->parent->right = noderight;
+                else
+                    noderight->parent->left = noderight;
             } else {
+                noderightleft->parent = node->parent;
                 noderight->left = noderightleft->right;
+                if (noderight->left)
+                    noderight->left->parent = noderight;
                 node->right = noderightleft->left;
+                if (node->right)
+                    node->right->parent = node;
                 noderightleft->right = noderight;
+                noderight->parent = noderightleft;
                 noderightleft->left = node;
+                node->parent = noderightleft;
                 noderight->height = node->height = heightrightleft;
                 noderightleft->height = heightright;
-                *nodeplace = noderightleft;
+
+                if (noderightleft->parent == NULL)
+                    *nodeplace = noderightleft;
+                else if (node == noderightleft->parent->right)
+                    noderightleft->parent->right = noderightleft;
+                else
+                    noderightleft->parent->left = noderightleft;
             }
         } else {
             c_long height;
@@ -161,6 +204,7 @@ c_avlTreeInsert (
 
     new_node = TONODE(this, element);
     nodeplace = (c_avlNode *)&this->root;
+    new_node->parent = NULL;
 
     for (;;) {
         c_avlNode node = *nodeplace;
@@ -180,6 +224,7 @@ c_avlTreeInsert (
         } else {
             return TODATA(this, node);
         }
+        new_node->parent = node;
     }
     new_node->left = NULL;
     new_node->right = NULL;
@@ -247,12 +292,16 @@ c_avlTreeReplace (
             new_node->left = node->left;
             new_node->right = node->right;
             new_node->height = node->height;
+            new_node->parent = node->parent;
+            if(node->left)node->left->parent = new_node;
+            if(node->right)node->right->parent = new_node;
             *nodeplace = new_node;
             return TODATA(this, node);
         }
     }
     new_node->left = NULL;
     new_node->right = NULL;
+    new_node->parent = NULL;
     new_node->height = 1;
     *nodeplace = new_node;
     c_avlTreeRebalance(stack_ptr,stack_count);
@@ -325,6 +374,7 @@ c_avlTreeRemove (
 
     if (node_to_delete->left == NULL) {
         *nodeplace_to_delete = node_to_delete->right;
+        if(node_to_delete->right) node_to_delete->right->parent = node_to_delete->parent;
         stack_ptr--; stack_count--;
     } else {
         c_avlNode **stack_ptr_to_delete = stack_ptr;
@@ -342,8 +392,12 @@ c_avlTreeRemove (
             nodeplace = &node->right;
         }
         *nodeplace = node->left;
+        if(node->left)node->left->parent = node->parent;
         node->left = node_to_delete->left;
+        if(node->left)node->left->parent = node;
         node->right = node_to_delete->right;
+        if(node->right)node->right->parent = node;
+        node->parent = node_to_delete->parent;
         node->height = node_to_delete->height;
         *nodeplace_to_delete = node;
         *stack_ptr_to_delete = &node->left;
@@ -536,6 +590,87 @@ c_avlTreeNearest (
     }
 }
 
+
+/***********************************************************************
+ *
+ * Method : c_avlTreeNext
+ * Provides the next (larger) node in the tree given a tree node.
+ *
+ * NOTE: dataNode MUST be a an actual member of the tree.
+ *
+ ***********************************************************************/
+void *
+c_avlTreeNext(
+    c_avlTree this,
+    void *dataNode)
+{
+    c_avlNode avlNode;
+
+    assert(this != NULL);
+
+    if(dataNode == NULL){
+        return c_avlTreeFirst(this);
+    }
+
+    avlNode = (c_avlNode)TONODE(this, dataNode);
+
+    if(avlNode->right == NULL){
+        while(avlNode->parent){
+            if(avlNode->parent->left == avlNode){
+                return TODATA(this, avlNode->parent);
+            }
+            avlNode = avlNode->parent;
+        }
+        return NULL; /* item was most right element */
+    } else {
+        avlNode = avlNode->right;
+        while(avlNode->left != NULL){
+            avlNode = avlNode->left;
+        }
+        return TODATA(this, avlNode);
+    }
+}
+
+/***********************************************************************
+ *
+ * Method : c_avlTreePrev
+ * Provides the previous (smaller) node in the tree given a tree node.
+ *
+ * NOTE: dataNode MUST be a an actual member of the tree.
+ *
+ ***********************************************************************/
+void *
+c_avlTreePrev(
+    c_avlTree this,
+    void *dataNode)
+{
+    c_avlNode avlNode;
+
+    assert(this != NULL);
+
+    if(dataNode == NULL){
+        return c_avlTreeLast(this);
+    }
+
+    avlNode = (c_avlNode)TONODE(this, dataNode);
+
+    if(avlNode->left == NULL){
+        while(avlNode->parent){
+            if(avlNode->parent->right == avlNode){
+                return TODATA(this, avlNode->parent);
+            }
+            avlNode = avlNode->parent;
+        }
+        return NULL; /* item was most left element */
+    } else {
+        avlNode = avlNode->left;
+        while(avlNode->right != NULL){
+            avlNode = avlNode->right;
+        }
+        return TODATA(this, avlNode);
+    }
+}
+
 /***********************************************************************
  *
  * Method : c_avlTreeWalk
@@ -664,12 +799,12 @@ c_avlTreeRangeWalk (
     }
 
     nodeplace = (c_avlNode *)&this->root;
-    
+
     if (endTemplate != NULL) {
         if (endInclude) {
-	    endSpec = C_LE;
+            endSpec = C_LE;
         } else {
-	    endSpec = C_LT;
+            endSpec = C_LT;
         }
         endnode = TONODE(this,
                          c_avlTreeNearest (this,
@@ -717,7 +852,7 @@ c_avlTreeRangeWalk (
                     nodeplace = &node->right;
                 }
             } else {
-	        if (startInclude) break;
+                if (startInclude) break;
                 if (node->right != NULL) {
                     node = node->right;
                     for (;;) {
@@ -930,26 +1065,24 @@ c_avlTreeNew (
 {
     c_avlTree tree;
 
-    assert(mm != NULL);
-
     tree = (c_avlTree)c_mmMalloc(mm, C_SIZEOF(c_avlTree));
-    tree->root = NULL;
-    tree->offset = offset;
-    tree->size = 0;
-    tree->mm = mm;
+    c_avlTreeInit(tree, mm, offset);
     return tree;
 }
 
-static void
-c_avlNodeFree(
+c_avlTree
+c_avlTreeInit (
+    c_avlTree tree,
     c_mm mm,
-    c_avlNode node)
+    c_long offset)
 {
-    if (node != NULL) {
-        c_avlNodeFree(mm,node->left);
-        c_avlNodeFree(mm,node->right);
-        c_mmFree(mm,node);
+    if(tree){
+        tree->root = NULL;
+        tree->offset = offset;
+        tree->size = 0;
+        tree->mm = mm;
     }
+    return tree;
 }
 
 /***********************************************************************

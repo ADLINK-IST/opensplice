@@ -1,0 +1,36 @@
+=> test #0 :
+factory[log4c_category_factory]:
+{ name:'root' priority:NOTICE additive:1 appender:'(nil)' parent:'(nil)' }
+
+factory[log4c_appender_factory]:
+{ name:'syslog' type:'syslog' layout:'basic' isopen:0 udata:(nil)}
+{ name:'stderr' type:'stream' layout:'dated' isopen:0 udata:0x42127480}
+{ name:'stdout' type:'stream' layout:'basic' isopen:0 udata:0x42127320}
+
+factory[log4c_layout_factory]:
+{ name:'basic' type:'basic' udata:(nil) }
+{ name:'dated' type:'dated' udata:(nil) }
+
+=> test #0 :  passed
+=> test #1 :
+factory[log4c_category_factory]:
+{ name:'' priority:UNKNOWN additive:1 appender:'(nil)' parent:'root' }
+{ name:'a.b' priority:DEBUG additive:1 appender:'afile' parent:'a' }
+{ name:'root' priority:ERROR additive:1 appender:'stderr' parent:'(nil)' }
+{ name:'a.b.c' priority:WARN additive:1 appender:'(nil)' parent:'a.b' }
+{ name:'a.b.c.d' priority:TRACE additive:1 appender:'(nil)' parent:'a.b.c' }
+{ name:'a' priority:INFO additive:1 appender:'' parent:'root' }
+
+factory[log4c_appender_factory]:
+{ name:'' type:'stream' layout:'basic' isopen:0 udata:(nil)}
+{ name:'syslog' type:'syslog' layout:'basic' isopen:0 udata:(nil)}
+{ name:'stderr' type:'stream' layout:'dated' isopen:0 udata:0x42127480}
+{ name:'afile' type:'stream' layout:'toto' isopen:0 udata:(nil)}
+{ name:'stdout' type:'stream' layout:'basic' isopen:0 udata:0x42127320}
+
+factory[log4c_layout_factory]:
+{ name:'toto' type:'basic' udata:(nil) }
+{ name:'basic' type:'basic' udata:(nil) }
+{ name:'dated' type:'dated' udata:(nil) }
+
+=> test #1 :  passed

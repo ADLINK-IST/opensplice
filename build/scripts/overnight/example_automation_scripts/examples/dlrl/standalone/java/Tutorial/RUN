@@ -1,0 +1,46 @@
+#!/bin/sh
+
+. $OSPL_HOME/examples/functions
+
+CURRENT_PL='uname | grep SunOS'
+
+if [ "$CURRENT_PL" != "" ]
+then
+   ln -s "$OSPL_HOME"/examples/dcps/Tutorial/cpp/standalone/libsacpp_tutorial_types.so libsacpp_tutorial_types.so
+fi
+
+check_osplhome
+
+get_libjsig
+
+startOSPL
+
+sleep 5 
+
+echo Start MessageBoard
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath bld:bld/WhiteListedMessageBoard:$OSPL_HOME/jar/dcpssaj.jar:$OSPL_HOME/jar/dlrlsaj.jar:$SPLICE_EXTRA_CP WhiteListedMessageBoard.WhiteListedMessageBoard -name family & > messageBoard.log
+
+sleep 5
+
+echo Start run Editor
+
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath bld:bld/WhiteListEditor:$OSPL_HOME/jar/dcpssaj.jar:$OSPL_HOME/jar/dlrlsaj.jar:$SPLICE_EXTRA_CP WhiteListEditor.WhiteListEditor -name family -add 1,mam 2,dad 3,John > editor.log
+
+sleep 5
+
+echo Start run Viewer
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -classpath bld:bld/WhiteListEditor:$OSPL_HOME/jar/dcpssaj.jar:$OSPL_HOME/jar/dlrlsaj.jar:$SPLICE_EXTRA_CP WhiteListViewer.WhiteListViewer > viewer.log
+
+sleep 5
+
+echo "Start Chatter.  These messages should appear on the MessageBoard"
+"$OSPL_HOME"/examples/dcps/Tutorial/cpp/standalone/Chatter 3 John
+
+echo "Start Chatter.  These messages should not appear on the MessageBoard"
+"$OSPL_HOME"/examples/dcps/Tutorial/cpp/standalone/Chatter 4 Dave
+
+echo "Stop MessageBoard"
+"$OSPL_HOME"/examples/dcps/Tutorial/cpp/standalone/Chatter -1
+
+stopOSPL

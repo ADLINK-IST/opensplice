@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -115,10 +115,15 @@ C_STRUCT(idl_macroSet) {
 static c_equality
 idl_macroNameMatch(
     /* QAC EXPECT 3673; Can not be solved here */
-    const idl_macro macro,
-    const c_char *name)
+    void *_macro,
+    void *_name)
 {
+    idl_macro macro;
+    c_char *name;
     c_equality result = C_NE;
+
+    macro = _macro;
+    name = _name;
 
     /* QAC EXPECT 3416; No unexpected side effect here */
     if (strcmp (macro->name, name) == 0) {
@@ -982,7 +987,7 @@ idl_tmplExpProcessMacro (
         idl_streamInWind(si);
 	/* QAC EXPECT 3416; No unexpected side effect here */
         if (idl_tmplExpGetMacroSingleArg (tmplExp, si, spaceCount)) {
-            sscanf (spaceCount, "%d", &spc);
+            sscanf (spaceCount, "%u", &spc);
             for (ni = 0; ni < spc; ni++) {
                 idl_streamOutPut (so, ' ');
             }

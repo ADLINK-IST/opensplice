@@ -1,171 +1,134 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 package org.opensplice.cm;
 
-import org.opensplice.cm.com.*;
+import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
+import org.opensplice.cm.com.JniCommunicator;
+import org.opensplice.cm.com.SOAPCommunicator;
 import org.opensplice.cm.impl.ParticipantImpl;
+import org.opensplice.cm.impl.StorageImpl;
 import org.opensplice.cm.qos.ParticipantQoS;
 
 /**
  * Control & Monitoring factory.
- * 
- * This class takes care of initialisation and detaching of the Control
- * & Monitoring API. The API can only be used when it is initialised. The
- * CMFactory is NOT threadsafe. Synchronization of initialisation and detaching
- * must be taken care of by the user of the API. 
  *
- * All allocated entities are registered here and are freed when the API is 
+ * This class takes care of initialisation and detaching of the Control &
+ * Monitoring API. The API can only be used when it is initialised. The
+ * CMFactory is NOT threadsafe. Synchronization of initialisation and detaching
+ * must be taken care of by the user of the API.
+ *
+ * All allocated entities are registered here and are freed when the API is
  * detached.
  */
 public class CMFactory {
-    /**
-     * Changes the communication mode of the C&M API. Currently two modes
-     * are supported:
-     * - COMMUNICATION_MODE_JNI  : local connection using JNI.
-     * - COMMUNICATION_MODE_SOAP : remote connection using SOAP. 
-     * 
-     * The communication mode may only be changed when the CMFactory is not
-     * initialised. 
-     * 
-     * @param mode The communication mode to set.
-     * @throws CMException Thrown when:
-     *                     - Communication mode is unknown
-     *                     - CMFactory is currently initialised.
-     */
-    public static void setCommunicationMode(int mode) throws CMException {
-        if(isInitialised()){
-            throw new CMException("Communication mode can only be changed when not initialised.");
-        }
-        if(mode == COMMUNICATION_MODE_JNI){
-            COMMUNICATION_MODE = mode;
-        } else if(mode == COMMUNICATION_MODE_SOAP){
-            COMMUNICATION_MODE = mode;
-        } else {
-            throw new CMException("Supplied communication mode unknown.");
-        }
-    }
-    
-    /**
-     * Initialises the Control & Monitoring API.
-     *  
-     * @throws CMException Thrown when the API could not be initialised. This
-     *                     happens when the communication libraries cannot be
-     *                     loaded or splice is not runnning.
-     */
-    public static synchronized void initialise() throws CMException{
-        if(instance == null){
-            instance = new CMFactory("http://127.0.0.1");
-        }
-    }
-    
-    /**
-     * Initialises the Control & Monitoring API.
-     * 
-     * @param url The location of the SPLICE-DDS node to initialize. In 
-     *            COMMUNICATION_MODE_JNI mode this is ignored.
-     * @throws CMException Thrown when the API could not be initialised. This
-     *                     happens when the communication libraries cannot be
-     *                     loaded or splice is not runnning.
-     */
-    public static synchronized void initialise(String url) throws CMException{
-        if(instance == null){
-            instance = new CMFactory(url);
-        }
-    }
-    
+
     /**
      * Checks whether the Control & Monitoring API is currently initialised.
-     * 
-     * @return true if it is initialised, false otherwise. 
+     *
+     * @return true if it is initialised, false otherwise.
      */
-    public static boolean isInitialised(){
+    public static boolean isInitialised() {
         return (instance != null);
     }
-    
+
     /**
-     * Detaches the Control & Monitoring API.
-     * All entities that not have been freed are freed before the API is
-     * detached.
-     * 
-     * @throws CMException Thrown when the API was currently not initialised or
-     *                     it could not be detached.
+     * Detaches the Control & Monitoring API. All entities that not have been
+     * freed are freed before the API is detached.
+     *
+     * @throws CMException
+     *             Thrown when the API was currently not initialised or it could
+     *             not be detached.
      */
-    public static synchronized void detach() throws CMException{
+    public static synchronized void detach() throws CMException {
         if(instance == null){
             throw new CMException("Not initialised.");
         }
-        
+
         try {
             communicator.detach();
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
-        currentURL = null;
         instance = null;
         communicator = null;
     }
-    
+
     /**
-     * Provides access to the domain id of the supplied kernel uri. This 
-     * function will disappear in the future.
-     * 
-     * @return The URL of the node where the API is currently working on.
-     * @throws CMException Thrown when the API currently is not initialised.
-     */
-    public static String getCurrentURL() throws CMException{
-        if(instance == null){
-            throw new CMException(initMsg);
-        }
-        return currentURL;
-    }
-    
-    /**
-     * Provides access to the communication handler of the Control & Monitoring 
+     * Provides access to the communication handler of the Control & Monitoring
      * API.
-     * 
+     *
      * @return The communicator of the Control & Monitoring API.
-     * @throws CMException Thrown when the Control & Monitoring API currently
-     *                     is not initialised.
+     * @throws CMException
+     *             Thrown when the Control & Monitoring API currently is not
+     *             initialised.
      */
-    public static Communicator getCommunicator() throws CMException{
+    public static Communicator getCommunicator() throws CMException {
         if(instance == null){
             throw new CMException(initMsg);
         }
         return communicator;
     }
-    
-    /**
-     * Provides access to the current communication mode.
-     * 
-     * @return The current communication mode.
+
+    public static Participant createParticipant(int uri, int timeout, String name, ParticipantQoS qos)
+            throws CMException {
+    	return createParticipant(Integer.toString(uri),timeout,name,qos);
+    }
+
+    /*
+     * Initialises the Control & Monitoring API. When there is no instance
+     * initiated a new one will be initiated with the current COMMUNICATION_MODE
+     * the following COMMUNICATION_MODE are available - COMMUNICATION_MODE_JNI :
+     * local connection using JNI. - COMMUNICATION_MODE_SOAP : remote connection
+     * using SOAP.
      */
-    public static int getCommunicationMode(){
-        return COMMUNICATION_MODE;
-    }
-    
-    public static Participant createParticipant(String uri, int timeout, String name, ParticipantQoS qos) throws CMException{
-        return new ParticipantImpl(uri, timeout, name, qos);
-        /*
-        Participant participant;
-        
+    public synchronized static Participant createParticipant(String uri, int timeout, String name, ParticipantQoS qos)
+            throws CMException {
+        if (instance == null) {
+            if (uri.toLowerCase().startsWith("http://") && !uri.equalsIgnoreCase("http://")) {
+                /* soap mode */
+                COMMUNICATION_MODE = COMMUNICATION_MODE_SOAP;
+            } else {
+                /* we are a local */
+                COMMUNICATION_MODE = COMMUNICATION_MODE_JNI;
+            }
+            instance = new CMFactory(uri);
+
+        } else {
+            if (uri.toLowerCase().startsWith("http://") && !uri.equalsIgnoreCase("http://")) {
+                if (COMMUNICATION_MODE != COMMUNICATION_MODE_SOAP) {
+                    throw new CMException("Can not create Participant in SOAP mode because current active mode is JNI");
+                }
+            } else {
+                if (COMMUNICATION_MODE != COMMUNICATION_MODE_JNI) {
+                    throw new CMException("Can not create Participant in JNI mode because current active mode is SOAP");
+                }
+            }
+        }
         try {
-            participant = CMFactory.getCommunicator().participantNew(uri, timeout, name, qos);
-        } catch (CommunicationException ce) {
-            throw new CMException(ce.getMessage());
-        } 
-        return participant;
-        */
+            matchCMVersions(getLocalVersion(), getVersion());
+        } catch (NoSuchMethodError er) {
+            return new ParticipantImpl(uri, timeout, name, qos);
+        }
+        return new ParticipantImpl(uri, timeout, name, qos);
     }
-    
+
+    /**
+     * Creates a storage object described by the provided storage attributes.
+     */
+    public static Storage createStorage() throws CMException {
+        return new StorageImpl();
+    }
+
     private CMFactory(String url) throws CMException{
         if(COMMUNICATION_MODE == COMMUNICATION_MODE_JNI){
             try {
@@ -181,7 +144,7 @@ public class CMFactory {
                 throw new CMException("Could not connect to : " + url);
             } catch (NoClassDefFoundError ne){
                 throw new CMException("Required Java SOAP extensions not available.");
-                
+
             }
         }
         try {
@@ -189,44 +152,105 @@ public class CMFactory {
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
-        currentURL = url;
     }
-    
+
+    /**
+     * Resolves the current remote version of the CM API.
+     *
+     * @return The current remote version of the CM API.
+     * @throws CMException
+     *             Thrown when the service has already been freed, or when its
+     *             kernel service could not be claimed.
+     */
+    public static String getVersion() throws CMException {
+        String version;
+
+        try {
+            version = CMFactory.getCommunicator().getVersion();
+        } catch (CommunicationException e) {
+            throw new CMException(e.getMessage());
+        }
+        return version;
+    }
+
+    /**
+     * Resolves the current local version of the CM API.
+     *
+     * @return The current local version of the CM API.
+     */
+    public static String getLocalVersion() {
+        Package pkgs[];
+
+        pkgs = Package.getPackages();
+        String result = "";
+        for (int i = 0; i < pkgs.length; i++) {
+            if (pkgs[i].getName().equals("org.opensplice.cm")) {
+                result = pkgs[i].getImplementationVersion();
+                if (result == null) {
+                    result = "N.A.";
+                }
+            }
+        }
+        return result;
+    }
+
+    public static void matchCMVersions(String local, String remote) throws CMException {
+
+        if (!local.equals("N.A.") && !remote.equals("N.A.") && !local.equals(remote)) {
+            String[] localVersion = local.split("\\.");
+            String[] remoteVersion = remote.split("\\.");
+            if (localVersion != null && remoteVersion != null) {
+                if (localVersion[0].equals(remoteVersion[0])) {
+                    if (!localVersion[1].equals(remoteVersion[1])) {
+                        int localMinor = new Integer(localVersion[1]).intValue();
+                        int remoteMinor = new Integer(remoteVersion[1]).intValue();
+                        if (localMinor > remoteMinor) {
+                            throw new CMException("CM API Minor version mismatch, remote version " + remoteVersion[0]
+                                    + "." + remoteMinor + " is lower than local " + localVersion[0] + "." + +localMinor
+                                    + " version");
+                        }
+                    }
+                } else {
+                    throw new CMException("CM API Major version mismatch, local version " + local + " remote version "
+                            + remote);
+                }
+            } else {
+                throw new CMException("CM API Major version mismatch, local version " + local + " remote version "
+                        + remote);
+            }
+        }
+    }
+
     /**
      * JNI communication mode. The API will communicate with Splice using
      * JNI.
      */
     public static final int COMMUNICATION_MODE_JNI = 0;
-    
+
     /**
-     * SOAP communication mode. The API will communicate with Splice using 
-     * SOAP.
+     * SOAP communication mode. The API will communicate with Splice using SOAP.
      */
     public static final int COMMUNICATION_MODE_SOAP = 1;
-    
+
     /**
      * The current communication mode.
      */
     private static int COMMUNICATION_MODE = COMMUNICATION_MODE_JNI;
-    
+
     /**
      * The CMFactory instance.
      */
-    private static CMFactory instance  = null;
-    
+    private static CMFactory    instance                = null;
+
     /**
      * The commmunicator.
      */
     private static Communicator communicator = null;
-    
+
     /**
      * Message that is used to notify that the API is used without being
      * initialized.
      */
     private static final String initMsg = "C&M API not initialised.";
-    
-    /**
-     * The current connected URL.
-     */
-    private static String currentURL = null;
+
 }

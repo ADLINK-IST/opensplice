@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -111,6 +111,8 @@ initBuiltinDataReaderQos(
     rQos->reader_data_lifecycle.autopurge_disposed_samples_delay.nanosec
                                                       = GAPI_DURATION_INFINITE_NSEC;
     rQos->reader_data_lifecycle.enable_invalid_samples = TRUE;
+    rQos->reader_data_lifecycle.invalid_sample_visibility.kind
+                                                      = GAPI_MINIMUM_INVALID_SAMPLES;
     rQos->reader_lifespan.use_lifespan                 = FALSE;
     rQos->reader_lifespan.duration.sec                 = GAPI_DURATION_INFINITE_SEC;
     rQos->reader_lifespan.duration.nanosec             = GAPI_DURATION_INFINITE_NSEC;
@@ -156,8 +158,7 @@ _BuiltinSubscriberNew (
                     _DataReader reader = NULL;
                     _Topic topic = NULL;
 
-                    typeSupport = _DomainParticipantFindTypeSupport(participant,
-                                                                    _BuiltinTopicTypeName(i));
+                    typeSupport = _DomainParticipantFindType(participant, _BuiltinTopicTypeName(i));
                     if (typeSupport) {
                         c_iter uTopicList;
                         u_topic uTopic;
@@ -933,6 +934,7 @@ gapi_participantBuiltinTopicData__copyIn (
 
     builtinTopicKeyCopyin(&from->key, &to->key);
     userDataQosPolicyCopyin(base, &from->user_data, &to->user_data);
+
 #endif
     return TRUE;
 }
@@ -1007,7 +1009,7 @@ gapi_topicBuiltinTopicData__copyIn (
     return TRUE;
 }
 
-void
+v_result
 gapi_publicationBuiltinTopicData__copyOut (
     void *_from,
     void *_to)
@@ -1035,7 +1037,7 @@ gapi_publicationBuiltinTopicData__copyOut (
     builtinPartitionQosPolicyCopyout(&from->partition, &to->partition);
     builtinTopicDataQosPolicyCopyout(&from->topic_data, &to->topic_data);
     builtinGroupDataQosPolicyCopyout(&from->group_data, &to->group_data);
-
+    return V_RESULT_OK;
 }
 
 gapi_boolean
@@ -1081,7 +1083,7 @@ gapi_publicationBuiltinTopicData__copyIn (
     return TRUE;
 }
 
-void
+v_result
 gapi_subscriptionBuiltinTopicData__copyOut (
     void *_from,
     void *_to)
@@ -1108,6 +1110,7 @@ gapi_subscriptionBuiltinTopicData__copyOut (
     builtinPartitionQosPolicyCopyout(&from->partition, &to->partition);
     builtinTopicDataQosPolicyCopyout(&from->topic_data, &to->topic_data);
     builtinGroupDataQosPolicyCopyout(&from->group_data, &to->group_data);
+    return V_RESULT_OK;
 }
 
 gapi_boolean

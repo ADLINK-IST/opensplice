@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -14,8 +14,115 @@
  *  \brief Posix shared memory management
  *
  * Implements shared memory management for POSIX.
- * This implementation maps shared memory on a file.
+ * This implementation maps shared memory  on a file.
  */
+
+#ifdef OS_SHAREDMEM_FILE_DISABLE
+
+os_result
+os_posix_sharedMemoryAttach (
+    const char *name,
+    const os_sharedAttr *sharedAttr,
+    void **mapped_address)
+{
+    OS_UNUSED_ARG (sharedAttr);
+    OS_UNUSED_ARG (name);
+    OS_UNUSED_ARG (mapped_address);
+    return os_resultFail;
+}
+
+os_result os_posix_sharedMemoryDestroy (const char *name)
+{
+    OS_UNUSED_ARG (name);
+    return os_resultFail;
+}
+
+os_result
+os_posix_sharedMemoryCreate (
+    const char *name,
+    os_sharedAttr *sharedAttr,
+    os_address size,
+    const os_int32 id)
+{
+    OS_UNUSED_ARG (size);
+    OS_UNUSED_ARG (sharedAttr);
+    OS_UNUSED_ARG (name);
+    OS_UNUSED_ARG (id);
+    return os_resultFail;
+}
+
+os_result os_posix_sharedMemoryDetach (const char *name, void *address)
+{
+    OS_UNUSED_ARG (address);
+    OS_UNUSED_ARG (name);
+    return os_resultFail;
+}
+
+os_result os_posix_sharedSize (const char *name, os_address *size)
+{
+    OS_UNUSED_ARG (size);
+    OS_UNUSED_ARG (name);
+    return os_resultFail;
+}
+
+os_result os_posix_sharedMemoryGetNameFromId (os_int32 id, char **name)
+{
+    OS_UNUSED_ARG (id);
+    OS_UNUSED_ARG (name);
+    return os_resultFail;
+}
+
+os_int32 os_posix_listUserProcessesFree(os_iter pidList)
+{
+    OS_UNUSED_ARG (pidList);
+    return 0;
+}
+
+char * os_posix_findKeyFileByIdAndName(const int id, const char *name)
+{
+    OS_UNUSED_ARG (id);
+    OS_UNUSED_ARG (name);
+    return NULL;
+}
+
+os_int32 os_posix_listUserProcesses(os_iter pidList, const char * fileName)
+{
+    OS_UNUSED_ARG (pidList);
+    OS_UNUSED_ARG (fileName);
+    return 0;
+}
+
+char *os_posix_findKeyFile(const char *name)
+{
+    OS_UNUSED_ARG (name);
+    return NULL;
+}
+
+os_int32 os_posix_listDomainNames(os_iter nameList)
+{
+    OS_UNUSED_ARG (nameList);
+    return 0;
+}
+
+os_int32 os_posix_listDomainNamesFree(os_iter nameList)
+{
+    OS_UNUSED_ARG (nameList);
+    return 0;
+}
+
+int os_posix_destroyKeyFile(const char *name)
+{
+    OS_UNUSED_ARG (name);
+    return 0;
+}
+
+int os_posix_destroyKey(const char *name)
+{
+    OS_UNUSED_ARG (name);
+    return 0;
+}
+
+#else
 
 #include "os_heap.h"
 #include "os_report.h"
@@ -38,7 +145,21 @@
         (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
 /** Defines the file format for the database file */
-static const char os_posix_key_file_format[] = "spddskey_XXXXXX";
+const char os_posix_key_file_format[] = "spddskey_XXXXXX";
+
+char *
+os_posix_findKeyFile(
+    const char *name);
+
+char *
+os_posix_findKeyFileByIdAndName(
+    const os_int32 id,
+    const char *name);
+
+int
+os_posix_findNameByIndex(
+    const os_int32 ix,
+    char **name);
 
 static int
 os_posix_get_shmumask(void)
@@ -83,9 +204,94 @@ os_posix_matchKeyFile(
                 rv = 1;
             }
         }
+
         fclose(key_file);
     }
     return rv;
+}
+
+/** \brief Check if the contents of the identified key file
+ *         matches the identified id and name
+ *
+ * \b os_posix_matchKeyFileByIdAndName tries to compare the contents of the identified
+ * key file in \b key_file_name with the identified \b id and name.
+ * On a match 1 will be returned, on a mismatch 0 will be returned.
+ */
+static int
+os_posix_matchKeyFileByIdAndName(
+    const char *key_file_name,
+    const os_int32 id,
+    const char *name)
+{
+    os_int32 f_id = 0;
+    FILE *key_file;
+    char line[512];
+    int rv =0;
+
+    if (key_file_name != NULL) {
+    key_file = fopen(key_file_name, "r");
+        if (key_file != NULL) {
+            if (fgets(line, sizeof(line), key_file) != NULL) { /* line 1 name */
+                if (strcmp(name, line) == 0) {
+                    rv = 1;
+                }
+            }
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           if (fgets(line, sizeof(line), key_file) != NULL) { /* line 6 id */
+               sscanf(line, "%d", &f_id);
+           }
+           fclose(key_file);
+        }
+    }
+    return (id == f_id && rv);
+}
+
+/** \brief Check if the contents of the identified key file
+ *         matches the identified id and and set the name
+ *
+ * \b os_posix_getNameById tries to compare the contents of the identified
+ * key file in \b key_file_name with the identified \b id.
+ * On a match 1 will be returned and the domain name will be set,
+ * on a mismatch 0 will be returned and name will be NULL.
+ */
+int
+os_posix_getNameById(
+    const char *key_file_name,
+    const os_int32 id,
+    char **name)
+{
+    os_int32 f_id = 0;
+    FILE *key_file;
+    char line[512];
+    int retVal =0;
+
+    if (key_file_name != NULL) {
+    key_file = fopen(key_file_name, "r");
+        if (key_file != NULL) {
+           if (fgets(line, sizeof(line), key_file) != NULL) { /* line 1 name */
+               *name =  os_strdup(line);
+           }
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           fgets(line, sizeof(line), key_file);
+           if (fgets(line, sizeof(line), key_file) != NULL) { /* line 6 id */
+               sscanf(line, "%d", &f_id);
+           }
+           fclose(key_file);
+           if (id != f_id) {
+              os_free(*name);
+              *name = NULL;
+           } else {
+              retVal =1;
+           }
+        }
+    }
+
+    return retVal;
 }
 
 /** \brief Return the file-path of the key file related
@@ -106,7 +312,8 @@ os_posix_matchKeyFile(
  *
  * If no matching entry is found, NULL is returned to the caller.
  */
-static char *
+
+char *
 os_posix_findKeyFile(
     const char *name)
 {
@@ -149,6 +356,279 @@ os_posix_findKeyFile(
     return kfn;
 }
 
+int
+os_posix_findNameById(
+    const os_int32 id,
+    char **name)
+{
+    DIR *key_dir;
+    struct dirent *entry;
+    int rv = 0;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
+
+    dir_name = os_getTempDir();
+    key_dir = opendir(dir_name);
+    if (key_dir) {
+        entry = readdir(key_dir);
+        while (entry != NULL) {
+            if (strncmp(entry->d_name, "spddskey_", 9) == 0) {
+                key_file_name_size = strlen(dir_name) + strlen(os_posix_key_file_format) + 2;
+                key_file_name = os_malloc (key_file_name_size);
+                snprintf(key_file_name,
+                         key_file_name_size,
+                         "%s/%s",
+                         dir_name,
+                         entry->d_name);
+                if (os_posix_getNameById(key_file_name, id, name)) {
+                    rv =1;
+                    entry = NULL;
+                } else {
+                    entry = readdir(key_dir);
+                }
+                os_free (key_file_name);
+            } else {
+                entry = readdir(key_dir);
+            }
+        }
+        closedir(key_dir);
+    }
+    return rv;
+}
+
+
+char *
+os_posix_findKeyFileByIdAndName(
+    const os_int32 id,
+    const char *name)
+{
+    DIR *key_dir;
+    struct dirent *entry;
+    char *kfn = NULL;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
+
+    dir_name = os_getTempDir();
+    key_dir = opendir(dir_name);
+    if (key_dir)
+    {
+        entry = readdir(key_dir);
+        while (entry != NULL)
+        {
+            if (strncmp(entry->d_name, "spddskey_", 9) == 0)
+            {
+                key_file_name_size = strlen(dir_name) + strlen(os_posix_key_file_format) + 2;
+                key_file_name = os_malloc (key_file_name_size);
+                snprintf(key_file_name,
+                         key_file_name_size,
+                         "%s/%s",
+                         dir_name,
+                         entry->d_name);
+                if (os_posix_matchKeyFileByIdAndName(key_file_name, id, name))
+                {
+                    kfn = os_malloc(strlen(key_file_name) + 1);
+                    if (kfn != NULL)
+                    {
+                        os_strcpy(kfn, key_file_name);
+                    }
+                    entry = NULL;
+                }
+                else
+                {
+                    entry = readdir(key_dir);
+                }
+                os_free (key_file_name);
+            }
+            else
+            {
+                entry = readdir(key_dir);
+            }
+        }
+        closedir(key_dir);
+    }
+    return kfn;
+}
+
+/** \brief Return list of processes defined in key file \b fileName
+ *         as an iterator contained in \b pidList
+ *
+ * \b linux key file format only supports creator pid entry in key file
+ *
+ * \b returns 0 on success and 1 if key file not found or unreadable
+ */
+os_int32
+os_posix_listUserProcesses(
+    os_iter pidList,
+    const char * fileName)
+{
+    os_int32 pid;
+    FILE *key_file;
+    char line[512];
+    char pidstr[16];
+    char *listpidstr;
+    int i;
+
+    /* get pid fileName key file */
+
+    if (fileName != NULL)
+    {
+        key_file = fopen(fileName, "r");
+        if (key_file != NULL)
+        {
+            fgets(line, sizeof(line), key_file); /* domain name */
+            fgets(line, sizeof(line), key_file); /* address */
+            fgets(line, sizeof(line), key_file); /* size */
+            fgets(line, sizeof(line), key_file); /* implementation */
+            /* creator pid */
+            if (fgets(line, sizeof(line), key_file) != NULL)
+            {
+                i = sscanf(line, "%d", &pid);
+
+                /* change pid to string to match iterator model */
+                snprintf(pidstr,16,"%d",pid);
+                listpidstr =  os_strdup(pidstr);
+                os_iterAppend(pidList, listpidstr);
+            }
+
+            if (fclose(key_file) == 0)
+            {
+                return 0;
+            }
+            else
+            {
+                return 1;
+            }
+        }
+        else
+        {
+            return 1;
+        }
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+
+
+/** \brief frees memory used by iterator created by prior call to
+ *  \b os_posix_listUserProcesses creating list in \b pidList
+ */
+os_int32
+os_posix_listUserProcessesFree(
+    os_iter pidList)
+{
+    char *pidstr;
+
+    pidstr = (char *) os_iterTakeFirst(pidList);
+    while (pidstr)
+    {
+        os_free(pidstr);
+        pidstr = (char *) os_iterTakeFirst(pidList);
+    }
+    return 0;
+}
+
+
+/** \brief Return list in \b nameList of running opensplice domains defined
+ * by presence of associated key files in relevant temporary directory
+ *
+ * \b returns 0 on success and 1 if key file not found or unreadable
+ */
+os_int32
+os_posix_listDomainNames(
+    os_iter nameList)
+{
+    DIR *key_dir;
+    struct dirent *entry;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
+    FILE *key_file;
+    char line[512];
+    char *name;
+    os_int32 retVal = 0;
+
+    dir_name = os_getTempDir();
+    key_dir = opendir(dir_name);
+    if (key_dir)
+    {
+        entry = readdir(key_dir);
+        while (entry != NULL)
+        {
+            if (strncmp(entry->d_name, "spddskey_", 9) == 0)
+            {
+
+                key_file_name_size = strlen(dir_name) + strlen(os_posix_key_file_format) + 2;
+                key_file_name = os_malloc (key_file_name_size);
+
+                if (key_file_name != NULL)
+                {
+                    snprintf(key_file_name,
+                         key_file_name_size,
+                         "%s/%s",
+                         dir_name,
+                         entry->d_name);
+                    key_file = fopen(key_file_name, "r");
+                    if (key_file != NULL)
+                    {
+                       if (fgets(line, sizeof(line), key_file) != NULL)
+                       {
+                           /* line 1 name */
+                           name =  os_strdup(line);
+                           os_iterAppend(nameList, name);
+                       }
+                       if (fclose(key_file) != 0)
+                       {
+                            retVal = 1;
+                       }
+                    }
+                    else
+                    {
+                        retVal = 1;
+                    }
+                }
+                os_free (key_file_name);
+            }
+            entry = readdir(key_dir);
+        }
+        if (closedir(key_dir) != 0)
+        {
+            retVal = 1;
+        }
+    }
+
+    return retVal;
+}
+
+/** \brief frees memory used by iterator created by prior call to
+ *  \b os_posix_listDomainNames creating list in \b nameList
+ */
+os_int32
+os_posix_listDomainNamesFree(
+    os_iter nameList)
+{
+    char *name;
+
+    name = (char *) os_iterTakeFirst(nameList);
+    while (name)
+    {
+        os_free(name);
+        name = (char *) os_iterTakeFirst(nameList);
+    }
+    return 0;
+}
+
+void
+os_cleanKeyFiles(
+    void)
+{
+}
+
+
 /** \brief Get a POSIX shared object identifier for a shared
  *         memory segment by name
  *
@@ -170,7 +650,8 @@ static char *
 os_posix_getShmObjName(
     const char *name,
     void *map_address,
-    int size)
+    int size,
+    const os_int32 id)
 {
     int key_file_fd;
     int cmask;
@@ -182,68 +663,73 @@ os_posix_getShmObjName(
     int invalid_access;
     int index;
 
-    key_file_name = os_posix_findKeyFile(name);
-    if ((map_address != NULL) && (key_file_name == NULL)) {
-        dir_name = os_getTempDir();
-        name_len = strlen(dir_name) + strlen(os_posix_key_file_format) + 2;
-        key_file_name = os_malloc(name_len);
-        if (key_file_name != NULL) {
-            snprintf(key_file_name, name_len, "%s/%s", dir_name, os_posix_key_file_format);
-            key_file_fd = mkstemp(key_file_name);
-            invalid_access = 0;
-            cmask = os_posix_get_kfumask();
-            if ((cmask & (S_IRUSR | S_IWUSR)) &&
-                ((cmask & (S_IRUSR | S_IWUSR)) != (S_IRUSR | S_IWUSR))) {
-                cmask |= (S_IRUSR | S_IWUSR);
-                invalid_access = 1;
+    key_file_name = os_posix_findKeyFileByIdAndName(id,name);
+
+    if (key_file_name == NULL) {
+        if ((map_address != NULL)) {
+            dir_name = os_getTempDir();
+            name_len = strlen(dir_name) + strlen(os_posix_key_file_format) + 2;
+            key_file_name = os_malloc(name_len);
+            if (key_file_name != NULL) {
+                snprintf(key_file_name, name_len, "%s/%s", dir_name, os_posix_key_file_format);
+                key_file_fd = mkstemp(key_file_name);
+                invalid_access = 0;
+                cmask = os_posix_get_kfumask();
+                if ((cmask & (S_IRUSR | S_IWUSR)) &&
+                    ((cmask & (S_IRUSR | S_IWUSR)) != (S_IRUSR | S_IWUSR))) {
+                    cmask |= (S_IRUSR | S_IWUSR);
+                    invalid_access = 1;
+                }
+                if ((cmask & (S_IRGRP | S_IWGRP)) &&
+                    ((cmask & (S_IRGRP | S_IWGRP)) != (S_IRGRP | S_IWGRP))) {
+                    cmask |= (S_IRGRP | S_IWGRP);
+                    invalid_access = 1;
+                }
+                if ((cmask & (S_IROTH | S_IWOTH)) &&
+                    ((cmask & (S_IROTH | S_IWOTH)) != (S_IROTH | S_IWOTH))) {
+                    cmask |= (S_IROTH | S_IWOTH);
+                    invalid_access = 1;
+                }
+                if (invalid_access) {
+                    int pmask = os_posix_get_kfumask();
+                    OS_REPORT_7(OS_INFO,
+                                "os_posix_getShmObjName", 1,
+                                "The user file-creation mask (0%o%o%o) set for the "
+                                "service\n              specifies exclusive read "
+                                "or write access for at least\n              "
+                                "one of the access categories.\n              "
+                                "Read and write access should always be paired,\n"
+                                "              both prohibit or granted for each "
+                                "access category.\n              Therefore the "
+                                "service has set the user access permissions\n"
+                                "              for the key file associated to "
+                                "this domain to (0%o%o%o).\nDomain      : \"%s\"",
+                                 (pmask & (S_IWUSR | S_IRUSR)) >> 6,
+                                 (pmask & (S_IWGRP | S_IRGRP)) >> 3,
+                                  pmask & (S_IWOTH | S_IROTH),
+                                 (cmask & (S_IWUSR | S_IRUSR)) >> 6,
+                                 (cmask & (S_IWGRP | S_IRGRP)) >> 3,
+                                  cmask & (S_IWOTH | S_IROTH),
+                                  name);
+                }
+                fchmod(key_file_fd, OS_PERMISSION & (~cmask));
+                write(key_file_fd, name, strlen(name) + 1);
+                write(key_file_fd, "\n", 1);
+                snprintf(buffer, sizeof (buffer), PA_ADDRFMT"\n", (PA_ADDRCAST)map_address);
+                write(key_file_fd, buffer, strlen(buffer));
+                snprintf(buffer, sizeof (buffer), "%x\n", (unsigned int)size);
+                write(key_file_fd, buffer, strlen(buffer));
+                snprintf(buffer, sizeof (buffer), "POSIX-SMO\n");
+                write(key_file_fd, buffer, strlen(buffer));
+                snprintf(buffer, sizeof (buffer), "%d\n", (int)getpid());
+                write(key_file_fd, buffer, strlen(buffer));
+                snprintf(buffer, sizeof (buffer), "%d\n", id);
+                write(key_file_fd, buffer, strlen(buffer));
+                setpgrp(); /* Make this process the session leader. */
+                snprintf(buffer, sizeof (buffer), "%d\n", (int)getpgrp());
+                write(key_file_fd, buffer, strlen(buffer));
+                close(key_file_fd);
             }
-            if ((cmask & (S_IRGRP | S_IWGRP)) &&
-                ((cmask & (S_IRGRP | S_IWGRP)) != (S_IRGRP | S_IWGRP))) {
-                cmask |= (S_IRGRP | S_IWGRP);
-                invalid_access = 1;
-            }
-            if ((cmask & (S_IROTH | S_IWOTH)) &&
-                ((cmask & (S_IROTH | S_IWOTH)) != (S_IROTH | S_IWOTH))) {
-                cmask |= (S_IROTH | S_IWOTH);
-                invalid_access = 1;
-            }
-            if (invalid_access) {
-                int pmask = os_posix_get_kfumask();
-                OS_REPORT_7(OS_INFO,
-                            "os_posix_getShmObjName", 1,
-                            "The user file-creation mask (0%o%o%o) set for the "
-                            "service\n              specifies exclusive read "
-                            "or write access for at least\n              "
-                            "one of the access catagories.\n              "
-                            "Read and write access should always be paired,\n"
-                            "              both prohibit or granted for each "
-                            "access catagory.\n              Therefore the "
-                            "service has set the user access permissions\n"
-                            "              for the key file associated to "
-                            "this domain to (0%o%o%o).\nDomain      : \"%s\"",
-                             (pmask & (S_IWUSR | S_IRUSR)) >> 6,
-                             (pmask & (S_IWGRP | S_IRGRP)) >> 3,
-                              pmask & (S_IWOTH | S_IROTH),
-                             (cmask & (S_IWUSR | S_IRUSR)) >> 6,
-                             (cmask & (S_IWGRP | S_IRGRP)) >> 3,
-                              cmask & (S_IWOTH | S_IROTH),
-                              name);
-            }
-            fchmod(key_file_fd, OS_PERMISSION & (~cmask));
-            write(key_file_fd, name, strlen(name) + 1);
-            write(key_file_fd, "\n", 1);
-            snprintf(buffer, sizeof (buffer), PA_ADDRFMT"\n", (PA_ADDRCAST)map_address);
-            write(key_file_fd, buffer, strlen(buffer));
-            snprintf(buffer, sizeof (buffer), "%x\n", (unsigned int)size);
-            write(key_file_fd, buffer, strlen(buffer));
-            snprintf(buffer, sizeof (buffer), "POSIX-SMO\n");
-            write(key_file_fd, buffer, strlen(buffer));
-            snprintf(buffer, sizeof (buffer), "%d\n", (int)getpid());
-            write(key_file_fd, buffer, strlen(buffer));
-            setpgrp(); /* Make this process the session leader. */
-            snprintf(buffer, sizeof (buffer), "%d\n", (int)getpgrp());
-            write(key_file_fd, buffer, strlen(buffer));
-            close(key_file_fd);
         }
     }
     if (key_file_name != NULL) {
@@ -274,22 +760,24 @@ os_posix_getMapAddress(
     const char *name)
 {
     char *key_file_name;
-    void *map_address = NULL;
+    os_address map_address;
     FILE *key_file;
     char line[512];
 
+    map_address = 0;
+
     key_file_name = os_posix_findKeyFile(name);
     if (key_file_name != NULL) {
-	key_file = fopen(key_file_name, "r");
-	if (key_file != NULL) {
-	    fgets(line, sizeof(line), key_file);
-	    fgets(line, sizeof(line), key_file);
-	    sscanf(line, PA_ADDRFMT, (PA_ADDRCAST *)&map_address);
-	    fclose(key_file);
-	}
+    key_file = fopen(key_file_name, "r");
+    if (key_file != NULL) {
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        sscanf(line, PA_ADDRFMT, (PA_ADDRCAST *)&map_address);
+        fclose(key_file);
+    }
         os_free(key_file_name);
     }
-    return map_address;
+    return (void*)map_address;
 }
 
 /** \brief Get a file map address by name
@@ -307,17 +795,72 @@ os_posix_getSize(
 
     key_file_name = os_posix_findKeyFile(name);
     if (key_file_name != NULL) {
-	key_file = fopen(key_file_name, "r");
-	if (key_file != NULL) {
-	    fgets(line, sizeof(line), key_file);
-	    fgets(line, sizeof(line), key_file);
-	    fgets(line, sizeof(line), key_file);
-	    sscanf(line, "%x", (os_uint32 *)&size);
-	    fclose(key_file);
-	}
+    key_file = fopen(key_file_name, "r");
+    if (key_file != NULL) {
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        sscanf(line, "%x", (os_uint32 *)&size);
+        fclose(key_file);
+    }
         os_free(key_file_name);
     }
     return size;
+}
+
+/** \brief Get a file id by name
+ *
+ * \b os_posix_getIdFromName returns the id of the named shared memory object.
+ */
+static os_int32
+os_posix_getIdFromName(
+    const char *name)
+{
+    char *key_file_name;
+    os_int32 id = 0;
+    FILE *key_file;
+    char line[512];
+
+    key_file_name = os_posix_findKeyFile(name);
+    if (key_file_name != NULL) {
+    key_file = fopen(key_file_name, "r");
+    if (key_file != NULL) {
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        fgets(line, sizeof(line), key_file);
+        sscanf(line, "%d", &id);
+        fclose(key_file);
+    }
+        os_free(key_file_name);
+    }
+    return id;
+}
+
+/** \brief Destroy the key file with filename name
+ */
+
+int
+os_posix_destroyKeyFile(
+    const char *name)
+{
+    int rv = 0;
+
+    /*key_file_name = os_posix_findKeyFile(name);
+    if (key_file_name ==  NULL) {
+        rv = -1;
+    } else if (unlink(key_file_name) == -1) {*/
+    if (unlink(name) == -1 && errno != ENOENT)
+    {
+        OS_REPORT_2(OS_WARNING,
+                    "os_posix_destroyKeyFile", 1,
+                    "unlink failed with error %d (%s)",
+                    errno, name);
+        rv = -1;
+    }
+    return rv;
 }
 
 /** \brief Destroy the key related to the named shared memory object
@@ -330,21 +873,24 @@ os_posix_getSize(
  * Depending on the result of \b unlink, 0 or -1
  * is returned after \b key_file_name is freed.
  */
-static int
-os_posix_destroyKeyFile(
+
+int
+os_posix_destroyKey(
     const char *name)
 {
     char *key_file_name;
     int rv;
 
     key_file_name = os_posix_findKeyFile(name);
+
     if (key_file_name ==  NULL) {
         rv = -1;
     } else if (unlink(key_file_name) == -1) {
-	OS_REPORT_2(OS_WARNING,
-                    "os_posix_destroyKeyFile", 1,
-                    "unlink failed with error %d (%s)",
-                    errno, name);
+        OS_REPORT_3(OS_WARNING,
+                    "os_destroyKey", 1,
+                    "Operation unlink failed with error (%d) = \"%s\"\n"
+                    "Domain      : \"%s\"",
+                    errno, strerror(errno), name);
         os_free(key_file_name);
         rv = -1;
     } else {
@@ -371,7 +917,9 @@ os_result
 os_posix_sharedMemoryCreate(
     const char *name,
     os_sharedAttr *sharedAttr,
-    os_address size)
+    os_address size,
+    const os_int32 id)
+
 {
     char *shmname;
     int shmfd;
@@ -385,7 +933,7 @@ os_posix_sharedMemoryCreate(
     if ((size % getpagesize()) != 0) {
         size += getpagesize() - (size % getpagesize());
     }
-    shmname = os_posix_getShmObjName(name, sharedAttr->map_address, size);
+    shmname = os_posix_getShmObjName(name, sharedAttr->map_address, size,id);
     if (shmname != NULL) {
         invalid_access = 0;
         cmask = os_posix_get_shmumask();
@@ -411,13 +959,13 @@ os_posix_sharedMemoryCreate(
                         "The shared-memory-creation mask (0%o%o%o) set for the "
                         "service \n              specifies exclusive read or write "
                         "access for at least one of the\n              "
-                        "access catagories.\n              Read and write "
+                        "access categories.\n              Read and write "
                         "access should always be paired,\n              both "
-                        "prohibit or granted for each access catagory.\n"
+                        "prohibit or granted for each access category.\n"
                         "              Therefore the service has set the "
                         "user access permissions\n              for the "
                         "shared memory segment associated to this domain "
-                        "to (0%o%o%o).\nDomain      : \"%s\"",
+                        "to (0%o%o%o).\n              Domain: \"%s\"",
                          (pmask & (S_IWUSR | S_IRUSR)) >> 6,
                          (pmask & (S_IWGRP | S_IRGRP)) >> 3,
                           pmask & (S_IWOTH | S_IROTH),
@@ -426,46 +974,45 @@ os_posix_sharedMemoryCreate(
                           cmask & (S_IWOTH | S_IROTH),
                           name);
         }
-	shmfd = shm_open(shmname,
+        shmfd = shm_open(shmname,
                          O_CREAT | O_RDWR | O_EXCL,
                          OS_PERMISSION & (~cmask));
         if (shmfd == -1) {
-	    OS_REPORT_2(OS_WARNING,
+            OS_REPORT_2(OS_WARNING,
                         "os_posix_sharedMemoryCreate", 1,
                         "shm_open failed with error %d (%s)",
                         errno, name);
-	    rv = os_resultFail;
+            rv = os_resultFail;
         } else {
             if (ftruncate(shmfd, size) == -1) {
-	        OS_REPORT_2(OS_ERROR,
+                OS_REPORT_2(OS_ERROR,
                             "os_posix_sharedMemoryCreate", 1,
                             "ftruncate failed with error %d (%s)",
                             errno, name);
-	        close(shmfd);
-	        rv = os_resultFail;
+
+                rv = os_resultFail;
             } else {
                 if (sharedAttr->userCred.uid != 0 &&
-                    sharedAttr->userCred.gid != 0)
-                {
-	            if (getuid() == 0 || geteuid() == 0) {
-	                if (chown(shmname,
+                    sharedAttr->userCred.gid != 0) {
+                    if (getuid() == 0 || geteuid() == 0) {
+                        if (chown(shmname,
                                   sharedAttr->userCred.uid,
                                   sharedAttr->userCred.gid) == -1) {
-	        	    OS_REPORT_2(OS_WARNING,
+                            OS_REPORT_2(OS_WARNING,
                                         "os_posix_sharedMemoryCreate", 1,
                                         "chown failed with error %d (%s)",
                                         errno, name);
-			}
-	            } else {
-	        	OS_REPORT_1(OS_WARNING,
+                        }
+                    } else {
+                        OS_REPORT_1(OS_WARNING,
                                     "os_posix_sharedMemoryCreate", 2,
                                     "Can not change ownership of the shared "
                                     "memory segment because of privilege "
                                     "problems (%s)",
                                     name);
-		    }
-	        }
-	    }
+                    }
+                }
+            }
         }
         close(shmfd);
         os_free(shmname);
@@ -489,18 +1036,19 @@ os_posix_sharedMemoryDestroy(
     os_result rv = os_resultSuccess;
 
     assert (name != NULL);
-    shmname = os_posix_getShmObjName(name, NULL, 0);
+    shmname = os_posix_getShmObjName(name, NULL, 0,os_posix_getIdFromName(name));
     if (shmname != NULL) {
         if (shm_unlink(shmname) == -1) {
-	    OS_REPORT_2(OS_WARNING,
+        OS_REPORT_2(OS_WARNING,
                         "os_posix_sharedMemoryDestroy", 1,
                         "shm_unlink failed with error %d (%s)",
                         errno, name);
-	    rv = os_resultFail;
-	}
-	if (os_posix_destroyKeyFile(name) == -1) {
-	    rv = os_resultFail;
-	}
+        rv = os_resultFail;
+    }
+
+    if (os_posix_destroyKey(name) == -1) {
+        rv = os_resultFail;
+    }
         os_free(shmname);
     }
 
@@ -537,43 +1085,45 @@ os_posix_sharedMemoryAttach(
     os_address size;
     os_result rv = os_resultSuccess;
 
+    OS_UNUSED_ARG(sharedAttr);
+
     assert(name != NULL);
     assert(sharedAttr != NULL);
     assert(mapped_address != NULL);
-    shmname = os_posix_getShmObjName(name, NULL, 0);
+    shmname = os_posix_getShmObjName(name, NULL, 0,os_posix_getIdFromName(name));
     if (shmname != NULL) {
         request_address = os_posix_getMapAddress(name);
-	size = os_posix_getSize(name);
-	if (request_address != NULL && size > 0) {
+    size = os_posix_getSize(name);
+    if (request_address != NULL && size > 0) {
             shmfd = shm_open(shmname, O_RDWR, OS_PERMISSION);
             if (shmfd == -1) {
-	    	OS_REPORT_2(OS_ERROR,
+            OS_REPORT_2(OS_ERROR,
                             "os_posix_sharedMemoryAttach", 1,
                             "shm_open failed with error %d (%s)",
                             errno, name);
-	        os_free(shmname);
-		rv = os_resultFail;
-	    } else {
-	        *mapped_address = mmap(request_address, (size_t)size,
+            os_free(shmname);
+        rv = os_resultFail;
+        } else {
+            *mapped_address = mmap(request_address, (size_t)size,
                                        PROT_READ | PROT_WRITE,
                                        MAP_FIXED | MAP_SHARED,
                                        shmfd, 0);
-		if (*mapped_address == (void *)-1) {
-	    	    OS_REPORT_2(OS_ERROR,
+        if (*mapped_address == (void *)-1) {
+                OS_REPORT_2(OS_ERROR,
                                 "os_posix_sharedMemoryAttach", 1,
                                 "mmap failed with error %d (%s)",
                                 errno, name);
-		    rv = os_resultFail;
-		} else if (*mapped_address != request_address) {
-		    munmap(*mapped_address, size);
-		    rv = os_resultFail;
-		}
-		close(shmfd);
-	    }
-	}
+            rv = os_resultFail;
+        } else if (*mapped_address != request_address) {
+            munmap(*mapped_address, size);
+            rv = os_resultFail;
+        }
+        close(shmfd);
+        }
+    }
         os_free(shmname);
     } else {
-	rv = os_resultFail;
+    rv = os_resultFail;
     }
     return rv;
 }
@@ -596,11 +1146,11 @@ os_posix_sharedMemoryDetach (
     assert (address != NULL);
     size = os_posix_getSize(name);
     if (munmap(address, (size_t)size) == -1) {
-	OS_REPORT_2(OS_WARNING,
+    OS_REPORT_2(OS_WARNING,
                     "os_posix_sharedMemoryDetach", 1,
                     "munmap failed with error %d (%s)",
                     errno, name);
-	rv = os_resultFail;
+    rv = os_resultFail;
     }
     return rv;
 }
@@ -615,7 +1165,7 @@ os_posix_sharedSize(
 
     s = os_posix_getSize(name);
     if (s == 0) {
-	OS_REPORT_1(OS_WARNING, "os_posix_sharedSize", 1, "get size of sgement faild: %s", name);
+    OS_REPORT_1(OS_WARNING, "os_posix_sharedSize", 1, "get size of sgement faild: %s", name);
         rv = os_resultFail;
     } else {
         *size = s;
@@ -624,5 +1174,22 @@ os_posix_sharedSize(
     return rv;
 }
 
-#undef OS_PERMISSION
+os_result
+os_posix_sharedMemoryGetNameFromId(
+    os_int32 id,
+    char **name)
+{
+    os_result rv;
+    os_int32 r;
+    r = os_posix_findNameById(id,name);
+    if (r) {
+        rv = os_resultSuccess;
+    } else {
+        rv = os_resultFail;
+    }
 
+    return rv;
+}
+
+#undef OS_PERMISSION
+#endif   /* OS_SHAREDMEM_FILE_DISABLE */

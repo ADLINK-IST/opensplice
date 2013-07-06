@@ -1,31 +1,16 @@
-generateReleaseInfo ()
+init_submodules ()
 {
-    . $OSPL_HOME/bin/checkconf
-    . $OSPL_HOME/release_info/RELEASE_tmpl
-    BASE_VERSION=`echo "$PACKAGE_VERSION" | sed 's/\(.*[^0-9.]\)\([0-9][0-9]*.[0-9][0-9]*.[0-9][0-9]*\)\(.*\)$/\2/'`
-    # We can't base this on git as users aren't necessarily working with a checkout
-    # As we only need this to be unique todays date will do.
-    if [ `uname` = "SunOS" ]
+    pushd $1 &> /dev/null
+    if [ -d "./.git" ]
     then
-        TODAYS_DATE=`perl -e 'print int(time)'`
-    else
-        TODAYS_DATE=`date +%s`
+        . $OSPL_HOME/release_info/RELEASE_tmpl
+        if [ "$OSPL_PATCH" != "OSS" ]
+        then
+            git submodule init
+            git submodule update
+        fi
     fi
-    DAYS_EPOCH=`expr $TODAYS_DATE / 86400`
-    CURRENT_DATE=`date +%Y-%m-%d`
-
-    #Commercial version is Major.Minor.Patch, just add Days since epoch to it
-    CONV_VERSION=${BASE_VERSION}.${DAYS_EPOCH}
-
-    #Opensource format is Major.Minor.DATE, Date is too big so we remove and
-    #replace with days since epoch and then a 0 to make up the 4 number group
-    if [ "$OSPL_MAINT" -gt "9999" ]
-    then
-        CONV_VERSION=`echo $BASE_VERSION | cut -d. -f-2`".${DAYS_EPOCH}.0"
-    fi
-    sed -e "s@#RELEASE_DATE#@${CURRENT_DATE}@g" \
-        -e "s/#CS_DLL_VERSION#/${CONV_VERSION}/g" \
-        $OSPL_HOME/release_info/RELEASE_tmpl > $OSPL_HOME/release_info/RELEASE
+    popd &> /dev/null
 }
 
 set_var ()
@@ -33,6 +18,7 @@ set_var ()
     found=0
     i=0
     eval x="\$OVERRIDE_${1}"
+
     if [ -n "$x" ]
     then
         value=$x
@@ -65,8 +51,26 @@ set_var ()
     fi
 }
 
+set_undefined_var ()
+{
+    eval x="\$${1}"
+
+    if [ -z "$x" ]
+    then
+        set_var ${1} ${2}
+    fi
+}
+
 unset_var ()
 {
+    eval x="\$OVERRIDE_${1}"
+
+    if [ -n "$x" ]
+    then
+        #There is and override use it and don't unset
+        return
+    fi
+
     if [ `uname` != "SunOS" ]
     then
         i=0
@@ -101,6 +105,37 @@ dump_env_vars ()
     fi
 }
 
+generateReleaseInfo ()
+{
+    . $OSPL_HOME/bin/checkconf
+    . $OSPL_HOME/release_info/RELEASE_tmpl
+    BASE_VERSION=`echo "$PACKAGE_VERSION" | sed 's/\(.*[^0-9.]\)\([0-9][0-9]*.[0-9][0-9]*.[0-9][0-9]*\)\(.*\)$/\2/'`
+    set_var BASE_VERSION "$BASE_VERSION"
+    # We can't base this on git as users aren't necessarily working with a checkout
+    # As we only need this to be unique todays date will do.
+    if [ `uname` = "SunOS" ]
+    then
+        TODAYS_DATE=`perl -e 'print int(time)'`
+    else
+        TODAYS_DATE=`date +%s`
+    fi
+    DAYS_EPOCH=`expr $TODAYS_DATE / 86400`
+    CURRENT_DATE=`date +%Y-%m-%d`
+
+    #Commercial version is Major.Minor.Patch, just add Days since epoch to it
+    CONV_VERSION=${BASE_VERSION}.${DAYS_EPOCH}
+
+    #Opensource format is Major.Minor.DATE, Date is too big so we remove and
+    #replace with days since epoch and then a 0 to make up the 4 number group
+    if [ "$OSPL_MAINT" -gt "9999" ]
+    then
+        CONV_VERSION=`echo $BASE_VERSION | cut -d. -f-2`".${DAYS_EPOCH}.0"
+    fi
+    sed -e "s@#RELEASE_DATE#@${CURRENT_DATE}@g" \
+        -e "s/#CS_DLL_VERSION#/${CONV_VERSION}/g" \
+        $OSPL_HOME/release_info/RELEASE_tmpl > $OSPL_HOME/release_info/RELEASE
+}
+
 print_usage ()
 {
     echo "usage: configure [options] [target-type]"
@@ -111,13 +146,18 @@ print_usage ()
 
 source_package_info ()
 {
-   . $OSPL_HOME/release_info/RELEASE
+   . "$OSPL_HOME/release_info/RELEASE"
    set_var PACKAGE_VERSION $PACKAGE_VERSION
    set_var PACKAGE_DATE $PACKAGE_DATE
    set_var PACKAGE_NAME $PACKAGE_NAME
-
+   set_var OSPL_MAJOR $OSPL_MAJOR
+   set_var OSPL_MINOR $OSPL_MINOR
+   set_var OSPL_MAINT $OSPL_MAINT
+   set_var OSPL_PATCH $OSPL_PATCH
+   set_var CS_DLL_VERSION $CS_DLL_VERSION
+   RIGHT_NOW=`date +%T`
    echo
-   echo "Setup for ${PACKAGE_NAME} - Version ${PACKAGE_VERSION} - Date ${PACKAGE_DATE}"
+   echo "Setup at ${RIGHT_NOW} for ${PACKAGE_NAME} - Version ${PACKAGE_VERSION} - Date ${PACKAGE_DATE}"
    echo
 }
 
@@ -185,14 +225,18 @@ get_avail_targets ()
 {
     ENV_DIR="$1/setup/environment"
 
-    TARGETS=`ls $ENV_DIR`
+    TARGETS=`ls "$ENV_DIR"`
     # Remove uninteresting targets
     host=`uname -s`
     for target in $TARGETS
     do
+        if [ ! -f "$ENV_DIR/$target" ]
+        then
+            continue
+        fi
         case $host in
         Linux)
-            required_host=`grep "SPLICE_HOST=.*linux" $ENV_DIR/$target`
+            required_host=`grep "SPLICE_HOST=.*linux" "$ENV_DIR/$target"`
             if [ -n "$required_host" ]
             then
                 SELECTED_TARGETS="$SELECTED_TARGETS $target"
@@ -201,21 +245,28 @@ get_avail_targets ()
         SunOS)
             os_version=`uname -r`
             os_number=`echo $os_version | sed 's/.*\.//'`
-            required_host=`grep "SPLICE_HOST=.*solaris$os_number" $ENV_DIR/$target`
+            required_host=`grep "SPLICE_HOST=.*solaris$os_number" "$ENV_DIR/$target"`
             if [ -n "$required_host" ]
             then
                 SELECTED_TARGETS="$SELECTED_TARGETS $target"
             fi
         ;;
         AIX)
-            required_host=`grep "SPLICE_HOST=.*AIX" $ENV_DIR/$target`
+            required_host=`grep "SPLICE_HOST=.*AIX" "$ENV_DIR/$target"`
             if [ -n "$required_host" ]
             then
                 SELECTED_TARGETS="$SELECTED_TARGETS $target"
             fi
         ;;
         CYGWIN*)
-            required_host=`grep "SPLICE_HOST=.*win32" $ENV_DIR/$target`
+            required_host=`grep "SPLICE_HOST=.*\.win" $ENV_DIR/$target`
+            if [ -n "$required_host" ]
+            then
+                SELECTED_TARGETS="$SELECTED_TARGETS $target"
+            fi
+        ;;
+        Darwin)
+            required_host=`grep "SPLICE_HOST=.*darwin" "$ENV_DIR/$target"`
             if [ -n "$required_host" ]
             then
                 SELECTED_TARGETS="$SELECTED_TARGETS $target"
@@ -258,10 +309,10 @@ set_target_alternate ()
         SPLICE_TARGET=$SPLICE_PLATFORM
     fi
 
-    if [ ! -f $FIRST_HOME/setup/environment/${SPLICE_TARGET} -a \
-        ! -f $SECOND_HOME/setup/environment/${SPLICE_TARGET} ]
+    if [ ! -f "$FIRST_HOME/setup/environment/${SPLICE_TARGET}" -a \
+        ! -f "$SECOND_HOME/setup/environment/${SPLICE_TARGET}" ]
     then
-	echo "Specified envionment \"${SPLICE_TARGET}\" is not supported"
+    echo "Specified envionment \"${SPLICE_TARGET}\" is not supported"
         echo
         return 1
     fi
@@ -324,13 +375,23 @@ setup_pathed_vars ()
                 sed "s#${OSPL_HOME}/exec/${OLD_SPLICE_HOST}:##"`
         fi
     fi
-      
+
     LD_LIBRARY_PATH="${OSPL_HOME}/lib/${SPLICE_HOST}:${LD_LIBRARY_PATH}"
     PATH="${OSPL_HOME}/exec/${SPLICE_HOST}:${PATH}"
 
     set_var PATH "$PATH"
-    set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
-    export LD_LIBRARY_PATH
+
+    case $host in
+        Darwin*)
+            set_var DYLD_LIBRARY_PATH "$LD_LIBRARY_PATH${DYLD_LIBRARY_PATH:+:}$DYLD_LIBRARY_PATH"
+        unset_var LD_LIBRARY_PATH
+        export DYLD_LIBRARY_PATH
+        ;;
+    *)
+        set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
+        export LD_LIBRARY_PATH
+        ;;
+    esac
 }
 
 export_vars ()
@@ -342,12 +403,24 @@ export_vars ()
             CYGWIN_INSTALL_DRIVE=`(df -k . | grep ":" | awk -F ':' '{ print $1 }')`
             OSPL_TMPL_PATH=`cygpath -d $OSPL_HOME/etc/idlpp`
             OSPL_TEMP=`cygpath -w $OSPL_HOME/etc/tmp`
-			   mkdir -p $OSPL_TEMP
-				set_var OSPL_TEMP "$OSPL_TEMP"
+               mkdir -p $OSPL_TEMP
+                set_var OSPL_TEMP "$OSPL_TEMP"
             ;;
     esac
     set_var CYGWIN_INSTALL_DRIVE "$CYGWIN_INSTALL_DRIVE"
     set_var OSPL_HOME "$OSPL_HOME"
+
+    . $OSPL_HOME/release_info/RELEASE_tmpl
+    if [ "$OSPL_PATCH" = "OSS" ]
+    then
+        set_var MPC_ROOT "$OSPL_HOME/MPC_ROOT"
+        set_var IS_OPENSOURCE "yes"
+    else
+        set_var MPC_ROOT "$OSPL_HOME/submods/MPC_ROOT"
+        set_var IS_OPENSOURCE "no"
+    fi
+    OSPL_HOME_NORMALIZED=`"$OSPL_HOME/bin/ospl_normalizePath" "$OSPL_HOME"`
+    set_var OSPL_HOME_NORMALIZED "$OSPL_HOME_NORMALIZED"
     set_var SPLICE_TARGET "$SPLICE_TARGET"
     set_var OSPL_TMPL_PATH "$OSPL_TMPL_PATH"
 }
@@ -377,4 +450,24 @@ cleanup ()
     unset varkeys
     unset varvals
     unset generateReleaseInfo
+    unset init_submodules
+    unset setup_pathed_vars
+}
+
+# Sets the values OSPL_HOST_HEADERS and OSPL_TARGET_HEADERS
+# that can be used to correctly include/compile the appropriate
+# OS abstraction source
+get_abstraction_header_dirs ()
+{
+    pushd $OSPL_HOME > /dev/null
+    set_var SPLICE_HOST $SPLICE_HOST
+    # Temporarily set SPLICE_TARGET to be SPLICE_HOST ...
+    SPLICE_REAL_TARGET=$SPLICE_TARGET
+    set_var SPLICE_TARGET $SPLICE_HOST
+    # ... to read the OS abstration headers for the host 'target'
+    set_var OSPL_HOST_HEADERS `make get_target_os_header_dir`
+    # ... then set SPLICE_TARGET correctly & repeat
+    set_var SPLICE_TARGET $SPLICE_REAL_TARGET
+    set_var OSPL_TARGET_HEADERS `make get_target_os_header_dir`
+    popd > /dev/null
 }

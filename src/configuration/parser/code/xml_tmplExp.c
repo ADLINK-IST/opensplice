@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -111,9 +111,11 @@ C_STRUCT(xml_macroSet) {
 
 static c_equality
 xml_macroNameMatch(
-    const xml_macro macro,
-    const c_char *name)
+    void *macro_voidp,
+    void *name_voidp)
 {
+    const xml_macro macro = (const xml_macro)macro_voidp;
+    const c_char *name = (const c_char *)name_voidp;
     c_equality result = C_NE;
 
     if (strcmp (macro->name, name) == 0) {

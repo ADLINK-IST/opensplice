@@ -38,6 +38,43 @@ namespace test.sacs
                 result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
                 return result;
             }
+            if (reader == null)
+            {
+                result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
+                result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
+                return result;
+            }
+            else
+            {
+                DDS.ITopicBuiltinTopicDataDataReader dcpsTopReader = reader as DDS.ITopicBuiltinTopicDataDataReader;
+                DDS.TopicBuiltinTopicData[] dataSeq = null;
+                DDS.SampleInfo[] infoSeq = null;
+                DDS.ReturnCode retcode = dcpsTopReader.Read(
+                        ref dataSeq, 
+                        ref infoSeq, 
+                        DDS.Length.Unlimited, 
+                        DDS.SampleStateKind.NotRead, 
+                        DDS.ViewStateKind.Any, 
+                        DDS.InstanceStateKind.Any);
+                if (retcode == DDS.ReturnCode.Ok)
+                {
+                    for (int i = 0; i < dataSeq.Length; i++)
+                    {
+                        System.Console.WriteLine("Found: topic " + dataSeq[i].Name); 
+                    }
+                    retcode = dcpsTopReader.ReturnLoan(ref dataSeq, ref infoSeq);
+                    if (retcode != DDS.ReturnCode.Ok)
+                    {
+                       result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
+                       return result;
+                    }
+                }
+                else
+                {
+                    result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
+                    return result;
+                }
+            }
             
             topic = reader.GetTopicDescription();
             if (topic == null)
@@ -64,6 +101,37 @@ namespace test.sacs
                 result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
+            else
+            {
+                DDS.IParticipantBuiltinTopicDataDataReader dcpsPubReader = reader as DDS.IParticipantBuiltinTopicDataDataReader;
+                DDS.ParticipantBuiltinTopicData[] dataSeq = null;
+                DDS.SampleInfo[] infoSeq = null;
+                DDS.ReturnCode retcode = dcpsPubReader.Read(
+                        ref dataSeq, 
+                        ref infoSeq, 
+                        DDS.Length.Unlimited, 
+                        DDS.SampleStateKind.NotRead, 
+                        DDS.ViewStateKind.Any, 
+                        DDS.InstanceStateKind.Any);
+                if (retcode == DDS.ReturnCode.Ok)
+                {
+                    for (int i = 0; i < dataSeq.Length; i++)
+                    {
+                        System.Console.WriteLine("Found: Participant for node " + dataSeq[i].Key[0]); 
+                    }
+                    retcode = dcpsPubReader.ReturnLoan(ref dataSeq, ref infoSeq);
+                    if (retcode != DDS.ReturnCode.Ok)
+                    {
+                       result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
+                       return result;
+                    }
+                }
+                else
+                {
+                    result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
+                    return result;
+                }
+            }
             topic = reader.GetTopicDescription();
             if (topic == null)
             {
@@ -89,6 +157,37 @@ namespace test.sacs
                 result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
             }
+            else
+            {
+                DDS.IPublicationBuiltinTopicDataDataReader dcpsDPReader = reader as DDS.IPublicationBuiltinTopicDataDataReader;
+                DDS.PublicationBuiltinTopicData[] dataSeq = null;
+                DDS.SampleInfo[] infoSeq = null;
+                DDS.ReturnCode retcode = dcpsDPReader.Read(
+                        ref dataSeq, 
+                        ref infoSeq, 
+                        DDS.Length.Unlimited, 
+                        DDS.SampleStateKind.NotRead, 
+                        DDS.ViewStateKind.Any, 
+                        DDS.InstanceStateKind.Any);
+                if (retcode == DDS.ReturnCode.Ok)
+                {
+                    for (int i = 0; i < dataSeq.Length; i++)
+                    {
+                        System.Console.WriteLine("Found: Writer for topic " + dataSeq[i].TopicName);
+                    }
+                    retcode = dcpsDPReader.ReturnLoan(ref dataSeq, ref infoSeq);
+                    if (retcode != DDS.ReturnCode.Ok)
+                    {
+                       result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
+                       return result;
+                    }
+                }
+                else
+                {
+                    result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
+                    return result;
+                }
+            }
             topic = reader.GetTopicDescription();
             if (topic == null)
             {
@@ -113,6 +212,37 @@ namespace test.sacs
                 result.Result = "Builtin datareader for " + topicName + " could not be resolved.";
                 result.ExpectedVerdict = Test.Framework.TestVerdict.Fail;
                 return result;
+            }
+            else
+            {
+                DDS.ISubscriptionBuiltinTopicDataDataReader dcpsSubReader = reader as DDS.ISubscriptionBuiltinTopicDataDataReader;
+                DDS.SubscriptionBuiltinTopicData[] dataSeq = null;
+                DDS.SampleInfo[] infoSeq = null;
+                DDS.ReturnCode retcode = dcpsSubReader.Read(
+                        ref dataSeq, 
+                        ref infoSeq, 
+                        DDS.Length.Unlimited, 
+                        DDS.SampleStateKind.NotRead, 
+                        DDS.ViewStateKind.Any, 
+                        DDS.InstanceStateKind.Any);
+                if (retcode == DDS.ReturnCode.Ok)
+                {
+                    for (int i = 0; i < dataSeq.Length; i++)
+                    {
+                        System.Console.WriteLine("Found: Reader for topic " + dataSeq[i].TopicName); 
+                    }
+                    retcode = dcpsSubReader.ReturnLoan(ref dataSeq, ref infoSeq);
+                    if (retcode != DDS.ReturnCode.Ok)
+                    {
+                       result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
+                       return result;
+                    }
+                }
+                else
+                {
+                    result.Result = "Returncode not Ok, instead ReturnCode = " + retcode;
+                    return result;
+                }
             }
             topic = reader.GetTopicDescription();
             if (topic == null)

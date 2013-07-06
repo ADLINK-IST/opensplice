@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -17,6 +17,7 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
+#include <limits.h>
 /* #include <winioctl.h> */
 
 #include "os_time.h"
@@ -33,7 +34,7 @@
 #define SLEEP_INTERVAL_NANO_SEC 100 * 1000 * 1000
 
 static const struct os_time SLEEP_INTERVAL = { SLEEP_INTERVAL_SEC,  SLEEP_INTERVAL_NANO_SEC};
-static const char *optflags="i:l:f:s:hetTmMa";
+static const char *optflags="i:l:f:s:o:n:hetTmMa";
 
 typedef enum {
    memoryStats,
@@ -47,7 +48,7 @@ print_usage ()
     printf ("Usage:\n"
             "      mmstat -h\n"
             "      mmstat [-M|m] [-e] [-a] [-i interval] [-s sample_count] [URI]\n"
-            "      mmstat [-t|T] [-i interval] [-s sample_count] [-l limit] [-f filter_expression] [URI]\n");
+            "      mmstat [-t|T] [-i interval] [-s sample_count] [-l limit] [-o C|S|T] [-n nrEntries] [-f filter_expression] [URI]\n");
     printf ("\n");
     printf ("Show the memory statistics of the OpenSplice system identified by the specified URI. "
             "If no URI is specified, the environment variable OSPL_URI will be used. "
@@ -67,6 +68,8 @@ print_usage ()
     printf ("      -i interval      Display interval (in milliseconds)\n");
     printf ("      -s sample_count  Stop after sample_count samples\n");
     printf ("      -l limit         Show only object count >= limit\n");
+    printf ("      -o <C|S|T>       Order by object[C]ount/object[S]ize/[T]otalSize\n");
+    printf ("      -n nrEntries     Display only the top nrEntries items (useful only in combination with ordering)\n");
     printf ("      -f filter_expr   Show only meta objects which name passes the filter expression\n");
     printf ("\n");
     printf ("Use 'q' to terminate the monitor\n"
@@ -105,6 +108,9 @@ main (int argc, char *argv[])
    HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
    INPUT_RECORD buffer[1];
    DWORD events;
+
+   orderKind selectedOrdering  = NO_ORDERING;
+   int orderCount = INT_MAX;
 
    while (((opt = getopt (argc, argv, optflags)) != -1) && !errno) {
        switch (opt) {
@@ -156,12 +162,49 @@ main (int argc, char *argv[])
                delta = TRUE;
                break;
            case 'o':
+               if (selectedOrdering  == NO_ORDERING && strlen(optarg) == 1)
+               {
+                   switch (optarg[0])
+                   {
+                       case 'C':
+                           selectedOrdering = ORDER_BY_COUNT;
+                           break;
+                       case 'S':
+                           selectedOrdering = ORDER_BY_SIZE;
+                           break;
+                       case 'T':
+                           selectedOrdering = ORDER_BY_TOTAL;
+                           break;
+                       default:
+                           fprintf(stderr, "mmstat: Unknown ordering kind.\n");
+                           print_usage();
+                           exit(-1);
+                   }
+               }
+               else
+               {
+                   fprintf(stderr, "mmstat: Cannot specify multiple orderings at the same time.\n");
+                   print_usage();
+                   exit(-1);
+               }
+               break;
+           case 'n':
+               if (!(sscanf (optarg, "%d", &orderCount)) > 0)
+               {
+                   fprintf(stderr, "mmstat: Not a valid ordering nrEntries.\n");
+                   print_usage();
+                   exit(-1);
+               }
+               break;
+#ifdef OBJECT_WALK
+           case 'r':
                selectedAction = objectRefCount;
                break;
-           case 'O':
+           case 'R':
                selectedAction = objectRefCount;
                delta = TRUE;
                break;
+#endif
            case 'h':
            case '?':
            default:
@@ -246,7 +289,7 @@ main (int argc, char *argv[])
             msData = monitor_msNew (extended, raw, delta, preallocated);
             break;
          case typeRefCount:
-            trcData = monitor_trcNew (objectCountLimit, filterExpression, delta);
+            trcData = monitor_trcNew (objectCountLimit, filterExpression, selectedOrdering, orderCount, delta);
             break;
          case objectRefCount:
             orcData = monitor_orcNew (objectCountLimit, filterExpression, delta);
@@ -358,6 +401,7 @@ main (int argc, char *argv[])
             printf("\nConnection with domain lost. The OpenSplice system has\n" \
                    "probably been shut down.\n");
          }
+         u_participantFree(participant);
       }
       else
       {

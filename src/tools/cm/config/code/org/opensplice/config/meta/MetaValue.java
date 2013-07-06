@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -11,12 +11,14 @@
  */
 package org.opensplice.config.meta;
 
+
 public abstract class MetaValue extends MetaNode {
     Object defaultValue;
     
     public MetaValue(String doc, Object defaultValue) {
         super(doc);
         this.defaultValue = defaultValue;
+        
     }
 
     public Object getDefaultValue() {
@@ -25,10 +27,12 @@ public abstract class MetaValue extends MetaNode {
 
     public abstract boolean setDefaultValue(Object defaultValue); 
     
+    @Override
     public String toString(){
         return "Value (" + defaultValue.getClass().toString().substring(defaultValue.getClass().toString().lastIndexOf('.') + 1) + ") DefaultValue: " + defaultValue.toString();
     }
     
+    @Override
     public boolean equals(Object object){
         boolean result;
         MetaValue mv;
@@ -50,5 +54,13 @@ public abstract class MetaValue extends MetaNode {
             result = false;
         }
         return result;
+    }
+    @Override
+    public int hashCode() {
+        int var_gen_code;
+        int hash = 13;
+        var_gen_code = (null == defaultValue ? 0 : defaultValue.hashCode());
+        hash = 31 * hash + var_gen_code;
+        return hash;
     }
 }

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -78,7 +78,7 @@ static void flush_final_nl (void)
    }
 }
 
-extern void init_io (FILE * f, char * fnname)
+extern void init_io (FILE * f, const char * fnname)
 {
    register int i;
 
@@ -101,7 +101,7 @@ extern void init_io (FILE * f, char * fnname)
    output_accum = init_accum();
 }
 
-extern void init_incldir (char * d)
+extern void init_incldir (const char * d)
 {
    cur_incldir = copyofstr(d);
    check_os_malloc(cur_incldir);
@@ -461,7 +461,7 @@ char *read_ident()
    return (accum_result(acc));
 }
 
-extern void out_at (int line, char * file)
+extern void out_at (int line, const char * file)
 {
    if ((line - nnls != atline) || strcmp(file, atfile))
    {

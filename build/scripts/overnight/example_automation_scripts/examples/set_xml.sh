@@ -15,17 +15,58 @@
 echo "Updating XML:"
 echo "OSPL_URI before update is $OSPL_URI"
 
-sleep 7200 &
-UNIQID=$!
-
-cd $OSPL_HOME/etc/config
-
-XMLFILE=ospl_no_network.xml
-NEWXMLFILE=ospl_no_network_uniq.xml
-
-echo "NEWXMLFILE is $NEWXMLFILE"
+ospl_unique_domainID > uniqID &
+UNIQ_PID=$!
+echo $UNIQ_PID > uniqIDPID
+# sleep here because ospl_unique_domainID may not immediately output to uniqID
+sleep 5
+UNIQID=`cat uniqID`
+if [ "$UNIQID" = "" ]
+then
+    echo "ERROR : unable to get uniqID from ospl_unique_domainID"
+    exit 1
+fi
 echo "UNIQID is $UNIQID"
 
-sed "s@<Name>OpenSpliceV[^<]*</Name>@<Name>oex_$UNIQID</Name>@" < $XMLFILE > $NEWXMLFILE
+cd "$OSPL_HOME/etc/config"
 
-echo "SET OSPL_URI=file://$OSPL_HOME/etc/config/ospl_no_network_uniq.xml" >> $OSPL_HOME/examples/swap_URI.bat
+# Generate the XML configuration for running the examples : either shared memory or single process
+if [ "$EXRUNTYPE" = "shm" ]
+then
+    XMLFILE=ospl_shmem_no_network.xml
+    NEWXMLFILE=ospl_shmem_no_network_uniq.xml
+
+    sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
+        -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" < $XMLFILE > $NEWXMLFILE
+
+    echo "SET OSPL_URI=\"file://$OSPL_HOME/etc/config/ospl_shmem_no_network_uniq.xml\"" >> $OSPL_HOME/examples/swap_URI.bat
+else
+    XMLFILE=ospl_sp_ddsi.xml
+    NEWXMLFILE=ospl_sp_ddsi_uniq.xml
+
+    # check that MulticastRecvNetworkInterfaceAddresses is not already present in the xml file:
+    grep MulticastRecvNetworkInterfaceAddresses $XMLFILE
+    if [ $? = 0 ]
+    then
+        echo "ERROR : MulticastRecvNetworkInterfaceAddresses already exists"
+        exit 1;
+    fi
+
+    sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
+        -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" \
+        -e 's@<NetworkInterfaceAddress>AUTO</NetworkInterfaceAddress>@<NetworkInterfaceAddress>127.0.0.1</NetworkInterfaceAddress>\n       <MulticastRecvNetworkInterfaceAddresses>127.0.0.1</MulticastRecvNetworkInterfaceAddresses>@'  < $XMLFILE > $NEWXMLFILE
+
+    # sanity check that the sed'ing worked (i.e. that the strings existed in the first place)
+    grep MulticastRecvNetworkInterfaceAddresses $NEWXMLFILE
+    if [ $? = 1 ]
+    then
+        echo "ERROR : MulticastRecvNetworkInterfaceAddresses does not exist"
+        exit 1;
+    fi
+
+    echo "SET OSPL_URI=\"file://$OSPL_HOME/etc/config/ospl_sp_ddsi_uniq.xml\"" >> $OSPL_HOME/examples/swap_URI.bat
+fi
+
+echo "XMLFILE is $XMLFILE"
+echo "NEWXMLFILE is $NEWXMLFILE"
+echo "OSPL_URI is $OSPL_URI"

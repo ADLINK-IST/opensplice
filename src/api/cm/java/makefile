@@ -5,6 +5,7 @@ JPACKAGES =	org/opensplice/cm/data \
 		org/opensplice/cm/meta \
 		org/opensplice/cm/status \
 		org/opensplice/cm/qos \
+		org/opensplice/cm/qos/holder \
 		org/opensplice/cm/statistics \
 	 	org/opensplice/cm/transform \
 		org/opensplice/cm/transform/xml \

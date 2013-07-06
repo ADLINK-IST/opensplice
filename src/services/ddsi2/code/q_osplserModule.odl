@@ -1,0 +1,46 @@
+/* -*- C -*-
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
+module q_osplserModule {
+  typedef struct type4u_s {
+    c_ulong a;
+    c_ulong b;
+    c_ulong c;
+    c_ulong d;
+  } type4u;
+
+  typedef struct pmd_s {
+    c_ulong a;
+    c_ulong b;
+    c_ulong c; /* officially: octets */
+    c_ulong kind; /* officially: octets */
+    sequence<octet> value;
+  } pmd;
+
+  enum bubble_kind {
+    BTK_DELETE_WRITER
+  };
+
+  typedef struct bubble_s {
+    bubble_kind kind;
+    c_ulong systemId;
+    c_ulong localId;
+    c_ulong serial;
+  } bubble;
+
+  struct name_value {
+    string name;
+    string value;
+  };
+  typedef sequence<name_value> seq_name_value;
+};
+
+/* SHA1 not available (unoffical build.) */

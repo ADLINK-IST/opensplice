@@ -3,6 +3,7 @@
 
 SUBSYSTEMS	 := common
 SUBSYSTEMS	 += boundsCheck
+SUBSYSTEMS	 += invalidData
 SUBSYSTEMS	 += builtin
 SUBSYSTEMS	 += condition
 SUBSYSTEMS	 += contentFilteredTopic
@@ -10,7 +11,7 @@ SUBSYSTEMS	 += contentFilteredTopic
 SUBSYSTEMS	 += domainParticipant
 SUBSYSTEMS	 += domainParticipantFactory
 SUBSYSTEMS	 += errorInfo
-SUBSYSTEMS   += getDiscoveredXxx
+SUBSYSTEMS	 += getDiscoveredXxx
 SUBSYSTEMS	 += histDataWithCondition
 SUBSYSTEMS	 += listener
 SUBSYSTEMS	 += publisher
@@ -21,6 +22,7 @@ SUBSYSTEMS	 += topic
 SUBSYSTEMS	 += typeSupport
 SUBSYSTEMS	 += waitset
 SUBSYSTEMS	 += writer
+SUBSYSTEMS	 += SampleInfo
 
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak
 

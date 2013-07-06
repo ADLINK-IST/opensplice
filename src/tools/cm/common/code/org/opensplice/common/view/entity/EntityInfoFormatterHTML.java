@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -12,12 +12,13 @@
 package org.opensplice.common.view.entity;
 
 import java.awt.Color;
-
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.opensplice.cm.meta.MetaClass;
 import org.opensplice.cm.meta.MetaCollection;
@@ -36,10 +37,10 @@ import org.opensplice.cm.meta.MetaUnionCase;
  * @date Jun 7, 2004
  */
 public class EntityInfoFormatterHTML extends EntityInfoFormatter{
-    private String color1 = this.getColorString(Color.RED.darker());
-    private String color2 = this.getColorString(Color.GREEN.darker().darker());
-    private String color3 = this.getColorString(Color.BLUE.darker());
-    private String color4 = this.getColorString(Color.MAGENTA.darker().darker());
+    private final String color1 = this.getColorString(Color.RED.darker());
+    private final String color2 = this.getColorString(Color.GREEN.darker().darker());
+    private final String color3 = this.getColorString(Color.BLUE.darker());
+    private final String color4 = this.getColorString(Color.MAGENTA.darker().darker());
     
     /**
      * Constructs new formatter that formats data in a HTML representation.
@@ -59,6 +60,7 @@ public class EntityInfoFormatterHTML extends EntityInfoFormatter{
      * 
      * If the type is not supported, no error will occur.
      */
+    @Override
     public synchronized String getValue(Object object){
         curObject = object;
         if(object == null){
@@ -117,7 +119,7 @@ public class EntityInfoFormatterHTML extends EntityInfoFormatter{
      * @param type The type to create a HTML representation of.
      */
     private void setUserDataType(MetaType type){
-        curValue = (String)typeCache.get(type);
+        curValue = typeCache.get(type);
         
         if(curValue == null){
             MetaField field = type.getRootField();
@@ -139,17 +141,13 @@ public class EntityInfoFormatterHTML extends EntityInfoFormatter{
      * @param type The type to extract the typedefs from.
      */
     private void drawTypedefs(MetaType type){
-        MetaField field;
-        String typedefName;
+        LinkedHashMap<MetaField, String> typedefs = type.getTypedefs();
+        HashSet<String> finished = new HashSet<String>();
         
-        LinkedHashMap typedefs = type.getTypedefs();
-        Iterator iter = typedefs.keySet().iterator();
-        HashSet finished = new HashSet();
-        
-        while(iter.hasNext()){
-            field = (MetaField)(iter.next());
-            typedefName = (String)(typedefs.get(field));
-            
+        for (Iterator<Entry<MetaField, String>> it = typedefs.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<MetaField, String> entry = it.next();
+            MetaField field = entry.getKey();
+            String typedefName = entry.getValue();
             if(!(finished.contains(typedefName))){
                 writer.write("<b color=\"" + color1 + "\">typedef</b> ");
                 this.drawTypedefMetaField(field, "", type);

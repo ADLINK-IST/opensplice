@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -16,8 +16,9 @@
 package org.opensplice.common.view.entity;
 
 import java.io.StringWriter;
-
 import java.util.HashMap;
+
+import org.opensplice.cm.meta.MetaType;
 
 /**
  * Abstract base class that contains basic functionality for formatting 
@@ -31,7 +32,7 @@ public abstract class EntityInfoFormatter {
      * 
      */
     public EntityInfoFormatter(){
-        typeCache = new HashMap();
+        typeCache = new HashMap<MetaType, String>();
     }
     
     /**
@@ -96,5 +97,5 @@ public abstract class EntityInfoFormatter {
     /**
      * Cache for type information. (<MetaType, String>)
      */
-    protected HashMap typeCache; 
+    protected HashMap<MetaType, String> typeCache;
 }

@@ -10,7 +10,7 @@ ifneq (,$(ALT_CFLAGS_OPT))
 endif
 
 LDFLAGS += -L$(OSPL_HOME)/lib/$(SPLICE_HOST)
-LDLIBS  += -l$(DDS_DATABASE) -l$(DDS_OS)
+LDLIBS  += -l$(DDS_DATABASE) -l$(DDS_OS) -l$(DDS_UTIL)
 LDLIBS  :=$(filter-out -lefence, $(LDLIBS))
 
 CINCS += -I../../../database/include

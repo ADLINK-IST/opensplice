@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -296,13 +296,15 @@ public class UserDataTable extends JTable{
         setColumnSelectionAllowed(false);
         
         MouseAdapter sortListener = new MouseAdapter() {           
+            @Override
             public void mouseClicked(MouseEvent e) {
                 int column = columnModel.getColumnIndexAtX(e.getX());
-                String tableColName = (String)columnModel.getColumn(column).getIdentifier();
+
                 /* columns might have been moved to another index in the table
                  * Look up index in model.
                  */
                 if(!(model.getColumnName(column).equals(columnModel.getColumn(column).getIdentifier()))){
+                    String tableColName = (String) columnModel.getColumn(column).getIdentifier();
                     boolean found = false;
                     int i = 0;
                     
@@ -316,6 +318,7 @@ public class UserDataTable extends JTable{
                 }
                 
                 if (e.getButton() == MouseEvent.BUTTON3 && e.getClickCount() == 1 && column != -1) {
+                    String tableColName = (String) columnModel.getColumn(column).getIdentifier();
                     int shiftPressed = e.getModifiers()&InputEvent.SHIFT_MASK; 
                     boolean asc = (shiftPressed == 0);
                     sorter.sortByColumn(column, asc);
@@ -358,6 +361,7 @@ public class UserDataTable extends JTable{
         setColumnSelectionAllowed(false);
         
         MouseAdapter listMouseListener = new MouseAdapter() {           
+            @Override
             public void mouseClicked(MouseEvent e) {
                 int column = columnAtPoint(new Point(e.getX(), e.getY()));
                 

@@ -2,11 +2,14 @@ JAR_MODULE	 = tooling_common.jar
 JAR_LOCATION = $(OSPL_HOME)
 JAR_INC_DIR	 = $(OSPL_HOME)/jar/$(SPLICE_TARGET)
 
-ifeq (,$(findstring win32,$(SPLICE_HOST))) 
-JAVA_INC	=$(JAR_INC_DIR)/cmapi.jar
+JAVA_INC	= $(JAR_INC_DIR)/cmapi.jar
+
+TMP_CODE_DIR    = bld/$(SPLICE_TARGET)
+JTIMESTAMP      = $(TMP_CODE_DIR)/.java_common.timestamp
+ifndef OSPL_OUTER_HOME
+EXTRA_SOURCE = $(OSPL_HOME)/src/tools/cm/common/etc/ConfigModeIntializer.java
 else
-TMP_JAVA_INC	=$(JAR_INC_DIR)/cmapi.jar
-JAVA_INC	=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(TMP_JAVA_INC))
+EXTRA_SOURCE = $(OSPL_OUTER_HOME)/src/tools/cm/common/etc/ConfigModeIntializer.java
 endif
 
 JPACKAGES=	org/opensplice/common/util \
@@ -21,8 +24,8 @@ JPACKAGES=	org/opensplice/common/util \
 		org/opensplice/common/view/entity \
 		org/opensplice/common/view/entity/tree \
 		org/opensplice/common/controller
-		
-all link: jar
+
+all link: $(JTIMESTAMP) jar
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
@@ -32,3 +35,10 @@ analyse:
 
 clean:
 	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) 
+
+
+$(JTIMESTAMP): $(EXTRA_SOURCE)
+	@rm -rf $(TMP_CODE_DIR)
+	@mkdir -p $(TMP_CODE_DIR)
+	$(JCC) $(JCC_ARGS) $(EXTRA_SOURCE)
+	@touch $(JTIMESTAMP)

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -21,11 +21,15 @@
 #include "v_entity.h"
 #include "os_report.h"
 #include "os_stdlib.h"
+#include "os_config.h"
 #include "c_iterator.h"
 #include "v_handle.h"
 
 #include "cf_config.h"
 #include "cfg_parser.h"
+#include "ut_entryPoint.h"
+
+#include "u__cfElement.h"
 
 #include "v_configuration.h"
 #include "v_cfNode.h"
@@ -63,6 +67,8 @@ C_STRUCT(u_domainConfig) {
     c_bool        heap;
     c_bool        builtinTopicEnabled;
     c_bool        prioInherEnabled;
+    os_int32      id;
+    c_bool        idReadFromConfig;
 };
 
 C_STRUCT(attributeCopyArg) {
@@ -99,15 +105,18 @@ GetDomainConfig(
 {
     cf_element dc = NULL;
     cf_element child;
+    cf_element id;
     cf_element name;
     cf_data elementData;
     cf_element size;
     cf_element threshold;
     cf_element address;
-    cf_element heap;
+    cf_element singleProcess;
     cf_element locked;
     c_value value;
     cf_attribute attr;
+    os_boolean doAppend;
+
     assert(config != NULL);
     assert(domainConfig != NULL);
 
@@ -121,6 +130,18 @@ GetDomainConfig(
                 os_free(domainConfig->name);
                 domainConfig->name = os_malloc(strlen(value.is.String) + 1);
                 os_strcpy(domainConfig->name, value.is.String);
+
+                id = cf_element(cf_elementChild(dc, CFG_ID));
+
+                if (id != NULL) {
+                    elementData = cf_data(cf_elementChild(id, "#text"));
+                    if (elementData != NULL) {
+                        value = cf_dataValue(elementData);
+                        sscanf(value.is.String, "%d", &domainConfig->id);
+                        domainConfig->idReadFromConfig = TRUE;
+                    }
+                }
+
                 child = cf_element(cf_elementChild(dc, CFG_DATABASE));
                 if (child != NULL) {
                     size = cf_element(cf_elementChild(child, CFG_SIZE));
@@ -182,18 +203,20 @@ GetDomainConfig(
                         }
                     } /* else: keep the platform dependent default OS_LOCK_DEFAULT */
                     shm_attr->lockPolicy = domainConfig->lockPolicy;
-                    heap = cf_element(cf_elementChild(child, CFG_HEAP));
-                    if (heap != NULL) {
-                        elementData = cf_data(cf_elementChild(heap, "#text"));
-                        if (elementData != NULL) {
-                            value = cf_dataValue(elementData);
-                            if (os_strncasecmp(value.is.String, "TRUE", 4) == 0) {
-                                domainConfig->heap = TRUE;
-                            } else if (os_strncasecmp(value.is.String, "FALSE", 5) == 0) {
-                                domainConfig->heap = FALSE;
-                            }
-                        }
-                    }
+                }
+                singleProcess = cf_element(cf_elementChild(dc, CFG_SINGLEPROCESS));
+                if (singleProcess != NULL) {
+                   elementData = cf_data(cf_elementChild(singleProcess, "#text"));
+                   if (elementData != NULL) {
+                      value = cf_dataValue(elementData);
+                      if (os_strncasecmp(value.is.String, "TRUE", 4) == 0) {
+                         /* A SingleProcess value of True implies that Heap is to be used */
+                         domainConfig->heap = TRUE;
+                         shm_attr->sharedImpl = OS_MAP_ON_HEAP;
+                      } else if (os_strncasecmp(value.is.String, "FALSE", 5) == 0) {
+                         domainConfig->heap = FALSE;
+                      }
+                   }
                 }
                 child = cf_element(cf_elementChild(dc, CFG_BUILTINTOPICS));
                 if (child != NULL) {
@@ -216,6 +239,38 @@ GetDomainConfig(
                         } /* else use default value */
                     } /* No attribute enabled, so use default value */
                 } /* No 'PriorityInheritance' element, so use default value */
+
+                child = cf_element(cf_elementChild(dc, CFG_REPORT));
+                if (child != NULL)
+                {
+                    attr = cf_elementAttribute(child, "verbosity");
+                    if (attr != NULL)
+                    {
+                        value = cf_attributeValue(attr);
+                        if (os_reportSetVerbosity(value.is.String) == os_resultFail)
+                        {
+                            OS_REPORT_2(OS_WARNING, OSRPT_CNTXT_USER, 0,
+                                    "Cannot parse report verbosity value \"%s\","
+                                    " reporting verbosity remains %s",value.is.String, os_reportTypeText[os_reportVerbosity]);
+                        }
+                    }
+
+                    attr = cf_elementAttribute(child, "append");
+                    if (attr != NULL)
+                    {
+                        value = cf_attributeValue(attr);
+                        if (os_configIsTrue(value.is.String, &doAppend) == os_resultFail)
+                        {
+                            OS_REPORT_1(OS_WARNING, OSRPT_CNTXT_USER, 0,
+                                    "Cannot parse report append value \"%s\","
+                                    " reporting append mode unchanged",value.is.String);
+                        }
+                        else
+                        {
+                            os_reportSetDoAppend(doAppend);
+                        }
+                    }
+                }
             }
         }
     }
@@ -406,19 +461,84 @@ unlockSharedMemory(
     return result;
 }
 
+static os_result
+startSplicedWithinProcess(
+   const c_char *uri)
+{
+    os_library libraryHandle;
+    os_libraryAttr libraryAttr;
+    struct ut_entryPointWrapperArg *mwa;
+    os_threadAttr threadAttr;
+    os_threadId id;
+    os_result result;
+
+    char * spliced = "spliced";
+    char * entryPoint = "ospl_spliced";
+
+    mwa = os_malloc(sizeof(struct ut_entryPointWrapperArg));
+
+    /* Initialise the library attributes */
+    result = os_libraryAttrInit(&libraryAttr);
+    if (result != os_resultSuccess) {
+        OS_REPORT(OS_ERROR,"user::u_domain::startSplicedInProcess",0,
+                    "Problem initialising os_libraryAttr\n");
+        return os_resultFail;
+    }
+
+    /* Now open the library */
+    libraryHandle = os_libraryOpen (spliced, &libraryAttr);
+    if (libraryHandle == NULL) {
+        OS_REPORT_1(OS_ERROR,"user::u_domain::startSplicedInProcess",0,
+                    "Error opening '%s' library\n", spliced);
+        return os_resultFail;
+    }
+
+    /* Locate the entry point.  Note that the usage of os_libraryGetSymbol
+     * may result in a warning of the form :
+     *   "ISO C forbids assignment between function pointer and void *"
+     * Unfortunately it seems this is a quirk of the standards as there is
+     * no valid cast between pointer to function.
+     */
+
+    mwa->entryPoint = os_libraryGetSymbol (libraryHandle, entryPoint);
+    if (mwa->entryPoint == NULL) {
+        OS_REPORT_1(OS_ERROR,"user::u_domain::startSplicedInProcess",0,
+                    "Error opening '%s' entry point\n", entryPoint);
+        return os_resultFail;
+    }
+
+    os_threadAttrInit(&threadAttr);
+
+    mwa->argc = 2;
+    mwa->argv = os_malloc((mwa->argc + 1)*sizeof(char *));
+    mwa->argv[0] = spliced;
+    mwa->argv[1] = (char*)uri;
+    mwa->argv[2] = NULL;
+
+    /* Invoke the spliced entry point as a new thread in the current process */
+    result = os_threadCreate(&id, spliced, &threadAttr, ut_entryPointWrapper, mwa);
+    if (result != os_resultSuccess) {
+        result = os_resultFail;
+        OS_REPORT_1(OS_ERROR,"user::u_domain::startSplicedInProcess",0,
+                    "Error starting thread for '%s'\n", spliced);
+    }
+
+    return result;
+}
+
 /**************************************************************
  * Public functions
  **************************************************************/
 
-u_domain
+u_result
 u_domainNew(
+    u_domain *domain,
     const c_char *uri)
 {
     os_sharedHandle  shm;
     os_sharedAttr    shm_attr;
     os_result        result;
     c_base           base;
-    u_domain         domain;
     u_result         r;
     cfgprs_status    s;
     v_kernel         kernel;
@@ -427,22 +547,19 @@ u_domainNew(
     v_cfElement      rootElement;
     C_STRUCT(u_domainConfig) domainCfg;
     C_STRUCT(v_kernelQos) kernelQos;
+    char            addrStr[100];
 
-    domain = NULL;
     base = NULL;
     processConfig = NULL;
     shm = NULL;
 
     r = u_userInitialise();
     if (r != U_RESULT_OK) {
-        if (uri == NULL) {
-            uri = "NULL";
-        }
         OS_REPORT_2(OS_ERROR,
                     "u_domainNew",0,
                     "implicit u_userInitialise failed, result = %s, uri = %s",
-                    u_resultImage(r), uri);
-        return NULL;
+                    u_resultImage(r), uri ? uri : "NULL");
+        return r;
     }
     domainCfg.name = os_malloc(strlen(DOMAIN_NAME) + 1);
     os_strcpy(domainCfg.name, DOMAIN_NAME);
@@ -452,6 +569,9 @@ u_domainNew(
     domainCfg.heap = FALSE;
     domainCfg.builtinTopicEnabled = TRUE;
     domainCfg.prioInherEnabled = FALSE;
+    domainCfg.id = DEF_DOMAIN_ID;
+    domainCfg.address = NULL;
+    domainCfg.idReadFromConfig = FALSE;
 
     if (uri == NULL) {
         base = c_create(DATABASE_NAME,NULL,0, 0);
@@ -467,6 +587,15 @@ u_domainNew(
             s = cfg_parse_ospl(uri, &processConfig);
             if (s == CFGPRS_OK) {
                 GetDomainConfig(processConfig, &domainCfg, &shm_attr);
+
+                if (r != U_RESULT_OK)
+                {
+                    OS_REPORT_2(OS_ERROR, "user::u_domain::u_domainNew",0,
+                                "Domain '%s' has not been started - ReportPlugin registration failed - %d \n", domainCfg.name, r);
+                    return r;
+                }
+                u_usrClockInit (processConfig);
+
             } else {
                 OS_REPORT_1(OS_ERROR,
                             "user::u_domain::u_domainNew", 0,
@@ -474,21 +603,48 @@ u_domainNew(
             }
         } /*  else Get default values */
 
-        /* start for windows the named pipe */
-        os_serviceStart(domainCfg.name);
+        if (domainCfg.heap) {
+            /* let the abstraction layer know that this is a single process
+             * configuration.  It uses this knowledge to use private rather
+             * than shared os constructs such as mutexes, conditionals */
+            os_serviceSetSingleProcess ();
+        } else {
+            /* start for windows the named pipe : only required when multiple
+             * processes require communication */
+            os_serviceStart(domainCfg.name);
+        }
 
-        if (!domainCfg.heap) {
-            shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
-            if (shm == NULL) {
+        /* Create the shared memory handle here.  The user layer currently requires
+         * the support of os_shared... functions like os_sharedSize, so a shared
+         * memory handle is required whether we intend to use shared memory or heap.
+         * Note that os_sharedmem also has a "heap" configuration
+         */
+        shm = os_sharedCreateHandle(domainCfg.name, &shm_attr, domainCfg.id);
+        if (shm == NULL) {
+            OS_REPORT_1(OS_ERROR,OSRPT_CNTXT_USER,0,
+                        "u_domainNew:os_sharedCreateHandle failed for domain %s.",
+                        domainCfg.name);
+        }
+        if (!domainCfg.heap ) {
+            result = os_sharedMemoryCreate(shm, domainCfg.dbSize);
+            if (result != os_resultSuccess) {
+                /* Print any message that was generated */
+                PRINT_THREAD_MESSAGE("u_domainNew");
+                os_sharedDestroyHandle(shm);
                 OS_REPORT_1(OS_ERROR,
                             "user::u_domain::u_domainNew",0,
                             "u_domainNew:os_sharedCreateHandle failed for domain %s.",
                             domainCfg.name);
+
+                /* reset r to 0 as it may have been set to success earlier and if we have an error
+                   here then the return code should not be OK */
+                r = 0;
             } else {
-                result = os_sharedMemoryCreate(shm, domainCfg.dbSize);
+                /* Ignore any message that was generated */
+                IGNORE_THREAD_MESSAGE;
+                result = os_sharedMemoryAttach(shm);
+                PRINT_THREAD_MESSAGE("u_domainNew");
                 if (result != os_resultSuccess) {
-                    /* Print any message that was generated */
-                    PRINT_THREAD_MESSAGE("u_domainNew");
                     os_sharedDestroyHandle(shm);
                     OS_REPORT_1(OS_ERROR,
                                 "user::u_domain::u_domainNew",0,
@@ -496,30 +652,21 @@ u_domainNew(
                                 OS_REPORT_NL "The service cannot be started."
                                 OS_REPORT_NL "The required SHM size was "PA_SIZEFMT" bytes",
                                 domainCfg.dbSize);
+
+                    /* reset r to 0 as it may have been set to success earlier and if we have an error
+                       here then the return code should not be OK */
+                    r = 0;
                 } else {
-                    /* Ignore any message that was generated */
-                    IGNORE_THREAD_MESSAGE;
-                    result = os_sharedMemoryAttach(shm);
-                    PRINT_THREAD_MESSAGE("u_domainNew");
-                    if (result != os_resultSuccess) {
-                        os_sharedDestroyHandle(shm);
-                        OS_REPORT(OS_ERROR,
-                                  "user::u_domain::u_domainNew",0,
-                                  "u_domainNew:os_sharedMemoryAttach failed."
-                                  OS_REPORT_NL "The service cannot be started"
-                                  OS_REPORT_NL "The created SHM segment will be destroyed");
+                    if ((domainCfg.lockPolicy != OS_LOCKED) ||
+                        (lockSharedMemory(shm) == 0))
+                    {
+                        base = c_create(DATABASE_NAME,
+                                       os_sharedAddress(shm),
+                                       domainCfg.dbSize,
+                                       domainCfg.dbFreeMemThreshold);
                     } else {
-                        if ((domainCfg.lockPolicy != OS_LOCKED) ||
-                            (lockSharedMemory(shm) == 0))
-                        {
-                            base = c_create(DATABASE_NAME,
-                                        os_sharedAddress(shm),
-                                        domainCfg.dbSize,
-                                        domainCfg.dbFreeMemThreshold);
-                        } else {
-                            os_sharedMemoryDetach(shm);
-                            os_sharedDestroyHandle(shm);
-                        }
+                       os_sharedMemoryDetach(shm);
+                       os_sharedDestroyHandle(shm);
                     }
                 }
             }
@@ -529,6 +676,10 @@ u_domainNew(
                 OS_REPORT(OS_ERROR,
                           "user::u_domain::u_domainNew",0,
                           "u_domainNew:Creation of the database failed.");
+
+                /* reset r to 0 as it may have been set to success earlier and if we have an error
+                   here then the return code should not be OK */
+                r = 0;
             } else {
                 OS_REPORT(OS_INFO,
                           "user::u_domain::u_domainNew", 0,
@@ -558,6 +709,10 @@ u_domainNew(
                           "Node may need manual cleanup of the shared memory segment");
             }
             os_sharedDestroyHandle(shm);
+
+            /* reset r to 0 as it may have been set to success earlier and if we have an error
+               here then the return code should not be OK */
+            r = 0;
         } else {
             /* Copy configuration to kernel */
             rootElement = NULL;
@@ -606,34 +761,49 @@ u_domainNew(
                                 "will be used.\nDomain      : \"%s\"",
                                 name);
                 }
-                domain = u_entityAlloc(NULL,u_domain,kernel,TRUE);
-                domain->kernel = kernel;
-                domain->shm = shm;
-                domain->participants = NULL;
-                domain->lockPolicy = domainCfg.lockPolicy;
-                domain->protectCount = 0;
+                *domain = u_entityAlloc(NULL,u_domain,kernel,TRUE);
+                (*domain)->kernel = kernel;
+                (*domain)->shm = shm;
+                (*domain)->participants = NULL;
+                (*domain)->lockPolicy = domainCfg.lockPolicy;
+                (*domain)->protectCount = 0;
                 if (uri == NULL) {
-                    domain->uri = NULL;
+                    (*domain)->uri = NULL;
                 } else {
-                    domain->uri = os_malloc(strlen(uri) + 1);
-                    os_strcpy(domain->uri, uri);
+                    (*domain)->uri = os_malloc(strlen(uri) + 1);
+                    os_strcpy((*domain)->uri, uri);
                 }
-                domain->name = os_malloc(strlen(domainCfg.name) + 1);
-                os_strcpy(domain->name, domainCfg.name);
+                (*domain)->name = os_malloc(strlen(domainCfg.name) + 1);
+                os_strcpy((*domain)->name, domainCfg.name);
+                (*domain)->id = domainCfg.id;
                 /* r = u_dispatcherInit(u_dispatcher(domain));*/
-                u_userAddDomain(domain);
-
-                OS_REPORT_3(OS_INFO,"The OpenSplice domain service", 0,
-                            "+++++++++++++++++++++++++++++++++++++++++++" OS_REPORT_NL
-                            "++ The service has successfully started. ++" OS_REPORT_NL
-                            "+++++++++++++++++++++++++++++++++++++++++++\n"
-                            "Storage     : %d Kbytes.\n"
-                            "Locking     : %s\n"
-                            "Domain      : \"%s\"",
-                             domainCfg.dbSize/1024,
-                             (domainCfg.lockPolicy == OS_LOCKED)?"true":
-                             (domainCfg.lockPolicy == OS_UNLOCKED)? "false":"default",
-                             domainCfg.name);
+                u_userAddDomain(*domain);
+                if ((PA_ADDRCAST)os_sharedAddress(shm) == (PA_ADDRCAST)shm_attr.map_address) {
+                    os_sprintf(addrStr, "0x" PA_ADDRFMT, (PA_ADDRCAST)os_sharedAddress(shm));
+                } else {
+                    os_sprintf(addrStr, "0x" PA_ADDRFMT " (Requested: 0x" PA_ADDRFMT ")", (PA_ADDRCAST)os_sharedAddress(shm), (PA_ADDRCAST)shm_attr.map_address);
+                }
+                OS_REPORT_9(OS_INFO,"The OpenSplice domain service", 0,
+                            "---------------------------------------------------------------" OS_REPORT_NL
+                            "-- The service is using the following configuration settings --" OS_REPORT_NL
+                            "---------------------------------------------------------------" OS_REPORT_NL
+                            "Domain (id)          : %s (%u)" OS_REPORT_NL
+                            "Storage              : %d Kbytes" OS_REPORT_NL
+                            "Storage threshold    : %d Kbytes" OS_REPORT_NL
+                            "Storage address      : %s" OS_REPORT_NL
+                            "Locking              : %s" OS_REPORT_NL
+                            "Memory mode          : %s" OS_REPORT_NL
+                            "Builtin topics       : %s" OS_REPORT_NL
+                            "Priority inheritance : %s",
+                            domainCfg.name,
+                            domainCfg.id,
+                            domainCfg.dbSize/1024,
+                            domainCfg.dbFreeMemThreshold/1024,
+                            (os_serviceGetSingleProcess())      ? "Not available"   : addrStr,
+                            (domainCfg.lockPolicy == OS_LOCKED) ? "true"            : (domainCfg.lockPolicy == OS_UNLOCKED) ? "false" : "default",
+                            domainCfg.heap                      ? "Heap memory"     : "Shared memory",
+                            domainCfg.builtinTopicEnabled       ? "true"            : "false",
+                            domainCfg.prioInherEnabled          ? "true"            : "false");
             }
         }
     }
@@ -642,11 +812,12 @@ u_domainNew(
     }
     os_free(domainCfg.name);
 
-    return domain;
+    return r;
 }
 
-u_domain
+u_result
 u_domainOpen(
+    u_domain *domain,
     const c_char *uri,
     c_long timeout)
 {
@@ -655,7 +826,6 @@ u_domainOpen(
     os_result        result;
     c_base           base;
     u_result         r;
-    u_domain         domain;
     cfgprs_status    s;
     v_kernel         kernel;
     cf_element       processConfig;
@@ -663,26 +833,30 @@ u_domainOpen(
     os_time          pollDelay = {1,0};
     const c_char     *name = NULL;
     v_configuration  config;
+    os_time          delay_100ms = { 0, 100000000 };
+    int              count = 0;
+    /** @todo - Fix properly. See: OSPL-1222 */
+    static os_boolean singleProcessLoggerRegDoneHack = OS_FALSE;
 
     r = u_userInitialise();
     if (r != U_RESULT_OK) {
-        if (uri == NULL) {
-            uri = "NULL";
-        }
         OS_REPORT_2(OS_ERROR,
                     "user::u_domain::u_domainOpen",0,
                     "implicit u_userInitialise failed, result = %s, uri = %s",
-                    u_resultImage(r), uri);
-        return NULL;
+                    u_resultImage(r), uri ? uri : "NULL");
+        return r;
     }
-    domain = u_userLookupDomain(uri);
-    if (domain != NULL) {
-        return domain;
+    /* If the domain already exists within the process return that */
+    *domain = u_userLookupDomain(uri);
+    if (*domain != NULL) {
+        return U_RESULT_OK;
     }
 
-    domain = NULL;
     base = NULL;
     processConfig = NULL;
+
+    /* Initialize r to zero as in user return codes this means undefined rather than successful*/
+    r = 0;
 
     domainCfg.name = os_malloc(strlen(DOMAIN_NAME) + 1);
     os_strcpy(domainCfg.name, DOMAIN_NAME);
@@ -692,38 +866,89 @@ u_domainOpen(
     domainCfg.heap = FALSE;
     domainCfg.builtinTopicEnabled = TRUE;
     domainCfg.prioInherEnabled = FALSE;
+    domainCfg.id = DEF_DOMAIN_ID;
+    domainCfg.idReadFromConfig = FALSE;
 
     os_sharedAttrInit(&shm_attr);
     if ((uri != NULL) && (strlen(uri) > 0)) {
         s = cfg_parse_ospl(uri, &processConfig);
         if (s == CFGPRS_OK) {
-
-
             GetDomainConfig(processConfig, &domainCfg, &shm_attr);
+
+#ifdef INCLUDE_PLUGGABLE_REPORTING
+            /** @todo - Fix properly. See: OSPL-1222 */
+            if (!domainCfg.heap || singleProcessLoggerRegDoneHack == OS_FALSE)
+            {
+                r = u_usrReportPluginReadAndRegister (processConfig);
+
+                if (r != U_RESULT_OK)
+                {
+                    OS_REPORT_2(OS_ERROR, "user::u_domain::u_domainOpen",0,
+                                "Domain '%s' has not been started - ReportPlugin registration failed - return code %d\n", domainCfg.name, r);
+                    return r;
+                }
+                singleProcessLoggerRegDoneHack = OS_TRUE;
+            }
+#endif
+            if (domainCfg.heap) {
+                /* This is expected to be a "SingleProcess" deployment.  If control
+                 * has reached here then the domain does not yet exist.  This is
+                 * either because this is the spliced process which has yet to start
+                 * it (will happen during u_domainNew), or this is an application
+                 * which expects to start the spliced within the application process
+                 */
+
+                if (!u_splicedInProcess()) {
+                    result = startSplicedWithinProcess(uri);
+                    if (result != os_resultSuccess) {
+                        OS_REPORT_1(OS_ERROR,"user::u_domain::u_domainOpen",0,
+                                    "Error starting thread for '%s'\n", "spliced");
+                    } else {
+                        /* wait for up to 5 seconds for the domain to be available in this process */
+                        while (count < 50) {
+                            os_nanoSleep(delay_100ms);
+                            if (*domain == NULL) {
+                                *domain = u_userLookupDomain(uri);
+                            }
+                            if ((*domain != NULL) && (count > 10)) {
+                                return U_RESULT_OK;
+                            }
+                            count++;
+                        }
+                        OS_REPORT_1(OS_ERROR,"user::u_domain::u_domainOpen",0,
+                                    "Domain '%s' has not been started\n", domainCfg.name);
+                    }
+                }
+                /* If we get here then we have been unable to start the spliced from
+                 * within the application process
+                 */
+                return U_RESULT_INTERNAL_ERROR;
+            }
+
             /* set pipename for windows */
             os_createPipeNameFromDomainName(domainCfg.name);
-#ifdef INCLUDE_PLUGGABLE_REPORTING
-            u_usrReportPluginReadAndRegister (processConfig);
-#endif
+
             u_usrClockInit (processConfig);
             if (domainCfg.prioInherEnabled) {
                 os_mutexSetPriorityInheritanceMode(OS_TRUE);
             }
-            shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
+            shm = os_sharedCreateHandle(domainCfg.name, &shm_attr,domainCfg.id);
             name = domainCfg.name;
         } else {
             /* assume that the uri is the domain name */
-            shm = os_sharedCreateHandle(uri, &shm_attr);
+            shm = os_sharedCreateHandle(uri, &shm_attr,domainCfg.id);
             os_createPipeNameFromDomainName(uri);
         }
         if (processConfig != NULL) {
             cf_elementFree(processConfig);
         }
     } else {
-        shm = os_sharedCreateHandle(domainCfg.name, &shm_attr);
+        domainCfg.id = 0;
+        shm = os_sharedCreateHandle(domainCfg.name, &shm_attr,domainCfg.id);
         name = domainCfg.name;
         /* set pipename for windows */
         os_createPipeNameFromDomainName(domainCfg.name);
+
 
     }
     if (shm == NULL) {
@@ -732,6 +957,10 @@ u_domainOpen(
                       "user::u_domain::u_domainOpen",0,
                       "c_open failed; shared memory open failure!");
         }
+
+        /* reset r to 0 as it may have been set to success earlier and if we have an error
+           here then the return code should not be OK */
+        r = 0;
     } else {
         result = os_sharedMemoryAttach(shm);
         IGNORE_THREAD_MESSAGE;
@@ -763,6 +992,10 @@ u_domainOpen(
                       "user::u_domain::u_domainOpen",0,
                       "c_open failed");
         }
+
+        /* reset r to 0 as it may have been set to success earlier and if we have an error
+           here then the return code should not be OK */
+        r = 0;
     } else {
         kernel = v_kernelAttach(base, KERNEL_NAME);
         while ((timeout > 0) && (kernel == NULL)) {
@@ -774,18 +1007,22 @@ u_domainOpen(
             OS_REPORT(OS_ERROR,
                       "user::u_domain::u_domainOpen", 0,
                       "v_kernelAttach failed");
+
+            /* reset r to 0 as it may have been set to success earlier and if we have an error
+               here then the return code should not be OK */
+            r = 0;
         } else {
-            domain = u_entityAlloc(NULL,u_domain,kernel,TRUE);
-            domain->kernel = kernel;
-            domain->shm = shm;
-            domain->protectCount = 0;
-            domain->participants = NULL;
-            domain->lockPolicy = OS_LOCK_DEFAULT; /* don't care! */
+            *domain = u_entityAlloc(NULL,u_domain,kernel,TRUE);
+            (*domain)->kernel = kernel;
+            (*domain)->shm = shm;
+            (*domain)->protectCount = 0;
+            (*domain)->participants = NULL;
+            (*domain)->lockPolicy = OS_LOCK_DEFAULT; /* don't care! */
             if ((uri != NULL) && (name == NULL)) {
                 /* Assume uri is the domain name,
                  * try to get the real uri from v_configuration
                  */
-            	name = uri;
+                name = uri;
                 config = v_getConfiguration(kernel);
                 uri = v_configurationGetUri(config);
                 if (uri != NULL && (strlen(uri) > 0)) {
@@ -794,31 +1031,33 @@ u_domainOpen(
                         GetDomainConfig(processConfig,
                                         &domainCfg,
                                         &shm_attr);
-#ifdef INCLUDE_PLUGGABLE_REPORTING
-                        u_usrReportPluginReadAndRegister (processConfig);
-#endif
                         u_usrClockInit (processConfig);
                         if (domainCfg.prioInherEnabled) {
                             os_mutexSetPriorityInheritanceMode(OS_TRUE);
                         }
                     }
-            	}
+                }
             }
+            (*domain)->id = domainCfg.id;
+
             /* Recheck 'uri', maybe it is retrieved from v_configuration */
             if (uri != NULL) {
-                domain->uri = os_malloc(strlen(uri) + 1);
-                os_strcpy(domain->uri, uri);
+                (*domain)->uri = os_malloc(strlen(uri) + 1);
+                os_strcpy((*domain)->uri, uri);
             } else {
-                domain->uri = NULL;
+                (*domain)->uri = NULL;
             }
             assert(name);
-            domain->name = os_malloc(strlen(name) + 1);
-            os_strcpy(domain->name, name);
-            u_userAddDomain(domain);
+            (*domain)->name = os_malloc(strlen(name) + 1);
+            os_strcpy((*domain)->name, name);
+            u_userAddDomain(*domain);
+
+            r = U_RESULT_OK;
         }
     }
     os_free(domainCfg.name);
-    return domain;
+
+    return r;
 }
 
 u_result
@@ -879,9 +1118,9 @@ u_domainFree (
     u_result r;
     os_result result;
     c_long count;
-    os_time pollDelay = {1,0};
     c_long protectCount;
     c_char *name;
+    os_uint32 sleepCount = 0;
 
     if (_this == NULL) {
         OS_REPORT(OS_ERROR,
@@ -890,68 +1129,65 @@ u_domainFree (
         return U_RESULT_ILL_PARAM;
     }
 
-    count = u_domainParticipantCount(_this);
-    if (count > 0) {
+    if (u_domainParticipantCount(_this) > 0) {
         return U_RESULT_PRECONDITION_NOT_MET;
     }
 
-    r = u_domainProtect(_this);
-
-    if (r ==  U_RESULT_OK) {
+    r = u_entityLock(u_entity(_this));
+    if (r == U_RESULT_OK) {
+        static const os_time zero = {0,0}; /* 0 s */
+        static const os_time pollPeriod = {0,100 * 1e6}; /* 0.1 s */
+        os_time pollDelay = {1,0}; /* 1s */
         protectCount = u_domainProtectCount(_this);
-        while (protectCount > 1) {
+        while (protectCount > 0 && os_timeCompare(pollDelay, zero) == OS_MORE) {
 #ifndef NDEBUG
             printf("u_domainFree: waiting for %d threads to detach\n",
-                   protectCount-1);
+                   protectCount);
 #endif
-            os_nanoSleep(pollDelay);
+            os_nanoSleep(pollPeriod);
+            pollDelay = os_timeSub(pollDelay, pollPeriod);
             protectCount = u_domainProtectCount(_this);
-        }
-        r = u_userRemoveDomain(_this);
-        v_kernelDetach(_this->kernel);
-        count = v_kernelUserCount(_this->kernel);
-        if (count == 0) {
-            /* If no users left for the kernel (including the Spliced)
-             * then the kernel and database can be destroyed and the
-             * memory segment can be detached.
-             */
-            c_destroy(c_getBase(_this->kernel));
-        }
-        if (_this->shm != NULL) {
-            if (_this->lockPolicy == OS_LOCKED) {
-                result = unlockSharedMemory(_this->shm);
-                if (result != os_resultSuccess) {
-                    name = u_domainName(_this);
-                    OS_REPORT_2(OS_ERROR,
-                                "user::u_domain::u_domainFree", 0,
-                                "Could not unlock shared segment from memory."
-                                OS_REPORT_NL "Domain = \"%s\""
-                                OS_REPORT_NL "Result = \"%s\"",
-                                name,
-                                os_resultImage(result));
-                    os_free(name);
-                }
+            sleepCount++;
+            if(sleepCount > 5 && os_serviceGetSingleProcess()) {
+                /* do not wait longer then 5 secs in single process mode */
+                break;
             }
-            result = os_sharedMemoryDetach(_this->shm);
-            if (result != os_resultSuccess) {
-                name = u_domainName(_this);
-                OS_REPORT_2(OS_ERROR,
-                            "user::u_domain::u_domainFree", 0,
-                            "Operation os_sharedMemoryDetach failed."
-                            OS_REPORT_NL "Domain = \"%s\""
-                            OS_REPORT_NL "result = \"%s\"",
-                            name,
-                            os_resultImage(result));
-                os_free(name);
-                r = U_RESULT_INTERNAL_ERROR;
-            } else {
-                if (count == 0) {
-                    result = os_sharedMemoryDestroy(_this->shm);
+        }
+
+        if(u_userRemoveDomain(_this) == 0){
+            v_kernelDetach(_this->kernel);
+            count = v_kernelUserCount(_this->kernel);
+            if (count == 0) {
+                /* If no users left for the kernel (including the Spliced)
+                 * then the kernel and database can be destroyed and the
+                 * memory segment can be detached.
+                 */
+                c_destroy(c_getBase(_this->kernel));
+            }
+            if(!os_serviceGetSingleProcess())
+            {
+                if (_this->shm != NULL) {
+                    if (_this->lockPolicy == OS_LOCKED) {
+                        result = unlockSharedMemory(_this->shm);
+                        if (result != os_resultSuccess) {
+                            name = u_domainName(_this);
+                            OS_REPORT_2(OS_ERROR,
+                                        "user::u_domain::u_domainFree", 0,
+                                        "Could not unlock shared segment from memory."
+                                        OS_REPORT_NL "Domain = \"%s\""
+                                        OS_REPORT_NL "Result = \"%s\"",
+                                        name,
+                                        os_resultImage(result));
+                            os_free(name);
+
+                        }
+                    }
+                    result = os_sharedMemoryDetach(_this->shm);
                     if (result != os_resultSuccess) {
                         name = u_domainName(_this);
                         OS_REPORT_2(OS_ERROR,
                                     "user::u_domain::u_domainFree", 0,
-                                    "Operation os_sharedMemoryDestroy failed."
+                                    "Operation os_sharedMemoryDetach failed."
                                     OS_REPORT_NL "Domain = \"%s\""
                                     OS_REPORT_NL "result = \"%s\"",
                                     name,
@@ -959,22 +1195,58 @@ u_domainFree (
                         os_free(name);
                         r = U_RESULT_INTERNAL_ERROR;
                     } else {
+                        if (count == 0) {
+                            result = os_sharedMemoryDestroy(_this->shm);
+                            if (result != os_resultSuccess) {
+                                name = u_domainName(_this);
+                                OS_REPORT_2(OS_ERROR,
+                                            "user::u_domain::u_domainFree", 0,
+                                            "Operation os_sharedMemoryDestroy failed."
+                                            OS_REPORT_NL "Domain = \"%s\""
+                                            OS_REPORT_NL "result = \"%s\"",
+                                            name,
+                                            os_resultImage(result));
+                                os_free(name);
+                                r = U_RESULT_INTERNAL_ERROR;
+                            }
+                        }
                         os_sharedDestroyHandle(_this->shm);
                     }
                 }
+            } else {
+                result = os_resultSuccess;
             }
+            assert(c_iterLength(_this->participants) == 0);
+            c_iterFree(_this->participants);
+            _this->participants = NULL;
+            os_free(_this->uri);
+            _this->uri = NULL;
+            os_free(_this->name);
+            _this->name = NULL;
+
+            /* Explicitly perform u_entityDeinit here by hand, since _this
+             * doesn't properly extend from u_entity. */
+            {
+                u_entity _e = u_entity(_this);
+                _e->kind = U_UNDEFINED;
+                _e->magic = NULL;
+                _e->gid = v_publicGid(NULL);
+                _e->participant = NULL;
+                _e->userData = NULL;
+                /* Since this call needs to be done in locked condition, the mutex needs
+                * to be unlocked here before destroying. */
+                os_mutexUnlock(&_e->mutex);
+                os_mutexDestroy(&_e->mutex);
+            }
+
+            os_free(_this);
+
+    #ifdef INCLUDE_PLUGGABLE_REPORTING
+            u_usrReportPluginUnregister ();
+    #endif
         } else {
-            result = os_resultSuccess;
+            u_entityUnlock(u_entity(_this));
         }
-        assert(c_iterLength(_this->participants) == 0);
-        c_iterFree(_this->participants);
-        _this->participants = NULL;
-        os_free(_this->uri);
-        _this->uri = NULL;
-        os_free(_this);
-#ifdef INCLUDE_PLUGGABLE_REPORTING
-        u_usrReportPluginUnregister ();
-#endif
     }
     return r;
 }
@@ -1335,6 +1607,8 @@ u_domainCompareDomainId(
     const c_char *uri;
     const c_char *name;
     u_result result;
+    os_char* uriQuoted;
+    os_size_t uriLength;
 
     if (_this != NULL) {
         domainId = id;
@@ -1352,6 +1626,25 @@ u_domainCompareDomainId(
                     uri = "";
                 }
                 result = (strcmp(domainId, uri) == 0);
+
+                if (!result)
+                {
+                    /* At this point, the domains (either name or uri) do not match exactly.
+                     * The uri [possibly obtained from 'os_getenv ("OSPL_URI")'] may have
+                     * leading and trailing quotes because the user may have quoted it to
+                     * handle possible spaces in the uri path.  Internally the uri will be
+                     * stored without quoutes, so check this is not the difference between
+                     * the two URIs:
+                     */
+                    uriLength = strlen (uri);
+                    if (uriLength + 2 == strlen (domainId))
+                    {
+                        uriQuoted = os_malloc (sizeof (char*) * (uriLength + 2));
+                        sprintf (uriQuoted, "\"%s\"", uri);
+                        result = (strcmp (uriQuoted, domainId) == 0);
+                        os_free (uriQuoted);
+                    }
+                }
             }
         } else {
             result = FALSE;
@@ -1511,6 +1804,29 @@ u_domainCreatePersistentSnapshot(
     return result;
 }
 
+u_result
+u_domainFederationSpecificPartitionName (
+    u_domain _this,
+    c_char *buf,
+    os_size_t bufsize)
+{
+    u_result result;
+    os_uint32 systemId;
+    int n;
+    if (bufsize < U_DOMAIN_FEDERATIONSPECIFICPARTITIONNAME_MINBUFSIZE) {
+        return U_RESULT_ILL_PARAM;
+    }
+    if ((result = u_entityLock (u_entity (_this))) != U_RESULT_OK) {
+        return result;
+    }
+
+    systemId = _this->_parent._parent.gid.systemId;
+    n = snprintf (buf, bufsize, "__NODE%08"PA_PRIx32" BUILT-IN PARTITION__", systemId);
+    assert (n < bufsize);
+    u_entityUnlock (u_entity (_this));
+    return U_RESULT_OK;
+}
+
 os_sharedHandle
 u_domainSharedMemoryHandle (
     u_domain _this)
@@ -1520,4 +1836,54 @@ u_domainSharedMemoryHandle (
     } else {
         return NULL;
     }
+}
+
+/* Note: This function is part of a temporary workaround used by R&R.
+ * The function copies heap-configuration (cf_node from parser) to shm-configuration (v_cfNode).
+ * This is needed so R&R can use a single operation to process configuration nodes, either from the config file (URI)
+ * or a string (R&R config command).
+ * Ideally in the future this will be replaced by memory-agnostic XML processing so that it doesn't make a difference
+ * if the configuration is on heap or in shared memory.
+ */
+u_result
+u_domainCopyConfiguration(
+    cf_node cfgNode,
+    u_participant participant,
+    u_cfElement *element)
+{
+    v_cfElement velement = NULL;
+    v_configuration config = NULL;
+    v_kernel kernel;
+    u_result result;
+
+
+    assert(cfgNode);
+    assert(participant);
+
+    if (participant) {
+        result = u_entityReadClaim(u_entity(participant->domain),(v_entity*)(&kernel));
+        if ((result == U_RESULT_OK) && (kernel != NULL)) {
+            config = v_configurationNew(kernel);
+            u_entityRelease(u_entity(participant->domain));
+        } else {
+            OS_REPORT(OS_ERROR, "u_domainCopyConfiguration", 0, "Cannot claim u_participant");
+            result = U_RESULT_INTERNAL_ERROR;
+        }
+    } else {
+        OS_REPORT(OS_ERROR, "u_domainCopyConfiguration", 0, "Participant is invalid");
+        result = U_RESULT_ILL_PARAM;
+    }
+
+    if (config) {
+        result = copyConfiguration(cfgNode, config, (v_cfNode*)&velement);
+        if (result == U_RESULT_OK) {
+            v_configurationSetRoot(config, velement);
+            *element = u_cfElementNew(participant, velement);
+        } else {
+            *element = NULL;
+            v_configurationFree(config);
+        }
+    }
+
+    return result;
 }

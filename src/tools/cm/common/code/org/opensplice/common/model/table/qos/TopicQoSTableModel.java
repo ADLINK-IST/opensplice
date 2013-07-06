@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -37,6 +37,8 @@ import org.opensplice.common.CommonException;
  */
 public class TopicQoSTableModel extends EntityQoSTableModel{
 
+    private static final long serialVersionUID = -4444046499069182517L;
+
     /**
      * Constructs a new table model that holds the QoS of the supplied
      * Topic.
@@ -48,6 +50,7 @@ public class TopicQoSTableModel extends EntityQoSTableModel{
         super(_entity);
     }
 
+    @Override
     protected void init() {
         Object[] data = new Object[3];
         int row;
@@ -182,6 +185,7 @@ public class TopicQoSTableModel extends EntityQoSTableModel{
         nonEditRows.add(new Integer(row));
     }
 
+    @Override
     public boolean update() {
         boolean result;
         Object nill = "null";

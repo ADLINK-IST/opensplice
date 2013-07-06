@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef U_QUERY_H
@@ -29,6 +29,8 @@ extern "C" {
 
 #define u_query(o) ((u_query)(o))
 
+typedef c_bool (u_queryAction)(c_object o, c_voidp arg);
+
 OS_API u_query
 u_queryNew(
     u_reader source,
@@ -36,25 +38,25 @@ u_queryNew(
     q_expr predicate,
     c_value params[]);
 
-OS_API u_result    
+OS_API u_result
 u_queryInit(
     u_query _this);
 
-OS_API u_result    
+OS_API u_result
 u_queryFree(
     u_query _this);
 
-OS_API u_result    
+OS_API u_result
 u_queryDeinit(
     u_query _this);
 
-OS_API u_result    
+OS_API u_result
 u_queryRead(
     u_query _this,
     u_readerAction action,
     c_voidp actionArg);
-                             
-OS_API u_result    
+
+OS_API u_result
 u_queryTake(
     u_query _this,
     u_readerAction action,
@@ -74,28 +76,28 @@ u_queryTakeList(
     u_readerCopyList copy,
     c_voidp copyArg);
 
-OS_API u_result    
+OS_API u_result
 u_queryReadInstance(
     u_query _this,
     u_instanceHandle h,
     u_readerAction action,
     c_voidp actionArg);
 
-OS_API u_result    
+OS_API u_result
 u_queryTakeInstance(
     u_query _this,
     u_instanceHandle h,
     u_readerAction action,
     c_voidp actionArg);
 
-OS_API u_result   
+OS_API u_result
 u_queryReadNextInstance(
     u_query _this,
     u_instanceHandle h,
     u_readerAction action,
     c_voidp actionArg);
 
-OS_API u_result    
+OS_API u_result
 u_queryTakeNextInstance(
     u_query _this,
     u_instanceHandle h,
@@ -103,20 +105,22 @@ u_queryTakeNextInstance(
     c_voidp actionArg);
 
 
-OS_API c_bool      
+OS_API c_bool
 u_queryTest(
-    u_query _this);
+    u_query _this,
+    u_queryAction action,
+    c_voidp args);
 
-OS_API c_bool      
+OS_API c_bool
 u_queryTriggerTest(
     u_query _this);
 
-OS_API u_result    
+OS_API u_result
 u_querySet(
     u_query _this,
     c_value params[]);
 
-OS_API u_reader    
+OS_API u_reader
 u_querySource(
     u_query _this);
 

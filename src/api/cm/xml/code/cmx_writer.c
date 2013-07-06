@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -94,13 +94,9 @@ c_char*
 cmx_writerInit(
     v_writer entity)
 {
-    char buf[512];
-    v_writer writer;
-    
-    writer = v_writer(entity);
-    os_sprintf(buf, "<kind>WRITER</kind>");
-    
-    return (c_char*)(os_strdup(buf));
+    assert(C_TYPECHECK(entity, v_writer));
+
+    return (c_char*)(os_strdup("<kind>WRITER</kind>"));
 }
 
 struct cmx_writerTypeArg {
@@ -113,16 +109,13 @@ cmx_writerDataType(
     const c_char* writer)
 {
     u_entity entity;
-    c_bool result;
-    c_char* type;
     struct cmx_writerTypeArg arg;
     
-    type = NULL;
     entity = cmx_entityUserEntity(writer);
     arg.result = NULL;
     
     if(entity != NULL){
-        result = u_entityAction(entity, cmx_writerDataTypeAction, &arg);
+        u_entityAction(entity, cmx_writerDataTypeAction, &arg);
     }
     return arg.result;
 }
@@ -170,16 +163,16 @@ cmx_writerWrite(
     const c_char* data)
 {
     u_entity entity;
-    c_bool result;
-    c_char* type;
     struct cmx_writerArg arg;
     
-    type = NULL;
+    arg.success = CMX_RESULT_ENTITY_NOT_AVAILABLE;
+
     entity = cmx_entityUserEntity(writer);
-    arg.result = data;
 
     if(entity != NULL){
-        result = u_entityAction(entity, cmx_writerCopy, &arg);
+        arg.result = data;
+
+        u_entityWriteAction(entity, cmx_writerCopy, &arg);
     }
     return arg.success;
 }
@@ -232,16 +225,16 @@ cmx_writerDispose(
     const c_char* data)
 {
     u_entity entity;
-    c_bool result;
-    c_char* type;
     struct cmx_writerArg arg;
     
-    type = NULL;
+    arg.success = CMX_RESULT_ENTITY_NOT_AVAILABLE;
+
     entity = cmx_entityUserEntity(writer);
-    arg.result = data;
 
     if(entity != NULL){
-        result = u_entityAction(entity, cmx_writerDisposeCopy, &arg);
+        arg.result = data;
+
+        u_entityWriteAction(entity, cmx_writerDisposeCopy, &arg);
     }
     return arg.success;
 }
@@ -294,16 +287,15 @@ cmx_writerWriteDispose(
     const c_char* data)
 {
     u_entity entity;
-    c_bool result;
-    c_char* type;
     struct cmx_writerArg arg;
     
-    type = NULL;
+    arg.success = CMX_RESULT_ENTITY_NOT_AVAILABLE;
+
     entity = cmx_entityUserEntity(writer);
-    arg.result = data;
 
     if(entity != NULL){
-        result = u_entityAction(entity, cmx_writerWriteDisposeCopy, &arg);
+        arg.result = data;
+        u_entityWriteAction(entity, cmx_writerWriteDisposeCopy, &arg);
     }
     return arg.success;
 }
@@ -356,16 +348,16 @@ cmx_writerRegister(
     const c_char* data)
 {
     u_entity entity;
-    c_bool result;
-    c_char* type;
     struct cmx_writerArg arg;
     
-    type = NULL;
+    arg.success = CMX_RESULT_ENTITY_NOT_AVAILABLE;
+
     entity = cmx_entityUserEntity(writer);
-    arg.result = data;
 
     if(entity != NULL){
-        result = u_entityAction(entity, cmx_writerRegisterCopy, &arg);
+        arg.result = data;
+
+        u_entityWriteAction(entity, cmx_writerRegisterCopy, &arg);
     }
     return arg.success;
 }
@@ -418,16 +410,16 @@ cmx_writerUnregister(
     const c_char* data)
 {
     u_entity entity;
-    c_bool result;
-    c_char* type;
     struct cmx_writerArg arg;
     
-    type = NULL;
+    arg.success = CMX_RESULT_ENTITY_NOT_AVAILABLE;
+
     entity = cmx_entityUserEntity(writer);
-    arg.result = data;
 
     if(entity != NULL){
-        result = u_entityAction(entity, cmx_writerUnregisterCopy, &arg);
+        arg.result = data;
+
+        u_entityWriteAction(entity, cmx_writerUnregisterCopy, &arg);
     }
     return arg.success;
 }

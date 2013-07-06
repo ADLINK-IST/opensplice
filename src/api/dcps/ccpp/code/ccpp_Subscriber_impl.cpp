@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -9,9 +9,9 @@
  *   for full copyright notice and license terms.
  *
  */
+#include "ccpp_Subscriber_impl.h"
 #include "gapi.h"
 #include "ccpp_dds_dcps.h"
-#include "ccpp_Subscriber_impl.h"
 #include "ccpp_Topic_impl.h"
 #include "ccpp_DataReader_impl.h"
 #include "ccpp_ListenerUtils.h"
@@ -77,11 +77,11 @@ DDS::DataReader_ptr DDS::Subscriber_impl::create_datareader (
 
     if (proceed)
     {
-      if (&qos == DDS::DefaultQos::DataReaderQosDefault)
+      if (&qos == &DDS::DefaultQos::DataReaderQosDefault.in())
       {
         gapi_drqos = GAPI_DATAREADER_QOS_DEFAULT;
       }
-      else if (&qos == DDS::DefaultQos::DataReaderQosUseTopicQos)
+      else if (&qos == &DDS::DefaultQos::DataReaderQosUseTopicQos.in())
       {
         gapi_drqos = GAPI_DATAREADER_QOS_USE_TOPIC_QOS;
       }
@@ -139,7 +139,7 @@ DDS::DataReader_ptr DDS::Subscriber_impl::create_datareader (
                   {
                       gapi_subscriberQos *sqos = gapi_subscriberQos__alloc();
                       gapi_object_set_user_data(reader_handle, (CORBA::Object *)myUD,
-                                                DDS::ccpp_CallBack_DeleteUserData,NULL);
+                                                ccpp_CallBack_DeleteUserData,NULL);
                       if(sqos){
                           if(gapi_subscriber_get_qos(_gapi_self, sqos) == GAPI_RETCODE_OK){
                               if(sqos->entity_factory.autoenable_created_entities) {
@@ -203,11 +203,7 @@ DDS::ReturnCode_t DDS::Subscriber_impl::delete_datareader (
     if (os_mutexLock(&(dataReader->dr_mutex)) == os_resultSuccess)
     {
       result = gapi_subscriber_delete_datareader(_gapi_self, dataReader->_gapi_self);
-      if (result == DDS::RETCODE_OK)
-      {
-        dataReader->_gapi_self = NULL;
-      }
-      else
+      if (result != DDS::RETCODE_OK)
       {
         OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to delete datareader");
       }
@@ -335,7 +331,7 @@ DDS::ReturnCode_t DDS::Subscriber_impl::set_qos (
 ) THROW_ORB_EXCEPTIONS
 {
   DDS::ReturnCode_t result;
-  if (&qos == DDS::DefaultQos::SubscriberQosDefault)
+  if (&qos == &DDS::DefaultQos::SubscriberQosDefault.in())
   {
     result = gapi_subscriber_set_qos(_gapi_self, GAPI_SUBSCRIBER_QOS_DEFAULT );
   }

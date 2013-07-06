@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,6 +13,116 @@
 #include "idl_tmplExp.h"
 
 #include "os_stdlib.h"
+
+/* Print a BOUNDSCHECK out of range error message to the default output file
+*/
+void
+idl_boundsCheckFail(
+        enum idl_boundsCheckFailKind kind,
+        idl_scope scope,
+        idl_typeSpec type,
+        const c_char* name) {
+    c_char *scopeName;
+
+    /* Create scoped name for type */
+    scopeName = idl_scopeStack(scope, "::", NULL);
+
+    switch(kind) {
+
+    /* Value is a case */
+    case CASE:
+        idl_fileOutPrintf(idl_fileCur(), "OS_REPORT (OS_ERROR, \"copyIn\", 0,"\
+            "\"Case '%s.%s' of type '%s' is out of range.\");\n",
+            scopeName,
+            name,
+            idl_typeSpecName(type));
+        break;
+
+    /* Value is a discriminator */
+    case DISCRIMINATOR:
+        idl_fileOutPrintf(idl_fileCur(), "OS_REPORT (OS_ERROR, \"copyIn\", 0,"\
+            "\"Discriminator '%s.%s' of type '%s' is out of range.\");\n",
+            scopeName,
+            name,
+            idl_typeSpecName(type));
+        break;
+
+    /* Value is a member */
+    case MEMBER:
+        idl_fileOutPrintf(idl_fileCur(), "OS_REPORT (OS_ERROR, \"copyIn\", 0,"\
+            "\"Member '%s.%s' of type '%s' is out of range.\");\n",
+            scopeName,
+            name,
+            idl_typeSpecName(type));
+        break;
+
+    /* Value is an element */
+    case ELEMENT:
+        idl_fileOutPrintf(idl_fileCur(), "OS_REPORT (OS_ERROR, \"copyIn\", 0,"\
+            "\"Element of '%s.%s' of type '%s' is out of range.\");\n",
+            scopeName,
+            name,
+            idl_typeSpecName(type));
+        break;
+    }
+
+    os_free(scopeName);
+}
+
+/* Print a BOUNDSCHECK NULL error message to the default output file
+*/
+void
+idl_boundsCheckFailNull(
+        enum idl_boundsCheckFailKind kind,
+        idl_scope scope,
+        idl_typeSpec type,
+        const c_char* name) {
+    c_char *scopeName;
+
+    /* Create scoped name for type */
+    scopeName = idl_scopeStack(scope, "::", NULL);
+
+    switch(kind) {
+
+    /* Value is a case */
+    case CASE:
+        idl_fileOutPrintf(idl_fileCur(), "OS_REPORT (OS_ERROR, \"copyIn\", 0,"\
+            "\"Case '%s.%s' of type '%s' is NULL.\");\n",
+            scopeName,
+            name,
+            idl_typeSpecName(type));
+        break;
+
+    /* Value is a discriminator */
+    case DISCRIMINATOR:
+        idl_fileOutPrintf(idl_fileCur(), "OS_REPORT (OS_ERROR, \"copyIn\", 0,"\
+            "\"Discriminator '%s.%s' of type '%s' is NULL.\");\n",
+            scopeName,
+            name,
+            idl_typeSpecName(type));
+        break;
+
+    /* Value is a member */
+    case MEMBER:
+        idl_fileOutPrintf(idl_fileCur(), "OS_REPORT (OS_ERROR, \"copyIn\", 0,"\
+            "\"Member '%s.%s' of type '%s' is NULL.\");\n",
+            scopeName,
+            name,
+            idl_typeSpecName(type));
+        break;
+
+    /* Value is an element */
+    case ELEMENT:
+        idl_fileOutPrintf(idl_fileCur(), "OS_REPORT (OS_ERROR, \"copyIn\", 0,"\
+            "\"Element of '%s.%s' of type '%s' is NULL.\");\n",
+            scopeName,
+            name,
+            idl_typeSpecName(type));
+        break;
+    }
+
+    os_free(scopeName);
+}
 
 /* Print the specified indentation the the default output file,
    the indent is specified in units of 4 space characters

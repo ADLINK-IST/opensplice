@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -93,7 +93,7 @@ d_instanceNew(
         assert(nrOfKeys == c_arraySize(instanceKeyList));
 
         for (i=0;i<nrOfKeys;i++) {
-            c_fieldCopy(messageKeyList[i],action->message,
+            c_fieldClone(messageKeyList[i],action->message,
                         instanceKeyList[i], instance);
         }
         c_free(instanceKeyList);
@@ -140,10 +140,7 @@ d_groupInfoLookupInstance (
         for (i=0;i<nrOfKeys;i++) {
             keyValues[i] = c_fieldValue(messageKeyList[i],action->message);
         }
-        instance = c_tableFind(_this->instances, &keyValues[0]);
-        c_keep(instance);
-
-
+        instance = c_tableFind(_this->instances, &keyValues[0]); /* c_tableFind already performs keep. */
 
         for (i=0;i<nrOfKeys;i++) {
             c_valueFreeRef(keyValues[i]);
@@ -193,12 +190,13 @@ d_groupInfoSampleNew (
     v_message msg)
 {
     d_sample sample;
-    v_message mmfMessage;
+    v_message mmfMessage, *mmfMessagePtr;
 
     sample = d_sample(c_new(_this->topic->sampleType));
 
     if (sample) {
-        c_cloneIn(_this->topic->messageType, msg, (c_voidp*)&(mmfMessage));
+        mmfMessagePtr = &mmfMessage;
+        c_cloneIn(_this->topic->messageType, msg, (c_voidp*)mmfMessagePtr);
         d_sampleTemplate(sample)->message = mmfMessage;
         sample->instance = instance;
         sample->older = NULL;
@@ -212,6 +210,39 @@ d_groupInfoSampleNew (
     return sample;
 }
 
+
+static d_sampleTemplate
+d_instanceLastTransactionSample(
+    d_instance _this,
+    v_message endOfTransaction)
+{
+    d_sampleTemplate found = NULL;
+    d_sampleTemplate lastTransactionSample;
+
+    assert(v_stateTest(v_nodeState(endOfTransaction), L_TRANSACTION));
+
+    lastTransactionSample = d_instanceTemplate(_this)->newest;
+
+    while((lastTransactionSample != NULL) && (!found)){
+        /* Same sequence number */
+        if(lastTransactionSample->message->sequenceNumber == endOfTransaction->sequenceNumber){
+            /* Same transactionId */
+            if(V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(lastTransactionSample->message->transactionId)
+                == V_MESSAGE_GET_TRANSACTION_UNIQUE_ID(endOfTransaction->transactionId))
+            {
+                /* Same DataWriter */
+                if(v_gidCompare(lastTransactionSample->message->writerGID,
+                        endOfTransaction->writerGID) == C_EQ)
+                {
+                    found = lastTransactionSample;
+                }
+            }
+        }
+        lastTransactionSample = d_sampleTemplate(d_sample(lastTransactionSample)->older);
+    }
+    return found;
+}
+
 static d_storeResult
 d_instanceInsert(
     d_instance instance,
@@ -222,9 +253,11 @@ d_instanceInsert(
     d_sample sample;
     d_sample oldest;
     d_sample ptr;
+    d_sampleTemplate lastTransactionSample;
     v_state state;
     c_equality equality;
     v_topicQos topicQos;
+    v_message mmfMessage;
 
     assert(C_TYPECHECK(instance, d_instance));
     assert(C_TYPECHECK(msg, v_message));
@@ -257,6 +290,27 @@ d_instanceInsert(
         assert(d_instanceGetTail(instance) != NULL);
         assert(instance->count != 0);
 
+        /* This message marks the end of a transaction. It needs to replace
+         * the last message of the transaction if it still exists in this
+         * instance. If not, it will be stored as a 'normal' message while
+         * taking into account the history depth.
+         */
+        if(v_stateTest(v_nodeState(msg), L_TRANSACTION)){
+            /* Look up the last sample in the transaction */
+            lastTransactionSample = d_instanceLastTransactionSample(
+                    instance, msg);
+
+            /* If it is found, replace the message and return success.*/
+            if(lastTransactionSample){
+                c_free(lastTransactionSample->message);
+                c_cloneIn(groupInfo->topic->messageType, msg, (c_voidp*)&(mmfMessage));
+                lastTransactionSample->message = mmfMessage;
+                c_free(sample);
+
+                return D_STORE_RESULT_OK;
+            }
+            /* if it is not found continue business as usual. */
+        }
         if(topicQos->orderby.kind == V_ORDERBY_RECEPTIONTIME){
             sample->older = d_instanceGetHead(instance);
             d_instanceSetHead(instance, sample);
@@ -571,7 +625,7 @@ d_instanceInject(
 {
     d_instance instance;
     d_sample sample;
-    v_message message, storeMessage, unregisterMsg;
+    v_message message, *messagePtr, storeMessage, unregisterMsg;
     struct d_instanceInjectArg* inj;
     v_writeResult wr;
     os_time oneSec;
@@ -591,7 +645,8 @@ d_instanceInject(
         storeMessage = d_sampleGetMessage(sample);
 
         /* copy message */
-        c_cloneIn(inj->messageType, storeMessage, (c_voidp*)&(message));
+        messagePtr = &message;
+        c_cloneIn(inj->messageType, storeMessage, (c_voidp*)messagePtr);
 
         /* inject message */
         wr = v_groupWriteNoStream(inj->vgroup, message, NULL, V_NETWORKID_LOCAL);
@@ -627,6 +682,7 @@ d_instanceInject(
             }
         }
         sample = sample->newer;
+        c_free(message);
     }
     if(inj->result == D_STORE_RESULT_OK){
         oneSec.tv_sec  = 1;
@@ -641,6 +697,7 @@ d_instanceInject(
                 wr = v_groupWriteNoStream(inj->vgroup, unregisterMsg, NULL, V_NETWORKID_LOCAL);
                 os_nanoSleep(oneSec);
             }
+            c_free(unregisterMsg);
             unregisterMsg = v_message(c_iterTakeFirst(unregisterMessagesToInject));
         }
         c_iterFree(unregisterMessagesToInject);
@@ -798,6 +855,7 @@ d_groupInfoWrite(
     d_storeResult result;
     d_instance instance;
 
+    OS_UNUSED_ARG(store);
     if(_this && action && action->message){
         instance = d_groupInfoGetInstance(_this, action, &result);
 
@@ -821,6 +879,7 @@ d_groupInfoDispose(
     d_storeResult result;
     d_instance instance;
 
+    OS_UNUSED_ARG(store);
     if(_this && action && action->message){
         instance = d_groupInfoGetInstance(_this, action, &result);
 
@@ -847,6 +906,7 @@ d_groupInfoExpungeInstance(
     d_storeResult result;
     d_instance instance, removed;
 
+    OS_UNUSED_ARG(store);
     if(_this && action && action->message){
         instance = d_groupInfoLookupInstance(_this, action);
 
@@ -880,6 +940,7 @@ d_groupInfoExpungeSample(
     d_storeResult result;
     d_instance instance;
 
+    OS_UNUSED_ARG(store);
     if(_this && action && action->message){
         instance = d_groupInfoGetInstance(_this, action, &result);
 
@@ -908,6 +969,7 @@ d_groupInfoDataInject(
     c_type mmfMessageType;
     c_char* typeName;
 
+    OS_UNUSED_ARG(store);
     if(_this && group){
         inject.vgroup = d_groupGetKernelGroup(group);
 
@@ -950,6 +1012,7 @@ d_groupInfoBackup(
     assert(_this);
     assert(backup);
 
+    OS_UNUSED_ARG(store);
     base = c_getBase(_this->kernel);
     groupInfoType = c_resolve(base,"durabilityModule2::d_groupInfo");
     *backup = d_groupInfo(c_new(groupInfoType));
@@ -1001,6 +1064,7 @@ d_groupInfoDeleteHistoricalData(
     assert(_this);
     assert(action);
 
+    OS_UNUSED_ARG(store);
     if(_this && action){
         success = c_tableWalk(_this->instances, removeHistoricalData, action);
 

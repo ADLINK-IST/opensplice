@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -305,7 +305,7 @@ be_generator::create_expr(char c)
  * Create a BE_Expression node denoting a 64-bit floating point number
  */
 
-AST_Expression * be_generator::create_expr (double d, char * str)
+AST_Expression * be_generator::create_expr (double d, const char * str)
 {
 cout << "be_generator::create_expr (double) " << d << " " << str << endl;
    return (AST_Expression*) new be_expr_val (d, str);

@@ -1,4 +1,4 @@
-ifneq (,$(findstring win32,$(SPLICE_HOST)))
+ifneq (,$(or $(findstring win32,$(SPLICE_HOST)),$(findstring win64,$(SPLICE_HOST))))
 compile:
 	(cd wincmd; make)
 	(cd winln; make)

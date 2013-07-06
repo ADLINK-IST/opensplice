@@ -22,6 +22,7 @@
  **********************************************************************/
 
 #include "os_if.h"
+#include "os_heap.h"
 #ifndef WIN32
 #include "os_stdlib.h"
 #include "ctype.h"
@@ -94,7 +95,7 @@ ODL_Identifier          [a-zA-Z_][a-zA-Z0-9_]*
 
 <COMMENT>[^*\n]*
 <COMMENT>"*"+[^*/\n]*
-<COMMENT>\n             { pl(); }
+<COMMENT>\n             { pl(); OS_UNUSED_ARG(yyunput);}
 <COMMENT>"*"+"/"        BEGIN(INITIAL);
 
 [ \t\r]                 { pc(); }
@@ -233,7 +234,6 @@ extractToken(const char *_String)
    if (!compareStrings(_String, "persistent"  ) ) return PERSISTENT;
    if (!compareStrings(_String, "transient"   ) ) return TRANSIENT;
    if (!compareStrings(_String, "interface"   ) ) return INTERFACE;
-   if (!compareStrings(_String, "extent"      ) ) return EXTENT;
    if (!compareStrings(_String, "key"         ) ) return KEY;
    if (!compareStrings(_String, "keys"        ) ) return KEYS;
    if (!compareStrings(_String, "const"       ) ) return _CONST;
@@ -292,7 +292,7 @@ extractToken(const char *_String)
        assert(compareStrings(_String, yylval.String) == 0);
        os_strncpy(yylval.String, &tmp[1], strlen(tmp) - 1);
        yylval.String[strlen(tmp) - 1] = '\0';
-		 free(tmp);
+		 os_free(tmp);
    }
 
    return Identifier;

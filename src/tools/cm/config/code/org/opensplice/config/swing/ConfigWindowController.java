@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 package org.opensplice.config.swing;
@@ -17,8 +17,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.print.PrinterJob;
 import java.io.File;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
@@ -29,24 +27,24 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.filechooser.FileFilter;
 
+import org.opensplice.common.util.Report;
 import org.opensplice.config.data.DataConfiguration;
 import org.opensplice.config.data.DataException;
 import org.opensplice.config.meta.MetaConfiguration;
+import org.opensplice.common.util.ConfigModeIntializer;
 
 public class ConfigWindowController implements ActionListener {
-    private ConfigWindow view;
+    private final ConfigWindow view;
     private HelpWindow helpView;
-    private Logger logger;
     private boolean closeInProgress;
     private boolean exitInProgress;
     private boolean newInProgress;
     private boolean openInProgress;
     private File curFile;
-    private JFileChooser openFileChooser;
-    private JFileChooser saveFileChooser;
-    
+    private final JFileChooser openFileChooser;
+    private final JFileChooser saveFileChooser;
+
     public ConfigWindowController(ConfigWindow view){
-        this.logger             = Logger.getLogger("org.opensplice.config.swing");
         this.view               = view;
         this.closeInProgress    = false;
         this.exitInProgress     = false;
@@ -56,19 +54,19 @@ public class ConfigWindowController implements ActionListener {
         this.saveFileChooser    = new JFileChooser();
         this.curFile            = null;
         this.helpView           = null;
-        
+
         String osplHome         = System.getenv("OSPL_HOME");
         File f                  = null;
         String fileSep          = System.getProperty("file.separator");
-        
+
         if(osplHome == null){
             f = new File(System.getProperty("user.dir") + fileSep);
         } else {
             f = new File(osplHome + fileSep + "etc" + fileSep + "config" + fileSep);
-            
+
             if((!f.exists()) || (!f.isDirectory())){
                 f = new File(osplHome + fileSep + "etc" + fileSep);
-                
+
                 if((!f.exists()) || (!f.isDirectory())){
                     f = new File(System.getProperty("user.dir") + fileSep);
                 }
@@ -80,19 +78,20 @@ public class ConfigWindowController implements ActionListener {
         this.openFileChooser.setFileFilter(new ConfigChooseFilter());
         this.openFileChooser.setAcceptAllFileFilterUsed(false);
         this.openFileChooser.setApproveButtonText("Open");
-        
+
         this.saveFileChooser.setCurrentDirectory(f);
         this.saveFileChooser.setDialogTitle("Save configuration");
         this.saveFileChooser.setMultiSelectionEnabled(false);
         this.saveFileChooser.setFileFilter(new ConfigChooseFilter());
         this.saveFileChooser.setAcceptAllFileFilterUsed(false);
         this.saveFileChooser.setApproveButtonText("Save");
-        
+
     }
-    
+
+    @Override
     public void actionPerformed(ActionEvent e) {
         String command = e.getActionCommand();
-        
+
         try{
             if("exit".equals(command)){
                 this.exitInProgress = true;
@@ -125,21 +124,21 @@ public class ConfigWindowController implements ActionListener {
             this.handleSetEnabled(true);
         }
     }
-    
+
     private void handleConditionalSave(){
         DataConfiguration config  = view.getDataConfiguration();
-        
+
         if(config == null){
             this.handleNextAction();
         } else if(config.isUpToDate()){
             this.handleNextAction();
         } else {
             int answer = JOptionPane.showConfirmDialog(
-                    this.view, 
-                    "Configuration has changed. Save changes?", 
-                    "Close configuration", 
+                    this.view,
+                    "Configuration has changed. Save changes?",
+                    "Close configuration",
                     JOptionPane.YES_NO_CANCEL_OPTION);
-            
+
             if(answer == JOptionPane.YES_OPTION){
                 this.handleSave(false);
             } else if(answer == JOptionPane.NO_OPTION){
@@ -149,17 +148,18 @@ public class ConfigWindowController implements ActionListener {
             }
         }
     }
-    
+
     private void handlePrint(){
         final DataConfiguration config = view.getDataConfiguration();
-        
+
         if(config == null){
             this.handleSetStatus("No configuration to print.", false);
         } else {
             this.handleSetStatus("Printing configuration...", true);
             this.handleSetEnabled(false);
-            
+
             Runnable worker = new Runnable(){
+                @Override
                 public void run(){
                     try {
                         PrinterJob pjob = PrinterJob.getPrinterJob();
@@ -167,7 +167,7 @@ public class ConfigWindowController implements ActionListener {
                         aset.add(MediaSizeName.ISO_A4);
                         aset.add(new Copies(1));
                         boolean doPrint = pjob.printDialog(aset);
-                        
+
                         if(doPrint){
                             /*
                             if(currentDialog != null){
@@ -193,28 +193,28 @@ public class ConfigWindowController implements ActionListener {
             SwingUtilities.invokeLater(worker);
         }
     }
-    
+
     private void handleExit(){
         this.exitInProgress = false;
         view.dispose();
         System.exit(0);
     }
-    
+
     public void handleOpen(File file){
         this.curFile = file;
         this.openInProgress = true;
         this.handleConditionalSave();
     }
-    
+
     private void handleOpen(){
         openInProgress = false;
         File file = null;
-        
+
         if(this.curFile != null){
             file = this.curFile;
         } else {
             int returnVal = this.openFileChooser.showOpenDialog(this.view);
-            
+
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 file = this.openFileChooser.getSelectedFile();
             } else {
@@ -222,37 +222,46 @@ public class ConfigWindowController implements ActionListener {
                 this.handleNextAction();
             }
         }
-        
+
         if(file != null){
             final File f = file;
             this.handleSetEnabled(false);
             view.setStatus("Opening configuration from " + f.getAbsolutePath() + "...", true, true);
             view.repaint();
-            
+
             Runnable worker = new Runnable(){
-                public void run(){         
+                @Override
+                public void run(){
                     view.setDataConfiguration(null);
                     DataConfiguration config = null;
-                    
+
                     try {
+                        if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE) {
+                            ConfigModeIntializer.setMode(ConfigModeIntializer.COMMUNITY_MODE_FILE_OPEN);
+                        }
+
                         config = new DataConfiguration(f, false);
                     } catch (DataException e) {
-                        logger.logp(Level.INFO, "ConfigWindowController", "handleOpen", e.getMessage());
-                        
+                        Report.getInstance().writeInfoLog("ConfigWindowController handleOpen\n" + e.getMessage());
+                        if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE) {
+                            ConfigModeIntializer.setMode(ConfigModeIntializer.COMMUNITY_MODE);
+                        }
+
                         int answer = JOptionPane.showConfirmDialog(
-                                view, 
+                                view,
                                 "The configuration is not valid.\nReason: " +
-                                e.getMessage() + 
-                                "\nTry automatic repairing?", 
-                                "Invalid configuration", 
+                                e.getMessage() +
+                                "\nTry automatic repairing?",
+                                "Invalid configuration",
                                 JOptionPane.YES_NO_OPTION);
-                        
+
                         if(answer == JOptionPane.YES_OPTION){
                             try {
                                 config = new DataConfiguration(f, true);
+
                                 view.setStatus("Configuration repaired successfully.", false);
                             } catch (DataException e1) {
-                                JOptionPane.showMessageDialog(view, 
+                                JOptionPane.showMessageDialog(view,
                                         "Configuration could not be repaired.\nReason: '" +
                                         e.getMessage() + "'"
                                         , "Error", JOptionPane.ERROR_MESSAGE);
@@ -275,27 +284,93 @@ public class ConfigWindowController implements ActionListener {
         }
         this.curFile = null;
     }
-    
+
+    public void handleOpenFromUri(String uri) {
+        openInProgress = false;
+        File file = null;
+
+        if (uri.startsWith("file://")) {
+            /* strip off file:// */
+            uri = uri.substring(7);
+        }
+        file = new File(uri);
+
+        if (file != null) {
+            final File f = file;
+            this.handleSetEnabled(false);
+            view.setStatus("Opening configuration from " + f.getAbsolutePath() + "...", true, true);
+            view.repaint();
+
+            Runnable worker = new Runnable() {
+                @Override
+                public void run() {
+                    view.setDataConfiguration(null);
+                    DataConfiguration config = null;
+
+                    try {
+                        if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE) {
+                            ConfigModeIntializer.setMode(ConfigModeIntializer.COMMUNITY_MODE_FILE_OPEN);
+                        }
+
+                        config = new DataConfiguration(f, false);
+                    } catch (DataException e) {
+                        Report.getInstance().writeInfoLog("ConfigWindowController handleOpen\n" + e.getMessage());
+                        if (ConfigModeIntializer.CONFIGURATOR_MODE != ConfigModeIntializer.COMMERCIAL_MODE) {
+                            ConfigModeIntializer.setMode(ConfigModeIntializer.COMMUNITY_MODE);
+                        }
+
+                        int answer = JOptionPane.showConfirmDialog(view, "The configuration is not valid.\nReason: "
+                                + e.getMessage() + "\nTry automatic repairing?", "Invalid configuration",
+                                JOptionPane.YES_NO_OPTION);
+
+                        if (answer == JOptionPane.YES_OPTION) {
+                            try {
+                                config = new DataConfiguration(f, true);
+                                view.setStatus("Configuration repaired successfully.", false);
+                            } catch (DataException e1) {
+                                JOptionPane.showMessageDialog(view, "Configuration could not be repaired.\nReason: '"
+                                        + e.getMessage() + "'", "Error", JOptionPane.ERROR_MESSAGE);
+                                handleSetStatus("Configuration could not be repaired.", false);
+                                handleNextAction();
+                            }
+                        } else if (answer == JOptionPane.NO_OPTION) {
+                            handleSetStatus("Configuration not opened.", false);
+                            handleNextAction();
+                        }
+                    }
+                    if (config != null) {
+                        view.setDataConfiguration(config);
+                        view.setStatus("Configuration opened.", false);
+                        handleNextAction();
+                    }
+                }
+            };
+            SwingUtilities.invokeLater(worker);
+        }
+        this.curFile = null;
+    }
+
     private void handleSave(boolean alwaysAskFile){
         int returnVal;
         File file;
         int answer;
         String path;
         boolean proceed = false;
-        
+
         final DataConfiguration config = view.getDataConfiguration();
-        
+
         if(config == null){
             this.handleCancel("Warning: No configuration to save.");
             return;
         }
-        
+
         this.handleSetEnabled(false);
-        
+
         if((!alwaysAskFile) && (config.getFile() != null)){
             this.handleSetStatus("Saving configuration to: " + config.getFile().getAbsolutePath() + "...", true);
-            
+
             Runnable worker = new Runnable(){
+                @Override
                 public void run(){
                     try {
                         config.store(true);
@@ -303,7 +378,7 @@ public class ConfigWindowController implements ActionListener {
                         handleNextAction();
                     } catch (DataException e) {
                         handleSetStatus("Error: Cannot save configuration to: " +
-                                            config.getFile().getAbsolutePath(), 
+                                            config.getFile().getAbsolutePath(),
                                             false);
                         handleNextAction();
                     }
@@ -314,28 +389,29 @@ public class ConfigWindowController implements ActionListener {
             try{
                 do {
                     answer = JOptionPane.CANCEL_OPTION;
+                    saveFileChooser.setSelectedFile(config.getFile());
                     returnVal = this.saveFileChooser.showSaveDialog(this.view);
-                
+
                     if (returnVal == JFileChooser.APPROVE_OPTION) {
                         file = this.saveFileChooser.getSelectedFile();
                         path = file.getAbsolutePath();
-                        
+
                         if(!path.endsWith(ConfigChooseFilter.CONFIG_SUFFIX)){
                             path = path + ConfigChooseFilter.CONFIG_SUFFIX;
                             file = new File(path);
                         }
-                        
+
                         this.handleSetStatus("Saving configuration to: " + file.getAbsolutePath() + "...", true);
-                        
+
                         if(file.equals(config.getFile())){
                             proceed = true;
                         } else if (file.exists()){
                             answer = JOptionPane.showConfirmDialog(
-                                    this.view, 
-                                    "The file '" + path + "' already exists. Overwrite?", 
-                                    "File already exists", 
+                                    this.view,
+                                    "The file '" + path + "' already exists. Overwrite?",
+                                    "File already exists",
                                     JOptionPane.YES_NO_CANCEL_OPTION);
-                            
+
                             if(answer == JOptionPane.YES_OPTION){
                                 proceed = true;
                                 config.setFile(file);
@@ -352,13 +428,14 @@ public class ConfigWindowController implements ActionListener {
                     } else {
                         proceed = false;
                         this.handleNextAction();
-                    } 
+                    }
                 } while(answer == JOptionPane.NO_OPTION);
-                
+
                 if(proceed){
                     this.handleSetStatus("Saving configuration to: " + config.getFile().getAbsolutePath() + "...", true);
-                    
+
                     Runnable worker = new Runnable(){
+                        @Override
                         public void run(){
                             try {
                                 config.store(true);
@@ -381,48 +458,58 @@ public class ConfigWindowController implements ActionListener {
             }
         }
     }
-    
+
     private void handleHelp(){
         if(helpView != null){
             helpView.toFront();
         } else {
             view.setStatus("Opening help for configuration...", true, true);
             this.handleSetEnabled(false);
-            
+
             Runnable worker = new Runnable(){
+                @Override
                 public void run(){
                     MetaConfiguration metaConfig = MetaConfiguration.getInstance();
-                    helpView = new HelpWindow(metaConfig);
-                    helpView.setLocationRelativeTo(view);
-                    view.setStatus("Help pane openened.", false, false);
-                    handleSetEnabled(true);
-                    helpView.addWindowListener(new WindowAdapter(){
-                        public void windowClosed(WindowEvent e) {
-                            helpView = null;
-                        }
-                    });
-                    helpView.setVisible(true);
-                    helpView.toFront();
+                    if (metaConfig != null) {
+                        helpView = new HelpWindow(metaConfig);
+                        helpView.setLocationRelativeTo(view);
+                        view.setStatus("Help pane openened.", false, false);
+                        handleSetEnabled(true);
+                        helpView.addWindowListener(new WindowAdapter(){
+                            @Override
+                            public void windowClosed(WindowEvent e) {
+                                helpView = null;
+                            }
+                        });
+                        helpView.setVisible(true);
+                        helpView.toFront();
+                    } else {
+                        view.setStatus("Failed to open the configuration help", true, false);
+                    }
                 }
             };
             SwingUtilities.invokeLater(worker);
         }
     }
-    
+
     private void handleNew(){
         view.setStatus("Creating new configuration...", true, true);
         this.handleSetEnabled(false);
-        
+
         Runnable worker = new Runnable(){
+            @Override
             public void run(){
                 view.setDataConfiguration(null);
                 newInProgress = false;
+                if (ConfigModeIntializer.CONFIGURATOR_MODE == ConfigModeIntializer.COMMUNITY_MODE_FILE_OPEN) {
+                    ConfigModeIntializer.setMode(ConfigModeIntializer.COMMUNITY_MODE);
+                }
                 try {
                     DataConfiguration config = new DataConfiguration();
                     view.setDataConfiguration(config);
                     view.setStatus("New configuration created.", false, false);
                 } catch (DataException e) {
-                    
+
                     view.setStatus("Error: Could not create new configuration.", false, false);
                 }
                 handleSetEnabled(true);
@@ -430,13 +517,14 @@ public class ConfigWindowController implements ActionListener {
         };
         SwingUtilities.invokeLater(worker);
     }
-    
+
     private void handleClose(){
         view.setStatus("Closing configuration...", true, true);
         this.handleSetEnabled(false);
-        
+
         Runnable worker = new Runnable(){
-            public void run(){                
+            @Override
+            public void run(){
                 view.setDataConfiguration(null);
                 closeInProgress = false;
                 view.setStatus("Configuration closed.", false);
@@ -445,7 +533,7 @@ public class ConfigWindowController implements ActionListener {
         };
         SwingUtilities.invokeLater(worker);
     }
-    
+
     private void handleNextAction(){
         if(closeInProgress){
             handleClose();
@@ -460,17 +548,17 @@ public class ConfigWindowController implements ActionListener {
             handleSetEnabled(true);
         }
     }
-    
+
     private void handleCancel(){
         view.setStatus("Action cancelled.", false);
         this.handleSetEnabled(true);
     }
-    
+
     private void handleCancel(String message){
         view.setStatus(message, false);
         this.handleSetEnabled(true);
     }
-    
+
     private void handleSetEnabled(boolean enabled){
         if(enabled){
             this.view.enableView();
@@ -479,38 +567,40 @@ public class ConfigWindowController implements ActionListener {
         }
         this.view.setActionsEnabled(enabled);
     }
-    
-    private void handleSetStatus(String message, boolean persistent, boolean busy){        
+
+    private void handleSetStatus(String message, boolean persistent, boolean busy){
         this.view.setStatus(message, persistent, busy);
 
     }
-    
+
     private void handleSetStatus(String message, boolean persistent){
         this.view.setStatus(message, persistent, false);
     }
-    
+
     private void printStackTrace(Exception exception){
         StackTraceElement[] elements = exception.getStackTrace();
-        String error = "The following exception occurred: \n";
-        
+        StringBuffer buf = new StringBuffer();
+        buf.append("The following exception occurred: \n");
+
         for(int i=0; i<elements.length; i++){
-            error += elements[i].getFileName() + ", " +
-                     elements[i].getMethodName() + ", " + 
-                     elements[i].getLineNumber() + "\n"; 
+            buf.append(elements[i].getFileName() + ", " +
+                    elements[i].getMethodName() + ", " +
+                    elements[i].getLineNumber() + "\n");
         }
-        logger.log(Level.SEVERE, error);
-        System.err.println(error);
+        String error = buf.toString();
+        Report.getInstance().writeErrorLog(error);
     }
-    
-    private class ConfigChooseFilter extends FileFilter{
-        private String description = null;
+
+    private static class ConfigChooseFilter extends FileFilter{
+        private static String description = null;
         public static final String CONFIG_SUFFIX = ".xml";
-        
+
         public ConfigChooseFilter(){
-            this.description = "OpenSplice config files (*" + 
+            ConfigChooseFilter.description = "OpenSplice config files (*" +
                                 ConfigChooseFilter.CONFIG_SUFFIX + ")";
         }
 
+        @Override
         public boolean accept(File f) {
             if (f.isDirectory()) {
                 return true;
@@ -522,9 +612,10 @@ public class ConfigWindowController implements ActionListener {
             return false;
         }
 
+        @Override
         public String getDescription() {
-            return this.description;
-            
+            return ConfigChooseFilter.description;
+
         }
     }
 }

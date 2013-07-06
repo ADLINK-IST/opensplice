@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -42,6 +42,7 @@ public class MetaUnionCase extends MetaField{
         return caseField;
     }
     
+    @Override
     public MetaField getField(String fieldName){
         if(fieldName.equals(caseField.getName())){
             return caseField; 
@@ -49,22 +50,25 @@ public class MetaUnionCase extends MetaField{
         return null;
     }
     
+    @Override
     public MetaField[] getFields(){
        MetaField[] result = {caseField};
        
        return result;
     }
     
+    @Override
     public String toString(){
-        String s = super.toString();
-        s += caseField.toString();
-        
-        for(int i=0; i<labels.size(); i++){
-            s+= "\nLabel: " + labels.get(i);
+        StringBuffer buf = new StringBuffer();
+        buf.append(super.toString());
+        buf.append(caseField.toString());
+        for (int i = 0; i < labels.size(); i++) {
+            buf.append("\nLabel: " + labels.get(i));
         }
-        return s;
+        return buf.toString();
     }
     
+    @Override
     public ArrayList getFieldNames(){
         ArrayList result = new ArrayList();
         ArrayList names;
@@ -108,10 +112,10 @@ public class MetaUnionCase extends MetaField{
     /**
      * The case field.
      */
-    private MetaField caseField;
+    private final MetaField caseField;
     
     /**
      * List of all labels, that are associated with the case field.
      */
-    private ArrayList labels;
+    private final ArrayList labels;
 }

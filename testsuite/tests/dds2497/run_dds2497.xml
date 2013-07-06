@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "stax.dtd">
+<stax>
+    <defaultcall function="dds2497_main">
+    </defaultcall>
+    
+    <function name="dds2497_main" scope="local" >
+        <function-list-args>
+        
+            <function-required-arg name="host1_name">
+                The name for the first host you wish test on in double quotes, use the following format: "name"
+            </function-required-arg>
+            <function-required-arg name="host2_name">
+                The name for the second host you wish test on in double quotes, use the following format: "name"
+            </function-required-arg>
+            
+            <function-required-arg name="application_exec_dir_on_host1">
+                App exec dir host 1 
+                C:\cygwin\home\user\ospli\testsuite\tests\dds2497\app\exec\x86.win32-release\
+            </function-required-arg>
+            <function-required-arg name="application_exec_dir_on_host2">
+                app exec dir host 2
+            </function-required-arg>
+            
+            <function-required-arg name="host1_ospl_home">
+                OSPL home of an installed version of OpenSplice on host1
+            </function-required-arg>
+            <function-required-arg name="host2_ospl_home">
+                OSPL home of an installed version of OpenSplice on host2
+            </function-required-arg>
+            
+            <function-optional-arg name="test_framework_root" default="'../common'">
+                Absolute path of stax framework root on the local host in double quotes and double backslash.
+                By default it this_xml_folder/../common.
+                Use the format "/home/username/ospli/testsuite/tests/common")
+            </function-optional-arg>
+            <function-optional-arg name="log_dir" default="'.'">
+                Location of log dir on local host
+            </function-optional-arg>            
+        </function-list-args>
+        <sequence>
+            <script>
+                import os
+                if test_framework_root == '../common':
+                    host_manager_file = os.path.join(os.path.dirname(STAXCurrentXMLFile), test_framework_root, "HostManager.xml")
+                else:
+                    host_manager_file = os.path.join(test_framework_root, "HostManager.xml")
+            </script>
+            <import file="host_manager_file"/>
+            <call function="'Initialize'" />
+            <script>
+                time_stamp = time.strftime("%d-%m-%Y-%H-%M-%S", time.localtime())
+                if log_dir ==".":
+                    log_dir = os.path.join(os.path.dirname(STAXCurrentXMLFile), "dds2497_log", time_stamp) 
+                else:
+                    log_dir = os.path.join(log_dir, "dds2497_log", time_stamp)
+                    
+                if not os.path.exists(log_dir): os.makedirs(log_dir)
+                test_scenario = BaseTestScenario("dds2497", 
+                                                 "Sequence or array element corrupted over the network", 
+                                                 log_dir, 
+                                                 os.path.join(log_dir, "result.txt"))
+                test_scenario.set_log_root(log_dir)
+            </script>
+            
+            <testcase name="'testcase_dds2497'">
+                <try>
+                    <sequence>
+                        <call function="'CreateLocalhost'"/>
+                        <script>localhost = STAXResult</script>                    
+                        <call function="'RequestHost'">{'hostname': host1_name}</call>
+                        <script>
+                            host1 = STAXResult
+                            test_scenario.add_host(host1)
+                        </script>
+                        <call function="'RequestHost'">{'hostname': host2_name, 'reused_host': 1}</call>
+                        <script>
+                            host2 = STAXResult
+                            test_scenario.add_host(host2)                            
+                        </script>
+                        <script>
+                            host1.set_ospl_home(host1_ospl_home)
+                            host2.set_ospl_home(host2_ospl_home)
+                        </script>
+                        <call function="'DeployHost'">{'host': host1}</call>
+                        <call function="'DeployHost'">{'host': host2}</call>
+                        <script>
+                            test_scenario.set_test_scenario_initialized(1)
+                            host1.set_scenario('dds2497_scenario')
+                            host2.set_scenario('dds2497_scenario')
+                            ospl_config1 = host1.pathjoin(application_exec_dir_on_host1, '..', '..', '..', 'ospl2497.xml')
+                            ospl_config2 = host2.pathjoin(application_exec_dir_on_host2, '..', '..', '..', 'ospl2497.xml')
+                            host1.set_env("OSPL_URI", "file://" + ospl_config1)
+                            host2.set_env("OSPL_URI", "file://" + ospl_config2)
+                            host1.set_logdir(host1.pathjoin(application_exec_dir_on_host1, "log"))
+                            host2.set_logdir(host2.pathjoin(application_exec_dir_on_host2, "log"))
+                            sub_proc = Process(command = host1.pathjoin(application_exec_dir_on_host1, 'dds2497_sub'), 
+                                               log_file = host1.pathjoin(host1.get_logdir(), "subscriber.log"))
+                            test_scenario.set_host_app_log_file(host1, "subscriber.log")
+                            pub_proc = Process(command = host2.pathjoin(application_exec_dir_on_host2, 'dds2497_pub'), 
+                                               log_file = host2.pathjoin(host2.get_logdir(), "publisher.log"))
+                            test_scenario.set_host_app_log_file(host2, "publisher.log")
+                        </script>
+                        <paralleliterate in="[host1, host2]" var="host">
+                            <sequence>
+                                <call function="'CreateDirectory'">[host, host.get_logdir()]</call>
+                                <call function="'StartOpenSplice'">[host, host.get_env("OSPL_URI"), 0]</call>
+                            </sequence>
+                        </paralleliterate>
+                        
+                        <call function="'SpawnProcess'">[host1, sub_proc]</call> 
+                        <script>time.sleep(10)</script>
+                        <call function="'RunProcess'">[host2, pub_proc, '140s']</call>
+                        <script>
+                            time.sleep(10)
+                            if STAXResult['timed_out']:
+                                test_scenario.fail()
+                                test_scenario.errors.append("Puplisher process was timed out")
+                            elif STAXResult['RC'] != 0:
+                                test_scenario.fail()
+                                test_scenario.errors.append("Puplisher process was failed with RC: %s" %(STAXResult['RC']))
+                        </script>
+                        <script>time.sleep(30)</script>
+                        <call function="'TerminateProcess'">[host1, sub_proc]</call>
+                        <script>
+                            if STAXResult['terminated']:
+                                test_scenario.fail()
+                                test_scenario.errors.append("Subscriber process was terminated")
+                            elif str(STAXResult['RC']) != '0':
+                                test_scenario.fail()
+                                test_scenario.errors.append("Subscriber process was failed with RC: %s" %((STAXResult['RC'])))
+                        </script>
+                        <paralleliterate in="[host1, host2]" var="host">
+                            <sequence>
+                                <call function="'StopOpenSplice'">host</call>
+
+                                <call function="'CopyPathFromTo'">
+                                    {'src_host': host,
+                                     'src_path': host.get_logdir(),
+                                     'dest_host': localhost,
+                                     'dest_path': os.path.join(log_dir, host.get_hostname()),
+                                     'overwrite': 1,
+                                     'remove': 1}
+                                </call>
+                            </sequence>
+                        </paralleliterate>
+                        <script>
+                            test_scenario.check_results()
+                            test_scenario.analyze()
+                        </script>
+                        <message>"Test is completed        " </message>
+                        <message>"Job log is saved to %s" % log_dir </message>
+                        
+                    </sequence> 
+                    <finally>             
+                        <paralleliterate in="test_scenario.get_all_hosts()" var="host">                    
+                            <sequence>
+                                <call function="'StopOpenSplice'">host</call>
+                                <call function="'ReleaseHost'">host</call>
+                            </sequence>
+                        </paralleliterate>
+                    </finally>                
+                </try>
+            </testcase>    
+        </sequence>
+    </function>
+</stax>

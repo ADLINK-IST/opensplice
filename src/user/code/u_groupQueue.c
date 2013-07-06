@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -29,7 +29,8 @@ u_groupQueueNew(
     u_subscriber s,
     const c_char *name,
     c_ulong queueSize,
-    v_readerQos qos)
+    v_readerQos qos,
+    c_iter expr)
 {
     u_participant p;
     u_groupQueue _this = NULL;
@@ -42,7 +43,7 @@ u_groupQueueNew(
             result = u_entityWriteClaim(u_entity(s),(v_entity*)(&ks));
             if (result == U_RESULT_OK) {
                 assert(ks);
-                kn = v_groupQueueNew(ks,name,queueSize,qos);
+                kn = v_groupQueueNew(ks,name,queueSize,qos, expr);
                 if (kn != NULL) {
                     p = u_entityParticipant(u_entity(s));
                     _this = u_entityAlloc(p,u_groupQueue,kn,TRUE);

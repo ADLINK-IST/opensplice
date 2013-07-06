@@ -1,0 +1,421 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "stax.dtd">
+
+<!--
+    run_soak_test.xml - Run the SOAK test using STAX
+
+    Job Description:
+    This job runs the TouchStones as SOAK test using STAX.
+    OSPL will be started on the master and slave hosts.
+    TouchStones will be started on each hosts.
+    Two recorders with different scenario will be started.
+    A watcher and mmstat will be started on each hosts.
+-->
+
+<stax>
+    <!-- Define default function to execute -->
+    <defaultcall function="soak_main"/>
+
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <!-- Function runs the DDS SOAK -->
+    <function name="soak_main" scope="local">
+
+        <!-- Function description -->
+        <function-prolog>
+            Test runs OSPL on two nodes.
+            DDS Touchstones using corresponding scenarios are then run between them.
+        </function-prolog>
+
+        <!-- Function dependencies -->
+        <function-import file="../stax/test_ospl.xml"/>
+
+        <function-list-args>
+            <function-required-arg name="test_duration">
+                How long the test will pass in seconds.
+            </function-required-arg>
+
+            <function-required-arg name="master_host_name">
+                The name for the "master" host (i.e. 'my_computer1').
+            </function-required-arg>
+            <function-required-arg name="slave_host_name">
+                The name for the "slave" host (i.e. 'my_computer2').
+            </function-required-arg>
+
+            <function-required-arg name="master_ospl_home">
+                The OSPL location on the master host.
+            </function-required-arg>
+            <function-required-arg name="slave_ospl_home">
+                The OSPL location on the slave host.
+            </function-required-arg>
+
+            <function-required-arg name="master_log_dir">
+                The location where the logs will be stored on the master host.
+            </function-required-arg>
+            <function-required-arg name="slave_log_dir">
+                The location where the logs will be stored on the slave host.
+            </function-required-arg>
+
+            <function-required-arg name="master_ts_bin">
+                The location of the DDS TouchStones binaries on the master host.
+            </function-required-arg>
+            <function-required-arg name="slave_ts_bin">
+                The location of the DDS TouchStones binaries on the slave host.
+            </function-required-arg>
+
+            <function-required-arg name="master_ts_lang">
+                The language of the DDS TouchStones on the master host ('C', 'C++', 'Java').
+            </function-required-arg>
+            <function-required-arg name="slave_ts_lang">
+                The language of the DDS TouchStones on the slave host ('C', 'C++', 'Java').
+            </function-required-arg>
+
+            <function-required-arg name="master_ts_group_id">
+                The group id of the DDS TouchStones on the master host.
+            </function-required-arg>
+            <function-required-arg name="slave_ts_group_id">
+                The group id of the DDS TouchStones on the slave host.
+            </function-required-arg>
+
+            <function-required-arg name="master_result_dir">
+                The location where all logs from both hosts and results will be stored on the master host.
+            </function-required-arg>
+            
+            <function-required-arg name="master_ospl_config">
+                The location of the OSPL config on the master host which will be used for testing on both hosts.
+            </function-required-arg>
+            
+            <function-required-arg name="master_latency_recorder_script">
+                The DDS TouchStone recorder script on the master host which will be used for testing.
+            </function-required-arg>
+            <function-required-arg name="master_throughput_recorder_script">
+                The DDS TouchStone recorder script on the master host which will be used for testing.
+            </function-required-arg>
+
+            <function-optional-arg name="master_ts_start_app_id" default="1">
+                The start application id of the DDS TouchStones on the master host.
+            </function-optional-arg>
+            <function-optional-arg name="slave_ts_start_app_id" default="1">
+                The start application id of the DDS TouchStones on the master host.
+            </function-optional-arg>
+            
+            <function-optional-arg name="master_staf_port" default="'6500'">
+                The STAF port number on the master host you wish test on in double quotes, use the following format: "port"
+            </function-optional-arg>
+            <function-optional-arg name="slave_staf_port" default="'6500'">
+                The STAF port number on the the slave host you wish to test on in double quotes, use the following format: "port"
+            </function-optional-arg>
+        </function-list-args>
+
+        <!-- Function body begin -->
+        <sequence>
+            <try>
+                <sequence>
+                    <call function="'Initialise'"/>
+                    <script>
+                        from time import *
+
+                        # Create test case:
+                        test_scenario = BaseTestScenario("SOAK",
+                                                         "SOAK [%s(%s) VS %s(%s)]"%\
+                                                         (master_host_name, master_ts_lang,
+                                                          slave_host_name,  slave_ts_lang),
+                                                          master_result_dir)
+
+                        # Define "master" host:
+                        master_host = test_scenario.define_host(ospl_home = master_ospl_home,
+                                                                test_root = master_log_dir,
+                                                                host_name = master_host_name,
+                                                                staf_port = master_staf_port)
+                        # Define "slave" host:
+                        slave_host  = test_scenario.define_host(ospl_home = slave_ospl_home,
+                                                                test_root = slave_log_dir,
+                                                                host_name = slave_host_name,
+                                                                staf_port = slave_staf_port)
+                                                                
+                        # Set test case result log file:
+                        this_xml_dir = STAXCurrentXMLFile[:STAXCurrentXMLFile.rfind(os.sep)]
+                        master_host.set_log_dir(this_xml_dir)
+                        test_scenario.set_result_file(master_host.get_log_dir() + master_host.get_file_sep() + test_scenario.get_name() + "_result.log")
+                    </script>
+
+                    <!-- For all defined hosts -->
+                    <iterate var="host" in="test_scenario.get_all_hosts()">
+                        <!-- Init the host -->
+                        <call function="'InitHost'">host</call>
+                    </iterate>
+                </sequence>
+                
+                 <catch exception="'...'" typevar="type" var="info">
+                    <sequence>
+                        <script>
+                            test_scenario.fail()
+                            test_scenario.errors.append("Initializing process error: %s (%s)!"% (type, info))
+                        </script>
+                    </sequence>
+                </catch>
+            </try> 
+            
+            <if expr="test_scenario.is_test_scenario_initialized() == 1">
+                <sequence>    
+
+                    <script>
+                        # "master" host file separator alias:
+                        mfs = master_host.get_file_sep()
+                        # "slave" host file separator alias:
+                        sfs = slave_host.get_file_sep()
+
+                        # DDS Touchstone java instance:
+                        ts_jar = "touchstone.jar"
+
+                        # Used to create test log dir:
+                        test_type = "SOAK"
+
+                        # Map for the language:
+                        ts_lang = {"C"    : "c",
+                                   "C++"  : "cpp",
+                                   "Java" : "java"}
+
+                        # Map for the language executables:
+                        master_ts_exec = {"C"    : master_ts_bin + mfs + "touchstone_c",
+                                          "C++"  : master_ts_bin + mfs + "touchstone_cpp",
+                                          "Java" : "java"}
+                        slave_ts_exec = {"C"    : slave_ts_bin + sfs + "touchstone_c",
+                                         "C++"  : slave_ts_bin + sfs + "touchstone_cpp",
+                                         "Java" : "java"}
+
+                        # Map for the language executables additional arguments:
+                        ts_exec_args = {"C"    : "",
+                                        "C++"  : "",
+                                        "Java" : "touchstone.Main"}
+
+                        time_stamp = strftime("%d-%m-%Y-%H-%M-%S", localtime())
+
+                        # Set log sub-directories for the hosts:
+                        master_log_subdir = test_type + mfs +\
+                                            time_stamp + mfs +\
+                                            master_host.get_host_name() + "_" + slave_host.get_host_name()
+                        slave_log_subdir = test_type + sfs +\
+                                           time_stamp + sfs +\
+                                           slave_host.get_host_name() + "_" + master_host.get_host_name()
+                        slave_log_subdir_for_master_host = test_type + mfs +\
+                                           time_stamp + mfs +\
+                                           slave_host.get_host_name() + "_" + master_host.get_host_name()
+                    </script>
+
+                    <!-- Copy OSPL config to the "slave" host from the "master" -->
+                    <call function="'CopyFileFromTo'">[master_host, slave_host, master_ospl_config, slave_host.get_ospl_home()]</call>
+                    <script>slave_ospl_config = STAXResult</script>
+
+                    <script>
+                        # Set result log file for the test scenario:
+                        test_scenario.set_result_file(master_result_dir + mfs + test_type + mfs + time_stamp + mfs + "result.log")
+
+                        # Set log directory for the hosts:
+                        master_host.set_log_dir(master_host.get_test_root() + mfs + master_log_subdir)
+                        slave_host.set_log_dir(slave_host.get_test_root() + sfs + slave_log_subdir)
+
+                        # Set log directory for the ospl daemon on the hosts:
+                        master_host.set_ospl_log_dir(master_host.get_log_dir())
+                        slave_host.set_ospl_log_dir(slave_host.get_log_dir())
+
+                        # Set OSPL URI for the hosts:
+                        master_host.set_ospl_uri("file://" + master_ospl_config)
+                        slave_host.set_ospl_uri("file://"  + slave_ospl_config)
+
+                        master_host.set_env_value("OSPL_URI", master_host.get_ospl_uri())
+                        slave_host.set_env_value("OSPL_URI", slave_host.get_ospl_uri())
+
+                        # Add DDS ToucStone java instance to the hosts CLASSPATH:
+                        master_ts_jar = master_ts_bin + mfs + ts_jar
+                        old_classpath = master_host.get_env_value("CLASSPATH")
+                        new_classpath = master_ts_jar + master_host.get_path_sep() + old_classpath
+                        master_host.set_env_value("CLASSPATH", new_classpath)
+
+                        slave_ts_jar  = slave_ts_bin + sfs + ts_jar
+                        old_classpath = slave_host.get_env_value("CLASSPATH")
+                        new_classpath = slave_ts_jar + slave_host.get_path_sep() + old_classpath
+                        slave_host.set_env_value("CLASSPATH", new_classpath)
+
+                        # Define "watcher" process for the hosts:
+                        master_watcher = STAXGlobal(master_host.define_process(command  = master_ts_bin + mfs + "watcher",
+                                                                               log_file = master_host.get_log_dir() + mfs + "watcher.log"))
+                        slave_watcher =  STAXGlobal(slave_host.define_process(command  = slave_ts_bin + sfs + "watcher",
+                                                                              log_file = slave_host.get_log_dir() + sfs + "watcher.log"))
+
+                        # Define "touchstone" process for the hosts:
+                        ts_args  = "%d %d"% (master_ts_start_app_id, master_ts_group_id)
+                        if ts_exec_args[master_ts_lang] != "":
+                            ts_args = ts_exec_args[master_ts_lang] + " " + ts_args
+                        
+                        ts_log = master_host.get_log_dir() + mfs + ("touchstone_%s_%d_%d.log"% (master_ts_lang, master_ts_start_app_id, master_ts_group_id))
+                        master_ts = STAXGlobal(master_host.define_process(
+                                                command  = master_ts_exec[master_ts_lang],
+                                                args     = ts_args,
+                                                log_file = ts_log))
+                                                
+                        ts_args  = "%d %d"% (slave_ts_start_app_id, slave_ts_group_id)
+                        if ts_exec_args[slave_ts_lang] != "":
+                            ts_args = ts_exec_args[slave_ts_lang] + " " + ts_args
+                            
+                        ts_log = slave_host.get_log_dir() + sfs + ("touchstone_%s_%d_%d.log"% (slave_ts_lang, slave_ts_start_app_id, slave_ts_group_id))
+                        slave_ts =  STAXGlobal(slave_host.define_process(
+                                                command  = slave_ts_exec[slave_ts_lang],
+                                                args     = ts_args,
+                                                log_file = ts_log))
+                        
+                        # Define "recorders" processes for the master host only:
+                        master_latency_recorder = master_host.define_process(command  = master_ts_bin + mfs + "recorder",
+                                                                     args = "--autoplay -v 99 " + master_latency_recorder_script,
+                                                                     log_file = master_host.get_log_dir() + mfs + "recorder_latency.log")
+                        master_throughput_recorder = master_host.define_process(command  = master_ts_bin + mfs + "recorder",
+                                                                     args = "--autoplay -v 99 " + master_throughput_recorder_script,
+                                                                     log_file = master_host.get_log_dir() + mfs + "recorder_throughput.log")
+
+                        # Define "mmstat" processes for the hosts:
+                        master_mmstat = master_host.define_process(command  = "mmstat",
+                                                                     args = "-i 9000",
+                                                                     log_file = master_host.get_log_dir() + mfs + "mmstat.log")
+                        slave_mmstat = slave_host.define_process(command  = "mmstat",
+                                                                     args = "-i 9000",
+                                                                     log_file = slave_host.get_log_dir() + sfs + "mmstat.log")
+
+                        print test_scenario
+
+                        # Get starting test time:
+                        start_time = time()
+                    </script>
+
+                    <!-- For all defined hosts -->
+                    <iterate var="host" in="test_scenario.get_all_hosts()">
+                        <!-- Create log directory on the host -->
+                        <call function="'CreateLogDirOnHost'">host</call>
+                    </iterate>
+
+                    <!-- Start testing -->
+                    <testcase name = "test_scenario.get_name()">
+                        <sequence>
+                            <try>
+                                <sequence>
+                                    <!-- For all hosts start OSPL daemon in parellel -->
+                                    <iterate var="host" in="test_scenario.get_all_hosts()">
+                                        <call function="'StartOSPL'">host</call>
+                                    </iterate>
+
+                                    <!-- Wait 5 sec to allow OSPL daemon start -->
+                                    <script>sleep(5)</script>
+
+                                    <!-- Start "touchstones" on the hosts -->
+                                    <parallel>
+                                        <!-- Master -->
+                                            <call function="'SpawnProcess'">[master_host, master_ts]</call>
+                                        <!-- Slave -->
+                                            <call function="'SpawnProcess'">[slave_host, slave_ts]</call>
+                                    </parallel>
+                                    
+                                    <!-- Wait 7 sec to allow touchstone start -->
+                                    <script>sleep(7)</script>
+
+                                    <!-- Start "watcher" on the hosts -->
+                                    <parallel>
+                                        <call function="'SpawnProcess'">[master_host, master_watcher]</call>
+                                        <call function="'SpawnProcess'">[slave_host,  slave_watcher]</call>
+                                    </parallel>
+
+                                    <!-- Wait 7 sec to allow watcher start -->
+                                    <script>sleep(7)</script>
+
+                                    <!-- Start "mmstat" on the hosts -->
+                                    <call function="'SpawnProcess'">[master_host, master_mmstat]</call>
+                                    <call function="'SpawnProcess'">[slave_host, slave_mmstat]</call>
+                                    
+                                    <!-- Wait 7 sec to allow mmstat start -->
+                                    <script>sleep(7)</script>
+
+                                    <!-- Start "recorders" on the "master" host -->
+                                    <call function="'SpawnProcess'">[master_host, master_latency_recorder]</call>
+                                    <call function="'SpawnProcess'">[master_host, master_throughput_recorder]</call>
+                                    
+                                    <!-- Wait to allow DDS TouchStone framework work -->
+                                    <message>"Performing tests [%d] seconds..."% test_duration</message>
+                                    <script>sleep(test_duration)</script>
+                                    <message>"Done."</message>
+
+                                    <!-- Stop "watcher" on the hosts -->
+                                    <parallel>
+                                        <call function="'TerminateProcess'">[master_host, master_watcher]</call>
+                                        <call function="'TerminateProcess'">[slave_host,  slave_watcher]</call>
+                                    </parallel>
+
+                                    <!-- Stop "recorders" on the "master" host -->
+                                    <call function="'TerminateProcess'">[master_host, master_latency_recorder]</call>
+                                    <call function="'TerminateProcess'">[master_host, master_throughput_recorder]</call>
+
+                                    <!-- Stop "touchstones" on the hosts -->
+                                    <parallel>
+                                        <!-- Master -->
+                                        <call function="'TerminateProcess'">[master_host, master_ts]</call>
+                                        <!-- Slave -->
+                                        <call function="'TerminateProcess'">[slave_host, slave_ts]</call>
+                                    </parallel>
+                                    
+                                    <!-- Stop "mmstat" on the hosts -->
+                                    <parallel>
+                                        <call function="'TerminateProcess'">[master_host, master_mmstat]</call>
+                                        <call function="'TerminateProcess'">[slave_host, slave_mmstat]</call>
+                                    </parallel>
+                                    
+                                    <!-- Wait 20 sec to allow mmstat stop -->
+                                    <script>sleep(20)</script>
+
+                                </sequence>
+                                <!-- At the end -->
+                                <finally>
+                                    <sequence>
+                                        <!-- For all hosts stop OSPL daemon in parellel -->
+                                        <paralleliterate var="host" in="test_scenario.get_all_hosts()">
+                                            <call function="'StopOSPL'">host</call>
+                                        </paralleliterate>
+                                    
+                                        <!-- Get logs from the hosts -->
+                                        <parallel>
+                                            <call function="'CopyDirFromTo'">[master_host,
+                                                                          master_host,
+                                                                          master_host.get_log_dir(),
+                                                                          test_scenario.get_log_root() + mfs + master_log_subdir]</call>
+                                            <call function="'CopyDirFromTo'">[slave_host,
+                                                                          master_host,
+                                                                          slave_host.get_log_dir(),
+                                                                          test_scenario.get_log_root() + mfs + slave_log_subdir_for_master_host]</call>
+                                        </parallel>
+                                    </sequence>
+                                </finally>
+                            </try>
+                        </sequence>
+                    </testcase>
+
+                    <!-- Delete OSPL config from the "slave" host -->
+                    <call function="'DeleteFileFrom'">[slave_host, slave_host.get_ospl_uri().replace("file://", "")]</call>
+
+                    <script>
+                        # Get stopping test time:
+                        stop_time    = time()
+                        # Calc the difference:
+                        elapsed_secs = stop_time - start_time
+                    </script>
+
+                    <message>'Test complete - ran for [%d] seconds.'% elapsed_secs</message>
+                </sequence>
+            <else>
+                <script>
+                    test_scenario.analyze()
+                </script>
+            </else>
+            </if>
+        </sequence>    
+
+        <!-- Function body end -->
+
+    </function>
+    <!-- function: touchstone_main -->
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+</stax>

@@ -75,12 +75,12 @@ extern "C" {
 
 int driver_main(int argc, char **argv);
 
-int DRV_drive(char *); /* Compiler driver for single file */
+int DRV_drive(const char *); /* Compiler driver for single file */
 char * DRV_param_copy(long, char **);
 void DRV_init();
 void DRV_parse_args(int, char **);
 void DRV_usage();
-void DRV_pre_proc(char *myfile);
+void DRV_pre_proc(const char *myfile);
 void DRV_cpp_init();
 void DRV_cpp_putarg(const char *arg);
 void DRV_cpp_new_location(char *new_loc);

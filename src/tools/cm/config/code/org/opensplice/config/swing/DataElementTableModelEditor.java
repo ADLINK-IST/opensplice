@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -39,8 +39,8 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
     private static final long serialVersionUID = 805706250918260825L;
     private Object curValue = null;
     private StatusPanel status;
-    private Color editColor = Config.getInputColor();
-    private Color errorColor = Config.getIncorrectColor();
+    private final Color editColor = Config.getInputColor();
+    private final Color errorColor = Config.getIncorrectColor();
     private int editRow, editColumn;
     private Component curEditor = null;
     private DataElementTableModel tableModel = null;
@@ -55,6 +55,7 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         this.status = status;
     }
     
+    @Override
     public void cancelCellEditing(){
         super.cancelCellEditing();
         curEditor = null;
@@ -64,6 +65,7 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         }
     }
     
+    @Override
     public boolean stopCellEditing(){
         boolean result = true;
         
@@ -80,6 +82,7 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         return result;
     }
     
+    @Override
     public Object getCellEditorValue() {
         return curValue;
     }
@@ -89,6 +92,7 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         return (curEditor != null);
     }
     
+    @Override
     public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
         Component result = null;
         
@@ -96,7 +100,9 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         editColumn = column;
         curValue   = value;
         editNode   = (DataValue)tableModel.getNodeAt(editRow);
-        editType   = (MetaValue)editNode.getMetadata();
+        if (editNode != null) {
+            editType   = (MetaValue)editNode.getMetadata();
+        }
             
         if(editType instanceof MetaValueBoolean){
             Object[] values = {"true", "false"};
@@ -121,12 +127,14 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         return result;
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
         if(e.getSource().equals(curEditor)){
             this.assign();
          }
     }
 
+    @Override
     public void keyReleased(KeyEvent e) {
         if(curEditor != null){
             if(e.getSource() instanceof JTextField){
@@ -151,8 +159,10 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
         }     
     }
     
+    @Override
     public void keyTyped(KeyEvent e) {}
 
+    @Override
     public void keyPressed(KeyEvent e) {}
     
     public AssignmentResult testAssignment(){
@@ -164,7 +174,7 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
                 if((editType instanceof MetaValueNatural) || (editType instanceof MetaValueString)) {
                     JTextField source = (JTextField)curEditor;
                     value = source.getText();
-                    ((DataValue)editNode).testSetValue(value);
+                    editNode.testSetValue(value);
                 } else {
                     // No validation required.
                 }
@@ -193,6 +203,7 @@ public class DataElementTableModelEditor extends AbstractCellEditor implements T
                 if(!editNode.getValue().equals(value)){
                     assert editNode.getOwner() != null: "Owner == null (" + editNode.getMetadata() + ")";
                     editNode.getOwner().setValue(editNode, value);
+
                 }
             } catch (DataException e) {
                 assert false: "this.testAssignment does not work properly";

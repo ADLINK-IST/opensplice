@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -49,6 +49,7 @@
 #include "c_misc.h"
 #include "c_typebase.h"
 #include "c_metabase.h"
+#include "c_mmbase.h"
 #include "os_if.h"
 
 #ifdef OSPL_BUILD_DB
@@ -108,6 +109,7 @@ OS_API c_base
 c_open (
     const c_char *name,
     void *addr);
+
 
 /**
  * \brief This operation will resolve a meta description of a type from
@@ -302,7 +304,7 @@ c_refCount (
  *         return the currently bound object or NULL.
  */
 OS_API c_object
-c_bind (
+ospl_c_bind (
     c_object object,
     const c_char *name);
 
@@ -378,10 +380,28 @@ c_stringNew (
 OS_API c_string
 c_stringMalloc(
     c_base base,
-    c_long length);
+    c_size length);
 
 /**
- * \brief 	This operation behaves the same as c_arrayNew, with the exeption that
+ * \brief This operation will create a new database wstring object of the
+ *        specified length.
+ *
+ * This operation will create a new database wstring of the specified length.
+ *
+ * \param _this The database in which the new wstring object must reside.
+ * \param length The wstring length that must be allocated.
+ *
+ * \return On a successful operation a reference to the created wstring object
+ *         is returned. Otherwise NULL is returned.
+ */
+c_wstring
+c_wstringMalloc(
+    c_base base,
+    c_size length);
+
+
+/**
+ * \brief 	This operation behaves the same as c_arrayNew, with the exception that
  * 			it will always return an object with valid header.
  *
  * This operation is provided by the database primarily to be able to serialize
@@ -397,22 +417,6 @@ OS_API c_array
 c_arrayNew_w_header(
     c_collectionType arrayType,
     c_long length);
-
-OS_API typedef void (*c_baseOutOfMemoryAction)(c_voidp arg);
-
-OS_API void
-c_baseOnOutOfMemory(
-    c_base base,
-    c_baseOutOfMemoryAction action,
-    c_voidp arg);
-
-OS_API typedef void (*c_baseLowOnMemoryAction)(c_voidp arg);
-
-OS_API void
-c_baseOnLowOnMemory(
-    c_base base,
-    c_baseLowOnMemoryAction action,
-    c_voidp arg);
 
 OS_API void
 c_destroy (
@@ -456,6 +460,8 @@ OS_API c_object c_baseCheckPtr (c_base _this, void *ptr);
 /* The following define enables the DAT tool functionality:
  * #define OBJECT_WALK
  */
+
+OS_API c_mm     c_baseMM      (c_base base);
 
 #ifndef NDEBUG
 #ifdef OBJECT_WALK

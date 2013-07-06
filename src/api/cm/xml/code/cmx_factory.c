@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -24,6 +24,8 @@
 #include "v_entity.h"
 #include "os.h"
 #include <string.h>
+#include "os_version.h"
+#include "os_gitrev.h"
 
 static c_iter       cmx_allocatedEntities   = NULL;
 static os_mutex     cmx_allocationMutex;
@@ -40,26 +42,26 @@ cmx_initialise()
     os_mutexAttr attr;
     const c_char* result;
     os_result osr = os_resultSuccess;
-    
+
     result = CMX_RESULT_FAILED;
 
     ur = u_userInitialise();
-        
+
     if(ur == U_RESULT_OK){
         if(osr == os_resultSuccess){
             osr = os_mutexAttrInit(&attr);
             attr.scopeAttr = OS_SCOPE_PRIVATE;
-            
+
             if(osr == os_resultSuccess){
                 osr = os_mutexInit(&cmx_allocationMutex, &attr);
-                
+
                 if(osr == os_resultSuccess){
                     cmx_allocatedEntities = c_iterNew(NULL);
                     osr = os_mutexInit(&cmx_readerSnapshotMutex, &attr);
-                    
+
                     if(osr == os_resultSuccess){
                         osr = os_mutexInit(&cmx_writerSnapshotMutex, &attr);
-                        
+
                         if(osr == os_resultSuccess){
                             result = CMX_RESULT_OK;
                             cmx_initialized = TRUE;
@@ -105,26 +107,26 @@ cmx_detach()
     const c_char* result;
     u_entity entity;
     os_result osr;
-    
+
     result = CMX_RESULT_FAILED;
-    
+
     if((cmx_initialized == TRUE) || (cmx_mustDetach == TRUE)){
         cmx_initialized = FALSE;
         cmx_mustDetach  = FALSE;
         cmx_snapshotFreeAll();
-        
+
         osr = os_mutexLock(&cmx_allocationMutex);
-            
+
         if(osr == os_resultSuccess){
             entity = u_entity(c_iterTakeFirst(cmx_allocatedEntities));
-            
+
             while(entity != NULL){
                 cmx_entityFreeUserEntity(entity);
                 entity = u_entity(c_iterTakeFirst(cmx_allocatedEntities));
             }
             c_iterFree(cmx_allocatedEntities);
             osr = os_mutexUnlock(&cmx_allocationMutex);
-            
+
             if(osr != os_resultSuccess){
                 OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                           "cmx_detach: mutexUnlock failed.");
@@ -132,18 +134,18 @@ cmx_detach()
         } else {
             OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                       "cmx_detach: mutexLock failed.");
-        }        
+        }
         ur = u_userDetach();
-        
+
         if(ur == U_RESULT_OK){
             osr = os_mutexDestroy(&cmx_allocationMutex);
-           
+
             if(osr == os_resultSuccess){
                 osr = os_mutexDestroy(&cmx_readerSnapshotMutex);
-                
+
                 if(osr == os_resultSuccess){
                     osr = os_mutexDestroy(&cmx_writerSnapshotMutex);
-                
+
                     if(osr == os_resultSuccess){
                         result = CMX_RESULT_OK;
                     } else {
@@ -170,7 +172,7 @@ cmx_resolveKind(
     const c_char* kind)
 {
     v_kind vk;
-    
+
     if(kind == NULL){
         vk = K_ENTITY;
     } else if(strcmp(kind, "ENTITY") == 0){
@@ -221,19 +223,19 @@ cmx_convertToXMLList(
 {
     c_char* result;
     c_char* temp;
-    
+
     result = (c_char*)(os_malloc(length + 14));
     memset(result, 0, length + 14);
     os_sprintf(result, "<list>");
     temp = (c_char*)(c_iterTakeFirst(xmlEntities));
-    
+
     while(temp != NULL){
        result = os_strcat(result, temp);
        os_free(temp);
        temp = (c_char*)(c_iterTakeFirst(xmlEntities));
     }
     c_iterFree(xmlEntities);
-    
+
     result = os_strcat(result, "</list>");
     return result;
 }
@@ -243,14 +245,14 @@ cmx_registerEntity(
     u_entity entity)
 {
     os_result osr;
-    
+
     if(entity != NULL){
         osr = os_mutexLock(&cmx_allocationMutex);
-        
+
         if(osr == os_resultSuccess){
             cmx_allocatedEntities = c_iterInsert(cmx_allocatedEntities, entity);
             osr = os_mutexUnlock(&cmx_allocationMutex);
-            
+
             if(osr != os_resultSuccess){
                 OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                           "cmx_registerEntity: mutexUnlock failed.");
@@ -269,18 +271,18 @@ cmx_deregisterEntity(
     u_entity ue;
     os_result osr;
     ue = NULL;
-    
+
     if(entity != NULL){
         osr = os_mutexLock(&cmx_allocationMutex);
-        
+
         if(osr == os_resultSuccess){
             ue = u_entity(c_iterTake(cmx_allocatedEntities, entity));
             osr = os_mutexUnlock(&cmx_allocationMutex);
-            
+
             if(osr != os_resultSuccess){
                 OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                           "cmx_deregisterEntity: mutexUnlock failed.");
-            } 
+            }
         } else {
             OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                       "cmx_deregisterEntity: mutexLock failed.");
@@ -294,21 +296,21 @@ cmx_deregisterAllEntities()
 {
     os_result osr;
     u_entity entity;
-    
+
     if(cmx_initialized == TRUE){
         osr = os_mutexLock(&cmx_allocationMutex);
-            
+
         if(osr == os_resultSuccess){
             entity = u_entity(c_iterTakeFirst(cmx_allocatedEntities));
-            
+
             while(entity != NULL){
                 cmx_entityFreeUserEntity(entity);
                 entity = u_entity(c_iterTakeFirst(cmx_allocatedEntities));
             }
             osr = os_mutexUnlock(&cmx_allocationMutex);
-            
+
             if(osr != os_resultSuccess){
-                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0, 
+                OS_REPORT(OS_ERROR, CM_XML_CONTEXT, 0,
                           "cmx_deregisterAllEntities: mutexUnlock failed.");
             }
         } else {
@@ -343,5 +345,17 @@ cmx_internalDetach()
         cmx_initialized = FALSE;
         cmx_mustDetach = TRUE;
     }
+}
+
+c_char*
+cmx_getVersion()
+{
+    char* result;
+#if defined(OSPL_INNER_REV) && defined (OSPL_OUTER_REV)
+        result = OSPL_VERSION_STR ", build " OSPL_INNER_REV_STR "/" OSPL_OUTER_REV_STR "";
+#else
+        result = OSPL_VERSION_STR ", non-PrismTech build";
+#endif
+    return (c_char*)(os_strdup(result));
 }
 

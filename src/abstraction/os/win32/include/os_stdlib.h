@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -40,6 +40,7 @@ extern "C" {
 #define OS_OS_FILESEPCHAR '\\'
 #define OS_OS_PATHSEPCHAR ';'
 #define OS_OS_EXESUFFIX   ".exe"
+#define OS_OS_LIB_LOAD_PATH_VAR "PATH"
 
 #define OS_ROK (_S_IREAD)
 #define OS_WOK (_S_IWRITE)

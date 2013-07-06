@@ -1,0 +1,28 @@
+// -*- MPC -*-
+// $Id:$
+
+project : splice_targets {
+    specific (make, prop:windows) {
+        configurations = Debug Release
+        //output_dir = .
+    }
+    specific (make) {
+        obj_dir = .obj$(CFG)/
+    }
+}
+
+feature (ospl_os_linux) {
+    specific (make) {
+        linkflags += -Wl,-rpath,\$$ORIGIN
+    }
+}
+
+feature(!src_co) {
+    libout = $(OSPL_HOME)/lib
+    exeout = $(OSPL_HOME)/bin
+}
+
+feature(src_co) {
+    libout = $(OSPL_HOME_NORMALIZED)/lib/$(SPLICE_TARGET)
+    exeout = $(OSPL_HOME_NORMALIZED)/exec/$(SPLICE_TARGET)
+}

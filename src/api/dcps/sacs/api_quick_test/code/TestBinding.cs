@@ -110,7 +110,7 @@ namespace testNamespace
             dpQos.WatchdogScheduling.SchedulingPriorityKind.Kind = SchedulingPriorityQosPolicyKind.PriorityRelative;
             dpQos.WatchdogScheduling.SchedulingPriority = 4;
 
-            IDomainParticipant dp = dpf.CreateParticipant(null, dpQos);
+            IDomainParticipant dp = dpf.CreateParticipant(DDS.DomainId.Default, dpQos);
             Console.Write("DomainParticipant: ");
             Console.WriteLine(dp != null ? "yes" : "no");
 

@@ -1,16 +1,16 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-#include "gapi.h"
 #include "ccpp_QueryCondition_impl.h"
+#include "gapi.h"
 #include "ccpp_Utils.h"
 #include "os_report.h"
 
@@ -21,7 +21,7 @@ DDS::QueryCondition_impl::QueryCondition_impl(
 }
 
 char * DDS::QueryCondition_impl::get_query_expression (
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   char * gapi_result = gapi_queryCondition_get_query_expression(_gapi_self);
   char * result = CORBA::string_dup(gapi_result);
@@ -32,11 +32,11 @@ char * DDS::QueryCondition_impl::get_query_expression (
 
 DDS::ReturnCode_t DDS::QueryCondition_impl::get_query_parameters (
     DDS::StringSeq & query_parameters
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   gapi_stringSeq gapi_queryParams;
   DDS::ReturnCode_t result;
-  
+
   ccpp_sequenceInitialize<gapi_stringSeq>(gapi_queryParams);
   result = gapi_queryCondition_get_query_parameters(_gapi_self, &gapi_queryParams);
   if (result == DDS::RETCODE_OK)
@@ -45,10 +45,10 @@ DDS::ReturnCode_t DDS::QueryCondition_impl::get_query_parameters (
   }
   return result;
 }
- 
+
 DDS::ReturnCode_t DDS::QueryCondition_impl::set_query_parameters (
   const DDS::StringSeq & query_parameters
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   DDS::ReturnCode_t result;
 

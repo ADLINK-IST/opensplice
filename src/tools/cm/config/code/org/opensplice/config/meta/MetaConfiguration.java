@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -12,15 +12,17 @@
 package org.opensplice.config.meta;
 
 import java.io.IOException;
-import java.lang.Math;
-import java.util.regex.*;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.opensplice.common.util.Report;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -32,11 +34,12 @@ import org.xml.sax.SAXParseException;
 
 public class MetaConfiguration {
     private double version;
-    private MetaElement rootElement;
-    private ArrayList<MetaElement> services;
-    private static final double LATEST_VERSION = 5.1;
+    private final MetaElement rootElement;
+    private final ArrayList<MetaElement> services;
+    private static HashMap<String, String> serviceMapping = new HashMap<String, String>();
+    private static final double LATEST_VERSION = 6.1;
 
-    private MetaConfiguration(float version, MetaElement rootElement, ArrayList<MetaElement> services){
+    private MetaConfiguration(float version, MetaElement rootElement, ArrayList<MetaElement> services) {
         this.version = version;
         this.rootElement = rootElement;
         this.services = services;
@@ -54,17 +57,34 @@ public class MetaConfiguration {
         return this.services.toArray(new MetaElement[this.services.size()]);
     }
 
+    public String getCommandForService(String name) {
+        return serviceMapping.get(name);
+    }
+
+    public String getServiceForCommand(String name) {
+        String retVal = null;
+        for (String service : serviceMapping.keySet()) {
+            if (name.equals(serviceMapping.get(service))) {
+                return service;
+            }
+        }
+        return retVal;
+    }
+
     public double getVersion() {
         return this.version;
     }
 
     private static MetaConfiguration load(String fileName, double version){
         MetaConfiguration config = null;
+
         InputStream is = ClassLoader.getSystemResourceAsStream(fileName);
 
         if(is != null){
             config = load(is);
-            config.version = version;
+            if (config != null) {
+                config.version = version;
+            }
         }
         return config;
     }
@@ -89,18 +109,21 @@ public class MetaConfiguration {
             DocumentBuilder builder = factory.newDocumentBuilder();
 
             builder.setErrorHandler(new ErrorHandler(){
+                @Override
                 public void warning(SAXParseException exception) throws SAXException {
 
                 }
 
+                @Override
                 public void error(SAXParseException exception) throws SAXException {
-                    System.err.println("Parse error at line: " + exception.getLineNumber() +
+                    Report.getInstance().writeErrorLog("Parse error at line: " + exception.getLineNumber() +
                                         " column: " + exception.getColumnNumber() + ".");
 
                 }
 
+                @Override
                 public void fatalError(SAXParseException exception) throws SAXException {
-                    System.err.println("Parse error at line: " + exception.getLineNumber() +
+                    Report.getInstance().writeErrorLog("Parse error at line: " + exception.getLineNumber() +
                                         " column: " + exception.getColumnNumber() + ".");
                 }
             });
@@ -108,30 +131,28 @@ public class MetaConfiguration {
             config = init(document);
 
         } catch (ParserConfigurationException exc) {
-            System.err.println(exc.getMessage());
+            Report.getInstance().writeErrorLog(exc.getMessage());
         } catch (SAXException exc) {
-            System.err.println(exc.getMessage());
+            Report.getInstance().writeErrorLog(exc.getMessage());
         } catch (IOException exc) {
-            System.err.println(exc.getMessage());
+            Report.getInstance().writeErrorLog(exc.getMessage());
         }
         return config;
     }
 
 
 
+    @Override
     public String toString(){
-        String result = "";
-
-        result += "MetaConfiguration version: " + this.version + "\n";
-        result += "ROOT_ELEMENT:";
-        result += this.rootElement.toString().replaceAll("\n", "\n\t");
-
+        StringBuffer buf = new StringBuffer();
+        buf.append("MetaConfiguration version: " + this.version + "\n");
+        buf.append("ROOT_ELEMENT:");
+        buf.append(this.rootElement.toString().replaceAll("\n", "\n\t"));
         for(MetaElement me: this.services){
-            result += "\nSERVICE:\n";
-            result += me.toString().replaceAll("\n", "\n\t");
+            buf.append("\nSERVICE:\n");
+            buf.append(me.toString().replaceAll("\n", "\n\t"));
         }
-
-        return result;
+        return buf.toString();
     }
 
     private static MetaConfiguration init(Document dom){
@@ -139,11 +160,13 @@ public class MetaConfiguration {
         String childName;
         MetaElement metaElement, rootMetaElement = null;
         MetaConfiguration configuration = null;
+        boolean res = true;
 
         try{
             ArrayList<MetaElement> metaElements = new ArrayList<MetaElement>();
             Element rootElement = dom.getDocumentElement();
             float version = Float.parseFloat(rootElement.getAttribute("version"));
+
 
             NodeList children = rootElement.getChildNodes();
 
@@ -163,6 +186,11 @@ public class MetaConfiguration {
                             rootMetaElement.addChild(metaElement);
                             metaElements.add(metaElement);
                         }
+                    } else if ("serviceMapping".equals(childName)) {
+                        res = parseServiceMapping((Element) childElement, false);
+                        if (!res) {
+                            throw new MetaException("Could not resolve meta configuration for service mapping.");
+                        }
                     }
                 }
             }
@@ -172,11 +200,11 @@ public class MetaConfiguration {
 
             }
         } catch(Exception exc){
-            System.err.println("Exception occurred during initialization of meta configuration: " + exc.getMessage());
+            Report.getInstance().writeErrorLog("Exception occurred during initialization of meta configuration: " + exc.getMessage());
         }
 
         if (configuration == null) {
-            System.out.println("config null");
+             Report.getInstance().writeInfoLog("config null");
         }
         return configuration;
     }
@@ -225,14 +253,16 @@ public class MetaConfiguration {
         MetaElement result, tmp;
         MetaAttribute tmpAttr;
         ArrayList<MetaNode> metaChildren;
-        NodeList children;
+        NodeList children, nodes;
         Node node;
         String nodeName, name;
         int minOccurrences, maxOccurrences;
         String comment = null;
+        String version = null;
 
         try{
             name           = element.getAttribute("name");
+            version           = element.getAttribute("version");
             //if(!isRootElement){
                 minOccurrences = Integer.parseInt(element.getAttribute("minOccurrences"));
                 maxOccurrences = Integer.parseInt(element.getAttribute("maxOccurrences"));
@@ -253,11 +283,16 @@ public class MetaConfiguration {
 
                 if((node instanceof Element) && (nodeName != null)){
                     if("comment".equals(nodeName)){
-                        node = node.getFirstChild();
-
-                        if(node != null){
-                            comment = node.getNodeValue();
+                        nodes = node.getChildNodes();
+                        comment = "";
+                        StringBuffer buf = new StringBuffer();
+                        for (int j = 0; j < nodes.getLength(); j++) {
+                            node = nodes.item(j);
+                            if (node != null) {
+                                buf.append(node.getNodeValue());
+                            }
                         }
+                        comment = buf.toString();
                     } else if("element".equals(nodeName)){
                         if(!isRootElement){
                             tmp = parseElement((Element)node, isRootElement);
@@ -284,11 +319,44 @@ public class MetaConfiguration {
                 }
             }
             if(name != null){
-                result = new MetaElement(comment, name, minOccurrences, maxOccurrences, metaChildren);
+                result = new MetaElement(comment, name, minOccurrences, maxOccurrences, metaChildren, version);
             } else {
                 throw getException(element, "No name found");
             }
         } catch(NumberFormatException nfe){
+            throw getException(element, nfe.getMessage());
+        }
+        return result;
+    }
+
+    private static boolean parseServiceMapping(Element element, boolean isRootElement)
+            throws MetaException {
+        String command = null;
+        String name = null;
+        boolean result = true;
+        Node node = null;
+        String nodeName = null;
+        NodeList children = element.getChildNodes();
+        try {
+            for (int i = 0; i < children.getLength() && result; i++) {
+                node = children.item(i);
+                nodeName = node.getNodeName();
+
+                if ((node instanceof Element) && (nodeName != null)) {
+                    if ("element".equals(nodeName)) {
+                        name = ((Element) node).getAttribute("name");
+                        command = ((Element) node).getAttribute("command");
+                        if (name != null && command != null) {
+                            serviceMapping.put(name, command);
+                        } else {
+                            result = false;
+                            throw getException(element, "No name and/or command found");
+                        }
+                    }
+                }
+            }
+        } catch (NumberFormatException nfe) {
+            result = false;
             throw getException(element, nfe.getMessage());
         }
         return result;
@@ -300,14 +368,16 @@ public class MetaConfiguration {
         MetaValue data;
         ArrayList<MetaNode> metaChildren;
         NodeList children;
-        String name, comment, nodeName;
+        String name, comment, nodeName, version;
         int minOccurrences, maxOccurrences;
         Node node;
+        NodeList nodes;
 
         try{
 
             comment        = parseComment(element);
             name           = element.getAttribute("name");
+            version        = element.getAttribute("version");
             minOccurrences = Integer.parseInt(element.getAttribute("minOccurrences"));
             maxOccurrences = Integer.parseInt(element.getAttribute("maxOccurrences"));
 
@@ -329,11 +399,16 @@ public class MetaConfiguration {
 
                         if((node instanceof Element) && (nodeName != null)){
                             if("comment".equals(nodeName)){
-                                node = node.getFirstChild();
-
-                                if(node != null){
-                                    comment = node.getNodeValue();
+                                nodes = node.getChildNodes();
+                                comment = "";
+                                StringBuffer buf = new StringBuffer();
+                                for (int j = 0; j < nodes.getLength(); j++) {
+                                    node = nodes.item(j);
+                                    if (node != null) {
+                                        buf.append(node.getNodeValue());
+                                    }
                                 }
+                                comment = buf.toString();
                             } else if(nodeName.startsWith("attribute")){
                                 tmpAttr = parseAttribute((Element)node);
 
@@ -347,7 +422,7 @@ public class MetaConfiguration {
                             }
                         }
                     }
-                    result = new MetaElement(comment, name, minOccurrences, maxOccurrences, metaChildren);
+                    result = new MetaElement(comment, name, minOccurrences, maxOccurrences, metaChildren, version);
                 } else {
                     throw getException(element, "No data found");
                 }
@@ -363,19 +438,20 @@ public class MetaConfiguration {
     private static MetaAttribute parseAttribute(Element element) throws MetaException{
         MetaAttribute result;
         MetaValue data;
-        String name, comment;
+        String name, comment, version;
         boolean required;
 
         try{
             comment        = parseComment(element);
             name           = element.getAttribute("name");
             required       = Boolean.parseBoolean(element.getAttribute("required"));
+            version        = element.getAttribute("version");
 
             if(name != null){
                 data = parseValue(element, element.getNodeName().substring(9));
 
                 if(data != null){
-                    result = new MetaAttribute(comment, name, required, data);
+                    result = new MetaAttribute(comment, name, required, data, version);
                 } else {
                     throw getException(element, "No data found");
                 }
@@ -411,7 +487,7 @@ public class MetaConfiguration {
             result  = parseMetaValueSize(element);
         } else {
             result = null;
-            System.err.println( "Unknown leaf or attribute type specified (" +
+            Report.getInstance().writeErrorLog( "Unknown leaf or attribute type specified (" +
                                 type + ").");
         }
         return result;
@@ -868,21 +944,23 @@ public class MetaConfiguration {
 
 
     private static String parseComment(Element parent) {
-        Node text;
         String comment = null;
         Node commentNode = null;
         NodeList list = parent.getChildNodes();
+        NodeList childs;
+        StringBuffer buf;
 
         for(int i=0; (i<list.getLength()) && (commentNode == null); i++) {
             if("comment".equals(list.item(i).getNodeName())) {
-                commentNode = list.item(i);
-                text = list.item(i).getFirstChild();
-
-                if(text != null) {
-                    comment = text.getNodeValue().trim();
-                } else {
-                    comment = null;
+                childs = list.item(i).getChildNodes();
+                buf = new StringBuffer();
+                for (int j=0; j<childs.getLength(); j++) {
+                    commentNode = childs.item(j);
+                    if (commentNode != null) {
+                        buf.append(commentNode.getNodeValue().trim());
+                    }
                 }
+                comment = buf.toString();
             }
         }
         return comment;

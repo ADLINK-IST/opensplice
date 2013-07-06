@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -24,6 +24,8 @@ extern "C" {
 C_STRUCT(d_chainBead){
     d_networkAddress sender;
     v_message message;
+    c_value keyValues[32];
+    c_ulong nrOfKeys;
     c_ulong refCount;
 };
 
@@ -42,6 +44,7 @@ C_STRUCT(d_chain){
     c_long          samplesExpect;
     c_ulong         receivedSize;
     sd_serializer   serializer;
+    v_group         vgroup;
 };
 
 #define d_chain(c)                ((d_chain)(c))
@@ -61,7 +64,7 @@ void                    d_sampleChainListenerInsertRequest      (d_sampleChainLi
                                                                  d_chain chain,
                                                                  c_bool reportGroupWhenUnfullfilled);
 
-void                    d_sampleChainListenerInsertMergeAction  (d_sampleChainListener listener,
+c_bool                  d_sampleChainListenerInsertMergeAction  (d_sampleChainListener listener,
                                                                  d_mergeAction action);
 
 void                    d_sampleChainListenerTryFulfillChains   (d_sampleChainListener listener,
@@ -87,7 +90,8 @@ c_bool                  d_chainReportStatus                     (d_chain chain,
 void                    d_chainFree                             (d_chain chain);
 
 d_chainBead             d_chainBeadNew                          (d_networkAddress sender,
-                                                                 v_message message);
+                                                                 v_message message,
+                                                                 d_chain chain);
 
 void                    d_chainBeadFree                         (d_chainBead chainBead);
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . buildsys/functions
 
@@ -36,13 +36,13 @@ fi
 echo "BUILD_DIST=RUNNING" >> $RESFILE
 ArchiveLogs
 
-cd install || 
-{ 
-    echo "ERROR: could not cd to install dir - dcps_build_dist"; 
-    exit 2; 
+cd install ||
+{
+    echo "ERROR: could not cd to install dir - dcps_build_dist";
+    exit 2;
 }
 
-#Make a full distro and an eval that does not contain the source
-make all_no_src
+#Make a full distro and an eval, then an lgpl
+make all_distros
 
 exit 0

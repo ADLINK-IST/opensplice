@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -54,7 +54,7 @@ v_entryFree(
 
     assert(C_TYPECHECK(entry,v_entry));
 
-    proxies = c_select(entry->groups, 0);
+    proxies = ospl_c_select(entry->groups, 0);
     proxy = c_iterTakeFirst(proxies);
     while (proxy != NULL) {
         group = v_group(v_proxyClaim(proxy));
@@ -115,6 +115,7 @@ v_entryResend(
 {
     v_writeResult writeResult;
 
+    OS_UNUSED_ARG(o);
     assert(C_TYPECHECK(e,v_entry));
     assert(C_TYPECHECK(o,v_message));
 
@@ -187,7 +188,7 @@ v_entryRemoveGroup(
 
     query = c_queryNew(entry->groups, qExpr, params);
     q_dispose(qExpr);
-    groups = c_select(query, 0);
+    groups = ospl_c_select(query, 0);
     c_free(query);
     assert(c_iterLength(groups) <= 1);
     proxy = v_proxy(c_iterTakeFirst(groups));
@@ -228,6 +229,7 @@ v_entryGroupExists(
     arg.proxy = v_proxyNew(v_objectKernel(group),
                        v_publicHandle(v_public(group)), NULL);
     r = c_tableWalk(entry->groups, groupExists, &arg);
+    assert(r != (arg.exists));
     c_free(arg.proxy);
     return arg.exists;
 }

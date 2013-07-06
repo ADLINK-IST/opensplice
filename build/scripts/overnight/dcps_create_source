@@ -1,0 +1,103 @@
+#!/bin/bash
+
+. buildsys/functions
+
+ProcessArgs $*
+Assert LoadConfigs
+Assert SetupLogDir
+Assert SetupResFile
+
+if [ "$CREATE_SOURCE" != "yes" ]
+then
+   echo "CREATE_SOURCE=SKIPPED" >> $RESFILE
+   exit 0
+fi
+
+cd ../../..
+
+SetState CreatingSource
+ArchiveLogs
+
+if [ "$DEP" != "none" ]
+then
+   OSPL_HOME=$DEPWORKDIR
+   export OSPL_HOME
+fi
+
+echo "CREATE_SOURCE=RUNNING" >> $RESFILE
+ArchiveLogs
+
+#the etc/license.lic has been added to the .gitattributes so it ignores the file
+#during an archive
+(
+    #Do the tar and zip as the arch is not important its just source
+    if [ "$DEP" != "none" ]
+    then
+        git archive --format=tar --prefix=osplo/ --output=$LOGDIR/OpenSpliceDDS_src_osplo.tar HEAD
+        if [ $? != 0 ] 
+        then
+            exit 1
+        fi
+        cd ..
+        ln -s build osplo
+        tar -rhf $LOGDIR/OpenSpliceDDS_src_osplo.tar osplo/etc/BUILDINFO
+        if [ $? != 0 ] 
+        then
+            exit 1
+        fi
+        cd -
+        gzip -9 $LOGDIR/OpenSpliceDDS_src_osplo.tar
+        if [ $? != 0 ] 
+        then
+            exit 1
+        fi
+
+        git archive -9 --format=zip --prefix=osplo/ --output=$LOGDIR/OpenSpliceDDS_src_osplo.zip HEAD
+        if [ $? != 0 ] 
+        then
+            exit 1
+        fi
+        cd ..
+        zip --grow $LOGDIR/OpenSpliceDDS_src_osplo.zip osplo/etc/BUILDINFO
+        if [ $? != 0 ] 
+        then
+            exit 1
+        fi
+        cd -
+        cd $OSPL_HOME
+    fi
+
+    git archive --format=tar --prefix=ospli/ --output=$LOGDIR/OpenSpliceDDS_src_ospli.tar HEAD
+    if [ $? != 0 ] 
+    then
+        exit 1
+    fi
+    cd ..
+    ln -s build ospli
+    tar -rhf $LOGDIR/OpenSpliceDDS_src_ospli.tar ospli/etc/BUILDINFO
+    if [ $? != 0 ] 
+    then
+        exit 1
+    fi
+    cd -
+    gzip -9 $LOGDIR/OpenSpliceDDS_src_ospli.tar
+    if [ $? != 0 ] 
+    then
+        exit 1
+    fi
+
+    git archive -9 --format=zip --prefix=ospli/ --output=$LOGDIR/OpenSpliceDDS_src_ospli.zip HEAD
+    if [ $? != 0 ] 
+    then
+        exit 1
+    fi
+    cd ..
+    zip --grow $LOGDIR/OpenSpliceDDS_src_ospli.zip ospli/etc/BUILDINFO
+    if [ $? != 0 ] 
+    then
+        exit 1
+    fi
+    cd -
+) || exit 1
+
+exit 0

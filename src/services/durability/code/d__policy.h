@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -30,6 +30,7 @@ C_STRUCT(d_policy) {
     d_name           nameSpace;
     c_bool           aligner;
     d_alignmentKind  alignmentKind;
+    c_bool           delayedAlignment;
     d_durabilityKind durabilityKind;
     c_iter           mergePolicyRules;
 };

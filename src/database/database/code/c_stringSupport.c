@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -187,3 +187,58 @@ c_trimString(
 
     return result;
 }
+
+c_bool
+c_stringExpressionIsAbsolute(
+    const c_char* expression)
+{
+    c_bool result;
+
+    assert(expression);
+
+    /* Absolute expressions are those which do not contain a '?' or a '*' */
+    if(strchr(expression, '*') == NULL && strchr(expression, '?') == NULL)
+    {
+        result = TRUE;
+    } else
+    {
+        result = FALSE;
+    }
+
+    return result;
+}
+
+c_bool
+c_stringMatchesExpression(
+    const c_char* string,
+    const c_char* expression)
+{
+    c_bool result = FALSE;
+    c_value matchResult;
+    c_value expressionValue;
+    c_value stringValue;
+
+    assert(string);
+    assert(expression);
+
+    if(c_stringExpressionIsAbsolute(expression))
+    {
+        if(strcmp(expression, string) == 0)
+        {
+             result  = TRUE;
+        }
+    } else
+    {
+        expressionValue.kind = V_STRING;
+        expressionValue.is.String = (c_char*)expression;
+        stringValue.kind = V_STRING;
+        stringValue.is.String = (c_char*)string;
+        matchResult = c_valueStringMatch(expressionValue, stringValue);
+        if(matchResult.is.Boolean == TRUE)
+        {
+            result = TRUE;
+        }
+    }
+    return result;
+}
+

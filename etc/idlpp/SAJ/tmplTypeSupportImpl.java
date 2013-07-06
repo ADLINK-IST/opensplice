@@ -1,6 +1,6 @@
 import org.opensplice.dds.dcps.Utilities;
 
-public class $(type-name)TypeSupport extends org.opensplice.dds.dcps.TypeSupportImpl implements $(type-name)TypeSupportOperations
+public class $(type-name)TypeSupport extends org.opensplice.dds.dcps.TypeSupportImpl implements DDS.TypeSupportOperations
 {
     private static java.lang.String idl_type_name = "$(scoped-meta-type-name)";
     private static java.lang.String idl_key_list = "$(key-list)";
@@ -56,7 +56,7 @@ public class $(type-name)TypeSupport extends org.opensplice.dds.dcps.TypeSupport
     	finally{
     	    super.finalize();
     	}
-		
+
     }
 
     public long get_copyCache()

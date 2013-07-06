@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -21,12 +21,11 @@ DDS::ErrorInfo::ErrorInfo( void )
     if (_gapi_self) {
         myUD = new DDS::ccpp_UserData(this);
         if (myUD) {
-            gapi_object_set_user_data(_gapi_self, (CORBA::Object *)myUD,
-                                      DDS::ccpp_CallBack_DeleteUserData,NULL);
+            gapi_object_set_user_data(_gapi_self, dynamic_cast<CORBA::Object_ptr>(myUD),
+                                      ccpp_CallBack_DeleteUserData,NULL);
         } else {
             OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to allocate memory");
         }
-        CORBA::release(this);
     }
 }
 
@@ -37,14 +36,13 @@ DDS::ErrorInfo::~ErrorInfo( void )
     if (myUD) {
         /* avoid another last release of the reference to this ErrorInfo */
         myUD->ccpp_object = NULL;
-        delete myUD;
     } else {
         OS_REPORT(OS_ERROR, "CCPP", 0, "Unable to obtain userdata");
     }
     gapi__free(_gapi_self);
 }
 
-DDS::ReturnCode_t DDS::ErrorInfo::update( 
+DDS::ReturnCode_t DDS::ErrorInfo::update(
     void
 ) THROW_ORB_EXCEPTIONS
 {
@@ -70,7 +68,7 @@ DDS::ReturnCode_t DDS::ErrorInfo::get_message(
 {
     gapi_returnCode_t result;
     gapi_string gapi_message = NULL;
-    
+
     result = gapi_errorInfo_get_message(_gapi_self, &gapi_message);
     if (result == GAPI_RETCODE_OK){
         if (gapi_message != NULL) {
@@ -93,7 +91,7 @@ DDS::ReturnCode_t DDS::ErrorInfo::get_location(
 {
     gapi_returnCode_t result;
     gapi_string gapi_location = NULL;
-    
+
     result = gapi_errorInfo_get_location(_gapi_self, &gapi_location);
     if (result == GAPI_RETCODE_OK){
         if (gapi_location != NULL) {
@@ -116,7 +114,7 @@ DDS::ReturnCode_t DDS::ErrorInfo::get_source_line(
 {
     gapi_returnCode_t result;
     gapi_string gapi_source_line = NULL;
-    
+
     result = gapi_errorInfo_get_source_line(_gapi_self, &gapi_source_line);
     if (result == GAPI_RETCODE_OK){
         if (gapi_source_line != NULL) {
@@ -139,7 +137,7 @@ DDS::ReturnCode_t DDS::ErrorInfo::get_stack_trace(
 {
     gapi_returnCode_t result;
     gapi_string gapi_stack_trace = NULL;
-    
+
     result = gapi_errorInfo_get_stack_trace(_gapi_self, &gapi_stack_trace);
     if (result == GAPI_RETCODE_OK){
         if (gapi_stack_trace != NULL) {

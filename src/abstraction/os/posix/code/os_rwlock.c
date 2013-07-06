@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -17,6 +17,7 @@
  */
 
 #include "os_rwlock.h"
+#include "os_init.h"
 #include <errno.h>
 #include <assert.h>
 
@@ -28,6 +29,11 @@
  * In case the scope attribute is \b OS_SCOPE_SHARED, the posix
  * \b rwlock "pshared" attribute is set to \b PTHREAD_PROCESS_SHARED
  * otherwise it is set to \b PTHREAD_PROCESS_PRIVATE.
+ *
+ * When in single process mode, a request for a SHARED variable will
+ * implictly create a PRIVATE equivalent.  This is an optimisation
+ * because there is no need for "shared" multi process variables in
+ * single process mode.
  */
 os_result
 os_rwlockInit (
@@ -41,7 +47,9 @@ os_rwlockInit (
     assert (rwlock != NULL);
     assert (rwlockAttr != NULL);
     pthread_rwlockattr_init (&rwattr);
-    if (rwlockAttr->scopeAttr == OS_SCOPE_SHARED) {
+
+    /* In single process mode only "private" variables are required */
+    if (rwlockAttr->scopeAttr == OS_SCOPE_SHARED && !os_serviceGetSingleProcess ()) {
         result = pthread_rwlockattr_setpshared (&rwattr, PTHREAD_PROCESS_SHARED);
     } else {
         result = pthread_rwlockattr_setpshared (&rwattr, PTHREAD_PROCESS_PRIVATE);

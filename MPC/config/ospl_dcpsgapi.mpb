@@ -1,6 +1,10 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_dcpsgapi_incl, ospl_base, ospl_ddsuser {
+project : ospl_base, ospl_ddsuser {
   lit_libs += dcpsgapi
+}
+
+feature(src_co) {
+    includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/gapi/include
 }

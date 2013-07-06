@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -111,21 +111,24 @@ d_storeCopyFile(
     os_char* destStorePath);
 
 
-d_storeResult		d_storeNsIsComplete 		(const d_store store,
-												 const d_nameSpace nameSpace,
-												 c_bool* isComplete);
+d_storeResult           d_storeNsIsComplete             (const d_store store,
+                                                                                                 const d_nameSpace nameSpace,
+                                                                                                 c_bool* isComplete);
 
-d_storeResult		d_storeNsMarkComplete 		(const d_store store,
-												 const d_nameSpace nameSpace,
-												 c_bool isComplete);
+d_storeResult           d_storeNsMarkComplete           (const d_store store,
+                                                                                                 const d_nameSpace nameSpace,
+                                                                                                 c_bool isComplete);
 
-d_storeResult		d_storeRestoreBackup		(const d_store store,
-												 const d_nameSpace nameSpace);
+d_storeResult           d_storeRestoreBackup            (const d_store store,
+                                                                                                 const d_nameSpace nameSpace);
 
 c_char*      d_storeDirNew(d_store store, const c_char *name);
 
 
 void         d_storeGetBase(v_entity entity, c_voidp args);
+
+d_storeResult           d_storeGroupListFree            (const d_store store, d_groupList list);
+
 
 #if defined (__cplusplus)
 }

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -59,6 +59,14 @@ c_result
 c__metaFinalize(
     c_metaObject o,
     c_bool normalize);
+
+c_bool
+c_isBaseObjectType(
+    c_type type);
+
+c_bool
+c_isBaseObject(
+    c_object obj);
 
 #if defined (__cplusplus)
 }

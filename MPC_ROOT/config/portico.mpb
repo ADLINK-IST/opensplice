@@ -1,0 +1,18 @@
+// $Id$
+
+project {
+  requires += portico
+
+  includes += $(RTI_HOME)/include/ng6
+  libpaths += $(RTI_HOME)/lib
+
+  macros += RTI_USES_STD_FSTREAM
+
+  specific (prop:windows) {
+    lit_libs += libRTI-NG libFedTime
+
+    DisableSpecificWarnings += 4996
+  } else {
+    libs += RTI-NG
+  }
+}

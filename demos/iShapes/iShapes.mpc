@@ -1,0 +1,17 @@
+// -*- MPC -*-
+// $Id$
+
+project (Build*) : ospl_qt4, ospl_dcpsisocpp, isosacpp_typesupport, ospl_build_lib {
+  TypeSupport_Files {
+      ishape.idl
+  }
+  includes += .
+  MOC_Files {
+    ReaderQosDialog.hpp
+    ShapesDialog.hpp
+    ShapesWidget.hpp
+    WriterQosDialog.hpp
+    FilterDialog.hpp
+  }
+  exename = demo_ishapes
+}

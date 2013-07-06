@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -73,7 +73,7 @@ template <DDS::ULong max> inline char **
    return buffer;
 }
 
-template <DDS::ULong max> inline void 
+template <DDS::ULong max> inline void
    DDS_DCPSBStrSeq<max>::freebuf (char** buffer)
 {
    if (buffer)

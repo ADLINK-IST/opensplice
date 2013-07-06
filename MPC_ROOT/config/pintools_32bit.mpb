@@ -1,0 +1,47 @@
+// $Id$
+
+project {
+  specific (prop:windows) {
+    macros += BIGARRAY_MULTIPLIER=1 TARGET_IA32 HOST_IA32 TARGET_WINDOWS USING_XED _SECURE_SCL=0
+
+    // Hack to ensure libraries are linked in the correct order
+    // since MPC does not honor the order in the list below!! ;-)
+    pure_libs += "ntdll-32.lib libxed.lib pin.lib pinvm.lib libcmt.lib libcpmt.lib"
+
+    runtime_library = 0
+    DisableSpecificWarning += 4530
+    IgnoreAllDefaultLibraries = true
+    link_options += /EXPORT:main /ENTRY:Ptrace_DllMainCRTStartup@12
+  } else {
+    macros += BIGARRAY_MULTIPLIER=1 TARGET_IA32 HOST_IA32 TARGET_LINUX USING_XED _SECURE_SCL=0
+    compile_flags += -fomit-frame-pointer -fno-strict-aliasing
+
+    libs += pin xed dwarf elf
+    linkflags += -Wl,--hash-style=sysv -Wl,-Bsymbolic -Wl,--version-script=$(PIN_ROOT)/source/include/pintool.ver
+  }
+
+  includes += $(PIN_ROOT)/extras/components/include \
+              $(PIN_ROOT)/extras/xed2-ia32/include \
+              $(PIN_ROOT)/source/include/gen \
+              $(PIN_ROOT)/source/include
+
+
+  libpaths += $(PIN_ROOT)/ia32/lib \
+              $(PIN_ROOT)/ia32/lib-ext \
+              $(PIN_ROOT)/extras/xed2-ia32/lib
+
+  verbatim (gnuace, top) {
+    // We have to disable hidden symbols since we are
+    // not manually exporting the main() function.
+    no_hidden_visibility = 1
+  }
+
+  verbatim (make, top) {
+    // We have to disable hidden symbols since we are
+    // not manually exporting the main() function.
+    no_hidden_visibility = 1
+  }
+}
+
+
+

@@ -1,0 +1,135 @@
+This is the distribution of Log4C (last updated 13 Nov 2006)
+
+* What is Log4C
+
+   Log4C is a C library for flexible logging to files, syslog and other
+   destinations. It is modeled after the Log for Java library
+   (http://jakarta.apache.org/log4j/), staying as close to their API as is
+   reasonable.
+   
+   As well as the "doc" directory in the Log4C repository, see also here for
+   more documentation on Log4c:
+   
+     http://log4c.sourceforge.net/
+     http://sourceforge.net/docman/?group_id=38627
+     http://en.wikipedia.org/wiki/Log4C   
+     
+* Licensing
+
+   Log4C libraries are released under the terms of the GNU Lesser
+   General Public License (GNU LGPL). 
+
+   You can find copies of the license in the file COPYING
+
+* What you will need to compile Log4C on Unix systems
+
+   perl 5.8+ (used by the automake tools)
+
+   GNU make tools: automake 1.7+, autoconf 2.57+, m4 1.4+ and libtool 1.4+
+
+   A Compiler, among those tested are:
+   . gcc3 (on Red Hat Enterprise Linux 3 and 4)
+   . gcc4 (on HP-UX 11.11i, on Fedora Core 5)
+   . Sun cc (versions 5.3 and 5.7 on Solaris 8 and higher, sparc and i386)
+   . HPUX ansi C compiler (on HPUX v11.11i, pa-risc)
+   . AIX xlc compiler
+
+   If you request at compile time that the expat library be used to help parse
+   the configuration file, then you will need the expat library available
+   on the system.  If you do not use expat then pre-generated files from
+   obsolete versions of flex and bison are used to do the parsing--this code
+   is still supported for the moment but it is recommended to use expat.
+
+   For information on compiling on Microsoft Windows see the README in the msvc6
+   directory.
+
+* Where to find ...
+
+   GNU automake tools:
+      http://gcc.gnu.org
+      http://www.sunfreeware.com/ for pre-built Solaris packages
+      http://hpux.connect.org.uk/ for re-built HP-UX depots
+
+   gcc3 or gcc4
+      http://gcc.gnu.org
+      http://www.sunfreeware.com for pre-built Solaris packages
+      http://hpux.connect.org.uk/ for re-built HP-UX depots
+
+   Log4C
+      http://log4c.sf.net/ This SourceForge site is now the main log4c site.
+
+   expat        
+      http://expat.sourceforge.net/
+
+* How to for library users who download a released tarball (eg.
+  log4c-1.2.0.tar.gz):
+
+  The Log4C package uses the GNU autotools compilation and installation
+  framework.
+  
+  We recommend that you do not build in the source directories themselves;
+  rather make a build directory into which the configure script will generate
+  the Makefiles and build the library and binaries in there. This is better
+  because it allows you to seperate the source from the binaries and also to
+  mantain a compiled version of Log4C for different platforms--make a build
+  directory for each of the platforms you support and run configure on each of
+  your build machines.
+  
+  So, for example, you might create directories called build-fc5, build-rh3,
+  build-Solaris10x86, build-hpuxi11 and so on for your various builds. These
+  example commands below should compile Log4C on each of the supported
+  platforms:
+  
+    $ tar -zxvf log4c-1.2.0.tar.gz
+    $ mkdir build; cd build
+    $ ../log4c-1.2.0/configure --prefix=/path/of/installation
+    $ make
+    $ make install
+
+  To build the binary, source, developer and debuginfo RPMs for Linux:
+    $ make rpm
+
+  To enable compilation of the test programs for the library you would do this:
+    $ ../log4c-1.2.0/configure --prefix=/path/of/installation --enable-test
+   
+  To enable the dcumentation generation
+    $ ../log4c-1.2.0/configure --prefix=/path/of/installation --enable-doc
+   
+  To specify a compiler other than gcc at configure time you would do something
+  like this:
+    $ ../log4c-1.2.0/configure --prefix=/path/of/installation --enable-test \
+      CC=/usr/SUNWspro/bin/cc
+
+  To get started with the examples see the README in the examples source code
+  directory and run them from the build directory as follows:
+    $ cd examples
+    $ ./application_1
+    $ ./application_2
+
+* How to for library developers ...
+   
+  When you check out Log4C from CVS (as opposed to downloading a released
+  tarball) you will need to generate the configure script and so on. To do this
+  run the bootstrap script. This script must be run in the source directories
+  themselves:
+   
+    $ cvs -d:pserver:anonymous@log4c.cvs.sourceforge.net:/cvsroot/log4c login
+    $ cvs -z3 -d:pserver:anonymous@log4c.cvs.sourceforge.net:/cvsroot/log4c co -P log4c
+    $ cd log4c
+    $ ./bootstrap
+
+  To compile in extra tracing and messages and compile the doc you would do
+  this from your build directory: 
+    $ ../log4c/configure --prefix=/path/of/installation --enable-test \
+        --enable-debug --enable-doc
+
+   This will define the __SD_DEBUG__ variable at compile time. Note that you
+   still need to define the SD_ERROR and SD_DEBUG envronment variables at run
+   time to actually see the error/debug output.
+
+   Type '../log4c/configure --help' for a list of all the configure
+   options. Some of the options are generic autoconf options, while the Log4C
+   specific options are prefixed with "LOG4C" in the help text.
+
+
+Have Fun !!

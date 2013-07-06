@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -58,8 +58,8 @@ void v_networkChannelStatisticsInit(v_networkChannelStatistics ncs, c_string nam
     ncs->numberOfPacketsResent=0;
     ncs->numberOfBytesInResendBuffer=0;
     ncs->numberOfPacketsInResendBuffer=0;
-    v_maxValueInit(&(ncs->maxNumberOfBytesResentToOneNode));
-    v_maxValueInit(&(ncs->maxNumberOfPacketsResentToOneNode));
+    ncs->maxNumberOfBytesResentToOneNode=0;
+    ncs->maxNumberOfPacketsResentToOneNode=0;
 
     ncs->numberOfMessagesReceived=0;
     ncs->numberOfBytesReceived=0;
@@ -100,8 +100,8 @@ c_bool v_networkChannelStatisticsReset(v_networkChannelStatistics ncs)
 	ncs->numberOfPacketsResent=0;
 	ncs->numberOfBytesInResendBuffer=0;
 	ncs->numberOfPacketsInResendBuffer=0;
-	v_maxValueInit(&(ncs->maxNumberOfBytesResentToOneNode));
-	v_maxValueInit(&(ncs->maxNumberOfPacketsResentToOneNode));
+    ncs->maxNumberOfBytesResentToOneNode=0;
+    ncs->maxNumberOfPacketsResentToOneNode=0;
 
 	ncs->numberOfMessagesReceived=0;
 	ncs->numberOfBytesReceived=0;
@@ -131,6 +131,7 @@ void v_networkChannelStatisticsDeinit(v_networkChannelStatistics ncs)
 {
     assert(ncs != NULL);
     assert(C_TYPECHECK(ncs, v_networkChannelStatistics));
+    OS_UNUSED_ARG(ncs);
 }
 
 void v_networkChannelStatisticsFree(v_networkChannelStatistics ncs)

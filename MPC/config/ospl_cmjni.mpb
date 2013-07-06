@@ -1,6 +1,14 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_cmjni_incl, ospl_base {
+project : ospl_base {
   lit_libs += cmjni
+}
+
+feature(!src_co) {
+
+}
+
+feature(src_co) {
+
 }

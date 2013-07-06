@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -45,7 +45,7 @@ c_stringDupHeap (
 rs_report
 rs_reportNew (
     c_char *domain_name,
-    c_short port)
+    c_ushort port)
 {
     rs_report report;
 
@@ -80,7 +80,7 @@ void rs_reportReport (
     os_time ostime;
     c_time ctime;
     c_char extended_description[512];
-    c_char procIdentity[64];
+    c_char procIdentity[256];
     c_char threadIdentity[64];
     c_char node[64];
     rs_report Report = (rs_report)domainReport;

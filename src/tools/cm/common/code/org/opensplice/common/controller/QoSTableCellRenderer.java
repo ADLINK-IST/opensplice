@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -58,6 +58,7 @@ public class QoSTableCellRenderer extends JLabel implements TableCellRenderer {
      * @param row The row of the cell in the table.
      * @param column The column of the cell in the table.
      */
+    @Override
     public Component getTableCellRendererComponent(JTable table, Object value,
             boolean isSelected, boolean hasFocus, int row, int column) {
         if(!table.isEnabled()){
@@ -71,7 +72,7 @@ public class QoSTableCellRenderer extends JLabel implements TableCellRenderer {
         } else {
             super.setForeground(table.getForeground());
 
-            if((!(table.isCellEditable(row, 2))) && (column == 2)){
+            if ((!(table.isCellEditable(row, table.getColumnCount() - 1))) && (column == table.getColumnCount() - 1)) {
                 super.setForeground(Config.getInactiveColor());
                 setToolTipText("This policy is not editable.");
                 setFont(table.getFont().deriveFont(Font.ITALIC));

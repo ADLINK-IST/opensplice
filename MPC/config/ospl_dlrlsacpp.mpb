@@ -1,6 +1,22 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_dlrlsacpp_incl, ospl_base {
+project : ospl_base, ospl_dcpssacpp, ospl_ddslockernel, ospl_ddslocutil, ospl_ddsloccollections, ospl_ddslocmetamodel {
   lit_libs += dlrlsacpp
+  requires += ospl_dlrlsacpp
+}
+
+feature(!src_co) {
+    includes += $(OSPL_HOME)/include/dlrl/C++/SACPP
+}
+
+feature(src_co) {
+    includes += $(OSPL_HOME_NORMALIZED)/src/api/dlrl/ccpp/include
+    includes += $(OSPL_HOME_NORMALIZED)/src/api/dlrl/sacpp/include
+    includes += $(OSPL_HOME_NORMALIZED)/src/api/dlrl/sacpp/bld/$(SPLICE_TARGET)
+
+
+    // Should we be be directly including a user header in the
+    // DLRL API ?? Remove this to see it & fix if not
+    includes += $(OSPL_HOME_NORMALIZED)/src/user/include
 }

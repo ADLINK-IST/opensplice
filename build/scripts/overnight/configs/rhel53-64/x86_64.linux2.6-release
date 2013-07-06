@@ -1,11 +1,13 @@
 BUILD=yes
 SETUP_TYPE=x86_64.linux2.6-release
+BUILD_SRC=yes
 BUILD_DIST=yes
 BUILD_EXAMPLES=yes
 KEEP_DIST=yes
 RUN_DBT=no
 RUN_RBT=no
-RUN_EXAMPLES=yes
+RUN_EXAMPLES_SP=yes
+RUN_EXAMPLES_SHM=yes
 VALGRIND=no
 
 . configs/`hostname`/common

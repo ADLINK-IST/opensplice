@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -51,6 +51,8 @@ OS_API c_equality  c_compareString  (const c_char *s1, const c_char *s2);
 * - if original string only contains spaces, return null-terminated empty string
 */
 OS_API c_char     *c_trimString     (const c_char *s);
+OS_API c_bool      c_stringMatchesExpression(const c_char* string, const c_char* expression);
+OS_API c_bool      c_stringExpressionIsAbsolute(const c_char* expression);
 
 #undef OS_API
 

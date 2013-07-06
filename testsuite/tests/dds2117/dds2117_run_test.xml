@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE stax SYSTEM "stax.dtd">
+
+<!--
+    run_dds2117_test.xml - Run the dds 2117 test using STAX.
+    This test is for Coflight test requirement eFDPfi_MW_DDS_5 of OpenSplice 
+    network messages (enhancement dds2117).
+    It consists of a publisher which sends a series of strings to a subscriber.
+    
+    CoFlight requirement eFDPfi_MW_DDS_5 requires that the loss of a data update diffused 
+    with a nonsecured protocol (udp, ipm, MAC, LLC1?) is not considered as a fault and 
+    shall be gracefully and transparently handled and overcome by the DDS within 1 second on a LAN
+    and within 5 seconds on a WAN.
+    
+    This test is performed using a development environment. 
+    The test code is built from the osplo/testsuite/rbt/services/networking/dds2117 directory using make.
+    
+    Running the test:
+        Start OpenSplice on two nodes.
+        On one node, start the subscriber.
+        On the other, run the publisher.
+
+    Expected results:
+        Both process should terminate normally.
+        Sample publisher output :
+
+        Sent all strings
+        Sent 1000 messages
+        Number of messages recoverd not in time: 0.
+        dds2117 recovery time PASS.
+        dds2117 publisher PASS
+
+        Sample subscriber output :
+
+        Received 1000 messages
+        dds2117 subscriber PASS
+
+-->
+
+<stax>
+
+  <defaultcall function="dds2117_main">
+  </defaultcall>
+
+  <function name="dds2117_main" scope="local" >
+    <function-prolog>
+        This test is for Coflight test requirement eFDPfi_MW_DDS_5 of OpenSplice network messages. 
+        It consists of a publisher which sends a series of strings to a subscriber.
+
+        Start OpenSplice on two nodes.
+        On one node, start the subscriber.
+        On the other, run the publisher.
+    </function-prolog>
+
+    <function-list-args>
+        <function-required-arg name="host1_name">
+            The name for the "master" host you wish test on in double quotes, use the following format: "name"
+        </function-required-arg>
+        <function-required-arg name="host2_name">
+            The name for the "slave" host you wish to test on in double quotes, use the following format: "name"
+        </function-required-arg>
+          
+        <function-required-arg name="host1_ospl_home">
+            OSPL_HOME of an installed OpenSplice on the host1
+        </function-required-arg>
+        <function-required-arg name="host2_ospl_home">
+            OSPL_HOME of an installed OpenSplice on the host2
+        </function-required-arg>
+        
+        <function-required-arg name="application_exec_dir_on_host1">
+            App exec dir host 1 
+            C:\\cygwin\\home\\user\\ospli\\testsuite\\tests\\networking\\dds2117\\app\\exec\\x86.win32-release\\
+        </function-required-arg>
+        <function-required-arg name="application_exec_dir_on_host2">
+            app exec dir host 2
+        </function-required-arg>
+
+        <function-required-arg name="host1_ospl_src_home">
+            Location on the host1 where /osplo and /ospli can be found, in double quotes and double backslash, use the following format: "dir1\\dir2"
+        </function-required-arg>
+        <function-required-arg name="host2_ospl_src_home">
+            Location on the host2 host where /osplo and /ospli can be found, in double quotes and double backslash, use the following format: "dir1\\dir2"
+        </function-required-arg>
+
+        <function-required-arg name="log_dir">
+            The location where the logs will be stored on the master host in double quotes and double backslash, use the following format: "dir1\\dir2"
+        </function-required-arg>
+
+        <function-optional-arg name="network_type" default="'L'">
+            Indicate the type of network we are running on.
+            It is L for LAN and W for WAN.
+        </function-optional-arg>
+
+        <function-optional-arg name="test_framework_root" default="'../common'">
+            Absolute path of stax framework root on the local host in double quotes and double backslash.
+            By default it this_xml_folder/../common.
+            Use the format "/home/username/ospli/testsuite/tests/common")
+        </function-optional-arg>
+    </function-list-args>
+    
+    <sequence>
+        <script>
+            import os
+            if test_framework_root == '../common':
+                host_manager_file = os.path.join(os.path.dirname(STAXCurrentXMLFile), test_framework_root, "HostManager.xml")
+            else:
+                host_manager_file = os.path.join(test_framework_root, "HostManager.xml")
+        </script>
+        <import file="host_manager_file"/>
+        <call function="'Initialize'" />
+    
+        <script>
+                time_stamp = time.strftime("%d-%m-%Y-%H-%M-%S", time.localtime())
+                if log_dir ==".":
+                    log_dir = os.path.join(os.path.dirname(STAXCurrentXMLFile), "dds2117_log", time_stamp) 
+                else:
+                    log_dir = os.path.join(log_dir, "dds2117_log", time_stamp)
+                    
+                if not os.path.exists(log_dir): os.makedirs(log_dir)
+                test_scenario = BaseTestScenario("dds2117", 
+                                                 "Network messages", 
+                                                 log_dir, 
+                                                 os.path.join(log_dir, "result.txt"))
+                test_scenario.set_log_root(log_dir)
+            </script>
+            
+            <testcase name="'testcase_dds2117'">
+                <try>
+                    <sequence>
+                        <call function="'CreateLocalhost'"/>
+                        <script>localhost = STAXResult</script>                    
+                        <call function="'RequestHost'">{'hostname': host1_name}</call>
+                        <script>
+                            host1 = STAXResult
+                            test_scenario.add_host(host1)
+                        </script>
+                        <call function="'RequestHost'">{'hostname': host2_name, 'reused_host': 1}</call>
+                        <script>
+                            host2 = STAXResult
+                            test_scenario.add_host(host2)                            
+                        </script>
+                        <script>
+                            host1.set_ospl_home(host1_ospl_home)
+                            host2.set_ospl_home(host2_ospl_home)
+                            host1.set_env('OSPL_OUTER_HOME', host1.pathjoin(host1_ospl_src_home, 'osplo'))
+                            host2.set_env('OSPL_OUTER_HOME', host2.pathjoin(host2_ospl_src_home, 'osplo'))
+                        </script>
+                        <iterate in="[host1, host2]" var="host">
+                            <sequence>
+                                <call function="'DeployHost'">{'host': host}</call>
+                                <!--Add to PATH/LD_LIBRARY_PATH path to osplo test libs that are needed for test application-->
+                                <script>
+                                    path_var = host.isWindows() and 'PATH' or 'LD_LIBRARY_PATH'
+                                </script>
+                                <call function="'GetEnv'">[host, path_var]</call>
+                                <script>
+                                    lib_path = host.pathjoin(host.get_env('OSPL_OUTER_HOME'), 'testsuite', 'lib', host.get_target() + '-release')
+                                    host.set_env(path_var, lib_path + host.get_pathsep() + STAXResult)
+                                    print path_var
+                                    print lib_path + host.get_pathsep() + STAXResult
+                                </script>
+                            </sequence>
+                        </iterate>
+                        <script>
+                            test_scenario.set_test_scenario_initialized(1)
+                            host1.set_scenario('dds2117_scenario')
+                            host2.set_scenario('dds2117_scenario')
+                            ospl_config1 = host1.pathjoin(application_exec_dir_on_host1, '..', 'dds2117.xml')
+                            ospl_config2 = host2.pathjoin(application_exec_dir_on_host2, '..', 'dds2117.xml')
+                            host1.set_env("OSPL_URI", "file://" + ospl_config1)
+                            host2.set_env("OSPL_URI", "file://" + ospl_config2)
+                            host1.set_logdir(host1.pathjoin(application_exec_dir_on_host1, "log"))
+                            host2.set_logdir(host2.pathjoin(application_exec_dir_on_host2, "log"))
+                            sub_proc = Process(command = host1.pathjoin(application_exec_dir_on_host1, 'subscriber.exe'), 
+                                               log_file = host1.pathjoin(host1.get_logdir(), "subscriber.log"))
+                            test_scenario.set_host_app_log_file(host1, "subscriber.log")
+                            pub_proc = Process(command = './publisher',
+                                               working_dir = host2.pathjoin(application_exec_dir_on_host2),
+                                               log_file = host2.pathjoin(host2.get_logdir(), "publisher.log"))
+                            test_scenario.set_host_app_log_file(host2, "publisher.log")
+                        </script>
+                        <paralleliterate in="[host1, host2]" var="host">
+                            <sequence>
+                                <call function="'CreateDirectory'">[host, host.get_logdir()]</call>
+                                <call function="'StartOpenSplice'">[host, host.get_env("OSPL_URI"), 0]</call>
+                            </sequence>
+                        </paralleliterate>
+                        <script>time.sleep(3)</script>
+                        <call function="'SpawnProcess'">[host1, sub_proc]</call> 
+                        <script>time.sleep(10)</script>
+                        <call function="'RunProcess'">[host2, pub_proc, '1200s']</call>
+                        <script>
+                            time.sleep(10)
+                            if STAXResult['timed_out']:
+                                test_scenario.fail()
+                                test_scenario.errors.append("Puplisher process was timed out")
+                            elif STAXResult['RC'] != 0:
+                                test_scenario.fail()
+                                test_scenario.errors.append("Puplisher process was failed with RC: %s" %(STAXResult['RC']))
+                        </script>
+                        <script>time.sleep(30)</script>
+                        <call function="'TerminateProcess'">[host1, sub_proc]</call>
+                        <script>
+                            if STAXResult['terminated']:
+                                test_scenario.fail()
+                                test_scenario.errors.append("Subscriber process was terminated")
+                            elif str(STAXResult['RC']) != '0':
+                                test_scenario.fail()
+                                test_scenario.errors.append("Subscriber process was failed with RC: %s" %((STAXResult['RC'])))
+                        </script>
+                        <paralleliterate in="[host1, host2]" var="host">
+                            <sequence>
+                                <call function="'StopOpenSplice'">host</call>
+
+                                <call function="'CopyPathFromTo'">
+                                    {'src_host': host,
+                                     'src_path': host.get_logdir(),
+                                     'dest_host': localhost,
+                                     'dest_path': os.path.join(log_dir, host.get_hostname()),
+                                     'overwrite': 1,
+                                     'remove': 1}
+                                </call>
+                            </sequence>
+                        </paralleliterate>
+                        <script>
+                            test_scenario.check_results()
+                            test_scenario.analyze()
+                        </script>
+                        <message>"Test is completed        " </message>
+                        <message>"Job log is saved to %s" % log_dir </message>
+                        
+                    </sequence> 
+                    <finally>             
+                        <paralleliterate in="test_scenario.get_all_hosts()" var="host">                    
+                            <sequence>
+                                <call function="'StopOpenSplice'">host</call>
+                                <call function="'ReleaseHost'">host</call>
+                            </sequence>
+                        </paralleliterate>
+                    </finally>                
+                </try>
+            </testcase>    
+        </sequence>
+    </function>
+</stax>

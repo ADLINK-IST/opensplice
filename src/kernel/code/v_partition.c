@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -89,6 +89,7 @@ v_partitionNew(
 {
     v_partition partition, found;
 
+    OS_UNUSED_ARG(qos);
     assert(kernel != NULL);
     assert(C_TYPECHECK(kernel,v_kernel));
 
@@ -144,7 +145,7 @@ v_partitionLookupPublishers(
 
     while (participant != NULL) {
         c_lockRead(&participant->lock);
-        entities = c_select(participant->entities, 0);
+        entities = ospl_c_select(participant->entities, 0);
         c_lockUnlock(&participant->lock);
         entity = v_entity(c_iterTakeFirst(entities));
 
@@ -195,7 +196,7 @@ v_partitionLookupSubscribers(
 
     while (participant != NULL) {
         c_lockRead(&participant->lock);
-        entities = c_select(participant->entities, 0);
+        entities = ospl_c_select(participant->entities, 0);
         c_lockUnlock(&participant->lock);
         entity = v_entity(c_iterTakeFirst(entities));
 

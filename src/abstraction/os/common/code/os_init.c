@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -41,11 +41,14 @@ os_osInit (
     initCount = pa_increment(&_ospl_osInitCount);
 
     if(initCount == 1){
+        os_reportInit(OS_FALSE);
         os_sharedMemoryInit();
         os_threadModuleInit();
     } else {
+#ifndef NDEBUG
         OS_REPORT_1(OS_INFO, "os_osInit", 1,
                 "OS-layer initialization called %d times", initCount);
+#endif /* NDEBUG */
     }
     return;
 }
@@ -67,6 +70,7 @@ os_osExit (
     if(initCount == 0){
         os_sharedMemoryExit();
         os_threadModuleExit();
+	os_reportExit();
     } else if ((initCount + 1) < initCount){
         /* The 0 boundary is passed, so os_osExit is called more often than
          * os_osInit. Therefore undo decrement as nothing happened and warn. */

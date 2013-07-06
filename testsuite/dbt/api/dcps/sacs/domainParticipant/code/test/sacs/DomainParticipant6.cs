@@ -49,7 +49,7 @@ namespace test.sacs
                 result.Result = "Create Subscriber with BAD_PARAM succeeded.";
                 return result;
             }
-            participant2 = factory.CreateParticipant(null, qos, null, 0);
+            participant2 = factory.CreateParticipant(DDS.DomainId.Default, qos, null, 0);
             if (participant2 == null)
             {
                 result.Result = "Create Participant failed.";

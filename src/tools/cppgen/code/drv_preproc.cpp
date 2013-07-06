@@ -234,11 +234,11 @@ DRV_stripped_name(const char *fn)
 /*
  * Pass input through preprocessor
  */
-void DRV_pre_proc(char *myfile)
+void DRV_pre_proc(const char *myfile)
 {
 
 //   char catbuf[1664];
-   char *inname = "";
+   const char *inname = "";
    FILE *inf;
 
    if (strcmp(myfile, "standard input") == 0)

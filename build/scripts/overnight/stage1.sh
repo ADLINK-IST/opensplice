@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 cd `dirname $0` || exit 1
 
@@ -13,10 +13,13 @@ export DATE
 ProcessArgs $*
 ARGS=$*
 Assert LoadConfigs
+Assert PreRunSetup
 Assert SetupLogDir
 Assert SetupResFile
 
 # List the fields we want the display page to show.
-echo "BUILD_DISPLAY=/SETUP_TYPE,/BUILD_DIST,/KEEP_DIST,RUN/EXAMPLES" > $LOGDIR/BUILDINFO
+echo "BUILD_DISPLAY=/SETUP_TYPE,/BUILD_DIST,/KEEP_DIST,RUN/EXAMPLES_SP" > $LOGDIR/BUILDINFO
 
 . ./stage2.sh
+
+Assert PostRunSetup

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -25,7 +25,8 @@
 
 char *
 idl_cutXMLmeta (
-     char *meta)
+     char *meta,
+     c_ulong *nrOfElements)
 {
     char *result;
     int metaLength;
@@ -33,9 +34,10 @@ idl_cutXMLmeta (
     char *currentPos = meta;
     char *tmp;
     assert(meta != NULL);
+    *nrOfElements = 1;
     metaLength = strlen(meta);
     /* We will add at most 3 chars every MIN_SUBMETA_LENGTH chars (+ \0) */
-    result = os_malloc(metaLength + ((int)(metaLength/MIN_SUBMETA_LENGTH))*3 + 1);
+    result = os_malloc(metaLength + ((int)(metaLength/MIN_SUBMETA_LENGTH))*4 + 1);
     result[0] = 0;
     while(currentPos < meta + metaLength)
     {
@@ -55,7 +57,8 @@ idl_cutXMLmeta (
                 currentPos = tmp;
                 if(currentPos < meta + metaLength)
                 {
-                    strcat(result, "\"\n\"");
+                    strcat(result, "\",\n\"");
+                    (*nrOfElements)++;
                 }
             }
             else

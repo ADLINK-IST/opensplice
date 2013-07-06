@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -132,23 +132,23 @@ void                    d_adminNameSpaceWalk                    (d_admin admin,
                                                                      c_voidp userData),
                                                                  c_voidp userData);
 
+c_iter                  d_adminNameSpaceCollect                 (d_admin admin);
+void                    d_adminNameSpaceCollectFree             (d_admin admin, c_iter nameSpaces);
+
 c_ulong                 d_adminGetNameSpacesCount               (d_admin admin);
 
 d_nameSpace             d_adminGetNameSpaceForGroup             (d_admin admin,
                                                                  d_partition partition,
-                                                                 d_topic topic,
-                                                                 d_durabilityKind kind);
+                                                                 d_topic topic);
 
 c_bool                  d_adminInNameSpace                      (d_nameSpace ns,
                                                                  d_partition partition,
                                                                  d_topic topic,
-                                                                 d_durabilityKind kind,
                                                                  c_bool aligner);
 
 c_bool                  d_adminGroupInInitialAligneeNS          (d_admin admin,
                                                                  d_partition partition,
-                                                                 d_topic topic,
-                                                                 d_durabilityKind kind);
+                                                                 d_topic topic);
 
 /**
  * Determines whether the supplied partition-topic combination is in the
@@ -161,8 +161,7 @@ c_bool                  d_adminGroupInInitialAligneeNS          (d_admin admin,
  */
 c_bool                  d_adminGroupInAlignerNS                 (d_admin admin,
                                                                  d_partition partition,
-                                                                 d_topic topic,
-                                                                 d_durabilityKind kind);
+                                                                 d_topic topic);
 /**
  * Determines whether the supplied partition-topic combination is in the
  * alignee namespace for non-volatile data and the
@@ -176,8 +175,7 @@ c_bool                  d_adminGroupInAlignerNS                 (d_admin admin,
  */
 c_bool                  d_adminGroupInActiveAligneeNS           (d_admin admin,
                                                                  d_partition partition,
-                                                                 d_topic topic,
-                                                                 d_durabilityKind kind);
+                                                                 d_topic topic);
 /**
  * Determines whether the supplied partition-topic combination is in the
  * alignee namespace for non-volatile data.
@@ -190,8 +188,7 @@ c_bool                  d_adminGroupInActiveAligneeNS           (d_admin admin,
  */
 c_bool                  d_adminGroupInAligneeNS                 (d_admin admin,
                                                                  d_partition partition,
-                                                                 d_topic topic,
-                                                                 d_durabilityKind kind);
+                                                                 d_topic topic);
 
 u_topic                 d_adminGetStatusTopic                   (d_admin admin);
 
@@ -252,6 +249,10 @@ void                    d_adminReportMaster                     (d_admin admin,
                                                                  d_fellow fellow,
                                                                  d_nameSpace fellowNameSpace,
                                                                  d_nameSpace oldFellowNameSpace);
+
+void                    d_adminReportDelayedInitialSet          (d_admin admin,
+                                                                 d_nameSpace nameSpace,
+                                                                 d_fellow fellow);
 
 #if defined (__cplusplus)
 }

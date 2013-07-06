@@ -1,0 +1,288 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+ <meta http-equiv="Content-Type" content="text/html; charset=us-ascii">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <meta name="id" content=
+  "$Id$">
+  <link rel="STYLESHEET" href="MakeProjectCreator.css" charset="ISO-8859-1"
+  type="text/css">
+
+  <title>MPC: CDT6 Project Type</title>
+</head>
+
+<body>
+<div>
+  <h1 class="Head1">CDT6 Project Type documentation</h1>
+
+  <div>
+    <h3 class="Head2">Background/Abstract</h3>
+    <li class="body">The <em>CDT6 Project Type</em> generates project files utilizable
+    by Eclipse's CDT plugin, version 6.  This is the version
+    generally available/compatible with the Eclipse "Galileo" release.
+    The project type generates eclipse projects from generic mpc
+    files.  These Eclipse/CDT projects can then be imported into a user's
+    workspace and built using CDT's internal builder.</li>
+
+    <li class="body">MPC's CDT6 Project Type currently supports Linux
+    and Windows as both host and target platforms.</li>
+ </div>
+
+  <div>
+    <h3 class="Head2">Pre-requisites</h3>
+    <ul>
+      <li class="body">The following software items are required and
+    in the execution path (as well as any of their respective dependencies):
+      <dl>
+        <dt>Eclipse Galileo</dt>
+        <dd>Standard download from <a href="http://www.eclipse.org/downloads">http://www.eclipse.org/downloads</a>.</dd>
+        <dt>CDT 6.0</dt>
+        <dd>This comes packaged together with Eclipse Galileo in the
+    <a
+    href="http://www.eclipse.org/downloads/packages/eclipse-ide-cc-developers/heliosr">Eclipse
+    IDE for C/C++ Development</a>.</dd>
+        <dt>Eclipse-compatible toolchain</dt>
+        <dd>On linux platforms, this should just be the standard
+    installation of the GNU toolchain for that linux distribution.  On
+    Windows, Eclipse uses the <a href="http://www.mingw.org">MinGW</a>
+    toolchain, available for download.  Suggested tool set is <a
+    href="http://sourceforge.net/downloads/mingw/Automated%20MinGW%20Installer/MinGW%205.1.6/MinGW-5.1.6.exe/">Automated
+    MinGW Installer</a>.</dd>
+        <dt>a compatible <tt>make</tt> tool</dt>
+        <dd>This does not need to be a full-featured GNU make, but it
+    must be in the PATH as an executable named <em>make</em>.  On
+    Linux, the standard GNU make suffices.  On Windows, <a
+    href="http://gnuwin32.sourceforge.net/packages/make.htm">the
+    <em>make</em> package from GNUWin32</a> is a good choice.</dd>
+      </dl>
+
+      <li class="body">The default value of 256Mb for Eclipse's Java
+    VM heap size is insufficient for building projects the size of
+    ACE/TAO/CIAO. A minimum of 768Mb or more is suggested. This can be
+    done on the command line launch of eclipse, or in the
+    <code>eclipse.ini</code> file.</li>
+
+    </ul>
+ </div>
+
+  <div>
+    <h3 class="Head2">Usage</h3>
+    For every <code>project <var>myprojname</var> { }</code> in mpc files, the CDT6 project type
+    generates a corresponding "eclipse project" directory of the form
+    <samp>cdt_<var>myprojname</var></samp>.  The CDT6 Project Type
+    uses Eclipse's <em>linked resource</em> feature to work around
+    Eclipse's usual requirement that source files reside inside the Eclipse project
+    directory.  However, the linked resource feature also comes with
+    restrictions; see <a href="#fullpath">the note</a> for details.
+
+    <h4>Generic workflow</h4>
+    Presuming .mpc files already exist:
+    <ol>
+     <li>Generate projects using <samp>-type cdt6</samp>.</li>
+      <li>Import projects into an Eclipse workspace.</li>
+   </ol>
+
+   <h4>Workflow for building ACE/TAO</h4>
+   <ol>
+     <li>Check out a copy of ACE/TAO.</li>
+
+     <li>Configure ACE/TAO for your target(s) by setting up
+   <samp>config.h</samp>.
+     </li>
+
+     <li>Set up environment variables (<var>ACE_ROOT</var>,
+     <var>TAO_ROOT</var>, etc.), <var>PATH</var>,
+     <var>LD_LIBRARY_PATH</var> (or similar), etc.
+     </li>
+
+     <li>Verify settings in <samp>global.features</samp> and, if changes
+     are necessary, make appropriate changes in
+     <samp>default.features</samp>.
+     </li>
+
+     <li>Generate projects using <samp>-type cdt6</samp> insuring the
+     use of <samp>mwc.pl</samp> from within ACE, e.g.,
+     <blockquote><pre>
+$ cd $TAO_ROOT
+$ mwc.pl -type cdt6 TAO_ACE.mwc
+</pre></blockquote>
+     <samp>mwc.pl</samp> will churn for awhile.
+     </li>
+
+     <li><em>Suggestion:</em> Verify that <strong>Project->Build
+     Automatically</strong> is unchecked (has no checkmark to its
+     immediate left). If this is left on, then the build will start as
+     soon as the import in the next step begins, and it will build everything.</li>
+
+     <li>From within Eclipse (preferably an otherwise-empty workspace) select
+     <strong>File->Import...</strong> and perform the following actions:
+     <ol type="a">
+       <li>Choose <strong>General->Existing Projects Into
+     Workspace</strong> and click <strong>Next</strong></li>
+       <li>In "Select Root Directory:" text field, enter the full path
+     to the directory <em>above</em> ACE, TAO, etc. (you can also use
+     the "Browse" feature to select the directory from the GUI). For
+     example, if you checked everything out into
+     <samp>/home/joedeveloper/acetao</samp> and ACE and TAO are in a
+     peer layout under that directory, you would enter
+     <samp>/home/joedeveloper/acetao</samp> in the text field.
+     </li>
+     <li>Eclipse will scan all the subdirectories looking for existing
+     projects; this can take a few minutes for something as large as
+     TAO or CIAO. <strong>NOTE:</strong> If you have previously run
+     MPC to generate CDT projects with one workspace
+     (<samp>.mwc</samp> file) and then ran it later with a different
+     workspace without removing the projects from the first
+     generation, Eclipse will still find those projects for import.
+     See <a href="#remove_projects">the note on removing generated
+     projects</a> for information on how to do that.</li>
+
+     <li><strong>Be sure that the checkbox next to <em>Copy projects
+     into workspace</em> is <em>UN</em>checked.</strong> Copying projects into
+     the workspace unnecessarily duplicates files, plus we have found
+     that Eclipse can get confused with file paths sometimes (though
+     sometimes it will work).</li>
+
+     <li>Feel free to use <em>Working Sets</em> or not. You may also
+     choose to import a subset of the discovered projects by
+     manipulating them in the list, however, experience suggests that
+     the list is ignorant of dependency interactions between projects,
+     so you must manage that manually (<em>i.e.</em>, you could import
+     a project, but not projects upon which the first depends, and
+     that first project would then fail to build).</li>
+
+     <li>Click <strong>Finish</strong> to proceed with the import.</li>
+     </ol>
+     Eclipse will now start populating the <em>Projects</em> pane with
+     projects.  If you didn't uncheck <strong>Build
+     Automatically</strong>, then builds will start.  Regardless, the
+     C++ indexer will run in the background across the source of all projects.</li>
+   </ol>
+
+   <h4>Building A Project</h4>
+   To build a project or set of projects, select the project (or
+   projects) in the <em>Project</em> pane, then select
+   <strong>Project->Build Project</strong>. Eclipse will evaluate
+   <em>ALL</em> dependencies automatically, though not necessarily
+   quickly.
+   <p>
+   <em>Hint:</em> a good choice to get all of ACE/TAO built is to
+   choose the <em>Naming Service</em> project.
+
+</div>
+
+<div>
+  <h3 class="Head2">Multiple Platforms</h3>
+  Just as a project created within CDT can be set up to support
+  multiple platforms, so too can projects generated via MPC. To the
+  extent possible, the platforms are represented in generated projects
+  in the same way as they are in "native" projects (though there will
+  be some differences).
+
+  <h4>Generating Projects with Multiple Platform Support</h4>
+  <p>
+  Platforms are named in a list called <samp>platforms</samp> in the
+  CDT6 template (much like other MPC templates). The list defaults to
+  the platform on which <samp>mwc.pl</samp> is run.  To generate for
+  another platforms, or for additional platforms, you must provide
+  <samp>platforms</samp> with the list of platforms to generate.
+  </p>
+  <p>
+  Generate projects using a similar incantation to the default (from
+  above) using <samp>-type cdt6</samp> and <samp>-value_template
+  platform="&lt;platform_list&gt;"</samp>, insuring the
+     use of <samp>mwc.pl</samp> from within ACE, e.g.,
+     <blockquote><pre>
+$ cd $TAO_ROOT
+$ mwc.pl -type cdt6 -value_template platforms="linux cellppu" TAO_ACE.mwc
+</pre></blockquote>
+  </p>
+  <p>
+  Platforms are defined as scopes in <tt>templates/cdt6platforms.mpt</tt>.
+  </p>
+
+  <h4>Cross-Compilation</h4>
+  <p>
+  Cross-compilation is handled the same as a platform; the target is
+  the platform.  If you want to generate for cross-compilation, the
+  cross-compiler information must be defined in a scope (typically
+  named for the target type) in
+  <tt>templates/cdt6platforms.mpt</tt>. If a scope does not exist for
+  the target, follow <a href="#addplatform">the instructions for adding
+  a new platform.</a>
+  </p>
+  <p>
+  In the example given above, <samp>cellppu</samp> is the name of the
+  platform for cross-compilation.
+  </p>
+
+  <h4>Adding a New Platform<a name="addplatform"></a></h4>
+  To add a new platform, particularly one for cross-compilation, it's
+  probably easiest to start from an existing scope, e.g.,
+  <samp>cellppu</samp>. For cross-compilation where the cross-compiler
+  toolchain is GNU Compiler-based, you will need to provide the names
+  of the various executables in the toolchain in the values
+  <samp>as</samp>, <samp>ar</samp>, <samp>cc</samp>, and
+  <samp>cxx</samp>.  And, optionally, <samp>ccld</samp> and/or
+  <samp>cxxld</samp> if the linker used for linking C and C++
+  executables, respectively, is different from the respective
+  compiler. CDT expects these to be in the path.
+
+</div>
+  <div>
+    <h3 class="Head2">Notes</h3>
+    <ol>
+      <li>
+      There is no generated workspace. Eclipse's concept of workspace is
+      very different from MPC's, and there is no way to generate a
+      workspace. Eclipse's workspace concept doesn't permit sharing
+      among machines or developers or even checking a workspace into
+      version control.
+      </li>
+
+      <li>The Eclipse "workspace" and MPC project + source must not be in the
+      same directory hierarchy.  For example, if you chose to have
+      Eclipse store its workspace in
+      <samp>/home/joedeveloper/workspace</samp>, you may not put your
+      MPC project+source under that directory.  However, putting the
+      MPC project+source under <samp>/home/joedeveloper/acetao</samp>
+      or similar, <em>i.e.</em>, as a <em>peer</em> to the workspace
+      directory, is fine.
+      </li>
+
+      <li><a name="fullpath"></a>CDT6 uses Eclipse's <em>linked
+      resource</em> feature to work around the usual requirement that
+      all source code reside in Eclipse project directories.  These
+      act similar to Unix symbolic links.  While convenient so that a
+      developer is not required to conform to Eclipse's directory
+      layout, it comes at a price: the target of the link must be
+      specified as a full path. The consequence of this restriction is
+      that, once the CDT6 projects get generated, the source should
+      not move in the filesystem.</li>
+
+      <li><a name="remove_projects"></a>MPC's CDT Project Generator
+    creates directories named <samp>cdt_*</samp> for projects, similar
+    to how the GNUACE generator generates makefiles of the form
+    <samp>GNUmakefile.*</samp>. To remove all CDT projects from a
+    directory hierarchy, on Linux you can use a command such as:
+<pre>
+  $ find . -name 'cdt_*' -print | xargs rm -rf
+</pre>
+      </li>
+
+      <li>Perfect hash generation using the IDL compiler is not
+    currently working because the IDL compiler cannot find the
+    <samp>gperf</samp> executable. This may be a <code>PATH</code>
+    issue, "installation" issue, or an mpc file dependency issue.  The
+    IDL compiler works but does not generate perfect hash lookups.</li>
+    </ol>
+  </div>
+
+</div>
+
+
+<hr>
+<address></address>
+<!-- hhmts start --> Last modified: Thu Jul 22 11:14:15 CDT 2010 <!-- hhmts end -->
+</body> </html>

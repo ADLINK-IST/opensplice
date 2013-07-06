@@ -1,12 +1,12 @@
-/*
+ /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -202,6 +202,14 @@ JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniGetTopic
  */
 JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniGetServiceState
   (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniGetVersion
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniGetVersion
+  (JNIEnv *, jobject);
 
 /*
  * Class:     org_opensplice_cm_com_JniCommunicator
@@ -426,6 +434,46 @@ JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniWaitsetS
  */
 JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniDataReaderWaitForHistoricalData
   (JNIEnv *, jobject, jstring, jint, jint);
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniStorageOpen
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniStorageOpen
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniStorageClose
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniStorageClose
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniStorageAppend
+ * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniStorageAppend
+  (JNIEnv *, jobject, jstring, jstring, jstring);
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniStorageRead
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniStorageRead
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniStorageGetType
+ * Signature: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniStorageGetType
+  (JNIEnv *, jobject, jstring, jstring);
 
 #ifdef __cplusplus
 }

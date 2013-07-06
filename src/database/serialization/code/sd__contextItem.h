@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -161,7 +161,7 @@ void
 sd_contextItemFree (
     sd_contextItem item);
 
-void
+sd_contextItem
 sd_contextItemKeep (
     sd_contextItem item);
 
@@ -169,6 +169,28 @@ sd_contextItemKeep (
 void
 sd_contextItemAddChild (
     sd_contextItem parent,
+    sd_contextItem child);
+
+void
+sd_contextItemInsertChild (
+    sd_contextItem item,
+    sd_contextItem child);
+
+void
+sd_contextItemInsertChildAfter(
+    sd_contextItem item,
+    sd_contextItem child,
+    sd_contextItem after);
+
+void
+sd_contextItemInsertChildBefore(
+    sd_contextItem item,
+    sd_contextItem child,
+    sd_contextItem before);
+
+void
+sd_contextItemRemoveChild(
+    sd_contextItem item,
     sd_contextItem child);
 
 void 

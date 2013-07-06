@@ -1,0 +1,113 @@
+/*
+ *                         OpenSplice DDS
+ *
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
+ *   Limited and its licensees. All rights reserved. See file:
+ *
+ *                     $OSPL_HOME/LICENSE
+ *
+ *   for full copyright notice and license terms.
+ *
+ */
+
+/****************************************************************
+ * Initialization / Deinitialization                            *
+ ****************************************************************/
+
+/** \file os/darwin/code/os_init.c
+ *  \brief Initialization / Deinitialization
+ */
+
+#include <sys/utsname.h>
+#include <code/os__process.h>
+#include <code/os__thread.h>
+#include <code/os__sharedmem.h>
+#include <os_abstract.h>
+#include <os_report.h>
+#include <../posix/code/os__mutex.h>
+
+#include "include/os_msem.h"
+
+/** \brief Counter that keeps track of number of times os-layer is initialized */
+static os_uint32 _ospl_osInitCount = 0;
+
+int os_pthread_shared_supported;
+
+/** \brief OS layer initialization
+ *
+ * \b os_osInit calls:
+ * - \b os_sharedMemoryInit
+ * - \b os_threadInit
+ */
+void os_osInit (void)
+{
+  os_uint32 initCount;
+
+  initCount = pa_increment(&_ospl_osInitCount);
+
+  if (initCount == 1) {
+<<<<<<< HEAD
+    os_reportInit(OS_FALSE);
+    __msem_init_global ();
+=======
+    struct utsname nm;
+    if (getenv ("__MSEM_KEY") || getenv ("__MSEM_ADDR") || uname (&nm) < 0) {
+      /* if msem explicitly configured or version number unavailable,
+       * use our own shared mutex/cond.var support */
+      os_pthread_shared_supported = 0;
+    } else {
+      /* release is formated as major.minor.patch, so atoi'll do the trick,
+       * first version on which it has been tried is Mac OS X Lion, a.k.a.
+       * Darwin 11. */
+      int major = atoi (nm.release);
+      os_pthread_shared_supported = (major >= 11);
+    }
+
+    if (!os_pthread_shared_supported) {
+      /* If we use our own, init it */
+      __msem_init_global ();
+    }
+>>>>>>> 88d6698e45af33fc9fdbcdd2c491c4b2d83fb683
+    os_mutexModuleInit();
+    os_processModuleInit();
+    os_threadModuleInit();
+    os_sharedMemoryInit();
+  } else {
+    OS_REPORT_1(OS_INFO, "os_osInit", 1,
+                "OS-layer initialization called %d times", initCount);
+  }
+  return;
+}
+
+/** \brief OS layer deinitialization
+ *
+ * \b os_osExit calls:
+ * - \b os_sharedMemoryExit
+ * - \b os_threadExit
+ */
+void os_osExit (void)
+{
+  os_uint32 initCount;
+
+  initCount = pa_decrement(&_ospl_osInitCount);
+
+  if (initCount == 0) {
+    os_sharedMemoryExit();
+    os_threadModuleExit();
+    os_processModuleExit();
+    os_mutexModuleExit();
+    if (!os_pthread_shared_supported) {
+      __msem_fini_global ();
+    }
+  } else if ((initCount + 1) < initCount){
+    /* The 0 boundary is passed, so os_osExit is called more often than
+     * os_osInit. Therefore undo decrement as nothing happened and warn. */
+    initCount = pa_increment(&_ospl_osInitCount);
+    OS_REPORT(OS_WARNING, "os_osExit", 1, "OS-layer not initialized");
+    /* Fail in case of DEV, as it is incorrect API usage */
+    assert(0);
+  }
+  return;
+}
+
+#include <../common/code/os_service.c>

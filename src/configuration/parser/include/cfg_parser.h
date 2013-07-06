@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -35,6 +35,11 @@ typedef enum cfgprs_status_enum {
 OS_API cfgprs_status
 cfg_parse_ospl (
     const char *uri,
+    cf_element *spliceElement);
+
+OS_API cfgprs_status
+cfg_parse_str (
+    const char *str,
     cf_element *spliceElement);
 
 #undef OS_API

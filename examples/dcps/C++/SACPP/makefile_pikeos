@@ -1,0 +1,69 @@
+-include $(OSPL_HOME)/examples/common/os_defs_x86.pikeos3.2.mak
+
+#
+# Include paths
+INCLUDES=-I./
+INCLUDES+=-I./bld
+INCLUDES+=-I$(OSPL_HOME)/include/dcps/C++/SACPP
+INCLUDES+=-I$(OSPL_HOME)/include
+INCLUDES+=-I$(OSPL_HOME)/include/sys
+
+# Compiler settings.
+CFLAGS=-g -c $(CFLAGS_EXTRA) $(INCLUDES)
+
+# Linker settings.
+LD_FLAGS=$(C_LD_FLAGS_EXTRA)
+LD_LIBS=$(C_LD_LIBS_EXTRA)
+
+#OpenSplice idl preprocessor
+OSPLICE_COMP=$(OSPL_HOME)/bin/idlpp -S -l cpp -d bld
+
+OSPLICE_LIBS=-lspliced -lnetworking -ldurability -lcmsoap -lcmxml -ldcpssacpp -ldcpsgapi -lddsuser -lddsconf -lddsconfparser -lddskernel -lddsdatabase -lddsutil -lddsserialization -lddsosnet -lddsos
+
+DCPS_SRC_FILES = bld/pingpongDcps.cpp  bld/pingpongSplDcps.cpp bld/pingpongDcps_impl.cpp
+
+DCPS_OBJ_FILES = $(patsubst %.cpp, %.o, $(DCPS_SRC_FILES))
+
+URIFILE=$(patsubst file://%, %, $(OSPL_URI))
+
+.c.o :
+	@echo "Compiling $<"
+	@$(CC) $(CFLAGS) $< -o $@
+
+.cpp.o :
+	@echo "Compiling $<"
+	@$(CXX) $(CXXFLAGS_EXTRA) $(CFLAGS) $< -o $@
+
+all : dirs exec/ping exec/pong
+	@echo ">>>> all done"
+	@echo ">>>> to execute, enter : sh RUN"
+	@echo ">>>> to clean, enter : make clean"
+
+ospl_config.c: $(URIFILE)
+	osplconf2c -o ospl_config.c
+
+dirs :
+	@mkdir -p bld
+	@mkdir -p exec
+
+$(DCPS_SRC_FILES) : pingpong.idl
+	@echo "Compiling IDL with SPLICE IDL compiler"
+	@mkdir -p bld
+	@$(OSPLICE_COMP) $(INCLUDES) $<
+
+exec/ping : $(DCPS_OBJ_FILES) ping.o ospl_config.o
+	@echo "Linking PING"
+	@mkdir -p exec
+	@$(LD) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS) $(CXX_LD_FLAGS_EXTRA) $(CXX_LD_LIBS_EXTRA) $(LD_LIBS)
+
+exec/pong : $(DCPS_OBJ_FILES) pong.o ospl_config.o
+	@echo "Linking PONG"
+	@mkdir -p exec
+	@$(LD) $(LD_FLAGS) -L$(OSPL_HOME)/lib -o $@ $^ $(OSPLICE_LIBS) $(CXX_LD_FLAGS_EXTRA) $(CXX_LD_LIBS_EXTRA) $(LD_LIBS)
+
+clean :
+	@rm -f *.o
+	@rm -f bld/*
+	@rm -f exec/*
+	@rmdir bld
+	@rmdir exec

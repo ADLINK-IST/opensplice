@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -25,11 +25,11 @@ import java.util.ArrayList;
  * @date Oct 12, 2004 
  */
 public class IncompatibleQosInfo{
-    private long total_count;
-    private long total_count_change;
+    private final long total_count;
+    private final long total_count_change;
     private long last_policy_id;
     private ArrayList policies;
-    private String[] policyNames = {
+    private final String[] policyNames = {
         "INVALID_QOS_POLICY_ID", "USERDATA_QOS_POLICY_ID",
         "DURABILITY_QOS_POLICY_ID", "PRESENTATION_QOS_POLICY_ID",
         "DEADLINE_QOS_POLICY_ID", "LATENCYBUDGET_QOS_POLICY_ID", 
@@ -95,7 +95,7 @@ public class IncompatibleQosInfo{
         String result;
         
         if(this.policyNames.length >= this.last_policy_id+1){
-            result = policyNames[new Long(this.last_policy_id).intValue()];
+            result = policyNames[(int) (this.last_policy_id)];
         } else {
             result = "!CM API MISMATCH!"; 
         }

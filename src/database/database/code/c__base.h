@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -18,7 +18,6 @@
 
 #include "c_base.h"
 #include "c_mmbase.h"
-#include "c__extent.h"
 #include "c_module.h"
 #include "c_avltree.h"
 
@@ -106,9 +105,9 @@ C_STRUCT(c_base) {
     c_avlTree bindings;
     c_mutex   bindLock;
     c_mutex   serLock; /* currently only used for defining enums from sd_serializerXMLTypeinfo.c */
-    c_mutex   extentBugLock; /* this lock must be removed when extents are created properly*/
     c_type    metaType[M_COUNT];
     c_type    string_type;
+    c_string  emptyString;
     C_STRUCT(c_baseCache) baseCache;
 
 #ifndef NDEBUG
@@ -126,8 +125,6 @@ OS_API c_type   c_getMetaType (c_base base, c_metaKind kind);
 /** @fn c_baseMM (c_base base)
     @brief Lookup the memory management object of the given database.
 */
-OS_API c_mm     c_baseMM      (c_base base);
-
 OS_API void     c__free(c_object object);
 
 OS_API c_long   c_memsize(c_type type);

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,7 +20,7 @@
 #include "os_time.h"
 #include "os_heap.h"
 #include "os_abstract.h"
-#include "code/os__debug.h"
+#include "os__debug.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -203,12 +203,62 @@ os_threadExit(
     ExitThread((DWORD)thread_result);
 }
 
+const DWORD MS_VC_EXCEPTION=0x406D1388;
+
+#pragma pack(push,8)
+typedef struct tagTHREADNAME_INFO
+{
+   /** Must be 0x1000. */
+   DWORD dwType;
+   /** Pointer to name (in user addr space). */
+   LPCSTR szName;
+   /** Thread ID (-1=caller thread). */
+   DWORD dwThreadID;
+   /**  Reserved for future use, must be zero. */
+   DWORD dwFlags;
+} THREADNAME_INFO;
+#pragma pack(pop)
+
+/**
+* Usage: os_threadSetThreadName (-1, "MainThread");
+* @pre ::
+* @see http://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx
+* @param dwThreadID The thread ID that is to be named, -1 for 'self'
+* @param threadName The name to apply.
+*/
+void os_threadSetThreadName( DWORD dwThreadID, char* threadName)
+{
+   char* tssThreadName;
+#ifndef WINCE /* When we merge the code, this first bit won't work there */
+   THREADNAME_INFO info;
+   info.dwType = 0x1000;
+   info.szName = threadName;
+   info.dwThreadID = dwThreadID;
+   info.dwFlags = 0;
+
+   __try
+   {
+      RaiseException( MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(ULONG_PTR), (ULONG_PTR*)&info );
+   }
+   __except(EXCEPTION_EXECUTE_HANDLER)
+   {
+   }
+#endif /* No reason why the restshouldn't though */
+
+    tssThreadName = (char *)os_threadMemGet(OS_THREAD_NAME);
+    if (tssThreadName == NULL)
+    {
+        tssThreadName = (char *)os_threadMemMalloc(OS_THREAD_NAME, (strlen(threadName) + 1));
+        os_strcpy(tssThreadName, threadName);
+    }
+}
+
 /** \brief Wrap thread start routine
  *
  * \b os_startRoutineWrapper wraps a threads starting routine.
- * before calling the user routine, it sets the threads name
- * in the context of the thread. With \b pthread_getspecific,
- * the name can be retreived for different purposes.
+ * before calling the user routine. It tries to set a thread name
+ * that will be visible if the process is running under the MS
+ * debugger.
  */
 static void *
 os_startRoutineWrapper(
@@ -220,6 +270,9 @@ os_startRoutineWrapper(
 
     /* allocate an array to store thread private memory references */
     os_threadMemInit();
+
+    /* Set a thread name that will take effect if the process is running under a debugger */
+    os_threadSetThreadName(-1, context->threadName);
 
     id.threadId = GetCurrentThreadId();
     id.handle = GetCurrentThread();
@@ -380,7 +433,7 @@ os_threadWaitExit(
     }
 
     callstatus = GetExitCodeThread(threadId.handle, &tr);
-    
+
     if (callstatus == 0) {
        err = GetLastError();
        OS_DEBUG_1("os_threadWaitExit", "GetExitCodeThread Failed %d", err);
@@ -418,8 +471,14 @@ os_threadFigureIdentity(
     os_uint threadIdentitySize)
 {
    os_int32 size;
+   char* threadName;
 
-   size = snprintf(threadIdentity, threadIdentitySize, "%u", GetCurrentThreadId());
+   threadName = (char *)os_threadMemGet(OS_THREAD_NAME);
+   if (threadName != NULL) {
+       size = snprintf (threadIdentity, threadIdentitySize, "%s %u", threadName, GetCurrentThreadId());
+   } else {
+       size = snprintf (threadIdentity, threadIdentitySize, "%u", GetCurrentThreadId());
+   }
 
    return size;
 }
@@ -447,7 +506,7 @@ os_threadFigureIdentity(
 void *
 os_threadMemMalloc(
     os_int32 index,
-    os_int32 size)
+    os_size_t size)
 {
    void **tlsMemArray;
    void *threadMemLoc = NULL;

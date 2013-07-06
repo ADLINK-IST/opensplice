@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -415,7 +415,7 @@ idl_typedefOpenClose(
             idl_fileCur(),
             "    public %s (%s%s initialValue)\n",
             holderName,
-            idl_corbaJavaTypeFromTypeSpec(idl_typeArrayActual(idl_typeSeq(idl_typeDefRefered(defSpec)))),
+            idl_corbaJavaTypeFromTypeSpec(idl_typeArrayActual(idl_typeArray(idl_typeDefRefered(defSpec)))),
             idl_arrayJavaIndexString(idl_typeArray (idl_typeDefRefered (defSpec))));
         idl_fileOutPrintf(idl_fileCur(), "    {\n");
         idl_fileOutPrintf(idl_fileCur(), "        value = initialValue;\n");

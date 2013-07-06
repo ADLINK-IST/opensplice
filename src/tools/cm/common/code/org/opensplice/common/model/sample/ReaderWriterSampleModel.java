@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -16,6 +16,7 @@ import org.opensplice.cm.DataTypeUnsupportedException;
 import org.opensplice.cm.Reader;
 import org.opensplice.cm.Writer;
 import org.opensplice.cm.data.Sample;
+import org.opensplice.cm.data.UserData;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.model.table.UserDataEditTableModel;
 
@@ -54,6 +55,36 @@ public class ReaderWriterSampleModel extends ReaderSampleModel {
         }
     }
     
+    public ReaderWriterSampleModel(Reader _reader, Writer _writer, String struct) throws CommonException {
+        super(_reader, struct);
+        if(_writer == null){
+            throw new CommonException("Supplied writer == null.");
+        }
+        writer = _writer;
+        try {
+            writerModel = new UserDataEditTableModel(writer.getDataType(), struct);
+        } catch (CMException e) {
+            throw new CommonException("Writer data type could not be resolved.");
+        } catch (DataTypeUnsupportedException e) {
+            throw new CommonException("Writer data type could not be resolved.");
+        }
+    }
+    
+    public boolean isCollectionType(String name) throws CommonException{
+        boolean result = false;
+
+        try {
+            UserData data = writerModel.getData();
+            if (data != null && !data.isStringCollection(name)) {
+                result = data.isCollection(name);
+            }
+        } catch (CommonException e) {
+            throw new CommonException(e.getMessage());
+        }
+        
+        return result;
+    }
+    
     /**
      * Writes the current data in the writer model with the Writer of this model.
      * 
@@ -61,7 +92,98 @@ public class ReaderWriterSampleModel extends ReaderSampleModel {
      */
     public void write() throws CommonException{
         try {
-            writer.write(writerModel.getData());
+            UserData data = writerModel.getData();
+            for (int i=0;i<writerModel.getRowCount();i++) {
+                String value = (data.getUserData().get(writerModel.getValueAt(i, 1)));
+                if (value != null) {
+                    data.setData((String)writerModel.getValueAt(i, 1), (String)writerModel.getValueAt(i, 2));
+                }
+            }
+            writer.write(data);
+        } catch (CMException e) {
+            throw new CommonException(e.getMessage());
+        }
+    }
+    
+    public boolean isWriterDataValid() throws CommonException {
+        boolean result = true;
+        UserData data = writerModel.getData();// needed to update the data from the editModel to the writerModel
+        for (int i=0;i<writerModel.getRowCount();i++) {
+            String name = (String)writerModel.getValueAt(i, 1);
+            String value = (data.getUserData().get(name));
+            if (value == null || value.equals("NULL")) {
+                if (data.isCollection(name)) {
+                    result = false;
+                }
+            }
+        }
+        return result;
+    }
+    
+    public boolean isContainsUnboundedSequence() throws CommonException {
+        boolean result = true;
+        UserData data = writerModel.getData();// needed to update the data from the editModel to the writerModel
+        for (int i=0;i<writerModel.getRowCount();i++) {
+            String name = (String)writerModel.getValueAt(i, 1);
+            String value = (data.getUserData().get(name));
+            if (value == null || value.equals("NULL")) {
+                if (data.isCollection(name)) {
+                    result = false;
+                }
+            }
+        }
+        return result;
+    }
+    
+    /**
+     * Writes the data from the UserDataModel with the Writer of this model.
+     * 
+     * @throws CommonException Thrown when the Writer is not available.
+     */
+    public UserData writeCurrentFrame(UserData currentData) throws CommonException {
+        try {
+            UserData data = writerModel.getData();
+            for (int i=0;i<writerModel.getRowCount();i++) {
+                String name = (String)writerModel.getValueAt(i, 1);
+                String value = (String)writerModel.getValueAt(i, 2);
+                if (name != null && !data.isCollection(name)) {
+                    if (value != null) {
+                        currentData.setData(name, value);
+                    }
+                }
+            }
+        } catch (CommonException e) {
+            throw new CommonException(e.getMessage());
+        }
+        return currentData;
+    }
+    
+    public UserData collectUserData(UserData data) throws CommonException {
+        if (data == null) {
+            data = writerModel.getData();
+        } else {
+            writerModel.stopEdit();
+            /*
+             * needed to update the data from the editModel to the writerModel
+             */
+        }
+        for (int i = 0; i < writerModel.getRowCount(); i++) {
+            String typeName = (String) writerModel.getValueAt(i, 1);
+            if (data.isStringCollection(typeName)) {
+                data.setData((String) writerModel.getValueAt(i, 1) + "[0]", (String) writerModel.getValueAt(i, 2));
+            }
+        }
+        return data;
+    }
+
+    /**
+     * Writes the data from the UserDataModel with the Writer of this model.
+     * 
+     * @throws CommonException Thrown when the Writer is not available.
+     */
+    public void write(UserData data) throws CommonException{
+        try {
+            writer.write(collectUserData(data));
         } catch (CMException e) {
             throw new CommonException(e.getMessage());
         }
@@ -74,8 +196,12 @@ public class ReaderWriterSampleModel extends ReaderSampleModel {
      * @throws CommonException Thrown when the Writer is not available.
      */
     public void dispose() throws CommonException{
+        dispose(writerModel.getData());
+    }
+
+    public void dispose(UserData data) throws CommonException {
         try {
-            writer.dispose(writerModel.getData());
+            writer.dispose(collectUserData(data));
         } catch (CMException e) {
             throw new CommonException(e.getMessage());
         }
@@ -88,8 +214,12 @@ public class ReaderWriterSampleModel extends ReaderSampleModel {
      * @throws CommonException Thrown when the Writer is not available.
      */
     public void writeDispose() throws CommonException{
+        writeDispose(writerModel.getData());
+    }
+
+    public void writeDispose(UserData data) throws CommonException {
         try {
-            writer.writeDispose(writerModel.getData());
+            writer.writeDispose(collectUserData(data));
         } catch (CMException e) {
             throw new CommonException(e.getMessage());
         }
@@ -102,8 +232,12 @@ public class ReaderWriterSampleModel extends ReaderSampleModel {
      * @throws CommonException Thrown when the Writer is not available.
      */
     public void register() throws CommonException{
+        register(writerModel.getData());
+    }
+
+    public void register(UserData data) throws CommonException {
         try {
-            writer.register(writerModel.getData());
+            writer.register(collectUserData(data));
         } catch (CMException e) {
             throw new CommonException(e.getMessage());
         }
@@ -116,8 +250,12 @@ public class ReaderWriterSampleModel extends ReaderSampleModel {
      * @throws CommonException Thrown when the Writer is not available.
      */
     public void unregister() throws CommonException{
+        unregister(writerModel.getData());
+    }
+
+    public void unregister(UserData data) throws CommonException {
         try {
-            writer.unregister(writerModel.getData());
+            writer.unregister(collectUserData(data));
         } catch (CMException e) {
             throw new CommonException(e.getMessage());
         }
@@ -142,6 +280,7 @@ public class ReaderWriterSampleModel extends ReaderSampleModel {
      * @return When the supplied index is not available, false is returned,
      *         true otherwise. 
      */
+    @Override
     public boolean setSelectedSample(int index){
         boolean result = super.setSelectedSample(index);
         Sample s = null;
@@ -160,11 +299,12 @@ public class ReaderWriterSampleModel extends ReaderSampleModel {
         } else if(s.getMessage().getUserData() == null){
             return false;
         }
+        writerModel.clear();
         writerModel.setData(s.getMessage().getUserData());
         
         return true;
     }
-    
+
     /**
      * Provides access to the Writer of this model.
      * 

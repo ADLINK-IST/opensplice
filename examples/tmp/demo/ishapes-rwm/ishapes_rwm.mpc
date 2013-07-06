@@ -1,0 +1,31 @@
+project (*areader) : ospl_dcpssacpp, ospl_dcpsisocpp, sacpp_typesupport {
+    includes += $(OSPL_HOME_NORMALIZED)/examples
+    Source_Files {
+        util.cpp
+        ishapes-areader.cpp
+    }
+}
+
+project (*reader) : ospl_dcpssacpp, ospl_dcpsisocpp, sacpp_typesupport {
+    includes += $(OSPL_HOME_NORMALIZED)/examples
+    Source_Files {
+        util.cpp
+        ishapes-reader.cpp
+    }
+}
+
+project (*sreader) : ospl_dcpssacpp, ospl_dcpsisocpp, sacpp_typesupport {
+    includes += $(OSPL_HOME_NORMALIZED)/examples
+    Source_Files {
+        util.cpp
+        ishapes-sreader.cpp
+    }
+}
+
+project (*writer) : ospl_dcpssacpp, ospl_dcpsisocpp, sacpp_typesupport {
+    includes += $(OSPL_HOME_NORMALIZED)/examples
+    Source_Files {
+        util.cpp
+        ishapes-writer.cpp
+    }
+}

@@ -527,10 +527,8 @@ namespace DDS.OpenSplice
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSTopic");
                     if (reader_gapiPtr != IntPtr.Zero)
                     {
-                        DDS.TopicBuiltinTopicDataTypeSupport typeSupport =
-                                GetTypeSupport("DDS::TopicBuiltinTopicData")
-                                        as DDS.TopicBuiltinTopicDataTypeSupport;
-                        typeSupport.CreateDataReader(reader_gapiPtr);
+                        TypeSupportFactory tsFactory = GetTypeSupportFactory("DDS::TopicBuiltinTopicData");
+                        tsFactory.CreateDataReader(reader_gapiPtr);
                         IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
                         if (topic_gapiPtr != IntPtr.Zero)
                         {
@@ -539,10 +537,8 @@ namespace DDS.OpenSplice
                     }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSParticipant");
                     if (reader_gapiPtr != IntPtr.Zero){
-                        DDS.ParticipantBuiltinTopicDataTypeSupport typeSupport =
-                                GetTypeSupport("DDS::ParticipantBuiltinTopicData")
-                                        as DDS.ParticipantBuiltinTopicDataTypeSupport;
-                        typeSupport.CreateDataReader(reader_gapiPtr);
+                        TypeSupportFactory tsFactory = GetTypeSupportFactory("DDS::ParticipantBuiltinTopicData");
+                        tsFactory.CreateDataReader(reader_gapiPtr);
                         IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
                         if (topic_gapiPtr != IntPtr.Zero)
                         {
@@ -551,10 +547,8 @@ namespace DDS.OpenSplice
                     }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSPublication");
                     if (reader_gapiPtr != IntPtr.Zero){
-                        DDS.PublicationBuiltinTopicDataTypeSupport typeSupport =
-                                GetTypeSupport("DDS::PublicationBuiltinTopicData")
-                                        as DDS.PublicationBuiltinTopicDataTypeSupport;
-                        typeSupport.CreateDataReader(reader_gapiPtr);
+                        TypeSupportFactory tsFactory = GetTypeSupportFactory("DDS::PublicationBuiltinTopicData");
+                        tsFactory.CreateDataReader(reader_gapiPtr);
                         IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
                         if (topic_gapiPtr != IntPtr.Zero)
                         {
@@ -563,10 +557,8 @@ namespace DDS.OpenSplice
                     }
                     reader_gapiPtr = Gapi.Subscriber.lookup_datareader(subscriber_gapiPtr, "DCPSSubscription");
                     if (reader_gapiPtr != IntPtr.Zero){
-                        DDS.SubscriptionBuiltinTopicDataTypeSupport typeSupport =
-                                GetTypeSupport("DDS::SubscriptionBuiltinTopicData")
-                                        as DDS.SubscriptionBuiltinTopicDataTypeSupport;
-                        typeSupport.CreateDataReader(reader_gapiPtr);
+                        TypeSupportFactory tsFactory = GetTypeSupportFactory("DDS::SubscriptionBuiltinTopicData");
+                        tsFactory.CreateDataReader(reader_gapiPtr);
                         IntPtr topic_gapiPtr = Gapi.DataReader.get_topicdescription(reader_gapiPtr);
                         if (topic_gapiPtr != IntPtr.Zero)
                         {
@@ -951,14 +943,11 @@ namespace DDS.OpenSplice
         }
 
 
-        public string DomainId
+        public DomainId DomainId
         {
             get
             {
-                IntPtr ptr = Gapi.DomainParticipant.get_domain_id(GapiPeer);
-                string result = Marshal.PtrToStringAnsi(ptr);
-                Gapi.GenericAllocRelease.Free(ptr);
-
+                DomainId result = Gapi.DomainParticipant.get_domain_id(GapiPeer);
                 return result;
             }
         }
@@ -1204,13 +1193,29 @@ namespace DDS.OpenSplice
                     out currentTime);
         }
 
-        public ITypeSupport GetTypeSupport(string registeredName)
+        internal TypeSupportFactory GetTypeSupportFactory(string registeredName)
         {
-            ITypeSupport typeSupport = null;
+            TypeSupportFactory tsFactory = null;
 
             IntPtr gapiPtr = Gapi.DomainParticipant.get_typesupport(
                     GapiPeer,
                     registeredName);
+
+            if (gapiPtr != IntPtr.Zero)
+            {
+                tsFactory = TypeSupportFactory.fromUserData(gapiPtr);
+            }
+
+            return tsFactory;
+        }
+
+        public ITypeSupport GetTypeSupport(string registeredTypeName)
+        {
+            ITypeSupport typeSupport = null;
+
+            IntPtr gapiPtr = Gapi.DomainParticipant.get_typesupport(
+                GapiPeer,
+                registeredTypeName);
 
             if (gapiPtr != IntPtr.Zero)
             {

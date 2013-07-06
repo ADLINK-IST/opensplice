@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?fileVersion 4.0.0?>
+<cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
+  <storageModule moduleId="org.eclipse.cdt.core.settings">
+<%foreach(platforms)%>
+<%foreach(host_platform)%><%comment(there won't be more than one host_platform, but a foreach is used in order to access scoped assignments from the mpt)%>
+<%foreach(configurations)%>
+<!-- platform = <%platform%>, nocross = <%nocross%>, host_platform = <%host_platform%>, vars_equal = <%vars_equal(platform, host_platform)%> -->
+<%if(!nocross || vars_equal(platform, host_platform))%>
+    <cconfiguration id="mpc.generated.config.<%platform%>.<%configuration%>">
+      <storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="mpc.generated.config.<%platform%>.<%configuration%>" moduleId="org.eclipse.cdt.core.settings" name="<%platform%>-<%configuration%>">
+        <externalSettings/><%comment(looks like for libraries there are externalsettings)%>
+        <extensions>
+<%foreach(binary_parsers)%>
+          <extension id="<%binary_parser%>" point="org.eclipse.cdt.core.BinaryParser"/>
+<%endfor%>
+<%foreach(error_parsers additional_error_parsers)%>
+          <extension id="<%error_parser%>" point="org.eclipse.cdt.core.ErrorParser"/>
+<%endfor%>
+        </extensions>
+      </storageModule>
+      <storageModule moduleId="cdtBuildSystem" version="4.0.0">
+<configuration
+  artifactExtension="<%if(exename && exe_ext_nodot)%><%exe_ext_nodot%><%else%><%if(type_is_dynamic && dll_ext_nodot)%><%dll_ext_nodot%><%else%><%if(type_is_static && lib_ext_nodot)%><%lib_ext_nodot%><%endif%><%endif%><%endif%>"
+  artifactName="<%if(exename)%><%exename%><%else%><%if(type_is_dynamic)%><%sharedname%><%else%><%if(type_is_static)%><%staticname%><%endif%><%endif%><%if(use_lib_modifier)%><%lib_modifier%><%endif%><%endif%>"
+  description=""
+  id="mpc.generated.config.<%platform%>.<%configuration%>"
+  name="<%platform%>-<%configuration%>"
+<%if(custom_only)%>
+  parent="org.eclipse.cdt.build.core.emptycfg" buildProperties=""
+<%else%>
+  buildArtefactType="<%build_artefact_type%>"
+  buildProperties="org.eclipse.cdt.build.core.buildArtefactType=<%build_artefact_type%>,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.<%configuration%>"
+  cleanCommand="<%delete("rm -rf")%>"
+  parent="<%configuration_parent_root%>.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>"
+  prebuildStep="<%eval(prebuild)%>"
+<%endif%>
+  postbuildStep="<%shell%> ..<%slash%><%create_aux_file(postbuild_, platform, _, configuration, script_ext)%><%script_hdr%>
+<%if(!custom_only)%>
+<%if(type_is_dynamic)%>
+<%setenv%> DESTDIR=<%if(dllout)%><%if(!starts_with(dllout, [/\\\$]))%>..<%slash%>..<%slash%><%endif%><%convert_slashes(translate_vars(dllout))%><%else%><%if(libout)%><%if(!starts_with(libout, [/\\\$]))%>..<%slash%>..<%slash%><%endif%><%convert_slashes(translate_vars(libout))%><%else%>..<%slash%>..<%endif%><%endif%><%slash%><%platform%>-<%configuration%>
+<%if(mkdir_pre)%><%mkdir_pre%> <%envvar_pre%>DESTDIR<%envvar_post%><%endif%><%mkdir%> <%envvar_pre%>DESTDIR<%envvar_post%>
+<%cp%> <%lib_prefix%><%sharedname%><%lib_modifier%><%dll_ext%> <%envvar_pre%>DESTDIR<%envvar_post%><%else%>
+<%if(type_is_static)%>
+<%setenv%> DESTDIR=<%if(libout)%><%if(!starts_with(libout, [/\\\$]))%>..<%slash%>..<%slash%><%endif%><%convert_slashes(translate_vars(libout))%><%else%>..<%slash%>..<%endif%><%slash%><%platform%>-<%configuration%>
+<%if(mkdir_pre)%><%mkdir_pre%> <%envvar_pre%>DESTDIR<%envvar_post%><%endif%><%mkdir%> <%envvar_pre%>DESTDIR<%envvar_post%>
+<%cp%> <%lib_prefix%><%staticname%><%lib_modifier%><%lib_ext%> <%envvar_pre%>DESTDIR<%envvar_post%><%else%>
+<%if(exename)%>
+<%setenv%> DESTDIR=<%if(exeout)%><%if(!starts_with(exeout, [/\\\$]))%>..<%slash%>..<%slash%><%endif%><%convert_slashes(translate_vars(exeout))%><%else%>..<%slash%>..<%endif%><%endif%>
+<%cp%> <%exename%><%exe_ext%> <%envvar_pre%>DESTDIR<%envvar_post%>
+<%endif%><%endif%>
+<%endif%>
+<%if(postbuild)%><%eval(postbuild)%><%endif%>
+<%end_aux_file%>"
+>
+  <folderInfo id="mpc.generated.config.<%platform%>.<%configuration%>"<%comment(same id as configuration element id)%> name="/" resourcePath="">
+    <toolChain
+      id="mpc.generated.toolchain.<%platform%>.<%configuration%>"
+      name="<%platform%> Default"
+      nonInternalBuilderId="<%toolchain_internal_builder_root%>.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>"<%comment(nonInternalBuildId not in native generation on win32)%>
+      superClass="<%toolchain_superclass_root%>.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>">
+      <targetPlatform
+        id="mpc.generated.target.platform.<%platform%>.<%project_type%>.<%configuration%>"
+        name="<%configuration%> Platform"
+        superClass="<%targetplatform_superclass%>.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>"/>
+      <builder
+        id="org.eclipse.cdt.internal.builder.<%project_name%>"
+        autoBuildTarget="all"<%comment(these targets don't appear in native generation on win32)%>
+        cleanBuildTarget="clean"
+        incrementalBuildTarget="all"
+        keepEnvironmentInBuildfile="false"
+<%if(custom_only)%>
+        superClass="org.eclipse.cdt.build.core.settings.default.builder"
+        name="Gnu Make Builder.<%platform%>.<%configuration%>"
+        buildPath="${workspace_loc:/<%project_name%>}/.."
+        arguments="-f <%project_name%>.mk"
+<%else%>
+        buildPath="${workspace_loc:/<%project_name%>/<%configuration%>}"<%comment(buildpath may need to include platform as well in the case of cross-compiles)%>
+        managedBuildOn="true" name="CDT Internal Builder"
+        superClass="org.eclipse.cdt.build.core.internal.builder"
+<%endif%>
+      />
+<%if(custom_only)%>
+<tool
+  id="org.eclipse.cdt.build.core.settings.holder.libs.<%platform%>.<%configuration%>"
+  name="holder for library settings"
+  superClass="org.eclipse.cdt.build.core.settings.holder.libs"
+/>
+<%else%>
+<tool
+<%if(ccld)%>
+  command="<%ccld%>"
+<%else%>
+<%if(cc)%>
+  command="<%cc%>"
+<%endif%>
+<%endif%>
+  id="<%c_linker_tool_superclass_root%>.<%project_type%>.<%configuration%>.1311461244"
+  name="<%tool_name_prefix%> C Linker"
+  superClass="<%c_linker_tool_superclass_root%>.<%project_type%>.<%configuration%>">
+<%if(type_is_dynamic)%>
+  <option
+    defaultValue="true"
+    id="<%c_linker_dynamiclib_superclass%>.1"
+    name="Shared/Dynamic"
+    superClass="<%c_linker_dynamiclib_superclass%>" valueType="boolean"
+  />
+<%endif%>
+</tool>
+<tool
+<%if(cxxld)%>
+  command="<%cxxld%>"
+<%else%>
+<%if(cxx)%>
+  command="<%cxx%>"
+<%endif%>
+<%endif%>
+  id="<%cpp_linker_tool_superclass_root%>.<%project_type%>.<%configuration%>.335515345"
+  name="<%tool_name_prefix%> C++ Linker"
+  superClass="<%cpp_linker_tool_superclass_root%>.<%project_type%>.<%configuration%>">
+  <option
+    id="mpc.generated.link.libpaths.1"
+    superClass="<%linker_option_superclass%>.paths"
+    valueType="libPaths">
+<%foreach(libpaths)%>
+    <listOptionValue builtIn="false" value="<%if(!starts_with(libpath, [/\\\$]))%>../../<%endif%><%translate_vars(libpath, 1)%>"/>
+    <listOptionValue builtIn="false" value="<%if(!starts_with(libpath, [/\\\$]))%>../../<%endif%><%translate_vars(libpath, 1)%>/<%platform%>-<%configuration%>"/>
+<%endfor%>
+  </option>
+  <option
+    id="mpc.generated.link.option.libs.1"
+    name="Libraries (-l)"
+    superClass="<%linker_option_superclass%>.libs"
+    valueType="libs">
+<%foreach(libs lit_libs pure_libs platform_libs)%>
+    <listOptionValue builtIn="false" value="<%lib%>"/>
+<%endfor%>
+  </option>
+  <option
+    id="mpc.generated.linkflags.1"
+    superClass="<%linker_option_superclass%>.flags"
+    value="<%if(use_threads)%> <%threadflags%><%endif%><%if(linkflags)%> <%linkflags%><%endif%><%if(build64bit && linkflags64)%> <%linkflags64%><%endif%>"
+    valueType="string"
+  />
+<%if(type_is_dynamic)%>
+  <option
+    defaultValue="true"
+    id="<%cpp_linker_dynamiclib_superclass%>.1"
+    name="Shared/Dynamic"
+    superClass="<%cpp_linker_dynamiclib_superclass%>"
+    valueType="boolean"
+  />
+<%endif%>
+  <inputType
+    id="cdt.managedbuild.tool.<%if(platform_specializer)%><%platform_specializer%>.<%endif%>cpp.linker.input.415890365"
+    superClass="<%cpp_linker_tool_input_superclass%>">
+    <additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
+    <additionalInput kind="additionalinput" paths="$(LIBS)"/>
+  </inputType>
+<%if(!exename)%>
+  <outputType id="mpc.generated.cpp.linker.output.so.1" outputPrefix="<%lib_prefix%>" superClass="<%outputtype_superclass%>"/>
+<%endif%>
+</tool>
+<tool
+<%if(as)%>
+  command="<%as%>"
+<%endif%>
+  id="cdt.managedbuild.tool.gnu.assembler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>.897965604"
+  name="GCC Assembler"
+  superClass="cdt.managedbuild.tool.gnu.assembler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>">
+  <inputType
+    id="cdt.managedbuild.tool.gnu.assembler.input.706221217"
+    superClass="cdt.managedbuild.tool.gnu.assembler.input"
+  />
+</tool>
+<tool
+<%if(ar)%>
+  command="<%ar%>"
+<%endif%>
+  id="cdt.managedbuild.tool.gnu.archiver.<%if(platform_specializer)%><%platform_specializer%>.<%endif%>base.134329701"
+  name="GCC Archiver"
+  superClass="cdt.managedbuild.tool.gnu.archiver.<%if(platform_specializer)%><%platform_specializer%>.<%endif%>base"
+/>
+<tool
+<%if(cxx)%>
+  command="<%cxx%>"
+<%endif%>
+  id="cdt.managedbuild.tool.gnu.cpp.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>.1373363011"
+  name="GCC C++ Compiler"
+  superClass="cdt.managedbuild.tool.gnu.cpp.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>">
+  <option
+    id="mpc.generated.cc.include.paths.1"
+    superClass="<%cpp_compiler_option_superclass%>.include.paths"
+    valueType="includePath">
+<%foreach(includes)%>
+    <listOptionValue builtIn="false" value="<%if(!starts_with(include, [/\\\$]))%>../../<%endif%><%translate_vars(include, 1)%>"/>
+<%endfor%>
+  </option>
+  <option
+    id="gnu.cpp.compiler.option.other.other.375481234"
+    superClass="gnu.cpp.compiler.option.other.other"
+    value="-c <%comment(here's where we can put in all the extra compiler flags)%><%cxxflags%><%if(use_threads)%> <%threadflags%><%endif%><%if(dll_ext && pic)%> <%pic%><%endif%>"
+    valueType="string"
+  />
+  <option
+    id="gnu.cpp.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>.option.optimization.level.886842330"
+    name="Optimization Level"
+    superClass="gnu.cpp.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>.option.optimization.level"
+    value="gnu.cpp.compiler.optimization.level.<%optimization_level%>"
+    valueType="enumerated"
+  />
+  <option
+    id="gnu.cpp.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>.option.debugging.level.63360527"
+    name="Debug Level"
+    superClass="gnu.cpp.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>.option.debugging.level"
+    value="gnu.cpp.compiler.debugging.level.<%debugging_level%>"
+    valueType="enumerated"
+  />
+  <option
+    id="gnu.cpp.compiler.option.preprocessor.def.1310953196"
+    superClass="gnu.cpp.compiler.option.preprocessor.def"
+    valueType="definedSymbols">
+<%foreach(defines common_defines cpu_defines platform_defines macros)%>
+    <listOptionValue builtIn="false" value="<%define%>"/>
+<%endfor%>
+<%if(type_is_dynamic)%>
+<%foreach(dynamicflags)%>
+    <listOptionValue builtIn="false" value="<%dynamicflag%>"/>
+<%endfor%>
+<%endif%>
+<%if(need_static_flags)%>
+<%foreach(staticflags)%>
+    <listOptionValue builtIn="false" value="<%staticflag%>"/>
+<%endfor%>
+<%endif%>
+  </option>
+<!--
+<option id="gnu.cpp.compiler.option.preprocessor.undef.1618336754" superClass="gnu.cpp.compiler.option.preprocessor.undef" valueType="undefDefinedSymbols">
+<listOptionValue builtIn="false" value="blah"/>
+</option>
+-->
+  <inputType
+    id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1095450641"
+    superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"
+  />
+</tool>
+<tool
+<%if(cc)%>
+  command="<%cc%>"
+<%endif%>
+  id="cdt.managedbuild.tool.gnu.c.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>.1634417374"
+  name="GCC C Compiler"
+  superClass="cdt.managedbuild.tool.gnu.c.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>">
+  <option
+    id="mpc.generated.c.compiler.option.include.paths.1"
+    superClass="<%c_compiler_option_superclass%>.include.paths"
+    valueType="includePath">
+<%foreach(includes)%>
+    <listOptionValue builtIn="false" value="<%if(!starts_with(include, [/\\\$]))%>../../<%endif%><%translate_vars(include, 1)%>"/>
+<%endfor%>
+  </option>
+  <option
+    id="gnu.c.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>.option.optimization.level.1822406061"
+    name="Optimization Level"
+    superClass="gnu.c.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>.option.optimization.level"
+    value="gnu.c.optimization.level.<%optimization_level%>"
+    valueType="enumerated"
+  />
+  <option
+    id="gnu.c.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>.option.debugging.level.1766929"
+    name="Debug Level"
+    superClass="gnu.c.compiler.<%if(platform_specializer)%><%platform_specializer%>.<%endif%><%project_type%>.<%configuration%>.option.debugging.level"
+    value="gnu.c.debugging.level.<%debugging_level%>"
+    valueType="enumerated"
+  />
+  <option
+    id="gnu.c.compiler.miscoptions.<%platform%>.<%configuration%>"
+    superClass="gnu.c.compiler.option.misc.other"
+    value="-c -fmessage-length=0 <%ccflags%>"
+    valueType="string"
+  />
+  <option
+    id="gnu.c.compiler.option.preprocessor.def.<%platform%>.<%configuration%>"
+    superClass="gnu.c.compiler.option.preprocessor.def.symbols"
+    valueType="definedSymbols">
+<%foreach(defines common_defines cpu_defines platform_defines macros)%>
+    <listOptionValue builtIn="false" value="<%define%>"/>
+<%endfor%>
+<%if(type_is_dynamic)%>
+<%foreach(dynamicflags)%>
+    <listOptionValue builtIn="false" value="<%dynamicflag%>"/>
+<%endfor%>
+<%endif%>
+<%if(need_static_flags)%>
+<%foreach(staticflags)%>
+    <listOptionValue builtIn="false" value="<%staticflag%>"/>
+<%endfor%>
+<%endif%>
+  </option>
+  <inputType
+    id="cdt.managedbuild.tool.gnu.c.compiler.input.1596535093"
+    superClass="cdt.managedbuild.tool.gnu.c.compiler.input"
+  />
+</tool>
+<%endif%><%comment(custom_only)%>
+</toolChain>
+</folderInfo>
+<%if(custom_only)%>
+<%create_aux_file(../, project_name, .mk)%>.PHONY: all clean
+all:
+
+clean:
+	<%rm%> <%if(starts_with(shell, cmd))%>$(subst /,\,$(GENERATED))<%else%>$(GENERATED)<%endif%><%if(starts_with(shell, cmd))%> 2>NUL<%endif%>
+
+SPACE := $(empty_variable) $(empty_variable)
+
+<%foreach(custom_types)%><%if(custom_type->libpath)%>
+<%libenv%> := $(<%libenv%>)<%pathsep%><%custom_type->libpath%>
+<%endif%><%foreach(custom_type->input_files)%><%if(custom_type->input_file->output_files)%>
+GENERATED +=<%foreach(custom_type->input_file->output_files)%> <%custom_type->input_file->output_file%><%endfor%>
+<%foreach(custom_type->input_file->output_files)%><%fornotfirst(" ")%><%if(flag_overrides(custom_type->input_file, gendir))%><%if(!compares(flag_overrides(custom_type->input_file, gendir),.))%><%flag_overrides(custom_type->input_file, gendir)%>/<%endif%><%basename(custom_type->input_file->output_file)%><%else%><%custom_type->input_file->output_file%><%endif%><%endfor%>: <%custom_type->input_file%><%foreach(custom_type->input_file->dependencies)%> <%if(contains(custom_type->input_file->dependencie, [\s\$]))%>$(subst $(SPACE),\$(SPACE),<%custom_type->input_file->dependencie%>)<%else%><%custom_type->input_file->dependencie%><%endif%><%endfor%><%if(flag_overrides(custom_type->input_file, dependent))%><%foreach(dep, flag_overrides(custom_type->input_file, dependent))%> <%if(contains(dep, [\s\$]))%>$(subst $(SPACE),\$(SPACE),<%dep%>)<%else%><%dep%><%endif%><%if(!has_extension(dep))%><%exe%><%endif%><%endfor%><%else%><%foreach(custom_type->dependent)%> <%if(contains(custom_type->dependent, [\s\$]))%>$(subst $(SPACE),\$(SPACE),<%custom_type->dependent%>)<%else%><%custom_type->dependent%><%endif%><%if(!has_extension(custom_type->dependent))%><%exe%><%endif%><%endfor%><%endif%>
+<%if(flag_overrides(custom_type->input_file, gendir))%>
+<%if(!compares(flag_overrides(custom_type->input_file, gendir),.))%>
+	<%if(mkdir_pre)%><%mkdir_pre%> <%flag_overrides(custom_type->input_file, gendir)%> <%endif%><%mkdir%> <%flag_overrides(custom_type->input_file, gendir)%>
+<%endif%>
+<%endif%>
+	<%if(flag_overrides(custom_type->input_file, command))%><%flag_overrides(custom_type->input_file, command)%><%else%><%custom_type->command%><%endif%> <%if(flag_overrides(custom_type->input_file, commandflags))%><%flag_overrides(custom_type->input_file, commandflags)%><%else%><%custom_type->commandflags%><%endif%> <%if(custom_type->output_option)%><%custom_type->input_file%> <%custom_type->output_option%> $@<%else%><%custom_type->input_file%><%endif%>
+<%if(flag_overrides(custom_type->input_file, postcommand))%>
+	<%flag_overrides(custom_type->input_file, postcommand)%>
+<%else%>
+<%if(custom_type->postcommand)%>
+	<%custom_type->postcommand%>
+<%endif%>
+<%endif%>
+<%if(pch_header)%>
+<%if(custom_type->pch_postrule)%>
+<%foreach(custom_type->input_file->source_output_files)%>
+	@echo <%quote_echo%>#include "<%pch_header%>"<%quote_echo%> > <%makefile_tmpfile%> && <%cat%> "<%if(flag_overrides(custom_type->input_file, gendir))%><%flag_overrides(custom_type->input_file, gendir)%><%slash%><%basename(custom_type->input_file->source_output_file)%><%else%><%custom_type->input_file->source_output_file%><%endif%>" >> <%makefile_tmpfile%> && <%mv%> <%makefile_tmpfile%> "<%if(flag_overrides(custom_type->input_file, gendir))%><%flag_overrides(custom_type->input_file, gendir)%><%slash%><%basename(custom_type->input_file->source_output_file)%><%else%><%custom_type->input_file->source_output_file%><%endif%>"
+<%endfor%>
+<%endif%>
+<%endif%>
+<%endif%><%comment(has some output files)%><%endfor%><%comment(input_files)%><%endfor%><%comment(custom_types)%>
+all: $(GENERATED)
+<%end_aux_file%>
+<%else%><%comment(not custom_only)%>
+<%foreach(custom_types)%>
+<%foreach(custom_type->input_files)%>
+<%if(custom_type->input_file->output_files)%>
+<fileInfo
+  id="mpc.generated.custfile.<%platform%>.<%configuration%>.<%custom_type%>.<%normalize(custom_type->input_file)%>"
+  name="<%custom_type->input_file%>"
+  rcbsApplicability="override"
+  resourcePath="<%custom_type->input_file%>"
+  toolsToInvoke="org.eclipse.cdt.managedbuilder.ui.rcbs.467489715">
+  <tool
+    announcement="Invoking custom build step for type <%custom_type%> on <%custom_type->input_file%>"
+    command="<%shell%> ..<%slash%><%create_aux_file(platform, _, configuration, _, custom_type, _, normalize(custom_type->input_file), script_ext)%><%script_hdr%>
+<%comment(LIBPATH)%><%if(custom_type->libpath)%><%setenv%> <%libenv%>=<%envvar_pre%><%libenv%><%envvar_post%><%pathsep%><%translate_vars(custom_type->libpath)%>
+<%endif%>cd ..<%slash%>..
+<%comment(GENDIR)%><%if(flag_overrides(custom_type->input_file, gendir))%><%if(mkdir_pre)%><%mkdir_pre%> <%flag_overrides(custom_type->input_file, gendir)%> <%endif%><%mkdir%> <%flag_overrides(custom_type->input_file, gendir)%>
+<%endif%><%if(custom_type->input_file->commands)%><%comment(GENDIR-MULTI-CUSTOM)%><%foreach(custom_type->input_file->commands)%><%if(custom_type->input_file->command->gdir)%><%if(mkdir_pre)%><%mkdir_pre%> <%custom_type->input_file->command->gdir%> <%endif%><%mkdir%> <%custom_type->input_file->command->gdir%>
+<%endif%><%endfor%><%endif%><%if(custom_type->input_file->commands)%><%comment(MULTI-CUSTOM)%><%foreach(custom_type->input_file->commands)%><%translate_vars(custom_type->input_file->command)%> <%translate_vars(custom_type->input_file->command->flags)%> "<%custom_type->input_file%>"<%if(custom_type->input_file->command->outopt)%> <%custom_type->input_file->command->outopt%> "<%custom_type->input_file->command->outfile%>"<%endif%><%fornotlast(" && ")%><%endfor%><%else%><%comment(COMMAND)%><%if(flag_overrides(custom_type->input_file, command))%><%translate_vars(flag_overrides(custom_type->input_file, command))%><%else%><%translate_vars(custom_type->command)%><%endif%> <%comment(COMMANDFLAGS)%><%if(flag_overrides(custom_type->input_file, commandflags))%><%translate_vars(flag_overrides(custom_type->input_file, commandflags))%><%else%><%if(custom_type->commandflags)%><%translate_vars(custom_type->commandflags)%><%endif%><%endif%> <%if(custom_type->output_option)%><%comment(with OUTPUT_OPTION)%>"<%custom_type->input_file%>" <%custom_type->output_option%><%foreach(custom_type->input_file->output_files)%> "<%if(flag_overrides(custom_type->input_file, gendir))%><%flag_overrides(custom_type->input_file, gendir)%><%slash%><%basename(custom_type->input_file->output_file)%><%else%><%custom_type->input_file->output_file%><%endif%>"<%endfor%><%else%><%comment(without OUTPUT_OPTION)%>"<%custom_type->input_file%>"<%endif%><%endif%><%comment(POSTCOMMAND)%><%if(flag_overrides(custom_type->input_file, postcommand))%> && <%flag_overrides(custom_type->input_file, postcommand)%><%else%><%if(custom_type->postcommand)%> && <%custom_type->postcommand%><%endif%><%endif%><%comment(PCH_POSTRULE)%><%if(pch_header)%><%if(custom_type->pch_postrule)%><%foreach(custom_type->input_file->source_output_files)%> && echo <%quote_echo%>#include "<%pch_header%>"<%quote_echo%> > <%script_tmpfile%> && <%cat%> "<%if(flag_overrides(custom_type->input_file, gendir))%><%flag_overrides(custom_type->input_file, gendir)%><%slash%><%basename(custom_type->input_file->source_output_file)%><%else%><%custom_type->input_file->source_output_file%><%endif%>" >> <%script_tmpfile%> && <%mv%> <%script_tmpfile%> "<%if(flag_overrides(custom_type->input_file, gendir))%><%flag_overrides(custom_type->input_file, gendir)%><%slash%><%basename(custom_type->input_file->source_output_file)%><%else%><%custom_type->input_file->source_output_file%><%endif%>"<%endfor%><%endif%><%endif%><%comment(LINK_SRCDIR_TO_OUTDIR)%><%if(custom_type->input_file->output_files)%> && cd cdt_<%project_name%><%slash%><%platform%>-<%configuration%><%endif%><%foreach(custom_type->input_file->output_files)%> && <%ln%> ..<%slash%>..<%slash%><%if(dirname(custom_type->input_file->output_file))%><%dirname(custom_type->input_file->output_file)%><%slash%><%endif%><%basename(custom_type->input_file->output_file)%> .<%endfor%>
+<%end_aux_file%>"
+    customBuildStep="true"
+    id="mpc.generated.rcbs.<%platform%>.<%configuration%>.<%custom_type%>.<%normalize(custom_type->input_file)%>"
+    name="Resource Custom Build Step for <%custom_type%> <%normalize(custom_type->input_file)%> (<%configuration%>)">
+    <inputType
+      id="mpc.generated.rcbsinput.<%platform%>.<%configuration%>.<%custom_type%>.<%normalize(custom_type->input_file)%>"
+      name="Resource Custom Build Step Input Type">
+      <additionalInput
+        kind="additionalinputdependency"
+<%if(flag_overrides(custom_type->input_file, dependent) || custom_type->dependent || custom_type->input_file->dependencies || (!need_staticflags && (flag_overrides(custom_type->input_file, dependent_libs) || custom_type->dependent_libs)))%>
+        paths="<%if(flag_overrides(custom_type->input_file, dependent))%><%foreach(dep, flag_overrides(custom_type->input_file, dependent))%><%translate_vars(dep, 1)%><%if(!has_extension(dep))%><%exe_ext%><%endif%><%fornotlast(";")%><%endfor%><%else%><%if(custom_type->dependent)%><%foreach(custom_type->dependent)%><%translate_vars(custom_type->dependent, 1)%><%if(!has_extension(custom_type->dependent))%><%exe_ext%><%endif%><%fornotlast(";")%><%endfor%><%endif%><%endif%><%foreach(custom_type->input_file->dependencies)%><%if(flag_overrides(custom_type->input_file, dependent) || custom_type->dependent)%>;<%else%><%fornotfirst(";")%><%endif%><%translate_vars(custom_type->input_file->dependencie, 1)%><%endfor%><%if(!need_staticflags)%><%if(flag_overrides(custom_type->input_file, dependent_libs))%><%foreach(dep_lib, flag_overrides(custom_type->input_file, dependent_libs))%><%if(flag_overrides(custom_type->input_file, dependent) || custom_type->dependent || custom_type->input_file->dependencies)%>;<%else%><%fornotfirst(";")%><%endif%><%translate_vars(dirname(dep_lib), 1)%>/<%lib_prefix%><%translate_vars(basename(dep_lib), 1)%><%lib_modifier%><%dll_ext%><%endfor%><%else%><%if(custom_type->dependent_libs)%><%foreach(custom_type->dependent_libs)%><%if(flag_overrides(custom_type->input_file, dependent) || custom_type->dependent || custom_type->input_file->dependencies)%>;<%else%><%fornotfirst(";")%><%endif%><%translate_vars(dirname(custom_type->dependent_lib), 1)%>/<%lib_prefix%><%translate_vars(basename(custom_type->dependent_lib), 1)%><%lib_modifier%><%dll_ext%><%endfor%><%endif%><%endif%><%endif%>"
+<%endif%>
+      />
+    </inputType>
+    <outputType
+      id="mpc.generated.rcbsoutput.<%platform%>.<%configuration%>.<%custom_type%>.<%normalize(custom_type->input_file)%>"
+      name="Resource Custom Build Step Output Type"
+      outputNames="<%foreach(custom_type->input_file->output_files)%><%if(flag_overrides(custom_type->input_file, gendir))%><%basename(custom_type->input_file->output_file)%><%else%><%custom_type->input_file->output_file%><%endif%><%fornotlast(";")%><%endfor%>"
+    />
+  </tool>
+</fileInfo>
+<%endif%><%comment(generates any output)%><%endfor%><%comment(input file)%><%endfor%><%comment(custom type)%>
+<sourceEntries>
+<%comment(we may need to change the source_output_files to just output_files below to align it with what's used above)%>
+<entry excluding="<%foreach(template_files)%><%template_file%>|<%endfor%><%foreach(custom_types)%><%foreach(custom_type->input_files)%><%foreach(custom_type->input_file->source_output_files)%><%custom_type->input_file->source_output_file%>|<%endfor%><%endfor%><%endfor%>" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+</sourceEntries>
+<%endif%><%comment(!custom_only)%>
+</configuration>
+</storageModule>
+<%foreach(additional_storage_modules)%>
+<storageModule moduleId="<%additional_storage_module%>"/>
+<%endfor%>
+<storageModule moduleId="scannerConfiguration">
+<!-- It's not clear what this section does, so it's not clear if it's necessary. In fact, experience suggests that CDT seems to fill in the blanks properly for the platform if it's empty. -->
+</storageModule>
+<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+    </cconfiguration>
+<%endif%>
+<%endfor%><%comment(configurations)%>
+<%endfor%><%comment(host_platform)%>
+<%endfor%><%comment(platforms)%>
+</storageModule>
+<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+<%foreach(platforms)%>
+<project
+  id="<%project_name%>.<%project_element_type_id%>.1"
+  name="<%project_type_name%>"
+  projectType="<%project_element_type_id%>.<%project_type%>"/>
+<%endfor%>
+</storageModule>
+</cproject>

@@ -1,0 +1,43 @@
+// -*- MPC -*-
+// $Id:$
+
+// project (sacs*types) : _repetitive_sacs_example_types {
+//}
+
+project(sacs*ping) :  sacs_typesupport {
+
+    specific {
+        output_dir = .
+    }
+    exename = *
+    Source_Files {
+        ../src/ping.cs
+        ../src/pinger.cs
+        ../src/stats.cs
+        ../src/time.cs
+        ../src/ErrorHandler.cs
+    }
+
+    TypeSupport_Files {
+        ../../idl
+    }
+}
+
+project(sacs*pong) :  sacs_typesupport {
+
+    specific {
+        output_dir = .
+    }
+    exename = *
+    Source_Files {
+        ../src/pong.cs
+        ../src/ponger.cs
+        ../src/stats.cs
+        ../src/time.cs
+        ../src/ErrorHandler.cs
+    }
+
+    TypeSupport_Files {
+        ../../idl
+    }
+}

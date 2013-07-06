@@ -1,0 +1,7 @@
+// -*- MPC -*-
+// $Id$
+
+project : sac_dcps_app_libs {
+    exename = *
+    exeout = .
+}

@@ -1,0 +1,27 @@
+// $Id$
+//
+// Current as of 10/26/2006
+// This defines the role of all the template variables specific to the
+// 'vc8' project type with the csharp language.
+//
+// Please try to keep this alphabetically sorted.
+//
+allowunsafeblocks = Enable/disable the use of the unsafe keyword.
+common_defines = Specifies macros that are common to all target types.
+comreferences = Creates references to COM libraries. Each entry in the list takes the form libraryname:guid=the_guid and can optionally list more attribute name/value pairs separated by commas.  The valid attributes besides guid (with their defaults) are majorver (1), minorver (0), lcid (0), wrapper (tlbimp), isolated (False), copylocal (False), and embed (omitted).
+defines = Macros that are specific to a particular configuration.
+disablespecificwarnings = A space separated list of warning numbers to be disabled.
+guid = The value for this variable is generated during project generation.
+keyfile = Indicate the keyfile to use when signing the assembly.
+platformtarget = Set the Platform Target, for example x86 to force a 32-bit .NET framework.
+prversion = This setting specifies the ProductVersion in the generated .csproj file.
+registerforcominterop = This setting corresponds to the Build Output property "Register for COM interop". The boolean values true and false correspond to enabling or disabling the feature in the IDE.
+schemaversion = This setting specifies the SchemaVersion in the generated .csproj file.
+startupobject = This corresponds to the Application property "Startup object".
+targetframeworkprofile = Target a certain profile of the .NET framework, such as "Client".
+targetframeworkversion = The TargetFrameworkVersion attribute.  Setting this also enables a reference to the System.Core using the same version number as a requirement.
+toolsversion = The ToolsVersion attribute of the Project XML element.
+trace = This setting corresponds to the Build General property "Conditional Compilation Constants". If this boolean template variable is set, the TRACE constant will be defined.
+warning_level = This corresponds to the Build General property "Warning level". Valid values are 0 through 4.
+winapp = This boolean template variable indicates whether the application target is for the Console or Windows subsystem.
+xmlheader = Enable the <?xml ...?> header.

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -52,6 +52,7 @@
 #define V_EVENT_HISTORY_REQUEST         (0x00000001U << 20) /* 1048576 */
 #define V_EVENT_PERSISTENT_SNAPSHOT     (0x00000001U << 21) /* 2097152 */
 #define V_EVENT_ALL_DATA_DISPOSED       (0x00000001U << 22) /* 4194304 */
+#define V_EVENT_CONNECT_WRITER          (0x00000001U << 23) /* 8388608 */
 #define V_EVENTMASK_ALL                 (0xffffffffU)
 
 #define v_eventTest(events,kind) (((events)&(kind))==(kind))

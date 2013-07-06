@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_NETWORKREADERENTRY_H
@@ -43,8 +43,9 @@ v_networkReaderEntryNew(
     v_group group,
     v_networkId networkId,
     c_ulong channelsToConnect,
-    v_networkPartitionId networkPartitionId);
-                         
+    v_networkPartitionId networkPartitionId,
+    c_bool isRouting);
+
 OS_API void
 v_networkReaderEntryFree(
     v_networkReaderEntry entry);
@@ -63,11 +64,15 @@ v_networkReaderEntryReceive(
     v_gid sender,
     c_bool sendTo, /* for p2p writing */
     v_gid receiver);
-                    
+
 OS_API void
 v_networkReaderEntryNotifyConnected(
     v_networkReaderEntry entry,
     const c_char* serviceName);
+
+OS_API c_bool
+v_networkReaderEntryIsRouting(
+    v_networkReaderEntry entry);
 
 #undef OS_API
 

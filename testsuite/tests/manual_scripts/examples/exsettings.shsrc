@@ -1,0 +1,167 @@
+#!/bin/bash
+
+# This file must only be sourced.
+if [ -z "$BASH_SOURCE" -o "$0" = "$BASH_SOURCE" ]; then
+    echo "ERROR: Only source '$0' file"
+    exit 1
+fi
+
+# Source current settings.
+. "$(dirname "$BASH_SOURCE")/../osplsettings.shsrc" "$@"
+. "$(dirname "$BASH_SOURCE")/../ospltestutils.shsrc" "$@"
+. "$(dirname "$BASH_SOURCE")/../osplconfig.shsrc" "$@"
+. "$(dirname "$BASH_SOURCE")/../stafutils.shsrc" "$@"
+
+# Setup STAF environment.
+source_staf_env || exit 1
+
+# Exit status of run_tests which we cannot directly return in bash
+# since we pipe script output to tee.
+g_examples_failed=0
+
+function check_ex_prereqs ()
+{
+    which javac &>/dev/null || error_help "ERROR: 'javac' executable is not found" || return 1
+
+    if [ "$(uname)" != 'SunOS' ]; then   
+        if [ "$(uname -o)" = 'Cygwin' ]; then
+            which devenv &>/dev/null || error_help "ERROR: 'devenv' executable is not found" || return 1
+        else
+            which make &>/dev/null || error_help "ERROR: 'make' executable is not found" || return 1
+        fi
+    else
+        which make &>/dev/null || error_help "ERROR: 'make' executable is not found" || return 1
+    fi
+}
+
+function _run_tests ()
+{
+    if [ $# -ne 5 ]; then
+        error_trace "ERROR: Wrong number of arguments to ${FUNCNAME[0]}"
+        return 1
+    fi
+
+    # Check if there are no stupid mistakes related to remote hosts.
+    check_testing_prereqs || return 1
+
+    local testfunction="$1" && test -n "$testfunction" || error_trace "ERROR: Parameter \$1 is empty" || return 1
+    local masterhost="$2" && test -n "$masterhost" || error_trace "ERROR: Parameter \$2 is empty" || return 1
+    local runtypes="$3"  && test -n "$runtypes" || error_trace "ERROR: Parameter \$3 is empty" || return 1
+    local transports="$4" && test -n "$transports" || error_trace "ERROR: Parameter \$4 is empty" || return 1
+    local implementations="$5" && test -n "$implementations" || error_trace "ERROR: Parameter \$5 is empty" || return 1
+
+    local masterospl masterlog slavehosts
+    masterospl="$(remote_var_value "$masterhost" OSPL_DISTPATH)" || return 1
+    masterlog="$(remote_var_value "$masterhost" LOG_DIR)" || return 1
+    slavehosts="$(testing_slaves "$masterhost")" || return 1
+
+    if [ -n "$g_cleanlogs" ]; then
+        echo -e "\nDeleting old logs on '$masterhost'..."
+        STAF "$masterhost" FS DELETE ENTRY "$masterlog" CONFIRM RECURSE || return 1
+    fi
+
+    # Note slavehosts is not quoted so that each word in slavehosts is
+    # processed separately. Ditto for other internal loops.
+    local slavehost transport impl slaveospl slavelog
+    for slavehost in $slavehosts
+    do
+        slaveospl="$(remote_var_value "$slavehost" OSPL_DISTPATH)" || return 1
+        slavelog="$(remote_var_value "$slavehost" LOG_DIR)" || return 1
+
+        if [ -n "$g_cleanlogs" ]; then
+            echo -e "\nDeleting old logs on '$slavehost'..."
+            STAF "$slavehost" FS DELETE ENTRY "$slavelog" CONFIRM RECURSE || return 1
+        fi
+
+        for runtype in $runtypes
+        do
+            for transport in $transports
+            do
+                # Make sure that the log dirs exist on both hosts.
+                local masterfulllog="$masterlog/examples/$masterhost/$slavehost/$runtype/$transport"
+                echo -e "\nCreating a new log dir '$masterfulllog' on '$masterhost'..."
+                STAF "$masterhost" FS CREATE DIRECTORY "$masterfulllog" FULLPATH || return 1
+                local slavefulllog="$slavelog/examples/$runtype/$transport"
+                echo -e "\nCreating a new log dir '$slavefulllog' on '$slavehost'..."
+                STAF "$slavehost" FS CREATE DIRECTORY "$slavefulllog" FULLPATH || return 1
+
+                # Create OSPL configs specific to this run.
+                change_remote_configs "$masterhost" "$runtype" "$transport" || return 1
+                change_remote_configs "$slavehost" "$runtype" "$transport" || return 1
+
+                for impl in $implementations
+                do
+                    eval "\"$testfunction\" \"$masterhost\" \"$masterfulllog\" \"$masterospl\" \"$slavehost\" \"$slavefulllog\" \"$slaveospl\" \"$runtype\" \"$transport\" \"$impl\""
+                    if [ $? -ne 0 -a -z "$g_force_tests" ]; then
+                        return 1
+                    fi
+                done
+
+                if [ -n "$g_cleanlogs" ]; then
+                    echo -e "\nDeleting logs for '$transport' on '$slavehost'..."
+                    STAF "$slavehost" FS DELETE ENTRY "$slavefulllog" CONFIRM RECURSE || return 1
+                fi
+            done
+        done
+    done
+
+    return 0
+}
+
+function run_tests ()
+{
+    test $g_examples_failed -eq 0 && _run_tests "$@" || g_examples_failed=1
+}
+
+function savelogs ()
+{
+    if [ $# -ne 1 ]; then
+        error_trace "ERROR: Wrong number of arguments to ${FUNCNAME[0]}"
+        return 1
+    fi
+
+    local masterhost="$1" && test -n "$masterhost" || error_trace "ERROR: Parameter \$1 is empty" || return 1
+
+    local masterlog
+    masterlog="$(remote_var_value "$masterhost" LOG_DIR)" || return 1
+    masterlog="$(to_unix_path "$masterlog")"
+
+    # Save the config files for the report.
+    if [ "$(uname)" != 'SunOS' ]; then
+        find "$(osplconfig_current_path)/" -maxdepth 1 -regex '.*\.xml$' -exec mv -f '{}' "$masterlog/examples" \; || return 1
+    else
+        find "$(osplconfig_current_path)/" -name '.*\.xml$' -exec mv -f '{}' "$masterlog/examples" \; || return 1
+    fi
+
+    # Save the screen.log.
+    find "$PWD/" -name 'screen.log' -exec mv -f '{}' "$masterlog/examples" \; || return 1
+
+    echo -e "\nArchiving the logs..."
+    if [ "$(uname)" != 'SunOS' ]; then   
+        tar -czf "$PWD/examples$(date +%F_%s).tgz" -C "$masterlog" examples
+    else
+        tar -cvf "$PWD/examples$(date +%F).tar" -C "$masterlog" examples 
+    fi
+}
+
+function _check_examples_args ()
+{
+    while [ $# -ne 0 ]
+    do
+        case "$1" in
+            -h|--help)
+                # Nothing to print as help here.
+                return 1
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+}
+if [ -z "$g_exsettings_loaded" ]; then
+    g_exsettings_loaded='yes'
+    # This is the last line in this file. It can set $? which is important for
+    # the outside code. Don't do anything after this!!!
+    _check_examples_args "$@"
+fi

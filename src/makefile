@@ -9,6 +9,7 @@ SUBSYSTEMS	+= database
 SUBSYSTEMS	+= kernel
 SUBSYSTEMS	+= configuration
 SUBSYSTEMS	+= user
+SUBSYSTEMS	+= loc
 ifeq ($(INCLUDE_API),yes)
 SUBSYSTEMS	+= api
 endif

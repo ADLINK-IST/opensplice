@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -26,22 +26,35 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JRadioButtonMenuItem;
-import javax.swing.JTabbedPane;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
 import javax.swing.JPanel;
+import javax.swing.JRadioButtonMenuItem;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.WindowConstants;
 import javax.swing.table.TableColumnModel;
 
-import org.opensplice.cm.*;
+import org.opensplice.cm.CMException;
+import org.opensplice.cm.DataReader;
+import org.opensplice.cm.DataTypeUnsupportedException;
+import org.opensplice.cm.Entity;
+import org.opensplice.cm.Participant;
+import org.opensplice.cm.Partition;
+import org.opensplice.cm.Publisher;
+import org.opensplice.cm.Query;
+import org.opensplice.cm.Queue;
+import org.opensplice.cm.Reader;
+import org.opensplice.cm.Subscriber;
+import org.opensplice.cm.Topic;
+import org.opensplice.cm.Writer;
 import org.opensplice.common.CommonException;
 import org.opensplice.common.controller.EntityInfoListener;
 import org.opensplice.common.controller.MainWindowOpener;
-import org.opensplice.common.model.*;
+import org.opensplice.common.model.ModelListener;
+import org.opensplice.common.model.ModelRegister;
 import org.opensplice.common.model.table.EntityAttributeTableModel;
 import org.opensplice.common.model.table.status.EntityStatusTableModel;
 import org.opensplice.common.model.table.status.PartitionStatusTableModel;
@@ -200,6 +213,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
      * 
      * @param e The event that occurred.
      */
+    @Override
     public void actionPerformed(ActionEvent e) {
         boolean success;
         
@@ -257,6 +271,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
      * 
      * @param msg The update message.
      */
+    @Override
     public void update(String msg){
         if(msg != null){
             if("tabbed_pane_update".equals(msg)){
@@ -269,6 +284,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                         setStatus("Initializing status pane...", true, true);
                         
                         Runnable worker = new Runnable(){
+                            @Override
                             public void run(){
                                 try {
                                     statusScrollPane.setViewportView(getStatusTable());
@@ -292,6 +308,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                         setStatus("Initializing data type pane...", true, true);
                         
                         Runnable worker = new Runnable(){
+                            @Override
                             public void run(){
                                 dataTypeScrollPane.setViewportView(getDataTypePane());
                                 setStatus("Data type pane initialized", false, false);
@@ -308,6 +325,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                         setStatus("Initializing QoS pane...", true, true);
                         
                         Runnable worker = new Runnable(){
+                            @Override
                             public void run(){
                                 try {
                                     qosScrollPane.setViewportView(getQosTable());
@@ -332,6 +350,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                         setStatus("Initializing Statistics pane...", true, true);
                         
                         Runnable worker = new Runnable(){
+                            @Override
                             public void run(){
                                 try {
                                     statisticsPane.setViewportView(getStatisticsTable());
@@ -372,6 +391,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                 setStatus("Resolving QoS...", true, true);
                 
                 Runnable worker = new Runnable(){
+                    @Override
                     public void run(){
                         boolean b = qosTable.update();
                         
@@ -396,6 +416,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                 setStatus("Applying new QoS...", true, true);
                 
                 Runnable worker = new Runnable(){
+                    @Override
                     public void run(){
                         try {
                             qosTable.applyCurrentQoS();
@@ -424,6 +445,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                 setStatus("Changing data type representation to " + type + "...", true, true);
                 
                 Runnable worker = new Runnable(){
+                    @Override
                     public void run(){
                         setDataTypeContentType(command);
                         setStatus("Data type representation changed to " + type, false, false);
@@ -439,6 +461,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                     setStatus("Resolving Status...", true, true);
                     
                     Runnable worker = new Runnable(){
+                        @Override
                         public void run(){
                             boolean success = ((EntityStatusTableModel)statusTable.getModel()).update();
                             
@@ -461,6 +484,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                     setStatus("Resolving Statistics...", true, true);
                     
                     Runnable worker = new Runnable(){
+                        @Override
                         public void run(){
                             boolean success = statisticsTable.update();
                             
@@ -485,6 +509,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                     setStatus("Refreshing attributes...", true, true);
                     
                     Runnable worker = new Runnable(){
+                        @Override
                         public void run(){
                             boolean success = ((EntityAttributeTableModel)(getAttributeTable().getModel())).update();
                             
@@ -506,6 +531,10 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
                 closed = true;
                 fireFrameChanged("entity_freed");
                 dispose();
+            } else if ("reset_failed".equals(msg)) {
+                setStatus("Warning: Failed to reset field", false, false);
+            } else if ("reset_all_failed".equals(msg)) {
+                setStatus("Warning: Failed to reset all field", false, false);
             }
         }
     }
@@ -524,6 +553,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
         statusPanel.setStatus(msg, persistent, busy);
     }
     
+    @Override
     public String toString(){
         String result = this.getTitle();
         
@@ -821,7 +851,7 @@ public class EntityInfoFrame extends JFrame implements ActionListener, ModelList
             viewMainItem.setMnemonic(java.awt.event.KeyEvent.VK_S);
             viewMainItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.Event.SHIFT_MASK, false));
             viewMainItem.setActionCommand("view_main");
-            viewMainItem.addActionListener(new MainWindowOpener(this, parent));
+            viewMainItem.addActionListener(new MainWindowOpener(parent));
         }
         return viewMainItem;
     }

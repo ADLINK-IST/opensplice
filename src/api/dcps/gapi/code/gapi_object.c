@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -19,7 +19,6 @@
 
 #define IS_TYPE(t1,t2)        (((t1&t2)==t2)?TRUE:FALSE)
 #define HEADER_IS_TYPE(h,t)   (IS_TYPE(gapi_handle(h)->kind,t))
-#define OBJECT_IS_TYPE(o,t)   (HEADER_IS_TYPE(_Object(o)->handle, t))
 
 #define CHECK_REF (0)
 
@@ -878,14 +877,6 @@ _ObjectIsValid (
         }
     }
     return valid;
-}
-
-gapi_boolean
-_ObjectIsType (
-    _Object object,
-    _ObjectKind kind)
-{
-    return OBJECT_IS_TYPE(object,kind);
 }
 
 void

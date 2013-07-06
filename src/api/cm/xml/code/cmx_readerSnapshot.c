@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -90,7 +90,7 @@ cmx_readerSnapshotNewAction(
         v_observerLock(v_observer(reader));
 
         if(reader->index->objects){
-            instances = c_select(reader->index->notEmptyList, 0);
+            instances = ospl_c_select(reader->index->notEmptyList, 0);
         }
     break;
     case K_QUERY:
@@ -107,7 +107,7 @@ cmx_readerSnapshotNewAction(
             switch(v_object(query)->kind){
             case K_DATAREADERQUERY:
                 if(v_dataReaderQuery(query)->instanceQ){
-                    instances = c_select((c_collection)(v_dataReaderQuery(query)->instanceQ), 0);
+                    instances = ospl_c_select((c_collection)(v_dataReaderQuery(query)->instanceQ), 0);
                 }
             break;
             default:

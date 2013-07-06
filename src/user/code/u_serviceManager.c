@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -198,4 +198,29 @@ u_serviceManagerGetServices(
         }
     }
     return names;
+}
+
+c_bool
+u_serviceManagerRemoveService(
+    u_serviceManager _this,
+    const c_char *serviceName)
+{
+    u_result result = U_RESULT_OK;
+    v_serviceManager kServiceManager;
+    c_bool retVal = FALSE;
+
+    if (_this == NULL) {
+        OS_REPORT_1(OS_ERROR, "u_serviceManagerRemoveService", 0,
+                  "No valid serviceManager therefore service %s cannot be removed.",serviceName);
+    } else {
+        result = u_entityReadClaim(u_entity(_this), (v_entity*)(&kServiceManager));
+        if (result == U_RESULT_OK) {
+            retVal = v_serviceManagerRemoveService(kServiceManager, serviceName);
+            u_entityRelease(u_entity(_this));
+        } else {
+            OS_REPORT(OS_ERROR, "u_serviceManagerRemoveService", 0,
+                      "Could not claim serviceManager.");
+        }
+    }
+    return retVal;
 }

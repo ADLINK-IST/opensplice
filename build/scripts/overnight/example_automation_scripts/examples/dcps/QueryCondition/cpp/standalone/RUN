@@ -1,0 +1,17 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+startOSPL
+
+echo "=== Launching QueryCondition "
+
+./sacpp_querycondition_sub MSFT > subResult.txt &
+
+sleep 2
+
+./sacpp_querycondition_pub > pubResult.txt
+
+queryconditionCheckResult
+
+stopOSPL

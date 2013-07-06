@@ -1,0 +1,15 @@
+// -*- MPC -*-
+// $Id:$
+
+project : isosacpp_typesupport, _example_dcps_type_lib, c_or_cplusplus_example {
+    requires += dcps_isocpp_example
+    TypeSupport_Files {
+        ../idl
+    }
+    Source_Files {
+    }
+
+    Documentation_Files {
+        ../.
+    }
+}

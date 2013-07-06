@@ -1,0 +1,17 @@
+// $Id$
+
+workspace (CSharp) {
+    cmdline += --language csharp --features ospl_dcpssacs=1 --features ospl_dcpssacpp=0 --features ospl_dcpssac=0 --features ospl_dcpssaj=0 --features ospl_dcpscj=0
+    specific(prop:microsoft) {
+        .
+    }
+    exclude(!prop:microsoft) {
+        .
+    }
+    exclude {
+        dcps/HelloWorld/cpp/corba
+        dcps/PingPong/cpp/corba
+        dcps/Tutorial/cpp/corba
+    }
+}
+

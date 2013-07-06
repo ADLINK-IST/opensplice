@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef V_PUBLIC_H
@@ -46,23 +46,21 @@ OS_API void     v_publicDispose   (v_public o);
 OS_API c_voidp  v_publicSetUserData (v_public o, c_voidp userData);
 OS_API c_voidp  v_publicGetUserData (v_public o);
 
-#define v_publicSystemId(o) \
-        (v_public(o)->GID.systemId)
-
 #define v_gidEqual(id1,id2) \
-        ((id1.systemId==id2.systemId)&& \
-         (id1.localId==id2.localId)&& \
-         (id1.serial==id2.serial))
+        (((id1).systemId==(id2).systemId)&& \
+         ((id1).localId==(id2).localId)&& \
+         ((id1).serial==(id2).serial))
 
 #define v_gidIsValid(id) \
-        (((id).systemId != V_PUBLIC_ILLEGAL_GID) &&	\
+        (((id).systemId != V_PUBLIC_ILLEGAL_GID) &&     \
          ((id).localId != V_PUBLIC_ILLEGAL_GID) && \
          ((id).serial != V_PUBLIC_ILLEGAL_GID))
 
-#define v_gidSetNil(id) \
-        ((id).systemId = V_PUBLIC_ILLEGAL_GID); \
-        ((id).localId = V_PUBLIC_ILLEGAL_GID); \
-        ((id).serial = V_PUBLIC_ILLEGAL_GID)
+#define v_gidSetNil(id)                         \
+  (((id).systemId = V_PUBLIC_ILLEGAL_GID),      \
+   ((id).localId = V_PUBLIC_ILLEGAL_GID),       \
+   ((id).serial = V_PUBLIC_ILLEGAL_GID),        \
+   ((void) 0))
 
 #define v_gidIsFromKernel(id,kernel) \
     (((id).systemId) == ((kernel)->GID.systemId))

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -40,6 +40,9 @@ typedef unsigned char                           DDS_octet;
 typedef unsigned char                           DDS_boolean;
 typedef DDS_char *                              DDS_string;
 
+/**
+ * @file
+ * @bug OSPL-2272 We should not need to/be defining TRUE & FALSE */
 #ifndef FALSE
 #define FALSE                                   0
 #endif
@@ -58,6 +61,7 @@ typedef void *                                  DDS_Object;
 /* Generic allocation/release functions */
 OS_API void DDS_free (void *);
 OS_API extern DDS_char *DDS_string_alloc (DDS_unsigned_long len);
+OS_API extern DDS_char *DDS_string_dup (const DDS_char *src);
 typedef DDS_boolean (*dealloactorType)(void *object);
 OS_API void * DDS_sequence_malloc (void);
 OS_API void * DDS_sequence_allocbuf (dealloactorType deallocator,
@@ -81,10 +85,15 @@ OS_API extern DDS_boolean DDS_sequence_get_release (void *sequence);
 
 /* Environment replacement type */
 
-#define DDS_DOMAINID_TYPE_NATIVE            DDS_string
+
+#define DDS_DOMAINID_TYPE_NATIVE            DDS_long
+#define DDS_DOMAIN_ID_DEFAULT               0x7fffffff
+
+
 #define DDS_HANDLE_TYPE_NATIVE              long long
 #define DDS_HANDLE_NIL_NATIVE               0LL
 #define DDS_BUILTIN_TOPIC_KEY_TYPE_NATIVE   DDS_long
+
 
 #define DDS_TheParticipantFactory           DDS_DomainParticipantFactory_get_instance()
 
@@ -95,6 +104,7 @@ OS_API extern DDS_boolean DDS_sequence_get_release (void *sequence);
 /*
  * typedef DOMAINID_TYPE_NATIVE DomainId_t;
  */
+
 typedef DDS_DOMAINID_TYPE_NATIVE DDS_DomainId_t;
 
 /*
@@ -1645,6 +1655,27 @@ struct DDS_WriterDataLifecycleQosPolicy_s {
     DDS_Duration_t autounregister_instance_delay;
 };
 
+/* enum InvalidSampleVisibilityQosPolicyKind {
+ *   NO_INVALID_SAMPLES,
+ *   MINIMUM_INVALID_SAMPLES,
+ *   ALL_INVALID_SAMPLES
+ * };
+ */
+typedef enum {
+    DDS_NO_INVALID_SAMPLES,
+    DDS_MINIMUM_INVALID_SAMPLES,
+    DDS_ALL_INVALID_SAMPLES
+} DDS_InvalidSampleVisibilityQosPolicyKind;
+
+/* struct InvalidSampleVisibilityQosPolicy {
+ *   InvalidSampleVisibilityQosPolicyKind kind;
+ * };
+ */
+typedef struct DDS_InvalidSampleVisibilityQosPolicy_s DDS_InvalidSampleVisibilityQosPolicy;
+struct DDS_InvalidSampleVisibilityQosPolicy_s {
+    DDS_InvalidSampleVisibilityQosPolicyKind kind;
+};
+
 /* struct ReaderDataLifecycleQosPolicy {
  *     Duration_t autopurge_nowriter_samples_delay;
  *     Duration_t autopurge_disposed_samples_delay;
@@ -1655,6 +1686,7 @@ struct DDS_ReaderDataLifecycleQosPolicy_s {
     DDS_Duration_t autopurge_nowriter_samples_delay;
     DDS_Duration_t autopurge_disposed_samples_delay;
     DDS_boolean enable_invalid_samples;
+    DDS_InvalidSampleVisibilityQosPolicy invalid_sample_visibility;
 };
 
 /* struct DurabilityServiceQosPolicy {
@@ -2458,7 +2490,7 @@ DDS_DomainParticipant_ignore_subscription (
     DDS_DomainParticipant _this,
     const DDS_InstanceHandle_t handle);
 
-/*     DomainId_t
+/*     DDS_DomainId_t
  *     get_domain_id();
  */
 OS_API DDS_DomainId_t
@@ -2617,7 +2649,7 @@ typedef DDS_Object DDS_Domain;
  */
 OS_API DDS_ReturnCode_t
 DDS_Domain_create_persistent_snapshot (
-    DDS_DomainParticipant _this,
+    DDS_Domain _this,
     const DDS_char *partition_expression,
     const DDS_char *topic_expression,
     const DDS_char *URI);
@@ -2637,7 +2669,7 @@ DDS_DomainParticipantFactory_get_instance (void);
 
 /*     DomainParticipant
  *     create_participant(
- *         in DomainId_t domainId,
+ *         in DomainId_t domain_id,
  *         in DomainParticipantQos qos,
  *         in DomainParticipantListener a_listener,
  *         in StatusMask mask);
@@ -2661,7 +2693,7 @@ DDS_DomainParticipantFactory_delete_participant (
 
 /*     DomainParticipant
  *     lookup_participant(
- *         in DomainId_t domainId);
+ *         in DDS_DomainId_t domain_id);
  */
 OS_API DDS_DomainParticipant
 DDS_DomainParticipantFactory_lookup_participant (
@@ -2707,7 +2739,7 @@ DDS_DomainParticipantFactory_get_default_participant_qos (
 
 /*     Domain
  *     lookup_domain(
- *         in DomainId domain_id);
+ *         in DDS_DomainId_t domain_id);
  */
 OS_API DDS_Domain
 DDS_DomainParticipantFactory_lookup_domain (
@@ -2900,6 +2932,20 @@ DDS_Topic_get_qos (
  */
 OS_API DDS_ReturnCode_t
 DDS_Topic_dispose_all_data (
+    DDS_Topic _this);
+
+/*     DDS_string
+ *     get_metadescription();
+ */
+OS_API DDS_string
+DDS_Topic_get_metadescription (
+    DDS_Topic _this);
+
+/*     DDS_string
+ *     get_keylist();
+ */
+OS_API DDS_string
+DDS_Topic_get_keylist (
     DDS_Topic _this);
 
 /*
@@ -4105,7 +4151,7 @@ struct DDS_SampleInfo_s {
     DDS_long sample_rank;
     DDS_long generation_rank;
     DDS_long absolute_generation_rank;
-    DDS_Time_t arrival_timestamp;
+    DDS_Time_t reception_timestamp;
 };
 
 /*

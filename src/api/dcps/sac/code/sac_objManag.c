@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -80,7 +80,7 @@ DDS_string_alloc (
 
 DDS_char *
 DDS_string_dup (
-    DDS_char *src
+    const DDS_char *src
     )
 {
     return (DDS_char *)

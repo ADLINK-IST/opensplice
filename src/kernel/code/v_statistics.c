@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,6 +20,7 @@
 #include "v_networkingStatistics.h"
 #include "v_durabilityStatistics.h"
 #include "v_cmsoapStatistics.h"
+#include "v_rnrStatistics.h"
 #include "v_time.h"
 #include "os.h"
 
@@ -107,6 +108,7 @@ v_statisticsResetField(
                     value = c_floatValue(0.0);
                     c_fieldAssign(field, s, value);
                     break;
+
                 default:
                     if(fieldName){
                         OS_REPORT_2(OS_ERROR,"Kernel", 0,
@@ -134,6 +136,7 @@ c_bool
 v_statisticsResetAllFields(
     v_statistics s)
 {
+    OS_UNUSED_ARG(s);
     OS_REPORT(OS_INFO, "v_statisticsReset", 0,
               "Resetting of fields in unknown statistics class not supported");
     return FALSE;
@@ -172,6 +175,8 @@ v_statisticsReset(
             result = v_cmsoapStatisticsReset(v_cmsoapStatistics(s), NULL);
         } else if (strcmp(typename, "v_networkingStatistics")==0 ) {
             result = v_networkingStatisticsReset(v_networkingStatistics(s), NULL);
+        } else if (strcmp(typename, "v_rnrStatistics")==0 ) {
+            result = v_rnrStatisticsReset(v_rnrStatistics(s), NULL);
         } else {
             result = v_statisticsResetAllFields(s);
         }

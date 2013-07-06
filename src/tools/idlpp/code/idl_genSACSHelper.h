@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -40,7 +40,7 @@ idl_metaCharpAddType(
 
 void
 idl_metaCsharpSerialize2XML(
-        idl_metaCsharp *metaElmnt,
+        void *_metaElmnt,
         void *args);
 
 void
@@ -50,7 +50,8 @@ idl_CsharpRemovePrefix (
 
 c_char *idl_CsharpId(
         const c_char *identifier,
-        c_bool customPSM);
+        c_bool customPSM,
+        c_bool isCType);
 
 void
 idl_toCsharpScopingOperator(c_char *scopedName);

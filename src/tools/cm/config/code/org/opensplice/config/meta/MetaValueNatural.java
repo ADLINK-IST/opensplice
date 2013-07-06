@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -63,6 +63,16 @@ public abstract class MetaValueNatural extends MetaValue {
             }
         }
         return result;
+    }
+    
+    @Override
+    public int hashCode() {
+        int var_gen_code;
+        int hash = 13;
+        var_gen_code = (null == maxValue ? 0 : maxValue.hashCode());
+        var_gen_code += (null == minValue ? 0 : minValue.hashCode());
+        hash = 31 * hash + var_gen_code;
+        return hash;
     }
     
     public abstract boolean setMaxValue(Object maxValue);

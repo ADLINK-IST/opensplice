@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -38,6 +38,7 @@
 
 #define ResolveType(s,t) c_type(c_metaResolve(c_metaObject(s),#t))
 
+
 C_CLASS(sd_serializerXMLTypeinfo);
 C_STRUCT(sd_serializerXMLTypeinfo) {
     C_EXTENDS(sd_serializer);
@@ -45,6 +46,7 @@ C_STRUCT(sd_serializerXMLTypeinfo) {
 };
 
 
+#ifndef NDEBUG
 /* -------------------------- checking routines -----------------------*/
 
 /** \brief Check if a serializer is an instance of the serializerXMLTypeinfo
@@ -67,7 +69,7 @@ sd_checkSerializerType(
             ((unsigned int)serializer->formatID == SD_FORMAT_ID) &&
             ((unsigned int)serializer->formatVersion == SD_FORMAT_VERSION));
 }
-
+#endif
 
 typedef struct {
     sd_contextItemKind kind;
@@ -112,1258 +114,1443 @@ static const sd_typeInfo specTypeInfoMap[] = {
 };
 static const c_long specTypeInfoMapSize = sizeof(specTypeInfoMap)/sizeof(sd_typeInfo);
 
-static const sd_typeInfo *
-sd_findNormalTypeInfo (
-    c_char *name)
-{
-    const sd_typeInfo *typeInfo = NULL;
-    c_long i;
-
-    assert(name);
-
-    for ( i = 0; (typeInfo == NULL) && (i < typeInfoMapSize); i++ ) {
-        if ( strcmp(typeInfoMap[i].xmlName, name) == 0 ) {
-            typeInfo = &typeInfoMap[i];
-        }
-    }
-
-    return typeInfo;
-}
-
-static const sd_typeInfo *
-sd_findSpecialTypeInfo (
-    c_char *name)
-{
-    const sd_typeInfo *typeInfo = NULL;
-    c_long i;
-
-    assert(name);
-
-    for ( i = 0; (typeInfo == NULL) && (i < specTypeInfoMapSize); i++ ) {
-        if ( strcmp(specTypeInfoMap[i].xmlName, name) == 0 ) {
-            typeInfo = &specTypeInfoMap[i];
-        }
-    }
-
-    return typeInfo;
-}
-
-static const sd_typeInfo *
-sd_findTypeInfo (
-    c_char *name)
-{
-    const sd_typeInfo *typeInfo = NULL;
-
-    assert(name);
-
-    typeInfo = sd_findSpecialTypeInfo(name);
-    if ( !typeInfo ) {
-        typeInfo = sd_findNormalTypeInfo(name);
-    }
-
-
-    return typeInfo;
-}
-
-static c_bool
-scopeIsModule (
-    c_metaObject scope)
-{
-    c_bool result = FALSE;
-
-    if ( c_baseObject(scope)->kind == M_MODULE ) {
-        result = TRUE;
-    }
-    return result;
-}
-
-#define SD_SCOPE_IDENTIFIER "::"
-static c_char *
-sd_concatScoped(
-    c_char *scopeName,
-    c_char *name)
-{
-    c_char *result;
-    c_ulong len;
-
-    if (scopeName && *scopeName) {
-        len = strlen(scopeName) + sizeof(SD_SCOPE_IDENTIFIER) + strlen(name) + 1;
-        result = os_malloc(len);
-        snprintf(result, len, "%s%s%s", scopeName, SD_SCOPE_IDENTIFIER, name);
-    } else {
-        len = strlen(name) + 1;
-        result = os_malloc(len);
-        os_strcpy(result, name);
-    }
-
-    return result;
-}
-#undef SD_SCOPE_IDENTIFIER
-
-
 /* --------------------- Serialization driving functions -------------------- */
 
-typedef struct sd_specialTypes_s {
-    c_object c_string;
-    c_object c_time;
-} sd_specialTypes;
+typedef struct sd_context_s* sd_context;
+struct sd_context_s {
+    c_base base;
+    c_iter items; /* c_iter<sd_item> - Dependency ordered list of contextItems. */
+    c_iter declarations; /* c_iter<sd_item> - Declarations - for cycle detection. */
+
+    /* Variables used for printing */
+    c_metaObject module; /* Used for keeping track of current scope while printing. */
+    c_iter inlineProcessed; /* c_iter<c_type> - Keeps a list of the inline types defined in the current top-level type. This list is needed
+                         because types can be used more than once within a given type-scope and the algorithm must be able
+                         to determine whether a type should be defined or whether it already is. */
+    c_bool escapeQuotes;
+    c_iter xmlbuff;  /* c_iter<c_char*> This contains a list of string-buffers, which together form the metadescriptor. The
+                        final step is to aggegrate these buffers into one string. */
+
+    /* Module optimization */
+    c_iter modules; /* c_iter<sd_moduleItem> - This list will be populated with used modules when types are parsed with modules. Per module
+                       the number of types is counted. At print-time, arrays are allocated of size typeCount * sizeof(sd_item).
+                       These arrays will at any time hold the unprinted root-type items with dependency count 0. */
+};
+
+/* This structure is only used in the final module optimization step. */
+typedef struct sd_item_s* sd_item;
+typedef struct sd_moduleItem_s* sd_moduleItem;
+struct sd_moduleItem_s {
+    c_metaObject self;
+    c_long typeCount; /* Worst case amount of types that can be stored at once in this module. */
+    sd_item* array; /* Array which at any time contains the unprinted root-type items with dependency count 0 */
+    sd_item* start; /* Pointer to the next item that should be printed. */
+    sd_item* end; /* Pointer which indicates the next free element in the list. */
+};
+
+struct sd_item_s {
+    c_type self;
+    c_long refcount; /* This is the number of unresolved(unprinted) dependencies */
+    c_iter dependees; /* c_iter<sd_item> */
+    sd_moduleItem module; /* Pointer to module-item. This overcomes the need for doing
+                             module-lookups at print-time, when a type must be added
+                             to the type-array of a module when it reaches dependency-count 0. */
+};
 
 
-C_CLASS(sd_context);
-C_STRUCT(sd_context) {
-    c_metaObject base;
-    sd_list scopeList;
-    sd_list processed;
-    sd_list stack;
-    sd_contextItem current;
-    sd_specialTypes specialTypes;
+/* --------------------- Serialization utilities --------------------- */
+
+/* Find the root-type (NULL if type is not an inlined type) */
+c_type
+sd_utilRootType(
+    c_type type)
+{
+    c_metaObject result, prev;
+
+    prev = NULL;
+    result = c_metaObject(type)->definedIn;
+    while(result && c_baseObject(result)->kind != M_MODULE) {
+        prev = result;
+
+        /* If result isn't a module, there must be higher levels in the hierarchy. */
+        result = result->definedIn;
+        assert(result);
+    }
+
+    return c_type(prev);
+}
+
+/* Check whether an object is inlined.
+ * Collections and primitives are conceptually always inlined,
+ * though the implementation might place them in a scope.
+ */
+static c_bool
+sd_utilIsInlined(
+    c_type type)
+{
+    /* Under some arcane conditions types can arrive here that have an
+     * empty 'definedIn' pointer which previously crashed this function,
+     * because the check on whether the parent was a module was first.
+     * By reversing the checks the code is robust against this issue,
+     * but it would be nice to know why it is occurring.
+     */
+    return (c_baseObject(type)->kind == M_COLLECTION) ||
+           (c_baseObject(type)->kind == M_PRIMITIVE) ||
+           (c_baseObject(c_metaObject(type)->definedIn)->kind != M_MODULE);
+}
+
+static sd_item
+sd_itemNew(
+    c_type self)
+{
+    sd_item result;
+
+    result = os_malloc(sizeof(struct sd_item_s));
+    result->self = self;
+    result->refcount = 0;
+    result->dependees = NULL;
+    result->module = NULL;
+
+    return result;
+}
+
+static void
+sd_itemFree(
+    sd_item item)
+{
+    if(item->dependees) {
+        c_iterFree(item->dependees);
+    }
+    os_free(item);
+}
+
+static void
+sd_moduleItemFree(
+    sd_moduleItem item)
+{
+    if(item->array) {
+        os_free(item->array);
+    }
+    os_free(item);
+}
+
+static sd_moduleItem
+sd_moduleItemNew(
+    c_metaObject module)
+{
+    sd_moduleItem result;
+
+    result = os_malloc(sizeof(struct sd_moduleItem_s));
+    result->array = NULL;
+    result->start = NULL;
+    result->end = NULL;
+    result->typeCount = 0;
+    result->self = module;
+
+    return result;
+}
+
+static sd_context
+sd_contextNew(
+    c_base base,
+    c_bool escapeQuotes)
+{
+    sd_context result;
+
+    result = os_malloc(sizeof(struct sd_context_s));
+    result->items = c_iterNew(NULL);
+    result->declarations = c_iterNew(NULL);
+    result->base = base;
+    result->module = NULL;
+    result->escapeQuotes = escapeQuotes;
+    result->xmlbuff = NULL;
+    result->inlineProcessed = NULL;
+    result->modules = NULL;
+
+    return result;
+}
+
+static void
+sd_freeItems(
+    void* o,
+    void* udata)
+{
+    sd_item item;
+    OS_UNUSED_ARG(udata);
+
+    item = o;
+    sd_itemFree(item);
+}
+
+static void
+sd_freeModuleItems(
+    void* o,
+    void* udata)
+{
+    sd_moduleItem item;
+    OS_UNUSED_ARG(udata);
+
+    item = o;
+    sd_moduleItemFree(item);
+}
+
+static void
+sd_contextFree(
+    sd_context context)
+{
+    /* Free items */
+    c_iterWalk(context->items, sd_freeItems, NULL);
+    c_iterFree(context->items);
+
+    /* Free declarations */
+    c_iterFree(context->declarations);
+
+    /* Free modules */
+    c_iterWalk(context->modules, sd_freeModuleItems, NULL);
+    c_iterFree(context->modules);
+
+    assert(context->xmlbuff == NULL);
+
+    os_free(context);
+}
+
+/* Add a dependee to the dependee list of an item */
+static void
+sd_itemAddDependee(
+    sd_item item,
+    sd_item dependee)
+{
+    item->dependees = c_iterInsert(item->dependees, dependee);
+
+    /* Increase the refcount of the dependee. */
+    dependee->refcount++;
+    assert(item->dependees);
+}
+
+/* Add item to module array */
+static void
+sd_itemAddToModule(
+    sd_item item) {
+    sd_moduleItem module = item->module;
+
+    if(!module->array) {
+        module->array = os_malloc(module->typeCount * sizeof(sd_item));
+        module->start = module->array;
+        module->end = module->array;
+    }
+
+    *(module->end) = item;
+    module->end++;
+
+    assert(module->end <= (module->array + module->typeCount));
+}
+
+struct sd_itemLookup_t {
+    c_type type;
+    sd_item result;
 };
 
 static void
-sd_specialTypesInit (
-    c_object base,
-    sd_specialTypes *special)
+sd_itemDerefDependee(
+    void* o, void* udata)
 {
-   special->c_string = c_resolve(base, "c_string");
-   special->c_time   = c_resolve(base, "c_time");
-}
-
-
-static sd_context
-sd_contextNew (
-    c_object base)
-{
-    sd_context context;
-
-    context = (sd_context)os_malloc(C_SIZEOF(sd_context));
-
-    if ( context ) {
-        context->base      = base;
-        context->scopeList = sd_listNew();
-        context->processed = sd_listNew();
-        context->stack     = sd_listNew();
-        context->current   = NULL;
-        sd_specialTypesInit(base, &context->specialTypes);
-
+    if(!--((sd_item)o)->refcount) {
+        sd_itemAddToModule(o);
     }
-
-    return context;
 }
 
-
+/* Deref dependees. Dependees are deref'd when a dependency (the item passed to this function) is
+ * resolved. When a dependee reaches refcount zero, it can be processed itself. */
 static void
-sd_contextFree (
-    sd_context context)
+sd_itemDerefDependees(
+    sd_item item)
 {
-    sd_contextItem item;
-
-    item = (sd_contextItem)sd_listTakeFirst(context->scopeList);
-    while ( item ) {
-        sd_contextItemFree(item);
-        item = (sd_contextItem)sd_listTakeFirst(context->scopeList);
-    }
-    sd_listFree(context->scopeList);
-
-    sd_listFree(context->processed);
-
-    item = (sd_contextItem)sd_listTakeFirst(context->stack);
-    while ( item ) {
-        sd_contextItemFree(item);
-        item = (sd_contextItem)sd_listTakeFirst(context->stack);
-    }
-    sd_listFree(context->stack);
-
-    if ( context->current ) {
-        sd_contextItemFree(context->current);
-    }
-
-    os_free(context);
-
-
+    c_iterWalk(item->dependees, sd_itemDerefDependee, NULL);
 }
 
-static void
-sd_contextPushItem (
+c_bool
+sd_contextLookupAction(
+    void* o,
+    void* userData)
+{
+    struct sd_itemLookup_t* data;
+
+    data = userData;
+    if(((sd_item)o)->self == data->type) {
+        data->result = o;
+    }
+
+    return data->result == NULL;
+}
+
+/* Check whether an item is already processed */
+static sd_item
+sd_contextIsProcessed(
     sd_context context,
-    sd_contextItem item)
+    c_type type)
 {
-    assert(context);
-    assert(context->stack);
-    assert(item);
+    struct sd_itemLookup_t walkData;
 
-    sd_listInsert(context->stack, item);
-    sd_contextItemKeep(item);
-    context->current = item;
+    walkData.type = type;
+    walkData.result = NULL;
+    c_iterWalkUntil(context->items, sd_contextLookupAction, &walkData);
+
+    return walkData.result;
 }
 
-static sd_contextItem
-sd_contextPopItem (
-    sd_context context)
-{
-    sd_contextItem item;
-
-    assert(context);
-    assert(context->stack);
-
-
-    item = (sd_contextItem)sd_listTakeFirst(context->stack);
-
-    assert(item == context->current);
-
-    context->current = (sd_contextItem)sd_listReadFirst(context->stack);
-    sd_contextItemFree(item);
-
-    return item;
-}
-
-
-static void
-sd_contextAddProcessed (
+/* Check for cycles */
+static sd_item
+sd_contextCheckCycles(
     sd_context context,
-    c_object   object)
+    c_type type)
 {
-    assert(context);
-    assert(context->processed);
-    assert(object);
+    struct sd_itemLookup_t walkData;
 
-    sd_listAppend(context->processed, object);
+    walkData.type = type;
+    walkData.result = NULL;
+    c_iterWalkUntil(context->declarations, sd_contextLookupAction, &walkData);
+
+    return walkData.result;
 }
 
-
+struct sd_contextFindModule_t {
+    c_metaObject find;
+    sd_moduleItem result;
+};
 
 static c_bool
-sd_contextIsProcessed (
-    sd_context context,
-     c_object   object)
+sd_contextFindModule(
+    void* o,
+    void* userData)
 {
-    c_bool found = FALSE;
+    struct sd_contextFindModule_t* data;
 
-    assert(context);
-    assert(context->processed);
-    assert(object);
-
-    if ( sd_listFindObject(context->processed, object) ) {
-        found = TRUE;
+    data = userData;
+    if(((sd_moduleItem)o)->self == data->find) {
+        data->result = o;
     }
 
-    return found;
+    return data->result == NULL;
 }
 
-
-static sd_contextItem
-sd_contextAddScope (
+/* Mark an item as processed, add to the context->items list */
+static void
+sd_contextProcessed(
     sd_context context,
-    c_metaObject scope)
+    sd_item item)
 {
-    sd_contextItemScope item;
-    c_module module;
+    struct sd_contextFindModule_t walkData;
+    assert(!sd_contextIsProcessed(context, item->self));
+    c_iterAppend(context->items, item);
 
-    assert(context);
-    assert(context->scopeList);
-    assert(scope);
+    /* Find corresponding module */
+    walkData.find = c_metaObject(item->self)->definedIn;
+    walkData.result = NULL;
+    c_iterWalkUntil(context->modules, sd_contextFindModule, &walkData);
 
-    if ( scope != context->base ) {
-        module = c_module(scope);
-
-        item = (sd_contextItemScope)sd_contextItemNew(SD_CONTEXT_ITEM_MODULE);
-        sd_contextItem(item)->name = scope->name;
-    } else {
-        item = (sd_contextItemScope)sd_contextItemNew(SD_CONTEXT_ITEM_SCOPE);
+    /* If module is not found, create new module object. */
+    if(!walkData.result) {
+        walkData.result = sd_moduleItemNew(walkData.find);
+        context->modules = c_iterInsert(context->modules, walkData.result);
     }
 
-    if ( item ) {
-        sd_contextItem(item)->self  = scope;
-        sd_contextItem(item)->scope = c_metaObject(scope->definedIn);
-        sd_listAppend(context->scopeList, item);
+    /* Administrate extra type for module. */
+    walkData.result->typeCount++;
+
+    /* Store pointer in item to module, so that during printing no lookups are required. */
+    item->module = walkData.result;
+}
+
+/* Mark an item as declared, add to the context->declarations list */
+static void
+sd_contextDeclare(
+    sd_context context,
+    sd_item item)
+{
+    assert(!sd_contextIsProcessed(context, item->self));
+    c_iterAppend(context->declarations, item);
+}
+
+/* Serialize a type */
+static int
+sd_serializeType(
+    sd_context context,
+    sd_item rootType,
+    c_type type,
+    c_bool allowCycles,
+    sd_item* out);
+
+/* Serialize dependencies of a typedef */
+static int
+sd_serializeTypedefDependencies(
+    sd_context context,
+    sd_item rootType,
+    c_bool allowCycles,
+    c_typeDef type)
+{
+    sd_item alias;
+
+    alias = NULL;
+
+    /* Resolve dependency */
+    if(sd_serializeType(context, rootType, type->alias, allowCycles, &alias)) {
+        goto error;
+    }
+
+    /* Add typedef to dependee list of dependency */
+    if(alias) {
+        sd_itemAddDependee(alias, rootType);
+    }
+
+    return 0;
+error:
+    return -1;
+}
+
+/* Serialize dependencies of a collection. */
+static int
+sd_serializeCollectionDependencies(
+    sd_context context,
+    sd_item rootType,
+    c_collectionType type)
+{
+    sd_item subType;
+    c_bool allowCycles;
+
+    subType = NULL;
+    allowCycles = FALSE;
+
+    /* Check if type is a sequence or array to find out if cycles are allowed. */
+    if(type->kind == C_SEQUENCE) {
+        allowCycles = TRUE;
+    }
+
+    /* Resolve dependency */
+    if(sd_serializeType(context, rootType, type->subType, allowCycles, &subType)) {
+        goto error;
+    }
+
+    /* Add collection to dependee list of subType */
+    if(subType) {
+        sd_itemAddDependee(subType, rootType);
+    }
+
+    return 0;
+error:
+    return -1;
+}
+
+/* Serialize dependencies for a struct */
+static int
+sd_serializeStructureDependencies(
+    sd_context context,
+    sd_item rootType,
+    c_structure type)
+{
+    c_member member;
+    sd_item memberType;
+    c_long i;
+
+    memberType = NULL;
+
+    /* Walk members to resolve dependencies of struct. */
+    for(i=0; i<c_arraySize(type->members); i++) {
+        member = type->members[i];
+        /* Serialize memberType, do not allow cycles. */
+        if(sd_serializeType(context, rootType, c_specifier(member)->type, FALSE, &memberType)) {
+            goto error;
+        }
+        if(memberType) {
+            sd_itemAddDependee(memberType, rootType);
+        }
+    }
+
+    return 0;
+error:
+    return -1;
+}
+
+/* Serialize dependencies for union */
+static int
+sd_serializeUnionDependencies(
+    sd_context context,
+    sd_item rootType,
+    c_union type)
+{
+    c_unionCase _case;
+    sd_item caseType, switchType;
+    c_long i;
+
+    switchType = NULL;
+    caseType = NULL;
+
+    /* Serialize switchType, no cycles allowed. */
+    if(sd_serializeType(context, rootType, type->switchType, FALSE, &switchType)) {
+        goto error;
+    }
+    if(switchType) {
+        sd_itemAddDependee(switchType, rootType);
+    }
+
+    /* Walk cases to resolve dependencies of union */
+    for(i=0; i<c_arraySize(type->cases); i++) {
+        _case = type->cases[i];
+        /* Serialize caseType, no cycles allowed. */
+        if(sd_serializeType(context, rootType, c_specifier(_case)->type, FALSE, &caseType)) {
+            goto error;
+        }
+        if(caseType) {
+            sd_itemAddDependee(caseType, rootType);
+        }
     }
 
 
-    return sd_contextItem(item);
+    return 0;
+error:
+    return -1;
 }
 
-typedef struct {
-    c_metaObject   scope;
-    sd_contextItem item;
-} findScopeItemArg;
-
-static c_bool
-findScopeItem (
-    void *obj,
-    void *arg)
+/* Serialize dependencies of a type.
+ *
+ * Parameter 'rootType' is typically the same as the 'type' parameter.
+ * However, for inline types these two differ. The distinction
+ * enables that dependencies are always added to the
+ * top-level type. */
+static int
+sd_serializeTypeDependencies(
+    sd_context context,
+    sd_item rootType,
+    c_bool allowCycles,
+    c_type type)
 {
-    sd_contextItem    item = (sd_contextItem)obj;
-    findScopeItemArg *info = (findScopeItemArg *)arg;
-    c_bool            retval = TRUE;
+    int result;
 
-    if ( item->self == info->scope ) {
-        info->item = item;
-        retval = FALSE;
+    result = 0;
+
+    /* Forward to the correct dependency-resolve function, depending on metaKind */
+    switch(c_baseObject(type)->kind) {
+    case M_TYPEDEF:
+        /* Allowance of cycles is transparently forwarded to typedefs. */
+        result = sd_serializeTypedefDependencies(context, rootType, allowCycles, c_typeDef(type));
+        break;
+    case M_COLLECTION:
+        result = sd_serializeCollectionDependencies(context, rootType, c_collectionType(type));
+        break;
+    case M_ENUMERATION:
+        /* Enumerations have no dependencies */
+        break;
+    case M_STRUCTURE:
+        result = sd_serializeStructureDependencies(context, rootType, c_structure(type));
+        break;
+    case M_UNION:
+        result = sd_serializeUnionDependencies(context, rootType, c_union(type));
+        break;
+    default:
+        assert(0);
+        break;
     }
 
-    return retval;
+    return result;
 }
 
-
-
-static sd_contextItem
-sd_contextFindScope (
+/* Serialize a type */
+static int
+sd_serializeType(
     sd_context context,
-    c_metaObject scope)
+    sd_item rootType,
+    c_type type,
+    c_bool allowCycles,
+    sd_item* out)
 {
-    findScopeItemArg arg;
+    sd_item item;
 
-    assert(context);
-    assert(scope);
+    item = NULL;
 
-    arg.scope = scope;
-    arg.item  = NULL;
+    switch(c_baseObject(type)->kind) {
+    case M_PRIMITIVE:
+        /* Primitives and collections are always treated as inline types, and are generated when a type is printed. */
+        break;
+    case M_STRUCTURE:
+        /* Check if type is the c_time type in the rootscope which is not handled as a seperate type, but will result in a <Time/>. */
+        if((c_metaObject(type)->definedIn == c_metaObject(context->base)) && !strcmp("c_time", c_metaObject(type)->name)) {
+            break; /* Don't handle c_time */
+        }
+    /* Fallthrough on purpose. */
+    case M_TYPEDEF:
+    case M_COLLECTION: /* Collections are always treated as inline types, but do have dependencies. */
+    case M_ENUMERATION:
+    case M_UNION:
+        /* Check if item is already processed */
+        if(!(item = sd_contextIsProcessed(context, type))) {
+            /* Check for invalid cycles. Don't process type if a cycle is detected. */
+            if(((c_baseObject(type)->kind == M_STRUCTURE) || (c_baseObject(type)->kind == M_UNION)) && sd_contextCheckCycles(context, type)) {
+                if(!allowCycles) {
+                    OS_REPORT(OS_ERROR, "sd_serializerXMLTypeInfoSerialize", 0, "unsupported cycle detected!");
+                    goto error;
+                }
+            }else {
+                /* Don't process inlined types in graph. These are resolved when the parent-type is printed, which is always in correct
+                 * dependency order, which is the order of members(structs) or cases(unions). Collections are also considered
+                 * inlined, because the actual location of a collection type is implementation specific. */
+                if(!sd_utilIsInlined(type)) {
+                    /* Here, the usage of 'rootType' is prohibited since this is not an inlined type. */
 
-    sd_listWalk(context->scopeList, findScopeItem, &arg);
+                    /* Create contextItem */
+                    item = sd_itemNew(type);
 
-    return arg.item;
-}
+                    /* Add forward-declaration marker for structs and unions, to allow references to self, so that
+                     * the cycles can be detected. IDL does not allow other types to be forward-declared, thus
+                     * cannot introduce cyclic references. */
+                    if((c_baseObject(type)->kind == M_STRUCTURE) || (c_baseObject(type)->kind == M_UNION)) {
+                        sd_contextDeclare(context, item);
+                    }
 
-static sd_contextItem
-sd_contextFindOrCreateScope (
-    sd_context context,
-    c_metaObject scope)
-{
-    sd_contextItem item = NULL;
-    sd_contextItem parent;
-    c_metaObject   pscope;
+                    /* Resolve dependencies of type */
+                    if(sd_serializeTypeDependencies(context, item, allowCycles, type)) {
+                        /* An error occurred, most likely an unsupported cyclic dependency */
+                        sd_itemFree(item);
+                        goto error;
+                    }
 
-    item = sd_contextFindScope(context, scope);
-    if ( !item ) {
-        if ( scope != context->base ) {
-            pscope = c_metaObject(scope->definedIn);
-            parent = sd_contextFindOrCreateScope(context, pscope);
-            if ( parent ) {
-                item = sd_contextAddScope(context, scope);
-                if ( item ) {
-                    sd_contextItemAddChild(parent, item);
+                    /* If success, add item to processed list */
+                    if(item) {
+                        sd_contextProcessed(context, item);
+                    }
+                    break;
+                }else {
+                    c_type typeRoot;
+
+                    assert(rootType);
+
+                    /* Still need to resolve dependencies for inlined types */
+                    if(sd_serializeTypeDependencies(context, rootType, allowCycles, type)) {
+                        goto error;
+                    }
+
+                    /* If rootType is referencing an inlined type that is defined in the scope of another type,
+                     * rootType is implicitly dependent on the rootType of the inlined type. */
+                    if(rootType->self != (typeRoot = sd_utilRootType(type))) {
+                        sd_item typeRootItem = NULL;
+
+                        /* An empty typeRoot means that the type is not stored as inlined object, but conceptually it is.
+                         * This will typically occur for intern collectiontypes like c_string, who are defined
+                         * in the root. */
+                        if(typeRoot) {
+                            /* Serialize rootType of type */
+                            if(sd_serializeType(context, NULL, typeRoot, allowCycles, &typeRootItem)) {
+                                goto error;
+                            }
+
+                            /* Because the 'typeRoot' is the root type of 'type', this can never be an inlined
+                             * type, neither can it be a primitive type (which is not serialized). Thus, typeRootItem
+                             * must always be set.
+                             */
+                            assert(typeRootItem);
+
+                            /* Add the root-type of the type to 'rootType' */
+                            sd_itemAddDependee(typeRootItem, rootType);
+                        }
+                    }
                 }
             }
-        } else {
-            item = sd_contextAddScope(context, scope);
         }
-    }
-    return item;
-}
-
-static c_bool
-sd_objectInScope (
-    sd_context   context,
-    c_metaObject scope)
-{
-    c_bool result = FALSE;
-
-    if ( scope == context->current->self ) {
-        result = TRUE;
-    } else if ( scope && (c_baseObject(scope)->kind != M_MODULE) ) {
-         result = TRUE;
-    } else {
-         result = FALSE;
+        break;
+    default:
+        /* The serializer shouldn't call serializeType with metaKinds other than the ones described above. */
+        assert(0);
+        break;
     }
 
-    return result;
-}
-
-static c_bool
-sd_contextItemIsTop (
-    sd_contextItem item)
-{
-    c_bool result = FALSE;
-
-    switch ( item->kind ) {
-        case SD_CONTEXT_ITEM_SCOPE:
-        case SD_CONTEXT_ITEM_MODULE:
-        case SD_CONTEXT_ITEM_STRUCTURE:
-        case SD_CONTEXT_ITEM_TYPEDEF:
-        case SD_CONTEXT_ITEM_ENUMERATION:
-        case SD_CONTEXT_ITEM_UNION:
-            result = TRUE;
-            break;
-        default:
-            result = FALSE;
-            break;
+    /* Return item if out is set */
+    if(out) {
+        *out = item;
     }
 
-    return result;
+    return 0;
+error:
+    return -1;
 }
 
+#define SD_XML_BUFFER (512)
+
+/* Append to buffer-list. Parameter 'str' is never larger than SD_XML_BUFFER bytes. */
 static void
-sd_addDependency (
-    sd_context     context,
-    sd_contextItem item,
-    c_metaObject   object)
-{
-    sd_contextItem root;
-    sd_contextItem referred = NULL;
-    sd_contextItem ancestor = NULL;
-
-    assert(context);
-    assert(item);
-    assert(object);
-
-    root = (sd_contextItem)sd_contextFindScope(context, context->base);
-    assert(root);
-
-    if ( root ) {
-        referred = sd_contextItemFindObject(root, object);
-        assert(referred);
-        if ( referred && (referred != item) ) {
-            ancestor = sd_contextItemFindAncestor(item, referred);
-            assert(ancestor);
-        }
-    }
-
-    if ( ancestor ) {
-        while ( item->parent && (item->parent != ancestor) ) {
-            item = item->parent;
-        }
-        while ( referred->parent && (referred->parent != ancestor) ) {
-            referred = referred->parent;
-        }
-        assert(item->parent == ancestor);
-        assert(referred->parent == ancestor);
-
-        if ( referred != item ) {
-            sd_contextItemAddDependency(item, referred);
-        }
-    }
-}
-
-
-static void
-sd_serializeType (
+sd_printXmlAppend(
     sd_context context,
-    c_type type,
-    c_object object);
-
-static void
-sd_serializeLabel (
-    sd_context context,
-    c_constant label,
-    c_object object)
+    char* str /* char[SD_XML_BUFFER] */)
 {
-    sd_contextItemLabel item;
-    c_char *name;
+    char* lastBuffer;
+    c_ulong strLen, buffLen, spaceLeft;
 
-    item = (sd_contextItemLabel)sd_contextItemNew(SD_CONTEXT_ITEM_LABEL);
+    /* Get first buffer from list, create if it didn't exist */
+    lastBuffer = c_iterObject(context->xmlbuff, 0);
+    if(!lastBuffer) {
+        lastBuffer = os_malloc(SD_XML_BUFFER + 1);
+        *lastBuffer = '\0';
+        context->xmlbuff = c_iterInsert(context->xmlbuff, lastBuffer);
+    }
 
-    if ( item ) {
-        name = c_metaObject(label)->name;
+    strLen = strlen(str);
+    buffLen = strlen(lastBuffer);
+    spaceLeft = SD_XML_BUFFER - buffLen;
 
-        sd_contextItem(item)->name = name;
+    /* If length of string is larger than the space left in the buffer, allocate new buffer. */
+    if(strLen >= spaceLeft) {
+        char* nextBuffer;
+        /* Fill remaining bytes of current buffer. */
+        memcpy(lastBuffer + buffLen, str, spaceLeft);
+        lastBuffer[SD_XML_BUFFER] = '\0';
 
-        sd_contextItemAddChild(context->current, sd_contextItem(item));
-        sd_contextItemFree(sd_contextItem(item));
+        /* Do the remaining string in the next buffer. */
+        nextBuffer = os_malloc(SD_XML_BUFFER + 1);
+        memcpy(nextBuffer, str + spaceLeft, strLen - spaceLeft + 1 /* 0-terminator */);
+
+        /* Insert new buffer in iterator */
+        context->xmlbuff = c_iterInsert(context->xmlbuff, nextBuffer);
+
+    /* ... otherwise, just append the string to the current buffer. */
+    }else {
+        strcat(lastBuffer, str);
     }
 }
 
 static void
-sd_serializeLiteral (
+sd_printXmlAggegrate(
     sd_context context,
-    c_literal  literal,
-    c_type     switchType,
-    c_object   object)
+    sd_serializedData* result)
 {
-    sd_contextItemLiteral item;
-
-    item = (sd_contextItemLiteral)sd_contextItemNew(SD_CONTEXT_ITEM_LITERAL);
-
-    if ( item ) {
-        sd_contextItem(item)->name = "label";
-        item->value = literal->value;
-        item->type  = switchType;
-
-        sd_contextItemAddChild(context->current, sd_contextItem(item));
-        sd_contextItemFree(sd_contextItem(item));
-    }
-}
-
-
-static void
-sd_serializeMember (
-    sd_context context,
-    c_member member,
-    c_object object)
-{
-    sd_contextItemMember item;
-    c_char *name;
-    c_type type;
-
-    item = (sd_contextItemMember)sd_contextItemNew(SD_CONTEXT_ITEM_MEMBER);
-
-    if ( item ) {
-        name = c_specifier(member)->name;
-        type = c_specifier(member)->type;
-
-        sd_contextItem(item)->self = context->current->self;
-        sd_contextItem(item)->name = name;
-
-        sd_contextItemAddChild(context->current, sd_contextItem(item));
-
-        sd_contextPushItem(context, sd_contextItem(item));
-
-        sd_serializeType(context, c_getType(type), type);
-
-        sd_contextPopItem(context);
-        sd_contextItemFree(sd_contextItem(item));
-    }
-}
-
-
-static void
-sd_serializeStructure (
-    sd_context context,
-    c_type type,
-    c_object object)
-{
-    sd_contextItemStructure item;
-    sd_contextItem parent;
-    sd_contextItem typeRef;
-    c_property property;
-    c_object o;
-    c_metaObject scope;
-    c_array members;
-    c_ulong size;
-    c_ulong i;
-    c_char *name;
-
-    assert(type);
-    assert(object);
-
-    property = (c_property)c_metaResolve(c_object(type), "definedIn");
-    o = (c_object)C_DISPLACE(object, property->offset);
-    scope = (c_metaObject)*(c_object *)o;
-
-    if ( sd_objectInScope(context, scope) ) {
-        sd_contextAddProcessed(context, object);
-
-        item = (sd_contextItemStructure)sd_contextItemNew(SD_CONTEXT_ITEM_STRUCTURE);
-        if ( item ) {
-            property = (c_property)c_metaResolve(c_object(type), "name");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            name = (c_char *)*(c_object *)o;
-
-            property = (c_property)c_metaResolve(c_object(type), "members");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            members = (c_array)*(c_object *)o;
-
-            sd_contextItem(item)->self = c_metaObject(object);
-            sd_contextItem(item)->name = name;
-            sd_contextItem(item)->scope = scope;
-
-            sd_contextItemAddChild(context->current, sd_contextItem(item));
-
-            sd_contextPushItem(context, sd_contextItem(item));
-
-            size = c_arraySize(members);
-
-            for ( i = 0; i < size; i++ ) {
-                c_member m = (c_member)members[i];
-                sd_serializeMember(context, m, object);
-            }
-
-            sd_contextPopItem(context);
-
-            sd_contextItemFree(sd_contextItem(item));
-        }
-    } else {
-        if ( !sd_contextIsProcessed(context, object) ) {
-            parent = (sd_contextItem)sd_contextFindOrCreateScope(context, scope);
-            if ( parent ) {
-                sd_contextPushItem(context, parent);
-                sd_serializeStructure(context, type, object);
-                sd_contextPopItem(context);
-            }
-        }
-        sd_addDependency(context, context->current, object);
-        typeRef = sd_contextItemNew(SD_CONTEXT_ITEM_TYPE);
-        if ( typeRef ) {
-            property = (c_property)c_metaResolve(c_object(type), "name");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            typeRef->name = (c_char *)*(c_object *)o;
-            typeRef->scope = scope;
-            sd_contextItemAddChild(context->current, typeRef);
-            sd_contextItemFree(sd_contextItem(typeRef));
-        }
-    }
-}
-
-static void
-metaWalkAction_serializeMetaObject (
-        c_metaObject metaObject,
-        c_metaWalkActionArg arg)
-{
-    sd_serializeType((sd_context)arg, c_getType(metaObject), metaObject);
-}
-
-
-static void
-sd_serializeModule (
-    sd_context context,
-    c_type type,
-    c_object object)
-{
-    sd_contextItemStructure item;
-    sd_contextItem parent;
-    sd_contextItem typeRef;
-    c_property property;
-    c_object o;
-    c_metaObject scope;
-    c_char *name;
-
-    assert(type);
-    assert(object);
-
-    property = (c_property)c_metaResolve(c_object(type), "definedIn");
-    o = (c_object)C_DISPLACE(object, property->offset);
-    scope = (c_metaObject)*(c_object *)o;
-    c_free(property);
-
-    if ( sd_objectInScope(context, scope) ) {
-        sd_contextAddProcessed(context, object);
-
-        item = (sd_contextItemStructure)sd_contextItemNew(SD_CONTEXT_ITEM_MODULE);
-        if ( item ) {
-            property = (c_property)c_metaResolve(c_object(type), "name");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            name = (c_char *)*(c_object *)o;
-            c_free(property);
-
-            sd_contextItem(item)->self = c_metaObject(object);
-            sd_contextItem(item)->name = name;
-            sd_contextItem(item)->scope = scope;
-
-            sd_contextItemAddChild(context->current, sd_contextItem(item));
-
-            sd_contextPushItem(context, sd_contextItem(item));
-
-            /* serialize all object contained in this module */
-            c_metaWalk(object, metaWalkAction_serializeMetaObject, (void*)context);
-
-            sd_contextPopItem(context);
-
-            sd_contextItemFree(sd_contextItem(item));
-        }
-        else
-        {
-            /* todo: OS_REPORT() */
-        }
-    } else {
-        if ( !sd_contextIsProcessed(context, object) ) {
-            parent = (sd_contextItem)sd_contextFindOrCreateScope(context, scope);
-            if ( parent ) {
-                sd_contextPushItem(context, parent);
-                sd_serializeModule(context, type, object);
-                sd_contextPopItem(context);
-            }
-        }
-        sd_addDependency(context, context->current, object);
-        typeRef = sd_contextItemNew(SD_CONTEXT_ITEM_TYPE);
-        if ( typeRef ) {
-            property = (c_property)c_metaResolve(c_object(type), "name");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            typeRef->name = (c_char *)*(c_object *)o;
-            typeRef->scope = scope;
-            sd_contextItemAddChild(context->current, typeRef);
-            sd_contextItemFree(sd_contextItem(typeRef));
-        }
-    }
-}
-
-static void
-sd_serializeTyperef (
-    sd_context context,
-    c_type type,
-    c_object object)
-{
-    sd_contextItem typeRef;
-    c_property property;
-    c_object o;
-
-    assert(type);
-    assert(object);
-
-    typeRef = sd_contextItemNew(SD_CONTEXT_ITEM_TYPE);
-    if ( typeRef ) {
-        property = (c_property)c_metaResolve(c_object(type), "name");
-        o = (c_object)C_DISPLACE(object, property->offset);
-        typeRef->name = (c_char *)*(c_object *)o;
-
-        property = (c_property)c_metaResolve(c_object(type), "definedIn");
-        o = (c_object)C_DISPLACE(object, property->offset);
-        typeRef->scope = (c_metaObject)*(c_object *)o;
-
-        sd_contextItemAddChild(context->current, typeRef);
-        sd_contextItemFree(sd_contextItem(typeRef));
-    }
-}
-
-static void
-sd_serializeTypedef (
-    sd_context context,
-    c_type type,
-    c_object object)
-{
-    sd_contextItemTypedef item;
-    sd_contextItem parent;
-    sd_contextItem typeRef;
-    c_type alias;
-    c_property property;
-    c_object o;
-    c_metaObject scope;
-    c_char *name;
-
-    assert(type);
-    assert(object);
-
-    property = (c_property)c_metaResolve(c_object(type), "definedIn");
-    o = (c_object)C_DISPLACE(object, property->offset);
-    scope = (c_metaObject)*(c_object *)o;
-
-    if ( sd_objectInScope(context, scope) ) {
-        sd_contextAddProcessed(context, object);
-        item = (sd_contextItemTypedef)sd_contextItemNew(SD_CONTEXT_ITEM_TYPEDEF);
-        if ( item ) {
-            property = (c_property)c_metaResolve(c_object(type), "name");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            name = (c_char *)*(c_object *)o;
-
-            property = (c_property)c_metaResolve(c_object(type), "alias");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            alias = (c_type)*(c_object *)o;
-
-            sd_contextItem(item)->self = c_metaObject(object);
-            sd_contextItem(item)->name = name;
-            sd_contextItem(item)->scope = scope;
-
-            sd_contextItemAddChild(context->current, sd_contextItem(item));
-
-            sd_contextPushItem(context, sd_contextItem(item));
-
-            sd_serializeType(context, c_getType(alias), alias);
-
-            sd_contextPopItem(context);
-
-            sd_contextItemFree(sd_contextItem(item));
-        }
-    } else {
-        if ( !sd_contextIsProcessed(context, object) ) {
-            parent = (sd_contextItem)sd_contextFindOrCreateScope(context, scope);
-            if ( parent ) {
-                sd_contextPushItem(context, parent);
-                sd_serializeTypedef(context, type, object);
-                sd_contextPopItem(context);
-            }
-        }
-        sd_addDependency(context, context->current, object);
-        typeRef = sd_contextItemNew(SD_CONTEXT_ITEM_TYPE);
-        if ( typeRef ) {
-            property = (c_property)c_metaResolve(c_object(type), "name");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            typeRef->name = (c_char *)*(c_object *)o;
-            typeRef->scope = scope;
-            sd_contextItemAddChild(context->current, typeRef);
-            sd_contextItemFree(sd_contextItem(typeRef));
-        }
-    }
-}
-
-static void
-sd_serializePrimitive (
-    sd_context context,
-    c_type type,
-    c_object object)
-{
-    sd_contextItemPrimitive item;
-    c_property property;
-    c_object o;
-    c_primKind kind;
-
-    assert(type);
-    assert(object);
-
-    item = (sd_contextItemPrimitive) sd_contextItemNew(SD_CONTEXT_ITEM_PRIMITIVE);
-
-    if ( item ) {
-        sd_contextItemAddChild(context->current, sd_contextItem(item));
-
-        property = (c_property)c_metaResolve(c_object(type), "kind");
-        o = (c_object)C_DISPLACE(object, property->offset);
-        kind = *(c_primKind *)(c_object *)o;
-
-        item->kind  = kind;
-        sd_contextItemFree(sd_contextItem(item));
-    }
-}
-
-static void
-sd_serializeCollection (
-    sd_context context,
-    c_type type,
-    c_object object)
-{
-    sd_contextItem item;
-    c_property property;
-    c_object o;
-    c_collKind kind;
-    c_ulong maxSize;
-    c_type subType;
-    c_char *name;
-    c_metaObject scope;
-
-    property = (c_property)c_metaResolve(c_object(type), "definedIn");
-    o = (c_object)C_DISPLACE(object, property->offset);
-    scope = (c_metaObject)*(c_object *)o;
-
-        property = (c_property)c_metaResolve(c_object(type), "name");
-        o = (c_object)C_DISPLACE(object, property->offset);
-        name = (c_char *)*(c_object *)o;
-
-        property = (c_property)c_metaResolve(c_object(type), "kind");
-        o = (c_object)C_DISPLACE(object, property->offset);
-        kind = *(c_collKind *)(c_object *)o;
-
-        property = (c_property)c_metaResolve(c_object(type), "maxSize");
-        o = (c_object)C_DISPLACE(object, property->offset);
-        maxSize = *(c_ulong *)(c_object *)o;
-
-        property = (c_property)c_metaResolve(c_object(type), "subType");
-        o = (c_object)C_DISPLACE(object, property->offset);
-        subType = *(c_type *)(c_object *)o;
-
-        property = (c_property)c_metaResolve(c_object(type), "definedIn");
-        o = (c_object)C_DISPLACE(object, property->offset);
-        scope = (c_metaObject)*(c_object *)o;
-
-
-        switch ( kind ) {
-            case C_STRING:
-                item = sd_contextItemNew(SD_CONTEXT_ITEM_STRING);
-                break;
-            case C_ARRAY:
-                item = sd_contextItemNew(SD_CONTEXT_ITEM_ARRAY);
-                break;
-            case C_SEQUENCE:
-                item = sd_contextItemNew(SD_CONTEXT_ITEM_SEQUENCE);
-                break;
-            default:
-                item = sd_contextItemNew(SD_CONTEXT_ITEM_COLLECTION);
-                break;
-        }
-
-        if ( item ) {
-            sd_contextItem(item)->self = context->current->self;
-            sd_contextItem(item)->name = name;
-            sd_contextItemCollection(item)->maxSize = maxSize;
-
-            sd_contextItemAddChild(context->current, sd_contextItem(item));
-
-            sd_contextPushItem(context, sd_contextItem(item));
-            sd_serializeType(context, c_getType(subType), subType);
-            sd_contextPopItem(context);
-
-            sd_contextItemFree(sd_contextItem(item));
-        }
-}
-
-static void
-sd_serializeEnumeration (
-    sd_context context,
-    c_type type,
-    c_object object)
-{
-    sd_contextItemEnumeration item;
-    sd_contextItem parent;
-    sd_contextItem typeRef;
-    c_property property;
-    c_object o;
-    c_metaObject scope;
-    c_array elements;
-    c_ulong size;
-    c_ulong i;
-    c_char *name;
-
-    assert(type);
-    assert(object);
-
-    property = (c_property)c_metaResolve(c_object(type), "definedIn");
-    o = (c_object)C_DISPLACE(object, property->offset);
-    scope = (c_metaObject)*(c_object *)o;
-
-    if ( sd_objectInScope(context, scope) ) {
-        sd_contextAddProcessed(context, object);
-        item = (sd_contextItemEnumeration)sd_contextItemNew(SD_CONTEXT_ITEM_ENUMERATION);
-        if ( item ) {
-            property = (c_property)c_metaResolve(c_object(type), "name");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            name = (c_char *)*(c_object *)o;
-
-            property = (c_property)c_metaResolve(c_object(type), "elements");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            elements = (c_array)*(c_object *)o;
-
-            sd_contextItem(item)->self = c_metaObject(object);
-            sd_contextItem(item)->name = name;
-            sd_contextItem(item)->scope = scope;
-
-            sd_contextItemAddChild(context->current, sd_contextItem(item));
-
-            sd_contextPushItem(context, sd_contextItem(item));
-
-            size = c_arraySize(elements);
-
-            for ( i = 0; i < size; i++ ) {
-                c_constant constant = (c_constant)elements[i];
-                sd_serializeLabel(context, constant, object);
-            }
-
-            sd_contextPopItem(context);
-
-            sd_contextItemFree(sd_contextItem(item));
-        }
-    } else {
-        if ( !sd_contextIsProcessed(context, object) ) {
-            parent = (sd_contextItem)sd_contextFindOrCreateScope(context, scope);
-            if ( parent ) {
-                sd_contextPushItem(context, parent);
-                sd_serializeEnumeration(context, type, object);
-                sd_contextPopItem(context);
-            }
-        }
-        sd_addDependency(context, context->current, object);
-        typeRef = sd_contextItemNew(SD_CONTEXT_ITEM_TYPE);
-        if ( typeRef ) {
-            property = (c_property)c_metaResolve(c_object(type), "name");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            typeRef->name = (c_char *)*(c_object *)o;
-            typeRef->scope = scope;
-            sd_contextItemAddChild(context->current, typeRef);
-            sd_contextItemFree(sd_contextItem(typeRef));
-        }
-    }
-}
-
-static void
-sd_serializeUnionSwitch (
-    sd_context context,
-    c_type type,
-    c_object object)
-{
-    sd_contextItemUnionSwitch item;
-
-    item = (sd_contextItemUnionSwitch)sd_contextItemNew(SD_CONTEXT_ITEM_UNIONSWITCH);
-
-    if ( item ) {
-        sd_contextItem(item)->self = context->current->self;
-        sd_contextItem(item)->name = NULL;
-
-        sd_contextItemAddChild(context->current, sd_contextItem(item));
-
-        sd_contextPushItem(context, sd_contextItem(item));
-
-        sd_serializeType(context, type, object);
-
-        sd_contextPopItem(context);
-        sd_contextItemFree(sd_contextItem(item));
+    c_iterIter iter;
+    c_long size;
+    c_char* chunk;
+
+    size = c_iterLength(context->xmlbuff);
+
+    /* Allocate memory for string */
+    *result = sd_serializedDataNew(SD_FORMAT_ID, SD_FORMAT_VERSION, size * (SD_XML_BUFFER) + 1);
+
+    /* Copy buffers in final structure. */
+    iter = c_iterIterGet(context->xmlbuff);
+    while((chunk = c_iterNext(&iter))) {
+#ifdef SER_DEBUG
+        printf("   ### %d: %s\n", strlen(chunk), chunk);
+#endif
+        memcpy((c_char*)((*result)->data) + SD_XML_BUFFER * (size-1), chunk, SD_XML_BUFFER);
+        os_free(chunk);
+        size--;
     }
 
 }
 
+/* Escape '"' */
 static void
-sd_serializeUnionCase (
-    sd_context  context,
-    c_unionCase unionCase,
-    c_type      switchType,
-    c_object    object)
+sd_printXmlEscapeQuotes(
+    c_char* buffer,
+    c_char* escapedBuffer)
 {
-    sd_contextItemUnionCase item;
-    sd_contextItemLiteral deflabel;
-    c_char *name;
-    c_type type;
-    c_ulong i, size;
-    c_array labels;
+    c_char *ptr, *quotePtr, *escapedPtr;
+    c_long ptrLen;
 
-    item = (sd_contextItemUnionCase)sd_contextItemNew(SD_CONTEXT_ITEM_UNIONCASE);
+    ptr = buffer;
+    escapedPtr = escapedBuffer;
 
-    if ( item ) {
-        name = c_specifier(unionCase)->name;
-        type = c_specifier(unionCase)->type;
-        labels = unionCase->labels;
+    /* Copy in chunks between quotes, replace quotes with escaped quotes. */
+    while((quotePtr = strchr(ptr, '\"'))) {
+        memcpy(escapedPtr, ptr, quotePtr - ptr);
+        escapedPtr += quotePtr - ptr;
+        *escapedPtr = '\\';
+        escapedPtr++;
+        *escapedPtr = '\"';
+        escapedPtr++;
+        ptr = quotePtr+1;
+    }
 
-        sd_contextItem(item)->self = context->current->self;
-        sd_contextItem(item)->name = name;
+    /* Copy last chunk */
+    ptrLen = strlen(ptr);
+    memcpy(escapedPtr, ptr, ptrLen);
 
-        sd_contextItemAddChild(context->current, sd_contextItem(item));
+    /* Add 0-terminator */
+    escapedPtr += ptrLen;
+    *escapedPtr = '\0';
+}
 
-        sd_contextPushItem(context, sd_contextItem(item));
+/* Print xml */
+static void
+sd_printXml(
+    sd_context context,
+    char* fmt,
+    ...)
+{
+    va_list args;
+    c_char buffer[SD_XML_BUFFER]; /* Large buffer on stack, safe since function is never called recursively. */
+    int length;
 
-        sd_serializeType(context, c_getType(type), type);
+    va_start(args, fmt);
+    length = vsnprintf(buffer, SD_XML_BUFFER, fmt, args); /* C99 function */
+    if(length >= SD_XML_BUFFER) {
+        OS_REPORT(OS_ERROR, "sd_serializerXMLTypeInfoSerialize", 0, "buffer too small!");
+        assert(0);
+    }
 
-        if ( labels ) {
-            size = c_arraySize(labels);
+    /* Escape quotes if needed */
+    if(context->escapeQuotes) {
+        c_char escapedBuffer[SD_XML_BUFFER];
+        sd_printXmlEscapeQuotes(buffer, escapedBuffer);
+        sd_printXmlAppend(context, escapedBuffer);
+    }else {
+        sd_printXmlAppend(context, buffer);
+    }
 
-            for ( i = 0; i < size; i++ ) {
-                c_literal literal = (c_literal)labels[i];
-                sd_serializeLiteral(context, literal, switchType, object);
-            }
-        } else {
-            deflabel = (sd_contextItemLiteral)sd_contextItemNew(SD_CONTEXT_ITEM_LITERAL);
-            if ( deflabel ) {
-                sd_contextItemAddChild(context->current, sd_contextItem(deflabel));
-                sd_contextItemFree(sd_contextItem(deflabel));
-            }
-        }
+    va_end(args);
+}
 
-        sd_contextPopItem(context);
-        sd_contextItemFree(sd_contextItem(item));
+/* Print type. */
+static void
+sd_printXmlType(
+    sd_context context,
+    c_type current,
+    c_type type);
+
+/* Print typedef */
+static void
+sd_printXmlTypedef(
+    sd_context context,
+    c_typeDef type)
+{
+    sd_printXml(context, "<TypeDef name=\"%s\">", c_metaObject(type)->name);
+    sd_printXmlType(context, c_type(type), type->alias);
+    sd_printXml(context, "</TypeDef>");
+}
+
+/* Print primitive */
+static void
+sd_printXmlPrimitive(
+    sd_context context,
+    c_primitive type)
+{
+    switch(type->kind) {
+    case P_BOOLEAN:
+        sd_printXml(context, "<Boolean/>");
+        break;
+    case P_CHAR:
+        sd_printXml(context, "<Char/>");
+        break;
+    case P_WCHAR:
+        sd_printXml(context, "<WChar/>");
+        break;
+    case P_OCTET:
+        sd_printXml(context, "<Octet/>");
+        break;
+    case P_SHORT:
+        sd_printXml(context, "<Short/>");
+        break;
+    case P_USHORT:
+        sd_printXml(context, "<UShort/>");
+        break;
+    case P_LONG:
+        sd_printXml(context, "<Long/>");
+        break;
+    case P_ULONG:
+        sd_printXml(context, "<ULong/>");
+        break;
+    case P_LONGLONG:
+        sd_printXml(context, "<LongLong/>");
+        break;
+    case P_ULONGLONG:
+        sd_printXml(context, "<ULongLong/>");
+        break;
+    case P_FLOAT:
+        sd_printXml(context, "<Float/>");
+        break;
+    case P_DOUBLE:
+        sd_printXml(context, "<Double/>");
+        break;
+    default:
+        /* Use this serializer only to serialize userdata */
+        assert(0);
+        break;
     }
 }
 
+/* Print enumeration */
 static void
-sd_serializeUnion (
+sd_printXmlEnumeration(
     sd_context context,
-    c_type type,
-    c_object object)
+    c_enumeration type)
 {
-    sd_contextItemUnion item;
-    sd_contextItem parent;
-    sd_contextItem typeRef;
-    c_property property;
-    c_object o;
-    c_metaObject scope;
-    c_array cases;
-    c_ulong size;
-    c_ulong i;
-    c_char *name;
+    c_long i;
+    c_constant constant;
+    c_long value;
+
+    sd_printXml(context, "<Enum name=\"%s\">", c_metaObject(type)->name);
+
+    /* Walk constants */
+    for(i=0; i<c_arraySize(type->elements); i++) {
+        constant = type->elements[i];
+        value = (c_long)(c_literal(c_constant(constant)->operand)->value.is.Long);
+        sd_printXml(context, "<Element name=\"%s\" value=\"%d\"/>", c_metaObject(constant)->name, value);
+    }
+
+    sd_printXml(context, "</Enum>");
+}
+
+/* Print structure */
+static void
+sd_printXmlStructure(
+    sd_context context,
+    c_structure type)
+{
+    c_long i;
+    c_member member;
+
+    sd_printXml(context, "<Struct name=\"%s\">", c_metaObject(type)->name);
+
+    /* Walk members of struct */
+    for(i=0; i<c_arraySize(type->members); i++) {
+        member = type->members[i];
+
+        /* Serialize member and member type */
+        sd_printXml(context, "<Member name=\"%s\">", c_specifier(member)->name);
+        sd_printXmlType(context, c_type(type), c_specifier(member)->type);
+        sd_printXml(context, "</Member>");
+    }
+
+    sd_printXml(context, "</Struct>");
+}
+
+/* Print union */
+static void
+sd_printXmlUnion(
+    sd_context context,
+    c_union type)
+{
+    c_long i, j;
+    c_unionCase _case;
+    c_char* image;
+    c_literal literal;
     c_type switchType;
 
-    assert(type);
-    assert(object);
+    sd_printXml(context, "<Union name=\"%s\">", c_metaObject(type)->name);
 
-    property = (c_property)c_metaResolve(c_object(type), "definedIn");
-    o = (c_object)C_DISPLACE(object, property->offset);
-    scope = (c_metaObject)*(c_object *)o;
+    /* Serialize switch-type */
+    sd_printXml(context, "<SwitchType>");
+    sd_printXmlType(context, c_type(type), type->switchType);
+    sd_printXml(context, "</SwitchType>");
 
-    if ( sd_objectInScope(context, scope) ) {
-        sd_contextAddProcessed(context, object);
-        item = (sd_contextItemUnion)sd_contextItemNew(SD_CONTEXT_ITEM_UNION);
-        if ( item ) {
-            property = (c_property)c_metaResolve(c_object(type), "name");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            name = (c_char *)*(c_object *)o;
+    switchType = c_typeActualType(type->switchType);
 
-            property = (c_property)c_metaResolve(c_object(type), "switchType");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            switchType = (c_type)*(c_object *)o;
+    /* Walk cases of union */
+    for(i=0; i<c_arraySize(type->cases); i++) {
+        _case = type->cases[i];
 
-            property = (c_property)c_metaResolve(c_object(type), "cases");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            cases = (c_array)*(c_object *)o;
+        /* Serialize member and member type */
+        sd_printXml(context, "<Case name=\"%s\">", c_specifier(_case)->name);
+        sd_printXmlType(context, c_type(type), c_specifier(_case)->type);
 
-            sd_contextItem(item)->self = c_metaObject(object);
-            sd_contextItem(item)->name = name;
-            sd_contextItem(item)->scope = scope;
+        /* Walk case labels */
+        if(!_case->labels || !c_arraySize(_case->labels)) {
+            sd_printXml(context, "<Default/>");
+        }else {
+            for(j=0; j<c_arraySize(_case->labels); j++) {
+                literal = _case->labels[j];
+                /* Serialize label */
+                sd_printXml(context, "<Label value=\"");
 
-            sd_contextItemAddChild(context->current, sd_contextItem(item));
+                /* Obtain and print string for value */
+                if(c_baseObject(switchType)->kind == M_ENUMERATION) {
+                    c_enumeration enumeration;
+                    c_long n;
 
-            sd_contextPushItem(context, sd_contextItem(item));
+                    assert(literal->value.kind == V_LONG);
+                    enumeration = c_enumeration(switchType);
 
-            sd_serializeUnionSwitch(context, c_getType(switchType), switchType);
+                    n = literal->value.is.Long;
 
-            size = c_arraySize(cases);
+                    assert(n < c_arraySize(enumeration->elements));
 
-            for ( i = 0; i < size; i++ ) {
-                c_unionCase unionCase = (c_unionCase)cases[i];
-                sd_serializeUnionCase(context, unionCase, switchType, object);
+                    sd_printXml(context, c_metaObject(enumeration->elements[n])->name);
+                }else {
+                    if(literal->value.kind == V_BOOLEAN) {
+                        if(literal->value.is.Boolean) {
+                            sd_printXml(context, "True");
+                        }else {
+                            sd_printXml(context, "False");
+                        }
+                    }else {
+                        image = c_valueImage(literal->value);
+                        sd_printXml(context, image);
+                        os_free(image);
+                    }
+                }
+                sd_printXml(context, "\"/>");
+            }
+        }
+        sd_printXml(context, "</Case>");
+    }
+
+    sd_printXml(context, "</Union>");
+}
+
+/* Print collection */
+static void
+sd_printXmlCollection(
+    sd_context context,
+    c_type current,
+    c_collectionType type)
+{
+    c_char* elementName;
+
+    elementName = NULL;
+
+    /* Print collection header */
+    switch(type->kind) {
+    case C_SEQUENCE:
+        elementName = "Sequence";
+        break;
+    case C_ARRAY:
+        elementName = "Array";
+        break;
+    case C_STRING:
+        elementName = "String";
+        break;
+    default:
+        OS_REPORT(OS_ERROR, "sd_printXmlCollection", 0, "invalid collectionkind for serializer.");
+        assert(0);
+        break;
+    }
+
+    sd_printXml(context, "<%s", elementName);
+
+    /* Print collection size, subType and footer. Pass current rootType to
+     * sd_printXmlType so inlined types that are used as subtype are defined within
+     * the inline collection. */
+    switch(type->kind) {
+    case C_SEQUENCE:
+    case C_ARRAY:
+        if(type->maxSize) {
+            sd_printXml(context, " size=\"%d\">", type->maxSize);
+        }else {
+            sd_printXml(context, ">");
+        }
+        sd_printXmlType(context, current, type->subType);
+        sd_printXml(context, "</%s>", elementName);
+        break;
+    case C_STRING:
+        if(type->maxSize) {
+            sd_printXml(context, " length=\"%d\"/>", type->maxSize);
+        }else {
+            sd_printXml(context, "/>");
+        }
+        break;
+    default:
+        OS_REPORT(OS_ERROR, "sd_printXmlCollection", 0, "invalid collectionkind for serializer(2).");
+        assert(0);
+        break;
+    }
+}
+
+#define SD_MAX_SCOPE_DEPTH (64) /* Should be on the safe side */
+
+/* Function builds a scope-stack from root to module */
+static void
+sd_utilModuleStack(
+    c_metaObject module,
+    c_metaObject* stack /* c_metaObject[SD_MAX_SCOPE_DEPTH] */)
+{
+    c_long count;
+    c_metaObject ptr;
+
+    assert(module);
+
+    /* Count scope depth */
+    ptr = module;
+    count = 1; /* For self */
+    while((ptr = ptr->definedIn)) {
+        count++;
+    }
+
+    if(count > SD_MAX_SCOPE_DEPTH) {
+        OS_REPORT_2(OS_ERROR, "sd_printXmlCollection", 0, "unsupported scope-depth (depth=%d, max=%d).", count, SD_MAX_SCOPE_DEPTH);
+    }
+    assert(count <= SD_MAX_SCOPE_DEPTH);
+
+    /* Fill module stack */
+    ptr = module;
+    while(count) {
+        stack[count-1] = ptr;
+        ptr = ptr->definedIn;
+        count--;
+    }
+
+    /* ptr should be NULL */
+    assert(!ptr);
+}
+
+/* Find first common module in two module-stacks */
+static c_metaObject
+sd_utilFirstCommonModule(
+    c_metaObject from,
+    c_metaObject to,
+    c_metaObject* fromStack,
+    c_metaObject* toStack,
+    c_long* i_out)
+{
+    c_metaObject fromPtr, toPtr;
+    c_long i;
+
+    /* fromPtr and toPtr will initially point to base */
+    i = 0;
+    do {
+        fromPtr = c_metaObject(fromStack[i]);
+        toPtr = c_metaObject(toStack[i]);
+        i++;
+    }while((fromPtr != from) && (toPtr != to) && (fromStack[i] == toStack[i]));
+
+    /* Common module is now stored in fromPtr and toPtr. */
+
+    if(i_out) {
+        *i_out = i;
+    }
+
+    return fromPtr;
+}
+
+/* Print typeref */
+static void
+sd_printXmlTyperef(
+    sd_context context,
+    c_type type)
+{
+    /* Print typeref. Use relative names (if possible) to obtain the shortest possible reference to another type. */
+    if(c_metaObject(type)->definedIn != context->module) {
+        c_metaObject fromStack[SD_MAX_SCOPE_DEPTH], toStack[SD_MAX_SCOPE_DEPTH];
+        c_metaObject from, to, common;
+        c_long i;
+
+        /* Get first common module between current module and the referenced type. */
+        from = context->module;
+        to = c_metaObject(type)->definedIn;
+        sd_utilModuleStack(from, fromStack);
+        sd_utilModuleStack(to, toStack);
+        sd_utilFirstCommonModule(from, to, fromStack, toStack, &i);
+
+        sd_printXml(context, "<Type name=\"");
+
+        /* Print modules from the common module until the current */
+        i--;
+        do {
+            common = toStack[i];
+            i++;
+            if(common->name) {
+                sd_printXml(context, "%s", common->name);
+            }
+            sd_printXml(context, "::");
+        }while(common != to);
+
+        /* Print the typename */
+        sd_printXml(context, "%s\"/>", c_metaObject(type)->name);
+    }else {
+        /* If module of type is equal to the current, just print the typename. */
+        sd_printXml(context, "<Type name=\"%s\"/>", c_metaObject(type)->name);
+    }
+}
+
+/* Open module. This function finds the shortest path from the current module to the next,
+ * and opens and closes modules where necessary. */
+static void
+sd_printXmlModuleOpen(
+    sd_context context,
+    c_metaObject to)
+{
+    c_metaObject from;
+
+    /* If context->module is NULL, start from root */
+    from = context->module;
+    if(!from) {
+        from = c_metaObject(c_getBase(to));
+    }
+
+    /* If from and to are not equal, find shortest path between modules. */
+    if(from != to) {
+        c_metaObject fromStack[SD_MAX_SCOPE_DEPTH], toStack[SD_MAX_SCOPE_DEPTH];
+        c_metaObject fromPtr, toPtr;
+        c_long i;
+
+        /* Find common module. First build up a scope-stack for the two modules which
+         * are ordered base -> <module>. Then walk through these stacks to find the
+         * last common module. */
+        sd_utilModuleStack(from, fromStack);
+        sd_utilModuleStack(to, toStack);
+        fromPtr = toPtr = sd_utilFirstCommonModule(from, to, fromStack, toStack, &i);
+
+        /* Walk down from module 'from' to 'toPtr' */
+        fromPtr = from;
+        while(fromPtr != toPtr) {
+            sd_printXml(context, "</Module>");
+            fromPtr = fromPtr->definedIn;
+        }
+
+        /* Walk from toPtr to 'to' */
+        while(toPtr != to) {
+            toPtr = toStack[i];
+            sd_printXml(context, "<Module name=\"%s\">", toPtr->name);
+            i++;
+        }
+
+        /* Update context->module */
+        context->module = to;
+    }
+}
+
+/* Close module */
+static void sd_printXmlModuleClose(
+    sd_context context)
+{
+    c_metaObject ptr;
+
+    if(context->module) {
+        ptr = context->module;
+        while((ptr = ptr->definedIn)) {
+            sd_printXml(context, "</Module>");
+        }
+
+        context->module = NULL;
+    }
+}
+
+/* Print type. */
+static void
+sd_printXmlType(
+    sd_context context,
+    c_type current,
+    c_type type)
+{
+    if((c_baseObject(type)->kind == M_STRUCTURE) &&
+            !(c_metaObject(type)->definedIn && c_metaObject(type)->definedIn->definedIn) &&
+            !strcmp("c_time", c_metaObject(type)->name)) {
+        sd_printXml(context, "<Time/>");
+    }else {
+        /* If object is defined outside the current scope and is not a collection or primitive, serialize a typeref.
+         * Also, if the type is already defined serialize a typeref. This prevents inline types to be defined multiple
+         * times if they are used multiple times within a module-scoped type. */
+        if(!((c_baseObject(type)->kind == M_COLLECTION) || (c_baseObject(type)->kind == M_PRIMITIVE) ||
+                (!c_iterContains(context->inlineProcessed, type) &&
+                (c_metaObject(type)->definedIn == c_metaObject(current))))) {
+            sd_printXmlTyperef(context, type);
+        }else {
+            /* Serialize type-definition. */
+            switch(c_baseObject(type)->kind) {
+            case M_TYPEDEF:
+                sd_printXmlTypedef(context, c_typeDef(type));
+                break;
+            case M_ENUMERATION:
+                sd_printXmlEnumeration(context, c_enumeration(type));
+                break;
+            case M_PRIMITIVE:
+                sd_printXmlPrimitive(context, c_primitive(type));
+                break;
+            case M_COLLECTION:
+                sd_printXmlCollection(context, current, c_collectionType(type));
+                break;
+            case M_STRUCTURE:
+                /* Make an exception for c_time. */
+                sd_printXmlStructure(context, c_structure(type));
+                break;
+            case M_UNION:
+                sd_printXmlUnion(context, c_union(type));
+                break;
+            default:
+                /* This may not happen. Types other than the ones listed
+                 * above cannot be printed. */
+                assert(0);
+                break;
             }
 
-            sd_contextPopItem(context);
-            sd_contextItemFree(sd_contextItem(item));
-        }
-    } else {
-        if ( !sd_contextIsProcessed(context, object) ) {
-            parent = (sd_contextItem)sd_contextFindOrCreateScope(context, scope);
-            if ( parent ) {
-                sd_contextPushItem(context, parent);
-                sd_serializeUnion(context, type, object);
-                sd_contextPopItem(context);
-            }
-        }
-        sd_addDependency(context, context->current, object);
-        typeRef = sd_contextItemNew(SD_CONTEXT_ITEM_TYPE);
-        if ( typeRef ) {
-            property = (c_property)c_metaResolve(c_object(type), "name");
-            o = (c_object)C_DISPLACE(object, property->offset);
-            typeRef->name = (c_char *)*(c_object *)o;
-            typeRef->scope = scope;
-            sd_contextItemAddChild(context->current, typeRef);
-            sd_contextItemFree(sd_contextItem(typeRef));
+            /* Mark type as processed. */
+            context->inlineProcessed = c_iterInsert(context->inlineProcessed, type);
         }
     }
 }
 
+/* Top-level printroutine. */
+static void
+sd_printXmlItem(
+    sd_item item,
+    sd_context context)
+{
+    if(context->inlineProcessed) {
+        c_iterFree(context->inlineProcessed);
+        context->inlineProcessed = NULL;
+    }
+
+#ifdef SER_DEBUG
+    printf("%s\n", c_metaScopedName(c_metaObject(item->self)));
+#endif
+
+    switch(c_baseObject(item->self)->kind) {
+    case M_TYPEDEF:
+    case M_STRUCTURE:
+    case M_UNION:
+    case M_ENUMERATION:
+        sd_printXmlModuleOpen(context, c_metaObject(item->self)->definedIn);
+        sd_printXmlType(context, c_type(c_metaObject(item->self)->definedIn), item->self);
+        break;
+    default:
+        /* This may not happen. Types other than the ones listed
+         * above cannot be directly printed. */
+        OS_REPORT(OS_ERROR, "sd_printXmlItem", 0, "invalid typeKind for serializer.");
+        assert(0);
+        break;
+    }
+
+    /* Dereference dependees of item. This will populate module-objects with types
+     * that reach refcount 0. */
+    sd_itemDerefDependees(item);
+}
 
 static void
-sd_serializeType (
+sd_addInitialItems(
+    void* o,
+    void* udata)
+{
+    sd_item item;
+
+    item = o;
+
+    /* If refcount of item is zero, it means that it has no unresolved dependencies, thus that it can
+     * be processed. */
+    if(!item->refcount){
+        sd_itemAddToModule(item);
+    }
+}
+
+struct sd_findLargestModule_t {
+    sd_moduleItem largest;
+};
+
+static void
+sd_findLargestModule(
+    void* o,
+    void* userData)
+{
+    sd_moduleItem module, largest;
+    struct sd_findLargestModule_t* data;
+
+    module = o;
+    data = userData;
+    largest = data->largest;
+
+    /* Find largest module. */
+    if(!largest) {
+        /* Only set largest if module has types. */
+        if(module->end - module->start) {
+            data->largest = module;
+        }
+    }else {
+        if((largest->end - largest->start) < (module->end - module->start)) {
+            data->largest = module;
+        }
+    }
+}
+
+/* Output types in optimized module order. The algorithm attempts to reduce the number
+ * of module transitions by selecting the module with the most types in each iteration.
+ * The algorithm stops when all modules are empty.
+ */
+static void
+sd_printModules(
+    sd_context context)
+{
+    struct sd_findLargestModule_t walkData;
+    sd_moduleItem module;
+
+    /* There must be at least one type, and as such at least one module. */
+    assert(context->modules);
+
+    /* Find initial largest module */
+    walkData.largest = NULL;
+    c_iterWalk(context->modules, sd_findLargestModule, &walkData);
+
+    /* There must be at least one module with types. */
+    assert(walkData.largest);
+
+    do {
+        module = walkData.largest;
+
+        /* Walk types */
+        while(module->start != module->end) {
+            /* If the printing of an item causes other types to be 'unlocked' (refcount becomes 0) in the current module,
+             * the type will be added to the 'module' object, causing the module->end pointer to shift. This
+             * automatically causes these types to be processed within the current iteration.
+             */
+            sd_printXmlItem(*(module->start), context);
+            module->start++;
+        }
+
+        /* Lookup next largest module */
+        walkData.largest = NULL;
+        c_iterWalk(context->modules, sd_findLargestModule, &walkData);
+    }while(walkData.largest);
+}
+
+#ifdef SER_DEBUG
+static void
+sd_printTypes(
+    void* o,
+    void* udata)
+{
+    printf("%s\n", c_metaScopedName(c_metaObject(((sd_item)o)->self)));
+}
+#endif
+
+static void
+sd_printXmlDescriptor(
     sd_context context,
-    c_type type,
-    c_object object)
+    sd_serializedData* result)
 {
-    sd_contextItem item;
-    c_property property;
-    c_object o;
-    c_ulong maxSize;
+#ifdef SER_DEBUG
+    printf("=== Dependency ordered: (%d types).\n", c_iterLength(context->items));
+    c_iterWalk(context->items, sd_printTypes, NULL);
+#endif
 
-    if ( object == context->specialTypes.c_string ) {
-        item = sd_contextItemNew(SD_CONTEXT_ITEM_STRING);
+    /* Set initial module to base */
+    context->module = c_metaObject(context->base);
 
-        property = (c_property)c_metaResolve(c_object(type), "maxSize");
-        o = (c_object)C_DISPLACE(object, property->offset);
-        maxSize = *(c_ulong *)(c_object *)o;
+    /* Insert initial types with refcount 0 in module objects */
+    c_iterWalk(context->items, sd_addInitialItems, NULL);
 
-        sd_contextItemCollection(item)->maxSize = maxSize;
-        sd_contextItemAddChild(context->current, sd_contextItem(item));
-        sd_contextItemFree(item);
-    } else if ( object == context->specialTypes.c_time ) {
-        item = sd_contextItemNew(SD_CONTEXT_ITEM_TIME);
-        sd_contextItemAddChild(context->current, sd_contextItem(item));
-        sd_contextItemFree(item);
-    } else {
-        if ( !sd_contextIsProcessed(context, object) ) {
-            if ( c_baseObject(type)->kind == M_CLASS) {
-                switch ( c_baseObject(object)->kind ) {
-                case M_STRUCTURE:
-                    sd_serializeStructure(context, type, object);
-                    break;
-                case M_TYPEDEF:
-                    sd_serializeTypedef(context, type, object);
-                    break;
-                case M_PRIMITIVE:
-                    /*
-                     * when the container object is a module, then only
-                     * modules, typedefs, enums, unions and structures
-                     * can be serialized (see S142 spec).
-                     */
-                    if(context->current->kind != SD_CONTEXT_ITEM_MODULE)
-                    {
-                        sd_serializePrimitive(context, type, object);
-                    }
-                    break;
-                case M_COLLECTION:
-                   /*
-                    * do not serialize if container object is a module (see explanation
-                    * above).
-                    */
-                    if(context->current->kind != SD_CONTEXT_ITEM_MODULE)
-                    {
-                        sd_serializeCollection(context, type, object);
-                    }
-                    break;
-                case M_ENUMERATION:
-                    sd_serializeEnumeration(context, type, object);
-                    break;
-                case M_UNION:
-                    sd_serializeUnion(context, type, object);
-                    break;
-                case M_MODULE:
-                    sd_serializeModule(context, type, object);
-                    break;
-                case M_CONSTANT:
-                    /*
-                     * In IDL constants can only be declared in modules (toplevel module too) and
-                     * these are intrepreted as #define pre-processor definitions.
-                     * In the S142 XML definition constants cannot be declared. Therefore
-                     * any constants that are encountered are those of enumerations, and
-                     * these should be ignored, as they are serialized when
-                     * the enumeration is serialized.
-                     */
-                    break;
-                default:
-                    OS_REPORT_1(OS_ERROR,
-                            "sd_serializeType",
-                            0, "sd_serializeType does not support type %d",
-                            c_baseObject(type)->kind);
-                    assert(0);
-                    break;
-                }
-            } else {
-                assert(0);
-            }
-        } else {
-            sd_addDependency(context, context->current, object);
-            sd_serializeTyperef(context, type, object);
-        }
-    }
-}
+    /* Print xml */
+    sd_printXml(context, "<MetaData version=\"1.0.0\">");
 
-static c_bool
-findItemWithoutDependencies (
-    void *o,
-    void *arg)
-{
-    c_bool found = FALSE;
-    sd_contextItem item = (sd_contextItem) o;
+    /* Print types, ordered by modules. */
+#ifdef SER_DEBUG
+    printf("=== Module ordered output:\n");
+#endif
+    sd_printModules(context);
 
-    if ( !sd_contextItemHasDependencies(item) ) {
-        found = TRUE;
+    /* Clean inlineProcessed. */
+    if(context->inlineProcessed) {
+        c_iterFree(context->inlineProcessed);
+        context->inlineProcessed = NULL;
     }
 
-    return found;
-}
+    /* Close last used module */
+    sd_printXmlModuleClose(context);
+    sd_printXml(context, "</MetaData>");
 
-static c_bool
-removeDependency (
-    sd_contextItem item,
-    void           *arg)
-{
-    sd_contextItem referred = (sd_contextItem) arg;
+    /* Aggegrate xml-buffers */
+#ifdef SER_DEBUG
+    printf("\n=== XML buffers:\n");
+#endif
+    sd_printXmlAggegrate(context, result);
 
-    assert(referred);
+    /* Free xmlbuff list */
+    c_iterFree(context->xmlbuff);
+    context->xmlbuff = NULL;
 
-    sd_contextItemRemoveDependency(item, referred);
-
-    return TRUE;
-}
-
-static c_bool
-sd_serializeReorderModules (
-    sd_contextItem item,
-    void           *arg)
-{
-    sd_list        modules = NULL;
-    sd_contextItem child;
-    c_bool         ready   = FALSE;
-
-    assert(item);
-
-    if ( sd_contextItemIsTop(item) ) {
-        if ( item->children ) {
-            sd_contextItemWalkChildren(item, sd_serializeReorderModules, NULL);
-            modules = sd_listNew();
-            if ( modules ) {
-                while ( !ready && !sd_listIsEmpty(item->children) ) {
-                    child = sd_listFind(item->children, findItemWithoutDependencies, NULL);
-                    if ( child ) {
-                        sd_listRemove(item->children, child);
-                        sd_listAppend(modules, child);
-                        /* remove dependencies */
-                        sd_contextItemWalkChildren(item, removeDependency, child);
-                    } else {
-                        ready = TRUE;
-                    }
-                }
-                assert(sd_listIsEmpty(item->children));
-                sd_listFree(item->children);
-                item->children = modules;
-            }
-        }
-    }
-
-    return TRUE;
+#ifdef SER_DEBUG
+    printf("\n=== XML MetaDescriptor:\n");
+    printf("'%s'\n", (c_char*)(*result)->data);
+#endif
 }
 
 static sd_serializedData
@@ -1371,56 +1558,47 @@ sd_serializerXMLTypeinfoSerialize(
     sd_serializer serializer,
     c_object object)
 {
-    sd_serializedData result = NULL;
-    c_ulong size;
-    c_type type;
-    c_type actualType;
-    c_metaObject module;
-    sd_contextItem mitem;
-    sd_context context;
-    c_object base;
+    sd_serializedData result;
+    c_base base;
     c_bool escapeQuote;
+    c_type type;
+    sd_context context;
+#ifdef SER_DEBUG
+    os_time t, start, stop;
+
+    start = os_timeGet();
+    printf("=== Start serializing..\n");
+#endif
 
     SD_CONFIDENCE(sd_checkSerializerType(serializer));
 
     escapeQuote = ((sd_serializerXMLTypeinfo)serializer)->escapeQuote;
-
+    type = c_type(object);
     base = (c_object)c_getBase(object);
+    context = sd_contextNew(base, escapeQuote);
+    result = NULL;
 
-    context = sd_contextNew(base);
-
-    if ( context ) {
-        actualType = (c_type)object;
-
-        type = c_getType(object);
-        SD_CONFIDENCE(c_metaObject(type)->name != NULL);
-
-        module = c_metaObject(c_metaObject(actualType)->definedIn);
-
-        mitem = (sd_contextItem)sd_contextFindOrCreateScope(context, module);
-
-        sd_contextPushItem(context, mitem);
-
-        sd_serializeType(context, type, object);
-
-        sd_contextPopItem(context);
-
-        sd_serializeReorderModules(sd_contextFindOrCreateScope(context, base), NULL);
-
-        mitem = (sd_contextItem)sd_contextFindOrCreateScope(context, base);
-
-        size = sd_printXmlTypeinfoLength(mitem, escapeQuote);
-
-        result = sd_serializedDataNew(SD_FORMAT_ID, SD_FORMAT_VERSION, size);
-
-        sd_printXmlTypeinfo(mitem, (c_char *)result->data, escapeQuote);
-
-        sd_contextFree(context);
+    /* Serialize type */
+    if(sd_serializeType(context, NULL, type, FALSE, NULL)) {
+        goto error;
     }
 
-    return result;
-}
+    /* Print XML */
+    sd_printXmlDescriptor(context, &result);
 
+    /* Free context */
+    sd_contextFree(context);
+
+#ifdef SER_DEBUG
+    stop = os_timeGet();
+    t = os_timeSub(stop, start);
+    printf("=== Serializing finished in %d.%09d seconds.\n", t.tv_sec, t.tv_nsec);
+#endif
+
+    return result;
+error:
+    return NULL;
+}
 
 /* ------------------- Special deserialization action routines -------------- */
 
@@ -1465,6 +1643,43 @@ sd_elementContextFree (
     }
 
     os_free(context);
+}
+
+typedef struct sd_elementContextCompareHelper_s {
+        const c_char *name;
+        sd_elementContext context;
+} sd_elementContextCompareHelper;
+
+c_bool
+sd_elementContextCompareAction (
+    void* o /* sd_elementContext */,
+    void* arg /* sd_elementContextCompareHelper */)
+{
+    sd_elementContext context = (sd_elementContext)o;
+    sd_elementContextCompareHelper *helper = (sd_elementContextCompareHelper*)arg;
+    c_bool proceed = TRUE;
+
+    if (context->name && (strcmp(context->name, helper->name) == 0)) {
+        helper->context = context;
+        proceed = FALSE;
+    }
+
+    return proceed;
+}
+
+static sd_elementContext
+sd_elementContextLookup (
+    sd_elementContext parent,
+    const c_char *name)
+{
+    sd_elementContextCompareHelper helper;
+    helper.context = NULL;
+    helper.name = name;
+
+    if (parent->children) {
+        sd_listWalk(parent->children, sd_elementContextCompareAction, &helper);
+    }
+    return helper.context;
 }
 
 static sd_elementContext
@@ -1583,35 +1798,6 @@ sd_findPrimitiveName (
     return name;
 }
 
-static void
-sd_deserContextSetError (
-    sd_elementContext  context,
-    const char        *element,
-    const char        *name,
-    c_ulong            errorNumber,
-    const c_char      *message)
-{
-    sd_string location;
-
-    if ( context->info->errorInfo ) {
-        return;
-    }
-
-    location = sd_stringNew(256);
-
-    if ( element ) {
-        if ( name ) {
-            sd_stringAdd(location, "<%s name=\"%s\">", element, name);
-        } else {
-            sd_stringAdd(location, "<%s>", element);
-        }
-    }
-
-    context->info->errorInfo = sd_errorReportNew(errorNumber, message, sd_stringContents(location));
-
-    sd_stringFree(location);
-}
-
 static c_bool
 sd_deserXmlModule (
     sd_elementContext  parent,
@@ -1638,7 +1824,11 @@ sd_deserXmlModule (
         }
 
         if ( o ) {
-            element = sd_elementContextNew(parent->info, name, o, parent, TRUE);
+            /* Lookup existing module or create a new one */
+            if ( (element = sd_elementContextLookup(parent, name)) == NULL ) {
+                element = sd_elementContextNew(parent->info, name, o, parent, TRUE);
+            }
+
             if ( element ) {
                 result = sd_typeInfoParserNext(handle, sd_handleTypeElement, element);
             } else {
@@ -1701,6 +1891,7 @@ sd_deserXmlTime (
     sd_elementContext element;
     c_metaObject      o;
 
+    OS_UNUSED_ARG(kind);
     o = c_metaResolve(parent->info->base, "c_time");
     if ( o ) {
         element = sd_elementContextNew(parent->info, NULL, o, parent, FALSE);
@@ -1945,7 +2136,7 @@ sd_deserXmlSequence (
     return result;
 }
 
-
+#if 0
 static sd_elementContext
 sd_findScopeRoot (
     sd_elementContext context,
@@ -1964,14 +2155,15 @@ sd_findScopeRoot (
     }
     return root;
 }
+#endif
 
 static c_metaObject
 sd_findScopeInContext (
     sd_elementContext  context,
-    const c_char       *name);
+    c_char            *name);
 
 typedef struct sd_findScopeArg_s {
-    const c_char  *name;
+    c_char       *name;
     c_metaObject  scope;
 } sd_findScopeArg;
 
@@ -1982,18 +2174,25 @@ sd_findScopeInChild (
 {
     sd_elementContext context = (sd_elementContext) obj;
     sd_findScopeArg  *info    = (sd_findScopeArg  *)arg;
-    c_char           *str     = sd_stringDup(info->name);
+    c_char           *str     = info->name;
     c_char           *cur;
     c_bool            proceed = TRUE;
 
+    str = sd_stringDup(info->name);
+
     cur = strstr(str, "::");
     if ( cur ) {
+        if(cur == str) {
+            while(context->parent) {
+                context = context->parent;
+            }
+        }
         *cur = '\0';
         cur += 2;
     }
 
     if ( cur ) {
-        if ( context->name && (strcmp(context->name, str) == 0) ) {
+        if ( !context->name || (context->name && (strcmp(context->name, str) == 0))) {
             info->scope = sd_findScopeInContext(context, cur);
             proceed = FALSE;
         }
@@ -2020,7 +2219,7 @@ sd_findScopeInChild (
 static c_metaObject
 sd_findScopeInContext (
     sd_elementContext  context,
-    const c_char       *name)
+    c_char            *name)
 {
     sd_findScopeArg argument;
 
@@ -2030,6 +2229,12 @@ sd_findScopeInContext (
     if ( context->children ) {
         sd_listWalk(context->children, sd_findScopeInChild, &argument);
     }
+
+    if(!argument.scope && context->parent) {
+        argument.scope = sd_findScopeInContext(context->parent, name);
+    }
+
+    assert(argument.scope);
 
     return argument.scope;
 }
@@ -2051,11 +2256,7 @@ sd_findTypeInScope (
             /* If still not found, look it up in the root of the serializer scope. */
             /* This is appropriate in case of recursive references to self, where  */
             /* self is not yet inserted into the database.                         */
-            sd_elementContext root = scope;
-            while (root->parent != NULL) {
-                root = root->parent;
-            }
-            o = sd_findScopeInContext(root, name);
+            o = sd_findScopeInContext(scope, (c_char*)name);
         }
     }
 

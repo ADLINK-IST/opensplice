@@ -1,0 +1,4 @@
+osplsettings.shsrc_*
+!osplsettings.shsrc_template
+*.xml
+*.dat

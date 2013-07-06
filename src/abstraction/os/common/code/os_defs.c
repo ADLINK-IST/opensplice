@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -93,6 +93,20 @@ os_booleanImage(
     default                   : image = "<undefined value>";    break;
     }
     return image;
+}
+
+union ptr_to_fptr {
+    os_fptr fptr;
+    void* ptr;
+};
+
+os_fptr
+os_fptr(
+    void* ptr)
+{
+    union ptr_to_fptr u;
+    u.ptr = ptr;
+    return u.fptr;
 }
 
 

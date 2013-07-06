@@ -8,7 +8,7 @@
 # this file will be lost the next time it is generated.
 #
 # MPC Command:
-# f:\worgit\TAO161_0-Windows-vc8-inline-32bit-091104\bin\mwc.pl -type gnuace -include ..\..\MPC\config -noreldefs -template prism
+# /home/dds/INSTALLED_FOR_DDS/TAO161_0-RedHat-ES4-gcc346-inline-32bit-OpenSpliceDDS_v4.1_UNSUPPORTED_091104/bin/mwc.pl -type gnuace -include ../../MPC/config -noreldefs -template prism
 #
 #----------------------------------------------------------------------------
 
@@ -20,7 +20,7 @@ endif
 
 include $(ACE_ROOT)/include/makeinclude/macros.GNU
 
-all: ospl_testlib ccpp_alldatadisposedlistener_dds1619_idl ccpp_alldatadisposedlistener_dds1619_proc1 ccpp_alldatadisposedlistener_dds1619_proc2 ccpp_hello_idl ccpp_hello_pub ccpp_hello_sub ccpp_net_compression_dds1578_idl ccpp_net_compression_dds1578_sub ccpp_net_compression_dds1578_pub
+all: ospl_testlib ccpp_alldatadisposedlistener_dds1619_idl ccpp_alldatadisposedlistener_dds1619_proc1 ccpp_alldatadisposedlistener_dds1619_proc2 dds2466_idl dds2466_pub dds2466_sub ccpp_hello_idl ccpp_hello_pub ccpp_hello_sub ccpp_net_compression_dds1578_idl ccpp_net_compression_dds1578_sub ccpp_net_compression_dds1578_pub
 
 REMAINING_TARGETS := $(subst all, , $(TARGETS_NESTED:.nested=)) $(CUSTOM_TARGETS)
 
@@ -29,6 +29,9 @@ $(REMAINING_TARGETS):
 	@cd alldatadisposedlistener_dds1619 && $(MAKE) -f GNUmakefile.ccpp_alldatadisposedlistener_dds1619_idl $(@)
 	@cd alldatadisposedlistener_dds1619 && $(MAKE) -f GNUmakefile.ccpp_alldatadisposedlistener_dds1619_proc1 $(@)
 	@cd alldatadisposedlistener_dds1619 && $(MAKE) -f GNUmakefile.ccpp_alldatadisposedlistener_dds1619_proc2 $(@)
+	@cd dds2466 && $(MAKE) -f GNUmakefile.dds2466_idl $(@)
+	@cd dds2466 && $(MAKE) -f GNUmakefile.dds2466_pub $(@)
+	@cd dds2466 && $(MAKE) -f GNUmakefile.dds2466_sub $(@)
 	@cd hello && $(MAKE) -f GNUmakefile.ccpp_hello_idl $(@)
 	@cd hello && $(MAKE) -f GNUmakefile.ccpp_hello_pub $(@)
 	@cd hello && $(MAKE) -f GNUmakefile.ccpp_hello_sub $(@)
@@ -51,6 +54,18 @@ ccpp_alldatadisposedlistener_dds1619_proc1: ccpp_alldatadisposedlistener_dds1619
 .PHONY: ccpp_alldatadisposedlistener_dds1619_proc2
 ccpp_alldatadisposedlistener_dds1619_proc2: ccpp_alldatadisposedlistener_dds1619_idl ccpp_alldatadisposedlistener_dds1619_proc1
 	@cd alldatadisposedlistener_dds1619 && $(MAKE) -f GNUmakefile.ccpp_alldatadisposedlistener_dds1619_proc2 all
+
+.PHONY: dds2466_idl
+dds2466_idl: ospl_testlib
+	@cd dds2466 && $(MAKE) -f GNUmakefile.dds2466_idl all
+
+.PHONY: dds2466_pub
+dds2466_pub: dds2466_idl
+	@cd dds2466 && $(MAKE) -f GNUmakefile.dds2466_pub all
+
+.PHONY: dds2466_sub
+dds2466_sub: dds2466_idl dds2466_pub
+	@cd dds2466 && $(MAKE) -f GNUmakefile.dds2466_sub all
 
 .PHONY: ccpp_hello_idl
 ccpp_hello_idl: ospl_testlib
@@ -80,6 +95,9 @@ project_name_list:
 	@echo ccpp_alldatadisposedlistener_dds1619_idl
 	@echo ccpp_alldatadisposedlistener_dds1619_proc1
 	@echo ccpp_alldatadisposedlistener_dds1619_proc2
+	@echo dds2466_idl
+	@echo dds2466_pub
+	@echo dds2466_sub
 	@echo ccpp_hello_idl
 	@echo ccpp_hello_pub
 	@echo ccpp_hello_sub

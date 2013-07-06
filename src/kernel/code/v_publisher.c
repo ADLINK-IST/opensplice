@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -36,27 +36,6 @@
 /**************************************************************
  * Private functions
  **************************************************************/
-static c_bool
-publish(
-    c_object o,
-    c_voidp arg)
-{
-    v_partition d = (v_partition)o;
-    v_writer w = (v_writer)arg;
-
-    return v_writerPublish(w,d);
-}
-
-static c_bool
-unpublish(
-    c_object o,
-    c_voidp arg)
-{
-    v_partition d = (v_partition)o;
-    v_writer w = (v_writer)arg;
-
-    return v_writerUnPublish(w,d);
-}
 
 static c_bool
 qosChangedAction(
@@ -506,7 +485,7 @@ v_publisherLookupWriters(
     q_dispose(expr);
 
     c_lockRead(&p->lock);
-    list = c_select(q,0);
+    list = ospl_c_select(q,0);
     c_lockUnlock(&p->lock);
     c_free(q);
     return list;
@@ -559,7 +538,7 @@ v_publisherResume (
     if (c_timeCompare(p->suspendTime, C_TIME_INFINITE) != C_EQ) {
         suspendTime = p->suspendTime;
         p->suspendTime = C_TIME_INFINITE;
-        writers = c_select(p->writers, 0);
+        writers = ospl_c_select(p->writers, 0);
         c_lockUnlock(&p->lock);
 
         w = v_writer(c_iterTakeFirst(writers));
@@ -614,6 +593,7 @@ endTransaction (
 {
     v_writer w = v_writer(o);
 
+    OS_UNUSED_ARG(arg);
     v_writerCoherentEnd(w);
 
     return TRUE;

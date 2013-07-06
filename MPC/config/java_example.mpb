@@ -1,0 +1,13 @@
+// -*- MPC -*-
+// $Id:$
+
+project : java_only {
+    libpaths -= .
+    specific (ospljavamake, javabat) {
+        class_dir = classes<%slash%>
+        genflags =
+        // compile_flags =
+        // targetoutdir =
+    }
+    //staticname = *
+}

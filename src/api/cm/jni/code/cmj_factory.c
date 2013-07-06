@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -53,11 +53,12 @@
 #include "cmx_dataReader.h"
 #include "cmx_query.h"
 #include "cmx_reader.h"
+#include "cmx_storage.h"
 #include "cmx_waitset.h"
 #include "c_typebase.h"
 #include "v_kernel.h"
 #include "os_heap.h"
-#include "os_process.h"
+#include "os_signalHandler.h"
 #include "os_stdlib.h"
 
 #define FUNCTION(name) Java_org_opensplice_cm_com_JniCommunicator_##name
@@ -95,10 +96,10 @@ FUNCTION(jniInitialise)(
         ldPreload = os_getenv("LD_PRELOAD");
         if(ldPreload){
             if(strstr(ldPreload, "jsig") == NULL){
-                os_procSetSignalHandlingEnabled(0);
+                os_signalHandlerSetEnabled(0);
             }
         } else {
-            os_procSetSignalHandlingEnabled(0);
+            os_signalHandlerSetEnabled(0);
         }
         result = cmx_initialise();
 
@@ -1036,6 +1037,38 @@ FUNCTION(jniGetServiceState)(
     }
 
     return jstate;
+}
+
+/**
+ * @brief Resolves the version of the CM API.
+ *
+ * - Class:     org_opensplice_api_cm_com_JniCommunicator
+ * - Method:    jniGetServiceState
+ * - Signature: (Ljava/lang/String;)Ljava/lang/String;
+ *
+ * @param env The JNI environment.
+ * @param this The Java object that called this function.
+ * @return The version of the service
+ */
+JNIEXPORT jstring JNICALL
+FUNCTION(jniGetVersion)(
+    JNIEnv *env,
+    jobject this)
+{
+    c_char* xmlVersion;
+    jstring jversion;
+    jobject thisCopy;
+
+    cmj_checkConnection(env);
+    jversion = NULL;
+
+    xmlVersion = cmx_getVersion();
+    if(xmlVersion != NULL){
+        jversion = (*env)->NewStringUTF(env, xmlVersion);
+        os_free(xmlVersion);
+    }
+
+    return jversion;
 }
 
 /**
@@ -2380,5 +2413,159 @@ FUNCTION(jniDataReaderWaitForHistoricalData)(
     if(xmlResult != NULL){
         jresult = (*env)->NewStringUTF(env, xmlResult);
     }
+    return jresult;
+}
+
+
+JNIEXPORT jstring JNICALL
+FUNCTION(jniStorageOpen) (
+        JNIEnv *env,
+        jobject this,
+        jstring  jattrs)
+{
+    const c_char* attrs;
+    c_char* xmlStorage;
+    jobject unusedThis;
+    jstring jresult;
+
+    unusedThis = this;
+    jresult = NULL;
+
+    cmj_checkConnection(env);
+
+    attrs = (*env)->GetStringUTFChars(env, jattrs, 0);
+    xmlStorage = cmx_storageOpen(attrs);
+    (*env)->ReleaseStringUTFChars(env, jattrs, attrs);
+
+    if(xmlStorage != NULL){
+       jresult = (*env)->NewStringUTF(env, xmlStorage);
+       os_free(xmlStorage);
+    }
+
+    return jresult;
+}
+
+
+JNIEXPORT jstring JNICALL
+FUNCTION(jniStorageClose) (
+        JNIEnv *env,
+        jobject this,
+        jstring jstorage)
+{
+    const c_char* xmlStorage;
+    c_char* xmlResult;
+    jobject unusedThis;
+    jstring jresult;
+
+    unusedThis = this;
+    jresult = NULL;
+
+    cmj_checkConnection(env);
+
+    xmlStorage = (*env)->GetStringUTFChars(env, jstorage, 0);
+    xmlResult = cmx_storageClose(xmlStorage);
+    (*env)->ReleaseStringUTFChars(env, jstorage, xmlStorage);
+
+    if(xmlResult != NULL){
+       jresult = (*env)->NewStringUTF(env, xmlResult);
+       os_free(xmlResult);
+    }
+
+    return jresult;
+}
+
+JNIEXPORT jstring JNICALL
+FUNCTION(jniStorageAppend) (
+        JNIEnv *env,
+        jobject this,
+        jstring jstorage,
+        jstring jmetadata,
+        jstring jdata)
+{
+    const c_char* xmlStorage;
+    const c_char* xmlMetadata;
+    const c_char* xmlData;
+    c_char* xmlResult;
+    jobject unusedThis;
+    jstring jresult;
+
+    unusedThis = this;
+    jresult = NULL;
+
+    cmj_checkConnection(env);
+
+    xmlStorage = (*env)->GetStringUTFChars(env, jstorage, 0);
+    xmlMetadata = (*env)->GetStringUTFChars(env, jmetadata, 0);
+    xmlData = (*env)->GetStringUTFChars(env, jdata, 0);
+    xmlResult = cmx_storageAppend(xmlStorage, xmlMetadata, xmlData);
+    (*env)->ReleaseStringUTFChars(env, jdata, xmlData);
+    (*env)->ReleaseStringUTFChars(env, jmetadata, xmlMetadata);
+    (*env)->ReleaseStringUTFChars(env, jstorage, xmlStorage);
+
+    if(xmlResult != NULL){
+       jresult = (*env)->NewStringUTF(env, xmlResult);
+       os_free(xmlResult);
+    }
+
+    return jresult;
+}
+
+JNIEXPORT jstring JNICALL
+FUNCTION(jniStorageRead) (
+        JNIEnv *env,
+        jobject this,
+        jstring jstorage)
+{
+    const c_char* xmlStorage;
+    c_char* xmlResult;
+    jobject unusedThis;
+    jstring jresult;
+
+    unusedThis = this;
+    jresult = NULL;
+
+    cmj_checkConnection(env);
+
+    xmlStorage = (*env)->GetStringUTFChars(env, jstorage, 0);
+    xmlResult = cmx_storageRead(xmlStorage);
+    (*env)->ReleaseStringUTFChars(env, jstorage, xmlStorage);
+
+    if(xmlResult != NULL){
+       jresult = (*env)->NewStringUTF(env, xmlResult);
+       os_free(xmlResult);
+    }
+
+    return jresult;
+}
+
+JNIEXPORT jstring JNICALL
+FUNCTION(jniStorageGetType) (
+        JNIEnv *env,
+        jobject this,
+        jstring jstorage,
+        jstring jtypename)
+{
+    const c_char* xmlStorage;
+    const c_char* xmlTypeName;
+    c_char* xmlResult;
+    jobject unusedThis;
+    jstring jresult;
+
+    unusedThis = this;
+    jresult = NULL;
+
+    cmj_checkConnection(env);
+
+    xmlStorage = (*env)->GetStringUTFChars(env, jstorage, 0);
+    xmlTypeName = (*env)->GetStringUTFChars(env, jtypename, 0);
+    xmlResult = cmx_storageGetType(xmlStorage, xmlTypeName);
+    (*env)->ReleaseStringUTFChars(env, jtypename, xmlTypeName);
+    (*env)->ReleaseStringUTFChars(env, jstorage, xmlStorage);
+
+    if(xmlResult != NULL){
+       jresult = (*env)->NewStringUTF(env, xmlResult);
+       os_free(xmlResult);
+    }
+
     return jresult;
 }

@@ -1,12 +1,12 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "v_dataViewInstance.h"
@@ -17,10 +17,6 @@
 #include "v_topic.h"
 #include "v_time.h"
 #include "v_public.h"
-#define _EXTENT_
-#ifdef _EXTENT_
-#include "c_extent.h"
-#endif
 
 #include "os_report.h"
 
@@ -112,27 +108,13 @@ v_dataViewInstanceNew(
 {
     v_dataViewInstance instance;
     v_dataViewSample viewSample;
-    v_dataReader reader;
-    v_readerQos qos;
 
     assert(dataView);
     assert(sample);
     assert(C_TYPECHECK(dataView,v_dataView));
     assert(C_TYPECHECK(sample,v_readerSample));
 
-    reader = dataView->reader;
-    qos = v_reader(reader)->qos;
-
-#ifdef _EXTENT_
-    instance = v_dataViewInstance(c_extentCreate(dataView->instanceExtent));
-#else
-    {
-        c_type subtype;
-        subtype = c_subType(dataView->instances);
-        instance = v_dataViewInstance(c_new(subtype));
-        c_free(subtype);
-    }
-#endif
+    instance = v_dataViewInstance(c_new(dataView->instanceType));
     if (instance) {
         v_object(instance)->kernel = v_objectKernel(dataView);
         v_objectKind(instance) = K_DATAVIEWINSTANCE;
@@ -167,6 +149,7 @@ void
 v_dataViewInstanceDeinit(
     v_dataViewInstance instance)
 {
+    OS_UNUSED_ARG(instance);
     assert(C_TYPECHECK(instance,v_dataViewInstance));
 
 /*  v_instanceDeinit(v_instance(instance)); */
@@ -230,7 +213,7 @@ v_dataViewInstanceWrite (
     assert(C_TYPECHECK(sample,v_readerSample));
 
     CHECK_INSTANCE(instance);
-   
+
     viewSample = v_dataViewSampleNew(instance,sample);
     if (viewSample) {
         viewSample->next = NULL;
@@ -244,14 +227,14 @@ v_dataViewInstanceWrite (
         }
         *prev = viewSample;
         viewSample->next = next;
-    
+
         v_readerSampleAddViewSample(sample,viewSample);
         instance->sampleCount++;
         assert(c_refCount(viewSample) == 1);
         v_dataViewNotifyDataAvailable(v_dataView(instance->dataView), viewSample);
     }
     CHECK_INSTANCE(instance);
-    return V_WRITE_SUCCESS;   
+    return V_WRITE_SUCCESS;
 }
 
 void
@@ -278,7 +261,9 @@ v_dataViewInstanceRemove(
 c_bool
 v_dataViewInstanceTest(
     v_dataViewInstance instance,
-    c_query query)
+    c_query query,
+    v_queryAction action,
+    c_voidp args)
 {
     v_dataViewSample sample, firstSample;
     c_bool sampleSatisfies = FALSE;
@@ -290,9 +275,7 @@ v_dataViewInstanceTest(
     if (instance == NULL) {
         return FALSE;
     }
-    if (query == NULL) {
-        return TRUE;
-    }
+
     if (instance->sampleCount == 0) {
         return TRUE;
     }
@@ -303,12 +286,23 @@ v_dataViewInstanceTest(
         /* The history samples are swapped with the first sample to make
            sample-evaluation on instance level work.
         */
-        if (sample != firstSample) {
-            v_dataViewInstanceTemplate(instance)->sample = sample;
+        if (query) {
+            if (sample != firstSample) {
+                v_dataViewInstanceTemplate(instance)->sample = sample;
+            }
+            sampleSatisfies = c_queryEval(query,instance);
+            if (sample != firstSample) {
+                v_dataViewInstanceTemplate(instance)->sample = firstSample;
+            }
+        } else {
+            sampleSatisfies = TRUE;
         }
-        sampleSatisfies = c_queryEval(query,instance);
-        if (sample != firstSample) {
-            v_dataViewInstanceTemplate(instance)->sample = firstSample;
+        /* If a sample passed the query, then check whether it matches the
+         * optional condition passed by the action routine. (This condition
+         * can for example check for matching lifecycle states.)
+         */
+        if (sampleSatisfies && action != NULL) {
+            sampleSatisfies = action(sample, args);
         }
         sample = sample->prev;
     }
@@ -324,21 +318,21 @@ v_dataViewInstanceReadSamples(
     c_voidp arg)
 {
     v_dataViewSample sample, firstSample;
-    c_bool proceed = TRUE;
+    v_actionResult result = V_PROCEED;
     c_bool sampleSatisfies;
 
     assert(C_TYPECHECK(instance,v_dataViewInstance));
     CHECK_INSTANCE(instance);
 
     if (instance == NULL) {
-        return proceed;
+        return v_actionResultTest(result, V_PROCEED);
     }
     if (instance->sampleCount == 0) {
-        return proceed;
+        return v_actionResultTest(result, V_PROCEED);
     }
     firstSample = v_dataViewInstanceTemplate(instance)->sample;
     sample = firstSample;
-    while ((sample != NULL) && (proceed == TRUE)) {
+    while ((sample != NULL) && v_actionResultTest(result, V_PROCEED)) {
         if (query != NULL) {
             /* The history samples are swapped with the first sample to make
                sample-evaluation on instance level work.
@@ -354,25 +348,12 @@ v_dataViewInstanceReadSamples(
             sampleSatisfies = TRUE;
         }
         if (sampleSatisfies) {
-            if (v_stateTest(instance->instanceState,L_NEW)) {
-                v_stateSet(v_readerSample(sample)->sampleState,L_NEW);
-            } else {
-                v_stateClear(v_readerSample(sample)->sampleState,L_NEW);
-            }
-            if (v_stateTest(v_readerSample(sample)->sampleState,L_LAZYREAD)) {
-                v_stateSet(v_readerSample(sample)->sampleState,L_READ);
-                v_stateClear(v_readerSample(sample)->sampleState,L_LAZYREAD);
-            }
-            proceed = action(v_readerSample(sample),arg);
-            v_stateClear(instance->instanceState,L_NEW);
-            if (!v_stateTest(v_readerSample(sample)->sampleState,L_READ)) {
-                v_stateSet(v_readerSample(sample)->sampleState,L_LAZYREAD);
-            }
+            result = v_dataViewSampleReadTake(sample, action, arg, FALSE);
         }
         sample = sample->prev;
     }
     CHECK_INSTANCE(instance);
-    return proceed;
+    return v_actionResultTest(result, V_PROCEED);
 }
 
 
@@ -435,21 +416,7 @@ v_dataViewInstanceTakeWithCondition(
         }
         previous = sample->prev;
         if (sampleSatisfies) {
-            if (v_stateTest(instance->instanceState,L_NEW)) {
-                v_stateSet(v_readerSample(sample)->sampleState,L_NEW);
-            } else {
-                v_stateClear(v_readerSample(sample)->sampleState,L_NEW);
-            }
-            if (v_stateTest(v_readerSample(sample)->sampleState,L_LAZYREAD)) {
-                v_stateSet(v_readerSample(sample)->sampleState,L_READ);
-                v_stateClear(v_readerSample(sample)->sampleState,L_LAZYREAD);
-            }
-
-            proceed = action(v_readerSample(sample),actionArg);
-            v_stateClear(instance->instanceState,L_NEW);
-
-            v_dataViewSampleListRemove(v_dataViewSampleList(sample));
-            v_dataViewSampleRemove(sample);
+            proceed = v_actionResultTest(v_dataViewSampleReadTake(sample, action, actionArg, TRUE), V_PROCEED);
         }
         sample = previous;
     }
@@ -477,7 +444,7 @@ evalInstanceQuery(
     v_dataViewInstance instance = instanceQueryArg->instance;
     v_dataViewSample firstSample;
     c_bool result;
-    
+
     assert(query != NULL);
     /* The history samples are swapped with the first sample to make
        sample-evaluation on instance level work. */
@@ -489,7 +456,7 @@ evalInstanceQuery(
     if (sample != firstSample) {
         v_dataViewInstanceTemplate(instance)->sample = firstSample;
     }
-    
+
     return result;
 }
 
@@ -520,5 +487,83 @@ v_dataViewInstanceTakeSamples(
     /* No check, already done in TakeWithCondition */
     /* CHECK_INSTANCE(instance); */
     return proceed;
+}
+
+v_actionResult
+v_dataViewSampleReadTake(
+    v_dataViewSample sample,
+    v_readerSampleAction action,
+    c_voidp arg,
+    c_bool consume)
+{
+    v_dataViewInstance instance;
+    v_state state;
+    v_state mask;
+    v_actionResult result = 0;
+
+    instance = v_dataViewSampleInstance(sample);
+
+    state = v_dataViewInstanceState(instance);
+    mask = L_NEW | L_DISPOSED | L_NOWRITERS;
+
+
+    /* Copy the value of instance state bits specified by the mask
+     * to the sample state bits without affecting other bits.
+     */
+    v_readerSampleSetState(sample,(state & mask));
+    v_readerSampleClearState(sample,(~state & mask));
+
+    /* If the status of the sample is READ by the previous read
+     * operation and the flag is not yet set (specified by the
+     * LAZYREAD flag) then correct the state before executing the
+     * read action.
+     */
+    if (v_readerSampleTestState(sample,L_LAZYREAD))
+    {
+        v_readerSampleSetState(sample,L_READ);
+        v_readerSampleClearState(sample,L_LAZYREAD);
+    }
+
+
+    /* An action routine is provided in case the sample needs to be returned
+     * to the user. If an action routine is not provided, it means the sample
+     * needs to be removed from the administration, so the reader should be
+     * modified accordingly. That means the 'proceed' flag should be set in
+     * that case.
+     */
+    V_MESSAGE_STAMP(v_dataReaderSampleMessage(sample),readerReadTime);
+    if (action)
+    {
+        /* Invoke the action routine with the typed sample. */
+        result = action(v_readerSample(sample), arg);
+    }
+    else
+    {
+        v_actionResultSet(result, V_PROCEED);
+    }
+
+    /* A sample is considered 'skipped' if the action routine invoked above
+     * does not want to keep track of the sample (for example because it
+     * didn't match its readerMasks). In that case, it sets the 'skip' flag
+     * to true, which indicates that those samples should be considered
+     * 'untouched' and therefore their instance and sample states should
+     * not be modified.
+     */
+    if (v_actionResultTestNot(result, V_SKIP))
+    {
+        V_MESSAGE_STAMP(v_dataReaderSampleMessage(sample),readerCopyTime);
+        V_MESSAGE_REPORT(v_dataReaderSampleMessage(sample),
+                         v_dataReaderInstanceDataReader(instance));
+
+        v_stateClear(instance->instanceState,L_NEW);
+        if (!v_stateTest(v_readerSample(sample)->sampleState,L_READ)) {
+            v_stateSet(v_readerSample(sample)->sampleState,L_LAZYREAD);
+        }
+        if (consume) {
+            v_dataViewSampleListRemove(v_dataViewSampleList(sample));
+            v_dataViewSampleRemove(sample);
+        }
+    }
+    return result;
 }
 

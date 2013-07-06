@@ -6,6 +6,7 @@ TESTCASESDIR=$OSPL_HOME/testsuite/dbt/api/dcps/sacs/exec/$SPLICE_TARGET
 TESTCASES="
     SACSTesterBoundsCheck
     SACSTesterBuiltin
+    SACSTesterInvalidData
     SACSTesterCondition
     SACSTesterContentFilteredTopic
     SACSTesterParticipant
@@ -22,6 +23,7 @@ TESTCASES="
     SACSTesterWaitSet
     SACSTesterWriter
     SACSGetDiscoveredXxx
+    SACSTesterSampleInfo
     "
 
 run_testcases    

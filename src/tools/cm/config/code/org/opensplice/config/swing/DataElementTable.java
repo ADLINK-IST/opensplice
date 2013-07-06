@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -22,15 +22,17 @@ import org.opensplice.config.data.DataNode;
 
 public class DataElementTable extends JTable implements DataNodePopupSupport {
     private static final long serialVersionUID = 3904871676109190600L;
-    private DataElementTableModel model;
-    private DataElementTableModelEditor editor;
+    private final DataElementTableCellRenderer renderer;
+    private final DataElementTableModel model;
+    private final DataElementTableModelEditor editor;
     private DataNodePopup popupController;
-    private StatusPanel status;
+    private final StatusPanel status;
     
     public DataElementTable(DataNodePopup popup, DataElement element, StatusPanel status){
         super();
         this.model = new DataElementTableModel();
         this.editor = new DataElementTableModelEditor(model);
+        this.renderer = new DataElementTableCellRenderer(model);
         this.editor.setStatusListener(status);
         this.model.setElement(element);
         this.status = status;
@@ -39,6 +41,7 @@ public class DataElementTable extends JTable implements DataNodePopupSupport {
         this.getTableHeader().setReorderingAllowed(false);
         this.setSurrendersFocusOnKeystroke(true);
         this.getColumnModel().getColumn(1).setCellEditor(editor);
+        this.getColumnModel().getColumn(1).setCellRenderer(renderer);
         
         if(popup == null){
             this.popupController = new DataNodePopup();
@@ -57,15 +60,18 @@ public class DataElementTable extends JTable implements DataNodePopupSupport {
         return this.model.getNodeAt(row);
     }
 
+    @Override
     public DataNode getDataNodeAt(int x, int y) {
         int row = this.rowAtPoint(new Point(x, y));
         return this.getDataNodeAt(row);
     }
 
+    @Override
     public void showPopup(JPopupMenu popup, int x, int y) {
         popup.show(this, x, y);
     }
 
+    @Override
     public void setStatus(String message, boolean persistent, boolean busy) {
         if(this.status != null){
             this.status.setStatus(message, persistent, busy);

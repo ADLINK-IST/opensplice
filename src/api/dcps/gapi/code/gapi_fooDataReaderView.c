@@ -1,17 +1,18 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "gapi_fooDataReaderView.h"
 #include "gapi_dataReaderView.h"
 #include "gapi_dataReader.h"
+#include "gapi_fooDataReader.h"
 #include "gapi_qos.h"
 #include "gapi_kernel.h"
 #include "gapi_objManag.h"
@@ -41,8 +42,7 @@ C_STRUCT(_FooDataReaderView) {
 typedef struct readerViewActionArg_s {
     _Status             readerStatus;
     gapi_unsigned_long  max;
-    gapi_unsigned_long  messageOffset;
-    gapi_unsigned_long  userdataOffset;
+    _DataReaderView     datareaderview;
     gapi_readerInfo    *readerInfo;
     gapi_readerCopy     readerCopy;
     v_readerSampleSeq  *samples;
@@ -139,8 +139,8 @@ copySampleInfoView (
 
     to->publication_handle          = u_instanceHandleFromGID(master->publicationHandle);
 
-    to->arrival_timestamp.sec       = (gapi_long)(master->insertTime.seconds);
-    to->arrival_timestamp.nanosec   = (gapi_unsigned_long)(master->insertTime.nanoseconds);
+    to->reception_timestamp.sec       = (gapi_long)(master->insertTime.seconds);
+    to->reception_timestamp.nanosec   = (gapi_unsigned_long)(master->insertTime.nanoseconds);
 }
 
 static void
@@ -230,7 +230,8 @@ determineSampleInfoView (
             v_dataReaderSampleTemplate sample = v_dataReaderSampleTemplate(viewSample->sample);
             v_message message = sample->message;
 
-            dataSamples._buffer[i].data = (void *)C_DISPLACE(message, info->userdataOffset);
+            dataSamples._buffer[i].data = (void *)C_DISPLACE(message,
+                    info->datareaderview->datareader->userdataOffset);
             copySampleInfoView(v_readerSample(viewSample), message, &dataSamples._buffer[i].info);
         }
 
@@ -251,7 +252,7 @@ determineSampleInfoView (
 
 }
 
-static c_bool
+static v_actionResult
 readerActionView (
     c_object o,
     c_voidp copyArg)
@@ -259,25 +260,29 @@ readerActionView (
     readerViewActionArg    *info    = (readerViewActionArg *) copyArg;
     v_readerSampleSeq  *samples = info->samples;
     v_readerSample      sample;
-    c_bool              result  = TRUE;
+    v_actionResult      result  = V_PROCEED;
     gapi_unsigned_long  i;
 
     if ( o ) {
         sample = v_readerSample(o);
-        if ( !sampleSeqContains(samples, sample) ) {
-            i = samples->_length;
+        if (gapi_matchesReaderMask(o, &info->datareaderview->reader_mask)) {
+            if ( !sampleSeqContains(samples, sample) ) {
+                i = samples->_length;
 
-            if ( v_readerSampleSeq_setLength(samples, i+1) ) {
-                samples->_buffer[i] = c_keep(sample);
-                c_keep(sample->instance);
-            } else {
-                info->result = GAPI_RETCODE_OUT_OF_RESOURCES;
-                result = FALSE;
-            }
+                if ( v_readerSampleSeq_setLength(samples, i+1) ) {
+                    samples->_buffer[i] = c_keep(sample);
+                    c_keep(sample->instance);
+                } else {
+                    info->result = GAPI_RETCODE_OUT_OF_RESOURCES;
+                    v_actionResultClear(result, V_PROCEED);
+                }
 
-            if ( samples->_length >= info->max ) {
-                result = FALSE;
+                if ( samples->_length >= info->max ) {
+                    v_actionResultClear(result, V_PROCEED);
+                }
             }
+        } else {
+            v_actionResultSet(result, V_SKIP);
         }
     } else {
         if ( samples->_length > 0 ) {
@@ -290,7 +295,7 @@ readerActionView (
             info->readerCopy(NULL, info->readerInfo);
             info->result = GAPI_RETCODE_NO_DATA;
         }
-        result = FALSE;
+        v_actionResultClear(result, V_PROCEED);
     }
 
     return result;
@@ -324,7 +329,7 @@ gapi_fooDataReaderView_read (
     if ( datareaderview == NULL ) {
         return result;
     } else if (!gapi_stateMasksValid(sample_states,view_states,instance_states)) {
-        result = GAPI_RETCODE_BAD_PARAMETER;        
+        result = GAPI_RETCODE_BAD_PARAMETER;
     } else if (statemasks_unsupported(sample_states,view_states,instance_states)) {
         result = GAPI_RETCODE_UNSUPPORTED;
     } else if (max_samples == 0) {
@@ -339,23 +344,11 @@ gapi_fooDataReaderView_read (
         readerInfo.copy_out       = datareaderview->datareader->copy_out;
         readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
         readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
-        
+
         reader = u_reader(U_DATAREADERVIEW_GET(datareaderview));
-        datareaderview->reader_mask.sampleStateMask = 0U;
-        datareaderview->reader_mask.viewStateMask = 0U;
-        datareaderview->reader_mask.instanceStateMask = 0U;
-        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-            datareaderview->reader_mask.sampleStateMask = sample_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (view_states != GAPI_ANY_VIEW_STATE) {
-            datareaderview->reader_mask.viewStateMask = view_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-            datareaderview->reader_mask.instanceStateMask = instance_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
+        datareaderview->reader_mask.sampleStateMask = sample_states;
+        datareaderview->reader_mask.viewStateMask = view_states;
+        datareaderview->reader_mask.instanceStateMask = instance_states;
 
         samples._length  = 0;
         samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
@@ -364,8 +357,7 @@ gapi_fooDataReaderView_read (
 
         arg.samples        = &samples;
         arg.max            = (gapi_unsigned_long)max_samples;
-        arg.messageOffset  = datareaderview->datareader->messageOffset;
-        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.datareaderview = datareaderview;
         arg.readerInfo     = &readerInfo;
         arg.readerCopy     = datareaderview->datareader->readerCopy;
         arg.result         = GAPI_RETCODE_OK;
@@ -379,7 +371,7 @@ gapi_fooDataReaderView_read (
         v_readerSampleSeq_freebuf(&samples);
     }
     _EntityRelease(datareaderview);
-    
+
     return result;
 }
 
@@ -392,7 +384,7 @@ gapi_fooDataReaderView_take (
     const gapi_sampleStateMask sample_states,
     const gapi_viewStateMask view_states,
     const gapi_instanceStateMask instance_states)
-{  
+{
     _DataReaderView     datareaderview;
     gapi_returnCode_t   result = GAPI_RETCODE_OK;
     gapi_readerInfo     readerInfo;
@@ -411,28 +403,16 @@ gapi_fooDataReaderView_take (
     if (datareaderview == NULL) {
         return result;
     } else if (!gapi_stateMasksValid(sample_states,view_states,instance_states)) {
-        result = GAPI_RETCODE_BAD_PARAMETER;        
+        result = GAPI_RETCODE_BAD_PARAMETER;
     } else if (statemasks_unsupported(sample_states,view_states,instance_states)) {
         result = GAPI_RETCODE_UNSUPPORTED;
     } else if (max_samples == 0) {
         result = GAPI_RETCODE_NO_DATA;
     } else {
         reader = u_reader(U_DATAREADERVIEW_GET(datareaderview));
-        datareaderview->reader_mask.sampleStateMask = 0U;
-        datareaderview->reader_mask.viewStateMask = 0U;
-        datareaderview->reader_mask.instanceStateMask = 0U;
-        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-            datareaderview->reader_mask.sampleStateMask = sample_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (view_states != GAPI_ANY_VIEW_STATE) {
-            datareaderview->reader_mask.viewStateMask = view_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-            datareaderview->reader_mask.instanceStateMask = instance_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
+        datareaderview->reader_mask.sampleStateMask = sample_states;
+        datareaderview->reader_mask.viewStateMask = view_states;
+        datareaderview->reader_mask.instanceStateMask = instance_states;
 
         readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
         readerInfo.num_samples    = 0U;
@@ -443,7 +423,7 @@ gapi_fooDataReaderView_take (
         readerInfo.copy_out       = datareaderview->datareader->copy_out;
         readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
         readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
-        
+
         samples._length  = 0;
         samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
         samples._buffer  = buffer;
@@ -451,8 +431,7 @@ gapi_fooDataReaderView_take (
 
         arg.samples        = &samples;
         arg.max            = (gapi_unsigned_long)max_samples;
-        arg.messageOffset  = datareaderview->datareader->messageOffset;
-        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.datareaderview = datareaderview;
         arg.readerInfo     = &readerInfo;
         arg.readerCopy     = datareaderview->datareader->readerCopy;
         arg.result         = GAPI_RETCODE_OK;
@@ -465,9 +444,9 @@ gapi_fooDataReaderView_take (
         }
         v_readerSampleSeq_freebuf(&samples);
     }
-    
+
     _EntityRelease(datareaderview);
-    
+
     return result;
 }
 
@@ -508,7 +487,7 @@ gapi_fooDataReaderView_read_instance (
     v_readerSample      buffer[V_DATAREADERSAMPLESEQ_INITIAL];
     readerViewActionArg arg;
     u_result            uResult;
-    
+
     assert(data_values);
     assert(info_data);
     assert(max_samples >= -1 );
@@ -518,30 +497,18 @@ gapi_fooDataReaderView_read_instance (
     if ( datareaderview == NULL ) {
         return result;
     } else if ( !gapi_stateMasksValid(sample_states, view_states, instance_states) ) {
-        result = GAPI_RETCODE_BAD_PARAMETER;        
+        result = GAPI_RETCODE_BAD_PARAMETER;
     } else if ( statemasks_unsupported(sample_states,view_states,instance_states) ) {
         result = GAPI_RETCODE_UNSUPPORTED;
     } else if ( max_samples == 0 ) {
         result = GAPI_RETCODE_NO_DATA;
     } else if ( a_handle == GAPI_HANDLE_NIL ) {
-        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+        result = GAPI_RETCODE_BAD_PARAMETER;
     } else {
         reader = u_reader(U_DATAREADERVIEW_GET(datareaderview));
-        datareaderview->reader_mask.sampleStateMask = 0U;
-        datareaderview->reader_mask.viewStateMask = 0U;
-        datareaderview->reader_mask.instanceStateMask = 0U;
-        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-            datareaderview->reader_mask.sampleStateMask = sample_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (view_states != GAPI_ANY_VIEW_STATE) {
-            datareaderview->reader_mask.viewStateMask = view_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-            datareaderview->reader_mask.instanceStateMask = instance_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
+        datareaderview->reader_mask.sampleStateMask = sample_states;
+        datareaderview->reader_mask.viewStateMask = view_states;
+        datareaderview->reader_mask.instanceStateMask = instance_states;
 
         readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
         readerInfo.num_samples    = 0U;
@@ -552,7 +519,7 @@ gapi_fooDataReaderView_read_instance (
         readerInfo.copy_out       = datareaderview->datareader->copy_out;
         readerInfo.copy_cache     = datareaderview->datareader->copy_cache;
         readerInfo.loan_registry  = (void**)&datareaderview->loanRegistry;
-    
+
         samples._length  = 0;
         samples._maximum = V_DATAREADERSAMPLESEQ_INITIAL;
         samples._buffer  = buffer;
@@ -560,8 +527,7 @@ gapi_fooDataReaderView_read_instance (
 
         arg.samples        = &samples;
         arg.max            = (gapi_unsigned_long)max_samples;
-        arg.messageOffset  = datareaderview->datareader->messageOffset;
-        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.datareaderview = datareaderview;
         arg.readerInfo     = &readerInfo;
         arg.readerCopy     = datareaderview->datareader->readerCopy;
         arg.result         = GAPI_RETCODE_OK;
@@ -575,7 +541,7 @@ gapi_fooDataReaderView_read_instance (
         v_readerSampleSeq_freebuf(&samples);
     }
     _EntityRelease(datareaderview);
-    
+
     return result;
 }
 
@@ -598,7 +564,7 @@ gapi_fooDataReaderView_take_instance (
     v_readerSample      buffer[V_DATAREADERSAMPLESEQ_INITIAL];
     readerViewActionArg arg;
     u_result            uResult;
-    
+
     assert(data_values);
     assert(info_data);
     assert(max_samples >= -1 );
@@ -608,30 +574,18 @@ gapi_fooDataReaderView_take_instance (
     if (datareaderview == NULL) {
         return result;
     } else if (!gapi_stateMasksValid(sample_states,view_states,instance_states)) {
-        result = GAPI_RETCODE_BAD_PARAMETER;        
+        result = GAPI_RETCODE_BAD_PARAMETER;
     } else if (statemasks_unsupported(sample_states,view_states,instance_states)) {
         result = GAPI_RETCODE_UNSUPPORTED;
     } else if (max_samples == 0) {
         result = GAPI_RETCODE_NO_DATA;
     } else if (a_handle == GAPI_HANDLE_NIL) {
-        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+        result = GAPI_RETCODE_BAD_PARAMETER;
     } else {
         reader = u_reader(U_DATAREADERVIEW_GET(datareaderview));
-        datareaderview->reader_mask.sampleStateMask = 0U;
-        datareaderview->reader_mask.viewStateMask = 0U;
-        datareaderview->reader_mask.instanceStateMask = 0U;
-        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-            datareaderview->reader_mask.sampleStateMask = sample_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (view_states != GAPI_ANY_VIEW_STATE) {
-            datareaderview->reader_mask.viewStateMask = view_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-            datareaderview->reader_mask.instanceStateMask = instance_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
+        datareaderview->reader_mask.sampleStateMask = sample_states;
+        datareaderview->reader_mask.viewStateMask = view_states;
+        datareaderview->reader_mask.instanceStateMask = instance_states;
 
         readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
         readerInfo.num_samples    = 0U;
@@ -650,8 +604,7 @@ gapi_fooDataReaderView_take_instance (
 
         arg.samples        = &samples;
         arg.max            = (gapi_unsigned_long)max_samples;
-        arg.messageOffset  = datareaderview->datareader->messageOffset;
-        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.datareaderview = datareaderview;
         arg.readerInfo     = &readerInfo;
         arg.readerCopy     = datareaderview->datareader->readerCopy;
         arg.result         = GAPI_RETCODE_OK;
@@ -664,9 +617,9 @@ gapi_fooDataReaderView_take_instance (
         }
         v_readerSampleSeq_freebuf(&samples);
     }
-        
+
     _EntityRelease(datareaderview);
-    
+
     return result;
 }
 
@@ -699,28 +652,16 @@ gapi_fooDataReaderView_read_next_instance (
     if (datareaderview == NULL) {
         return result;
     } else if (!gapi_stateMasksValid(sample_states,view_states,instance_states)) {
-        result = GAPI_RETCODE_BAD_PARAMETER;        
+        result = GAPI_RETCODE_BAD_PARAMETER;
     } else if (statemasks_unsupported(sample_states,view_states,instance_states)) {
         result = GAPI_RETCODE_UNSUPPORTED;
     } else if (max_samples == 0) {
         result = GAPI_RETCODE_NO_DATA;
     } else {
         reader = u_reader(U_DATAREADERVIEW_GET(datareaderview));
-        datareaderview->reader_mask.sampleStateMask = 0U;
-        datareaderview->reader_mask.viewStateMask = 0U;
-        datareaderview->reader_mask.instanceStateMask = 0U;
-        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-            datareaderview->reader_mask.sampleStateMask = sample_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (view_states != GAPI_ANY_VIEW_STATE) {
-            datareaderview->reader_mask.viewStateMask = view_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-            datareaderview->reader_mask.instanceStateMask = instance_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
+        datareaderview->reader_mask.sampleStateMask = sample_states;
+        datareaderview->reader_mask.viewStateMask = view_states;
+        datareaderview->reader_mask.instanceStateMask = instance_states;
 
         readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
         readerInfo.num_samples    = 0U;
@@ -739,8 +680,7 @@ gapi_fooDataReaderView_read_next_instance (
 
         arg.samples        = &samples;
         arg.max            = (gapi_unsigned_long)max_samples;
-        arg.messageOffset  = datareaderview->datareader->messageOffset;
-        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.datareaderview = datareaderview;
         arg.readerInfo     = &readerInfo;
         arg.readerCopy     = datareaderview->datareader->readerCopy;
         arg.result         = GAPI_RETCODE_OK;
@@ -753,9 +693,9 @@ gapi_fooDataReaderView_read_next_instance (
         }
         v_readerSampleSeq_freebuf(&samples);
     }
-    
+
     _EntityRelease(datareaderview);
-    
+
     return result;
 }
 
@@ -788,28 +728,16 @@ gapi_fooDataReaderView_take_next_instance (
     if (datareaderview == NULL ) {
         return result;
     } else if (!gapi_stateMasksValid(sample_states, view_states, instance_states)) {
-        result = GAPI_RETCODE_BAD_PARAMETER;        
+        result = GAPI_RETCODE_BAD_PARAMETER;
     } else if (statemasks_unsupported(sample_states,view_states,instance_states)) {
         result = GAPI_RETCODE_UNSUPPORTED;
     } else if (max_samples == 0) {
         result = GAPI_RETCODE_NO_DATA;
     } else {
         reader = u_reader(U_DATAREADERVIEW_GET(datareaderview));
-        datareaderview->reader_mask.sampleStateMask = 0U;
-        datareaderview->reader_mask.viewStateMask = 0U;
-        datareaderview->reader_mask.instanceStateMask = 0U;
-        if (sample_states != GAPI_ANY_SAMPLE_STATE) {
-            datareaderview->reader_mask.sampleStateMask = sample_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (view_states != GAPI_ANY_VIEW_STATE) {
-            datareaderview->reader_mask.viewStateMask = view_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
-        if (instance_states != GAPI_ANY_INSTANCE_STATE) {
-            datareaderview->reader_mask.instanceStateMask = instance_states;
-            reader = u_reader(datareaderview->uQuery);
-        }
+        datareaderview->reader_mask.sampleStateMask = sample_states;
+        datareaderview->reader_mask.viewStateMask = view_states;
+        datareaderview->reader_mask.instanceStateMask = instance_states;
 
         readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
         readerInfo.num_samples    = 0U;
@@ -828,8 +756,7 @@ gapi_fooDataReaderView_take_next_instance (
 
         arg.samples        = &samples;
         arg.max            = (gapi_unsigned_long)max_samples;
-        arg.messageOffset  = datareaderview->datareader->messageOffset;
-        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.datareaderview = datareaderview;
         arg.readerInfo     = &readerInfo;
         arg.readerCopy     = datareaderview->datareader->readerCopy;
         arg.result         = GAPI_RETCODE_OK;
@@ -842,9 +769,9 @@ gapi_fooDataReaderView_take_next_instance (
         }
         v_readerSampleSeq_freebuf(&samples);
     }
-    
+
     _EntityRelease(datareaderview);
-    
+
     return result;
 }
 
@@ -856,7 +783,7 @@ gapi_fooDataReaderView_return_loan (
 {
     _DataReaderView datareaderview;
     gapi_returnCode_t result = GAPI_RETCODE_OK;
- 
+
     datareaderview = gapi_dataReaderViewClaim(_this, &result);
 
     if (datareaderview == NULL) {
@@ -870,7 +797,7 @@ gapi_fooDataReaderView_return_loan (
     }
 
     _EntityRelease(datareaderview);
-     
+
     return result;
 }
 
@@ -902,11 +829,12 @@ gapi_fooDataReaderView_read_w_condition (
     if (datareaderview == NULL) {
         return result;
     } else if (readcondition == NULL) {
-        result = GAPI_RETCODE_BAD_PARAMETER;        
+        result = GAPI_RETCODE_BAD_PARAMETER;
     } else if (readcondition->dataReaderView != datareaderview) {
         result = GAPI_RETCODE_PRECONDITION_NOT_MET;
     } else if ( max_samples != 0) {
         reader = u_reader(readcondition->uQuery);
+        datareaderview->reader_mask = readcondition->readerMask;
 
         readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
         readerInfo.num_samples    = 0U;
@@ -925,8 +853,7 @@ gapi_fooDataReaderView_read_w_condition (
 
         arg.samples        = &samples;
         arg.max            = (gapi_unsigned_long)max_samples;
-        arg.messageOffset  = datareaderview->datareader->messageOffset;
-        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.datareaderview = datareaderview;
         arg.readerInfo     = &readerInfo;
         arg.readerCopy     = datareaderview->datareader->readerCopy;
         arg.result         = GAPI_RETCODE_OK;
@@ -943,7 +870,7 @@ gapi_fooDataReaderView_read_w_condition (
         result = GAPI_RETCODE_NO_DATA;
     }
     _EntityRelease(datareaderview);
-    
+
     return result;
 }
 
@@ -980,6 +907,7 @@ gapi_fooDataReaderView_take_w_condition (
         result = GAPI_RETCODE_PRECONDITION_NOT_MET;
     } else if ( max_samples != 0) {
         reader = u_reader(readcondition->uQuery);
+        datareaderview->reader_mask = readcondition->readerMask;
 
         readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
         readerInfo.num_samples    = 0U;
@@ -998,8 +926,7 @@ gapi_fooDataReaderView_take_w_condition (
 
         arg.samples        = &samples;
         arg.max            = (gapi_unsigned_long)max_samples;
-        arg.messageOffset  = datareaderview->datareader->messageOffset;
-        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.datareaderview = datareaderview;
         arg.readerInfo     = &readerInfo;
         arg.readerCopy     = datareaderview->datareader->readerCopy;
         arg.result         = GAPI_RETCODE_OK;
@@ -1016,7 +943,7 @@ gapi_fooDataReaderView_take_w_condition (
         result = GAPI_RETCODE_NO_DATA;
     }
     _EntityRelease(datareaderview);
-    
+
     return result;
 }
 
@@ -1054,6 +981,7 @@ gapi_fooDataReaderView_read_next_instance_w_condition (
         result = GAPI_RETCODE_PRECONDITION_NOT_MET;
     } else if ( max_samples != 0) {
         reader = u_reader(readcondition->uQuery);
+        datareaderview->reader_mask = readcondition->readerMask;
         readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
         readerInfo.num_samples    = 0U;
         readerInfo.data_buffer    = data_values;
@@ -1071,8 +999,7 @@ gapi_fooDataReaderView_read_next_instance_w_condition (
 
         arg.samples        = &samples;
         arg.max            = (gapi_unsigned_long)max_samples;
-        arg.messageOffset  = datareaderview->datareader->messageOffset;
-        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.datareaderview = datareaderview;
         arg.readerInfo     = &readerInfo;
         arg.readerCopy     = datareaderview->datareader->readerCopy;
         arg.result         = GAPI_RETCODE_OK;
@@ -1088,7 +1015,7 @@ gapi_fooDataReaderView_read_next_instance_w_condition (
         result = GAPI_RETCODE_NO_DATA;
     }
     _EntityRelease(datareaderview);
-    
+
     return result;
 }
 
@@ -1127,6 +1054,8 @@ gapi_fooDataReaderView_take_next_instance_w_condition (
         result = GAPI_RETCODE_PRECONDITION_NOT_MET;
     } else if ( max_samples != 0) {
         reader = u_reader(readcondition->uQuery);
+        datareaderview->reader_mask = readcondition->readerMask;
+
         readerInfo.max_samples    = (gapi_unsigned_long)max_samples;
         readerInfo.num_samples    = 0U;
         readerInfo.data_buffer    = data_values;
@@ -1144,8 +1073,7 @@ gapi_fooDataReaderView_take_next_instance_w_condition (
 
         arg.samples        = &samples;
         arg.max            = (gapi_unsigned_long)max_samples;
-        arg.messageOffset  = datareaderview->datareader->messageOffset;
-        arg.userdataOffset = datareaderview->datareader->userdataOffset;
+        arg.datareaderview = datareaderview;
         arg.readerInfo     = &readerInfo;
         arg.readerCopy     = datareaderview->datareader->readerCopy;
         arg.result         = GAPI_RETCODE_OK;
@@ -1166,7 +1094,7 @@ gapi_fooDataReaderView_take_next_instance_w_condition (
         result = GAPI_RETCODE_NO_DATA;
     }
     _EntityRelease(datareaderview);
-    
+
     return result;
 }
 
@@ -1178,7 +1106,7 @@ gapi_fooDataReaderView_is_loan (
 {
     _DataReaderView datareaderview;
     gapi_boolean result = FALSE;
- 
+
     datareaderview = gapi_dataReaderViewClaim(_this, NULL);
     if ( datareaderview ) {
         if ( data_buffer && info_buffer ) {
@@ -1188,7 +1116,7 @@ gapi_fooDataReaderView_is_loan (
         }
     }
     _EntityRelease(datareaderview);
-     
+
     return result;
 }
 
@@ -1240,7 +1168,7 @@ gapi_fooDataReaderView_lookup_instance (
 {
     _DataReaderView datareaderview;
     gapi_instanceHandle_t handle = GAPI_HANDLE_NIL;
- 
+
     datareaderview = gapi_dataReaderViewClaim(_this, NULL);
     if ( datareaderview && instance_data ) {
         readerViewCopyInInfo rData;
@@ -1248,7 +1176,7 @@ gapi_fooDataReaderView_lookup_instance (
 
         rData.reader = datareaderview->datareader;
         rData.data = (void *)instance_data;
- 
+
         uResult = u_dataViewLookupInstance(
                       U_DATAREADERVIEW_GET(datareaderview),
                       &rData,
@@ -1256,6 +1184,6 @@ gapi_fooDataReaderView_lookup_instance (
                       &handle);
     }
     _EntityRelease(datareaderview);
-     
+
     return handle;
 }

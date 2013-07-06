@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 
+import org.opensplice.common.util.ConfigModeIntializer;
 import org.opensplice.config.data.DataAttribute;
 import org.opensplice.config.data.DataConfiguration;
 import org.opensplice.config.data.DataConfigurationListener;
@@ -129,8 +130,10 @@ public class DataElementTableModel extends DefaultTableModel implements DataConf
     
     public boolean isCellEditable(int row, int column) {
         boolean result;
-        
-        if(column == 1){
+                
+        if(column == 1 && ConfigModeIntializer.CONFIGURATOR_MODE == ConfigModeIntializer.COMMERCIAL_MODE) {
+            result = true;
+        } else if (column == 1 && !element.getMetadata().getVersion().equals(ConfigModeIntializer.COMMERCIAL)) {
             result = true;
         } else {
             result = false;

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -101,6 +101,8 @@ d_storeMMFKernelDeleteNonMatchingGroups(
     d_storeMMFKernel _this,
     c_string partitionExpr,
     c_string topicExpr);
+
+#undef OS_API
 
 #if defined (__cplusplus)
 }

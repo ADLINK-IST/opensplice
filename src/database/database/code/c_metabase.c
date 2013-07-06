@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -15,7 +15,6 @@
 #include "c__base.h"
 #include "c__scope.h"
 #include "c_misc.h"
-#include "c_mmbase.h"
 #include "c_sync.h"
 #include "c_avltree.h"
 #include "c_iterator.h"
@@ -24,6 +23,7 @@
 #include "c_metafactory.h"
 #include <ctype.h>
 #include "c_module.h"
+#include "ut_collection.h"
 
 extern c_type c_getMetaType(c_base base, c_metaKind kind);
 
@@ -34,33 +34,6 @@ _TYPE_CACHE_(c_literal)
 _TYPE_CACHE_(c_constant)
 _TYPE_CACHE_(c_unionCase)
 _TYPE_CACHE_(c_property)
-
-static c_scope
-metaScope(
-    c_metaObject object)
-{
-    if (object == NULL) {
-        return NULL;
-    }
-    switch(c_baseObjectKind(object)) {
-    case M_MODULE:
-        return c_module(object)->scope;
-    case M_INTERFACE:
-    case M_CLASS:
-        return c_interface(object)->scope;
-    case M_STRUCTURE:
-    case M_EXCEPTION:
-        return c_structure(object)->scope;
-    case M_ENUMERATION:
-        return metaScope(object->definedIn);
-    case M_UNION:
-        return c_union(object)->scope;
-    case M_TYPEDEF:
-        return metaScope(object->definedIn);
-    default:
-        return NULL;
-    }
-}
 
 static c_scope
 metaClaim(
@@ -75,6 +48,7 @@ metaClaim(
         return c_module(scope)->scope;
     case M_INTERFACE:
     case M_CLASS:
+    case M_ANNOTATION:
         return c_interface(scope)->scope;
     case M_STRUCTURE:
     case M_EXCEPTION:
@@ -306,55 +280,6 @@ typedef enum c_state {
     ST_END
 } c_state;
 
-static c_metaObject
-c_metaResolve2(
-    c_metaObject scope,
-    const c_char *name,
-    c_long metaFilter)
-{
-    c_metaObject o;
-    c_specifier sp;
-    c_long i,size;
-
-    if (scope == NULL) {
-        return NULL;
-    }
-    switch (c_baseObjectKind(scope)) {
-    case M_EXCEPTION:
-    case M_STRUCTURE:
-        size = c_arraySize(c_structure(scope)->members);
-        for (i=0; i<size; i++) {
-            sp = c_specifier(c_structure(scope)->members[i]);
-            if ((sp != NULL) &&
-                strcmp(name,sp->name) == 0) {
-                return c_keep(c_structure(scope)->members[i]);
-            }
-        }
-        return metaScopeLookup(scope,name,metaFilter);
-    case M_UNION:
-        return metaScopeLookup(scope,name,metaFilter);
-    case M_MODULE:
-    case M_INTERFACE:
-    case M_CLASS:
-        o = metaScopeLookup(scope,name,metaFilter);
-        if (o != NULL) {
-            return o;
-        } else if (c_baseObjectKind(scope) == M_CLASS) {
-            return c_metaResolve2(c_metaObject(c_class(scope)->extends),
-                                  name,
-                                  metaFilter);
-        }
-    break;
-    case M_TYPEDEF:
-        return c_metaResolve2(c_metaObject(c_typeDef(scope)->alias),
-                              name,
-                              metaFilter);
-    default:
-    break;
-    }
-    return NULL;
-}
-
 void
 c_metaWalk(
     c_metaObject scope,
@@ -362,6 +287,16 @@ c_metaWalk(
     c_metaWalkActionArg actionArg)
 {
     metaScopeWalk(scope,action,actionArg);
+}
+
+/*
+ * Returns the number of elements in the c_scope of the given c_metaObject.
+ */
+c_long
+c_metaCount(
+    c_metaObject scope)
+{
+    return metaScopeCount(scope);
 }
 
 c_object
@@ -428,6 +363,7 @@ c_metaDefine(
             c_mutexInit(&c_module(o)->mtx, SHARED_MUTEX);
         }
     break;
+    case M_ANNOTATION:
     case M_CLASS:
     case M_INTERFACE:
         o = (c_baseObject)c_new(c_getMetaType(base,kind));
@@ -435,6 +371,8 @@ c_metaDefine(
             o->kind = kind;
             if (kind == M_CLASS) {
                 c_class(o)->extends = NULL;
+            }else if (kind == M_ANNOTATION) {
+                c_annotation(o)->extends = NULL;
             }
             c_interface(o)->scope = c_scopeNew(base);
             c_type(o)->base = base; /* REMARK c_keep(base); */
@@ -474,22 +412,25 @@ c_metaDeclare(
         case M_STRUCTURE:
         case M_TYPEDEF:
         case M_UNION:
+        case M_ANNOTATION:
             o = c_metaDefine(scope,kind);
             found = c_metaBind(scope,name,o);
             c_free(o);
-            return found;
+            o = found;
+            break;
         default:
             OS_REPORT_1(OS_WARNING,"c_metaDeclare failed",0,
                         "illegal meta kind (%d) specified",kind);
             assert(FALSE);
-            return NULL;
+            o = NULL;
+            break;
         }
     } else if (c_baseObjectKind(o) != kind) {
         c_free(o);
-        return NULL;
-    } else {
-        return o;
+        o = NULL;
     }
+
+    return o;
 }
 
 static void
@@ -611,6 +552,7 @@ c_typeIsRef (
     switch(c_baseObjectKind(type)) {
     case M_CLASS:
     case M_INTERFACE:
+    case M_ANNOTATION:
         result = TRUE;
     break;
     case M_COLLECTION:
@@ -651,6 +593,7 @@ c_typeSize(
             switch(c_baseObjectKind(subType)) {
             case M_INTERFACE:
             case M_CLASS:
+            case M_ANNOTATION:
                 size = c_collectionTypeMaxSize(type)*sizeof(void *);
             break;
             default:
@@ -707,8 +650,7 @@ c_typeHasRef (
     switch(c_baseObjectKind(type)) {
     case M_CLASS:
     case M_INTERFACE:
-    case M_EXTENT:
-    case M_EXTENTSYNC:
+    case M_ANNOTATION:
         return TRUE;
     case M_COLLECTION:
         switch(c_collectionType(type)->kind) {
@@ -784,8 +726,6 @@ propertySize(
             return sizeof(void *);
         }
     case M_CLASS:
-    case M_EXTENT:
-    case M_EXTENTSYNC:
         return sizeof(void *);
     case M_TYPEDEF:
         return propertySize(c_typeDef(type)->alias);
@@ -794,14 +734,27 @@ propertySize(
     }
 }
 
-c_metaEquality
-c_metaCompare (
+static c_metaEquality
+_c_metaCompare (
     c_metaObject object,
-    c_metaObject obj)
+    c_metaObject obj,
+    ut_collection adm)
 {
     c_long i, length;
     c_metaEquality result;
     c_metaObject o = obj;
+
+    if(object && o && (o == ut_get(adm, object)))
+    {
+        /* if the object-obj pair is in the adm-tree, then it is already being compared,
+         * so ignore here by returning equal.
+         */
+        return E_EQUAL;
+    }
+    else if(object && o)
+    {
+        ut_tableInsert(ut_table(adm), object, o);
+    }
 
     if (object == o) {
         return E_EQUAL;
@@ -837,8 +790,9 @@ c_metaCompare (
             if (member == m) {
                 return E_EQUAL;
             }
-            result = c_metaCompare(c_metaObject(c_specifier(member)->type),
-                                   c_metaObject(c_specifier(m)->type));
+            result = _c_metaCompare(c_metaObject(c_specifier(member)->type),
+                                   c_metaObject(c_specifier(m)->type),
+                                   adm);
             if (result != E_EQUAL) {
                 return result;
             }
@@ -852,8 +806,9 @@ c_metaCompare (
     {
         c_unionCase c1,c2;
 
-        result = c_metaCompare(c_metaObject(c_union(object)->switchType),
-                               c_metaObject(c_union(o)->switchType));
+        result = _c_metaCompare(c_metaObject(c_union(object)->switchType),
+                               c_metaObject(c_union(o)->switchType),
+                               adm);
         if (result != E_EQUAL) {
             return result;
         }
@@ -867,8 +822,9 @@ c_metaCompare (
         for (i=0; i<length; i++) {
             c1 = c_unionCase(c_union(object)->cases[i]);
             c2 = c_unionCase(c_union(o)->cases[i]);
-            result = c_metaCompare(c_metaObject(c_specifier(c1)->type),
-                                   c_metaObject(c_specifier(c2)->type));
+            result = _c_metaCompare(c_metaObject(c_specifier(c1)->type),
+                                   c_metaObject(c_specifier(c2)->type),
+                                   adm);
             if (result != E_EQUAL) {
                 return result;
             }
@@ -882,8 +838,9 @@ c_metaCompare (
         if (c_collectionType(object)->kind != c_collectionType(o)->kind) {
             return E_UNEQUAL;
         }
-        result = c_metaCompare(c_metaObject(c_collectionType(object)->subType),
-                               c_metaObject(c_collectionType(o)->subType));
+        result = _c_metaCompare(c_metaObject(c_collectionType(object)->subType),
+                               c_metaObject(c_collectionType(o)->subType),
+                               adm);
         if (result != E_EQUAL) {
             return result;
         }
@@ -910,13 +867,15 @@ c_metaCompare (
     break;
     case M_INTERFACE:
     case M_CLASS:
+    case M_ANNOTATION:
     {
         c_property property,p;
         c_iter iter;
 
         if (c_baseObjectKind(o) == M_CLASS) {
-            result = c_metaCompare(c_metaObject(c_class(object)->extends),
-                                   c_metaObject(c_class(o)->extends));
+            result = _c_metaCompare(c_metaObject(c_class(object)->extends),
+                                   c_metaObject(c_class(o)->extends),
+                                   adm);
             if (result != E_EQUAL) {
                 return result;
             }
@@ -938,8 +897,9 @@ c_metaCompare (
                     c_free(property); c_free(p);
                     return E_UNEQUAL;
                 }
-                result = c_metaCompare(c_metaObject(property->type),
-                                       c_metaObject(p->type));
+                result = _c_metaCompare(c_metaObject(property->type),
+                                       c_metaObject(p->type),
+                                       adm);
                 c_free(p);
                 if (result != E_EQUAL) {
                     return result;
@@ -951,13 +911,60 @@ c_metaCompare (
     break;
     case M_TYPEDEF:
     {
-        return c_metaCompare(c_metaObject(c_typeDef(object)->alias),
-                             c_metaObject(c_typeDef(o)->alias));
+        return _c_metaCompare(c_metaObject(c_typeDef(object)->alias),
+                             c_metaObject(c_typeDef(o)->alias),
+                             adm);
     }
     default:
     break;
     }
     return E_EQUAL;
+}
+
+/*
+ * Compares two pointers.
+ * Returns:
+ *  - OS_EQ when pointers are equal
+ *  - OS_GT when o1 is bigger than o2
+ *  - OS_LT when o1 is littler than o2
+ */
+static os_equality
+comparePointers(
+        void *o1,
+        void *o2,
+        void *args)
+{
+    os_equality result = OS_EQ;
+
+    OS_UNUSED_ARG(args);
+
+    if(o1 > o2) {
+        result = OS_GT;
+    }
+    else if(o1 < o2)
+    {
+        result = OS_LT;
+    }
+    return result;
+}
+
+c_metaEquality
+c_metaCompare(
+        c_metaObject object,
+        c_metaObject obj)
+{
+    ut_collection adm;
+    c_metaEquality result;
+    adm = ut_tableNew(comparePointers, NULL);
+
+    result = _c_metaCompare(
+            object,
+            obj,
+            adm);
+
+    ut_tableFree(ut_table(adm), NULL, NULL, NULL, NULL);
+
+    return result;
 }
 
 c_result
@@ -1014,9 +1021,8 @@ c__metaFinalize(
                 if (!c_isFinal(o)) {
                     switch(c_baseObjectKind(type)) {
                     case M_INTERFACE:
+                    case M_ANNOTATION:
                     case M_CLASS:
-                    case M_EXTENT:
-                    case M_EXTENTSYNC:
                     case M_BASE:
                         if (alignment < objectAlignment) {
                             alignment = objectAlignment;
@@ -1102,8 +1108,7 @@ c__metaFinalize(
                     switch(c_baseObjectKind(type)) {
                     case M_INTERFACE:
                     case M_CLASS:
-                    case M_EXTENT:
-                    case M_EXTENTSYNC:
+                    case M_ANNOTATION:
                     case M_BASE:
                         if (type->alignment > alignment) {
                             alignment = type->alignment;
@@ -1223,6 +1228,7 @@ c__metaFinalize(
     }
     break;
     case M_INTERFACE:
+    case M_ANNOTATION:
     case M_CLASS:
     {
         c_property property;
@@ -1286,9 +1292,8 @@ c__metaFinalize(
                     }
                     switch(c_baseObjectKind(type)) {
                     case M_INTERFACE:
+                    case M_ANNOTATION:
                     case M_CLASS:
-                    case M_EXTENT:
-                    case M_EXTENTSYNC:
                     case M_BASE:
                         if (alignment < objectAlignment) {
                             alignment = objectAlignment;
@@ -1318,7 +1323,7 @@ if ((offset != 0) && (offset != property->offset)) {
     c_string objectMetaName = c_metaName(o);
     /* apperantly the new order differs from the existing order */
     printf("property %s of type %s meta offset = "PA_ADDRFMT" but was "PA_ADDRFMT" \n",
-            propertyMetaName,objectMetaName,property->offset,offset);
+            propertyMetaName,objectMetaName,(PA_ADDRCAST)property->offset,(PA_ADDRCAST)offset);
     c_free(propertyMetaName);
     c_free(objectMetaName);
 }
@@ -1374,6 +1379,7 @@ c_isFinal(
     case M_ENUMERATION:
     case M_EXCEPTION:
     case M_INTERFACE:
+    case M_ANNOTATION:
     case M_PRIMITIVE:
     case M_STRUCTURE:
     case M_TYPEDEF:
@@ -1421,14 +1427,13 @@ c_objectIsType(
         return FALSE;
     }
     switch(o->kind) {
-    case M_EXTENT:
-    case M_EXTENTSYNC:
     case M_TYPEDEF:
     case M_CLASS:
     case M_COLLECTION:
     case M_ENUMERATION:
     case M_EXCEPTION:
     case M_INTERFACE:
+    case M_ANNOTATION:
     case M_PRIMITIVE:
     case M_STRUCTURE:
     case M_UNION:
@@ -1695,6 +1700,7 @@ c_alignment(
     case M_ENUMERATION:
     case M_EXCEPTION:
     case M_INTERFACE:
+    case M_ANNOTATION:
     case M_PRIMITIVE:
     case M_STRUCTURE:
     case M_UNION:
@@ -1735,6 +1741,7 @@ c_getSize(
     case M_ENUMERATION:
     case M_EXCEPTION:
     case M_INTERFACE:
+    case M_ANNOTATION:
     case M_PRIMITIVE:
     case M_STRUCTURE:
     case M_UNION:
@@ -1798,6 +1805,7 @@ c_metaValueKind(
         if (c_collectionType(o)->kind == C_STRING) return V_STRING;
     case M_CLASS:
     case M_INTERFACE:
+    case M_ANNOTATION:
     case M_MODULE:
     case M_BASE:
     case M_STRUCTURE:
@@ -1949,6 +1957,7 @@ c_metaCopy(
     case M_CLASS:
         c_class(d)->extends = c_keep(c_class(s)->extends);
         c_class(d)->keys = c_keep(c_class(s)->keys);
+    case M_ANNOTATION:
     case M_INTERFACE:
         c_interface(d)->abstract = c_interface(s)->abstract;
         c_interface(d)->inherits = c_keep(c_interface(s)->inherits);
@@ -2034,6 +2043,7 @@ c_metaPrint(
         c_scopeWalk(c_interface(o)->scope,c_metaPrint,NULL);
         printf("};\n\n");
     break;
+    case M_ANNOTATION:
     case M_INTERFACE:
     break;
     case M_STRUCTURE:
@@ -2048,7 +2058,7 @@ c_metaPrint(
     case M_ATTRIBUTE:
         printf("    attribute %s %s; ("PA_ADDRFMT")\n",
                c_metaName(c_metaObject(c_property(o)->type)),
-               name, c_property(o)->offset);
+               name, (PA_ADDRCAST)c_property(o)->offset);
     case M_UNIONCASE:
     case M_MEMBER:
     case M_PARAMETER:
@@ -2138,6 +2148,7 @@ _metaResolveName(
         return c_baseObject(metaScopeLookup(scope,name,metaFilter));
     case M_MODULE:
     case M_INTERFACE:
+    case M_ANNOTATION:
     case M_CLASS:
         o = c_baseObject(metaScopeLookup(scope,name,metaFilter));
         if (o != NULL) {
@@ -2186,6 +2197,7 @@ c_metaFindByComp (
                 case M_EXCEPTION:
                 case M_INTERFACE:
                 case M_CLASS:
+                case M_ANNOTATION:
                     scope = c_metaObject(o);
                     state = ST_REF;
                 break;
@@ -2315,12 +2327,12 @@ c_metaResolveType (
                                           CQ_METAOBJECTS));
 }
 
-c_metaObject
+c_specifier
 c_metaResolveSpecifier (
     c_metaObject scope,
     const os_char *name)
 {
-    return c_metaObject(c_metaFindByComp (scope,
+    return c_specifier(c_metaFindByComp (scope,
                                           name,
                                           CQ_SPECIFIERS));
 }
@@ -2345,3 +2357,64 @@ c_metaResolveFixedScope (
                                           CQ_ALL | CQ_FIXEDSCOPE));
 }
 
+/*
+ * Returns TRUE if an instance of the given type will be a c_baseObject.
+ */
+c_bool
+c_isBaseObjectType(
+        c_type type)
+{
+    c_base base;
+    int i = 0;
+
+    assert(type);
+
+    base = type->base;
+
+    for(i = M_ATTRIBUTE; i < M_COUNT; i++){
+        assert(base->metaType[i]);
+        if(base->metaType[i] == type)
+        {
+            return TRUE;
+        }
+    }
+
+    /* the following types are either abstract types or not used, so
+     * assert that the type is non of these:
+     *  - c_operand
+     *  - c_specifier
+     *  - c_metaObject
+     *  - c_property
+     *  - c_type
+     *  - c_blob
+     *  - c_fixed
+     *  - c_valueType
+     */
+
+#define _ASSERT_NOT_TYPE_(t) assert(strcmp(c_metaObject(type)->name,  #t) != 0)
+
+    _ASSERT_NOT_TYPE_(c_operand);
+    _ASSERT_NOT_TYPE_(c_specifier);
+    _ASSERT_NOT_TYPE_(c_metaObject);
+    _ASSERT_NOT_TYPE_(c_property);
+    _ASSERT_NOT_TYPE_(c_type);
+    _ASSERT_NOT_TYPE_(c_blob);
+    _ASSERT_NOT_TYPE_(c_fixed);
+    _ASSERT_NOT_TYPE_(c_valueType);
+#undef _ASSERT_NOT_TYPE_
+
+    return FALSE;
+}
+
+
+/*
+ * Returns TRUE is obj is a c_baseObject.
+ */
+c_bool
+c_isBaseObject(c_object obj)
+{
+    if(obj) {
+        return c_isBaseObjectType(c_getType(obj));
+    }
+    return FALSE;
+}

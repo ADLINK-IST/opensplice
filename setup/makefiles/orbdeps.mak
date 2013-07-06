@@ -2,20 +2,20 @@
 
 #ORB dependent settings:
 
-IF_OSPLENV_IS_WIN32:=$(findstring win32, $(SPLICE_TARGET))
+IF_OSPLENV_IS_WIN:=$(or $(findstring win32, $(SPLICE_TARGET)), $(findstring win64, $(SPLICE_TARGET)))
 IF_OSPLMODE_IS_DEV:=$(findstring dev, $(SPLICE_TARGET))
-IS_WINDOWS_DEBUG:=$(and $(IF_OSPLENV_IS_WIN32), $(IF_OSPLMODE_IS_DEV))
+IS_WINDOWS_DEBUG:=$(and $(IF_OSPLENV_IS_WIN), $(IF_OSPLMODE_IS_DEV))
 
 ifeq ($(SPLICE_ORB), DDS_ACE_TAO_5_6_6)
     ORB_MK_INCLUDE_NAME = tao15-OF
     ORB_INCLUDE	     = "-I$(TAO_ROOT)" -I"$(ACE_ROOT)"
-    ORB_LDLIBS	     = "-L$(ACE_ROOT)/lib" -lACE -lTAO -lTAO_PortableServer -lTAO_AnyTypeCode
+    ORB_LDLIBS	     = "-L$(ACE_ROOT)/lib" -lACE -lTAO -lTAO_AnyTypeCode
     ORB_IDL_COMPILER = tao_idl
     ORB_COMPILER     = tao_idl #only needed for compiling the corba-C++ testcases
     ORB_IDL_FLAGS    = -Sp -Sd -si S.i -ci C.i -I"$(OSPL_HOME)/etc/idl"
     ORB_CPP_FLAGS    = -DACE_HAS_EXCEPTIONS
     ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+ifneq (,$(or $(findstring win32, $(SPLICE_TARGET)), $(findstring win64, $(SPLICE_TARGET))))
     ORB_CXX_FLAGS    = -Wb,export_macro=$(DECL_PREFIX) -Wb,export_include=$(DECL_INCLUDE)
 endif
 
@@ -51,7 +51,7 @@ endif
     ORB_IDL_OUTPUT   = -o
     ORB_CPP_FLAGS    = -DACE_HAS_EXCEPTIONS
     ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+ifneq (,$(or $(findstring win32, $(SPLICE_TARGET)), $(findstring win64, $(SPLICE_TARGET))))
     ORB_CXX_FLAGS    = -Wb,export_macro=$(DECL_PREFIX) -Wb,export_include=$(DECL_INCLUDE)
 endif
 
@@ -71,7 +71,7 @@ endif
     #TODO determine if correct
     ORB_DLRL_API_OBJ = $(DLRL_API_IDL:%.idl=%C$(OBJ_POSTFIX))
     ORB_DLRL_API_SRC = $(DLRL_API_IDL:%.idl=%C.cpp) $(DLRL_API_IDL:%.idl=%S.cpp)
-    ORB_DLRL_API_HDR = $(ORB_DLRL_API_SRC:%.cpp=%.h) $(ORB_DLRL_API_SRC:%.cpp=%.inl)
+    ORB_DLRL_API_HDR = $(ORB_DLRL_API_SRC:%.cpp=%.h) $(ORB_DLRL_API_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_5_1)
     ORB_MK_INCLUDE_NAME = tao15-OF
@@ -87,7 +87,7 @@ endif
     ORB_IDL_OUTPUT   = -o
     ORB_CPP_FLAGS    = -DACE_HAS_EXCEPTIONS
     ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+ifneq (,$(or $(findstring win32, $(SPLICE_TARGET)), $(findstring win64, $(SPLICE_TARGET))))
     ORB_CXX_FLAGS    = -Wb,export_macro=$(DECL_PREFIX) -Wb,export_include=$(DECL_INCLUDE)
 endif
 
@@ -107,7 +107,7 @@ endif
     #TODO determine if correct
     ORB_DLRL_API_OBJ = $(DLRL_API_IDL:%.idl=%C$(OBJ_POSTFIX))
     ORB_DLRL_API_SRC = $(DLRL_API_IDL:%.idl=%C.cpp) $(DLRL_API_IDL:%.idl=%S.cpp)
-    ORB_DLRL_API_HDR = $(ORB_DLRL_API_SRC:%.cpp=%.h) $(ORB_DLRL_API_SRC:%.cpp=%.inl)
+    ORB_DLRL_API_HDR = $(ORB_DLRL_API_SRC:%.cpp=%.h) $(ORB_DLRL_API_SRC:%.cpp=%$(INLINESRC_POSTFIX))
 endif
 ifeq ($(SPLICE_ORB), DDS_OpenFusion_1_4_1)
     ORB_MK_INCLUDE_NAME = tao14-OF
@@ -123,7 +123,7 @@ endif
     ORB_IDL_OUTPUT   = -o
     ORB_CPP_FLAGS    = -DACE_HAS_EXCEPTIONS
     ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+ifneq (,$(or $(findstring win32, $(SPLICE_TARGET)), $(findstring win64, $(SPLICE_TARGET))))
     ORB_CXX_FLAGS    = -Wb,export_macro=$(DECL_PREFIX) -Wb,export_include=$(DECL_INCLUDE)
 endif
 
@@ -181,7 +181,7 @@ ifeq ($(SPLICE_ORB), DDS_ACE_TAO_1_4_1)
     ORB_IDL_FLAGS    = -Sc -Sp -Sd -Sv -I"$(OSPL_HOME)/etc/idl"
     ORB_CPP_FLAGS    = -DACE_HAS_EXCEPTIONS
     ORB_SELECT_FLAGS = -D$(SPLICE_ORB)
-ifneq (,$(findstring win32,$(SPLICE_TARGET)))
+ifneq (,$(or $(findstring win32, $(SPLICE_TARGET)), $(findstring win64, $(SPLICE_TARGET))))
     ORB_CXX_FLAGS    = -Wb,export_macro=$(DECL_PREFIX) -Wb,export_include=$(DECL_INCLUDE)
 endif
 

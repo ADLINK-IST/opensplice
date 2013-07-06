@@ -14,7 +14,7 @@ ifeq ($(FORCE_DEBUG_SYMBOLS), no)
 # Compiler flags
 CFLAGS_OPT       = -O4
 CFLAGS_DEBUG     = -DNDEBUG
-JCFLAGS          = -g:none -nowarn
+JCFLAGS          = -g:none
 
 #Csc compiler flags
 CSFLAGS_DEBUG    =

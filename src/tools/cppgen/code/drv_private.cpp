@@ -70,7 +70,7 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 
 // Storage for file names
 
-char *DRV_files[1024];
+const char *DRV_files[1024];
 long DRV_nfiles = 0;
 long DRV_file_index = -1;
 IDL_GlobalData *idl_global = NULL;

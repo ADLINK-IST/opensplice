@@ -1,0 +1,40 @@
+// -*- MPC -*-
+// $Id:$
+
+project (sac*types) : _repetitive_sac_example_types {
+    Source_Files {
+    }
+}
+
+project(sac*messageboard): c_or_cplusplus_example, ospl_dcpssac {
+  after += sac*types
+  libs += sac*types
+  includes += .
+  Source_Files {
+      ../src/MessageBoard.c
+      ../src/CheckStatus.c
+      ../src/multitopic.c
+  }
+}
+
+project(sac*chatter): c_or_cplusplus_example, ospl_dcpssac {
+  after += sac*types
+  libs += sac*types
+  includes += .
+  Source_Files {
+      ../src/Chatter.c
+      ../src/CheckStatus.c
+      ../src/multitopic.c
+  }
+}
+
+project(sac*userload): c_or_cplusplus_example, ospl_dcpssac {
+  after += sac*types
+  libs += sac*types
+  includes += .
+  Source_Files {
+      ../src/UserLoad.c
+      ../src/CheckStatus.c
+      ../src/multitopic.c
+  }
+}

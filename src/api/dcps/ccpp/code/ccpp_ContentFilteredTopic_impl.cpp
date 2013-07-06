@@ -1,17 +1,17 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
-#include "gapi.h"
 #include "ccpp_ContentFilteredTopic_impl.h"
+#include "gapi.h"
 #include "ccpp_Utils.h"
 #include "ccpp_Topic_impl.h"
 
@@ -35,7 +35,7 @@ DDS::ContentFilteredTopic_impl::~ContentFilteredTopic_impl()
 }
 
 char * DDS::ContentFilteredTopic_impl::get_filter_expression (
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   return gapi_contentFilteredTopic_get_filter_expression(__gapi_self);
 }
@@ -47,7 +47,7 @@ DDS::ReturnCode_t DDS::ContentFilteredTopic_impl::get_expression_parameters (
 {
   gapi_stringSeq gapi_expressionParams;
   DDS::ReturnCode_t result;
-  
+
   ccpp_sequenceInitialize<gapi_stringSeq>(gapi_expressionParams);
   result = gapi_contentFilteredTopic_get_expression_parameters(__gapi_self, &gapi_expressionParams);
   if (result == DDS::RETCODE_OK)
@@ -60,11 +60,11 @@ DDS::ReturnCode_t DDS::ContentFilteredTopic_impl::get_expression_parameters (
 
 DDS::ReturnCode_t DDS::ContentFilteredTopic_impl::set_expression_parameters (
   const DDS::StringSeq & expression_parameters
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   DDS::ReturnCode_t result = DDS::RETCODE_OUT_OF_RESOURCES;
   gapi_stringSeq * gapi_exprPar = gapi_stringSeq__alloc();
-  
+
   if (gapi_exprPar)
   {
     ccpp_sequenceCopyIn( expression_parameters, *gapi_exprPar);
@@ -75,7 +75,7 @@ DDS::ReturnCode_t DDS::ContentFilteredTopic_impl::set_expression_parameters (
 }
 
 DDS::Topic_ptr DDS::ContentFilteredTopic_impl::get_related_topic (
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   gapi_topic handle;
   DDS::Topic_ptr result = NULL;

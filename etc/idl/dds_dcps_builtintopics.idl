@@ -25,13 +25,24 @@ module DDS {
         Duration_t autopurge_suspended_samples_delay;
         Duration_t autounregister_instance_delay;
     };
+    
+    enum InvalidSampleVisibilityQosPolicyKind {
+        NO_INVALID_SAMPLES,
+        MINIMUM_INVALID_SAMPLES,
+        ALL_INVALID_SAMPLES
+    };
+    
+    struct InvalidSampleVisibilityQosPolicy {
+        InvalidSampleVisibilityQosPolicyKind kind;
+    };
 
     struct ReaderDataLifecycleQosPolicy {
         Duration_t autopurge_nowriter_samples_delay;
         Duration_t autopurge_disposed_samples_delay;
         // @discrepancy The below member existed in this file but did not
         // in ./etc/idlpp/dds_dcps.idl. Retain ?
-        boolean enable_invalid_samples;
+        boolean enable_invalid_samples; // @deprecated Will be replaced by invalid_sample_visibility in due time
+        InvalidSampleVisibilityQosPolicy invalid_sample_visibility;
     };
 
 // @discrepancy The below 3 QoS did not exist in ./etc/idlpp/dds_dcps.idl Retain ?

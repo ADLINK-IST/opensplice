@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -25,6 +25,7 @@ extern "C" {
 d_policy            d_policyNew                 (const char* namespace,
                                                  c_bool aligner,
                                                  d_alignmentKind alignmentKind,
+                                                 c_bool delayedAlignment,
                                                  d_durabilityKind durabilityKind);
 
 /* Delete policies */
@@ -39,6 +40,9 @@ c_bool              d_policyGetAligner          (d_policy policy);
 
 /* Get policy for alignment kind */
 d_alignmentKind     d_policyGetAlignmentKind    (d_policy policy);
+
+/* Get policy for delayed alignment */
+c_bool              d_policyGetDelayedAlignment (d_policy policy);
 
 /* Get policy for durabiltiy kind */
 d_durabilityKind    d_policyGetDurabilityKind   (d_policy policy);

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -97,7 +97,7 @@ C_STRUCT(d_storeXML){
 
 void            d_storeDeinitXML                (d_object object);
 
-d_storeXML      d_storeNewXML                   ();
+d_storeXML      d_storeNewXML                   (u_participant participant);
 
 d_storeResult   d_storeFreeXML                  (d_storeXML store);
 
@@ -116,8 +116,8 @@ d_storeResult   d_storeGetQualityXML            (const d_store store,
 d_storeResult   d_storeBackupXML                (const d_store store,
                                                  const d_nameSpace nameSpace);
 
-d_storeResult	d_storeRestoreBackupXML 		(const d_store store,
-												 const d_nameSpace nameSpace);
+d_storeResult   d_storeRestoreBackupXML                 (const d_store store,
+                                                                                                 const d_nameSpace nameSpace);
 
 d_storeResult   d_storeGroupsReadXML            (const d_store store,
                                                  d_groupList *list);
@@ -149,7 +149,7 @@ d_storeResult   d_storeDeleteHistoricalDataXML  (const d_store store,
 d_storeResult   d_storeMessagesInjectXML        (const d_store store,
                                                  const d_group group);
 
-d_storeResult   d_storeInstanceRegisterXML 	    (const d_store store,
+d_storeResult   d_storeInstanceRegisterXML          (const d_store store,
                                                  const v_groupAction message);
 
 d_storeResult   d_storeCreatePersistentSnapshotXML  (const d_store store,
@@ -163,13 +163,13 @@ d_storeResult   d_storeInstanceUnregisterXML    (const d_store store,
 d_storeResult   d_storeOptimizeGroupXML         (const d_store store,
                                                  const d_group group);
 
-d_storeResult	d_storeNsIsCompleteXML 			(const d_store store,
-												 const d_nameSpace nameSpace,
-												 c_bool* isComplete);
+d_storeResult   d_storeNsIsCompleteXML                  (const d_store store,
+                                                                                                 const d_nameSpace nameSpace,
+                                                                                                 c_bool* isComplete);
 
-d_storeResult	d_storeNsMarkCompleteXML 		(const d_store store,
-												 const d_nameSpace nameSpace,
-												 c_bool isComplete);
+d_storeResult   d_storeNsMarkCompleteXML                (const d_store store,
+                                                                                                 const d_nameSpace nameSpace,
+                                                                                                 c_bool isComplete);
 
 #if defined (__cplusplus)
 }

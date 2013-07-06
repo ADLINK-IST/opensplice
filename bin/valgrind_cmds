@@ -10,15 +10,17 @@ then
     export VG_LOG_DIR
 fi
 
-# Options to add for more info 
-# --leak-check=full --show-reachable=yes --leak-resolution=high
-#
+VALGRIND_OPTIONS_QUOTED="\"--num-callers=50\" \"--leak-check=full\" \"--show-reachable=yes\" \"--show-possibly-lost=no\" \"--leak-resolution=high\" \"--tool=memcheck\" \"-v\" \"--gen-suppressions=all\" \"--suppressions=$OSPL_HOME/etc/valgrind-suppressions.txt\""
 
-# Since valgrind version 3.5.0 "--leak-check=full" will report leaks as errors.  This means we
-# cannot easily distinguish memory errors from leaks.  For now set --leak-check to "summary"
-# which will report leaks but unfortunately not give stack traces of where they exist.
+# We need to ignore shared memory - see OSPL-1626.  At present we only run valgrind on the examples and only on
+# 32 bit linux, so we don't need to put anything complicated in at this stage to cater for different platforms.
+# The contents of this file are copied verbatim into the release.com file so the following lines will be in the
+# release.com and will result in the variables being set correctly when running the examples in shm mode
+if [ "$EXRUNTYPE" = "shm" ]
+then
+   VALGRIND_OPTIONS_QUOTED="$VALGRIND_OPTIONS_QUOTED \"--ignore-ranges=0x20000000-0x20a00000\""
+fi
 
-VALGRIND_OPTIONS_QUOTED="\"--num-callers=50\" \"--leak-check=summary\" \"--show-reachable=yes\" \"--leak-resolution=high\" \"--tool=memcheck\" \"-v\" \"--gen-suppressions=all\" \"--suppressions=$OSPL_HOME/etc/valgrind-suppressions.txt\""
 # for VALGRIND_OPTIONS remove the \"
 VALGRIND_OPTIONS=`echo $VALGRIND_OPTIONS_QUOTED | sed 's@\"@@g'`
 
@@ -45,7 +47,7 @@ VG_WHITELIST_MESSAGEBOARD="valgrind --log-file=$VG_LOG_DIR/vg_whitelistmessagebo
 
 #Used after an ospl start as valgrind slows spliced 
 #and other service startup by a considerable amount
-VG_START_SLEEP="sleep 4"
+VG_START_SLEEP="sleep 10"
 
 #Used in code at time of fork/exec
 #each of the valgrind args MUST be 'slashed double quoted' as this is the way the os_procCreate will use it

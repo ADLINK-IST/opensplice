@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -20,6 +20,12 @@ extern "C" {
 
 #define v_groupKeyList(_this) \
         c_tableKeyList(v_group(_this)->instances)
+
+#define v_groupSampleCountIncrement(_this) \
+        v_group(_this)->count++;
+
+#define v_groupSampleCountDecrement(_this) \
+        v_group(_this)->count--;
 
 v_group
 v_groupNew (
@@ -55,18 +61,6 @@ v_groupGetRegistrationsOfWriter(
     v_group _this,
     v_gid writerGid);
 
-/* The following hash defines implement a basic form of
- * destination identification for resend messages.
- * The resendScope is a set of these bits specifying the
- * resend scope.
- */
-
-#define V_RESEND_TOPIC       (1)
-#define V_RESEND_VARIANT     (2)
-#define V_RESEND_REMOTE      (4)
-#define V_RESEND_DURABLE     (8)
-#define V_RESEND_ALL        (15)
-
 v_writeResult
 v_groupResend(
     v_group _this,
@@ -79,14 +73,6 @@ v_writeResult
 v_groupDisposeAll (
     v_group group,
     c_time timestamp);
-
-typedef c_equality (*v_matchIdentityAction)(v_gid id1, v_gid id2);
-
-v_registration
-v_groupGetRegistration(
-    v_group _this,
-    v_gid writerGid,
-    v_matchIdentityAction predicate);
 
 void
 v_groupDisconnectWriter(

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -47,12 +47,13 @@ public class Time {
      * 
      * @return The String representation of the Time.
      */
+    @Override
     public String toString(){
         String nanos;
         
         
         if(nsec != infinite.nsec){
-            nanos = Double.toString((double)nsec / 1000000000.0);
+            nanos = Double.toString(nsec / 1000000000.0);
             
             if(nanos.indexOf('.') != -1){
                 nanos = nanos.substring(2);
@@ -90,6 +91,7 @@ public class Time {
         return new Time(sec, nsec);
     }
     
+    @Override
     public boolean equals(Object obj){
         if(obj instanceof Time){
             Time t = (Time)obj;
@@ -101,6 +103,11 @@ public class Time {
         return false;
     }
     
+    @Override
+    public int hashCode() {
+        return 0;
+    }
+
     public Time copy(){
         return new Time(this.sec, this.nsec);
     }

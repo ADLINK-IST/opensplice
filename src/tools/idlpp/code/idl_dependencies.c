@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -89,10 +89,15 @@ idl_depDefExit (
 */
 static c_equality
 idl_depCompare (
-    const char *listBasename,
-    const char *basename)
+    void *_listBasename,
+    void *_basename)
 {
+    char *listBasename;
+    char *basename;
     c_equality result = C_NE;
+
+    listBasename = _listBasename;
+    basename = _basename;
 
     /* QAC EXPECT 5007, 3416; will not use wrapper, No side effects in this case, expected behaviour */
     if (strcmp (listBasename, basename) == 0) {

@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -19,16 +19,16 @@
 extern "C" {
 #endif
 
-#define S_CFG_SERVICETERMINATEPERIOD_MINIMUM (0.0F)
-#define S_CFG_SERVICETERMINATEPERIOD_DEFAULT (10.0F)
-#define S_CFG_SERVICETERMINATEPERIOD_MAXIMUM (60.0F)
+#define S_CFG_SERVICETERMINATEPERIOD_MINIMUM    (0.0F)
+#define S_CFG_SERVICETERMINATEPERIOD_DEFAULT    (10.0F)
+#define S_CFG_SERVICETERMINATEPERIOD_MAXIMUM    (60.0F)
 
-#define S_CFG_LEASEPERIOD_MINIMUM            (0.2F)
-#define S_CFG_LEASEPERIOD_DEFAULT            (60.0F)
+#define S_CFG_LEASE_EXPIRYTIME_MINIMUM          (0.2F)
+#define S_CFG_LEASE_EXPIRYTIME_DEFAULT          (10.0F)
 
-#define S_CFG_LEASERENEWALPERIOD_MINIMUM     (0.05F)
-#define S_CFG_LEASERENEWALPERIOD_DEFAULT     (0.1F)
-#define S_CFG_LEASERENEWALPERIOD_MAXIMUM     (0.9F)
+#define S_CFG_LEASE_UPDATE_FACTOR_MINIMUM       (0.01F)
+#define S_CFG_LEASE_UPDATE_FACTOR_DEFAULT       (0.2F)
+#define S_CFG_LEASE_UPDATE_FACTOR_MAXIMUM       (1.0F)
 
 C_STRUCT(s_configuration)
 {
@@ -40,14 +40,15 @@ C_STRUCT(s_configuration)
     s_reportlevel tracingVerbosityLevel;
     os_time       startTime;
     os_time       serviceTerminatePeriod;
-    v_duration    leasePeriod;
-    v_duration    leaseRenewalPeriod;
+    v_duration    leasePeriod;        /* ExpiryTime */
+    v_duration    leaseRenewalPeriod; /* ExpiryTime * ExpiryTime@update_factor */
     os_threadAttr kernelManagerScheduling;
     os_threadAttr garbageCollectorScheduling;
     os_threadAttr resendManagerScheduling;
     os_threadAttr cAndMCommandScheduling;
     c_bool        enableCandMCommandThread;
     os_threadAttr leaseRenewScheduling;
+    os_char* domainName;
 };
 
 #define s_configuration(config) ((s_configuration)(config))

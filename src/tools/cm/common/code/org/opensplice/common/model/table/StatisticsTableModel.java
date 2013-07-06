@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -23,9 +23,9 @@ import org.opensplice.cm.statistics.AbstractValue;
 import org.opensplice.cm.statistics.AvgValue;
 import org.opensplice.cm.statistics.FullCounter;
 import org.opensplice.cm.statistics.Statistics;
+import org.opensplice.cm.statistics.StringValue;
 import org.opensplice.cm.statistics.TimedValue;
 import org.opensplice.cm.statistics.Value;
-import org.opensplice.cm.statistics.StringValue;
 import org.opensplice.common.CommonException;
 
 /**
@@ -165,36 +165,40 @@ public class StatisticsTableModel extends DefaultTableModel{
             try {
                 statistics = entity.getStatistics();
                 int index = 0;
-                
-                this.setValueAt(this.getTimeString(statistics.getLastReset()), index++, 2);
-                
-                for(int i=0; i<counterCount; i++){
-                    counter = statistics.getCounter((String)this.getValueAt(index, 0));
-                                        
-                    if(counter instanceof Value){
-                        this.setValueAt(Long.toString(((Value)counter).getValue()), index++, 2);
-                                                
-                        if(counter instanceof TimedValue){
-                            this.setValueAt(this.getTimeString(((TimedValue)counter).getLastUpdate()), index++, 2);
-                        } else if(counter instanceof FullCounter){
-                            TimedValue min = ((FullCounter)counter).getMin();
-                            this.setValueAt(Long.toString(min.getValue()), index++, 2);
-                            this.setValueAt(this.getTimeString(min.getLastUpdate()), index++, 2);
-                            
-                            TimedValue max = ((FullCounter)counter).getMax();
-                            this.setValueAt(Long.toString(max.getValue()), index++, 2);
-                            this.setValueAt(this.getTimeString(max.getLastUpdate()), index++, 2);
-                            
-                            AvgValue avg = ((FullCounter)counter).getAvg();
-                            this.setValueAt(Float.toString(avg.getValue()), index++, 2);
-                            this.setValueAt(Long.toString(avg.getCount()), index++, 2);
+                if (statistics != null) {
+                    this.setValueAt(this.getTimeString(statistics.getLastReset()), index++, 2);
+
+                    for (int i = 0; i < counterCount; i++) {
+                        counter = statistics.getCounter((String) this.getValueAt(index, 0));
+
+                        if (counter instanceof Value) {
+                            this.setValueAt(Long.toString(((Value) counter).getValue()), index++, 2);
+
+                            if (counter instanceof TimedValue) {
+                                this.setValueAt(this.getTimeString(((TimedValue) counter).getLastUpdate()), index++, 2);
+                            } else if (counter instanceof FullCounter) {
+                                TimedValue min = ((FullCounter) counter).getMin();
+                                this.setValueAt(Long.toString(min.getValue()), index++, 2);
+                                this.setValueAt(this.getTimeString(min.getLastUpdate()), index++, 2);
+
+                                TimedValue max = ((FullCounter) counter).getMax();
+                                this.setValueAt(Long.toString(max.getValue()), index++, 2);
+                                this.setValueAt(this.getTimeString(max.getLastUpdate()), index++, 2);
+
+                                AvgValue avg = ((FullCounter) counter).getAvg();
+                                this.setValueAt(Float.toString(avg.getValue()), index++, 2);
+                                this.setValueAt(Long.toString(avg.getCount()), index++, 2);
+                            }
+                        } else if (counter instanceof AvgValue) {
+                            this.setValueAt(Float.toString(((AvgValue) counter).getValue()), index++, 2);
+                            this.setValueAt(Long.toString(((AvgValue) counter).getCount()), index++, 2);
+                        } else if (counter instanceof StringValue) {
+                            this.setValueAt(((StringValue) counter).getValue(), index++, 2);
                         }
-                    } else if(counter instanceof AvgValue){
-                        this.setValueAt(Float.toString(((AvgValue)counter).getValue()), index++, 2);
-                        this.setValueAt(Long.toString(((AvgValue)counter).getCount()), index++, 2);
-                    } else if(counter instanceof StringValue){
-                        this.setValueAt(((StringValue)counter).getValue(), index++, 2);
                     }
+                    result = true;
+                } else {
+                    result = false;
                 }
                 
                 /*
@@ -218,7 +222,6 @@ public class StatisticsTableModel extends DefaultTableModel{
                     }
                 }
                 */
-                result = true;
             } catch (CMException e) {
                 result = false;
             }
@@ -312,14 +315,13 @@ public class StatisticsTableModel extends DefaultTableModel{
                     data[1] = "";
                     data[2] = ((StringValue)counters[i]).getValue();
                     this.addRow(data);
-                    
                 }
             }
         }
     }
         
     private String getTimeString(Time time){
-        String date = "(" + new Date( (new Long(time.sec).longValue() * 1000) + (new Long(time.nsec).longValue() / 1000000000)) + ")";
+        String date = "(" + new Date(((long) (time.sec * 1000)) + ((long) (time.nsec / 1000000000))) + ")";
         String result = time.sec + "s. " + time.nsec + " ns." + date;
         
         return result;

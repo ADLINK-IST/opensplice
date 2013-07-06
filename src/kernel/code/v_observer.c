@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE
@@ -149,6 +149,7 @@ v_observerNotify(
             case K_NETWORKING:
             case K_DURABILITY:
             case K_CMSOAP:
+            case K_RNR:
                 v_serviceNotify(v_service(_this), event, userData);
             break;
             case K_SERVICEMANAGER:
@@ -160,8 +161,8 @@ v_observerNotify(
             case K_GROUPQUEUE:
             break;
             default:
-                OS_REPORT_1(OS_INFO,"Kernel Observer",0,
-                            "Notify an unknown observer type: %d",
+                OS_REPORT_1(OS_ERROR,"Kernel Observer",0,
+                            "Notify called on an unknown observer type: %d",
                             v_objectKind(_this));
             break;
             }
@@ -186,7 +187,7 @@ c_ulong
 v__observerWait(
     v_observer o)
 {
-    os_result result = os_resultSuccess;
+    os_result result;
     c_ulong flags;
 
     assert(o != NULL);
@@ -195,6 +196,7 @@ v__observerWait(
     if (o->eventFlags == 0) {
         o->waitCount++;
         result = c_condWait(&o->cv,&o->mutex);
+        assert(result == os_resultSuccess);
         o->waitCount--;
     }
     flags = o->eventFlags;

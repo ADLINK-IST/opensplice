@@ -1,7 +1,7 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
  *                     $OSPL_HOME/LICENSE 
@@ -13,6 +13,7 @@
 #include "idl_extern.h"
 #include "xbe_globals.h"
 #include "xbe_generator.h"
+#include "os_version.h"
 
 /*
  * Initialize the BE. The protocol requires only that this routine
@@ -36,5 +37,5 @@ AST_Generator * BE_init ()
 void BE_version ()
 {
    cout << "OpenSplice C++ IDL Compiler ";
-   cout << VERSION << " (" __DATE__ ")" << endl;
+   cout << OSPL_VERSION_STR << " (" __DATE__ ")" << endl;
 }

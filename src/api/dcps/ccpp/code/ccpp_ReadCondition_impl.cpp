@@ -1,20 +1,20 @@
 /*
  *                         OpenSplice DDS
  *
- *   This software and documentation are Copyright 2006 to 2011 PrismTech
+ *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-#include "gapi.h"
 #include "ccpp_ReadCondition_impl.h"
+#include "gapi.h"
 #include "ccpp_Utils.h"
 #include "os_report.h"
 
-DDS::ReadCondition_impl::ReadCondition_impl( 
+DDS::ReadCondition_impl::ReadCondition_impl(
     gapi_readCondition handle
 ) : DDS::Condition_impl(handle)
 {
@@ -34,25 +34,25 @@ DDS::ReadCondition_impl::~ReadCondition_impl()
 }
 
 DDS::SampleStateMask DDS::ReadCondition_impl::get_sample_state_mask (
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   return gapi_readCondition_get_sample_state_mask(_gapi_self);
 }
-    
+
 DDS::ViewStateMask DDS::ReadCondition_impl::get_view_state_mask (
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   return gapi_readCondition_get_view_state_mask(_gapi_self);
 }
-    
+
 DDS::InstanceStateMask DDS::ReadCondition_impl::get_instance_state_mask (
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   return gapi_readCondition_get_instance_state_mask(_gapi_self);
 }
-    
+
 DDS::DataReader_ptr DDS::ReadCondition_impl::get_datareader (
-) THROW_ORB_EXCEPTIONS 
+) THROW_ORB_EXCEPTIONS
 {
   gapi_dataReader handle = NULL;
   DDS::DataReader_ptr dataReader = NULL;

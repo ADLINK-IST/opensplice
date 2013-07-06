@@ -1,0 +1,252 @@
+<?xml version="<%xml_version("1.0")%>" encoding="<%encoding("utf-8")%>"?>
+<Project ToolsVersion="<%toolsversion%>" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+<%if(source_files)%>
+<%if(grouped_source_files)%>
+<%foreach(sort(grouped_source_files))%>
+<%if(!compares(grouped_source_file, default_group))%>
+    <Filter Include="<%grouped_source_file%>">
+      <UniqueIdentifier>{<%new_guid(grouped_source_file)%>}</UniqueIdentifier>
+      <Extensions><%foreach(ext, extensions(source_files))%><%ext%><%fornotlast(";")%><%endfor%></Extensions>
+    </Filter>
+<%endif%>
+<%endfor%>
+<%endif%>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{<%new_guid(default_group)%>}</UniqueIdentifier>
+      <Extensions><%foreach(ext, extensions(source_files))%><%ext%><%fornotlast(";")%><%endfor%></Extensions>
+    </Filter>
+<%endif%>
+<%if(header_files)%>
+<%if(grouped_header_files)%>
+<%foreach(sort(grouped_header_files))%>
+<%if(!compares(grouped_header_file, default_group))%>
+    <Filter Include="<%grouped_header_file%>">
+      <UniqueIdentifier>{<%new_guid(grouped_header_file)%>}</UniqueIdentifier>
+      <Extensions><%foreach(ext, extensions(header_files))%><%ext%><%fornotlast(";")%><%endfor%></Extensions>
+    </Filter>
+<%endif%>
+<%endfor%>
+<%endif%>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{<%new_guid('Header Files')%>}</UniqueIdentifier>
+      <Extensions><%foreach(ext, extensions(header_files))%><%ext%><%fornotlast(";")%><%endfor%></Extensions>
+    </Filter>
+<%endif%>
+<%foreach(custom_types)%>
+<%if(custom_type->input_files)%>
+    <Filter Include="<%ucw(custom_type)%>">
+      <UniqueIdentifier>{<%new_guid(custom_type)%>}</UniqueIdentifier>
+<%if(custom_type->inputexts)%>
+      <Extensions><%foreach(custom_type->inputexts)%><%custom_type->inputext%><%fornotlast(";")%><%endfor%></Extensions>
+<%endif%>
+    </Filter>
+<%endif%>
+<%endfor%>
+<%if(inline_files)%>
+<%if(grouped_inline_files)%>
+<%foreach(sort(grouped_inline_files))%>
+<%if(!compares(grouped_inline_file, default_group))%>
+    <Filter Include="<%grouped_inline_file%>">
+      <UniqueIdentifier>{<%new_guid(grouped_inline_file)%>}</UniqueIdentifier>
+      <Extensions><%foreach(ext, extensions(inline_files))%><%ext%><%fornotlast(";")%><%endfor%></Extensions>
+    </Filter>
+<%endif%>
+<%endfor%>
+<%endif%>
+    <Filter Include="Inline Files">
+      <UniqueIdentifier>{<%new_guid('Inline Files')%>}</UniqueIdentifier>
+      <Extensions><%foreach(ext, extensions(inline_files))%><%ext%><%fornotlast(";")%><%endfor%></Extensions>
+    </Filter>
+<%endif%>
+<%if(template_files)%>
+<%if(grouped_template_files)%>
+<%foreach(sort(grouped_template_files))%>
+<%if(!compares(grouped_template_file, default_group))%>
+    <Filter Include="<%grouped_template_file%>">
+      <UniqueIdentifier>{<%new_guid(grouped_template_file)%>}</UniqueIdentifier>
+    </Filter>
+<%endif%>
+<%endfor%>
+<%endif%>
+    <Filter Include="Template Files">
+      <UniqueIdentifier>{<%new_guid('Template Files')%>}</UniqueIdentifier>
+    </Filter>
+<%endif%>
+<%if(documentation_files)%>
+<%if(grouped_documentation_files)%>
+<%foreach(sort(grouped_documentation_files))%>
+<%if(!compares(grouped_documentation_file, default_group))%>
+    <Filter Include="<%grouped_documentation_file%>">
+      <UniqueIdentifier>{<%new_guid(grouped_documentation_file)%>}</UniqueIdentifier>
+    </Filter>
+<%endif%>
+<%endfor%>
+<%endif%>
+    <Filter Include="Documentation">
+      <UniqueIdentifier>{<%new_guid('Documentation')%>}</UniqueIdentifier>
+    </Filter>
+<%endif%>
+<%if(resource_files && !type_is_static)%>
+<%if(grouped_resource_files)%>
+<%foreach(sort(grouped_resource_files))%>
+<%if(!compares(grouped_resource_file, default_group))%>
+    <Filter Include="<%grouped_resource_file%>">
+      <UniqueIdentifier>{<%new_guid(grouped_resource_file)%>}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+<%endif%>
+<%endfor%>
+<%endif%>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{<%new_guid('Resource Files')%>}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;cnt;rtf;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+<%endif%>
+  </ItemGroup>
+<%if(exename || sharedname || staticname)%>
+<%if(source_files)%>
+  <ItemGroup>
+<%if(grouped_source_files)%>
+<%foreach(sort(grouped_source_files))%>
+<%foreach(grouped_source_file->files)%>
+    <ClCompile Include="<%grouped_source_file->file%>">
+      <Filter><%grouped_source_file%></Filter>
+    </ClCompile>
+<%endfor%>
+<%endfor%>
+<%else%>
+<%foreach(source_files)%>
+<%if(ends_with(source_file,\.def))%>
+    <None Include="<%source_File%>">
+      <Filter>Source Files</Filter>
+    </None>
+<%else%>
+<%if(ends_with(source_file,\.[io]dl))%>
+    <Midl Include="<%source_File%>">
+      <Filter>Source Files</Filter>
+    </Midl>
+<%else%>
+    <ClCompile Include="<%source_file%>">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+<%endif%>
+<%endif%>
+<%endfor%>
+<%endif%>
+  </ItemGroup>
+<%endif%>
+<%endif%>
+<%if(header_files)%>
+  <ItemGroup>
+<%if(grouped_header_files)%>
+<%foreach(sort(grouped_header_files))%>
+<%foreach(grouped_header_file->files)%>
+    <ClInclude Include="<%grouped_header_file->file%>">
+      <Filter><%grouped_header_file%></Filter>
+    </ClInclude>
+<%endfor%>
+<%endfor%>
+<%else%>
+<%foreach(header_files)%>
+    <ClInclude Include="<%header_file%>">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+<%endfor%>
+<%endif%>
+  </ItemGroup>
+<%endif%>
+<%foreach(custom_types)%>
+<%if(custom_type->input_files)%>
+  <ItemGroup>
+<%foreach(custom_type->input_files)%>
+<%if(custom_type->input_file->output_files)%>
+    <CustomBuild Include="<%custom_type->input_file%>">
+      <Filter><%ucw(custom_type)%></Filter>
+    </CustomBuild>
+<%else%>
+    <None Include="<%custom_type->input_file%>">
+      <Filter><%ucw(custom_type)%></Filter>
+    </None>
+<%endif%>
+<%endfor%>
+  </ItemGroup>
+<%endif%>
+<%endfor%>
+<%if(inline_files)%>
+  <ItemGroup>
+<%if(grouped_inline_files)%>
+<%foreach(sort(grouped_inline_files))%>
+<%foreach(grouped_inline_file->files)%>
+    <None Include="<%grouped_inline_file->file%>">
+      <Filter><%grouped_inline_file%></Filter>
+    </None>
+<%endfor%>
+<%endfor%>
+<%else%>
+<%foreach(inline_files)%>
+    <None Include="<%inline_file%>">
+      <Filter>Inline Files</Filter>
+    </None>
+<%endfor%>
+<%endif%>
+  </ItemGroup>
+<%endif%>
+<%if(template_files)%>
+  <ItemGroup>
+<%if(grouped_template_files)%>
+<%foreach(sort(grouped_template_files))%>
+<%foreach(grouped_template_file->files)%>
+    <ClCompile Include="<%grouped_template_file->file%>">
+      <Filter><%grouped_template_file%></Filter>
+    </ClCompile>
+<%endfor%>
+<%endfor%>
+<%else%>
+<%foreach(template_files)%>
+    <ClCompile Include="<%template_file%>">
+      <Filter>Template Files</Filter>
+    </ClCompile>
+<%endfor%>
+<%endif%>
+  </ItemGroup>
+<%endif%>
+<%if(documentation_files)%>
+  <ItemGroup>
+<%if(grouped_documentation_files)%>
+<%foreach(sort(grouped_documentation_files))%>
+<%foreach(grouped_documentation_file->files)%>
+    <CustomBuild Include="<%grouped_documentation_file->file%>">
+      <Filter><%grouped_documentation_file%></Filter>
+    </CustomBuild>
+<%endfor%>
+<%endfor%>
+<%else%>
+<%foreach(documentation_files)%>
+    <CustomBuild Include="<%documentation_file%>">
+      <Filter>Documentation</Filter>
+    </CustomBuild>
+<%endfor%>
+<%endif%>
+  </ItemGroup>
+<%endif%>
+<%if(resource_files && !type_is_static)%>
+  <ItemGroup>
+<%if(grouped_resource_files)%>
+<%foreach(sort(grouped_resource_files))%>
+<%foreach(grouped_resource_file->files)%>
+    <ResourceCompile Include="<%grouped_resource_file->file%>">
+      <Filter><%grouped_resource_file%></Filter>
+    </ResourceCompile>
+<%endfor%>
+<%endfor%>
+<%else%>
+<%foreach(resource_files)%>
+    <ResourceCompile Include="<%resource_file%>">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+<%endfor%>
+<%endif%>
+  </ItemGroup>
+<%endif%>
+</Project>
