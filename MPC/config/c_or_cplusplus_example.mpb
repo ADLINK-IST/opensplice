@@ -7,10 +7,27 @@ project : c_or_cplusplus {
         obj_dir_flat = 1
         obj_dir = .obj$(CFG)/
     }
-    specific (make, prop:windows) {
+    // The default config is Release. Examples can be (re)built
+    // Debug though with:
+    // make CFG=Debug
+    specific (make) {
         configurations = Release Debug
         output_dir = .
     }
+    // Visual studio (2010 certainly, probably all since 2008) behaves really weirdly WRT
+    // configurations. The 'default' is always 'Debug' if it exists when any solution is first
+    // opened irrespective of any other configs specified or the order they are specified in.
+    // If Debug is not there then the default on first open is the lowest name alphabetically.
+    // The only way to set a 'non default' (i.e. non Debug) is via an *.suo file and this is
+    // an opaque binary file & MSDN strongly discourages their distribution.
+    // Therefore the only way to have a solution 'just work' on first
+    // open is to have only one configuration, and for it to match the 'build config'.
+    // We therefore set a default (& only) here of Release only.
+    specific (prop:windows) {
+        configurations = Release
+        output_dir = .
+    }
+    // eclipse seems real unhappy with capital letters on the configuration names.
     specific (cdt7) {
         configurations = release debug
         output_dir = .

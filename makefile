@@ -29,13 +29,13 @@ MPC_JISH_TYPE_TO_GEN ?= "ospljavamake"
 examplempc:
 	-@cd ./examples && ls Makefile* | xargs -n 1 -I {} make -f {} realclean
 	-@cd ./examples && ls *.sln | xargs -n 1 -I {} devenv.com {} /Clean
-	@mwc.pl --src-co --type $(MPC_CISH_TYPE_TO_GEN) $(MPC_CISH_ARGS) examples/CSharp.mwc
-	@mwc.pl --src-co --type $(MPC_JISH_TYPE_TO_GEN) $(MPC_JISH_ARGS) examples/JustJavaScripts.mwc
-	@mwc.pl --src-co --type $(MPC_CISH_TYPE_TO_GEN) $(MPC_CISH_ARGS) examples/examples.mwc
-	@mwc.pl --src-co --type $(MPC_CISH_TYPE_TO_GEN) $(MPC_CISH_ARGS) examples/examples_simple.mwc
+	mwc.pl --src-co --type $(MPC_CISH_TYPE_TO_GEN) $(MPC_CISH_ARGS) examples/CSharp.mwc
+	mwc.pl --src-co --type $(MPC_JISH_TYPE_TO_GEN) $(MPC_JISH_ARGS) examples/JustJavaScripts.mwc
+	mwc.pl --src-co --type $(MPC_CISH_TYPE_TO_GEN) $(MPC_CISH_ARGS) examples/examples.mwc
+	mwc.pl --src-co --type $(MPC_CISH_TYPE_TO_GEN) $(MPC_CISH_ARGS) examples/examples_simple.mwc
         ifneq "$(MPC_CISH_ARGS2)" ""
-	   @mwc.pl --src-co --type $(MPC_CISH_TYPE_TO_GEN) $(MPC_CISH_ARGS2)  examples/examples.mwc
-	   @mwc.pl --src-co --type $(MPC_CISH_TYPE_TO_GEN) $(MPC_CISH_ARGS2)  examples/examples_simple.mwc
+	   mwc.pl --src-co --type $(MPC_CISH_TYPE_TO_GEN) $(MPC_CISH_ARGS2)  examples/examples.mwc
+	   mwc.pl --src-co --type $(MPC_CISH_TYPE_TO_GEN) $(MPC_CISH_ARGS2)  examples/examples_simple.mwc
         endif
 
 build_demos:

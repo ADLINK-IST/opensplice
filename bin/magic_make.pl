@@ -31,12 +31,14 @@ my $squeaky = 0;
 my $left_over_args;
 my $ret;
 my $type = "make";
+my $ospl_home = '';
 ($ret, $left_over_args) = GetOptions('clean!' => \$clean,
                                      'check-mpc!' => \$check_mpc,
                                      'carryon!' => \$carryon,
                                      'debug!' => \$debug_override,
                                      'exhaustive' => \$exhaustive,
                                      'make!' => \$make,
+                                     'ospl-home=s' => \$ospl_home,
                                      'squeaky' => \$squeaky,
                                      'type=s' => \$type,
                                      'help|?' => \$help,
@@ -60,7 +62,7 @@ pod2usage(-exitstatus => 0, -verbose => 2) if $man;
 
 $check_mpc = 1 if ($make && $check_mpc eq '');
 #$clean = 1 if $squeaky;
-$make = 1 if ($make == '' && !$clean);
+$make = 1 if ($make eq '' && !$clean);
 
 if ($clean && !$make)
 {
@@ -316,9 +318,29 @@ sub mpc_dir
   my $ret = 0;
 
   unshift(@mpc_args, '--type', "$type");
-
   my $command = "mwc.pl @mpc_args";
   print STDERR "$scriptname: Regenerating MPC files: $command\n";
+  $ret = system($command);
+  die "$scriptname: ERROR: Trying to run: $command !!!\n" if $ret;
+}
+
+sub mpc_file
+{
+  my $file = shift(@_);
+  my @mpc_args = @_;
+  my $ret = 0;
+
+  unshift(@mpc_args, '--type', "$type");
+  if ($type =~ /^vc/)
+  {
+    unshift(@mpc_args, '--value_template', "configurations=$config");
+  }
+  if ($ospl_home ne '')
+  {
+    unshift(@mpc_args, '--ospl-home', "$ospl_home");
+  }
+  my $command = "mwc.pl @mpc_args";
+  print STDERR "$scriptname: Generating MPC file: $command\n";
   $ret = system($command);
   die "$scriptname: ERROR: Trying to run: $command !!!\n" if $ret;
 }
@@ -356,14 +378,21 @@ foreach my $file (@ARGV) {
   elsif (-f $file)
   {
     $done_something = 1;
-    print "$scriptname: Processing presumed buildfile $file...\n";
-    if ($clean)
+    if ($check_mpc && !$make && !$clean)
     {
-      call_build_file('clean', $file);
+      mpc_file($file, @ARGV);
     }
-    if ($make)
+    else
     {
-      call_build_file('build', $file);
+      print "$scriptname: Processing presumed buildfile $file...\n";
+      if ($clean)
+      {
+        call_build_file('clean', $file);
+      }
+      if ($make)
+      {
+        call_build_file('build', $file);
+      }
     }
   }
   else
