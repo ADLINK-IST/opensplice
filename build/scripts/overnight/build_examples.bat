@@ -19,22 +19,22 @@ ECHO Change to the examples directory
 cd "%OSPL_HOME%"/examples
 
 ECHO Build examples
-ECHO Cleaning Visual Studio examples....
-FOR %%p in (Debug Release) DO (
-    FOR %%q IN (*.sln) DO (
-        devenv.com %%q /clean %%p >NUL 2>&1
-    )
-)
+
+REM See @todo OSPL-2710. We do /rebuild without the usual
+REM trailing configuration(s) (e.g. Debug &/or Release). This will build
+REM the 'default' configuration only. This is OK (for a small +ve value
+REM of OK < 1) as we are currently creating solutions with one configuration only.
+REM Note MSBuild.exe (and hence devenv.com) no longer has an 'All' mode.
+REM Go figure.
+
 ECHO Building Visual Studio examples....
-FOR %%g in (Debug Release) DO (
-    ECHO Building all Visual Studio example solutions - Configuration %%g ....
-    FOR %%f IN (*.sln) DO (
-        ECHO -----------------------------------------------------------------------
-        ECHO Building solution file %%f with configuration %%g using devenv.com
-        ECHO devenv.com %%f /build %%g
-        devenv.com %%f /build %%g
-        IF ERRORLEVEL 1 ECHO ***** Error building %%f %%g using devenv.com Return code %ERRORLEVEL%
-    )
+ECHO Building all Visual Studio example solutions
+FOR %%f IN (*.sln) DO (
+    ECHO -----------------------------------------------------------------------
+    ECHO Building solution file %%f using devenv.com
+    ECHO devenv.com %%f /rebuild
+    devenv.com %%f /rebuild
+    IF ERRORLEVEL 1 ECHO ***** Error building %%f using devenv.com Return code %ERRORLEVEL%
 )
 
 ECHO Building Java examples....
