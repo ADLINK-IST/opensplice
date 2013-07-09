@@ -1,6 +1,0 @@
-// -*- MPC -*-
-// $Id$
-
-project: qt4_core {
-  lit_libs += QtTest$(QT_CFG)
-}

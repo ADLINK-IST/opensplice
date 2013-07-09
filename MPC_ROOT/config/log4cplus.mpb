@@ -1,8 +1,0 @@
-// -*- MPC -*-
-// $Id$
-
-project {
-  includes += $(LOG4CPLUS_ROOT)/include
-  libpaths += $(LOG4CPLUS_ROOT)/lib
-  libs     += log4cplus
-}

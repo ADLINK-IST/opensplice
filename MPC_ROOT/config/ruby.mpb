@@ -1,6 +1,0 @@
-// -*- MPC -*-
-// $Id$
-
-feature(ruby) {
-  lit_libs += ruby
-}

@@ -1,6 +1,0 @@
-// -*- MPC -*-
-// $Id$
-
-project: qt4_xml {
-  lit_libs += QtDesigner$(QT_CFG)
-}

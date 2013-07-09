@@ -1,6 +1,0 @@
-// -*- MPC -*-
-// $Id$
-
-conditional_include "wb26dll"
-conditional_include "user_wb26exe"
-

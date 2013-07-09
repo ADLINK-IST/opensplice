@@ -1,8 +1,0 @@
-// $Id$
-
-project {
-  requires += sqlite3
-  includes += $(SQLITE_ROOT)/include
-  libpaths += $(SQLITE_ROOT)/lib
-  lit_libs += sqlite3
-}

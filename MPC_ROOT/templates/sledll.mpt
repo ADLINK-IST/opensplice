@@ -1,7 +1,0 @@
-// -*- MPC -*-
-// $Id$
-
-conditional_include "common"
-conditional_include "windowscommon"
-
-conditional_include "user_sledll"
