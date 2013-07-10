@@ -25,11 +25,11 @@ install_git_files_dir_recursive ()
     from=$1
     to=$2
     pushd $from > /dev/null
-    git status > /dev/null 2>&1
+    git rev-parse > /dev/null 2>&1
     if [ $? != 0 ]
     then
-        # Non-zero from git status - we're not in a repo
-        echo "WARNING: Not working from a git repo. Copying *all* source from $from to $to"
+        # Non-zero from git rev-parse - we're not in a repo, or no git
+        echo "INFO: Not working from a git repository. Copying *all* files from $from to $to. If your source tree was not clean this could be a problem."
         mkdir -p "$to"
         cp -r * "$to"
     else
@@ -800,7 +800,7 @@ make_mirror_and_builder ()
         fi
 
         #Last one just to make sure to remove the left over tar.
-        restore_orig "${HDE_dir}" "true"        
+        restore_orig "${HDE_dir}" "true"
      fi
 }
 
@@ -1081,7 +1081,7 @@ generate_doxygen ()
                 export HAVE_DOT=YES
             else
                 export HAVE_DOT=NO
-                echo "Warning: dot not found, install Graphviz to generate diagrams"
+                echo "Warning: dot not found, install Graphviz to generate better class diagrams"
             fi
 
             #generate doxygen
@@ -1945,14 +1945,12 @@ install_hde_target ()
                    ${HDE_dir}/examples/dcps
     fi
 
-    pushd ${OSPL_HOME}
     # These directories are 'exported' directly into place instead of being copied manually
     # one file at a time from a list @todo this for all examples ??
-    git archive --prefix=${HDE_dir}/ --format=tar HEAD examples/utilities | $TAR -P -xf -
-    git archive --prefix=${HDE_dir}/ --format=tar HEAD examples/dcps/Tutorial | $TAR -P -xf -
-    git archive --prefix=${HDE_dir}/ --format=tar HEAD examples/dcps/PingPong | $TAR -P -xf -
-    git archive --prefix=${HDE_dir}/ --format=tar HEAD examples/include | $TAR -P -xf -
-    popd
+    install_git_files_dir_recursive "${OSPL_HOME}/examples/utilities" "${HDE_dir}/examples/utilities"
+    install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Tutorial" "${HDE_dir}/examples/dcps/Tutorial"
+    install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/PingPong" "${HDE_dir}/examples/dcps/PingPong"
+    install_git_files_dir_recursive "${OSPL_HOME}/examples/include" "${HDE_dir}/examples/include"
 
     if [ "${SOURCE_TARGET_SHORT}" = "win" -o "${SOURCE_TARGET_SHORT}" = "wince" ]
     then
@@ -2174,47 +2172,34 @@ install_hde_target ()
     fi
     CURRENT_WD="`pwd`"
     cd $OSPL_HOME
-    git archive --prefix=${OSPL_SRC}/ --format=tar HEAD | $TAR -P -xf -
+    git rev-parse > /dev/null 2>&1
     if [ $? != 0 ]
     then
-        echo "ERROR - archiving $OSPL_HOME failed "
-    fi
-    rm -rf $OSPL_SRC/docs
-    #When make is called from in the install directory there is a requirment 
-    #to have the .git as we do git archive to put some of the distro in place
-    #the opensplice (opensource) .git is fine to put into the source distro,
-    #however a generic solution for ospli will be needed
-    if [ "$IS_OPENSOURCE" = "yes" ]
-    then
-        cp -r .git ${OSPL_SRC}/.
-        if [ $? != 0 ]
-        then
-            echo "ERROR - copying .git into the source distro "
-        fi
-        cp -r MPC_ROOT ${OSPL_SRC}/.
-        if [ $? != 0 ]
-        then
-            echo "ERROR - copying MPC_ROOT into the source distro "
-        fi
+        echo "WARNING - Not in a repository &/or git unavailable. Will not include a source package into the distribution - presumably you are building this distribution from a source package already?"
     else
-        #In the opensource this is a regular directory and does not need to be accessed
-        #via git as this repo is not external
-        cd $MPC_ROOT
-        git archive --prefix=${OSPL_SRC}/$MPC_ROOT/ --format=tar HEAD | $TAR -P -xf -
+        git archive --prefix=${OSPL_SRC}/ --format=tar HEAD | $TAR -P -xf -
         if [ $? != 0 ]
         then
-            echo "ERROR - archiving $OSPL_HOME/$MPC_ROOT failed "
+            echo "ERROR - archiving $OSPL_HOME failed "
         fi
+        rm -rf $OSPL_SRC/docs
+        MPC_PATH=submods/MPC_ROOT
+        cd $MPC_PATH
+        git archive --prefix=${OSPL_SRC}/$MPC_PATH/ --format=tar HEAD | $TAR -P -xf -
+        if [ $? != 0 ]
+        then
+            echo "ERROR - archiving $OSPL_HOME/$MPC_PATH failed "
+        fi
+        BUILD=buildTarGZ
+        if [ "${SOURCE_HOST_SHORT}" = "win" ]
+        then
+            BUILD=buildZip
+        fi
+        (
+            cd $OSPL_SRC/..
+            $BUILD ${HDE_dir}/src/OpenSpliceDDS-src OpenSpliceDDS > /dev/null 2>&1
+        )
     fi
-    BUILD=buildTarGZ
-    if [ "${SOURCE_HOST_SHORT}" = "win" ]
-    then
-        BUILD=buildZip
-    fi
-    (
-        cd $OSPL_SRC/..
-        $BUILD ${HDE_dir}/src/OpenSpliceDDS-src OpenSpliceDDS > /dev/null 2>&1
-    )
     rm -rf ${HDE_dir}/tmpsrc
     cd $CURRENT_WD
     echo "Ready"

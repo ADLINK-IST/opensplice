@@ -87,6 +87,4 @@ dump_env_vars > "$ENVFILE.sh"
 . "./$ENVFILE.sh"
 print_setup
 
-printf "PATH after configure is $PATH\n\n"
-
 cleanup

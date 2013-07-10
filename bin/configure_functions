@@ -3,12 +3,8 @@ init_submodules ()
     pushd $1 &> /dev/null
     if [ -d "./.git" ]
     then
-        . $OSPL_HOME/release_info/RELEASE_tmpl
-        if [ "$OSPL_PATCH" != "OSS" ]
-        then
-            git submodule init
-            git submodule update
-        fi
+        git submodule init
+        git submodule update
     fi
     popd &> /dev/null
 }
@@ -409,16 +405,7 @@ export_vars ()
     esac
     set_var CYGWIN_INSTALL_DRIVE "$CYGWIN_INSTALL_DRIVE"
     set_var OSPL_HOME "$OSPL_HOME"
-
-    . $OSPL_HOME/release_info/RELEASE_tmpl
-    if [ "$OSPL_PATCH" = "OSS" ]
-    then
-        set_var MPC_ROOT "$OSPL_HOME/MPC_ROOT"
-        set_var IS_OPENSOURCE "yes"
-    else
-        set_var MPC_ROOT "$OSPL_HOME/submods/MPC_ROOT"
-        set_var IS_OPENSOURCE "no"
-    fi
+    set_var MPC_ROOT "$OSPL_HOME/submods/MPC_ROOT"
     OSPL_HOME_NORMALIZED=`"$OSPL_HOME/bin/ospl_normalizePath" "$OSPL_HOME"`
     set_var OSPL_HOME_NORMALIZED "$OSPL_HOME_NORMALIZED"
     set_var SPLICE_TARGET "$SPLICE_TARGET"
