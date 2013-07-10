@@ -1123,13 +1123,13 @@ doxygen_check ()
             if [ "IS_SCOREBOARD_BUILD" = "yes" ]
             then
                 echo "ERROR: doc repo cannot be reached and doxygen not installed"
-                return 1       
+                return 1
             else
                 echo "Warning: doc repo cannot be reached and doxygen not installed"
                 echo "  Some generated docs will not be available"
                 set_var OSPL_DOCS none
                 return 0
-            fi       
+            fi
         fi
         echo "OK: no doxygen installed, will attempt to retreive docs from git repo"
         return 0
@@ -1142,46 +1142,7 @@ doxygen_check ()
 # OpenORB - OPENORB_HOME should be set
 openorb_check ()
 {
-   if [ "$STRICT_CHECKS" = "yes" ]
-   then
-       openorb_check_fn "ERROR"
-       RES=$?
-   else
-       openorb_check_fn "Warning"
-       if [ $? != 0 ]
-       then
-           echo "   OpenOrb environment not set, disabling OpenOrb related features."
-           . "$OSPL_HOME/setup/environment/exclude_openorb"
-       fi
-       RES=0
-   fi
-   return $RES
-}
-
-openorb_check_fn ()
-{
-    echo -n "OpenORB: "
-    if test ! $OPENORB_VERSION
-    then
-        echo "$1 - OPENORB_VERSION is not set"
-        return 1
-    fi
-    set_var OPENORB_VERSION $OPENORB_VERSION
-
-    if [ -z "$OPENORB_HOME" ]
-    then
-        echo "$1 - OPENORB_HOME not set"
-        return 1
-    else
-        echo "OK"
-    fi
-
-    ESCAPED_OPENORB_HOME=`echo "$OPENORB_HOME" | sed 's/ /\\\\ /g'`
-    export ESCAPED_OPENORB_HOME
-    set_var ESCAPED_OPENORB_HOME "$ESCAPED_OPENORB_HOME"
-
-    echo "  OPENORB_HOME is $OPENORB_HOME"
-    return 0
+   return 0
 }
 
 cleanup_checks ()
@@ -1201,7 +1162,6 @@ cleanup_checks ()
     unset valgrind_check
     unset zlib_check
     unset openorb_check
-    unset openorb_check_fn
     unset doxygen_check
     unset PATHCHECK_FOUND
     unset GCC_FULLVERSION GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION JAVAC_REAL_VERSION

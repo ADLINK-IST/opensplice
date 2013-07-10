@@ -254,7 +254,6 @@ else
     # Some examples are not included in an inner only build so only add them if doing an outer build
     if [ "$DEP" != "none" ]
     then
-        add_example dlrl/standalone/java/Tutorial dlrl/standalone/cpp/Tutorial
         # Check for the existence of the StreamsExample idl directory to make sure the
         # example is included in this build.  (there will be a StreamsExample/cpp
         # directory because the RUN scripts are copied in as a whole.

@@ -9,10 +9,6 @@ ifeq ($(INCLUDE_DLRL),yes)
 BUILD_EXTRA_NEEDED_LOCS = yes
 endif
 
-ifeq ($(INCLUDE_API_STREAMS),yes)
-BUILD_EXTRA_NEEDED_LOCS = yes
-endif
-
 ifeq ($(BUILD_EXTRA_NEEDED_LOCS),yes)
 SUBSYSTEMS	 += metamodel
 SUBSYSTEMS	 += kernel
