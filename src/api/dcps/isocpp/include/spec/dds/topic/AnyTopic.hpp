@@ -26,7 +26,7 @@
 
 namespace dds {
   namespace topic {
-    class OS_API_EXPORT AnyTopic;
+    class AnyTopic;
 
     /**
      * Extracts a typed <code>Topic</code> from an
@@ -36,7 +36,7 @@ namespace dds {
     Topic<T> get(const AnyTopic& at);
   }
 }
-class OS_API_EXPORT dds::topic::AnyTopic {
+class OMG_DDS_API dds::topic::AnyTopic {
 public:
   template <typename T>
   AnyTopic(const dds::topic::Topic<T>& t);

@@ -26,7 +26,7 @@
 namespace dds {
   namespace sub {
 
-    class OS_API_EXPORT AnyDataReader;
+    class AnyDataReader;
 
     /**
      * Extracts a typed <code>DataReader</code> from an
@@ -37,7 +37,7 @@ namespace dds {
   }
 }
 
-class OS_API_EXPORT dds::sub::AnyDataReader {
+class OMG_DDS_API dds::sub::AnyDataReader {
 public:
   inline AnyDataReader(const dds::core::null_type& src);
 

@@ -14,7 +14,7 @@ include $(OSPL_HOME)/setup/makefiles/subsystem.mak
 
 clean: clean_demos
 	@rm -rf $(OSPL_HOME)/lib/$(SPLICE_TARGET)
-	@rm -rf $(OSPL_HOME)/bin/$(SPLICE_TARGET)
+	@rm -rf $(OSPL_HOME)/exec/$(SPLICE_TARGET)
 
 .PHONY: install
 install: link

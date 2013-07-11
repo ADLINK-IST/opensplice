@@ -27,7 +27,7 @@
 
 namespace dds {
   namespace pub {
-    class OS_API_EXPORT AnyDataWriter;
+    class AnyDataWriter;
 
     /**
      * Extracts a typed <code>DataWriter</code> from an
@@ -43,7 +43,7 @@ namespace dds {
  * This class provides an holder for representing a generic DDS
  * <code>DataWriter</code>.
  */
-class OS_API_EXPORT dds::pub::AnyDataWriter {
+class OMG_DDS_API dds::pub::AnyDataWriter {
 public:
   template <typename T>
   AnyDataWriter(const dds::pub::DataWriter<T>& dw);

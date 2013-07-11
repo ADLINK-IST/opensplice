@@ -24,14 +24,14 @@
  * @addtogroup isocpp_dcps ISO/IEC C++ API for DDS Data-centric Publish-Subscribe (DCPS)
  */
 /** @{*/
-/** @file */
+/** @dir dds */
 /** @}*/
 
 /**
  * @addtogroup isocpp_dcps_domain Domain Module - ::dds::domain
  * @ingroup isocpp_dcps */
 /** @{*/
-/** @file */
+/** @dir dds/domain */
 /** @}*/
 
 
@@ -39,14 +39,14 @@
  * @addtogroup isocpp_dcps_topic Topic Module- ::dds::topic
  * @ingroup isocpp_dcps */
 /** @{*/
-/** @file */
+/** @dir dds/topic */
 /** @}*/
 
 /**
  * @addtogroup isocpp_dcps_pub Publication Module - ::dds::pub
  * @ingroup isocpp_dcps */
 /** @{*/
-/** @file */
+/** @dir dds/pub */
 /** @}*/
 
 
@@ -54,14 +54,14 @@
  * @addtogroup isocpp_dcps_sub Subscription Module - ::dds::sub
  * @ingroup isocpp_dcps */
 /** @{*/
-/** @file */
+/** @dir dds/sub */
 /** @}*/
 
 /**
  * @addtogroup isocpp_dcps_core Core / Common Module - ::dds::core
  * @ingroup isocpp_dcps */
 /** @{*/
-/** @file */
+/** @dir dds/core */
 /** @}*/
 
 
