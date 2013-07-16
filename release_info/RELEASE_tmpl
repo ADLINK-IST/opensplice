@@ -1,7 +1,7 @@
 PACKAGE_NAME="OpenSplice DDS"
 OSPL_MAJOR="6"
 OSPL_MINOR="3"
-OSPL_MAINT="0"
+OSPL_MAINT="130716"
 OSPL_PATCH="OSS"
 #this file is also parsed as java properties so PACKAGE_VERSION must be hardcoded here#
 PACKAGE_VERSION=V6.3.0OSS
