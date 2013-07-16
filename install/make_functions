@@ -367,12 +367,21 @@ doTar ()
     )
 }
 
-doZip ()
+doGtar ()
 {
-    echo ${OSPL_BUILDER} -r ${OUT}.zip ${INSTTYPE}
+    echo ${OSPL_BUILDER} -czf ${OUT}.tar.gz ${INSTTYPE}
     (
         cd $OSPL_HOME/install
-        ${OSPL_BUILDER} -r ${OUT}.zip ${INSTTYPE}
+        ${OSPL_BUILDER} -czf ${OUT}.tar.gz ${INSTTYPE}
+    )
+}
+
+doZip ()
+{
+    echo ${OSPL_BUILDER} -9 -r ${OUT}.zip ${INSTTYPE}
+    (
+        cd $OSPL_HOME/install
+        ${OSPL_BUILDER} -9 -r ${OUT}.zip ${INSTTYPE}
     )
 }
 
@@ -395,13 +404,19 @@ doStandardPackage()
                 doZip
             fi
         else
-            OSPL_BUILDER=`which tar`
+            OSPL_BUILDER=`which ${TAR}`
             if [ "$?" != "0" ]
             then
-                echo "Error - No packager found please set OSPL_BUILDER"
-                return 1
+                OSPL_BUILDER=`which tar`
+                if [ "$?" != "0" ]
+                then
+                    echo "Error - No packager found please set OSPL_BUILDER"
+                    return 1
+                else
+                    doTar
+                fi
             else
-                doTar
+                doGtar
             fi
         fi
     else
