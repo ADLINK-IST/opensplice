@@ -17,5 +17,7 @@ INSTALLER_FILENAME=OpenSpliceDDS${PACKAGE_VERSION}-${INSTTYPE}-${SPLICE_HOST_FUL
 
 if [ "${OSPL_BUILDER_APP}" != "builder" ]
 then
+    set_hde_envs "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" "${PACKAGE_DATE}" \
+            "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_HOST_SHORT}" "${SOURCE_TARGET_SHORT}"
     doStandardPackage
 fi
