@@ -215,7 +215,7 @@ sub handle_compiler_output_line($) {
       return;
   }
 
-  if ($s =~ m/^inflating:.*DDS\/ERRORCODE/) {
+  if ($s =~ m/^\s*inflating:.*DDS\/ERRORCODE/) {
       # We unzip a load of files with ERROR in the filename
       $self->Output_Normal ($s);
       return;
