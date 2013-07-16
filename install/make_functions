@@ -2205,6 +2205,7 @@ install_hde_target ()
             echo "ERROR - archiving $OSPL_HOME failed "
         fi
         rm -rf $OSPL_SRC/docs
+        rm -rf $OSPL_SRC/.gitmodules
         MPC_PATH=submods/MPC_ROOT
         cd $MPC_PATH
         git archive --prefix=${OSPL_SRC}/$MPC_PATH/ --format=tar HEAD | $TAR -P -xf -
