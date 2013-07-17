@@ -6,4 +6,4 @@ export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-Windows-vc8-inline-32bit-Op
 export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
 export ZLIB_HOME=/home/dds/INSTALLED\ FOR\ DDS/zlib-1.2.4
 export BOOST_ROOT=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\boost_1_53_0
-export QTDIR=c:\\cygwin\\home\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_32bit
+export QTDIR=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_32bit
