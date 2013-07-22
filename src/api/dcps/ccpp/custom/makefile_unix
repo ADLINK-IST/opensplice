@@ -54,7 +54,7 @@ INCLUDE += $(ORB_INCLUDE)
 
 # compiler and compiler flags (Only valid for gcc-compilers)
 CXX := g++
-CXXFLAGS := -g $(ORB_CXX_FLAGS) -m32 -fPIC
+CXXFLAGS := -g $(ORB_CXX_FLAGS) -m32 -fPIC -DOSPL_VERSION
 CPPFLAGS = $(ORB_SELECT_FLAGS) $(INCLUDE) $(ORB_CPP_FLAGS)
 
 # linker and linker flags (Only valid for gcc-linkers)

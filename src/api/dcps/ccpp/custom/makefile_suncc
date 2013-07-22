@@ -52,7 +52,7 @@ CXXINCS += -I$(OSPL_HOME)/include/dcps/C++/CCPP/$(SPLICE_ORB)
 CXXINCS += $(ORB_INCLUDE)
 
 CXX := CC
-CXXFLAGS := $(ORB_CXX_FLAGS) -O -xarch=v8 -mt
+CXXFLAGS := $(ORB_CXX_FLAGS) -O -xarch=v8 -mt -DOSPL_VERSION
 CPPFLAGS = $(CXXINCS)
 
 # linker and linker flags (Only valid for gcc-linkers)
