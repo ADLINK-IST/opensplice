@@ -318,6 +318,10 @@ sub mpc_dir
   my $ret = 0;
 
   unshift(@mpc_args, '--type', "$type");
+  if ($ospl_home ne '')
+  {
+    unshift(@mpc_args, '--ospl-home', "$ospl_home");
+  }
   my $command = "mwc.pl @mpc_args";
   print STDERR "$scriptname: Regenerating MPC files: $command\n";
   $ret = system($command);
