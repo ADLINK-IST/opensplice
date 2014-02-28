@@ -295,6 +295,7 @@ __postbuild__:
 
 <%endif%>
 <%marker(local)%>
+<%if(supports_include)%>
 #----------------------------------------------------------------------------
 #       Dependencies
 #----------------------------------------------------------------------------
@@ -310,7 +311,6 @@ depend:
 <%endif%>
 
 <%if(forlast)%>
-<%if(supports_include)%>
 include $(DEPENDENCIES)
 <%else%>
 # DO NOT DELETE THIS LINE

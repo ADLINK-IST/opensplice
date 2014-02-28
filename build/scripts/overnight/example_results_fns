@@ -1,0 +1,143 @@
+#set -x
+
+check_example_result()
+{
+   if [ -f "run.log" ]
+   then
+       SUM=`expr $SUM + 1`
+       if [ $status = 0 ]
+       then
+           MESSAGE=""        
+
+           TIMEOUTS=`grep -ci "timeout" ./run.log`
+
+           if [ $TIMEOUTS != 0 ]
+           then
+               MESSAGE="$MESSAGE $TIMEOUTS timeout(s) occurred"
+               if [ $TIMEOUTS -lt 6 ]
+               then
+                   MESSAGE="$MESSAGE - 5 or less OK"
+               else
+                   FAIL=`expr $FAIL + 1`
+               fi
+           fi
+
+           # ignore the print out from ospl describing the location of the error log
+           # also ignore the "Killed" message from when spliced is terminated by the scripts (single process mode only)
+           if [ -n "`egrep -i '(segmentation|glibc detected|killed|not found|No such file or directory|NoClassDefFoundError|Assertion failed|Creation of kernel failed|error|Failed)' ./run.log | grep -v '^Error log :' | grep -v 'Printer error' | grep -v 'Printer Error' | grep -v 'singleProcessResult.txt' `" ]
+           then     
+               FAIL=`expr $FAIL + 1`
+
+               ERROR=`grep -ci "error" ./run.log`
+
+               SEGMENTATIONFAULTS=`grep -ci "segmentation" ./run.log`
+               NOTFOUND=`grep -ci "not found" ./run.log`
+               ASSERTIONFAILED=`grep -ci "assertion failed" ./run.log`
+               NOCLASSDEFFOUND=`grep -ci "NoClassDefFoundError" ./run.log`
+               CREATIONOFKERNEL=`grep -ci "creation of kernel failed" ./run.log`
+               KILLED=`grep -ci "killed" ./run.log`
+               GLIBC=`grep -ci "glibc" ./run.log`
+               FAILED=`grep -ci "Failed" ./run.log`
+
+               if [ $SEGMENTATIONFAULTS != 0 ]
+               then
+                   MESSAGE="Segmentation Faults occurred"
+               fi
+
+               if [ $NOTFOUND != 0 ]
+               then
+                   MESSAGE="$MESSAGE $NOTFOUND not found occurrences"
+               fi
+
+               if [ $NOCLASSDEFFOUND != 0 ]
+               then
+                   MESSAGE="$MESSAGE NoClassDefFound errors"
+               fi
+
+               if [ $NOCLASSDEFFOUND != 0 ]
+               then
+                   MESSAGE="$MESSAGE $ERROR errors occurred"
+               fi
+
+               if [ $CREATIONOFKERNEL != 0 ]
+               then
+                   MESSAGE="$MESSAGE Creation of kernel failures"
+               fi
+
+               if [ $KILLED != 0 ]
+               then
+                   MESSAGE="$MESSAGE Example killed"
+               fi
+
+               if [ $ASSERTIONFAILED != 0 ]
+               then
+                    MESSAGE="$MESSAGE $ASSERTIONFAILED Assertion Failed occurrences"
+               fi
+  
+               if [ $GLIBC != 0 ]
+               then
+                   MESSAGE="$MESSAGE $GLIBC glibc found"
+               fi
+
+               if [ $FAILED != 0 ]
+               then
+                   MESSAGE="$MESSAGE Example failed"
+               fi
+
+               echo "$PROJECT FAILED $MESSAGE" >> run.log
+               echo "$EXAMPLEDIR FAILED $MESSAGE" >> $RUN_SUMMARY_LOG
+           elif [ -f ./ospl-error.log ]
+           then
+               FAIL=`expr $FAIL + 1`
+               echo "$PROJECT FAILED ospl-error.log found " >> run.log
+               echo "$EXAMPLEDIR FAILED ospl-error.log found " >> $RUN_SUMMARY_LOG
+           elif [ -n "`egrep 'WARNING' ./ospl-info.log`" ]
+           then
+               # Add extra output to indicate how many of the warnings are "Missed heartbeats"
+               # so we can quickly identify new warnings appearing
+               WARNINGS=`grep -ci "WARNING" ./ospl-info.log`
+               MISSEDHEARTBEAT=`grep -ci "Missed heartbeat" ./ospl-info.log`
+               NONRESP=`grep -i "considering reader" ./ospl-info.log | grep -c "non-responsive"`
+               SENDKILL=`grep -i "did not terminate" ./ospl-info.log | grep -c "sending kill"`
+               CONCESSIONED=`expr $MISSEDHEARTBEAT + $NONRESP + $SENDKILL`
+               if [ "$WARNINGS" = "$CONCESSIONED" ]
+               then
+                   MESSAGE="$MESSAGE $WARNINGS WARNINGS in ospl-info.log - all are concessioned - OK"
+                   SUCC=`expr $SUCC + 1`
+                   echo " ### Missed heartbeat warnings = $MISSEDHEARTBEAT.." >> run.log
+                   echo " ### writer <n> considering reader <n> non-responsive warnings = $NONRESP.." >> run.log
+                   echo " ### Service .. did not terminate, sending kill warnings = $SENDKILL .." >> run.log
+                   echo " ### Run $PROJECT PASSED $MESSAGE ### " >> run.log
+                   echo " $EXAMPLEDIR PASSED $MESSAGE" >> $RUN_SUMMARY_LOG
+               else
+                   FAIL=`expr $FAIL + 1`
+                   echo "$PROJECT FAILED - $WARNINGS WARNINGs in ospl-info.log" >> run.log
+                   echo "$EXAMPLEDIR FAILED - $WARNINGS WARNINGs in ospl-info.log, $CONCESSIONED are concessioned - see $1/ospl-info.log for further details)" >> $RUN_SUMMARY_LOG
+               fi
+           else
+               SUCC=`expr $SUCC + 1`
+               echo " ### Run $1 PASSED ### " >> run.log
+               echo " $EXAMPLEDIR PASSED" >> $RUN_SUMMARY_LOG
+           fi 
+        else
+            FAIL=`expr $FAIL + 1`
+            echo " ### Run $1 FAILED with status: $status ### " >> run.log
+            echo "$EXAMPLEDIR FAILED with status: $status" >> $RUN_SUMMARY_LOG
+        fi
+
+        echo " ### Project: $1 End ### " >> run.log
+        echo "" >> run.log
+    fi
+}
+
+create_example_results_summary()
+{
+    echo "Killing unique domainID generator"
+    kill $UNIQ_PID
+
+    echo "Examples Run = $SUM" > $TOTALS_LOG
+    echo "Examples Passed = $SUCC" >> $TOTALS_LOG
+    echo "Examples Failed = $FAIL" >> $TOTALS_LOG
+
+    return $FAIL
+}

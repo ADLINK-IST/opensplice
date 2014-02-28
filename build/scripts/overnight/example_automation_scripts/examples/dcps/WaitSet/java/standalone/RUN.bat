@@ -3,8 +3,6 @@ SETLOCAL
 
 call %FUNCTIONS% :stopOSPL
 
-call %FUNCTIONS% :deleteDBFFiles
-
 call %FUNCTIONS% :startOSPL
 
 echo "=== Launching WaitSet "
@@ -15,4 +13,4 @@ start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes WaitSetDataSub
 
 call java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes WaitSetDataPublisher > pubResult.txt
 
-call %FUNCTIONS% :waitsetCheckResults
+call %FUNCTIONS% :waitsetCheckResults >> run.log

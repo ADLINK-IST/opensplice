@@ -26,7 +26,7 @@
 #include "sd__confidence.h"
 #include "sd__resultCodesXMLMetadata.h"
 #include "sd_stringsXML.h"
-#include "sd_deepwalkMeta.h"
+#include "sd__deepwalkMeta.h"
 #include "c_stringSupport.h"
 
 #define SD_FORMAT_ID      0x584DU    /* currently the same as XML */

@@ -65,14 +65,45 @@ void v_networkChannelStatisticsInit(v_networkChannelStatistics ncs, c_string nam
     ncs->numberOfBytesReceived=0;
     ncs->numberOfPacketsReceived=0;
     ncs->numberOfPacketsLost=0;
+    ncs->numberOfPacketsOutOfOrder=0;
     ncs->numberOfAcksSent=0;
 
     ncs->numberOfMessagesDelivered=0;
     ncs->numberOfBytesDelivered=0;
     ncs->numberOfMessagesNotInterested=0;
     ncs->numberOfBytesNotInterested=0;
+    ncs->numberOfPacketsNotConnectedPartition=0;
+    ncs->numberOfPacketsUnknownAddress=0;
+    ncs->numberOfPacketsInvalid=0;
+    ncs->numberOfPacketsOutOfOrderDropped=0;
     ncs->nofFreePacketBuffers=0;
     ncs->nofUsedPacketBuffers=0;
+
+    ncs->reorderAdminPacketsQueued=0;
+    v_avgValueInit(&ncs->reorderAdminPacketsQueuedAvg);
+    v_minValueInit(&ncs->reorderAdminPacketsQueuedMin);
+    v_maxValueInit(&ncs->reorderAdminPacketsQueuedMax);
+
+    ncs->reorderAdminBytesQueued=0;
+    v_avgValueInit(&ncs->reorderAdminBytesQueuedAvg);
+    v_minValueInit(&ncs->reorderAdminBytesQueuedMin);
+    v_maxValueInit(&ncs->reorderAdminBytesQueuedMax);
+
+    ncs->ringBufferMessagesQueued=0;
+    v_avgValueInit(&ncs->ringBufferMessagesQueuedAvg);
+    v_minValueInit(&ncs->ringBufferMessagesQueuedMin);
+    v_maxValueInit(&ncs->ringBufferMessagesQueuedMax);
+
+    ncs->resendAdminPacketsQueued=0;
+    v_avgValueInit(&ncs->resendAdminPacketsQueuedAvg);
+    v_minValueInit(&ncs->resendAdminPacketsQueuedMin);
+    v_maxValueInit(&ncs->resendAdminPacketsQueuedMax);
+
+    ncs->resendAdminBytesQueued=0;
+    v_avgValueInit(&ncs->resendAdminBytesQueuedAvg);
+    v_minValueInit(&ncs->resendAdminBytesQueuedMin);
+    v_maxValueInit(&ncs->resendAdminBytesQueuedMax);
+
     v_fullCounterInit(&(ncs->adminQueueAcks));
     v_fullCounterInit(&(ncs->adminQueueData));
 

@@ -1,0 +1,12 @@
+export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
+export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/GSOAP
+
+TMP_PLAT_ARCH=`echo $SETUP_TYPE | cut -d '.' -f 1`
+if [ "$TMP_PLAT_ARCH" = "x86" ]
+then
+   . configs/`hostname`/common-32bit
+else
+   . configs/`hostname`/common-64bit
+fi
+unset TMP_PLAT_ARCH
+unset QTDIR

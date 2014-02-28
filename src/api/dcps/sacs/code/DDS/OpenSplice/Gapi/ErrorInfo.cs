@@ -38,7 +38,7 @@ namespace DDS.OpenSplice
        /* void
         *     os_report();
         */
-        [DllImport("ddsos", EntryPoint = "os_report")]
+        [DllImport("ddskernel", EntryPoint = "os_report")]
         public static extern void Report(
                 ReportType type,
                 string reportContext,
@@ -72,13 +72,13 @@ namespace DDS.OpenSplice
              *     ErrorInfo__alloc (
              *         void);
              */
-            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo__alloc")]
+            [DllImport("ddskernel", EntryPoint = "gapi_errorInfo__alloc")]
             public static extern IntPtr alloc();
 
             /*     ReturnCode_t
              *     update( );
              */
-            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_update")]
+            [DllImport("ddskernel", EntryPoint = "gapi_errorInfo_update")]
             public static extern ReturnCode update(
                 IntPtr _this);
 
@@ -86,7 +86,7 @@ namespace DDS.OpenSplice
              *     get_code(
              *         out ErrorCode code);
              */
-            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_code")]
+            [DllImport("ddskernel", EntryPoint = "gapi_errorInfo_get_code")]
             public static extern ReturnCode get_code(
                 IntPtr _this,
                 out DDS.ErrorCode code);
@@ -95,7 +95,7 @@ namespace DDS.OpenSplice
              *     get_location(
              *         out String location);
              */
-            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_location")]
+            [DllImport("ddskernel", EntryPoint = "gapi_errorInfo_get_location")]
             public static extern ReturnCode get_location(
                 IntPtr _this,
                 out string location);
@@ -104,7 +104,7 @@ namespace DDS.OpenSplice
              *     get_source_line(
              *         out String source_line);
              */
-            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_source_line")]
+            [DllImport("ddskernel", EntryPoint = "gapi_errorInfo_get_source_line")]
             public static extern ReturnCode get_source_line(
                 IntPtr _this,
                 out string source_line);
@@ -113,7 +113,7 @@ namespace DDS.OpenSplice
              *     get_stack_trace(
              *         out String stack_trace);
              */
-            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_stack_trace")]
+            [DllImport("ddskernel", EntryPoint = "gapi_errorInfo_get_stack_trace")]
             public static extern ReturnCode get_stack_trace(
                 IntPtr _this,
                 out string stack_trace);
@@ -122,7 +122,7 @@ namespace DDS.OpenSplice
              *     get_message(
              *         out String message);
              */
-            [DllImport("dcpsgapi", EntryPoint = "gapi_errorInfo_get_message")]
+            [DllImport("ddskernel", EntryPoint = "gapi_errorInfo_get_message")]
             public static extern ReturnCode get_message(
                 IntPtr _this,
                 out string message);

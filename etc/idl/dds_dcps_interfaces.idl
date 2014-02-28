@@ -1471,5 +1471,66 @@ module DDS {
         DataReader get_datareader();
     };
 
+    // ----------------------------------------------------------------------
+    // QosProvider
+    // ----------------------------------------------------------------------
+    local interface QosProviderInterface {
+
+        // Create a QosProvider fetching QoS configuration from the specified
+        // URI. For instance, the following code:
+        //
+        // <pre><code>
+        // QosProvider xml_file_provider("file:///somewhere/on/disk/qos-config.xml");
+        // QosProvider json_file_provider("file:///somewhere/on/disk/json-config.json");
+        // QosProvider json_http_provider("http:///somewhere.org/here/json-config.json");
+        // </code></pre>
+        //
+        // The URI determines the how the Qos configuration is fetched and the
+        // format in which it is represented. This specification requires compliant
+        // implementations to support at least one file based configuration using
+        // the XML syntax defined as part of the DDS for CCM specification (formal/12.02.01).
+        //
+        // constructor (
+        //     in string uri,
+        //     in string profile);
+
+        ReturnCode_t
+        get_participant_qos (
+            inout DomainParticipantQos a_participant_qos,
+            in string id);
+
+        ReturnCode_t
+        get_topic_qos (
+            inout TopicQos a_topic_qos,
+            in string id);
+
+        ReturnCode_t
+        get_subscriber_qos (
+            inout SubscriberQos a_subscriber_qos,
+            in string id);
+
+        ReturnCode_t
+        get_datareader_qos (
+            inout DataReaderQos a_datareader_qos,
+            in string id);
+
+        ReturnCode_t
+        get_publisher_qos (
+            inout PublisherQos a_publisher_qos,
+            in string id);
+
+        ReturnCode_t
+        get_datawriter_qos (
+            inout DataWriterQos a_datawriter_qos,
+            in string id);
+
+        // Future expansion will allow the user to share QoSs over DDS
+        //
+        // ReturnCode_t
+        // subscribe ();
+        //
+        // ReturnCode_t
+        // publish ();
+    };
 };
 #endif

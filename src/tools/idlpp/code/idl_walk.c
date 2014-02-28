@@ -22,6 +22,7 @@
 #include "c_module.h"
 
 #include "idl_scope.h"
+#include "idl_walk.h"
 #include "idl_program.h"
 #include "idl_fileMap.h"
 #include "idl_genLanguageHelper.h"
@@ -75,7 +76,6 @@ static idl_operand idl_makeConstLiteral (c_literal operand, c_type type);
 static idl_constSpec idl_makeConstSpec (c_constant o);
 static idl_operand idl_makeConstOperand (c_constant operand);
 static idl_typeSpec idl_makeTypeSpec (c_type type);
-static idl_scope idl_buildScope (c_metaObject o);
 static c_value idl_scaledLiteral ( c_primitive prim, c_value value);
 
 static c_iter presetModules = NULL;
@@ -169,7 +169,7 @@ unsigned long long
 idl_switchValMaxRange(
     c_type type)
 {
-    unsigned long long max;
+    unsigned long long max = 0;
 
     if (c_baseObject(c_typeActualType(type))->kind == M_PRIMITIVE) {
         switch (c_primitive(c_typeActualType(type))->kind) {
@@ -270,7 +270,7 @@ idl_switchValEq(
     idl_switchVal swVal,
     c_value value)
 {
-    c_bool comp;
+    c_bool comp = FALSE;
 
     switch (swVal->value.kind) {
     case V_BOOLEAN:
@@ -376,7 +376,7 @@ idl_basename(
     return basename;
 }
 
-static idl_scope
+idl_scope
 idl_buildScope(
     c_metaObject o)
 {
@@ -566,7 +566,7 @@ static idl_typeBasic
 idl_makeTypeBasic(
     c_type type)
 {
-    idl_typeBasic typeBasic;
+    idl_typeBasic typeBasic = NULL;
 
     if (c_baseObject(type)->kind == M_PRIMITIVE) {
         switch (c_primitive(type)->kind) {
@@ -615,7 +615,6 @@ idl_makeTypeBasic(
             idl_typeSpecSetName(idl_typeSpec(typeBasic), c_metaObject(type)->name);
             break;
         default:
-            typeBasic = NULL;
             printf("Unexpected primitive kind %d for %s\n", c_primitive(type)->kind, c_metaObject(type)->name);
         }
         if (typeBasic != NULL) {
@@ -772,7 +771,7 @@ static idl_typeSpec
 idl_makeTypeSpec(
     c_type type)
 {
-    idl_typeSpec typeSpec;
+    idl_typeSpec typeSpec = NULL;
 
     if (c_baseObject(type)->kind == M_PRIMITIVE) {
         typeSpec = idl_typeSpec(idl_makeTypeBasic(type));
@@ -889,7 +888,7 @@ idl_iterTrace(
 {
     const char *scopeName;
     c_char *name;
-    const char *metaKind;
+    const char *metaKind = NULL;
 
     assert(o);
 
@@ -989,7 +988,7 @@ idl_metaObjectTrace(
 {
     const char *scopeName;
     c_char *name;
-    const char *metaKind;
+    const char *metaKind = NULL;
 
     assert(o);
     assert(proc);
@@ -1089,7 +1088,7 @@ static idl_exprKind
 idl_expressionKind (
     c_expression expr)
 {
-    idl_exprKind kind;
+    idl_exprKind kind = idl_or; /* Randomly selected item to fix compiler warning -Wuninitialized */
 
     switch (expr->kind) {
     case E_OR:
@@ -1139,7 +1138,7 @@ idl_makeConstExpression(
     idl_constExpression constExpr;
     int i;
     c_operand exprOper;
-    idl_operand operand;
+    idl_operand operand = NULL;
 
     constExpr = idl_constExpressionNew(idl_expressionKind(expr));
     for (i = 0; i < c_arraySize (expr->operands); i++) {
@@ -1172,7 +1171,7 @@ idl_makeConstLiteral(
     c_type type)
 {
     idl_constLiteral constLit;
-    char *val;
+    char *val = NULL;
     char *val2;
     int i;
 
@@ -1392,7 +1391,7 @@ idl_makeConstSpec(
 {
     idl_constSpec constSpec;
     idl_typeSpec typeSpec;
-    idl_operand operand;
+    idl_operand operand = NULL;
 
     typeSpec = idl_makeTypeSpec(o->type);
     constSpec = idl_constSpecNew(c_metaObject(o)->name, typeSpec, idl_buildScope(c_metaObject(o)));
@@ -2203,11 +2202,11 @@ idl_walk(
 
     if (context.program->fileOpen) {
         action = context.program->fileOpen(context.ownScope, context.baseName, context.program->userData);
-    }
-    if (action == idl_explore) {
-        c_walkIterScope(&iterator, (c_iterWalkAction)idl_metaobject, &context);
-        if (context.program->fileClose) {
-            context.program->fileClose(context.program->userData);
+        if (action == idl_explore) {
+            c_walkIterScope(&iterator, (c_iterWalkAction)idl_metaobject, &context);
+            if (context.program->fileClose) {
+               context.program->fileClose(context.program->userData);
+            }
         }
     }
 

@@ -16,6 +16,7 @@
  */
 #include "os_process.h"
 #include "os__process.h"
+#include "os__thread.h"
 #include "os_thread.h"
 #include "os_stdlib.h"
 #include "os_heap.h"
@@ -611,6 +612,9 @@ os_procCheckStatus(
     DWORD err;
     register int callstatus;
 
+    if (procId == OS_INVALID_PID) {
+        return os_resultInvalid;
+    }
     assert(status != NULL);
 
     callstatus = GetExitCodeProcess(procId, &tr);
@@ -662,6 +666,9 @@ os_procDestroy(
     char* errMsg;
     int id = os_procIdToInteger(procId);
 
+    if (procId == OS_INVALID_PID) {
+        return os_resultInvalid;
+    }
     if (signal == OS_SIGKILL)
     {
         result = (TerminateProcess(procId, 1) == 0 ? os_resultFail : os_resultSuccess);
@@ -721,6 +728,7 @@ os_procDestroy(
  * \b returns appropriate \b os_resultSuccess or Fail following final
  * status check
  */
+
 os_result
 os_procServiceDestroy(
     os_int32 pid,
@@ -740,13 +748,22 @@ os_procServiceDestroy(
         int err = GetLastError();
         return os_resultFail;
     }
+    else if (hProcess == NULL)
+    {
+        if (GetLastError() == ERROR_ACCESS_DENIED)
+        {
+            OS_REPORT_1(OS_INFO,"ospl",0, "Failed to open process %d no access", pid);
+            return os_resultFail;
+        }
+        /* the process already died so no need to remove it */
+    }
     else
     {
         /* remove process*/
         osr = os_procDestroy((os_procId)hProcess, OS_SIGTERM);
         if(osr != os_resultSuccess)
         {
-            OS_REPORT_1(OS_ERROR,"ospl",0, "Failed to send the term signal to the splice daemon process %d", (os_procId)hProcess);
+            OS_REPORT_1(OS_INFO,"ospl",0, "Failed to send the SIGTERM signal to the splice daemon process %d", (os_procId)hProcess);
         }
         osr = os_procCheckStatus((os_procId)hProcess, &procResult);
 
@@ -777,9 +794,9 @@ os_procServiceDestroy(
                     Check the handles process creation times against those in the iterator
                     process info to make sure they are the same process. */
 
-                    OS_REPORT_1(OS_ERROR,"ospl", 0,
+                    OS_REPORT_1(OS_INFO,"ospl", 0,
                                             "OpenSplice service process PID %u still running after spliced terminated." OS_REPORT_NL
-                                            "Sending termination signal.",pid);
+                                            "Sending SIGKILL signal.",pid);
                     os_procDestroy ((os_procId)hProcess, OS_SIGKILL);
 
                     CloseHandle(hProcess);
@@ -822,6 +839,7 @@ os_procServiceDestroy(
 
     return os_resultSuccess;
 }
+
 
 
 /** \brief Initialize process attributes

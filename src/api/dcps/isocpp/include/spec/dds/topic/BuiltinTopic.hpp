@@ -21,17 +21,21 @@
 
 #include <dds/topic/detail/BuiltinTopic.hpp>
 
-namespace dds { namespace topic {
+namespace dds
+{
+namespace topic
+{
 
-  typedef dds::topic::detail::ParticipantBuiltinTopicData ParticipantBuiltinTopicData;
+typedef dds::topic::detail::ParticipantBuiltinTopicData ParticipantBuiltinTopicData;
 
-  typedef dds::topic::detail::TopicBuiltinTopicData TopicBuiltinTopicData;
+typedef dds::topic::detail::TopicBuiltinTopicData TopicBuiltinTopicData;
 
-  typedef dds::topic::detail::PublicationBuiltinTopicData PublicationBuiltinTopicData;
+typedef dds::topic::detail::PublicationBuiltinTopicData PublicationBuiltinTopicData;
 
-  typedef dds::topic::detail::SubscriptionBuiltinTopicData SubscriptionBuiltinTopicData;
+typedef dds::topic::detail::SubscriptionBuiltinTopicData SubscriptionBuiltinTopicData;
 
-} }
+}
+}
 
 
 #endif /* OMG_DDS_TOPIC_BUILTIN_TOPIC_HPP_ */

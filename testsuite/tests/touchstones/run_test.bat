@@ -13,7 +13,7 @@ SET SLAVE_HOST_NAME='vm-dds-rhel53x64'
 
 REM Set the OSPL location on the hosts:
 SET MASTER_OSPL_HOME='C:\\PrismTech\\OpenSpliceDDS\\V5.3.0\\HDE\\x86.win32'
-SET SLAVE_OSPL_HOME='/home/skharin/PrismTech/OpenSpliceDDS/V5.3.0p3/HDE/x86_64.linux2.6'
+SET SLAVE_OSPL_HOME='/home/skharin/PrismTech/OpenSpliceDDS/V5.3.0p3/HDE/x86_64.linux'
 
 REM Set the location where the logs will be stored on the hosts:
 SET MASTER_LOG_DIR='C:\\Cygwin\\home\\skharin\\ospli\\testsuite\\tests\\TouchStones'

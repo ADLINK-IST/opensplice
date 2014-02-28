@@ -51,7 +51,7 @@ int OSPL_MAIN (int argc, char *argv[])
   mgr.registerType(st.in());
 
   //create Topic
-  char topic_name[] = "StockTrackerExclusive";
+  char topic_name[] = "OwnershipStockTracker";
   mgr.createTopic(topic_name);
 
   //create Subscriber

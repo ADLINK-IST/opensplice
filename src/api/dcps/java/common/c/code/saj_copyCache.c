@@ -538,6 +538,7 @@ saj_metaObject(
     case M_UNIONCASE:
     case M_CONSTANT:
     case M_MODULE:
+    case M_ANNOTATION:
         assert(FALSE);
         break;
     case M_PRIMITIVE:
@@ -1008,7 +1009,6 @@ saj_cacheUnionCaseField (
     sajUnionType unionType)
 {
     char fieldDescriptor[512];
-    jthrowable jexception;
 
     fieldDescriptor[0] = '\0';
     saj_fieldDescriptor (c_specifier(o)->type, fieldDescriptor, sizeof (fieldDescriptor), ctx->copyCache);
@@ -1121,7 +1121,6 @@ saj_cacheUnionBuild (
     char discrDescriptor [512];
     char methodSignature [512];
     jclass javaClass;
-    jthrowable jexception;
     jfieldID discrID;
 
     classDescriptor [0] = '\0';
@@ -1315,6 +1314,8 @@ saj_cacheBooleanBuild (
 {
     sajCopyHeader booleanHeader;
 
+    OS_UNUSED_ARG(o);
+
     TRACE (printf ("Boolean\n"));
     saj_cacheHeader (&booleanHeader, sajBoolean, sizeof(booleanHeader));
     saj_copyCacheWrite (ctx->copyCache, &booleanHeader, sizeof(booleanHeader));
@@ -1326,6 +1327,8 @@ saj_cacheByteBuild (
     saj_context ctx)
 {
     sajCopyHeader byteHeader;
+
+    OS_UNUSED_ARG(o);
 
     TRACE (printf ("Byte\n"));
     saj_cacheHeader (&byteHeader, sajByte, sizeof(byteHeader));
@@ -1339,6 +1342,8 @@ saj_cacheCharBuild (
 {
     sajCopyHeader charHeader;
 
+    OS_UNUSED_ARG(o);
+
     TRACE (printf ("Char\n"));
     saj_cacheHeader (&charHeader, sajChar, sizeof(charHeader));
     saj_copyCacheWrite (ctx->copyCache, &charHeader, sizeof(charHeader));
@@ -1350,6 +1355,8 @@ saj_cacheShortBuild (
     saj_context ctx)
 {
     sajCopyHeader shortHeader;
+
+    OS_UNUSED_ARG(o);
 
     TRACE (printf ("Short\n"));
     saj_cacheHeader (&shortHeader, sajShort, sizeof(shortHeader));
@@ -1363,6 +1370,8 @@ saj_cacheIntBuild (
 {
     sajCopyHeader intHeader;
 
+    OS_UNUSED_ARG(o);
+
     TRACE (printf ("Int\n"));
     saj_cacheHeader (&intHeader, sajInt, sizeof(intHeader));
     saj_copyCacheWrite (ctx->copyCache, &intHeader, sizeof(intHeader));
@@ -1374,6 +1383,8 @@ saj_cacheLongBuild (
     saj_context ctx)
 {
     sajCopyHeader longHeader;
+
+    OS_UNUSED_ARG(o);
 
     TRACE (printf ("Long\n"));
     saj_cacheHeader (&longHeader, sajLong, sizeof(longHeader));
@@ -1387,6 +1398,8 @@ saj_cacheFloatBuild (
 {
     sajCopyHeader floatHeader;
 
+    OS_UNUSED_ARG(o);
+
     TRACE (printf ("Float\n"));
     saj_cacheHeader (&floatHeader, sajFloat, sizeof(floatHeader));
     saj_copyCacheWrite (ctx->copyCache, &floatHeader, sizeof(floatHeader));
@@ -1399,6 +1412,8 @@ saj_cacheDoubleBuild (
 {
     sajCopyHeader doubleHeader;
 
+    OS_UNUSED_ARG(o);
+
     TRACE (printf ("Double\n"));
     saj_cacheHeader (&doubleHeader, sajDouble, sizeof(doubleHeader));
     saj_copyCacheWrite (ctx->copyCache, &doubleHeader, sizeof(doubleHeader));
@@ -1410,11 +1425,12 @@ saj_cacheArrBooleanBuild (
     saj_context ctx)
 {
     sajCopyArray booleanHeader;
+    sajCopyArray* const hdr = &booleanHeader;
 
     TRACE (printf ("Boolean Array\n"));
-    saj_cacheHeader ((sajCopyHeader *)&booleanHeader, sajArrBoolean, sizeof(booleanHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajArrBoolean, sizeof(*hdr));
     booleanHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &booleanHeader, sizeof(booleanHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1423,11 +1439,12 @@ saj_cacheArrByteBuild (
     saj_context ctx)
 {
     sajCopyArray byteHeader;
+    sajCopyArray* const hdr = &byteHeader;
 
     TRACE (printf ("Byte Array\n"));
-    saj_cacheHeader ((sajCopyHeader *)&byteHeader, sajArrByte, sizeof(byteHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajArrByte, sizeof(*hdr));
     byteHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &byteHeader, sizeof(byteHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1436,11 +1453,12 @@ saj_cacheArrCharBuild (
     saj_context ctx)
 {
     sajCopyArray charHeader;
+    sajCopyArray* const hdr = &charHeader;
 
     TRACE (printf ("Char Array\n"));
-    saj_cacheHeader ((sajCopyHeader *)&charHeader, sajArrChar, sizeof(charHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajArrChar, sizeof(*hdr));
     charHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &charHeader, sizeof(charHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1449,12 +1467,13 @@ saj_cacheArrCharToBStringBuild (
     saj_context ctx)
 {
     sajCopyArray charHeader;
+    sajCopyArray* const hdr = &charHeader;
     os_uint32 headerIndex;
 
     TRACE (printf ("Char Array To BString\n"));
-    saj_cacheHeader ((sajCopyHeader *)&charHeader, sajArrCharToBString, sizeof(charHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajArrCharToBString, sizeof(*hdr));
     charHeader.size = o->maxSize;
-    headerIndex = saj_copyCacheWrite (ctx->copyCache, &charHeader, sizeof(charHeader));
+    headerIndex = saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 
     c_iterInsert (ctx->typeStack, saj_typeHistoryNew (c_metaObject(o), headerIndex));
     cdrNoteCatsStac (ctx->copyCache->cdrInfo, ctx->typeStack);
@@ -1467,11 +1486,12 @@ saj_cacheArrShortBuild (
     saj_context ctx)
 {
     sajCopyArray shortHeader;
+    sajCopyArray* const hdr = &shortHeader;
 
     TRACE (printf ("Short Array\n"));
-    saj_cacheHeader ((sajCopyHeader *)&shortHeader, sajArrShort, sizeof(shortHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajArrShort, sizeof(*hdr));
     shortHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &shortHeader, sizeof(shortHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1480,11 +1500,12 @@ saj_cacheArrIntBuild (
     saj_context ctx)
 {
     sajCopyArray intHeader;
+    sajCopyArray* const hdr = &intHeader;
 
     TRACE (printf ("Int Array\n"));
-    saj_cacheHeader ((sajCopyHeader *)&intHeader, sajArrInt, sizeof(intHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajArrInt, sizeof(*hdr));
     intHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &intHeader, sizeof(intHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1493,11 +1514,12 @@ saj_cacheArrLongBuild (
     saj_context ctx)
 {
     sajCopyArray longHeader;
+    sajCopyArray* const hdr = &longHeader;
 
     TRACE (printf ("Long Array\n"));
-    saj_cacheHeader ((sajCopyHeader *)&longHeader, sajArrLong, sizeof(longHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajArrLong, sizeof(*hdr));
     longHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &longHeader, sizeof(longHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1506,11 +1528,12 @@ saj_cacheArrFloatBuild (
     saj_context ctx)
 {
     sajCopyArray floatHeader;
+    sajCopyArray* const hdr = &floatHeader;
 
     TRACE (printf ("Float Array\n"));
-    saj_cacheHeader ((sajCopyHeader *)&floatHeader, sajArrFloat, sizeof(floatHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajArrFloat, sizeof(*hdr));
     floatHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &floatHeader, sizeof(floatHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1519,11 +1542,12 @@ saj_cacheArrDoubleBuild (
     saj_context ctx)
 {
     sajCopyArray doubleHeader;
+    sajCopyArray* const hdr = &doubleHeader;
 
     TRACE (printf ("Double Array\n"));
-    saj_cacheHeader ((sajCopyHeader *)&doubleHeader, sajArrDouble, sizeof(doubleHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajArrDouble, sizeof(*hdr));
     doubleHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &doubleHeader, sizeof(doubleHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1534,6 +1558,7 @@ saj_cacheArrObjectBuild (
 {
     saj_context context;
     sajCopyObjectArray objectArrHeader;
+    sajCopyObjectArray* const hdr = &objectArrHeader;
     char classDescriptor [SAJ_COPYCACHE_CLASSDESCRIPTOR_SIZE];
     os_uint32 headerIndex;
     jclass javaClass;
@@ -1547,7 +1572,7 @@ saj_cacheArrObjectBuild (
             classDescriptor,
             SAJ_COPYCACHE_CLASSDESCRIPTOR_SIZE,
             OS_TRUE);
-        assert(tmp == stacRequested);
+        assert(tmp == stacRequested); OS_UNUSED_ARG(tmp);
     }
     javaClass = (*(ctx->javaEnv))->FindClass (ctx->javaEnv, classDescriptor);
 #if JNI_TRACE
@@ -1569,8 +1594,8 @@ saj_cacheArrObjectBuild (
     TRACE (printf ("    size %d\n", o->maxSize));
     TRACE (printf ("    Java class %x\n", (int)objectArrHeader.arrayClass));
 
-    saj_cacheHeader ((sajCopyHeader *)&objectArrHeader, sajArray, sizeof(objectArrHeader));
-    headerIndex = saj_copyCacheWrite (ctx->copyCache, &objectArrHeader, sizeof(objectArrHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajArray, sizeof(*hdr));
+    headerIndex = saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
     c_iterInsert (ctx->typeStack, saj_typeHistoryNew (c_metaObject(o), headerIndex));
 
     context = os_malloc (C_SIZEOF(saj_context));
@@ -1580,9 +1605,9 @@ saj_cacheArrObjectBuild (
     context->typeStack = ctx->typeStack;
     saj_metaObject (c_typeActualType(o->subType), context, stacRequested);
     saj_copyCacheUpdateSize (ctx->copyCache, headerIndex);
+    assert (context->typeStack == ctx->typeStack);
     os_free (context);
 
-    assert (context->typeStack == ctx->typeStack);
     saj_typeHistoryFree (c_iterTakeFirst (ctx->typeStack));
 }
 
@@ -1629,6 +1654,7 @@ saj_cacheSeqObjectBuild (
 {
     saj_context context;
     sajCopyObjectSequence objectSeqHeader;
+    sajCopyObjectSequence* const hdr = &objectSeqHeader;
     char classDescriptor [512];
     os_uint32 headerIndex;
     jclass javaClass;
@@ -1656,8 +1682,8 @@ saj_cacheSeqObjectBuild (
     TRACE (printf ("    size %d\n", o->maxSize));
     TRACE (printf ("    Java class %x\n", (int)objectSeqHeader.seqClass));
 
-    saj_cacheHeader ((sajCopyHeader *)&objectSeqHeader, sajSequence, sizeof(objectSeqHeader));
-    headerIndex = saj_copyCacheWrite (ctx->copyCache, &objectSeqHeader, sizeof(objectSeqHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajSequence, sizeof(*hdr));
+    headerIndex = saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
     /* Check if the subtype is in the scope of the subtype, in that case it is a recursive type */
     if (saj_isDefinedInScope (o)) {
         /* make back reference */
@@ -1671,9 +1697,9 @@ saj_cacheSeqObjectBuild (
         context->copyCache = ctx->copyCache;
         context->typeStack = ctx->typeStack;
         saj_metaObject (c_typeActualType(o->subType), context, OS_FALSE);
+        assert (context->typeStack == ctx->typeStack);
         os_free (context);
 
-        assert (context->typeStack == ctx->typeStack);
         saj_typeHistoryFree (c_iterTakeFirst (ctx->typeStack));
     }
     saj_copyCacheUpdateSize (ctx->copyCache, headerIndex);
@@ -1685,12 +1711,13 @@ saj_cacheSeqBooleanBuild (
     saj_context ctx)
 {
     sajCopySequence booleanHeader;
+    sajCopySequence* const hdr = &booleanHeader;
 
     TRACE (printf ("Boolean Sequence\n"));
-    saj_cacheHeader ((sajCopyHeader *)&booleanHeader, sajSeqBoolean, sizeof(booleanHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajSeqBoolean, sizeof(*hdr));
     booleanHeader.type = c_typeActualType(o->subType);
     booleanHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &booleanHeader, sizeof(booleanHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1699,12 +1726,13 @@ saj_cacheSeqByteBuild (
     saj_context ctx)
 {
     sajCopySequence byteHeader;
+    sajCopySequence* const hdr = &byteHeader;
 
     TRACE (printf ("Byte Sequence\n"));
-    saj_cacheHeader ((sajCopyHeader *)&byteHeader, sajSeqByte, sizeof(byteHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajSeqByte, sizeof(*hdr));
     byteHeader.type = c_typeActualType(o->subType);
     byteHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &byteHeader, sizeof(byteHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1713,12 +1741,13 @@ saj_cacheSeqCharBuild (
     saj_context ctx)
 {
     sajCopySequence charHeader;
+    sajCopySequence* const hdr = &charHeader;
 
     TRACE (printf ("Char Sequence\n"));
-    saj_cacheHeader ((sajCopyHeader *)&charHeader, sajSeqChar, sizeof(charHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajSeqChar, sizeof(*hdr));
     charHeader.type = c_typeActualType(o->subType);
     charHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &charHeader, sizeof(charHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1727,12 +1756,13 @@ saj_cacheSeqShortBuild (
     saj_context ctx)
 {
     sajCopySequence shortHeader;
+    sajCopySequence* const hdr = &shortHeader;
 
     TRACE (printf ("Short Sequence\n"));
-    saj_cacheHeader ((sajCopyHeader *)&shortHeader, sajSeqShort, sizeof(shortHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajSeqShort, sizeof(*hdr));
     shortHeader.type = c_typeActualType(o->subType);
     shortHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &shortHeader, sizeof(shortHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1741,12 +1771,13 @@ saj_cacheSeqIntBuild (
     saj_context ctx)
 {
     sajCopySequence intHeader;
+    sajCopySequence* const hdr = &intHeader;
 
     TRACE (printf ("Int Sequence\n"));
-    saj_cacheHeader ((sajCopyHeader *)&intHeader, sajSeqInt, sizeof(intHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajSeqInt, sizeof(*hdr));
     intHeader.type = c_typeActualType(o->subType);
     intHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &intHeader, sizeof(intHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1755,12 +1786,13 @@ saj_cacheSeqLongBuild (
     saj_context ctx)
 {
     sajCopySequence longHeader;
+    sajCopySequence* const hdr = &longHeader;
 
     TRACE (printf ("Long Sequence\n"));
-    saj_cacheHeader ((sajCopyHeader *)&longHeader, sajSeqLong, sizeof(longHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajSeqLong, sizeof(*hdr));
     longHeader.type = c_typeActualType(o->subType);
     longHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &longHeader, sizeof(longHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1769,12 +1801,13 @@ saj_cacheSeqFloatBuild (
     saj_context ctx)
 {
     sajCopySequence floatHeader;
+    sajCopySequence* const hdr = &floatHeader;
 
     TRACE (printf ("Float Sequence\n"));
-    saj_cacheHeader ((sajCopyHeader *)&floatHeader, sajSeqFloat, sizeof(floatHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajSeqFloat, sizeof(*hdr));
     floatHeader.type = c_typeActualType(o->subType);
     floatHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &floatHeader, sizeof(floatHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1783,12 +1816,13 @@ saj_cacheSeqDoubleBuild (
     saj_context ctx)
 {
     sajCopySequence doubleHeader;
+    sajCopySequence* const hdr = &doubleHeader;
 
     TRACE (printf ("Double Sequence\n"));
-    saj_cacheHeader ((sajCopyHeader *)&doubleHeader, sajSeqDouble, sizeof(doubleHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajSeqDouble, sizeof(*hdr));
     doubleHeader.type = c_typeActualType(o->subType);
     doubleHeader.size = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &doubleHeader, sizeof(doubleHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1797,6 +1831,8 @@ saj_cacheStringBuild (
     saj_context ctx)
 {
     sajCopyHeader stringHeader;
+
+    OS_UNUSED_ARG(o);
 
     TRACE (printf ("String\n"));
     saj_cacheHeader (&stringHeader, sajString, sizeof(stringHeader));
@@ -1809,11 +1845,12 @@ saj_cacheBStringBuild (
     saj_context ctx)
 {
     sajCopyBoundedString bstringHeader;
+    sajCopyBoundedString* const hdr = &bstringHeader;
 
     TRACE (printf ("BString\n"));
-    saj_cacheHeader ((sajCopyHeader *)&bstringHeader, sajBString, sizeof(bstringHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajBString, sizeof(*hdr));
     bstringHeader.max = o->maxSize;
-    saj_copyCacheWrite (ctx->copyCache, &bstringHeader, sizeof(bstringHeader));
+    saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 }
 
 STATIC void
@@ -1822,12 +1859,13 @@ saj_cacheBStringToArrCharBuild (
     saj_context ctx)
 {
     sajCopyBoundedString bstringHeader;
+    sajCopyBoundedString* const hdr = &bstringHeader;
     os_uint32 headerIndex;
 
     TRACE (printf ("BString To Char Array\n"));
-    saj_cacheHeader ((sajCopyHeader *)&bstringHeader, sajBStringToArrChar, sizeof(bstringHeader));
+    saj_cacheHeader ((sajCopyHeader *)hdr, sajBStringToArrChar, sizeof(*hdr));
     bstringHeader.max = o->maxSize;
-    headerIndex = saj_copyCacheWrite (ctx->copyCache, &bstringHeader, sizeof(bstringHeader));
+    headerIndex = saj_copyCacheWrite (ctx->copyCache, hdr, sizeof(*hdr));
 
     c_iterInsert (ctx->typeStack, saj_typeHistoryNew (c_metaObject(o), headerIndex));
     cdrNoteCatsStac (ctx->copyCache->cdrInfo, ctx->typeStack);
@@ -1843,7 +1881,7 @@ saj_cacheEnumBuild (
     char classDescriptor [512];
     char constrSignature [512];
     jclass javaClass, javaClassGR;
-    jmethodID from_intID, valueMethodID;
+    jmethodID from_intID, valueMethodID = NULL;
     jfieldID valueFieldID;
     size_t copyEnumSize;
     unsigned int nrOfElements;
@@ -2130,7 +2168,7 @@ saj_substitute(
 
         before = os_malloc(ptr - tmp+1);
         *ptr = '\0';
-        os_strcpy(before, tmp);
+        os_strncpy(before, tmp, (size_t)(ptr - tmp+1));
         ptr = ptr+strlen(searchFor);
         after = saj_substitute(ptr, searchFor, replaceWith);
         result = os_malloc(strlen(before) + strlen(replaceWith) + strlen (after) + 1);
@@ -2344,6 +2382,7 @@ saj_fieldDescriptor (
     case M_MEMBER:
     case M_UNIONCASE:
     case M_CONSTANT:
+    case M_ANNOTATION:
         assert(FALSE);
         break;
     case M_PRIMITIVE:
@@ -2470,6 +2509,7 @@ saj_classDescriptor (
     case M_MEMBER:
     case M_UNIONCASE:
     case M_CONSTANT:
+    case M_ANNOTATION:
         assert(FALSE);
         break;
     case M_PRIMITIVE:

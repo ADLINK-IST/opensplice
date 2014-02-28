@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifdef SCCSID
@@ -94,7 +94,7 @@ void be_string::InitializeTypeMap (be_Type* t)
       corbaString = BE_Globals::CorbaScope("String");
       stringInOut = BE_Globals::CorbaScope("String&");
       stringOut = BE_Globals::CorbaScope("String_out");
-      structStringVar = BE_Globals::CorbaScope ("String_mgr");
+      structStringVar = (BE_Globals::isocpp_new_types ? "std::string" : BE_Globals::CorbaScope ("String_mgr"));
    }
    else
    {
@@ -108,7 +108,7 @@ void be_string::InitializeTypeMap (be_Type* t)
    os_sprintf (size, "%d", (int) ExprToULong(maxsize));
 
    t_typedef = (be_typedef*)t->narrow((long) & be_typedef::type_id);
-   if (t_typedef) 
+   if (t_typedef)
    {
       AST_Type * t_ast = (AST_Type*)t->narrow((long) & AST_Type::type_id);
 
@@ -166,8 +166,16 @@ void be_string::InitializeTypeMap (be_Type* t)
    t->ReturnTypeName (stringOut);
    t->DMFAdtMemberTypeName (corbaString);
    t->StructMemberTypeName (structStringVar);
-   t->UnionMemberTypeName (corbaString);
-   t->SequenceMemberTypeName (corbaString);
+   if (BE_Globals::isocpp_new_types)
+   {
+      t->UnionMemberTypeName (structStringVar);
+      t->SequenceMemberTypeName (structStringVar);
+   }
+   else
+   {
+      t->UnionMemberTypeName (corbaString);
+      t->SequenceMemberTypeName (corbaString);
+   }
 
    if (m_typecode->kind == DDS::tk_string)
    {
@@ -203,7 +211,11 @@ void be_string::GenerateTypedefs
    ostream & os = source.Stream();
    be_Tab tab(source);
 
-   if (m_typecode->kind == DDS::tk_string)
+   if (BE_Globals::isocpp_new_types)
+   {
+      os << tab << "typedef ::std::string " << alias.LocalName() << ";" << nl;
+   }
+   else if (m_typecode->kind == DDS::tk_string)
    {
       // YO BEN should read "DDS::Char*" from some central place; violates OAOO
       os << tab << "typedef DDS::Char* " << alias.LocalName() << ";" << nl;
@@ -264,6 +276,11 @@ be_string::InRequestArgumentDeclaration(be_Type& btype, const DDS_StdString& arg
 
 DDS_StdString be_string::Releaser (const DDS_StdString & arg) const
 {
+   if (BE_Globals::isocpp_new_types)
+   {
+      DDS_StdString str("delete ");
+      return str + arg + ";";
+   }
    if (m_typecode->kind == DDS::tk_string)
    {
       return BE_Globals::CorbaScope ("string_free") + "(" + arg + ");";
@@ -294,7 +311,11 @@ DDS_StdString be_string::Duplicater
 
    if (isConst)
    {
-      if (m_typecode->kind == DDS::tk_string)
+      if (BE_Globals::isocpp_new_types)
+      {
+         ret = arg + " = new std::string(" + val + ");";
+      }
+      else if (m_typecode->kind == DDS::tk_string)
       {
          ret = arg + " = DDS::string_dup (" + val + ");";
       }
@@ -507,7 +528,7 @@ DDS::Boolean be_string::declare_for_struct_get
 )
 {
    os << tab << sptr << "->" << fld << " = (char *) 0;";
-   
+
    return TRUE;
 }
 
@@ -713,7 +734,7 @@ ostream & be_string::put_for_struct
 )
 {
    tab.indent ();
-   os << tab << "os.cdr_put (" << sptr << "->" << fld 
+   os << tab << "os.cdr_put (" << sptr << "->" << fld
       << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
    tab.outdent ();
 
@@ -869,12 +890,12 @@ ostream & be_string::put_for_array
 {
    DDS_StdString parg = (DDS_StdString) "_putArg_";
    parg += uid;
-   
+
    os << tab << "DDS::Codec::Param " << parg << " = { " << Scope (TypeCodeTypeName())
       << ", &(" << arg << "[" << index << "].m_ptr), mode };" << nl;
    os << tab << "os.put (&" << parg << ", 1"
-      << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl; 
-   
+      << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
+
    return os;
 }
 
@@ -889,15 +910,15 @@ ostream & be_string::get_for_array
 {
    DDS_StdString garg = (DDS_StdString) "_getArg_";
    garg += uid;
-  
+
    if (m_typecode->kind == DDS::tk_string)
    {
-      /* 
-         In Strings are shallow copied so disable String_mgr 
+      /*
+         In Strings are shallow copied so disable String_mgr
          from releasing string when PARAM_IN.
       */
 
-      os << tab << arg << "[" << index  << "]"  << " = (char*) 0;" << nl;     
+      os << tab << arg << "[" << index  << "]"  << " = (char*) 0;" << nl;
 
       os << tab << "DDS::Codec::Param " << garg
          << " = { " << Scope (TypeCodeTypeName ())
@@ -908,14 +929,14 @@ ostream & be_string::get_for_array
    }
    else
    {
-      os << tab << "DDS::Codec::Param " << garg << " = { " 
+      os << tab << "DDS::Codec::Param " << garg << " = { "
          << Scope (TypeCodeTypeName ())
          << ", &(" << arg << "[" << index << "].m_ptr), mode };" << nl;
    }
    os << tab << "is.get (&" << garg << ", 1"
       << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
-   
-   return os; 
+
+   return os;
 }
 
 DDS_StdString be_string::kind_string ()

@@ -95,6 +95,11 @@ namespace DDS
    typedef DDS_DCPSInterface_var <Entity> Entity_var;
    typedef DDS_DCPSInterface_out <Entity> Entity_out;
 
+   class SACPP_API QosProviderInterface;
+
+   typedef QosProviderInterface * QosProviderInterface_ptr;
+   typedef DDS_DCPSInterface_var <QosProviderInterface> QosProviderInterface_var;
+   typedef DDS_DCPSInterface_out <QosProviderInterface> QosProviderInterface_out;
 
    class SACPP_API TopicDescription;
 
@@ -1517,6 +1522,56 @@ namespace DDS
       Subscriber & operator = (const Subscriber &);
    };
 
+
+   class SACPP_API QosProviderInterface
+   :
+      virtual public DDS::LocalObject
+   {
+   public:
+      typedef QosProviderInterface_ptr _ptr_type;
+      typedef QosProviderInterface_var _var_type;
+
+      static QosProviderInterface_ptr _duplicate (QosProviderInterface_ptr obj);
+      DDS::Boolean _local_is_a (const char * id);
+
+      static QosProviderInterface_ptr _narrow (DDS::Object_ptr obj);
+      static QosProviderInterface_ptr _unchecked_narrow (DDS::Object_ptr obj);
+      static QosProviderInterface_ptr _nil () { return NULL; }
+      static const char * _local_id;
+      QosProviderInterface_ptr _this () { return this; }
+
+      virtual ReturnCode_t get_participant_qos (
+         DomainParticipantQos &qos,
+         const char *id) = 0;
+
+      virtual ::DDS::ReturnCode_t get_topic_qos (
+         TopicQos &qos,
+         const char *id) = 0;
+
+      virtual ::DDS::ReturnCode_t get_subscriber_qos (
+         SubscriberQos &qos,
+         const char *id) = 0;
+
+      virtual ::DDS::ReturnCode_t get_datareader_qos (
+         DataReaderQos &qos,
+         const char *id) = 0;
+
+      virtual ::DDS::ReturnCode_t get_publisher_qos (
+         PublisherQos &qos,
+         const char *id) = 0;
+
+      virtual ::DDS::ReturnCode_t get_datawriter_qos (
+         DataWriterQos &qos,
+         const char *id) = 0;
+
+   protected:
+      QosProviderInterface () {};
+      ~QosProviderInterface () {};
+   private:
+      QosProviderInterface (const QosProviderInterface &);
+      QosProviderInterface & operator = (const QosProviderInterface &);
+   };
+
    struct Property;
 
    typedef Property * Property_ptr;
@@ -1609,7 +1664,6 @@ namespace DDS
       virtual ReturnCode_t delete_view (DataReaderView_ptr a_view) = 0;
       virtual ReturnCode_t get_default_datareaderview_qos(DataReaderViewQos & qos) = 0;
       virtual ReturnCode_t set_default_datareaderview_qos(const DataReaderViewQos & qos) = 0;
-
 
    protected:
       DataReader () {};

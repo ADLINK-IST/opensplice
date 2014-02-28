@@ -35,12 +35,24 @@
 
 static const struct os_time SLEEP_INTERVAL = { SLEEP_INTERVAL_SEC,  SLEEP_INTERVAL_NANO_SEC};
 static const char *optflags="i:l:f:s:o:n:hetTmMa";
+u_participant participant;
 
 typedef enum {
    memoryStats,
    typeRefCount,
    objectRefCount
 } monitorMode;
+
+/*
+ * Function to handle Ctrl-C presses.
+ * @param fdwCtrlType Ctrl signal type
+ */
+static c_bool CtrlHandler(DWORD fdwCtrlType)
+{
+    u_participantFree(participant);
+    u_userDetach();
+    return TRUE;
+}
 
 static void
 print_usage ()
@@ -88,7 +100,6 @@ main (int argc, char *argv[])
    c_bool preallocated = FALSE;
    char *uri = "";
    u_result ur;
-   u_participant participant;
    v_participantQos pqos;
    int no_break = TRUE;
    char c;
@@ -104,13 +115,15 @@ main (int argc, char *argv[])
    c_long objectCountLimit = 0;
    char *filterExpression = NULL;
 
-
    HANDLE handle = GetStdHandle(STD_INPUT_HANDLE);
    INPUT_RECORD buffer[1];
    DWORD events;
 
    orderKind selectedOrdering  = NO_ORDERING;
    int orderCount = INT_MAX;
+
+   /* Register handler for Ctrl-C */
+   SetConsoleCtrlHandler((PHANDLER_ROUTINE)CtrlHandler, TRUE);
 
    while (((opt = getopt (argc, argv, optflags)) != -1) && !errno) {
        switch (opt) {

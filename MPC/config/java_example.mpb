@@ -9,5 +9,10 @@ project : java_only {
         // compile_flags =
         // targetoutdir =
     }
+    specific (ospljavamake) {
+
+        // Switch off dependency checking entry generation
+        supports_include =
+    }
     //staticname = *
 }

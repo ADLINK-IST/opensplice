@@ -25,7 +25,12 @@
 #include <org/opensplice/core/exception_helper.hpp>
 
 
-namespace org { namespace opensplice { namespace core {
+namespace org
+{
+namespace opensplice
+{
+namespace core
+{
 
 //----------------------------------------------------------------------------
 //    DataReader Status
@@ -66,5 +71,7 @@ OSPL_ISOCPP_IMPL_API void convertStatus(const DDS::PublicationMatchedStatus& pms
                                         dds::core::status::PublicationMatchedStatus& on_publication_matched);
 
 
-}}}
+}
+}
+}
 #endif

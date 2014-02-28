@@ -101,6 +101,14 @@ JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniEntityGe
 
 /*
  * Class:     org_opensplice_cm_com_JniCommunicator
+ * Method:    jniEntitiesGetStatistics
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_opensplice_cm_com_JniCommunicator_jniEntitiesGetStatistics
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     org_opensplice_cm_com_JniCommunicator
  * Method:    jniEntityEnable
  * Signature: (Ljava/lang/String;)Ljava/lang/String;
  */

@@ -7,4 +7,4 @@ set EXAMPLE_LANG=sac
 
 call %FUNCTIONS% :runOwnership
 
-call %FUNCTIONS% :ownershipCheckResult
+call %FUNCTIONS% :ownershipCheckResult >> run.log

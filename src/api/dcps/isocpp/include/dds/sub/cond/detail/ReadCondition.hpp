@@ -34,13 +34,15 @@ namespace detail
 {
 
 /**
- * With ReadCondition, a handler functor can be passed in at construction time which is then
+ *  @internal With ReadCondition, a handler functor can be passed in at construction time which is then
  * executed by WaitSetImpl which calls it's dispatch member function when the condition is triggered.
  */
 class ReadCondition: public org::opensplice::core::ConditionImpl
 {
 
 public:
+    ReadCondition() : executor_(0), adr_(dds::core::null) { }
+
     ReadCondition(const dds::sub::AnyDataReader& adr,
                   const dds::sub::status::DataState& status,
                   bool query = false) :
@@ -49,10 +51,10 @@ public:
         if(!query)
         {
             read_condition_ = adr_->get_dds_datareader()->create_readcondition(status_.sample_state().to_ulong(),
-                status_.view_state().to_ulong(), status_.instance_state().to_ulong());
-            if (read_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create ReadCondition. "
-                                        "Nil return from ::create_readcondition")));
+                              status_.view_state().to_ulong(), status_.instance_state().to_ulong());
+            if(read_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create ReadCondition. "
+                                                 "Nil return from ::create_readcondition")));
             condition_ = read_condition_.in();
         }
     }
@@ -63,15 +65,15 @@ public:
                   const FUN& functor,
                   bool query = false) :
         executor_(new ParametrizedExecutor<FUN, dds::sub::DataReader<T> >(
-                functor, dr)), adr_(dr), status_(status)
+                      functor, dr)), adr_(dr), status_(status)
     {
         if(!query)
         {
             read_condition_ = adr_->get_dds_datareader()->create_readcondition(status_.sample_state().to_ulong(),
-                status_.view_state().to_ulong(), status_.instance_state().to_ulong());
-            if (read_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create ReadCondition. "
-                                        "Nil return from ::create_readcondition")));
+                              status_.view_state().to_ulong(), status_.instance_state().to_ulong());
+            if(read_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create ReadCondition. "
+                                                 "Nil return from ::create_readcondition")));
             condition_ = read_condition_.in();
         }
     }
@@ -82,15 +84,15 @@ public:
                   const FUN& functor,
                   bool query = false) :
         executor_(new ParametrizedExecutor<FUN, dds::sub::AnyDataReader >(
-                functor, adr)), adr_(adr), status_(status)
+                      functor, adr)), adr_(adr), status_(status)
     {
         if(!query)
         {
             read_condition_ = adr_->get_dds_datareader()->create_readcondition(status_.sample_state().to_ulong(),
-                status_.view_state().to_ulong(), status_.instance_state().to_ulong());
-            if (read_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create ReadCondition. "
-                                        "Nil return from ::create_readcondition")));
+                              status_.view_state().to_ulong(), status_.instance_state().to_ulong());
+            if(read_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create ReadCondition. "
+                                                 "Nil return from ::create_readcondition")));
             condition_ = read_condition_.in();
         }
     }
@@ -103,7 +105,9 @@ public:
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::delete_readcondition"));
         }
         if(executor_)
+        {
             delete executor_;
+        }
     }
 
     virtual void dispatch()

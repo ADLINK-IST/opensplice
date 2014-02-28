@@ -1,3 +1,7 @@
+#set -x
+
+. $BASE/example_results_fns 
+
 PATH="$JAVA_HOME/bin:$PATH"
 PATH="$PATH:$TAO_ROOT/bin:$JACORB_HOME/bin"
 
@@ -33,28 +37,45 @@ else
     XMLFILE=`echo $OSPL_URI | sed 's@file://@@' | sed 's/ospl.xml$/ospl_sp_ddsi.xml/'`
     NEWXMLFILE=`echo $XMLFILE | sed 's/ospl_sp_ddsi.xml$/ospl_sp_ddsi_uniq.xml/'`
 
-    # check that MulticastRecvNetworkInterfaceAddresses is not already present in the xml file:
-    grep MulticastRecvNetworkInterfaceAddresses $XMLFILE
-    if [ $? = 0 ]
-    then
-        echo "ERROR : MulticastRecvNetworkInterfaceAddresses already exists"
 
-        exit 1;
+    if [ -n "$UNIQE_MC_ADDRESS" ]
+    then 
+        grep SPDPMulticastAddress $XMLFILE
+        if [ $? = 0 ]
+        then
+            echo "ERROR : SPDPMulticastAddress already exists"  
+            exit 1;
+        fi
+        sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
+            -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" \
+            -e "s@</DDSI2Service>@<Discovery><SPDPMulticastAddress>$UNIQE_MC_ADDRESS</SPDPMulticastAddress></Discovery></DDSI2Service>@" < $XMLFILE > $NEWXMLFILE
+        grep SPDPMulticastAddress $NEWXMLFILE
+        if [ $? = 1 ]
+        then
+            echo "ERROR : SPDPMulticastAddress does not exist"
+            exit 1;
+        fi
+    else
+        # check that MulticastRecvNetworkInterfaceAddresses is not already present in the xml file:
+        grep MulticastRecvNetworkInterfaceAddresses $XMLFILE
+        if [ $? = 0 ]
+        then
+            echo "ERROR : MulticastRecvNetworkInterfaceAddresses already exists"  
+            exit 1;
+        fi
+        sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
+            -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" \
+            -e 's@<NetworkInterfaceAddress>AUTO</NetworkInterfaceAddress>@<NetworkInterfaceAddress>127.0.0.1</NetworkInterfaceAddress>\
+              <MulticastRecvNetworkInterfaceAddresses>127.0.0.1</MulticastRecvNetworkInterfaceAddresses>@'  < $XMLFILE > $NEWXMLFILE
+        # sanity check that the sed'ing worked (i.e. that the strings existed in the first place)
+        grep MulticastRecvNetworkInterfaceAddresses $NEWXMLFILE
+        if [ $? = 1 ]
+        then
+            echo "ERROR : MulticastRecvNetworkInterfaceAddresses does not exist"
+            exit 1;
+        fi
     fi
-
-    sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
-        -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" \
-        -e 's@<NetworkInterfaceAddress>AUTO</NetworkInterfaceAddress>@<NetworkInterfaceAddress>127.0.0.1</NetworkInterfaceAddress>\
-           <MulticastRecvNetworkInterfaceAddresses>127.0.0.1</MulticastRecvNetworkInterfaceAddresses>@'  < $XMLFILE > $NEWXMLFILE
     OSPL_URI=`echo $OSPL_URI | sed 's/ospl.xml/ospl_sp_ddsi_uniq.xml/'`
-
-    # sanity check that the sed'ing worked (i.e. that the strings existed in the first place)
-    grep MulticastRecvNetworkInterfaceAddresses $NEWXMLFILE
-    if [ $? = 1 ]
-    then
-        echo "ERROR : MulticastRecvNetworkInterfaceAddresses does not exist"
-        exit 1;
-    fi
 fi
 
 echo "XMLFILE is $XMLFILE"
@@ -74,7 +95,7 @@ then
    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/gcc-3.4.6/lib"
 fi
 
-export  ODBCINI ODBCINST ODBC_MSSQL_SERVER ODBC_MYSQL_SERVER ODBCSYSINI LD_LIBRARY_PATH
+export  ODBCINI ODBCINST ODBC_MSSQL_SERVER ODBC_MYSQL_SERVER ODBCSYSINI LD_LIBRARY_PATH OSPL_URI
 
 SUM=0
 SUCC=0
@@ -83,6 +104,8 @@ RUN_SUMMARY_LOG=$LOGDIR/examples/run_$EXRUNTYPE/run_results_summary.txt
 RUN_LOG=$LOGDIR/examples/run_$EXRUNTYPE/run_results.txt
 SUMMARY_LOG=$LOGDIR/examples/run_$EXRUNTYPE/examples.log
 TOTALS_LOG=$LOGDIR/examples/run_$EXRUNTYPE/totals.log
+
+export RUN_SUMMARY_LOG RUN_LOG SUMMARY_LOG TOTALS_LOG
 
 CUR_PATH=`pwd`
 echo " Begin running examples - `date`"
@@ -102,122 +125,46 @@ do
             fi
         done
 
-        echo " ### Project: $PROJECT Begin ### " > run.log
+        #Clean up any previous run logs
+        #single process and shared memory run after one another
+        if [ -f "ospl-error.log" ]
+        then
+            rm ospl-error.log
+        fi
+        if [ -f "ospl-info.log" ]
+        then
+            rm ospl-info.log
+        fi
+        if [ -f "run.log" ]
+        then
+            rm run.log
+        fi
+
+        #Create a run.log so all output is captured, for some reason the durability
+        #examples do not get a run.log until the result is analysed.  The output from
+        #the durability examples actually goes to .txt files
+        touch run.log
+        echo " ### Project: $PROJECT Begin ### " >> run.log
 
         if [ $run = "yes" ];
         then
             #Create a directory using the project directory location, ommitting the slashes
             EXAMPLEDIR=`echo $PROJECT | sed -e 's/standalone/SA/' -e 's/CORBA/C/' -e 's/Java/J/' -e 's/C++/CPP/' -e 's/JacORB//' -e 's/OpenFusion//' -e 's/\///g'`
 
+            export EXAMPLEDIR
 
             sh RUN $EXRUNTYPE >> run.log 2>&1
             status=$?
 
-            SUM=`expr $SUM + 1`
-            if [ $status = 0 ]
-            then
-               # ignore the print out from ospl describing the location of the error log
-               # also ignore the "Killed" message from when spliced is terminated by the scripts (single process mode only)
-               if [ -n "`egrep -i '(segmentation|glibc detected|killed|timeout|not found|No such file or directory|NoClassDefFoundError|Assertion failed|Creation of kernel failed|error|Failed)' $CUR_PATH/$PROJECT/run.log | grep -v '^Error log :' | grep -v 'Printer Error' | grep -v 'singleProcessResult.txt' `" ]
-               then               
-                   FAIL=`expr $FAIL + 1`
-
-                   ERROR=`grep -ci "error" $CUR_PATH/$PROJECT/run.log`
-
-                   SEGMENTATIONFAULTS=`grep -ci "segmentation" $CUR_PATH/$PROJECT/run.log`
-                   NOTFOUND=`grep -ci "not found" $CUR_PATH/$PROJECT/run.log`
-                   ASSERTIONFAILED=`grep -ci "assertion failed" $CUR_PATH/$PROJECT/run.log`
-                   NOCLASSDEFFOUND=`grep -ci "NoClassDefFoundError" $CUR_PATH/$PROJECT/run.log`
-                   CREATIONOFKERNEL=`grep -ci "creation of kernel failed" $CUR_PATH/$PROJECT/run.log`
-                   TIMEOUTS=`grep -ci "timeout" $CUR_PATH/$PROJECT/run.log`
-                   KILLED=`grep -ci "killed" $CUR_PATH/$PROJECT/run.log`
-                   GLIBC=`grep -ci "glibc" $CUR_PATH/$PROJECT/run.log`
-                   FAILED=`grep -ci "Failed" $CUR_PATH/$PROJECT/run.log`
-                   MESSAGE=""
-
-                   if [ $SEGMENTATIONFAULTS != 0 ]
-                   then
-                      MESSAGE="Segmentation Faults occurred"
-                   fi
-
-                   if [ $NOTFOUND != 0 ]
-                   then
-                      MESSAGE="$MESSAGE $NOTFOUND not found occurrences"
-                   fi
-
-                   if [ $NOCLASSDEFFOUND != 0 ]
-                   then
-                      MESSAGE="$MESSAGE NoClassDefFound errors"
-                   fi
-
-                   if [ $NOCLASSDEFFOUND != 0 ]
-                   then
-                      MESSAGE="$MESSAGE $ERROR errors occurred"
-                   fi
-
-                   if [ $CREATIONOFKERNEL != 0 ]
-                   then
-                      MESSAGE="$MESSAGE Creation of kernel failures"
-                   fi
-
-                   if [ $TIMEOUTS != 0 ]
-                   then
-                      MESSAGE="$MESSAGE $TIMEOUTS timeout(s) occurred"
-                   fi
-
-                   if [ $KILLED != 0 ]
-                   then
-                      MESSAGE="$MESSAGE Example killed"
-                   fi
-
-                   if [ $ASSERTIONFAILED != 0 ]
-                   then
-                      MESSAGE="$MESSAGE $ASSERTIONFAILED Assertion Failed occurrences"
-                   fi
-
-                   if [ $GLIBC != 0 ]
-                   then
-                      MESSAGE="$MESSAGE $GLIBC glibc found"
-                   fi
-
-                   if [ $FAILED != 0 ]
-                   then
-                      MESSAGE="$MESSAGE Example failed"
-                   fi
-
-                   echo "$PROJECT FAILED $MESSAGE" >> run.log
-                   echo "$EXAMPLEDIR FAILED $MESSAGE" >> $RUN_SUMMARY_LOG
-               elif [ -f $CUR_PATH/$PROJECT/ospl-error.log ]
-               then
-                    FAIL=`expr $FAIL + 1`
-                    echo "$PROJECT FAILED ospl-error.log found " >> run.log
-                    echo "$EXAMPLEDIR FAILED ospl-error.log found " >> $RUN_SUMMARY_LOG
-                elif [ -n "`egrep 'WARNING' $CUR_PATH/$PROJECT/ospl-info.log`" ]
-                then
-                    # Add extra output to indicate how many of the warnings are "Missed heartbeats"
-                    # so we can quickly identify new warnings appearing
-                    WARNINGS=`grep -ci "WARNING" $CUR_PATH/$PROJECT/ospl-info.log`
-                    MISSEDHEARTBEAT=`grep -ci "Missed heartbeat" $CUR_PATH/$PROJECT/ospl-info.log`
-                    FAIL=`expr $FAIL + 1`
-                    echo "$PROJECT FAILED - $WARNINGS WARNINGs found in ospl-info.log" >> run.log
-                    echo "$EXAMPLEDIR FAILED - $WARNINGS WARNINGs found in ospl-info.log ($MISSEDHEARTBEAT Missed heartbeat warnings)" >> $RUN_SUMMARY_LOG
-                else
-                    SUCC=`expr $SUCC + 1`
-                    echo " ### Run $PROJECT PASSED ### " >> run.log
-                    echo " $EXAMPLEDIR PASSED" >> $RUN_SUMMARY_LOG
-                fi
-            else
-                FAIL=`expr $FAIL + 1`
-            echo " ### Run $PROJECT FAILED with status: $status ### " >> run.log
-            echo "$EXAMPLEDIR FAILED with status: $status" >> $RUN_SUMMARY_LOG
-            fi
-
-            echo " ### Project: $PROJECT End ### " >> run.log
-            echo "" >> run.log
+            check_example_result $PROJECT 
 
             mkdir $LOGDIR/examples/run_$EXRUNTYPE/$EXAMPLEDIR
             cp $CUR_PATH/$PROJECT/*.log $LOGDIR/examples/run_$EXRUNTYPE/$EXAMPLEDIR
-            cp $CUR_PATH/$PROJECT/*Result*.txt $LOGDIR/examples/run_$EXRUNTYPE/$EXAMPLEDIR
+
+            if ls $CUR_PATH/$PROJECT/*Result*.txt &> /dev/null; then
+               cp $CUR_PATH/$PROJECT/*Result*.txt $LOGDIR/examples/run_$EXRUNTYPE/$EXAMPLEDIR
+            fi
+
             if [ "$VALGRIND" = "yes" ]
             then
                 (
@@ -231,21 +178,13 @@ do
 
             cat run.log  >> $RUN_LOG
             sleep 10
+
         else
             echo "Next Examples"
         fi
     fi
 done
 
-echo "Killing unique domainID generator"
-kill $UNIQ_PID
+create_example_results_summary
 
-echo "Examples Run = $SUM" > $TOTALS_LOG
-echo "Examples Passed = $SUCC" >> $TOTALS_LOG
-echo "Examples Failed = $FAIL" >> $TOTALS_LOG
-
-if [ $FAIL != 0 ]; then
-
-    exit 1
-fi
-
+exit $?

@@ -77,70 +77,100 @@
 /**
  * @ingroup isocpp_dcps
  */
-namespace dds {
+namespace dds
+{
 /**
  * @ingroup isocpp_dcps_domain
  * @ingroup isocpp_dcps */
-namespace domain {
+namespace domain
+{
 /** @ingroup isocpp_dcps_domain
  * @ingroup isocpp_dcps */
-namespace qos {
-namespace detail {} }
-namespace detail {} }
+namespace qos
+{
+namespace detail {}
+}
+namespace detail {}
+}
 /**
  * @ingroup isocpp_dcps_topic
  * @ingroup isocpp_dcps */
-namespace topic {
+namespace topic
+{
 /** @ingroup isocpp_dcps_topic
  * @ingroup isocpp_dcps */
-namespace qos {
-namespace detail {} }
-namespace detail {} }
+namespace qos
+{
+namespace detail {}
+}
+namespace detail {}
+}
 /**
  * @ingroup isocpp_dcps_pub
  * @ingroup isocpp_dcps */
-namespace pub {
+namespace pub
+{
 /** @ingroup isocpp_dcps_pub
  * @ingroup isocpp_dcps */
-namespace qos {
-namespace detail {} }
-namespace detail {} }
+namespace qos
+{
+namespace detail {}
+}
+namespace detail {}
+}
 /**
  * @ingroup isocpp_dcps_sub
  * @ingroup isocpp_dcps */
-namespace sub {
+namespace sub
+{
 /** @ingroup isocpp_dcps_sub
  * @ingroup isocpp_dcps */
-namespace cond {
-namespace detail {} }
+namespace cond
+{
+namespace detail {}
+}
 /** @ingroup isocpp_dcps_sub
  * @ingroup isocpp_dcps */
-namespace functors {
-namespace detail {} }
+namespace functors
+{
+namespace detail {}
+}
 /** @ingroup isocpp_dcps_sub
  * @ingroup isocpp_dcps */
 namespace status {}
 /** @ingroup isocpp_dcps_sub
  * @ingroup isocpp_dcps */
-namespace qos {
-namespace detail {} } }
+namespace qos
+{
+namespace detail {}
+}
+}
 /**
  * @ingroup isocpp_dcps_core
  * @ingroup isocpp_dcps */
-namespace core {
+namespace core
+{
 /** @ingroup isocpp_dcps_core
  * @ingroup isocpp_dcps */
-namespace policy {
-namespace detail {} }
+namespace policy
+{
+namespace detail {}
+}
 /** @ingroup isocpp_dcps_core
  * @ingroup isocpp_dcps */
-namespace cond {
-namespace detail {} }
+namespace cond
+{
+namespace detail {}
+}
 /** @ingroup isocpp_dcps_core
  * @ingroup isocpp_dcps */
-namespace status {
-namespace detail {} }
-namespace detail {} } }
+namespace status
+{
+namespace detail {}
+}
+namespace detail {}
+}
+}
 
 // End of implementation
 

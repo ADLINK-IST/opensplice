@@ -29,6 +29,10 @@
 #include <stdint.h>
 #endif
 
+#if defined _WRS_KERNEL && defined OSPL_STRICT_MEM
+#include <stdio.h>
+#endif
+
 #include <pthread.h>
 
 

@@ -44,7 +44,7 @@ public class OwnershipDataSubscriber {
 		mgr.registerType(st);
 
 		// create Topic
-		String topic_name = "StockTrackerExclusive";
+		String topic_name = "OwnershipStockTracker";
 		mgr.createTopic(topic_name);
 
 		// create Subscriber

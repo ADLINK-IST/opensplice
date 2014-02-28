@@ -73,5 +73,7 @@ os_procInitializeOpenSpliceService(os_boolean thisIsSpliceD)
     We therefore need to call this again now and pass a 'true' value for
     forceReInit to make it repeat its actions again taking account of the new values
     we have just set */
+#if defined _WIN32
     os_reportInit(OS_TRUE);
+#endif
 }

@@ -19,7 +19,7 @@
 #include "v_dataReaderQuery.h"
 #include "v__status.h"
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -192,6 +192,10 @@ void
 v_dataReaderUpdatePurgeLists(
     v_dataReader _this);
 
+void
+v_dataReaderUpdatePurgeListsLocked(
+    v_dataReader _this);
+
 typedef struct v_dataReaderConnectionChanges_s {
     /* the following fields are set when the partitionQosPolicy has changed. */
     c_iter addedPartitions;
@@ -247,6 +251,11 @@ v_dataReaderNotifyLivelinessChanged(
     enum v_statusLiveliness oldLivState,
     enum v_statusLiveliness newLivState,
     v_message publicationInfo);
+
+void
+v_dataReaderNotifyOwnershipStrengthChanged(
+    v_dataReader _this,
+    struct v_owner *ownership);
 
 void
 v_dataReaderInsertView(

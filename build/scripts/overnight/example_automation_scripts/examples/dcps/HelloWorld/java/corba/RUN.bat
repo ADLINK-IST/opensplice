@@ -7,9 +7,6 @@ call %FUNCTIONS% :check_osplhome
 echo "====Calling stopOSPL ===="
 call %FUNCTIONS% :stopOSPL
 
-echo "====Calling deleteDBFFiles ===="
-call %FUNCTIONS% :deleteDBFFiles
-
 echo "====Calling startOSPL ===="
 call %FUNCTIONS% :startOSPL
 
@@ -21,7 +18,7 @@ start "" /B java  -Djava.endorsed.dirs="%JACORB_HOME%\lib\endorsed" -classpath "
 java -Djava.endorsed.dirs="%JACORB_HOME%\lib\endorsed" -classpath "%OSPL_HOME%\jar\dcpscj.jar";classes HelloWorldDataPublisher > pubResult.txt
 
 %SLEEP5% >NUL
-
-call %FUNCTIONS% :helloworldCheckResult
+ 
+call %FUNCTIONS% :helloworldCheckResult >> run.log
 
 call %FUNCTIONS% :stopOSPL

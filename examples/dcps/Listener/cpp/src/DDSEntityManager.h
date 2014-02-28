@@ -23,10 +23,9 @@
       TopicQos reliable_topic_qos;
       TopicQos setting_topic_qos;
       PublisherQos pub_qos;
-      DataWriterQos dw_qos;
       SubscriberQos sub_qos;
       DataReaderQos dr_qos;
- 
+
       DomainId_t domain;
       ReturnCode_t status;
 

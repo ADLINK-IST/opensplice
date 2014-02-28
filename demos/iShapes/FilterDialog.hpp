@@ -13,6 +13,7 @@
 #include <ui_filterForm.h>
 #include <ShapesWidget.hpp>
 
+namespace demo { namespace ishapes {
 class FilterDialog : public QDialog
 {
 
@@ -42,6 +43,8 @@ private:
     QRect filter_;
     bool enabled_;
 };
+}
+}
 
 /** @}*/
 

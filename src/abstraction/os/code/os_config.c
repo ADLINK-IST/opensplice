@@ -30,17 +30,17 @@ os_configIsTrue(
 {
     os_result result = os_resultSuccess;
 
-    if (os_strcasecmp(configString, "FALSE") == 0
-        || os_strcasecmp(configString, "0")
-        || os_strcasecmp(configString, "NO"))
+    if (os_strcasecmp(configString, "FALSE") == 0 ||
+        os_strcasecmp(configString, "0")     == 0 ||
+        os_strcasecmp(configString, "NO")    == 0)
     {
         *resultOut = OS_FALSE;
     }
     else
     {
-        if (os_strcasecmp(configString, "TRUE") == 0
-            || os_strcasecmp(configString, "1")
-            || os_strcasecmp(configString, "YES"))
+        if (os_strcasecmp(configString, "TRUE") == 0 ||
+            os_strcasecmp(configString, "1")    == 0 ||
+            os_strcasecmp(configString, "YES")  == 0)
         {
             *resultOut = OS_TRUE;
         }

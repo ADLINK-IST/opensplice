@@ -23,10 +23,20 @@ namespace dds
 namespace sub
 {
 
-/** @todo See OSPL-1743 implementation correct? RTF Issue re how 'built in' subscriber to be constructed. */
 const dds::sub::Subscriber builtin_subscriber(const dds::domain::DomainParticipant& dp)
 {
-    return Subscriber(dp, true);
+    DDS::Subscriber_ptr key = dp->dp_->get_builtin_subscriber();
+    dds::sub::Subscriber sub = org::opensplice::core::EntityRegistry<DDS::Subscriber_ptr, dds::sub::Subscriber>::get(key);
+    if(sub == dds::core::null)
+    {
+        sub = dds::sub::Subscriber(dp);
+        org::opensplice::core::EntityRegistry<DDS::Subscriber_ptr, dds::sub::Subscriber>::remove(sub->sub_.get());
+        sub->init_builtin(key);
+        sub.retain();
+        org::opensplice::core::EntityRegistry<DDS::Subscriber_ptr, dds::sub::Subscriber>::insert(key, sub);
+    }
+
+    return sub;
 }
 
 }

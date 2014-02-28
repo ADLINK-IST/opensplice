@@ -22,72 +22,92 @@
 #include <dds/sub/SampleInfo.hpp>
 #include <org/opensplice/topic/TopicTraits.hpp>
 
-namespace org {
-   namespace opensplice {
-      namespace sub {
-         template <typename T>
-         class LoanedSequence;
-      }
-   }
+namespace org
+{
+namespace opensplice
+{
+namespace sub
+{
+template <typename T>
+class LoanedSequence;
+}
+}
 }
 
-namespace org {
-   namespace opensplice {
-      namespace topic {
-         template<> struct topic_data_seq<dds::sub::SampleInfo> {
-            typedef DDS::SampleInfoSeq type;
-            typedef DDS::SampleInfoSeq_uniq_ utype;
-         };
-      }
-   }
+namespace org
+{
+namespace opensplice
+{
+namespace topic
+{
+template<> struct topic_data_seq<dds::sub::SampleInfo>
+{
+    typedef DDS::SampleInfoSeq type;
+    typedef DDS::SampleInfoSeq_uniq_ utype;
+};
+}
+}
 }
 template <typename T>
-class org::opensplice::sub::LoanedSequence {
+class org::opensplice::sub::LoanedSequence
+{
 public:
-   typedef typename org::opensplice::topic::topic_data_seq<T>::type SequenceType;
-   typedef const T* iterator;
-
-public:
-   LoanedSequence() { }
+    typedef typename org::opensplice::topic::topic_data_seq<T>::type SequenceType;
+    typedef const T* iterator;
 
 public:
-   // NOTE: The reinterpret cast below might looks superflous at the
-   // first sight, however it is needed to make a DDS::SampleInfo look
-   // like a dds::sub::SampleInfo.
-   const T* begin() const {
-      const T* retVal = 0;
-      if (s_.length() > 0)
-         retVal = reinterpret_cast<const T*>(&s_[0]);
-      else
-         retVal = reinterpret_cast<const T*>(&s_);
+    LoanedSequence() { }
 
-      return retVal;
-   }
+public:
+    // NOTE: The reinterpret cast below might looks superflous at the
+    // first sight, however it is needed to make a DDS::SampleInfo look
+    // like a dds::sub::SampleInfo.
+    const T* begin() const
+    {
+        const T* retVal = 0;
+        if(s_.length() > 0)
+        {
+            retVal = reinterpret_cast<const T*>(&s_[0]);
+        }
+        else
+        {
+            retVal = reinterpret_cast<const T*>(&s_);
+        }
 
-   const T* end() const {
-      const T* retVal = 0;
-      if (s_.length() > 0)
-         retVal = reinterpret_cast<const T*>(&(s_[s_.length() -1]) + 1);
-      else
-         retVal = this->begin();
+        return retVal;
+    }
 
-      return retVal;
-   }
+    const T* end() const
+    {
+        const T* retVal = 0;
+        if(s_.length() > 0)
+        {
+            retVal = reinterpret_cast<const T*>(&(s_[s_.length() - 1]) + 1);
+        }
+        else
+        {
+            retVal = this->begin();
+        }
 
-   SequenceType& sequence() {
-      return s_;
-   }
+        return retVal;
+    }
 
-   uint32_t length() const {
-      return s_.length();
-   }
+    SequenceType& sequence()
+    {
+        return s_;
+    }
+
+    uint32_t length() const
+    {
+        return s_.length();
+    }
 
 private:
-   LoanedSequence(const LoanedSequence&);
-   LoanedSequence& operator=(const LoanedSequence&);
+    LoanedSequence(const LoanedSequence&);
+    LoanedSequence& operator=(const LoanedSequence&);
 
 private:
-   SequenceType s_;
+    SequenceType s_;
 };
 
 #endif

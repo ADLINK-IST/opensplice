@@ -88,6 +88,12 @@ feature (x86_elinos5) {
     }
 }
 
+feature (arm_elinos5) {
+    specific (make) {
+        compilers = armel-unknown-linux-gnueabi-gcc
+    }
+}
+
 feature(ospl_os_int) {
     specific (make) {
         platforms = integrity
@@ -141,7 +147,7 @@ feature (ospl_os_pikeos, ospl_arch_x86) {
     }
 }
 
-feature (ospl_os_pikeos, ospl_arch_PPC750) {
+feature (ospl_os_pikeos, ospl_arch_ppc) {
     specific (make) {
         compilers = ppc_oea-pikeos-gcc
     }
@@ -363,9 +369,15 @@ feature (ospl_os_vxworks, !ospl_kernelspace, ospl_arch_PENTIUM, !ospl_vxworks_li
 }
 
 // Specific targets. NOTE: DO NOT USE DOTS !!!! They are swapped for _
-feature(E500v2_linux2_6) {
+feature(E500v2_linux) {
     specific (make) {
         compilers = powerpc-none-linux-gnuspe-gcc
+    }
+}
+
+feature(E500mc_linux) {
+    specific (make) {
+        compilers = powerpc-fsl-linux-gcc
     }
 }
 
@@ -381,13 +393,13 @@ feature (ospl_os_vxworks, ospl_arch_PPCE500, ospl_os_ver_5_5 ) {
     }
 }
 
-feature(PPC440_linux2_6) {
+feature(PPC440_linux) {
     specific (make) {
         compilers = powerpc-linux-gnu-gcc
     }
 }
 
-feature(mpc8313e_linux2_6) {
+feature(mpc8313e_linux) {
     specific (make) {
         compilers = powerpc-e300c3-linux-gcc
     }
@@ -407,9 +419,10 @@ feature(PPCE600_lynxos5) {
     }
 }
 
-feature(x86_linux2_6) {
+feature(x86_linux) {
     specific (make) {
         compilerflags += -m32
+        linkflags += -m32
     }
 }
 

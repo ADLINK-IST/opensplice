@@ -24,6 +24,14 @@
 /* pa_increment and pa_decrement are implemented at os_level */
 #include <atomic.h>
 
+#ifdef pa_increment
+#undef pa_increment
+#endif
+
+#ifdef pa_decrement
+#undef pa_decrement
+#endif
+
 os_uint32
 pa_increment(
     os_uint32 *count)

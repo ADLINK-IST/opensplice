@@ -167,6 +167,7 @@ idl_structureOpen(
         "    public %s value = null;\n\n",
         idl_scopeStackJava(scope, ".", idl_javaId(name)));
     idl_fileOutPrintf(idl_fileCur(), "    public %s () { }\n\n", holderName);
+
     idl_fileOutPrintf(
         idl_fileCur(),
         "    public %s (%s initialValue)\n",

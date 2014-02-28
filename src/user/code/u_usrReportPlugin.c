@@ -144,7 +144,7 @@ u_usrReportPluginReadAndRegister (
     os_reportPlugin reportPlugin;
     c_iter elementList;
     u_result uResult = U_RESULT_OK;
-    c_bool result;
+    c_bool result = FALSE;
     c_bool suppressDefaultLogs = FALSE;
     c_bool pluginIsForservicesOnly = FALSE;
 

@@ -2,7 +2,7 @@
 // $Id:$
 
 project : ospl_base, c_or_cplusplus {
-    lit_libs += ddsos
+    //lit_libs += ddsos
 }
 
 feature(!src_co) {
@@ -13,7 +13,7 @@ feature(src_co) {
     includes += $(OSPL_HOME_NORMALIZED)/src/abstraction/os/include
 }
 
-feature (src_co, os_headers_linux2_6) {
+feature (src_co, os_headers_linux) {
     includes += $(OSPL_HOME_NORMALIZED)/src/abstraction/os/$(OSPL_TARGET_HEADERS)
 }
 
@@ -37,7 +37,7 @@ feature (src_co, os_headers_pikeos3) {
     includes += $(OSPL_HOME_NORMALIZED)/src/abstraction/os/$(OSPL_TARGET_HEADERS)
 }
 
-feature (src_co, !os_headers_linux2_6, !os_headers_win32, !os_headers_solaris9, !os_headers_solaris10, !os_headers_darwin10, !os_headers_pikeos3) {
+feature (src_co, !os_headers_linux, !os_headers_win32, !os_headers_solaris9, !os_headers_solaris10, !os_headers_darwin10, !os_headers_pikeos3) {
     includes += $(OSPL_OUTER_HOME_NORMALIZED)/src/abstraction/os/$(OSPL_TARGET_HEADERS)
 }
 

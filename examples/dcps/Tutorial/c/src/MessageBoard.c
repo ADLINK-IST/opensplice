@@ -42,24 +42,25 @@ static void sleep(int secs)
 
 #define TERMINATION_MESSAGE -1
 
-#ifdef _VXWORKS
-int MessageBoard_main (int argc, char ** argv);
-int MessageBoard (char * args)
+#ifdef _WRS_KERNEL
+#define USE_NANOSLEEP
+int messageboard_main (int argc, char ** argv);
+int messageboard (char * args)
 {
    int argc=1;
    char *argv[256];
    char *str1;
-   argv[0] = strdup ("MessageBoard");
-   str1 = strtok(args, " ");
+   argv[0] = (char*) strdup ("MessageBoard");
+   str1 = (char*) strtok(args, " ");
    while (str1)
    {
-      argv[argc] = strdup (str1);
+      argv[argc] = (char*) strdup (str1);
       argc++;
       str1 = strtok(NULL, " ");
    }
-   return MessageBoard_main (argc, argv);
+   return messageboard_main (argc, argv);
 }
-int MessageBoard_main (int argc, char ** argv)
+int messageboard_main (int argc, char ** argv)
 #else
 int OSPL_MAIN (int argc, char ** argv)
 #endif

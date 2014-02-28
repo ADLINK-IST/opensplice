@@ -96,6 +96,10 @@ extern "C" {
 #define D_DEFAULT_OPTIMIZE_INTERVAL                 (0)
 #define D_MAXIMUM_OPTIMIZE_INTERVAL                 (1000000000)
 
+#define D_MINIMUM_TIME_TO_WAIT_FOR_ALIGNER          ((float)0.0e0)
+#define D_DEFAULT_TIME_TO_WAIT_FOR_ALIGNER          ((float)1.0e0)
+#define D_MAXIMUM_TIME_TO_WAIT_FOR_ALIGNER          ((float)1.0e0)
+
 #define D_DEFAULT_ROLE                              "DefaultRole"
 
 int            d_configurationInit                             (d_configuration config,
@@ -212,6 +216,9 @@ void            d_configurationSetTracingTimestamps         (d_configuration  co
 
 void            d_configurationSetTimeAlignment             (d_configuration  config,
                                                              c_bool alignment);
+
+void            d_configurationSetTimeToWaitForAligner      (d_configuration  config,
+                                                             c_float seconds);
 
 void            d_configurationSetTracingRelativeTimestamps (d_configuration config,
                                                              u_cfElement element,

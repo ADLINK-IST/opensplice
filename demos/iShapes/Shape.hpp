@@ -12,6 +12,7 @@
 #include <QtGui/QBrush>
 #include <dds/core/refmacros.hpp>
 
+namespace demo { namespace ishapes {
 class Shape
 {
 public:
@@ -45,6 +46,8 @@ protected:
     QBrush brush_;
     bool targeted_;
 };
+}
+}
 
 /** @}*/
 

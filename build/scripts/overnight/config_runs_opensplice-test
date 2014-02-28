@@ -1,0 +1,47 @@
+E   opensplice-test/rhel4e/x86.linux-dev 25 #First# none
+E   opensplice-test/rhel4e/x86.linux-release 25 #First# none
+
+E   opensplice-test/win7a/x86.win32-dev 30 #First# none
+E   opensplice-test/win7a/x86.win32-release 30 #First# none
+
+E   opensplice-test/win7a-64/x86_64.win64-dev 30 #First# none
+E   opensplice-test/win7a-64/x86_64.win64-release 30 #First# none
+
+E   opensplice-test/ubuntu1204b/x86.linux-dev 25 #First# none
+E   opensplice-test/ubuntu1204b/x86.linux-release 25 #First# none
+
+E   opensplice-test/ubuntu1204-64b/x86_64.linux-dev 25 #First# none
+E   opensplice-test/ubuntu1204-64b/x86_64.linux-release 25 #First# none
+
+E   opensplice-test/rhel62a/x86.linux-dev 25 #First# none
+E   opensplice-test/rhel62a/x86.linux-release 25 #First# none
+
+E   opensplice-test/rhel62-64b/x86_64.linux-dev 25 #First# none
+E   opensplice-test/rhel62-64b/x86_64.linux-release 25 #First# none
+
+E   opensplice-test/rhel54-64c/x86_64.linux-dev 25 #First# none
+M   opensplice-test/rhel54-64c/x86_64.linux-release 25 #First# none
+
+E   opensplice-test/rhel62-32a/x86.linux-dev 25 #First# none
+M   opensplice-test/rhel62-32a/x86.linux-release 25 #First# none
+
+E   opensplice-test/rhel62-64a/x86_64.linux-dev 25 #First# none
+M   opensplice-test/rhel62-64a/x86_64.linux-release 25 #First# none
+
+E   opensplice-test/ubuntu1204/x86.linux-dev 25 #First# none
+M   opensplice-test/ubuntu1204/x86.linux-release 25 #First# none
+
+E   opensplice-test/ubuntu1204-64/x86_64.linux-dev 25 #First# none
+M   opensplice-test/ubuntu1204-64/x86_64.linux-release 25 #First# none
+
+E   opensplice-test/win7b/x86.win32-dev-vs11 30 #First# none
+M   opensplice-test/win7b/x86.win32-release-vs11 30 #First# none
+
+E   opensplice-test/win7c/x86.win32-dev-vs12 30 #First# none
+M   opensplice-test/win7c/x86.win32-release-vs12 30 #First# none
+
+E   opensplice-test/win7d/x86_64.win64-dev-vs11 30 #First# none
+M   opensplice-test/win7d/x86_64.win64-release-vs11 30 #First# none
+
+E   opensplice-test/win7e/x86_64.win64-dev-vs12 30 #First# none
+M   opensplice-test/win7e/x86_64.win64-release-vs12 30 #First# none

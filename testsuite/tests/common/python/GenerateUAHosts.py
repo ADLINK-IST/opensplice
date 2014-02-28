@@ -7,9 +7,9 @@ def hostList():
     """Modify this list to reflect the STAF hosts available in your local network"""
     list = []
     list.append(TestHost('ws175', ['x86.win32'], ['HDE'], 6503))
-    list.append(TestHost('glasgow', ['x86.linux2.6'], ['HDE'], 6504))
-    list.append(TestHost('vm-dds-rhel53x86', ['x86.linux2.6'], ['HDE'], 6503))
-    list.append(TestHost('vm-dds-rhel53x64', ['x86_64.linux2.6'], ['HDE'], 6503))
+    list.append(TestHost('glasgow', ['x86.linux'], ['HDE'], 6504))
+    list.append(TestHost('vm-dds-rhel53x86', ['x86.linux'], ['HDE'], 6503))
+    list.append(TestHost('vm-dds-rhel53x64', ['x86_64.linux'], ['HDE'], 6503))
     return list
 
 if __name__ == '__main__':

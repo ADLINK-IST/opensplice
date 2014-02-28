@@ -3,8 +3,6 @@ SETLOCAL
 
 call %FUNCTIONS% :stopOSPL
 
-call %FUNCTIONS% :deleteDBFFiles
-
 rem =======================================================
 rem ==                    step_1                         ==
 rem =======================================================
@@ -53,4 +51,4 @@ java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes LifecycleDataPublisher fal
 %SLEEP5% > NUL 
 
 
-call %FUNCTIONS% :lifecycleCheckResults
+call %FUNCTIONS% :lifecycleCheckResults >> run.log

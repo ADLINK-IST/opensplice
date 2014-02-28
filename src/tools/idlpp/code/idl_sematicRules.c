@@ -1884,7 +1884,7 @@ idl_checkSimpleFieldName(
         if(c_iterLength(fields) > 1)
         {
             result++;
-            snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_IllegalFieldName], fieldName);
+            snprintf(errorBuffer, IDL_MAX_ERRORSIZE-1, errorText[idl_IllegalFieldName], name);
             rf(errorBuffer);
         } else
         {

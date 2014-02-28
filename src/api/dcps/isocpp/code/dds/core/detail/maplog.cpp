@@ -23,7 +23,7 @@ namespace core
 namespace detail
 {
 
-os_reportType maplog(std::string kind)
+os_reportType maplog(const std::string& kind)
 {
     if(kind == "WARNING")
     {

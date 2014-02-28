@@ -10,6 +10,8 @@
  *
  */
 
+#include <assert.h>
+
 #include "os.h"
 #include "os_defs.h"
 #include "os_mutex.h"
@@ -53,7 +55,6 @@
 #include "q_config.h"
 #include "q_log.h"
 #include "q_misc.h"
-#include "q_mlv.h"
 #include "q_xmsg.h"
 #include "q_unused.h"
 #include "q_thread.h"
@@ -66,11 +67,13 @@
 #include "q_xevent.h"
 #include "q_globals.h"
 #include "q_error.h"
+#include "q_osplser.h"
 #include "q_addrset.h"
 #include "q_osplserModule.h"
 #include "q_static_assert.h"
 
-static c_bool terminate = FALSE;
+#include "ddsi_tran.h"
+
 static u_participant participant = NULL;
 static v_service service = NULL;
 static u_subscriber networkSubscriber = NULL;
@@ -80,6 +83,7 @@ static u_waitset local_discovery_waitset = NULL;
 static os_mutex gluelock;
 static os_cond gluecond;
 static v_gid ddsi2_participant_gid;
+static struct ephash *gid_hash;
 
 static const char *bubble_topic_name = "q_bubble";
 static u_topic bubble_topic;
@@ -103,21 +107,26 @@ struct builtin_datareader_set {
   c_long subscription_off;
 };
 
-struct channel_reader_arg {
+struct channel_reader_arg
+{
   struct builtin_datareader_set *drset;
-  os_socket transmit_socket;
+  ddsi_tran_conn_t transmit_conn;
 };
 
 /* Having any tentative participant at all is really rare, so slightly
    inefficient expiry handling is ok */
 struct tentative_participant {
-  STRUCT_AVLNODE (tentative_participant_avlnode, struct tentative_participant *) avlnode;
+  ut_avlNode_t avlnode;
   v_gid key;
   os_int64 t_expiry;
 };
 
-STRUCT_AVLTREE (tentative_participant_avltree, struct tentative_participant *) tentative_participants;
-struct xevent *tentative_participants_cleanup_event;
+static ut_avlTree_t tentative_participants;
+static struct xevent *tentative_participants_cleanup_event;
+
+static int compare_gid (const v_gid *a, const v_gid *b);
+static const ut_avlTreedef_t tentative_participants_treedef =
+  UT_AVL_TREEDEF_INITIALIZER (offsetof (struct tentative_participant, avlnode), offsetof (struct tentative_participant, key), (int (*) (const void *, const void *)) compare_gid, 0);
 
 struct q_globals gv;
 
@@ -131,6 +140,123 @@ static void new_fictitious_transient_reader (v_group group);
 static int compare_gid (const v_gid *a, const v_gid *b)
 {
   return memcmp (a, b, sizeof (v_gid));
+}
+
+static void ppguid_from_ppgid (nn_guid_t *ppguid, const struct v_gid_s *ppgid)
+{
+  ppguid->prefix.u[0] = ppgid->systemId;
+  ppguid->prefix.u[1] = ppgid->localId;
+  ppguid->prefix.u[2] = ppgid->serial;
+  ppguid->entityid.u = NN_ENTITYID_PARTICIPANT;
+}
+
+static int new_participant_gid (const struct v_gid_s *ppgid, unsigned flags)
+{
+  nn_guid_t ppguid;
+  ppguid_from_ppgid (&ppguid, ppgid);
+  return new_participant_guid (&ppguid, flags);
+}
+
+static int delete_participant_gid (const struct v_gid_s *ppgid)
+{
+  nn_guid_t ppguid;
+  ppguid_from_ppgid (&ppguid, ppgid);
+  return delete_participant (&ppguid);
+}
+
+static int new_writer_gid (const struct v_gid_s *ppgid, const struct v_gid_s *gid, C_STRUCT (v_topic) const * const ospl_topic, const struct nn_xqos *xqos)
+{
+  nn_guid_t ppguid, guid;
+  topic_t topic;
+  int res;
+
+  assert (ospl_topic != NULL);
+
+  if (ephash_lookup_writer_gid (gid_hash, gid))
+  {
+    TRACE (("new_writer(gid %x:%x:%x) - already known\n",
+            gid->systemId, gid->localId, gid->serial));
+    return ERR_ENTITY_EXISTS;
+  }
+
+  TRACE (("new_writer(gid %x:%x:%x)\n", gid->systemId, gid->localId, gid->serial));
+
+  if ((topic = deftopic (ospl_topic, NULL)) == NULL)
+    return ERR_UNSPECIFIED;
+
+  ppguid_from_ppgid (&ppguid, ppgid);
+  if ((res = new_writer (&guid, &ppguid, topic, xqos)) >= 0)
+  {
+    struct writer *wr = ephash_lookup_writer_guid (&guid);
+    assert (wr);
+    wr->c.gid = *gid;
+    ephash_insert_writer_gid (gid_hash, wr);
+  }
+  return res;
+}
+
+int delete_writer_gid (const struct v_gid_s *gid)
+{
+  struct writer *wr;
+  assert (v_gidIsValid (*gid));
+  if ((wr = ephash_lookup_writer_gid (gid_hash, gid)) == NULL)
+  {
+    nn_log (LC_DISCOVERY, "delete_writer(gid %x:%x:%x) - unknown gid\n",
+            gid->systemId, gid->localId, gid->serial);
+    return ERR_UNKNOWN_ENTITY;
+  }
+  nn_log (LC_DISCOVERY, "delete_writer(gid %x:%x:%x) ...\n", gid->systemId, gid->localId, gid->serial);
+  ephash_remove_writer_gid (gid_hash, wr);
+  delete_writer (&wr->e.guid);
+  return 0;
+}
+
+static int new_reader_gid (const struct v_gid_s *ppgid, const struct v_gid_s *gid, C_STRUCT (v_topic) const * const ospl_topic, const struct nn_xqos *xqos)
+{
+  /* see new_writer for comments */
+  nn_guid_t ppguid, guid;
+  topic_t topic;
+  int res;
+
+  assert (ospl_topic != NULL);
+
+  if (ephash_lookup_reader_gid (gid_hash, gid))
+  {
+    TRACE (("new_reader(gid %x:%x:%x) - already known\n",
+            gid->systemId, gid->localId, gid->serial));
+    return ERR_ENTITY_EXISTS;
+  }
+
+  TRACE (("new_reader(gid %x:%x:%x)\n", gid->systemId, gid->localId, gid->serial));
+
+  if ((topic = deftopic (ospl_topic, NULL)) == NULL)
+    return ERR_UNSPECIFIED;
+
+  ppguid_from_ppgid (&ppguid, ppgid);
+  if ((res = new_reader (&guid, &ppguid, topic, xqos, 0, 0)) >= 0)
+  {
+    struct reader *rd = ephash_lookup_reader_guid (&guid);
+    assert (rd);
+    rd->c.gid = *gid;
+    ephash_insert_reader_gid (gid_hash, rd);
+  }
+  return res;
+}
+
+int delete_reader_gid (const struct v_gid_s *gid)
+{
+  /* FIXME: NEED TO SERIALIZE THIS STUFF -- OR MAYBE NOT (NOW THAT GLUELOCK HAS BEEN REINSTATED) */
+  struct reader *rd;
+  assert (v_gidIsValid (*gid));
+  if ((rd = ephash_lookup_reader_gid (gid_hash, gid)) == NULL)
+  {
+    nn_log (LC_DISCOVERY, "delete_reader_gid(gid %x:%x:%x) - unknown gid\n",
+            gid->systemId, gid->localId, gid->serial);
+    return ERR_UNKNOWN_ENTITY;
+  }
+  nn_log (LC_DISCOVERY, "delete_reader_gid(gid %x:%x:%x) ...\n", gid->systemId, gid->localId, gid->serial);
+  ephash_remove_reader_gid (gid_hash, rd);
+  return delete_reader (&rd->e.guid);
 }
 
 #if 0 /* may be useful for suppressing built-ins when generating them from SPDP/SEDP */
@@ -609,12 +735,59 @@ static void handle_bubble (C_STRUCT (v_message) const * msg)
       gid.localId = data->localId;
       gid.serial = data->serial;
       nn_log (LC_DISCOVERY, "handle_bubble: delete_writer(%x:%x:%x)\n", gid.systemId, gid.localId, gid.serial);
-      delete_writer (&gid);
+      delete_writer_gid (&gid);
       break;
     default:
       NN_FATAL1 ("ddsi2: handle_bubble: kind %d unknown\n", (int) data->kind);
       break;
   }
+}
+
+int rtps_write (struct nn_xpack *xp, const struct v_gid_s *wrgid, C_STRUCT (v_message) const *msg)
+{
+  serdata_t serdata;
+  struct writer *wr;
+
+  if ((wr = ephash_lookup_writer_gid (gid_hash, wrgid)) == NULL)
+  {
+    TRACE (("rpts_write(gid %x:%x:%x) - unknown gid\n", wrgid->systemId, wrgid->localId, wrgid->serial));
+    return ERR_UNKNOWN_ENTITY;
+  }
+
+  /* Can't handle all node states ... though I do believe this is the
+   only set we'll ever get. Note: wr->topic is constant, so no need
+   to hold the lock while serializing.  */
+  switch (v_nodeState ((v_message) msg))
+  {
+    case L_WRITE:
+    case L_WRITE | L_DISPOSED:
+      if ((serdata = serialize (gv.serpool, wr->topic, msg)) == NULL)
+      {
+        NN_WARNING0 ("serialization (data) failed\n");
+        return ERR_UNSPECIFIED;
+      }
+      break;
+    case L_DISPOSED:
+    case L_UNREGISTER:
+      if ((serdata = serialize_key (gv.serpool, wr->topic, msg)) == NULL)
+      {
+        NN_WARNING0 ("serialization (key) failed\n");
+        return ERR_UNSPECIFIED;
+      }
+      break;
+    case L_REGISTER:
+      /* DDSI has no notion of "register" messages */
+      return 0;
+    default:
+      NN_WARNING1 ("rtps_write: unhandled message state: %u\n", (unsigned) v_nodeState ((v_message) msg));
+      return ERR_UNSPECIFIED;
+  }
+#ifndef NDEBUG
+  if ((config.enabled_logcats & LC_TRACE) && (v_nodeState ((v_message) msg) & L_WRITE))
+    assert (serdata_verify (serdata, msg));
+#endif
+
+  return write_sample_kernel_seq (xp, wr, serdata, 1, msg->sequenceNumber);
 }
 
 static void *channel_reader_thread (struct channel_reader_arg *arg)
@@ -623,10 +796,10 @@ static void *channel_reader_thread (struct channel_reader_arg *arg)
   v_networkQueue vnetworkQueue = NULL;
   struct nn_xpack *xp;
 
-  xp = nn_xpack_new (arg->transmit_socket);
+  xp = nn_xpack_new (arg->transmit_conn);
 
 
-  while (!terminate)
+  while (!gv.terminate)
   {
     const c_ulong queueId = gv.networkQueueId;
     v_networkReaderWaitResult nrwr;
@@ -654,7 +827,7 @@ static void *channel_reader_thread (struct channel_reader_arg *arg)
           {
             /* retry after checking for new publications */
             os_mutexLock (&gluelock);
-            handlePublications (arg->drset);
+            (void) handlePublications (arg->drset);
             if (rtps_write (xp, &sender, message) == ERR_UNKNOWN_ENTITY)
               nn_log (LC_TRACE, "message dropped because sender %x:%x:%x is unknown\n",
                       sender.systemId, sender.localId, sender.serial);
@@ -711,7 +884,7 @@ static void watch_spliced (v_serviceStateKind spliceDaemonState, UNUSED_ARG (voi
     case STATE_TERMINATED:
     case STATE_DIED:
       nn_log (LC_INFO, "splice daemon is terminating and so am I...\n");
-      terminate = TRUE;
+      gv.terminate = TRUE;
       u_serviceChangeState (u_service (participant), STATE_TERMINATING);
       os_mutexLock (&gluelock);
       if (local_discovery_waitset)
@@ -905,7 +1078,7 @@ static u_result monitor_local_entities (const u_waitset waitset, const struct bu
   TRACE (("Mirroring DCPS entities in DDSI ...\n"));
 
   result = U_RESULT_OK;
-  while (result == U_RESULT_OK && !terminate)
+  while (result == U_RESULT_OK && !gv.terminate)
   {
     c_iter events = NULL;
     result = u_waitsetWaitEvents (waitset, &events);
@@ -1011,21 +1184,21 @@ static void tentative_participants_cleanup_handler (struct xevent *ev, UNUSED_AR
   os_int64 tnext;
 
   os_mutexLock (&gluelock);
-  node = avl_findmin (&tentative_participants);
+  node = ut_avlFindMin (&tentative_participants_treedef, &tentative_participants);
   while (node)
   {
-    struct tentative_participant *node1 = avl_findsucc (&tentative_participants, node);
+    struct tentative_participant *node1 = ut_avlFindSucc (&tentative_participants_treedef, &tentative_participants, node);
     if (node->t_expiry <= tnow)
     {
       TRACE (("tentative_participants_cleanup_handler_helper: %x:%x:%x - deleting: no built-in topic received\n", node->key.systemId, node->key.localId, node->key.serial));
-      avl_delete (&tentative_participants, node);
+      ut_avlDelete (&tentative_participants_treedef, &tentative_participants, node);
       os_free (node);
     }
     node = node1;
   }
   os_mutexUnlock (&gluelock);
 
-  if (avl_empty (&tentative_participants))
+  if (ut_avlIsEmpty (&tentative_participants))
     tnext = T_NEVER;
   else
     tnext = tnow + T_SECOND;
@@ -1053,22 +1226,21 @@ static int do_new_participant (const v_gid *key, int confirmed)
   /* don't care if it already exists, failure is not an option :)
      (actually, it doesn't matter much if it doesn't exist
      afterward)  */
-  if ((res = new_participant (key, flags)) < 0)
+  if ((res = new_participant_gid (key, flags)) < 0)
     return res;
 
   if (!confirmed)
   {
     struct tentative_participant *tp;
-    avlparent_t parent;
-    if (avl_lookup (&tentative_participants, key, &parent) == NULL)
+    ut_avlIPath_t path;
+    if (ut_avlLookupIPath (&tentative_participants_treedef, &tentative_participants, key, &path) == NULL)
     {
       if ((tp = os_malloc (sizeof (*tp))) != NULL)
       {
         TRACE (("do_new_participant: %x:%x:%x - registering as tentative\n", key->systemId, key->localId, key->serial));
-        avl_init_node (&tp->avlnode, parent);
         tp->key = *key;
         tp->t_expiry = now () + 2 * T_SECOND;
-        avl_insert (&tentative_participants, tp);
+        ut_avlInsertIPath (&tentative_participants_treedef, &tentative_participants, tp, &path);
         resched_xevent_if_earlier (tentative_participants_cleanup_event, tp->t_expiry);
       }
     }
@@ -1099,14 +1271,14 @@ static u_result handleParticipants (const struct builtin_datareader_set *drset)
         struct tentative_participant *tp;
 
         if (v_stateTest (state, L_DISPOSED))
-          delete_participant (&data->key);
+          delete_participant_gid (&data->key);
         else
           do_new_participant (&data->key, 1);
 
-        if ((tp = avl_lookup (&tentative_participants, &data->key, NULL)) != NULL)
+        if ((tp = ut_avlLookup (&tentative_participants_treedef, &tentative_participants, &data->key)) != NULL)
         {
           TRACE (("handleParticipants: %x:%x:%x no longer tentative\n", data->key.systemId, data->key.localId, data->key.serial));
-          avl_delete (&tentative_participants, tp);
+          ut_avlDelete (&tentative_participants_treedef, &tentative_participants, tp);
         }
       }
       c_free (sample);
@@ -1175,7 +1347,7 @@ static u_result handleSubscriptions (const struct builtin_datareader_set *drset)
       }
       else if (v_stateTest (state, L_DISPOSED))
       {
-        delete_reader (&data->key);
+        delete_reader_gid (&data->key);
       }
       else
       {
@@ -1212,7 +1384,7 @@ static u_result handleSubscriptions (const struct builtin_datareader_set *drset)
           res = ERR_INVALID_DATA;
         else
         {
-          res = new_reader (&participant_gid, &data->key, topic, &xqos);
+          res = new_reader_gid (&participant_gid, &data->key, topic, &xqos);
           nn_xqos_fini (&xqos);
         }
         if (res == ERR_UNKNOWN_ENTITY)
@@ -1247,7 +1419,7 @@ static void schedule_delete_writer (const v_gid *key)
   {
     TRACE (("schedule_delete_writer(%x:%x:%x) deleting immediately: bubble writer's group not yet attached\n",
             key->systemId, key->localId, key->serial));
-    delete_writer (key);
+    delete_writer_gid (key);
   }
   else
   {
@@ -1260,7 +1432,7 @@ static void schedule_delete_writer (const v_gid *key)
     {
       NN_WARNING4 ("schedule_delete_writer(%x:%x:%x) failed with result %d, deleting immediately instead\n",
                    key->systemId, key->localId, key->serial, (int) res);
-      delete_writer (key);
+      delete_writer_gid (key);
     }
   }
 }
@@ -1304,7 +1476,7 @@ static u_result handlePublications (const struct builtin_datareader_set *drset)
               res = ERR_INVALID_DATA;
             else
             {
-              res = new_writer (&participant_gid, &data->key, topic, &xqos);
+              res = new_writer_gid (&participant_gid, &data->key, topic, &xqos);
               nn_xqos_fini (&xqos);
             }
             if (res == ERR_UNKNOWN_ENTITY)
@@ -1365,7 +1537,18 @@ static void new_fictitious_transient_reader (v_group group)
   nn_log (LC_DISCOVERY, "new_fictitious_transient_reader: %s.%s\n",
           v_entity (group->topic)->name, v_entity (group->partition)->name);
   /* the fictitious transient data reader has no gid */
-  res = new_reader (&ddsi2_participant_gid, NULL, group->topic, &xqos);
+  {
+    topic_t topic;
+    if ((topic = deftopic (group->topic, NULL)) == NULL)
+      res = ERR_UNSPECIFIED;
+    else
+    {
+      nn_guid_t ppguid, guid;
+      ppguid_from_ppgid (&ppguid, &ddsi2_participant_gid);
+      res = new_reader (&guid, &ppguid, topic, &xqos, 0, 0);
+    }
+  }
+
   if (res == ERR_UNKNOWN_ENTITY)
     NN_FATAL0 ("new_fictitious_transient_reader: the ddsi2 participant should've been known already\n");
   else if (res < 0)
@@ -1492,7 +1675,7 @@ static u_result create_builtin_readers (struct builtin_datareader_set *drset, u_
     static const struct topic_offset_tab {
       char *what;
       char *name;
-      size_t offset;
+      os_size_t offset;
     } topic_offset_tab[] = {
       { "participant", V_PARTICIPANTINFO_NAME, offsetof (struct builtin_datareader_set, participant_off) },
       { "publication", V_PUBLICATIONINFO_NAME, offsetof (struct builtin_datareader_set, publication_off) },
@@ -1588,60 +1771,12 @@ static void destroy_bubble_topic_writer (void)
   c_free (bubble_kernel_topic);
 }
 
-
-static int check_thread_properties (void)
-{
-  static const char *fixed[] = { "recv", "tev", "gc", "lease", "dq.builtins", "xmit.user", "dq.user", NULL };
-  const struct config_thread_properties_listelem *e;
-  int ok = 1, i;
-  for (e = config.thread_properties; e; e = e->next)
-  {
-    for (i = 0; fixed[i]; i++)
-      if (strcmp (fixed[i], e->name) == 0)
-        break;
-    if (fixed[i] == NULL)
-    {
-      NN_ERROR1 ("config: DDSI2Service/Threads/Thread[@name=\"%s\"]: unknown thread\n", e->name);
-      ok = 0;
-    }
-  }
-  return ok;
-}
-
-static int open_tracing_file (void)
-{
-  if (config.tracingOutputFileName == NULL || *config.tracingOutputFileName == 0 || config.enabled_logcats == 0)
-  {
-    config.enabled_logcats = 0;
-    config.tracingOutputFile = NULL;
-    return 1;
-  }
-  else if (os_strcasecmp (config.tracingOutputFileName, "stdout") == 0)
-  {
-    config.tracingOutputFile = stdout;
-    return 1;
-  }
-  else if (os_strcasecmp (config.tracingOutputFileName, "stderr") == 0)
-  {
-    config.tracingOutputFile = stderr;
-    return 1;
-  }
-  else if ((config.tracingOutputFile = fopen (config.tracingOutputFileName, config.tracingAppendToFile ? "a" : "w")) == NULL)
-  {
-    NN_ERROR1 ("%s: cannot open for writing\n", config.tracingOutputFileName);
-    return 0;
-  }
-  else
-  {
-    return 1;
-  }
-}
-
-static struct thread_state1 *create_channel_reader_thread (
-        const char *name
-        , os_socket transmit_socket
-        , struct builtin_datareader_set *drset
-                                                           )
+static struct thread_state1 * create_channel_reader_thread
+(
+  const char * name,
+  struct builtin_datareader_set * drset,
+  ddsi_tran_conn_t transmit_conn
+)
 {
   /* create one (or more, eventually) threads to read from the network
      queue and transmit the data */
@@ -1650,7 +1785,7 @@ static struct thread_state1 *create_channel_reader_thread (
   struct thread_state1 *ts;
   sprintf (thread_name, "xmit.%s", name);
   arg->drset = drset;
-  arg->transmit_socket = transmit_socket;
+  arg->transmit_conn = transmit_conn;
   if ((ts = create_thread (
                thread_name,
                (void * (*) (void *)) channel_reader_thread,
@@ -1658,6 +1793,15 @@ static struct thread_state1 *create_channel_reader_thread (
     NN_ERROR1 ("creation of network queue monitoring thread %s failed\n", thread_name);
   os_free (thread_name);
   return ts;
+}
+
+static void lease_renew_cb (void *vparticipant)
+{
+  const c_float leaseSec = config.servicelease_expiry_time;
+  v_duration p;
+  p.seconds = (os_int32) leaseSec;
+  p.nanoseconds = (os_int32) ((leaseSec - (float) p.seconds) * 1e9f);
+  u_serviceRenewLease (u_service (vparticipant), p);
 }
 
 void ospl_ddsi2AtExit (void)
@@ -1679,7 +1823,6 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
   const char *service_uri = NULL;
   struct builtin_datareader_set drset;
   u_waitset disc_ws;
-  os_socket transmit_socket;
 
   /* Init static log buffer early as possible -- but we don't even
      have a lock yet.  This is ok if we are certain the log functions
@@ -1703,7 +1846,6 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
 #endif
 
   /* Necessary to initialize the user layer. Do this just once per process.*/
-  mlv_init ();
   if (u_userInitialise () != U_RESULT_OK) {
     NN_ERROR0 ("initialisation of user layer failed\n");
     goto err_userInitialise;
@@ -1722,8 +1864,6 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
     goto err_static_logbuf_lock;
   }
   gv.static_logbuf_lock_inited = 1;
-
-  mlv_setforreal (1);
 
   /* Init glue lock + cond, used for some internal synchronisation */
   if (os_mutexInit (&gluelock, &gv.mattr) != os_resultSuccess) {
@@ -1755,7 +1895,7 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
   }
   ddsi2_participant_gid = u_entityGid (u_entity (participant));
   u_serviceChangeState (u_service (participant), STATE_INITIALISING);
-  u_serviceWatchSpliceDaemon (u_service (participant), watch_spliced, &terminate);
+  u_serviceWatchSpliceDaemon (u_service (participant), watch_spliced, NULL);
 
   /* Need to know the kernel's v_service for our u_service -- the
      v_service is rather useful, unlike the u_service. */
@@ -1763,6 +1903,9 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
   gv.ospl_base = c_getBase (service);
   gv.ospl_kernel = v_object (service)->kernel;
   gv.myNetworkId = getNetworkId ();
+  gv.ospl_qostype =
+    (c_collectionType) c_metaArrayTypeNew (c_metaObject (gv.ospl_base),
+                                         "C_ARRAY<c_octet>", c_octet_t (gv.ospl_base), 0);
 
   /* Parse configuration & open tracing file -- can't do the latter
      any earlier cos the configuration specifies where to write it
@@ -1785,77 +1928,19 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
       goto err_config_init;
     }
 
-    /* if the discovery domain id was explicitly set, override the default here */
-    if (!config.discoveryDomainId.isdefault)
-    {
-      config.domainId = config.discoveryDomainId.value;
-    }
-
-    /* Dependencies between default values is not handled
-       automatically by the config processing (yet) */
-    if (config.many_sockets_mode)
-    {
-      if (config.max_participants == 0)
-        config.max_participants = 100;
-    }
-    if (NN_STRICT_P)
-    {
-      /* Should not be sending invalid messages when strict */
-      config.respond_to_rti_init_zero_ack_with_invalid_heartbeat = 0;
-      config.acknack_numbits_emptyset = 1;
-    }
-    if (config.max_queued_rexmit_bytes == 0)
-    {
-      config.max_queued_rexmit_bytes = 2147483647u;
-    }
-
-    /* Verify thread properties refer to defined threads */
-    if (!check_thread_properties ())
+    if (rtps_config_prep (cfgst) < 0)
     {
       NN_ERROR0 ("Could not initialise configuration\n");
       exitstatus = 1;
       goto err_config_late_error;
     }
 
-#if ! OS_SOCKET_HAS_IPV6
-    /* If the platform doesn't support IPv6, guarantee useIpv6 is
-       false. There are two ways of going about it, one is to do it
-       silently, the other to let the user fix his config. Clearly, we
-       have chosen the latter. */
-    if (config.useIpv6)
-    {
-      NN_ERROR0 ("IPv6 addressing requested but not supported on this platform\n");
-      exitstatus = 1;
-      goto err_config_late_error;
-    }
-#endif
-
-
-
-    /* Open tracing file after all possible config errors have been
-       printed */
-    if (!open_tracing_file ())
-    {
-      NN_ERROR0 ("Could not initialise configuration\n");
-      exitstatus = 1;
-      goto err_config_late_error;
-    }
-
-    /* Thread admin: need max threads, which is currently (2 or 3) for each
-       configured channel plus 6: main, recv, dqueue.builtin,
-       lease, gc; once thread state admin has been inited, upgrade the
-       main thread one participating in the thread tracking stuff as
-       if it had been created using create_thread(). */
-    thread_states_init (8 + config.ddsi2direct_max_threads);
     upgrade_main_thread ();
-
-    /* Now the per-thread-log-buffers are set up, so print the configuration */
-    config_print_and_free_cfgst (cfgst);
   }
 
   /* Start monitoring the liveliness of all threads and renewing the
      service lease if everything seems well. */
-  if ((gv.servicelease = nn_servicelease_new (participant)) == NULL) {
+  if ((gv.servicelease = nn_servicelease_new (lease_renew_cb, participant)) == NULL) {
     NN_ERROR0 ("initialisation of service lease management failed\n");
     goto err_servicelease;
   }
@@ -1867,8 +1952,12 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
   /* Start-up DDSI proper (RTPS + discovery) */
   rtps_init ();
 
+  /* Prepare hash table for mapping GUIDs to entities */
+  if ((gid_hash = ephash_new (config.gid_hash_softlimit)) == NULL)
+    goto err_gid_hash;
+
   /* Tentative participants admin */
-  avl_init (&tentative_participants, offsetof (struct tentative_participant, avlnode), offsetof (struct tentative_participant, key), (int (*) (const void *, const void *)) compare_gid, 0);
+  ut_avlInit (&tentative_participants_treedef, &tentative_participants);
   tentative_participants_cleanup_event = qxev_callback (T_NEVER, (void (*) (struct xevent *, void *, os_int64)) tentative_participants_cleanup_handler, 0);
 
   /* Local discovery will eventually discover the DCPS participant of
@@ -1876,7 +1965,7 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
      need to know so create it now.  Note: no reason to clean it up
      explicitly, rtps_term() will take care of that. */
   thread_state_awake (lookup_thread_state ());
-  new_participant (&ddsi2_participant_gid, RTPS_PF_PRIVILEGED_PP);
+  new_participant_gid (&ddsi2_participant_gid, RTPS_PF_PRIVILEGED_PP);
   thread_state_asleep (lookup_thread_state ());
 
   /* Create subscriber, network reader to receive messages to be transmitted.
@@ -1957,14 +2046,12 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
   os_mutexUnlock (&gluelock);
   TRACE (("attached to bubble writer's group, continuing\n"));
 
-  if (make_socket (&transmit_socket, 0, NULL) < 0)
+
+  TRACE (("transmit port %d\n", (int) ddsi_tran_port (gv.data_conn_uc)));
+  if ((gv.channel_reader_ts = create_channel_reader_thread ("user", &drset, gv.data_conn_uc)) == NULL)
   {
-    NN_ERROR0 ("failed to create transmit socket\n");
-    goto err_make_transmit_socket;
-  }
-  TRACE (("transmit socket %d\n", (int) transmit_socket));
-  if ((gv.channel_reader_ts = create_channel_reader_thread ("user", transmit_socket, &drset)) == NULL)
     goto err_channel_reader_thread;
+  }
 
   /* Mirror local entities in DDSI until requested to stop */
   {
@@ -1986,7 +2073,7 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
      that at least all data in the queue at the time of the
      termination notification would be transmitted.  But we don't
      actually guarantee reliability once terminating anyway.  */
-  terminate = TRUE;
+  gv.terminate = TRUE;
  err_channel_reader_thread:
   v_networkReaderTrigger (vnetworkReader, 0);
   u_waitsetNotify (local_discovery_waitset, NULL);
@@ -1995,16 +2082,15 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
   os_mutexLock (&gluelock);
   local_discovery_waitset = NULL;
   os_mutexUnlock (&gluelock);
-  os_sockFree (transmit_socket);
- err_make_transmit_socket:
- err_initial_local_discovery:
+err_make_transmit_socket:
+err_initial_local_discovery:
   destroy_bubble_topic_writer ();
- err_bubble_topic_writer:
+err_bubble_topic_writer:
   destroy_discovery_waitset (disc_ws, participant, &drset);
- err_create_discovery_waitset:
+err_create_discovery_waitset:
   destroy_builtin_readers (&drset);
- err_create_builtin_readers:
- err_networkReaderCreateQueue:
+err_create_builtin_readers:
+err_networkReaderCreateQueue:
   /* fugly code to avoid an even nastier race condition with
      watch_spliced */
   os_mutexLock (&gluelock);
@@ -2012,32 +2098,32 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
   networkReader = NULL;
   vnetworkReader = NULL;
   os_mutexUnlock (&gluelock);
- err_networkReaderNew:
+err_networkReaderNew:
   u_subscriberFree (networkSubscriber);
- err_client_subscriber:
+err_client_subscriber:
   delete_xevent (tentative_participants_cleanup_event);
-  avl_free (&tentative_participants, os_free);
+  ut_avlFree (&tentative_participants_treedef, &tentative_participants, os_free);
+  ephash_free (gid_hash);
+err_gid_hash:
   rtps_term ();
- err_servicelease_start:
+err_servicelease_start:
   nn_servicelease_free (gv.servicelease);
- err_servicelease:
+err_servicelease:
   downgrade_main_thread ();
   thread_states_fini ();
- err_config_late_error:
+err_config_late_error:
   /* would expect config_fini() here, but no, it is postponed. */
  err_config_init:
+  c_free (gv.ospl_qostype);
   u_serviceChangeState (u_service (participant), STATE_TERMINATED);
   if (u_serviceFree (u_service (participant)) != U_RESULT_OK)
     NN_ERROR0 ("deletion of participant failed\n");
- err_participant:
+err_participant:
   os_condDestroy (&gluecond);
- err_gluecond:
+err_gluecond:
   os_mutexDestroy (&gluelock);
  err_gluelock:
-  mlv_setforreal (0);
   (void) u_userDetach ();
-
-  mlv_fini ();
   nn_log (LC_INFO, "Finis.\n");
 
   /* Must be really late, or nn_log becomes really unhappy -- but it
@@ -2046,8 +2132,8 @@ OPENSPLICE_ENTRYPOINT (ospl_ddsi2)
      handler, it appears.) */
   config_fini ();
   os_mutexDestroy (&gv.static_logbuf_lock);
- err_static_logbuf_lock:
- err_userInitialise:
+err_static_logbuf_lock:
+err_userInitialise:
   return exitstatus;
 }
 

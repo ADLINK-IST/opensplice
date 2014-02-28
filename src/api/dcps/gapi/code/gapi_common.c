@@ -316,5 +316,4 @@ gapi_stringToLongLong (
 
     return valid;
 }
-            
-            
+

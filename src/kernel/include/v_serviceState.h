@@ -19,7 +19,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -44,42 +44,45 @@ extern "C" {
  * new state (i.e. the state to transfer to).
  * <p>
  * <table BORDER COLS=7 WIDTH="100%" NOSAVE >
- * <tr ALIGN=CENTER NOSAVE>
- *   <td></td>
- *   <td>STATE_NONE</td>
- *   <td>STATE_INITIALISING</td>
- *   <td>STATE_OPERATIONAL</td>
- *   <td>STATE_TERMINATING</td>
- *   <td>STATE_TERMINATED</td>
- *   <td>STATE_DIED</td>
- * </tr>
- * <tr ALIGN=CENTER NOSAVE>
- *   <td>STATE_NONE</td>
- *   <td align=center>x</td><td>x</td><td>-</td><td>-</td><td>-</td><td>-</td>
- * </tr>
- * <tr ALIGN=CENTER NOSAVE>
- *   <td>STATE_INITIALISING</td>
- *   <td>-</td><td>x</td><td>x</td><td>x</td><td>-</td><td>x</td>
- * </tr>
- * <tr ALIGN=CENTER NOSAVE>
- *   <td>STATE_OPERATIONAL</td>
- *   <td>-</td><td>-</td><td>x</td><td>x</td><td>-</td><td>x</td>
- * </tr>
- * <tr ALIGN=CENTER NOSAVE>
- *   <td>STATE_TERMINATING</td>
- *   <td>-</td><td>-</td><td>-</td><td>x</td><td>x</td><td>x</td>
- * </tr>
- * <tr ALIGN=CENTER NOSAVE>
- *   <td>STATE_TERMINATED</td>
- *   <td>-</td><td>-</td><td>-</td><td>-</td><td>x</td><td>-</td>
- * </tr>
- * <tr ALIGN=CENTER NOSAVE>
- *   <td>STATE_DIED</td>
- *   <td>-</td><td>x</td><td>-</td><td>-</td><td>-</td><td>x</td>
- * </tr>
- * </table>
- *
- *
+ *  <tr ALIGN=CENTER NOSAVE>
+ *    <td></td>
+ *    <td>STATE_NONE</td>
+ *    <td>STATE_INITIALISING</td>
+ *    <td>STATE_OPERATIONAL</td>
+ *    <td>STATE_INCOMPATIBLE_CONFIGURATION</td>
+ *    <td>STATE_TERMINATING</td>
+ *    <td>STATE_TERMINATED</td>
+ *    <td>STATE_DIED</td>
+ *  </tr>
+ *  <tr ALIGN=CENTER NOSAVE>
+ *    <td>STATE_NONE</td>
+ *    <td align=center>x</td><td>x</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+ *  </tr>
+ *  <tr ALIGN=CENTER NOSAVE>
+ *    <td>STATE_INITIALISING</td>
+ *    <td>-</td><td>x</td><td>x</td><td>x</td><td>x</td><td>-</td><td>x</td>
+ *  </tr>
+ *  <tr ALIGN=CENTER NOSAVE>
+ *    <td>STATE_OPERATIONAL</td>
+ *    <td>-</td><td>-</td><td>x</td><td>x</td><td>x</td><td>-</td><td>x</td>
+ *  </tr>
+ *  <tr ALIGN=CENTER NOSAVE>
+ *    <td>STATE_INCOMPATIBLE_CONFIGURATION</td>
+ *    <td>-</td><td>-</td><td>-</td><td>x</td><td>-</td><td>-</td><td>x</td>
+ *  </tr>
+ *  <tr ALIGN=CENTER NOSAVE>
+ *    <td>STATE_TERMINATING</td>
+ *    <td>-</td><td>-</td><td>-</td><td>-</td><td>x</td><td>x</td><td>x</td>
+ *  </tr>
+ *  <tr ALIGN=CENTER NOSAVE>
+ *    <td>STATE_TERMINATED</td>
+ *    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>x</td><td>-</td>
+ *  </tr>
+ *  <tr ALIGN=CENTER NOSAVE>
+ *    <td>STATE_DIED</td>
+ *    <td>-</td><td>x</td><td>-</td><td>-</td><td>-</td><td>-</td><td>x</td>
+ *  </tr>
+ *  </table>
  * \param serviceState   the service state object to operate on.
  * \param newState  the new state for this service.
  *
@@ -96,6 +99,7 @@ v_serviceStateChangeState(
  *
  * The following kind of states are defined: <code>STATE_NONE</code>,
  * <code>STATE_INITIALISING</code>, <code>STATE_OPERATIONAL</code>,
+ * <code>STATE_INCOMPATIBLE_CONFIGURATION</code>,
  * <code>STATE_TERMINATING</code>, <code>STATE_TERMINATED</code> and
  * <code>STATE_DIED</code>.
  *

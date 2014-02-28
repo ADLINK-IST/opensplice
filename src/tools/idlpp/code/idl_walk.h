@@ -39,4 +39,8 @@ idl_typeSpec
 idl_makeTypeCollection(
     c_collectionType type);
 
+idl_scope
+idl_buildScope (
+    c_metaObject o);
+
 #endif /* IDL_WALK_H */

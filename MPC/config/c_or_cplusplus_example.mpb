@@ -5,14 +5,13 @@ project : c_or_cplusplus {
     includes += .
     specific (make) {
         obj_dir_flat = 1
-        obj_dir = .obj$(CFG)/
+        obj_dir = .obj$(CFG)<%slash%>
     }
-    // The default config is Release. Examples can be (re)built
-    // Debug though with:
-    // make CFG=Debug
+
     specific (make) {
-        configurations = Release Debug
         output_dir = .
+        // Switch off dependency checking
+        supports_include =
     }
     // Visual studio (2010 certainly, probably all since 2008) behaves really weirdly WRT
     // configurations. The 'default' is always 'Debug' if it exists when any solution is first
@@ -36,10 +35,21 @@ project : c_or_cplusplus {
 
 feature(!src_co) {
     includes += $(OSPL_HOME)/examples/include $(OSPL_HOME)/examples
+    // To distribute the examples we only ship the Release configuration
+    // The "if" makefile construct is a gnuism & not portable to all makes
+    specific (make) {
+        configurations = Release
+    }
 }
 
 feature(src_co) {
     includes += $(OSPL_HOME_NORMALIZED)/examples/include $(OSPL_HOME_NORMALIZED)/examples
+    // When building examples in a checkout the default config is Release. Examples can be (re)built
+    // Debug though with:
+    // make CFG=Debug
+    specific (make) {
+        configurations = Release Debug
+    }
 }
 
 feature (!src_co, ospl_os_linux) {
@@ -62,9 +72,10 @@ feature (ospl_os_pikeos, !ospl_os_host_win) : ospl_cmxml, ospl_ddsosnet, ospl_dd
     libs += spliced networking durability cmsoap
 
     verbatim(make, local) {
-        "URIFILE=$(patsubst file:\/\/%, %, $(OSPL_URI))"
+        "URIFILE=$(subst file:\/\/,,$(OSPL_URI))"
 
-        "ospl_config.c: $(URIFILE)"
+        ".PHONY: ospl_config.c"
+        "ospl_config.c:"
         "	osplconf2c -o $@"
     }
 }
@@ -75,16 +86,24 @@ feature (ospl_os_pikeos, ospl_os_host_win) : ospl_cmxml, ospl_ddsosnet, ospl_dds
 
     }
 
-
     libs += spliced networking durability cmsoap
 
-
     verbatim(make, local) {
-        "URIFILE=$(patsubst file:\/\/%, %, $(OSPL_URI))"
+        "URIFILE=$(subst file:\/\/,,$(OSPL_URI))"
 
+        ".PHONY: ospl_config.c"
+        "ospl_config.c:"
+        "	osplconf2c -u \"file:\/\/`cygpath -w \"$(URIFILE)\"`\" -o $@"
+    }
 
-        "ospl_config.c: $(URIFILE)"
-        "	osplconf2c -u file:\/\/`cygpath -w $(URIFILE)` -o $@"
+    verbatim(make, top) {
+        ifneq (,$(LWIP_HOME))
+        LWIP_INC_FLAG = -I\"$(LWIP_HOME)\"
+        LWIP_LD_FLAG = -L\"$(LWIP_HOME)\" \"$(LWIP_HOME)/lwip_config.o\"
+        else
+        LWIP_INC_FLAG =
+        LWIP_LD_FLAG =
+        endif
     }
 }
 
@@ -99,7 +118,7 @@ feature (ospl_os_vxworks, ospl_os_ver_5_5){
 }
 
 feature (ospl_os_vxworks, ospl_kernelspace, ospl_os_ver_5_5, !ospl_examples_dynamic) : ospl_cmxml, ospl_ddsosnet, ospl_ddsrrstorage  {
-   libs += ddsserviceWrapper spliced networking durability cmsoap
+   libs += ddsserviceWrapper spliced ddsi2e networking durability cmsoap
 }
 
 feature (ospl_kernelspace, !ospl_os_ver_5_5, !ospl_examples_dynamic ) {

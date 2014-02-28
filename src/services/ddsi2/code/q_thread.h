@@ -7,6 +7,10 @@
 
 #include "q_inline.h"
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 /* Things don't go wrong if CACHE_LINE_SIZE is defined incorrectly,
    they just run slower because of false cache-line sharing. It can be
    discovered at run-time, but in practice it's 64 for most CPUs and
@@ -28,8 +32,6 @@ typedef os_int32 svtime_t; /* signed version */
 
 /* When this value is used, the platform default for scheduling priority will be used */
 #define Q_THREAD_SCHEDPRIO_DEFAULT 0
-
-
 
 enum thread_state {
   THREAD_STATE_ZERO,
@@ -73,6 +75,9 @@ struct thread_states {
 };
 
 extern struct thread_states thread_states;
+#if OS_HAS_TSD_USING_THREAD_KEYWORD
+extern __thread struct thread_state1 *tsd_thread_state;
+#endif
 
 int thread_states_init (int maxthreads);
 void thread_states_fini (void);
@@ -81,20 +86,31 @@ void upgrade_main_thread (void);
 void downgrade_main_thread (void);
 const struct config_thread_properties_listelem *lookup_thread_properties (const char *name);
 struct thread_state1 *create_thread (const char *name, void * (*f) (void *arg), void *arg);
-struct thread_state1 *lookup_thread_state (void);
+struct thread_state1 *lookup_thread_state_real (void);
 int join_thread (struct thread_state1 *ts1, void **ret);
 
-#if NN_HAVE_C99_INLINE
-#include "q_thread.template"
+#if defined (__cplusplus)
+}
+#endif
+
+#if NN_HAVE_C99_INLINE && !defined SUPPRESS_THREAD_INLINES
+#include "q_thread_template.c"
 #else
+#if defined (__cplusplus)
+extern "C" {
+#endif
 int vtime_awake_p (vtime_t vtime);
 int vtime_asleep_p (vtime_t vtime);
 int vtime_gt (vtime_t vtime1, vtime_t vtime0);
 
+struct thread_state1 *lookup_thread_state (void);
 void thread_state_asleep (struct thread_state1 *ts1);
 void thread_state_awake (struct thread_state1 *ts1);
 void thread_state_blocked (struct thread_state1 *ts1);
 void thread_state_unblocked (struct thread_state1 *ts1);
+#if defined (__cplusplus)
+}
+#endif
 #endif
 
 #endif /* Q_THREAD_H */

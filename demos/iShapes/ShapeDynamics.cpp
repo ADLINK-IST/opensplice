@@ -3,6 +3,8 @@
  */
 #include "ShapeDynamics.hpp"
 
+namespace demo { namespace ishapes {
+
 ShapeDynamics::ShapeDynamics(int x0, int y0)
     : pos_(x0, y0)
 {
@@ -37,3 +39,4 @@ ShapeDynamics::setConstraint(const QRect& rect)
 {
     constraint_ = rect;
 }
+}}

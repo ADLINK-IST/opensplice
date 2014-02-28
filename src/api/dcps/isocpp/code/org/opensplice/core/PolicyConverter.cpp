@@ -209,7 +209,7 @@ org::opensplice::core::policy::convertPolicy(const dds::core::policy::GroupData&
 dds::core::policy::History
 org::opensplice::core::policy::convertPolicy(const DDS::HistoryQosPolicy& from)
 {
-    if (from.kind == DDS::KEEP_ALL_HISTORY_QOS)
+    if(from.kind == DDS::KEEP_ALL_HISTORY_QOS)
     {
         return dds::core::policy::History::KeepAll();
     }
@@ -221,7 +221,7 @@ DDS::HistoryQosPolicy
 org::opensplice::core::policy::convertPolicy(const dds::core::policy::History& from)
 {
     DDS::HistoryQosPolicy to;
-    if (from.kind() == dds::core::policy::HistoryKind::KEEP_ALL)
+    if(from.kind() == dds::core::policy::HistoryKind::KEEP_ALL)
     {
         to.kind = DDS::KEEP_ALL_HISTORY_QOS;
         to.depth = 1;
@@ -462,8 +462,10 @@ org::opensplice::core::policy::convertPolicy(const dds::core::policy::ReaderData
 dds::core::policy::Reliability
 org::opensplice::core::policy::convertPolicy(const DDS::ReliabilityQosPolicy& from)
 {
-    if (from.kind == DDS::BEST_EFFORT_RELIABILITY_QOS)
+    if(from.kind == DDS::BEST_EFFORT_RELIABILITY_QOS)
+    {
         return dds::core::policy::Reliability::BestEffort();
+    }
 
     dds::core::Duration d(from.max_blocking_time.sec, from.max_blocking_time.nanosec);
     return dds::core::policy::Reliability::Reliable(d);
@@ -473,7 +475,7 @@ DDS::ReliabilityQosPolicy
 org::opensplice::core::policy::convertPolicy(const dds::core::policy::Reliability& from)
 {
     DDS::ReliabilityQosPolicy to;
-    if (from.kind() == dds::core::policy::ReliabilityKind::BEST_EFFORT)
+    if(from.kind() == dds::core::policy::ReliabilityKind::BEST_EFFORT)
     {
         to.kind = DDS::BEST_EFFORT_RELIABILITY_QOS;
     }

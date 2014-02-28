@@ -32,6 +32,7 @@
 #include "idl_genLanguageHelper.h"
 #include "idl_keyDef.h"
 
+#include "os_heap.h"
 #include "os_stdlib.h"
 
 #include <ctype.h>
@@ -970,28 +971,106 @@ idl_typedefOpenClose(
     }
 }
 
+
 static void
 idl_sequenceOpenClose(
     idl_scope scope,
     idl_typeSeq typeSeq,
     void *userData)
 {
+    int   createFunctions;
     char *sequenceElementName;
     char *sequenceName;
+    idl_scope typeScope;
+
+    createFunctions = TRUE;
 
     sequenceElementName = idl_sequenceElementIdent(idl_typeSeqType(typeSeq));
     sequenceName = idl_sequenceIdent(typeSeq);
 
+    /* Check if current sequence support functions are already defined within
+     * the current working context. */
     if (idl_definitionExists("objManagImpl", sequenceName))
     {
-        return;
+        createFunctions = FALSE;
+    } else {
+        idl_definitionAdd("objManagImpl", sequenceName);
     }
-    idl_definitionAdd("objManagImpl", sequenceName);
 
-    /* Already defined as part of the core implementation */
-    if (strcmp(sequenceName, "DDS_sequence_octet") != 0 &&
-        strcmp(sequenceName, "DDS_sequence_string") != 0)
-    {
+    if (createFunctions) {
+        /* Already defined as part of the core implementation */
+        if ((strcmp(sequenceName, "DDS_sequence_octet")  == 0) ||
+            (strcmp(sequenceName, "DDS_sequence_string") == 0) )
+        {
+            createFunctions = FALSE;
+        }
+    }
+
+    if (createFunctions) {
+        /*
+         * The purpose of this function is to create type sequence support functions.
+         *
+         * The type, however, can be in a different file than this sequence. Let's
+         * call that context. The context can be checked by getting the base of a
+         * scope. By comparing the base of the working scope and the type scope, you
+         * can determine if the context is the same or not.
+         *
+         * If the contexts are the same, then there's no worries and the type sequence
+         * support functions should be created.
+         *
+         * If the contexts are different, then proplems can occur because
+         * 'idl_definitionExists()' only checks the current context for possible type
+         * sequence support functions. When we would create new support function while
+         * another context already has them, then the generated code will not be able
+         * to compile due to 'multiple definitions'.
+         *
+         * So, we have to figure out if the current type is defined within the current
+         * working context by checking the bases. If not, then figure out if the other
+         * context already has defined the type sequence support functions.
+         *
+         * N.B. The working context is always the lowest in the current hierarchy.
+         */
+        typeScope = idl_typeUserScope(idl_typeUser(idl_typeSeqType(typeSeq)));
+        if (typeScope != NULL) {
+
+            char *typeBase = idl_scopeBasename(typeScope);
+            char *workBase = idl_scopeBasename(scope);
+            if (strcmp(typeBase, workBase) != 0) {
+
+                /* If a type has a related key, that means that readers and
+                 * writers have been created, which also means that type
+                 * sequence support functions have already been created in
+                 * the other context. */
+                if (idl_keyDefIncludesType(idl_keyDefDefGet(), sequenceElementName)) {
+                    createFunctions = FALSE;
+                }
+
+                /*
+                 * We should search all scopes of all contexts to be sure that
+                 * no sequence support functions for this type are defined
+                 * anywhere within the hierarchy by means of an actual
+                 * 'sequence<Type>' definition in an idl file.
+                 * We shoudn't only search the context of the type itself for
+                 * sequences of this type because there could be a file include
+                 * between the current working context and the type definition
+                 * context, in which a sequence can be defined.
+                 *
+                 * We don't have access to all contexts at this point.
+                 * Also, only the scope information isn't enough to detect
+                 * sequences. So, basically, we don't have enough information
+                 * here to do a proper search.
+                 *
+                 * This multiple sequences problem, however, can be solved by
+                 * adding a sequence typedef in the idl hierarchy and use that
+                 * typedef everywhere else.
+                 */
+            }
+            os_free(typeBase);
+            os_free(workBase);
+        }
+    }
+
+    if (createFunctions) {
        /* Generate allocation routine for the sequence */
        idl_fileOutPrintf(
           idl_fileCur(),

@@ -38,4 +38,4 @@ E   opensplice/winxp16/x86.win32-dev-vs10 30 #First# none
 M   opensplice/winxp16/x86.win32-release-vs10 30 #First# none
 
 E   opensplice/win2008-64a/x86_64.win64-dev 30 #First# none
-M   opensplice/win2008-64a/x86_64.win64-release 30 #First# none
+E   opensplice/win2008-64a/x86_64.win64-release 30 #First# none

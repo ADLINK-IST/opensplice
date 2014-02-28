@@ -25,7 +25,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -52,6 +52,7 @@ v_groupStreamInit(
     const c_char *name,
     v_subscriber subscriber,
     v_readerQos qos,
+    v_statistics rs,
     c_iter expr);
                                          
 OS_API void            

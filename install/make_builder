@@ -13,11 +13,19 @@ then
     echo "*** Warning: SPLICE_HOST_FULL unset, using SPLICE_HOST ($SPLICE_HOST)"
     SPLICE_HOST_FULL=$SPLICE_HOST
 fi
-INSTALLER_FILENAME=OpenSpliceDDS${PACKAGE_VERSION}-${INSTTYPE}-${SPLICE_HOST_FULL}${EXTRA}
+
+if [ -z "$OPENSPLICE_PLATFORM_CODE" ]
+then
+    # For example if this is an ospli only build
+    INSTALLER_FILENAME_PREFIX="PXXX-"
+else
+    # Set the prefix to be the code and a dash
+    INSTALLER_FILENAME_PREFIX=${OPENSPLICE_PLATFORM_CODE}-
+fi
+
+INSTALLER_FILENAME=${INSTALLER_FILENAME_PREFIX}OpenSpliceDDS${PACKAGE_VERSION}-${INSTTYPE}-${SPLICE_HOST_FULL}-installer${EXTRA}
 
 if [ "${OSPL_BUILDER_APP}" != "builder" ]
 then
-    set_hde_envs "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" "${PACKAGE_DATE}" \
-            "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_HOST_SHORT}" "${SOURCE_TARGET_SHORT}"
     doStandardPackage
 fi

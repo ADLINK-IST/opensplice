@@ -14,7 +14,14 @@ CFLAGS     += -DTARGET_VXWORKS_KM
 endif
 
 LDFLAGS     += $(LDFLAGS_FLEX)
-LDLIBS		+= -l$(DDS_OS) -l$(DDS_DATABASE) -l$(DDS_CONF) -l$(DDS_CONFPARSER) $(LDLIBS_FLEX)
+LDLIBS		+= $(LDLIBS_FLEX)
+#if we are building for the host then use ddshts lib
+#as there is no ddskernel
+ifneq ($(SPLICE_TARGET),$(SPLICE_REAL_TARGET))
+LDLIBS += -l$(DDS_HTS)
+else
+LDLIBS += -l$(DDS_CORE)
+endif
 
 CINCS		+= -I$(OSPL_HOME)/src/database/database/include
 CINCS		+= -I$(OSPL_HOME)/src/configuration/config/include

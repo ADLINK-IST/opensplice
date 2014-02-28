@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -30,12 +30,12 @@ DDS_DataReader_create_readcondition (
     )
 {
     return (DDS_ReadCondition)
-	gapi_dataReader_create_readcondition (
-	    (gapi_dataReader)this,
-	    (gapi_sampleStateMask)sample_states,
-	    (gapi_viewStateMask)view_states,
-	    (gapi_instanceStateMask)instance_states
-	);
+        gapi_dataReader_create_readcondition (
+            (gapi_dataReader)this,
+            (gapi_sampleStateMask)sample_states,
+            (gapi_viewStateMask)view_states,
+            (gapi_instanceStateMask)instance_states
+        );
 }
 
 /*     QueryCondition
@@ -57,14 +57,14 @@ DDS_DataReader_create_querycondition (
     )
 {
     return (DDS_QueryCondition)
-	gapi_dataReader_create_querycondition (
-	    (gapi_dataReader)this,
-	    (gapi_sampleStateMask)sample_states,
-	    (gapi_viewStateMask)view_states,
-	    (gapi_instanceStateMask)instance_states,
-	    (gapi_char *)query_expression,
-	    (gapi_stringSeq *)query_parameters
-	);
+        gapi_dataReader_create_querycondition (
+            (gapi_dataReader)this,
+            (gapi_sampleStateMask)sample_states,
+            (gapi_viewStateMask)view_states,
+            (gapi_instanceStateMask)instance_states,
+            (gapi_char *)query_expression,
+            (gapi_stringSeq *)query_parameters
+        );
 }
 
 /*     ReturnCode_t
@@ -78,10 +78,10 @@ DDS_DataReader_delete_readcondition (
     )
 {
     return (DDS_ReturnCode_t)
-	gapi_dataReader_delete_readcondition (
-	    (DDS_DataReader)this,
-	    (DDS_ReadCondition)a_condition
-	);
+        gapi_dataReader_delete_readcondition (
+            (DDS_DataReader)this,
+            (DDS_ReadCondition)a_condition
+        );
 }
 
 /*     ReturnCode_t
@@ -93,8 +93,8 @@ DDS_DataReader_delete_contained_entities (
     )
 {
     return (DDS_ReturnCode_t)
-	gapi_dataReader_delete_contained_entities (
-	    (gapi_dataReader)this);
+        gapi_dataReader_delete_contained_entities (
+            (gapi_dataReader)this);
 }
 /*     DataReaderView
   *     create_view (
@@ -107,10 +107,10 @@ DDS_DataReader_create_view (
     )
 {
     return (DDS_DataReaderView)
-	gapi_dataReader_create_view (
-	    (gapi_dataReader)this,
-	    (gapi_dataReaderViewQos *)qos
-	);
+        gapi_dataReader_create_view (
+            (gapi_dataReader)this,
+            (gapi_dataReaderViewQos *)qos
+        );
 
 }
 /*     ReturnCode_t
@@ -124,10 +124,10 @@ DDS_DataReader_delete_view (
     )
 {
     return (DDS_ReturnCode_t)
-	gapi_dataReader_delete_view (
-	    (gapi_dataReader)this,
-	    (gapi_dataReaderView)a_view
-	);
+        gapi_dataReader_delete_view (
+            (gapi_dataReader)this,
+            (gapi_dataReaderView)a_view
+        );
 }
 
 
@@ -142,10 +142,10 @@ DDS_DataReader_set_qos (
     )
 {
     return (DDS_ReturnCode_t)
-	gapi_dataReader_set_qos (
-	    (gapi_dataReader)this,
-	    (gapi_dataReaderQos *)qos
-	);
+        gapi_dataReader_set_qos (
+            (gapi_dataReader)this,
+            (gapi_dataReaderQos *)qos
+        );
 }
 
 /*     ReturnCode_t
@@ -159,8 +159,8 @@ DDS_DataReader_get_qos (
     )
 {
     gapi_dataReader_get_qos (
-	(gapi_dataReader)this,
-	(gapi_dataReaderQos *)qos
+        (gapi_dataReader)this,
+        (gapi_dataReaderQos *)qos
     );
     return DDS_RETCODE_OK;
 }
@@ -186,11 +186,11 @@ DDS_DataReader_set_listener (
     }
 
     return (DDS_ReturnCode_t)
-	gapi_dataReader_set_listener (
-	    (gapi_dataReader)this,
-	    (const struct gapi_dataReaderListener *)pListener,
-	    (gapi_statusMask)mask
-	);
+        gapi_dataReader_set_listener (
+            (gapi_dataReader)this,
+            (const struct gapi_dataReaderListener *)pListener,
+            (gapi_statusMask)mask
+        );
 }
 
 /*     DataReaderListener
@@ -219,9 +219,9 @@ DDS_DataReader_get_topicdescription (
     )
 {
     return (DDS_TopicDescription)
-	gapi_dataReader_get_topicdescription (
-	    (gapi_dataReader)this
-	);
+        gapi_dataReader_get_topicdescription (
+            (gapi_dataReader)this
+        );
 }
 
 /*     Subscriber
@@ -233,9 +233,9 @@ DDS_DataReader_get_subscriber (
     )
 {
     return (DDS_Subscriber)
-	gapi_dataReader_get_subscriber (
-	    (gapi_dataReader)this
-	);
+        gapi_dataReader_get_subscriber (
+            (gapi_dataReader)this
+        );
 }
 
 
@@ -368,10 +368,10 @@ DDS_DataReader_wait_for_historical_data (
     )
 {
     return (DDS_ReturnCode_t)
-	gapi_dataReader_wait_for_historical_data (
-	    (gapi_dataReader)this,
-	    (const gapi_duration_t *)max_wait
-	);
+        gapi_dataReader_wait_for_historical_data (
+            (gapi_dataReader)this,
+            (const gapi_duration_t *)max_wait
+        );
 }
 
 DDS_ReturnCode_t
@@ -405,10 +405,10 @@ DDS_DataReader_get_matched_publications (
     )
 {
     return (DDS_ReturnCode_t)
-	gapi_dataReader_get_matched_publications (
-	    (gapi_dataReader)this,
-	    (gapi_instanceHandleSeq *)publication_handles
-	);
+        gapi_dataReader_get_matched_publications (
+            (gapi_dataReader)this,
+            (gapi_instanceHandleSeq *)publication_handles
+        );
 }
 
 /*     ReturnCode_t
@@ -424,11 +424,11 @@ DDS_DataReader_get_matched_publication_data (
     )
 {
     return (DDS_ReturnCode_t)
-	gapi_dataReader_get_matched_publication_data (
-	    (gapi_dataReader)this,
-	    (gapi_publicationBuiltinTopicData *)publication_data,
-	    (gapi_instanceHandle_t)publication_handle
-	);
+        gapi_dataReader_get_matched_publication_data (
+            (gapi_dataReader)this,
+            (gapi_publicationBuiltinTopicData *)publication_data,
+            (gapi_instanceHandle_t)publication_handle
+        );
 }
 
 /*     ReturnCode_t
@@ -465,3 +465,18 @@ DDS_DataReader_get_default_datareaderview_qos (
         );
 }
 
+/*     ReturnCode_t
+ *     set_notread_threshold(
+ *         in long threshold);
+ */
+DDS_ReturnCode_t
+DDS_DataReader_set_notread_threshold (
+    DDS_DataReader _this,
+    DDS_long threshold)
+{
+    return (DDS_ReturnCode_t)
+    gapi_dataReader_set_notread_threshold(
+        (gapi_dataReader)_this,
+        threshold
+        );
+}

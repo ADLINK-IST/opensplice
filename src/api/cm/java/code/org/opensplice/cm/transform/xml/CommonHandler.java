@@ -175,7 +175,7 @@ abstract class CommonHandler extends DefaultHandler {
                 (typeName.equals("c_wstring")) ||
                 (typeName.startsWith("C_STRING<")) ||
                 (typeName.startsWith("C_WSTRING<"))) {
-            fe = this.getFirstMatchingElement(elements, nestedElementName);
+            fe = this.getFirstMatchingElement(elements, nestedElementName, ENDTOKEN_DUMMY);
 
             if (fe != null) {
                 data.setData(nestedFieldName, fe.flatValue);
@@ -186,7 +186,7 @@ abstract class CommonHandler extends DefaultHandler {
             if (size == 0) {
                 // get the size as provided in the elements
                 FlatElement sizeElement = getFirstMatchingElement(elements,
-                        nestedElementName + ".size");
+                        nestedElementName + ENDTOKEN_COLLECTION_SIZE, ENDTOKEN_COLLECTION_SIZE);
                 if (sizeElement != null) {
                     size = Integer.parseInt(sizeElement.flatValue);
                 }
@@ -205,7 +205,7 @@ abstract class CommonHandler extends DefaultHandler {
 
                     for (int i = 0; found; i++) {
                         fieldName = getCollectionFieldName(nestedFieldName, i);
-                        fe = this.getFirstMatchingElement(elements, fieldName);
+                        fe = this.getFirstMatchingElement(elements, fieldName, ENDTOKEN_DUMMY);
 
                         if (fe != null) {
                             if (!fe.flatValue.equals("<NULL>")) {
@@ -219,6 +219,20 @@ abstract class CommonHandler extends DefaultHandler {
                     }
                 }
             } else {
+                /*
+                 * A bounded sequence has a maxSize and will get us here. But the
+                 * sequence doesn't have to be completely filled.
+                 * A bounded sequence also has the size element, which contains the
+                 * actual number of elements that the sequence contains.
+                 * Get the size as provided in the elements. If there isn't a size
+                 * element, then we're currently handling an array.
+                 */
+                FlatElement sizeElement = getFirstMatchingElement(elements,
+                        nestedElementName + ENDTOKEN_COLLECTION_SIZE, ENDTOKEN_COLLECTION_SIZE);
+                if (sizeElement != null) {
+                    size = Integer.parseInt(sizeElement.flatValue);
+                }
+
                 for (int i = 0; i < size; i++) {
                     this.fillType(getCollectionFieldName(nestedFieldName, i),
                             getCollectionFieldName(nestedElementName, i),
@@ -276,7 +290,7 @@ abstract class CommonHandler extends DefaultHandler {
     protected void fillPrimitive(String nestedFieldName,
             String nestedElementFieldName, UserData data, ArrayList<FlatElement> elements) {
         FlatElement element;
-        element = getFirstMatchingElement(elements, nestedElementFieldName);
+        element = getFirstMatchingElement(elements, nestedElementFieldName, ENDTOKEN_DUMMY);
 
         if (element != null) {
             data.setData(nestedFieldName, element.flatValue);
@@ -290,7 +304,7 @@ abstract class CommonHandler extends DefaultHandler {
             String nestedElementFieldName,
             UserData data, ArrayList<FlatElement> elements) {
         FlatElement element;
-        element = getFirstMatchingElement(elements, nestedElementFieldName);
+        element = getFirstMatchingElement(elements, nestedElementFieldName, ENDTOKEN_DUMMY);
 
         if (element != null) {
             data.setData(nestedFieldName, element.flatValue);
@@ -305,7 +319,7 @@ abstract class CommonHandler extends DefaultHandler {
             ArrayList<FlatElement> elements) {
         FlatElement element;
         element = getFirstMatchingElement(elements,
-                nestedElementFieldName + ".switch");
+                nestedElementFieldName + ".switch", ENDTOKEN_DUMMY);
 
         if (element != null) {
             data.setData(nestedFieldName + ".switch", element.flatValue);
@@ -320,7 +334,7 @@ abstract class CommonHandler extends DefaultHandler {
         }
     }
 
-    protected FlatElement getFirstMatchingElement(ArrayList<FlatElement> elements, String name) {
+    protected FlatElement getFirstMatchingElement(ArrayList<FlatElement> elements, String name, String ignoreByEndToken) {
         FlatElement element, result;
         int i, index;
         StringTokenizer st;
@@ -344,7 +358,7 @@ abstract class CommonHandler extends DefaultHandler {
                     token = st.nextToken();
 
                     if (elementName.startsWith(token)
-                            && (!elementName.endsWith(".size"))) {
+                            && (!elementName.endsWith(ignoreByEndToken))) {
                         if (elementName.equals(token) && (!st.hasMoreTokens())) {
                             result = element;
                             proceed = false;
@@ -356,7 +370,7 @@ abstract class CommonHandler extends DefaultHandler {
                     } else {
                         index = token.indexOf('[');
 
-                        if ((index != -1) && (!elementName.endsWith(".size"))) {
+                        if ((index != -1) && (!elementName.endsWith(ignoreByEndToken))) {
                             if (elementName.startsWith(token
                                     .substring(0, index))) {
                                 if ((token.indexOf('.') == -1)
@@ -527,4 +541,10 @@ abstract class CommonHandler extends DefaultHandler {
     protected final Logger                       logger;
 
     protected String                           dataBuffer;
+
+    /**
+     * Few helper token strings to call getFirstMatchingElement() with.
+     */
+    protected static final String ENDTOKEN_COLLECTION_SIZE = ".size";
+    protected static final String ENDTOKEN_DUMMY           = ".....";
 }

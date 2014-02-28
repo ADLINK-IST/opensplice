@@ -46,7 +46,7 @@ TInstanceHandle<DELEGATE>::~TInstanceHandle() { }
 template <typename DELEGATE>
 TInstanceHandle<DELEGATE>& TInstanceHandle<DELEGATE>::operator=(const TInstanceHandle& that)
 {
-    if (this != &that)
+    if(this != &that)
     {
         this->delegate() = that.delegate();
     }
@@ -57,6 +57,18 @@ template <typename DELEGATE>
 bool TInstanceHandle<DELEGATE>::operator==(const TInstanceHandle& that) const
 {
     return this->delegate() == that.delegate();
+}
+
+template <typename DELEGATE>
+bool TInstanceHandle<DELEGATE>::operator<(const TInstanceHandle& that) const
+{
+    return this->delegate() < that.delegate();
+}
+
+template <typename DELEGATE>
+bool TInstanceHandle<DELEGATE>::operator>(const TInstanceHandle& that) const
+{
+    return this->delegate() > that.delegate();
 }
 
 template <typename DELEGATE>

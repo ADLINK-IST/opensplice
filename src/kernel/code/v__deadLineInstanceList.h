@@ -41,7 +41,8 @@ v_deadLineInstanceListSetDuration(
 void
 v_deadLineInstanceListInsertInstance(
     v_deadLineInstanceList _this,
-    v_instance instance);
+    v_instance instance,
+    c_time timestamp);
 
 void
 v_deadLineInstanceListRemoveInstance(
@@ -51,7 +52,8 @@ v_deadLineInstanceListRemoveInstance(
 void
 v_deadLineInstanceListUpdate(
     v_deadLineInstanceList _this,
-    v_instance instance);
+    v_instance instance,
+    c_time timestamp);
 
 c_iter
 v_deadLineInstanceListCheckDeadlineMissed(

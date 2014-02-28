@@ -3,6 +3,10 @@
 
 #include "q_thread.h"
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 struct gcreq;
 struct gcreq_queue;
 
@@ -34,6 +38,10 @@ struct gcreq *gcreq_new (struct gcreq_queue *gcreq_queue, gcreq_cb_t cb);
 void gcreq_free (struct gcreq *gcreq);
 void gcreq_enqueue (struct gcreq *gcreq);
 int gcreq_requeue (struct gcreq *gcreq, gcreq_cb_t cb);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* Q_GC_H */
 

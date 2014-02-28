@@ -7,9 +7,6 @@ call %FUNCTIONS% :check_osplhome
 echo "====Calling stopOSPL ===="
 call %FUNCTIONS% :stopOSPL
 
-echo "====Calling deleteDBFFiles ===="
-call %FUNCTIONS% :deleteDBFFiles
-
 @echo off
 set EXPECTED_RESULT=..\..\expected_results
 set WIN_BATCH="..\..\..\..\win_batch"
@@ -23,8 +20,8 @@ java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes BuildInTopicsDataSubscribe
 %SLEEP5% > NUL
 
 echo "===== Calling builtintopicsCheckResult ===="
-call %FUNCTIONS% :builtintopicsCheckResult
-
+call %FUNCTIONS% :builtintopicsCheckResult >> run.log
+ 
 echo "===== calling stopOSPL ===="
 rem Don't kill it too soon.
 call %FUNCTIONS% :stopOSPL

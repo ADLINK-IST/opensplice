@@ -34,8 +34,8 @@ NoOpTopicListener<T>::~NoOpTopicListener() { }
 
 template <typename T>
 void NoOpTopicListener<T>::on_inconsistent_topic(
-        Topic<T>& topic,
-        const dds::core::status::InconsistentTopicStatus& status) { }
+    Topic<T>& topic,
+    const dds::core::status::InconsistentTopicStatus& status) { }
 
 }
 }

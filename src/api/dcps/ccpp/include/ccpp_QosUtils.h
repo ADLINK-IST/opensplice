@@ -17,6 +17,8 @@
 
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
+C_CLASS(qp_qosProviderInputAttr);
+
 //policies conversions
 
 namespace DDS
@@ -379,7 +381,7 @@ namespace DDS
                   const ::DDS::InvalidSampleVisibilityQosPolicy &from,
                   gapi_invalidSampleVisibilityQosPolicy &to);
 
-    struct DefaultQos
+    struct OS_DCPS_API DefaultQos
     {
         static ::DDS::DomainParticipantFactoryQos_var ParticipantFactoryQosDefault;
         static ::DDS::DomainParticipantQos_var        ParticipantQosDefault;
@@ -393,6 +395,126 @@ namespace DDS
         static ::DDS::DataReaderViewQos_var           DataReaderViewQosDefault;
     };
 
+    OS_DCPS_API const C_STRUCT(qp_qosProviderInputAttr) * ccpp_getQosProviderInputAttr();
+
+    /* Overloaded QoS policy equality operators */
+    OS_DCPS_API bool operator==( const DDS::Duration_t &a, const DDS::Duration_t &b);
+    OS_DCPS_API bool operator!=( const DDS::Duration_t &a, const DDS::Duration_t &b);
+
+    OS_DCPS_API bool operator==( const DDS::octSeq &a, const DDS::octSeq &b);
+    OS_DCPS_API bool operator!=( const DDS::octSeq &a, const DDS::octSeq &b);
+
+    OS_DCPS_API bool operator==( const DDS::StringSeq &a, const DDS::StringSeq &b);
+    OS_DCPS_API bool operator!=( const DDS::StringSeq &a, const DDS::StringSeq &b);
+
+    OS_DCPS_API bool operator==( const DDS::DeadlineQosPolicy            &a, const DDS::DeadlineQosPolicy            &b);
+    OS_DCPS_API bool operator!=( const DDS::DeadlineQosPolicy            &a, const DDS::DeadlineQosPolicy            &b);
+
+    OS_DCPS_API bool operator==( const DDS::DestinationOrderQosPolicy    &a, const DDS::DestinationOrderQosPolicy    &b);
+    OS_DCPS_API bool operator!=( const DDS::DestinationOrderQosPolicy    &a, const DDS::DestinationOrderQosPolicy    &b);
+
+    OS_DCPS_API bool operator==( const DDS::DurabilityQosPolicy          &a, const DDS::DurabilityQosPolicy          &b);
+    OS_DCPS_API bool operator!=( const DDS::DurabilityQosPolicy          &a, const DDS::DurabilityQosPolicy          &b);
+
+    OS_DCPS_API bool operator==( const DDS::DurabilityServiceQosPolicy   &a, const DDS::DurabilityServiceQosPolicy   &b);
+    OS_DCPS_API bool operator!=( const DDS::DurabilityServiceQosPolicy   &a, const DDS::DurabilityServiceQosPolicy   &b);
+
+    OS_DCPS_API bool operator==( const DDS::EntityFactoryQosPolicy       &a, const DDS::EntityFactoryQosPolicy       &b);
+    OS_DCPS_API bool operator!=( const DDS::EntityFactoryQosPolicy       &a, const DDS::EntityFactoryQosPolicy       &b);
+
+    OS_DCPS_API bool operator==( const DDS::GroupDataQosPolicy           &a, const DDS::GroupDataQosPolicy           &b);
+    OS_DCPS_API bool operator!=( const DDS::GroupDataQosPolicy           &a, const DDS::GroupDataQosPolicy           &b);
+
+    OS_DCPS_API bool operator==( const DDS::HistoryQosPolicy             &a, const DDS::HistoryQosPolicy             &b);
+    OS_DCPS_API bool operator!=( const DDS::HistoryQosPolicy             &a, const DDS::HistoryQosPolicy             &b);
+
+    OS_DCPS_API bool operator==( const DDS::LatencyBudgetQosPolicy       &a, const DDS::LatencyBudgetQosPolicy       &b);
+    OS_DCPS_API bool operator!=( const DDS::LatencyBudgetQosPolicy       &a, const DDS::LatencyBudgetQosPolicy       &b);
+
+    OS_DCPS_API bool operator==( const DDS::LifespanQosPolicy            &a, const DDS::LifespanQosPolicy            &b);
+    OS_DCPS_API bool operator!=( const DDS::LifespanQosPolicy            &a, const DDS::LifespanQosPolicy            &b);
+
+    OS_DCPS_API bool operator==( const DDS::LivelinessQosPolicy          &a, const DDS::LivelinessQosPolicy          &b);
+    OS_DCPS_API bool operator!=( const DDS::LivelinessQosPolicy          &a, const DDS::LivelinessQosPolicy          &b);
+
+    OS_DCPS_API bool operator==( const DDS::OwnershipQosPolicy           &a, const DDS::OwnershipQosPolicy           &b);
+    OS_DCPS_API bool operator!=( const DDS::OwnershipQosPolicy           &a, const DDS::OwnershipQosPolicy           &b);
+
+    OS_DCPS_API bool operator==( const DDS::OwnershipStrengthQosPolicy   &a, const DDS::OwnershipStrengthQosPolicy   &b);
+    OS_DCPS_API bool operator!=( const DDS::OwnershipStrengthQosPolicy   &a, const DDS::OwnershipStrengthQosPolicy   &b);
+
+    OS_DCPS_API bool operator==( const DDS::PartitionQosPolicy           &a, const DDS::PartitionQosPolicy           &b);
+    OS_DCPS_API bool operator!=( const DDS::PartitionQosPolicy           &a, const DDS::PartitionQosPolicy           &b);
+
+    OS_DCPS_API bool operator==( const DDS::PresentationQosPolicy        &a, const DDS::PresentationQosPolicy        &b);
+    OS_DCPS_API bool operator!=( const DDS::PresentationQosPolicy        &a, const DDS::PresentationQosPolicy        &b);
+
+    OS_DCPS_API bool operator==( const DDS::ReaderDataLifecycleQosPolicy &a, const DDS::ReaderDataLifecycleQosPolicy &b);
+    OS_DCPS_API bool operator!=( const DDS::ReaderDataLifecycleQosPolicy &a, const DDS::ReaderDataLifecycleQosPolicy &b);
+
+    OS_DCPS_API bool operator==( const DDS::ReaderLifespanQosPolicy      &a, const DDS::ReaderLifespanQosPolicy      &b);
+    OS_DCPS_API bool operator!=( const DDS::ReaderLifespanQosPolicy      &a, const DDS::ReaderLifespanQosPolicy      &b);
+
+    OS_DCPS_API bool operator==( const DDS::ReliabilityQosPolicy         &a, const DDS::ReliabilityQosPolicy         &b);
+    OS_DCPS_API bool operator!=( const DDS::ReliabilityQosPolicy         &a, const DDS::ReliabilityQosPolicy         &b);
+
+    OS_DCPS_API bool operator==( const DDS::ResourceLimitsQosPolicy      &a, const DDS::ResourceLimitsQosPolicy      &b);
+    OS_DCPS_API bool operator!=( const DDS::ResourceLimitsQosPolicy      &a, const DDS::ResourceLimitsQosPolicy      &b);
+
+    OS_DCPS_API bool operator==( const DDS::ShareQosPolicy               &a, const DDS::ShareQosPolicy               &b);
+    OS_DCPS_API bool operator!=( const DDS::ShareQosPolicy               &a, const DDS::ShareQosPolicy               &b);
+
+    OS_DCPS_API bool operator==( const DDS::SchedulingClassQosPolicy     &a, const DDS::SchedulingClassQosPolicy     &b);
+    OS_DCPS_API bool operator!=( const DDS::SchedulingClassQosPolicy     &a, const DDS::SchedulingClassQosPolicy     &b);
+
+    OS_DCPS_API bool operator==( const DDS::SchedulingPriorityQosPolicy  &a, const DDS::SchedulingPriorityQosPolicy  &b);
+    OS_DCPS_API bool operator!=( const DDS::SchedulingPriorityQosPolicy  &a, const DDS::SchedulingPriorityQosPolicy  &b);
+
+    OS_DCPS_API bool operator==( const DDS::SchedulingQosPolicy          &a, const DDS::SchedulingQosPolicy          &b);
+    OS_DCPS_API bool operator!=( const DDS::SchedulingQosPolicy          &a, const DDS::SchedulingQosPolicy          &b);
+
+    OS_DCPS_API bool operator==( const DDS::SubscriptionKeyQosPolicy     &a, const DDS::SubscriptionKeyQosPolicy     &b);
+    OS_DCPS_API bool operator!=( const DDS::SubscriptionKeyQosPolicy     &a, const DDS::SubscriptionKeyQosPolicy     &b);
+
+    OS_DCPS_API bool operator==( const DDS::TimeBasedFilterQosPolicy     &a, const DDS::TimeBasedFilterQosPolicy     &b);
+    OS_DCPS_API bool operator!=( const DDS::TimeBasedFilterQosPolicy     &a, const DDS::TimeBasedFilterQosPolicy     &b);
+
+    OS_DCPS_API bool operator==( const DDS::TopicDataQosPolicy           &a, const DDS::TopicDataQosPolicy           &b);
+    OS_DCPS_API bool operator!=( const DDS::TopicDataQosPolicy           &a, const DDS::TopicDataQosPolicy           &b);
+
+    OS_DCPS_API bool operator==( const DDS::TransportPriorityQosPolicy   &a, const DDS::TransportPriorityQosPolicy   &b);
+    OS_DCPS_API bool operator!=( const DDS::TransportPriorityQosPolicy   &a, const DDS::TransportPriorityQosPolicy   &b);
+
+    OS_DCPS_API bool operator==( const DDS::UserDataQosPolicy            &a, const DDS::UserDataQosPolicy            &b);
+    OS_DCPS_API bool operator!=( const DDS::UserDataQosPolicy            &a, const DDS::UserDataQosPolicy            &b);
+
+    OS_DCPS_API bool operator==( const DDS::ViewKeyQosPolicy             &a, const DDS::ViewKeyQosPolicy             &b);
+    OS_DCPS_API bool operator!=( const DDS::ViewKeyQosPolicy             &a, const DDS::ViewKeyQosPolicy             &b);
+
+    OS_DCPS_API bool operator==( const DDS::WriterDataLifecycleQosPolicy &a, const DDS::WriterDataLifecycleQosPolicy &b);
+    OS_DCPS_API bool operator!=( const DDS::WriterDataLifecycleQosPolicy &a, const DDS::WriterDataLifecycleQosPolicy &b);
+
+    /* Overloaded QoS equality operators */
+    OS_DCPS_API bool operator==( const DDS::DataReaderQos        &a,  const DDS::DataReaderQos        &b);
+    OS_DCPS_API bool operator!=( const DDS::DataReaderQos        &a,  const DDS::DataReaderQos        &b);
+
+    OS_DCPS_API bool operator==( const DDS::DataReaderViewQos    &a,  const DDS::DataReaderViewQos    &b);
+    OS_DCPS_API bool operator!=( const DDS::DataReaderViewQos    &a,  const DDS::DataReaderViewQos    &b);
+
+    OS_DCPS_API bool operator==( const DDS::DataWriterQos        &a,  const DDS::DataWriterQos        &b);
+    OS_DCPS_API bool operator!=( const DDS::DataWriterQos        &a,  const DDS::DataWriterQos        &b);
+
+    OS_DCPS_API bool operator==( const DDS::DomainParticipantQos &a,  const DDS::DomainParticipantQos &b);
+    OS_DCPS_API bool operator!=( const DDS::DomainParticipantQos &a,  const DDS::DomainParticipantQos &b);
+
+    OS_DCPS_API bool operator==( const DDS::PublisherQos         &a,  const DDS::PublisherQos         &b);
+    OS_DCPS_API bool operator!=( const DDS::PublisherQos         &a,  const DDS::PublisherQos         &b);
+
+    OS_DCPS_API bool operator==( const DDS::SubscriberQos        &a,  const DDS::SubscriberQos        &b);
+    OS_DCPS_API bool operator!=( const DDS::SubscriberQos        &a,  const DDS::SubscriberQos        &b);
+
+    OS_DCPS_API bool operator==( const DDS::TopicQos             &a,  const DDS::TopicQos             &b);
+    OS_DCPS_API bool operator!=( const DDS::TopicQos             &a,  const DDS::TopicQos             &b);
 }
 
 #endif /* QOSUTILS */

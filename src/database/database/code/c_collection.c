@@ -12,8 +12,10 @@
  *
  */
 #include <math.h>
+#include <stddef.h>
 #include "os.h"
 #include "os_report.h"
+#include "ut_avl.h"
 #include "q_expr.h"
 #include "c__base.h"
 #include "c__scope.h"
@@ -23,11 +25,8 @@
 #include "c__querybase.h"
 #include "c_metafactory.h"
 #include "c_stringSupport.h"
-#include "c_avltree.h"
 #include "c_mmbase.h"
 #include "c__mmbase.h"
-
-#define _PREALLOC_ (32)
 
 #define MM(c)      ((c_mm)c_baseMM(c__getBase(c)))
 
@@ -106,18 +105,23 @@ C_STRUCT(c_list) {
 };
 
 C_STRUCT(c_set) {
-    C_EXTENDS(c_avlTree);
+    ut_avlCTree_t tree;
     c_mm mm;
 };
 
 C_STRUCT(c_bag) {
-    C_EXTENDS(c_avlTree);
+    ut_avlTree_t tree;
     c_ulong count;
     c_mm mm;
 };
 
+union c_tableContents {
+    c_object object;
+    ut_avlTree_t tree;
+};
+
 C_STRUCT(c_table) {
-    c_object object;   /* is either an object or a collection of objects. */
+    union c_tableContents contents;
     c_array cursor;
     c_array key;
     c_ulong count;
@@ -135,6 +139,26 @@ const c_long c_setSize   = C_SIZEOF(c_set);
 const c_long c_bagSize   = C_SIZEOF(c_bag);
 const c_long c_tableSize = C_SIZEOF(c_table);
 const c_long c_querySize = C_SIZEOF(c_query);
+
+static int ptrCompare(const void *a, const void *b)
+{
+    return (a == b) ? 0 : (a < b) ? -1 : 1;
+}
+
+static c_bool predMatches (c_qPred qp, c_object o)
+{
+    if (qp == NULL) {
+        return TRUE;
+    } else {
+        do {
+            if (c_qPredEval (qp, o)) {
+                return TRUE;
+            }
+            qp = qp->next;
+        } while (qp);
+        return FALSE;
+    }
+}
 
 /* ============================================================================*/
 /* GENERIC COLLECT ACTION METHOD                                               */
@@ -687,50 +711,28 @@ c_readLast (
 /* ============================================================================*/
 
 C_STRUCT(c_setNode) {
-    C_EXTENDS(c_avlNode);
+    ut_avlNode_t avlnode;
     c_object object;
 };
 
-static c_equality
-c_setCompare(
-    c_setNode n1,
-    c_setNode n2,
-    c_voidp args)
-{
-    if (args != NULL) {
-        OS_REPORT(OS_WARNING,"c_set",0,"c_setCompare: parameter arg not NULL");
-    }
-    if (n2->object == NULL) {
-        return C_GT;
-    }
-    if (n1->object == NULL) {
-        return C_LT;
-    }
-    if ((c_voidp)n1->object > (c_voidp)n2->object) {
-        return C_GT;
-    }
-    if ((c_voidp)n1->object < (c_voidp)n2->object) {
-        return C_LT;
-    }
-    return C_EQ;
-}
+static const ut_avlCTreedef_t c_set_td =
+    UT_AVL_CTREEDEF_INITIALIZER_INDKEY (
+        offsetof (C_STRUCT(c_setNode), avlnode), offsetof (C_STRUCT(c_setNode), object),
+        ptrCompare, 0);
 
 c_object
 c_setInsert (
     c_set _this,
     c_object o)
 {
-    C_STRUCT(c_set) *s = (C_STRUCT(c_set) *)_this;
-    c_setNode f,n;
-
+    C_STRUCT(c_set) *set = (C_STRUCT(c_set) *) _this;
+    ut_avlIPath_t p;
+    c_setNode f;
     assert(c_collectionIsType(_this, C_SET));
-
-    n = c_mmMalloc (s->mm, C_SIZEOF(c_setNode));
-    n->object = c_keep(o);
-    f = c_avlTreeInsert((c_avlTree)s,n,c_setCompare,NULL);
-    if (f != n) {
-        c_mmFree(s->mm,n);
-        c_free(o);
+    if ((f = ut_avlCLookupIPath (&c_set_td, &set->tree, o, &p)) == NULL) {
+        f = c_mmMalloc (set->mm, sizeof (*f));
+        f->object = c_keep (o);
+        ut_avlCInsertIPath (&c_set_td, &set->tree, f, &p);
     }
     return f->object;
 }
@@ -742,23 +744,23 @@ c_setReplace (
     c_bool (*condition)(),
     c_voidp arg)
 {
-    C_STRUCT(c_set) *s = (C_STRUCT(c_set) *)_this;
-    c_setNode f,n;
-
+    C_STRUCT(c_set) *set = (C_STRUCT(c_set) *) _this;
+    ut_avlIPath_t p;
+    c_setNode f;
     assert(c_collectionIsType(_this, C_SET));
-
-    if (arg != NULL) {
-        /* supress warnings */
-    }
-    n = c_mmMalloc (s->mm, C_SIZEOF(c_setNode));
-    n->object = c_keep(o);
-    f = c_avlTreeReplace((c_avlTree)s,n,c_setCompare,NULL,condition,arg);
-    if (f == NULL) {
+    c_keep (o);
+    if ((f = ut_avlCLookupIPath (&c_set_td, &set->tree, o, &p)) == NULL) {
+        f = c_mmMalloc (set->mm, sizeof (*f));
+        f->object = o;
+        ut_avlCInsertIPath (&c_set_td, &set->tree, f, &p);
         return NULL;
+    } else if (condition == 0 || condition (f->object, o, arg)) {
+        c_object old = f->object;
+        f->object = o;
+        return old;
+    } else {
+        return o;
     }
-    o = f->object;
-    c_mmFree(s->mm,f);
-    return o;
 }
 
 c_object
@@ -768,49 +770,20 @@ c_setRemove (
     c_removeCondition condition,
     c_voidp arg)
 {
-    C_STRUCT(c_set) *s = (C_STRUCT(c_set) *)_this;
+    C_STRUCT(c_set) *set = (C_STRUCT(c_set) *) _this;
+    ut_avlDPath_t p;
     c_setNode f;
-    C_STRUCT(c_setNode) n;
-    c_object object;
-
     assert(c_collectionIsType(_this, C_SET));
-
-    n.object = o;
-    f = c_avlTreeRemove((c_avlTree)s,&n,c_setCompare,NULL,condition,arg);
-    if (f == NULL) {
+    if ((f = ut_avlCLookupDPath (&c_set_td, &set->tree, o, &p)) == NULL) {
         return NULL;
-    }
-    object = f->object;
-    c_mmFree(s->mm,f);
-    return object;
-}
-
-C_STRUCT(setReadActionArg) {
-    c_qPred query;
-    c_action action;
-    c_voidp arg;
-};
-C_CLASS(setReadActionArg);
-
-static c_bool
-setReadAction(
-    c_setNode n,
-    setReadActionArg arg)
-{
-    c_qPred pred;
-
-    pred = arg->query;
-    if (pred == NULL) {
-        return arg->action(n->object,arg->arg);
+    } else if (condition && !condition (f->object, o, arg)) {
+        return NULL;
     } else {
-        while (pred != NULL) {
-            if (c_qPredEval(pred, n->object)) {
-                return arg->action(n->object,arg->arg);
-            }
-            pred = pred->next;
-        }
+        c_object old = f->object;
+        ut_avlCDeleteDPath (&c_set_td, &set->tree, f, &p);
+        c_mmFree (set->mm, f);
+        return old;
     }
-    return TRUE;
 }
 
 static c_bool
@@ -820,14 +793,20 @@ c_setRead(
     c_action action,
     c_voidp arg)
 {
-    C_STRUCT(setReadActionArg) a;
-
+    C_STRUCT(c_set) *set = (C_STRUCT(c_set) *) _this;
+    ut_avlCIter_t it;
+    c_setNode n;
+    c_bool proceed;
     assert(c_collectionIsType(_this, C_SET));
-
-    a.query = q;
-    a.action = action;
-    a.arg = arg;
-    return c_avlTreeWalk((c_avlTree)_this,setReadAction,&a,C_INFIX);
+    proceed = TRUE;
+    for (n = ut_avlCIterFirst (&c_set_td, &set->tree, &it);
+         n != NULL && proceed;
+         n = ut_avlCIterNext (&it)) {
+        if (predMatches (q, n->object)) {
+            proceed = action (n->object, arg);
+        }
+    }
+    return proceed;
 }
 
 static c_iter
@@ -910,36 +889,29 @@ c_long
 c_setCount (
     c_set _this)
 {
+    C_STRUCT(c_set) *set = (C_STRUCT(c_set) *) _this;
     assert(c_collectionIsType(_this, C_SET));
-    return c_avlTreeCount((c_avlTree)_this);
-}
-
-typedef struct c_setWalkActionArg {
-    c_action action;
-    c_voidp arg;
-} *c_setWalkActionArg;
-
-static c_bool
-c_setWalkAction(
-    c_setNode n,
-    c_setWalkActionArg arg)
-{
-    return arg->action(n->object,arg->arg);
+    return ut_avlCCount(&set->tree);
 }
 
 c_bool
 c_setWalk(
-    c_set s,
+    c_set _this,
     c_action action,
     c_voidp actionArg)
 {
-    struct c_setWalkActionArg arg;
-
-    assert(c_collectionIsType(s, C_SET));
-
-    arg.action = action;
-    arg.arg = actionArg;
-    return c_avlTreeWalk((c_avlTree)s,c_setWalkAction,&arg,C_INFIX);
+    C_STRUCT(c_set) *set = (C_STRUCT(c_set) *) _this;
+    ut_avlCIter_t it;
+    c_setNode n;
+    c_bool proceed;
+    assert(c_collectionIsType(_this, C_SET));
+    proceed = TRUE;
+    for (n = ut_avlCIterFirst (&c_set_td, &set->tree, &it);
+         n != NULL && proceed;
+         n = ut_avlCIterNext (&it)) {
+        proceed = action (n->object, actionArg);
+    }
+    return proceed;
 }
 
 /*============================================================================*/
@@ -947,47 +919,34 @@ c_setWalk(
 /*============================================================================*/
 
 C_STRUCT(c_bagNode) {
-    C_EXTENDS(c_avlNode);
+    ut_avlNode_t avlnode;
     c_object object;
     c_long count;
 };
 
-static c_equality
-c_bagCompare(
-    c_bagNode n1,
-    c_bagNode n2,
-    void *args)
-{
-    if (args != NULL) {
-        OS_REPORT(OS_WARNING,"c_bag",0,"c_bagCompare: parameter arg not NULL");
-    }
-    if (n2->object == NULL) return C_GT;
-    if (n1->object == NULL) return C_LT;
-    if ((c_voidp)n1->object > (c_voidp)n2->object) return C_GT;
-    if ((c_voidp)n1->object < (c_voidp)n2->object) return C_LT;
-    return C_EQ;
-}
+static const ut_avlTreedef_t c_bag_td =
+    UT_AVL_TREEDEF_INITIALIZER_INDKEY (
+        offsetof (C_STRUCT(c_bagNode), avlnode), offsetof (C_STRUCT(c_bagNode), object),
+        ptrCompare, 0);
 
 c_object
 c_bagInsert (
     c_bag _this,
     c_object o)
 {
-    C_STRUCT(c_bag) *b = (C_STRUCT(c_bag) *)_this;
-    c_bagNode f,n;
-
+    C_STRUCT(c_bag) *bag = (C_STRUCT(c_bag) *) _this;
+    ut_avlIPath_t p;
+    c_bagNode f;
     assert(c_collectionIsType(_this, C_BAG));
-
-    n = c_mmMalloc (b->mm, C_SIZEOF(c_bagNode));
-    n->object = c_keep(o);
-    n->count = 1;
-    f = c_avlTreeInsert((c_avlTree)b,n,c_bagCompare,NULL);
-    if (f != n) {
-        c_mmFree(b->mm,n);
-        c_free(o);
+    if ((f = ut_avlLookupIPath (&c_bag_td, &bag->tree, o, &p)) == NULL) {
+        f = c_mmMalloc (bag->mm, sizeof (*f));
+        f->object = c_keep (o);
+        f->count = 1;
+        ut_avlInsertIPath (&c_bag_td, &bag->tree, f, &p);
+    } else {
         f->count++;
     }
-    b->count++;
+    bag->count++;
     return f->object;
 }
 
@@ -998,26 +957,25 @@ c_bagReplace (
     c_bool (*condition)(),
     c_voidp arg)
 {
-    C_STRUCT(c_bag) *b = (C_STRUCT(c_bag) *)_this;
-    c_bagNode f,n;
-
+    C_STRUCT(c_bag) *bag = (C_STRUCT(c_bag) *) _this;
+    ut_avlIPath_t p;
+    c_bagNode f;
     assert(c_collectionIsType(_this, C_BAG));
-
-    if (arg != NULL) {
-        /* supress warnings */
-    }
-    n = c_mmMalloc (b->mm, C_SIZEOF(c_bagNode));
-    n->object = c_keep(o);
-    n->count = 1;
-    f = c_avlTreeReplace((c_avlTree)b,n,c_bagCompare,NULL,condition,arg);
-    if (f == NULL) {
-        o = NULL;
-        b->count++;
+    c_keep (o);
+    if ((f = ut_avlLookupIPath (&c_bag_td, &bag->tree, o, &p)) == NULL) {
+        f = c_mmMalloc (bag->mm, sizeof (*f));
+        f->object = o;
+        f->count = 1;
+        ut_avlInsertIPath (&c_bag_td, &bag->tree, f, &p);
+        bag->count++;
+        return NULL;
+    } else if (condition == 0 || condition (f->object, o, arg)) {
+        c_object old = f->object;
+        f->object = o;
+        return old;
     } else {
-        o = f->object;
-        c_mmFree(b->mm,f);
+        return o;
     }
-    return o;
 }
 
 c_object
@@ -1027,61 +985,23 @@ c_bagRemove (
     c_removeCondition condition,
     c_voidp arg)
 {
-    C_STRUCT(c_bag) *b = (C_STRUCT(c_bag) *)_this;
+    C_STRUCT(c_bag) *bag = (C_STRUCT(c_bag) *) _this;
+    ut_avlDPath_t p;
     c_bagNode f;
-    C_STRUCT(c_bagNode) n;
-    c_object object;
-
     assert(c_collectionIsType(_this, C_BAG));
-
-    n.object = o;
-    f = c_avlTreeFind((c_avlTree)b,&n,c_bagCompare,NULL);
-    if (f == NULL) return NULL;
-    object = f->object;
-    if (condition != NULL) {
-       if (!condition(object,o,arg)) return NULL;
-    }
-    f->count--;
-    b->count--;
-    if (f->count == 0) {
-        f = c_avlTreeRemove((c_avlTree)b,&n,c_bagCompare,NULL,NULL,NULL);
-        c_mmFree(b->mm,f);
-    }
-    return object;
-}
-
-C_STRUCT(bagReadActionArg) {
-    c_qPred query;
-    c_action action;
-    c_voidp arg;
-};
-C_CLASS(bagReadActionArg);
-
-static c_bool
-bagReadAction(
-    c_bagNode n,
-    bagReadActionArg arg)
-{
-    c_long i;
-    c_bool proceed = TRUE;
-    c_qPred pred;
-
-    pred = arg->query;
-    if (pred == NULL) {
-        proceed = arg->action(n->object,arg->arg);
+    if ((f = ut_avlLookupDPath (&c_bag_td, &bag->tree, o, &p)) == NULL) {
+        return NULL;
+    } else if (condition && !condition (f->object, o, arg)) {
+        return NULL;
     } else {
-        while (pred != NULL) {
-            if (c_qPredEval(pred, n->object)) {
-                for (i=0; (i<n->count) && proceed; i++) {
-                    proceed = arg->action(n->object,arg->arg);
-                }
-                pred = NULL;
-            } else {
-                pred = pred->next;
-            }
+        c_object obj = f->object;
+        if (--f->count == 0) {
+            ut_avlDeleteDPath (&c_bag_td, &bag->tree, f, &p);
+            c_mmFree (bag->mm, f);
         }
+        bag->count--;
+        return obj;
     }
-    return proceed;
 }
 
 static c_bool
@@ -1091,14 +1011,23 @@ c_bagRead(
     c_action action,
     c_voidp arg)
 {
-    C_STRUCT(bagReadActionArg) a;
-
+    C_STRUCT(c_bag) *bag = (C_STRUCT(c_bag) *) _this;
+    ut_avlIter_t it;
+    c_bagNode n;
+    c_bool proceed;
     assert(c_collectionIsType(_this, C_BAG));
-
-    a.query = q;
-    a.action = action;
-    a.arg = arg;
-    return c_avlTreeWalk((c_avlTree)_this,bagReadAction,&a,C_INFIX);
+    proceed = TRUE;
+    for (n = ut_avlIterFirst (&c_bag_td, &bag->tree, &it);
+         n != NULL && proceed;
+         n = ut_avlIterNext (&it)) {
+        if (predMatches (q, n->object)) {
+            c_long i;
+            for (i = 0; i < n->count && proceed; i++) {
+                proceed = action (n->object, arg);
+            }
+        }
+    }
+    return proceed;
 }
 
 static c_iter
@@ -1181,37 +1110,32 @@ c_long
 c_bagCount (
     c_bag _this)
 {
+    C_STRUCT(c_bag) *bag = (C_STRUCT(c_bag) *) _this;
     assert(c_collectionIsType(_this, C_BAG));
-    return ((C_STRUCT(c_bag) *)_this)->count;
-}
-
-typedef struct c_bagWalkActionArg {
-    c_action action;
-    c_voidp arg;
-} *c_bagWalkActionArg;
-
-static c_bool
-c_bagWalkAction(
-    c_bagNode n,
-    c_bagWalkActionArg arg)
-{
-    arg->action(n->object,arg->arg);
-    return TRUE;
+    return bag->count;
 }
 
 c_bool
 c_bagWalk(
-    c_bag bag,
+    c_bag _this,
     c_action action,
     c_voidp actionArg)
 {
-    struct c_bagWalkActionArg arg;
-
-    assert(c_collectionIsType(bag, C_BAG));
-
-    arg.action = action;
-    arg.arg = actionArg;
-    return c_avlTreeWalk((c_avlTree)bag,c_bagWalkAction,&arg,C_INFIX);
+    C_STRUCT(c_bag) *bag = (C_STRUCT(c_bag) *) _this;
+    ut_avlIter_t it;
+    c_bagNode n;
+    c_bool proceed;
+    assert(c_collectionIsType(_this, C_BAG));
+    proceed = TRUE;
+    for (n = ut_avlIterFirst (&c_bag_td, &bag->tree, &it);
+         n != NULL && proceed;
+         n = ut_avlIterNext (&it)) {
+        c_long i;
+        for (i = 0; i < n->count && proceed; i++) {
+            proceed = action (n->object, actionArg);
+        }
+    }
+    return proceed;
 }
 
 /*============================================================================*/
@@ -1219,94 +1143,87 @@ c_bagWalk(
 /*============================================================================*/
 
 C_STRUCT(c_tableNode) {
-    C_EXTENDS(c_avlNode);
+    ut_avlNode_t avlnode;
     c_value keyValue;
-    c_object object;
+    union c_tableContents contents;
 #ifdef _CONSISTENCY_CHECKING_
     c_voidp table;
 #endif
 };
 
-static c_equality
-c_keyCompare(
-    c_tableNode n1,
-    c_tableNode n2,
-    c_value *v)
+struct tableCmp_constraints {
+    char require_LT_lt_0[-1+2*((int) C_LT < 0)];
+    char require_EQ_eq_0[-1+2*((int) C_EQ == 0)];
+    char require_GT_gt_0[-1+2*((int) C_GT > 0)];
+    char non_empty_dummy_last_member[1];
+};
+
+static int tableCmp (const void *va, const void *vb)
 {
-    if (v != NULL) {
-        OS_REPORT(OS_WARNING,"c_table",0,"c_keyCompare: parameter v not NULL");
-    }
-    if (n2 == NULL) {
-        return C_GT;
-    }
-    if (n1 == NULL) {
-        return C_LT;
-    }
-    return c_valueCompare(n1->keyValue,n2->keyValue);
+    const c_value *a = va;
+    const c_value *b = vb;
+    return (int) c_valueCompare (*a, *b);
 }
 
+static const ut_avlTreedef_t c_table_td =
+    UT_AVL_TREEDEF_INITIALIZER (
+        offsetof (C_STRUCT(c_tableNode), avlnode), offsetof (C_STRUCT(c_tableNode), keyValue),
+        tableCmp, 0);
+
+static union c_tableContents *c_tableLookupInsert (C_STRUCT(c_table) *table, c_object o)
+{
+    union c_tableContents *index;
+    c_long i, nrOfKeys;
+    nrOfKeys = c_arraySize (table->key);
+    index = &table->contents;
+    for (i = 0; i < nrOfKeys; i++) {
+        c_value k = c_fieldValue (table->key[i], o);
+        ut_avlIPath_t p;
+        c_tableNode f;
+        if ((f = ut_avlLookupIPath (&c_table_td, &index->tree, &k, &p)) == NULL) {
+            f = c_mmMalloc (table->mm, sizeof (*f));
+            f->keyValue = k;
+            if (i < nrOfKeys-1) {
+                ut_avlInit (&c_table_td, &f->contents.tree);
+            } else {
+                f->contents.object = NULL;
+            }
+#ifdef _CONSISTENCY_CHECKING_
+            f->table = table;
+#endif
+            ut_avlInsertIPath (&c_table_td, &index->tree, f, &p);
+        } else {
+            c_valueFreeRef (k);
+            _CHECK_CONSISTENCY_ (table, f);
+        }
+        index = &f->contents;
+    }
+    return index;
+}
 
 c_object
 c_tableInsert (
     c_table _this,
     c_object o)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)_this;
-    c_tableNode f,n;
-    c_object *index;
-    c_long i, nrOfKeys;
-
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
+    union c_tableContents *index;
     assert(c_collectionIsType(_this, C_DICTIONARY));
 
     if (o == NULL) {
         return NULL;
     }
 
-    _ACCESS_BEGIN_(t);
+    _ACCESS_BEGIN_(table);
 
-    n = NULL;
-    index = &t->object;
-
-    if (t->key == NULL) {
-        nrOfKeys = 0;
-    } else {
-        nrOfKeys = c_arraySize(t->key);
-    }
-    for (i=0; i<nrOfKeys; i++) {
-        if (n == NULL) {
-            n = c_mmMalloc (t->mm, C_SIZEOF(c_tableNode));
-            memset(n,0,C_SIZEOF(c_tableNode));
-#ifdef _CONSISTENCY_CHECKING_
-            n->table = (c_voidp)_this;
-        } else {
-            _CHECK_CONSISTENCY_(t,n);
-#endif
-        }
-        n->keyValue = c_fieldValue(t->key[i],o);
-        if (*index == NULL) {
-            *index = c_avlTreeNew(t->mm,0);
-        }
-        f = c_avlTreeInsert(*index,n,c_keyCompare,NULL);
-        if (f == n) {
-            n = NULL;
-        } else {
-            c_valueFreeRef(n->keyValue);
-            _CHECK_CONSISTENCY_(t,f);
-        }
-        index = &f->object;
-    }
-    if (n != NULL) {
-        /* do not free keyvalue here, already done in for loop */
-        c_mmFree(t->mm,n);
-    }
-    if (*index == NULL) {
-        t->count++;
-        *index = c_keep(o);
+    index = c_tableLookupInsert (table, o);
+    if (index->object == NULL) {
+        table->count++;
+        index->object = c_keep (o);
     }
 
-    _ACCESS_END_(t);
-
-    return *index;
+    _ACCESS_END_(table);
+    return index->object;
 }
 
 static c_object
@@ -1316,11 +1233,9 @@ c_tableReplace (
     c_bool (*condition)(),
     c_voidp arg)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)_this;
-    c_tableNode f,n;
-    c_object *index;
-    c_object object = NULL;
-    c_long i, nrOfKeys;
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
+    union c_tableContents *index;
+    c_object retobj;
 
     assert(c_collectionIsType(_this, C_DICTIONARY));
 
@@ -1328,99 +1243,22 @@ c_tableReplace (
         return NULL;
     }
 
-    _ACCESS_BEGIN_(t);
+    _ACCESS_BEGIN_(table);
 
-    n = NULL;
-    index = &t->object;
-
-    if (t->key == NULL) {
-        nrOfKeys = 0;
+    index = c_tableLookupInsert (table, o);
+    if (index->object == NULL) {
+        table->count++;
+        index->object = c_keep (o);
+        retobj = NULL;
+    } else if (condition == 0 || condition (index->object, o, arg)) {
+        retobj = index->object;
+        index->object = c_keep (o);
     } else {
-        nrOfKeys = c_arraySize(t->key);
+        retobj = o;
     }
-    for (i=0; i<nrOfKeys; i++) {
-        if (n == NULL) {
-            n = c_mmMalloc (t->mm, C_SIZEOF(c_tableNode));
-            memset(n,0,C_SIZEOF(c_tableNode));
-#ifdef _CONSISTENCY_CHECKING_
-            n->table = (c_voidp)_this;
-        } else {
-            _CHECK_CONSISTENCY_(t,n);
-#endif
-        }
-        n->keyValue = c_fieldValue(t->key[i],o);
-        if (n->keyValue.kind == V_UNDEFINED) {
-            OS_REPORT_1(OS_WARNING,"Database Collection",0,
-                        "c_tableReplace: Key (%s) value undefined",
-                        c_fieldName(t->key[i]));
-            c_mmFree(t->mm,n);
-            _ACCESS_END_(t);
-            return NULL;
-        }
-        if (*index == NULL) {
-            *index = c_avlTreeNew(t->mm,0);
-        }
-        f = c_avlTreeInsert(*index,n,c_keyCompare,NULL);
-        _CHECK_CONSISTENCY_(t,f);
-        if (f != n) {
-            c_valueFreeRef(n->keyValue);
-            c_mmFree(t->mm,n);
-        }
-        n = NULL;
-        index = &f->object;
-    }
-    object = *index;
-    if (condition != NULL) {
-        if (condition(object,o,arg)) {
-            *index = c_keep(o);
-        } else {
-            object = NULL;
-        }
-    } else {
-        if (*index == NULL) {
-            t->count++;
-        }
-        *index = c_keep(o);
-    }
-    _ACCESS_END_(t);
 
-    return object;
-}
-
-
-C_STRUCT(removeConditionArg) {
-    c_removeCondition condition;
-    c_object object;
-    c_voidp arg;
-    /* For looking up the next element if the removed element is the current cursor */
-    C_STRUCT(c_table) * table;
-    c_avlTree tree;
-    void * prev;
-};
-
-static c_bool
-c_tableRemoveConditionWrapper(
-    c_object o1,
-    c_object o2,
-    c_voidp arg)
-{
-    c_bool remove;
-    c_tableNode n1 = (c_tableNode)o1;
-    C_STRUCT(removeConditionArg) *remArg = (C_STRUCT(removeConditionArg)*)arg;
-
-    OS_UNUSED_ARG(o2);
-
-    if (remArg->condition != NULL) {
-        if((remove = remArg->condition(n1->object, remArg->object, remArg->arg)) == TRUE){
-            c_long count = c_arraySize(remArg->table->cursor);
-            if(remArg->table->cursor[count - 1] == n1){
-                remArg->prev = c_avlTreePrev(remArg->tree, n1);
-            }
-        }
-        return remove;
-    } else {
-        return TRUE;
-    }
+    _ACCESS_END_(table);
+    return retobj;
 }
 
 c_object
@@ -1430,130 +1268,74 @@ c_tableRemove (
     c_removeCondition condition,
     c_voidp arg)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)_this;
-    C_STRUCT(c_tableNode) n;
-    c_tableNode *stack;
-    c_tableNode found;
-    c_object object;
-    c_object index;
-    c_long i, nrOfKeys;
-    c_bool allowed = TRUE;
-    C_STRUCT(removeConditionArg) wrapperArg;
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
+    c_object object = NULL;
+    c_long nrOfKeys;
 
     assert(c_collectionIsType(_this, C_DICTIONARY));
 
-    _ACCESS_BEGIN_(t);
+    _ACCESS_BEGIN_(table);
 
-    if (t->object == NULL) {
-        _ACCESS_END_(t);
-        return NULL;
-    }
-    if (t->key == NULL) {
-        nrOfKeys = 0;
-    } else {
-        nrOfKeys = c_arraySize(t->key);
-    }
-    if (nrOfKeys == 0) {
-        assert(t->object != NULL);
-        if (condition != NULL) {
-            allowed = condition(t->object, o, arg);
-        }
-        if (allowed) {
-            t->count--;
-            object = t->object;
-            t->object = NULL;
-            t->cursor[0] = NULL;
-        } else {
-            object = NULL;
-        }
-        _ACCESS_END_(t);
-        return object;
-    }
-    stack = (c_tableNode *)os_alloca(sizeof(c_tableNode)*nrOfKeys);
-    index = t->object;
-    for (i=0; i<(nrOfKeys-1); i++) {
-        n.keyValue = c_fieldValue(t->key[i],o);
-        if (n.keyValue.kind == V_UNDEFINED) {
-            OS_REPORT_1(OS_WARNING,"Database Collection",0,
-                        "c_tableRemove: Key (%s) value undefined",
-                        c_fieldName(t->key[i]));
-            _ACCESS_END_(t);
-            return o;
-        }
-        stack[i] = c_avlTreeFind(index,&n,c_keyCompare,NULL);
-        if (stack[i] == NULL) {
-            os_freea(stack);
-            c_valueFreeRef(n.keyValue);
-            _ACCESS_END_(t);
-            return NULL;
-#ifdef _CONSISTENCY_CHECKING_
-        } else {
-            _CHECK_CONSISTENCY_(t,stack[i]);
-#endif
-        }
-        index = stack[i]->object;
-        c_valueFreeRef(n.keyValue);
-    }
-    n.keyValue = c_fieldValue(t->key[i],o);
-    if (n.keyValue.kind == V_UNDEFINED) {
-        OS_REPORT_1(OS_WARNING,"Database Collection",0,
-                    "c_tableRemove: Key (%s) value undefined",
-                     c_fieldName(t->key[i]));
-        _ACCESS_END_(t);
-        return o;
-    }
-
-    wrapperArg.condition = condition;
-    wrapperArg.object = o;
-    wrapperArg.arg = arg;
-    wrapperArg.table = t;
-    wrapperArg.tree = index;
-    wrapperArg.prev = NULL;
-    found = c_avlTreeRemove(index,&n,c_keyCompare,NULL,
-                            c_tableRemoveConditionWrapper,&wrapperArg);
-    if (found != NULL) {
-        t->cursor[i] = wrapperArg.prev;
-        t->count--;
-        for (i -= 1; i > 0; i--) {
-            if (c_avlTreeCount(stack[i]->object) == 0) {
-                if(t->cursor[i]) {
-                    t->cursor[i] = c_avlTreePrev(stack[i - 1]->object, stack[i]);
-                }
-                c_avlTreeRemove(stack[i - 1]->object, stack[i],
-                        c_keyCompare, NULL, NULL, NULL);
-                c_avlTreeFree(stack[i]->object);
-                c_valueFreeRef(stack[i]->keyValue);
-                c_mmFree(t->mm, stack[i]);
-            } else {
-                break;
+    if (table->key == NULL || (nrOfKeys = c_arraySize (table->key)) == 0) {
+        if (table->contents.object != NULL) {
+            if (condition == 0 || condition (table->contents.object, o, arg)) {
+                table->count--;
+                object = table->contents.object;
+                table->contents.object = NULL;
+                table->cursor[0] = NULL;
             }
         }
-        if (i == 0) {
-            if (c_avlTreeCount(stack[0]->object) == 0) {
-                if(t->cursor[0]){
-                    t->cursor[0] = c_avlTreePrev(t->object, stack[0]);
-                }
-                c_avlTreeRemove(t->object, stack[0],
-                        c_keyCompare, NULL, NULL, NULL);
-                c_avlTreeFree(stack[0]->object);
-                c_valueFreeRef(stack[0]->keyValue);
-                c_mmFree(t->mm, stack[0]);
-            }
-        }
-        if (c_avlTreeCount(t->object) == 0) {
-            c_avlTreeFree(t->object);
-            t->object = NULL;
-        }
-        object = found->object;
-        c_valueFreeRef(found->keyValue);
-        c_mmFree(t->mm,found);
     } else {
-        object = NULL;
-    }
-    c_valueFreeRef(n.keyValue);
-    os_freea(stack);
-    _ACCESS_END_(t);
+        struct {
+            c_tableNode node;
+            ut_avlDPath_t path;
+        } *stk;
+        C_STRUCT(c_tableNode) root_index;
+        c_long i;
 
+        stk = os_alloca ((nrOfKeys+1) * sizeof (*stk));
+
+        root_index.contents = table->contents;
+        stk[0].node = &root_index;
+        for (i = 0; i < nrOfKeys; i++) {
+            c_value k = c_fieldValue (table->key[i], o);
+            stk[i+1].node = ut_avlLookupDPath (&c_table_td, &stk[i].node->contents.tree, &k, &stk[i+1].path);
+            c_valueFreeRef (k);
+            if (stk[i+1].node == NULL) {
+                goto done;
+            }
+            _CHECK_CONSISTENCY_ (table, stk[i+1].node);
+        }
+
+        if (condition == 0 || condition (stk[i].node->contents.object, o, arg)) {
+            object = stk[i].node->contents.object;
+            table->count--;
+            /* delete object */
+            if (table->cursor[i-1] == stk[i].node) {
+                table->cursor[i-1] = ut_avlFindPred (&c_table_td, &stk[i-1].node->contents.tree, stk[i].node);
+            }
+            ut_avlDeleteDPath (&c_table_td, &stk[i-1].node->contents.tree, stk[i].node, &stk[i].path);
+            c_valueFreeRef (stk[i].node->keyValue);
+            c_mmFree (table->mm, stk[i].node);
+            /* prune empty trees */
+            for (--i; i > 0 && ut_avlIsEmpty (&stk[i].node->contents.tree); i--) {
+                /* FIXME: changed the condition here (from != NULL to
+                 * == stk[i].node): the tree at level-1 isn't
+                 * guaranteed empty, right? */
+                if (table->cursor[i-1] == stk[i].node) {
+                    assert (table->cursor[i] == NULL);
+                    table->cursor[i-1] = ut_avlFindPred (&c_table_td, &stk[i-1].node->contents.tree, stk[i].node);
+                }
+                ut_avlDeleteDPath (&c_table_td, &stk[i-1].node->contents.tree, stk[i].node, &stk[i].path);
+                c_valueFreeRef (stk[i].node->keyValue);
+                c_mmFree (table->mm, stk[i].node);
+            }
+            table->contents = root_index.contents;
+        }
+    done:
+        os_freea (stk);
+    }
+    _ACCESS_END_ (table);
     return object;
 }
 
@@ -1563,90 +1345,77 @@ c_tableFind (
     c_table _this,
     c_value *keyValues)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)_this;
-    C_STRUCT(c_tableNode) n;
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *)_this;
+    union c_tableContents *contents;
     c_tableNode found;
     c_object object;
     c_long i, nrOfKeys;
 
     assert(c_collectionIsType(_this, C_DICTIONARY));
 
-    _READ_BEGIN_(t);
+    _READ_BEGIN_(_this);
 
-    if (t->object == NULL) {
-        _READ_END_(t);
-        return NULL;
-    }
-    if (keyValues == NULL) {
-        _READ_END_(t);
-        return t->object;
-    }
-    nrOfKeys = c_arraySize(t->key);
-
-    object = t->object;
-    for (i=0; (i<nrOfKeys) && (object); i++) {
-        n.keyValue = keyValues[i];
-        assert(n.keyValue.kind != V_UNDEFINED);
-        found = c_avlTreeFind(object,&n,c_keyCompare,NULL);
-        if (found == NULL) {
-            _READ_END_(t);
-            return NULL;
+    if (table->key == NULL || (nrOfKeys = c_arraySize(table->key)) == 0) {
+        if (table->contents.object == NULL) {
+            goto notfound;
         }
-        object = found->object;
+        object = table->contents.object;
+    } else {
+        contents = &table->contents;
+        for (i = 0; i < nrOfKeys; i++) {
+            if ((found = ut_avlLookup (&c_table_td, &contents->tree, &keyValues[i])) == NULL) {
+                goto notfound;
+            } else {
+                contents = &found->contents;
+            }
+        }
+        object = contents->object;
     }
-    _READ_END_(t);
-    return c_keep(object);
+    _READ_END_(_this);
+    return c_keep (object);
+notfound:
+    _READ_END_ (table);
+    return NULL;
 }
 #endif
 
 static c_tableNode
 tableNext(
     c_object o,
-    c_object index,
+    ut_avlTree_t *index,
     c_array keyList,
     c_long keyId)
 {
-    C_STRUCT(c_tableNode) n;
     c_tableNode found;
     c_long lastKey = c_arraySize(keyList)-1;
+    c_value k = c_fieldValue(keyList[keyId], o);
 
-    n.keyValue = c_fieldValue(keyList[keyId],o);
-
-    if (n.keyValue.kind == V_UNDEFINED) {
-        OS_REPORT_1(OS_WARNING,"Database Collection",0,
-                    "c_tableNext: Key (%s) value undefined",
-                    c_fieldName(keyList[keyId]));
-        return o; /* Note that under normal circumstances it is not
-                     possible that the same object is returned,
-                     in this case this knowledge is used to indicate that
-                     an error has occured. */
-    }
     if (keyId < lastKey) {
-        found = c_avlTreeFind(index,&n,c_keyCompare,NULL);
+        found = ut_avlLookup (&c_table_td, index, &k);
         if (found != NULL) {
-            found = tableNext(o,found->object,keyList,(keyId+1));
+            found = tableNext (o, &found->contents.tree, keyList, keyId+1);
         }
         if (found == NULL) {
-            found = c_avlTreeNearest(index,&n,c_keyCompare,NULL,C_GT);
+            found = ut_avlLookupSucc (&c_table_td, index, &k);
             if (found == NULL) {
                 return NULL;
             }
             while (keyId != lastKey) {
-                found = c_avlTreeFirst((c_avlTree)found->object);
+                found = ut_avlFindMin (&c_table_td, &found->contents.tree);
                 keyId++;
             }
         }
     } else {
-        found = c_avlTreeNearest(index,&n,c_keyCompare,NULL,C_GT);
+        found = ut_avlLookupSucc (&c_table_td, index, &k);
     }
-    c_valueFreeRef(n.keyValue);
 
+    c_valueFreeRef (k);
     return found;
 }
 
 static c_tableNode
 tableFastNext(
-    c_object index,
+    ut_avlTree_t *index,
     c_array cursorList,
     const c_long lastCursor,
     c_long cursor)
@@ -1655,20 +1424,20 @@ tableFastNext(
         c_tableNode n;
 
         if (cursorList[cursor] == NULL) {
-            cursorList[cursor] = c_avlTreeFirst(index);
+            cursorList[cursor] = ut_avlFindMin (&c_table_td, index);
         }
 
-        if ((n = tableFastNext(((c_tableNode) cursorList[cursor])->object, cursorList, lastCursor, cursor + 1)) != NULL)
+        if ((n = tableFastNext(&((c_tableNode) cursorList[cursor])->contents.tree, cursorList, lastCursor, cursor + 1)) != NULL)
             return n;
-        else if ((cursorList[cursor] = c_avlTreeNext(index, cursorList[cursor])) == NULL)
+        else if ((cursorList[cursor] = ut_avlFindSucc(&c_table_td, index, cursorList[cursor])) == NULL)
             return NULL;
         else
-            return tableFastNext(((c_tableNode) cursorList[cursor])->object, cursorList, lastCursor, cursor + 1);
+            return tableFastNext(&((c_tableNode) cursorList[cursor])->contents.tree, cursorList, lastCursor, cursor + 1);
     } else {
         if (cursorList[cursor] == NULL) {
-            cursorList[cursor] = c_avlTreeFirst(index);
+            cursorList[cursor] = ut_avlFindMin (&c_table_td, index);
         } else {
-            cursorList[cursor] = c_avlTreeNext(index, cursorList[cursor]);
+            cursorList[cursor] = ut_avlFindSucc (&c_table_td, index, cursorList[cursor]);
         }
         return cursorList[cursor];
     }
@@ -1676,136 +1445,106 @@ tableFastNext(
 
 c_object
 c_tableReadCursor (
-    c_table table)
+    c_table _this)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
     c_tableNode node;
+    c_long nrOfKeys;
 
-    assert(c_collectionIsType(table, C_DICTIONARY));
+    assert(c_collectionIsType(_this, C_DICTIONARY));
 
-    _READ_BEGIN_(t);
-    if (t == NULL) {
-        _READ_END_(t);
-        return NULL;
-    }
-    if (t->object == NULL) {
-        _READ_END_(t);
-        return NULL;
-    }
-    if (t->key == NULL || c_arraySize(t->key) == 0) {
+    _READ_BEGIN_(table);
+    if (table->key == NULL || (nrOfKeys = c_arraySize (table->key)) == 0) {
         /* Special case when no key is defined; single place
          * buffer */
-        _READ_END_(t);
-        if (t->cursor[0] == NULL) {
-            _CHECK_CONSISTENCY_(t,t->object);
-            t->cursor[0] = t->object;
+        _READ_END_(table);
+        if (table->cursor[0] == NULL) {
+            _CHECK_CONSISTENCY_(table,table->contents.object);
+            table->cursor[0] = table->contents.object;
         } else {
-                t->cursor[0] = NULL;
+            table->cursor[0] = NULL;
         }
-        return t->cursor[0];
-    }
-    node = tableFastNext(t->object,t->cursor, c_arraySize(t->cursor) - 1, 0);
-    _READ_END_(t);
-    if (node == NULL) { /* o is last record of table */
-            return NULL;
+        return table->cursor[0];
+    } else if (ut_avlIsEmpty (&table->contents.tree)) {
+        _READ_END_(table);
+        return NULL;
     } else {
-            return node->object;
+        node = tableFastNext (&table->contents.tree, table->cursor, nrOfKeys - 1, 0);
+        _READ_END_(table);
+        if (node == NULL) { /* o is last record of table */
+            return NULL;
+        } else {
+            return node->contents.object;
+        }
     }
 }
 
 c_object
 c_tablePeekCursor (
-    c_table table)
+    c_table _this)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
     c_tableNode node;
-    c_long lastKey;
+    c_long nrOfKeys, lastKey;
 
-    assert(c_collectionIsType(table, C_DICTIONARY));
+    assert(c_collectionIsType(_this, C_DICTIONARY));
+    _READ_BEGIN_(table);
 
-    _READ_BEGIN_(t);
-    if (t == NULL) {
-        _READ_END_(t);
-        return NULL;
-    }
-
-    /* If t->key == NULL, t is a single place buffer. In that case cursor[0]
+    /* If table->key == NULL, table is a single place buffer. In that case cursor[0]
      * contains the cursor for that buffer. */
-    if (t->key == NULL || c_arraySize(t->key) == 0) {
-        return t->cursor[0];
+    if (table->key == NULL || (nrOfKeys = c_arraySize(table->key)) == 0) {
+        return table->cursor[0];
     }
 
-    lastKey = t->key ? c_arraySize(t->key) - 1 : 0;
-    _READ_END_(t);
-    node = t->cursor[lastKey];
+    lastKey = nrOfKeys - 1;
+    _READ_END_(table);
+    node = table->cursor[lastKey];
 
     if (node == NULL) { /* o is last record of table */
         return NULL;
     } else {
-        return node->object;
+        return node->contents.object;
     }
 }
 
 c_object
 c_tableNext (
-    c_table table,
+    c_table _this,
     c_object o)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
-    c_tableNode node;
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
     c_long nrOfKeys;
-    c_object data;
 
-    assert(c_collectionIsType(table, C_DICTIONARY));
+    assert(c_collectionIsType(_this, C_DICTIONARY));
 
-    _READ_BEGIN_(t);
-    if (t == NULL) {
-        _READ_END_(t);
-        return NULL;
-    }
-    if (t->object == NULL) {
-        _READ_END_(t);
-        return NULL;
-    }
-    if (t->key == NULL) {
-        _READ_END_(t);
+    _READ_BEGIN_(table);
+    if (table->key == NULL || (nrOfKeys = c_arraySize(table->key)) == 0) {
+        _READ_END_(table);
         if (o == NULL) {
-            return t->object;
+            return table->contents.object;
         }
         return NULL;
-    }
-    nrOfKeys = c_arraySize(t->key);
-    if (nrOfKeys == 0) {
-        _READ_END_(t);
-        if (o == NULL) {
-            _CHECK_CONSISTENCY_(t,t->object);
-            return t->object;
-        }
+    } else if (ut_avlIsEmpty (&table->contents.tree)) {
+        _READ_END_(table);
         return NULL;
-    }
-    if (o == NULL) {
-        node = t->object;
-        data = node;
-        while (nrOfKeys > 0) {
-            node = c_avlTreeFirst((c_avlTree)data);
-            if (node == NULL) {
-                return NULL;
-            } else {
-                _CHECK_CONSISTENCY_(t,node);
-                data = node->object;
-            }
+    } else if (o == NULL) {
+        ut_avlTree_t *index = &table->contents.tree;
+        c_tableNode node;
+        while (nrOfKeys > 1) {
+            assert (!ut_avlIsEmpty (index));
+            node = ut_avlFindMin (&c_table_td, index);
+            _CHECK_CONSISTENCY_ (table, node);
+            index = &node->contents.tree;
             nrOfKeys--;
         }
-        _READ_END_(t);
-        return data;
+        assert (!ut_avlIsEmpty (index));
+        node = ut_avlFindMin (&c_table_td, index);
+        _READ_END_(table);
+        return node->contents.object;
     } else {
-        node = tableNext(o,t->object,t->key,0);
-        _READ_END_(t);
-        if (node == NULL) { /* o is last record of table */
-            return NULL;
-        } else {
-            return node->object;
-        }
+        c_tableNode node = tableNext (o, &table->contents.tree, table->key, 0);
+        _READ_END_(table);
+        return node ? node->contents.object : NULL;
     }
 }
 
@@ -1821,113 +1560,151 @@ C_STRUCT(tableReadActionArg) {
 };
 C_CLASS(tableReadActionArg);
 
-static c_bool
-tableReadAction(
-    c_tableNode n,
-    tableReadActionArg arg)
+static c_bool tableReadTakeWalk (ut_avlTree_t *tree, c_bool (*action) (), void *actionarg)
 {
-    C_STRUCT(c_tableNode) start, end;
-    c_tableNode startRef, endRef;
-    c_bool startInclude, endInclude;
+    ut_avlIter_t it;
+    c_tableNode *n;
     c_bool proceed = TRUE;
-    c_qKey key;
-    c_qRange range;
-    c_long i,nrOfRanges;
-    c_value v;
-    c_qPred pred;
+    for (n = ut_avlIterFirst (&c_table_td, tree, &it);
+         n && proceed;
+         n = ut_avlIterNext (&it)) {
+        proceed = action (n, actionarg);
+    }
+    return proceed;
+}
 
-    _CHECK_CONSISTENCY_(arg->t,n);
+static c_bool tableReadTakeRangeWalk (ut_avlTree_t *tree, const c_value *start, int include_start, const c_value *end, int include_end, c_bool (*action) (), void *actionarg)
+{
+    ut_avlIter_t it;
+    c_tableNode n, endn;
+    c_bool proceed = TRUE;
+    /* Starting point for iteration */
+    if (start == NULL) {
+        n = ut_avlIterFirst (&c_table_td, tree, &it);
+    } else if (include_start) {
+        n = ut_avlIterSuccEq (&c_table_td, tree, &it, start);
+    } else {
+        n = ut_avlIterSucc (&c_table_td, tree, &it, start);
+    }
+    /* Don't bother looking at the end of the range if there's no
+     * matching data */
+    if (n == NULL) {
+        return proceed;
+    }
+    /* Endpoint of the iteration: if N is outside the range, abort,
+     * else look up the first node beyond the range */
+    if (end == NULL) {
+        endn = NULL;
+    } else if (include_end) {
+        if (tableCmp (&n->keyValue, end) > 0) {
+            return proceed;
+        }
+        endn = ut_avlLookupSucc (&c_table_td, tree, end);
+    } else {
+        if (tableCmp (&n->keyValue, end) >= 0) {
+            return proceed;
+        }
+        endn = ut_avlLookupSuccEq (&c_table_td, tree, end);
+    }
+    /* Then, just iterate starting at n until endn is reached */
+    while (n != endn && proceed) {
+        proceed = action (n, actionarg);
+        n = ut_avlIterNext (&it);
+    }
+    return proceed;
+}
 
-    if ((arg->keyIndex > 0) && (arg->query != NULL)) {
-        key = arg->query->keyField[arg->keyIndex-1];
+static c_bool tableReadTakeActionNonMatchingKey (c_tableNode n, c_qPred query, c_long keyIndex)
+{
+    /* FIXME: this can't be right: for any key but the one nested most
+       deeply, N doesn't actually point to an object.  Hence any table
+       with multi-level keys can be tricked into returning the wrong
+       result or crashes (in practice, only if the key is a string) */
+    if ((keyIndex > 0) && (query != NULL)) {
+        c_qKey key = query->keyField[keyIndex-1];
         if (key->expr != NULL) {
-            v = c_qValue(key->expr,n->object);
+            c_value v = c_qValue(key->expr,n->contents.object);
             assert(v.kind == V_BOOLEAN);
             if (!v.is.Boolean) {
                 return TRUE;
             }
         }
     }
-    if (arg->query == NULL) {
-        if (arg->keyIndex < (c_arraySize(arg->key))) {
-            arg->keyIndex++;
-            proceed = c_avlTreeWalk((c_avlTree)n->object,
-                                    tableReadAction,arg,
-                                    C_INFIX);
-            arg->keyIndex--;
-            return proceed;
+    return FALSE;
+}
+
+static void tableReadTakeActionGetRange (c_qRange range, c_value *start, c_value **startRef, c_bool *startInclude, c_value *end, c_value **endRef, c_bool *endInclude)
+{
+    if (range == NULL) {
+        *startRef = NULL; *startInclude = TRUE;
+        *endRef   = NULL; *endInclude   = TRUE;
+    } else {
+        *start = c_qRangeStartValue(range);
+        *end = c_qRangeEndValue(range);
+        switch (range->startKind) {
+        case B_UNDEFINED: *startRef = NULL;  *startInclude = TRUE;  break;
+        case B_INCLUDE:   *startRef = start; *startInclude = TRUE;  break;
+        case B_EXCLUDE:   *startRef = start; *startInclude = FALSE; break;
+        default:
+            OS_REPORT_1(OS_ERROR,
+                        "Database Collection",0,
+                        "Internal error: undefined range kind %d",
+                        range->startKind);
+            assert(FALSE);
         }
+        switch (range->endKind) {
+        case B_UNDEFINED: *endRef = NULL; *endInclude = TRUE;  break;
+        case B_INCLUDE:   *endRef = end;  *endInclude = TRUE;  break;
+        case B_EXCLUDE:   *endRef = end;  *endInclude = FALSE; break;
+        default:
+            OS_REPORT_1(OS_ERROR,
+                        "Database Collection",0,
+                        "Internal error: undefined range kind %d",
+                        range->endKind);
+            assert(FALSE);
+        }
+    }
+}
+
+static c_bool
+tableReadAction(
+    c_tableNode n,
+    tableReadActionArg arg)
+{
+    c_value start, end;
+    c_value *startRef = NULL, *endRef = NULL;
+    c_bool startInclude = TRUE, endInclude = TRUE;
+    c_bool proceed = TRUE;
+    c_qKey key;
+    c_long i,nrOfRanges;
+
+    _CHECK_CONSISTENCY_(arg->t,n);
+
+    if (tableReadTakeActionNonMatchingKey (n, arg->query, arg->keyIndex)) {
+        return TRUE;
     } else if (arg->keyIndex == c_arraySize(arg->key)) {
-        pred = arg->query;
-        v.is.Boolean = TRUE;
-        while (pred != NULL) {
-            if (pred->expr != NULL) {
-                v = c_qValue(pred->expr, n->object);
-                assert(v.kind == V_BOOLEAN);
-                if (v.is.Boolean) {
-                    pred = NULL;
-                } else {
-                    pred = pred->next;
-                }
-            } else {
-                pred = pred->next;
-            }
-        }
-        if (!v.is.Boolean) {
+        if (!predMatches (arg->query, n->contents.object)) {
             return TRUE;
+        } else {
+            return arg->action (n->contents.object, arg->arg);
         }
     } else {
-        key = arg->query->keyField[arg->keyIndex];
+        key = arg->query ? arg->query->keyField[arg->keyIndex] : NULL;
         arg->keyIndex++;
-        if ((key->range == NULL) || (c_arraySize(key->range) == 0)) {
-            proceed = c_avlTreeWalk((c_avlTree)n->object,
-                                    tableReadAction,arg,
-                                    C_INFIX);
+        if (key == NULL || key->range == NULL || (nrOfRanges = c_arraySize (key->range)) == 0) {
+            proceed = tableReadTakeWalk (&n->contents.tree, tableReadAction, arg);
         } else {
-            nrOfRanges = c_arraySize(key->range);
-            i=0;
-            while ((i<nrOfRanges) && proceed) {
-                range = key->range[i];
-                if (range == NULL) {
-                    startRef = NULL; startInclude = TRUE;
-                    endRef   = NULL; endInclude   = TRUE;
-                } else {
-                    start.keyValue = c_qRangeStartValue(range);
-                    end.keyValue = c_qRangeEndValue(range);
-                    switch (range->startKind) {
-                    case B_UNDEFINED: startRef = NULL;   startInclude = TRUE;  break;
-                    case B_INCLUDE:   startRef = &start; startInclude = TRUE;  break;
-                    case B_EXCLUDE:   startRef = &start; startInclude = FALSE; break;
-                    default:
-                        OS_REPORT_1(OS_ERROR,"Database Collection",0,
-                                    "Internal error: undefined range kind %d",range->startKind);
-                        assert(FALSE);
-                        return FALSE;
-                    }
-                    switch (range->endKind) {
-                    case B_UNDEFINED: endRef = NULL; endInclude = TRUE;  break;
-                    case B_INCLUDE:   endRef = &end; endInclude = TRUE;  break;
-                    case B_EXCLUDE:   endRef = &end; endInclude = FALSE; break;
-                    default:
-                        OS_REPORT_1(OS_ERROR,"Database Collection",0,
-                                    "Internal error: undefined range kind %d",range->endKind);
-                        assert(FALSE);
-                        return FALSE;
-                    }
-                }
-                proceed = c_avlTreeRangeWalk((c_avlTree)n->object,
-                                              startRef,startInclude,
-                                              endRef,endInclude,
-                                              c_keyCompare,NULL,
-                                              tableReadAction,arg,
-                                              C_INFIX);
-                i++;
+            for (i = 0; i < nrOfRanges && proceed; i++) {
+                tableReadTakeActionGetRange (key->range[i], &start, &startRef, &startInclude, &end, &endRef, &endInclude);
+                proceed = tableReadTakeRangeWalk(&n->contents.tree,
+                                                 startRef,startInclude,
+                                                 endRef,endInclude,
+                                                 tableReadAction,arg);
             }
         }
         arg->keyIndex--;
         return proceed;
     }
-    return arg->action(n->object,arg->arg);
 }
 
 static c_bool
@@ -1937,65 +1714,46 @@ c_tableRead (
     c_action action,
     c_voidp arg)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)_this;
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
     C_STRUCT(tableReadActionArg) a;
     C_STRUCT(c_tableNode) root;
-    c_value v;
     c_bool proceed = TRUE;
-    c_qPred pred;
 
     assert(c_collectionIsType(_this, C_DICTIONARY));
 
     _READ_BEGIN_(t);
-    if (t->object == NULL) {
-        _READ_END_(t);
-        return proceed;
-    }
 
-    if ((t->key == NULL) || (c_arraySize(t->key) == 0)) {
-        if (q == NULL) {
-            proceed = action(t->object,arg);
-        } else {
-            pred = q;
-            while (pred != NULL) {
-                if (pred->expr != NULL) {
-                    v = c_qValue(c_qExpr(pred->expr), t->object);
-                    assert(v.kind == V_BOOLEAN);
-                    if (v.is.Boolean) {
-                        proceed = action(t->object,arg);
-                        pred = NULL;
-                    } else {
-                        pred = pred->next;
-                    }
-                } else {
-                    pred = pred->next;
-                }
-            }
+    if ((table->key == NULL) || (c_arraySize(table->key) == 0)) {
+        if (table->contents.object == NULL) {
+            /* skip */
+        } else if (predMatches (q, table->contents.object)) {
+            proceed = action(table->contents.object,arg);
         }
-        _READ_END_(t);
+        _READ_END_(table);
         return proceed;
     }
 
-    root.object = t->object;
-    a.key = t->key;
+    root.contents = table->contents;
+    a.key = table->key;
     a.action = action;
     a.arg = arg;
 #ifdef _CONSISTENCY_CHECKING_
-    a.t = t;
-    root.table = (c_voidp)t;
+    a.t = table;
+    root.table = (c_voidp)table;
 #endif
     if (q == NULL) {
         a.keyIndex = 0;
         a.query = q;
         proceed = tableReadAction(&root,&a);
+    } else {
+        while ((q != NULL) && proceed) {
+            a.keyIndex = 0;
+            a.query = q;
+            proceed = tableReadAction(&root,&a);
+            q = q->next;
+        }
     }
-    while ((q != NULL) && proceed) {
-        a.keyIndex = 0;
-        a.query = q;
-        proceed = tableReadAction(&root,&a);
-        q = q->next;
-    }
-    _READ_END_(t);
+    _READ_END_(table);
     return proceed;
 }
 
@@ -2049,14 +1807,14 @@ c_tableSelect (
 
 static c_object
 c_tableReadOne (
-    c_table t,
+    c_table _this,
     c_qPred q)
 {
     c_object o = NULL;
 
-    assert(c_collectionIsType(t, C_DICTIONARY));
+    assert(c_collectionIsType(_this, C_DICTIONARY));
 
-    c_tableRead(t,q,readOne,&o);
+    c_tableRead(_this,q,readOne,&o);
     return o;
 }
 
@@ -2080,171 +1838,83 @@ C_CLASS(tableTakeActionArg);
 static c_bool
 tableTakeAction(
     c_tableNode n,
+    tableTakeActionArg arg);
+
+static void tableTakeActionDeleteDisposed (c_tableNode n, tableTakeActionArg arg)
+{
+    c_tableNode d = arg->disposed;
+    ut_avlDelete (&c_table_td, &n->contents.tree, d);
+    if (arg->keyIndex == c_arraySize(arg->key)) {
+        c_free(d->contents.object);
+    }
+    c_valueFreeRef(d->keyValue);
+    c_mmFree(arg->mm, d);
+}
+
+static c_bool tableTakeActionWalk (c_tableNode n, tableTakeActionArg arg)
+{
+    c_bool proceed;
+    do {
+        proceed = tableReadTakeWalk(&n->contents.tree, tableTakeAction, arg);
+        if ((!proceed) && (arg->disposed != NULL)) {
+            tableTakeActionDeleteDisposed (n, arg);
+        }
+    } while ((proceed == FALSE) && (arg->proceed == TRUE));
+    return arg->proceed;
+}
+
+static c_bool tableTakeActionWalkRange (c_tableNode n, tableTakeActionArg arg, const c_value *startRef, c_bool startInclude, const c_value *endRef, c_bool endInclude)
+{
+    c_bool proceed;
+    do {
+        proceed = tableReadTakeRangeWalk(&n->contents.tree,
+                                         startRef,startInclude,
+                                         endRef,endInclude,
+                                         tableTakeAction,arg);
+        if ((!proceed) && (arg->disposed != NULL)) {
+            tableTakeActionDeleteDisposed (n, arg);
+        }
+    } while ((proceed == FALSE) && (arg->proceed == TRUE));
+    return arg->proceed;
+}
+
+static c_bool
+tableTakeAction(
+    c_tableNode n,
     tableTakeActionArg arg)
 {
-    C_STRUCT(c_tableNode) start, end;
-    c_tableNode startRef, endRef, found;
-    c_bool startInclude, endInclude;
+    c_value start, end;
+    c_value *startRef = NULL, *endRef = NULL;
+    c_bool startInclude = TRUE, endInclude = TRUE;
     c_bool proceed = TRUE;
     c_qKey key;
-    c_qRange range;
     c_long i,nrOfRanges;
-    c_value v;
-    c_qPred pred;
 
     _CHECK_CONSISTENCY_(arg->t,n);
 
-    if ((arg->keyIndex > 0) && (arg->pred != NULL)) {
-        key = arg->pred->keyField[arg->keyIndex-1];
-        if (key->expr != NULL) {
-            v = c_qValue(key->expr,n->object);
-            assert(v.kind == V_BOOLEAN);
-            if (!v.is.Boolean) {
-                return TRUE;
-            }
-        }
-    }
-    if (arg->pred == NULL) {
-        if (arg->keyIndex < (c_arraySize(arg->key))) {
-            arg->keyIndex++;
-            do {
-                proceed = c_avlTreeWalk((c_avlTree)n->object,
-                                        tableTakeAction,
-                                        arg,
-                                        C_INFIX);
-                if ((!proceed) && (arg->disposed != NULL)) {
-                    found = c_avlTreeRemove(n->object,
-                                            arg->disposed,
-                                            c_keyCompare,
-                                            NULL,NULL,NULL);
-                    assert(found == arg->disposed);
-                    if (arg->keyIndex == c_arraySize(arg->key)) {
-                        c_free(found->object);
-                    } else {
-                        c_avlTreeFree(found->object);
-                    }
-                    c_valueFreeRef(found->keyValue);
-                    c_mmFree(arg->mm,found);
-                }
-            } while ((proceed == FALSE) && (arg->proceed == TRUE));
-            proceed = arg->proceed;
-            if (c_avlTreeCount(n->object) == 0) {
-                arg->disposed = n;
-            } else {
-                arg->disposed = NULL;
-            }
-            arg->keyIndex--;
-            return proceed;
-        }
-    } else if (arg->keyIndex == c_arraySize(arg->key)) {
-        pred = arg->pred;
-        v.is.Boolean = TRUE;
-        while (pred != NULL) {
-            if (pred->expr != NULL) {
-                v = c_qValue(pred->expr, n->object);
-                assert(v.kind == V_BOOLEAN);
-                if (v.is.Boolean) {
-                    pred = NULL;
-                } else {
-                    pred = pred->next;
-                }
-            } else {
-                pred = pred->next;
-            }
-        }
-        if (!v.is.Boolean) {
+    if (tableReadTakeActionNonMatchingKey (n, arg->pred, arg->keyIndex)) {
+        return TRUE;
+    } else if (arg->keyIndex == c_arraySize (arg->key)) {
+        if (!predMatches (arg->pred, n->contents.object)) {
             return TRUE;
+        } else {
+            arg->disposed = n;
+            arg->count++;
+            arg->proceed = arg->action (n->contents.object, arg->arg);
+            return FALSE;
         }
     } else {
-        key = arg->pred->keyField[arg->keyIndex];
+        key = arg->pred ? arg->pred->keyField[arg->keyIndex] : NULL;
         arg->keyIndex++;
-        if ((key->range == NULL) || (c_arraySize(key->range) == 0)) {
-            do {
-                proceed = c_avlTreeWalk((c_avlTree)n->object,
-                                        tableTakeAction,
-                                        arg,
-                                        C_INFIX);
-                if ((!proceed) && (arg->disposed != NULL)) {
-                    assert(arg->disposed != NULL);
-                    found = c_avlTreeRemove(n->object,
-                                            arg->disposed,
-                                            c_keyCompare,
-                                            NULL,NULL,NULL);
-                    assert(found == arg->disposed);
-                    if (arg->keyIndex == c_arraySize(arg->key)) {
-                        c_free(found->object);
-                    } else {
-                        c_avlTreeFree(found->object);
-                    }
-                    c_valueFreeRef(found->keyValue);
-                    c_mmFree(arg->mm,found);
-                }
-            } while ((proceed == FALSE) && (arg->proceed == TRUE));
-            proceed = arg->proceed;
+        if (key == NULL || key->range == NULL || (nrOfRanges = c_arraySize (key->range)) == 0) {
+            proceed = tableTakeActionWalk (n, arg);
         } else {
-            nrOfRanges = c_arraySize(key->range);
-            i=0;
-            while ((i<nrOfRanges) && proceed) {
-                range = key->range[i];
-                if (range == NULL) {
-                    startRef = NULL; startInclude = TRUE;
-                    endRef   = NULL; endInclude   = TRUE;
-                } else {
-                    start.keyValue = c_qRangeStartValue(range);
-                    end.keyValue = c_qRangeEndValue(range);
-                    switch (range->startKind) {
-                    case B_UNDEFINED: startRef = NULL;   startInclude = TRUE;  break;
-                    case B_INCLUDE:   startRef = &start; startInclude = TRUE;  break;
-                    case B_EXCLUDE:   startRef = &start; startInclude = FALSE; break;
-                    default:
-                        OS_REPORT_1(OS_ERROR,
-                                    "Database Collection",0,
-                                    "Internal error: undefined range kind %d",
-                                    range->startKind);
-                        assert(FALSE);
-                        return FALSE;
-                    }
-                    switch (range->endKind) {
-                    case B_UNDEFINED: endRef = NULL; endInclude = TRUE;  break;
-                    case B_INCLUDE:   endRef = &end; endInclude = TRUE;  break;
-                    case B_EXCLUDE:   endRef = &end; endInclude = FALSE; break;
-                    default:
-                        OS_REPORT_1(OS_ERROR,
-                                    "Database Collection",0,
-                                    "Internal error: undefined range kind %d",
-                                    range->endKind);
-                        assert(FALSE);
-                        return FALSE;
-                    }
-                }
-                do {
-                    proceed = c_avlTreeRangeWalk((c_avlTree)n->object,
-                                                  startRef,startInclude,
-                                                  endRef,endInclude,
-                                                  c_keyCompare,NULL,
-                                                  tableTakeAction,arg,
-                                                  C_INFIX);
-                    if ((!proceed) && (arg->disposed != NULL)) {
-                        assert(arg->disposed != NULL);
-                        found = c_avlTreeRemove(n->object,
-                                                arg->disposed,
-                                                c_keyCompare,
-                                                NULL,NULL,NULL);
-                        assert(found == arg->disposed);
-                        if (arg->keyIndex == c_arraySize(arg->key)) {
-                            c_free(found->object);
-                        } else {
-                            c_avlTreeFree(found->object);
-                        }
-                        c_valueFreeRef(found->keyValue);
-                        c_mmFree(arg->mm,found);
-                    }
-                } while ((proceed == FALSE) && (arg->proceed == TRUE));
-                proceed = arg->proceed;
-                i++;
+            for (i = 0; i < nrOfRanges && proceed; i++) {
+                tableReadTakeActionGetRange (key->range[i], &start, &startRef, &startInclude, &end, &endRef, &endInclude);
+                proceed = tableTakeActionWalkRange (n, arg, startRef, startInclude, endRef, endInclude);
             }
         }
-        if (c_avlTreeCount(n->object) == 0) {
+        if (ut_avlIsEmpty (&n->contents.tree)) {
             arg->disposed = n;
         } else {
             arg->disposed = NULL;
@@ -2252,10 +1922,6 @@ tableTakeAction(
         arg->keyIndex--;
         return proceed;
     }
-    arg->disposed = n;
-    arg->count++;
-    arg->proceed = arg->action(n->object,arg->arg);
-    return FALSE;
 }
 
 static c_bool
@@ -2265,98 +1931,71 @@ c_tableTake (
     c_action action,
     c_voidp arg)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)_this;
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
     C_STRUCT(tableTakeActionArg) a;
     C_STRUCT(c_tableNode) root;
-    c_value v;
     c_bool proceed = TRUE;
     c_long nrOfKeys;
-    c_object o = NULL;
-    c_qPred pred;
 
     assert(c_collectionIsType(_this, C_DICTIONARY));
 
-    _ACCESS_BEGIN_(t);
-    if (t->key == NULL) {
-        nrOfKeys = 0;
-    } else {
-        nrOfKeys = c_arraySize(t->key);
-    }
+    _ACCESS_BEGIN_(table);
 
-    if (t->object == NULL) {
-        _ACCESS_END_(t);
-        return FALSE;
-    }
-
-    if (nrOfKeys == 0) {
-        if (p == NULL) {
-            o = t->object;
-            t->object = NULL;
-            t->count--;
-        } else {
-            pred = p;
-            while (pred != NULL) {
-                if (pred->expr != NULL) {
-                    v = c_qValue(c_qExpr(pred->expr), t->object);
-                    assert(v.kind == V_BOOLEAN);
-                    if (v.is.Boolean) {
-                        o = t->object;
-                        t->object = NULL;
-                        t->count--;
-                        pred = NULL;
-                    } else {
-                        pred = pred->next;
-                    }
-                } else {
-                    pred = pred->next;
-                }
+    if (table->key == NULL || (nrOfKeys = c_arraySize(table->key)) == 0) {
+        if (table->contents.object != NULL) {
+            c_object o = NULL;
+            /* FIXME: this can't be right: action is called regardless
+             * of whether the predicate is satisfied */
+            if (predMatches (p, table->contents.object)) {
+                o = table->contents.object;
+                table->contents.object = NULL;
+                table->count--;
             }
+            proceed = action (o, arg);
+            c_free (o);
         }
-        proceed = action(o,arg);
-        c_free(o);
-        _ACCESS_END_(t);
-        return proceed;
-    }
-
-    a.mm = MM(t);
-    a.key = t->key;
-    a.action = action;
-    a.arg = arg;
-    a.count = 0;
-    a.proceed = TRUE;
+    } else {
+        a.mm = MM(table);
+        a.key = table->key;
+        a.action = action;
+        a.arg = arg;
+        a.count = 0;
+        a.proceed = TRUE;
 #ifdef _CONSISTENCY_CHECKING_
-    a.t = t;
-    root.table = (c_voidp)t;
+        a.t = table;
+        root.table = (c_voidp)table;
 #endif
-    root.object = t->object;
-    if (p == NULL) {
-        a.keyIndex = 0;
-        a.pred = p;
-        a.disposed = NULL;
-        proceed = tableTakeAction(&root,&a);
+        root.contents = table->contents;
+        if (p == NULL) {
+            a.keyIndex = 0;
+            a.pred = p;
+            a.disposed = NULL;
+            proceed = tableTakeAction(&root,&a);
+        }
+        while ((p != NULL) && proceed) {
+            a.keyIndex = 0;
+            a.pred = p;
+            a.disposed = NULL;
+            proceed = tableTakeAction(&root,&a);
+            p = p->next;
+        }
+        table->contents = root.contents;
+        table->count -= a.count;
     }
-    while ((p != NULL) && proceed) {
-        a.keyIndex = 0;
-        a.pred = p;
-        a.disposed = NULL;
-        proceed = tableTakeAction(&root,&a);
-        p = p->next;
-    }
-    t->count -= a.count;
-    _ACCESS_END_(t);
+    _ACCESS_END_(table);
     return proceed;
 }
 
 static c_object
 c_tableTakeOne(
-    c_table t,
+    c_table _this,
     c_qPred p)
 {
     c_object o = NULL;
 
-    assert(c_collectionIsType(t, C_DICTIONARY));
+    assert(c_collectionIsType(_this, C_DICTIONARY));
 
-    c_tableTake(t,p,readOne,&o);
+    c_tableTake(_this,p,readOne,&o);
 
     return o;
 }
@@ -2365,8 +2004,9 @@ c_long
 c_tableCount (
     c_table _this)
 {
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
     assert(c_collectionIsType(_this, C_DICTIONARY));
-    return ((C_STRUCT(c_table) *)_this)->count;
+    return table->count;
 }
 
 typedef struct c_tableWalkActionArg {
@@ -2383,10 +2023,10 @@ c_tableWalkAction (
     c_bool result;
 
     if (arg->nrOfKeys == 0) {
-        result = arg->action(n->object,arg->actionArg);
+        result = arg->action(n->contents.object,arg->actionArg);
     } else {
         arg->nrOfKeys--;
-        result = c_avlTreeWalk(n->object,c_tableWalkAction,arg,C_INFIX);
+        result = tableReadTakeWalk(&n->contents.tree,c_tableWalkAction,arg);
         arg->nrOfKeys++;
     }
     return result;
@@ -2398,48 +2038,45 @@ c_tableWalk(
     c_action action,
     c_voidp actionArg)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)_this;
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
     struct c_tableWalkActionArg walkActionArg;
     c_bool result = TRUE;
 
     assert(c_collectionIsType(_this, C_DICTIONARY));
 
-    _READ_BEGIN_(t);
-    if (t->count > 0) {
-        if ((t->key == NULL) || (c_arraySize(t->key) == 0)) {
-            result = action(t->object,actionArg);
+    _READ_BEGIN_(table);
+    if (table->count > 0) {
+        if ((table->key == NULL) || (c_arraySize(table->key) == 0)) {
+            result = action(table->contents.object,actionArg);
         } else {
             walkActionArg.action = action;
             walkActionArg.actionArg = actionArg;
-            walkActionArg.nrOfKeys = c_arraySize(t->key) - 1;
-            result = c_avlTreeWalk(t->object,
-                                   c_tableWalkAction,
-                                   &walkActionArg,
-                                   C_INFIX);
+            walkActionArg.nrOfKeys = c_arraySize(table->key) - 1;
+            result = tableReadTakeWalk(&table->contents.tree, c_tableWalkAction, &walkActionArg);
         }
     }
-    _READ_END_(t);
+    _READ_END_(table);
     return result;
 }
 
 c_long
 c_tableGetKeyValues(
-    c_table table,
+    c_table _this,
     c_object object,
     c_value *values)
 {
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
     c_long i, nrOfKeys;
     c_value *currentValuePtr = values;
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
 
-    assert(c_collectionIsType(table, C_DICTIONARY));
+    assert(c_collectionIsType(_this, C_DICTIONARY));
 
     assert(table != NULL);
     assert(object != NULL);
 
-    nrOfKeys = c_arraySize(t->key);
+    nrOfKeys = c_arraySize(table->key);
     for (i=0;i<nrOfKeys;i++) {
-        *currentValuePtr = c_fieldValue(t->key[i], object);
+        *currentValuePtr = c_fieldValue(table->key[i], object);
         currentValuePtr = &(currentValuePtr[1]);
     }
     return nrOfKeys;
@@ -2447,20 +2084,20 @@ c_tableGetKeyValues(
 
 c_long
 c_tableSetKeyValues(
-    c_table table,
+    c_table _this,
     c_object object,
     c_value *values)
 {
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
     c_long i, nrOfKeys;
     c_value *currentValue;
     c_field *currentField;
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
 
-    assert(c_collectionIsType(table, C_DICTIONARY));
+    assert(c_collectionIsType(_this, C_DICTIONARY));
 
-    nrOfKeys = c_arraySize(t->key);
+    nrOfKeys = c_arraySize(table->key);
     if (nrOfKeys > 0) {
-        currentField = (c_field *)t->key;
+        currentField = (c_field *)table->key;
         currentValue = values;
         for (i=0;i<nrOfKeys;i++) {
             c_fieldAssign(*currentField, object, *currentValue);
@@ -2473,45 +2110,45 @@ c_tableSetKeyValues(
 
 c_long
 c_tableNofKeys(
-    c_table table)
+    c_table _this)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
 
-    assert(c_collectionIsType(table, C_DICTIONARY));
+    assert(c_collectionIsType(_this, C_DICTIONARY));
 
-    return c_arraySize(t->key);
+    return c_arraySize(table->key);
 }
 
 c_array
 c_tableKeyList(
-    c_table table)
+    c_table _this)
 {
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
 
-    assert(c_collectionIsType(table, C_DICTIONARY));
+    assert(c_collectionIsType(_this, C_DICTIONARY));
 
-    return c_keep(t->key);
+    return c_keep(table->key);
 }
 
 c_char *
 c_tableKeyExpr(
-    c_table table)
+    c_table _this)
 {
+    C_STRUCT(c_table) *table = (C_STRUCT(c_table) *) _this;
     c_long i, nrOfKeys, size;
     c_char *expr;
-    C_STRUCT(c_table) *t = (C_STRUCT(c_table) *)table;
 
-    assert(c_collectionIsType(table, C_DICTIONARY));
+    assert(c_collectionIsType(_this, C_DICTIONARY));
 
     size = 0;
-    nrOfKeys = c_arraySize(t->key);
+    nrOfKeys = c_arraySize(table->key);
     for (i=0;i<nrOfKeys;i++) {
-        size += strlen(c_fieldName(t->key[i])) + 1;
+        size += strlen(c_fieldName(table->key[i])) + 1;
     }
     expr = (c_char *)os_malloc(size);
     expr[0] = (c_char)0;
     for (i=0;i<nrOfKeys;i++) {
-        os_strcat(expr,c_fieldName(t->key[i]));
+        os_strcat(expr,c_fieldName(table->key[i]));
         if (i < (nrOfKeys-1)) {
             os_strcat(expr,",");
         }
@@ -3432,10 +3069,7 @@ c_setNew(
     c = (c_collection)c_new(c_type(o));
     if (c) {
         c_set(c)->mm = c_baseMM (base);
-        c_avlTree(c)->root = NULL;
-        c_avlTree(c)->offset = 0;
-        c_avlTree(c)->size = 0;
-        c_avlTree(c)->mm = NULL;
+        ut_avlCInit (&c_set_td, &(c_set(c))->tree);
     }
     c_free(o);
     return c;
@@ -3490,11 +3124,8 @@ c_bagNew(
     c = (c_collection)c_new(c_type(o));
     if (c) {
         c_bag(c)->mm = c_baseMM(base);
-        c_avlTree(c)->root = NULL;
-        c_avlTree(c)->offset = 0;
-        c_avlTree(c)->size = 0;
-        c_avlTree(c)->mm = NULL;
         c_bag(c)->count = 0;
+        ut_avlInit (&c_bag_td, &(c_bag(c))->tree);
     }
     c_free(o);
     return c;
@@ -3610,7 +3241,11 @@ c_tableNew(
         t->cursor = c_arrayNew(c_voidp_t(base),nrOfKeys ? nrOfKeys : 1);
         c_iterFree(fieldList);
         t->mm = c_baseMM(base);
-        t->object = NULL;
+        if (nrOfKeys == 0) {
+            t->contents.object = NULL;
+        } else {
+            ut_avlInit (&c_table_td, &t->contents.tree);
+        }
     }
     return (c_collection)t;
 }
@@ -3762,9 +3397,6 @@ c_clear (
         }
         c_free(c_table(c)->key);
         c_free(c_table(c)->cursor);
-        if (c_table(c)->object) {
-            c_avlTreeFree(c_table(c)->object);
-        }
     break;
     case C_SET:
         while ((o = c_take(c)) != NULL) {

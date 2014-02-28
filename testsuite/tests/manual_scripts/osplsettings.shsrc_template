@@ -104,7 +104,7 @@ export OSPL_VERSION="V6.2.2"
 
 # Root of local OSPL installation. This variable must be in native format.
 # This is a convenience variable used only by these scripts.
-export LOCAL_OSPL_DISTPATH="$STAF_ROOT/data/$USER/OpenSpliceDDS/$OSPL_VERSION/HDE/x86_64.linux2.6"
+export LOCAL_OSPL_DISTPATH="$STAF_ROOT/data/$USER/OpenSpliceDDS/$OSPL_VERSION/HDE/x86_64.linux"
 
 # Local OSPL version string. This value must be exactly the same as in the
 # first line of release.com/release.bat in the OSPL installation.
@@ -122,7 +122,7 @@ export LIN64_OSPL_DISTVER="$OSPL_VERSION"
 
 # Root of OSPL installation on Linux 64 in Unix format.
 # This is a convenience variable used only by these scripts.
-export LIN64_OSPL_DISTPATH="$STAF_ROOT/data/$USER/OpenSpliceDDS/$LIN64_OSPL_DISTVER/HDE/x86_64.linux2.6"
+export LIN64_OSPL_DISTPATH="$STAF_ROOT/data/$USER/OpenSpliceDDS/$LIN64_OSPL_DISTVER/HDE/x86_64.linux"
 
 # Path to logs on Linux 64 in Unix format.
 # This is a convenience variable used only by these scripts.
@@ -145,7 +145,7 @@ export LIN32_OSPL_DISTVER="$OSPL_VERSION"
 
 # Root of OSPL installation on Linux 32 in Unix format.
 # This is a convenience variable used only by these scripts.
-export LIN32_OSPL_DISTPATH="$STAF_ROOT/data/$USER/OpenSpliceDDS/$LIN32_OSPL_DISTVER/HDE/x86.linux2.6"
+export LIN32_OSPL_DISTPATH="$STAF_ROOT/data/$USER/OpenSpliceDDS/$LIN32_OSPL_DISTVER/HDE/x86.linux"
 
 # Path to logs on Linux 32 in Unix format.
 # This is a convenience variable used only by these scripts.

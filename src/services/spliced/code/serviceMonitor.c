@@ -25,6 +25,14 @@ C_STRUCT(serviceMonitor)
     u_serviceManager serviceManager;
 };
 
+static void
+detachService(
+    u_serviceManager serviceManager,
+    sr_componentInfo info);
+
+
+
+
 /**************************************************************
  * Private functions
  **************************************************************/
@@ -34,12 +42,13 @@ serviceMonitorMain(
     c_ulong event,
     c_voidp usrData)
 {
-    c_iter diedServices;
+    c_iter diedServices, incompatibleServices;
     c_char *name;
     sr_componentInfo info;
     serviceMonitor this = (serviceMonitor)usrData;
     c_bool removed;
 
+    /* handle the died services */
     diedServices = u_serviceManagerGetServices(serviceManager, STATE_DIED);
     name = (c_char *)c_iterTakeFirst(diedServices);
     while (name != NULL) {
@@ -61,6 +70,31 @@ serviceMonitorMain(
     }
     c_iterFree(diedServices);
 
+    /* handle the incompatible services */
+    incompatibleServices = u_serviceManagerGetServices(serviceManager, STATE_INCOMPATIBLE_CONFIGURATION);
+    name = (c_char *)c_iterTakeFirst(incompatibleServices);
+    while (name != NULL) {
+        /* check if restart is needed */
+        info = splicedGetServiceInfo(this->spliceDaemon, name);
+        if (info != NULL) {
+            OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0,
+                "Detected incompatible service '%s' STATE_INCOMPATIBLE_CONFIGURATION -> systemhalt", info->name);
+            splicedDoSystemHalt(SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
+            splicedRemoveKnownService(info->name);
+            removed = u_serviceManagerRemoveService(serviceManager,name);
+            if (!removed) {
+                OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED, 0,
+                   "Could not remove incompatible service %s from the serviceset", name);
+            }
+        } else {
+            OS_REPORT_1(OS_ERROR, OSRPT_CNTXT_SPLICED, 0,
+                "Unknown incompatible service '%s' died", name);
+        }
+        os_free(name);
+        name = (c_char *)c_iterTakeFirst(incompatibleServices);
+    }
+    c_iterFree(incompatibleServices);
+
     return event;
 }
 
@@ -71,6 +105,7 @@ waitForDiedService(
     os_time sleepTime;
     os_int32 dummy = 0;
     int count = 0;
+    os_result result;
 
     /* The child process that terminates remains in a zombie state until it has
      * has os_procCheckStatus called on it (especially true for Posix).  Try for
@@ -78,10 +113,12 @@ waitForDiedService(
      */
     sleepTime.tv_sec = 0;
     sleepTime.tv_nsec = 100000000;
-
-    while ((os_procCheckStatus(info->procId, &dummy) == os_resultBusy) && (count < 100)) {
+    while (((result = os_procCheckStatus(info->procId, &dummy) == os_resultBusy)) && (count < 100)) {
         count++;
         os_nanoSleep(sleepTime);
+    }
+    if (result == os_resultSuccess) {
+        info->procId = OS_INVALID_PID;
     }
 }
 
@@ -174,7 +211,9 @@ serviceMonitorProcessDiedservice(
         os_procDestroy(info->procId, OS_SIGKILL);
 #endif
         waitForDiedService(info);
+        /* Kill send to service, detach from kernel */
         detachService(serviceManager, info);
+        splicedRemoveKnownService(info->name);
     break;
     case RR_RESTART:
         argc = strlen(info->name)+4+1+strlen(info->configuration)+4+strlen(info->args)+1;
@@ -197,6 +236,7 @@ serviceMonitorProcessDiedservice(
 #endif
 
         waitForDiedService(info);
+        /* Kill send to service, detach from kernel */
         detachService(serviceManager, info);
 
         procCreateResult = os_procCreate(info->command,
@@ -222,13 +262,14 @@ serviceMonitorProcessDiedservice(
     case RR_HALT:
         OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0,
             "Service '%s' DIED -> systemhalt", info->name);
-        detachService(serviceManager, info);
         splicedDoSystemHalt(SPLICED_EXIT_CODE_RECOVERABLE_ERROR);
+        splicedRemoveKnownService(info->name);
     break;
 #endif /* INTEGRITY */
     case RR_SKIP:
         OS_REPORT_1(OS_INFO, OSRPT_CNTXT_SPLICED, 0,
             "Service '%s' DIED -> skip", info->name);
+        splicedRemoveKnownService(info->name);
     break;
     default:
         if (info->restartRule != RR_SKIP) {

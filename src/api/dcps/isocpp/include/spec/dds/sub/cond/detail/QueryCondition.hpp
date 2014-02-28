@@ -23,16 +23,20 @@
 
 #ifdef OMG_DDS_CONTENT_SUBSCRIPTION_SUPPORT
 
-namespace dds {
-   namespace sub {
-      namespace cond {
-         namespace detail {
-            class QueryCondition;
-            // For Implementor to fill in
+namespace dds
+{
+namespace sub
+{
+namespace cond
+{
+namespace detail
+{
+class QueryCondition;
+// For Implementor to fill in
 
-         }
-      }
-   }
+}
+}
+}
 }
 #endif  // OMG_DDS_CONTENT_SUBSCRIPTION_SUPPORT
 

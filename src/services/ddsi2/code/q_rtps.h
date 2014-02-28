@@ -12,7 +12,11 @@
 #ifndef NN_RTPS_H
 #define NN_RTPS_H
 
-#include "kernelModule.h" /* just for v_networkId */
+#include "os_defs.h"
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 typedef struct {
   unsigned char id[2];
@@ -61,11 +65,14 @@ typedef struct nn_guid {
 #define NN_ENTITYID_KIND_READER_WITH_KEY 0x07
 #define NN_ENTITYID_ALLOCSTEP 0x100
 
-struct c_base_s;
-struct v_kernel_s;
-
-void rtps_init (void);
+struct cfgst;
+int rtps_config_prep (struct cfgst *cfgst);
+int rtps_init (void);
 void rtps_term (void);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* NN_RTPS_H */
 

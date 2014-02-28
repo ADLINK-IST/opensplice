@@ -25,7 +25,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -88,11 +88,14 @@ typedef c_bool (*v_groupWriterAction)(v_writer w, c_voidp arg);
 #define v_groupPartitionAccessMode(_this)\
         (v_group(_this)->partitionAccessMode)
 
+#define v_groupwriterAdministration(o) (C_CAST(o,v_groupwriterAdministration))
+
 typedef c_equality (*v_matchIdentityAction)(v_gid id1, v_gid id2);
 
 typedef enum {
-    V_GROUP_FLUSH_REGISTRATION, /* The object flushed is a v_registration */
-    V_GROUP_FLUSH_MESSAGE       /* The object flushed is a v_message */
+    V_GROUP_FLUSH_REGISTRATION,     /* The object flushed is a v_registration */
+    V_GROUP_FLUSH_UNREGISTRATION,   /* The object flushed is a v_registration */
+    V_GROUP_FLUSH_MESSAGE           /* The object flushed is a v_message */
 } v_groupFlushType;
 
 typedef c_bool (*v_groupFlushCallback)
@@ -153,6 +156,13 @@ v_groupWrite (
     v_resendScope *resendScope);
 
 OS_API v_writeResult
+v_groupResend (
+    v_group _this, v_message o,
+    v_groupInstance *instancePtr,
+    v_resendScope *resendScope,
+    v_networkId writingNetworkId);
+
+OS_API v_writeResult
 v_groupWriteNoStream (
     v_group _this,
     v_message message,
@@ -168,9 +178,41 @@ v_groupWriteNoStreamWithEntry (
     v_entry entry);
 
 OS_API v_writeResult
+v_groupWriteCheckSampleLost(
+    v_group group,
+    v_message msg,
+    v_groupInstance *instancePtr,
+    v_networkId writingNetworkId,
+    v_resendScope *resendScope);
+
+/**
+ * \brief Disposes all instances in the group and the registered DataReaders.
+ *
+ * \param group The group for which the instances must be disposed.
+ * \param t The source timestamp of the dispose message
+ * \param flags The additional flags to set for the dispose messages.
+ *
+ * \remark The 'flags' parameter is introduced to implement the REPLACE
+ * merge policy.
+ */
+OS_API v_writeResult
+v_groupDisposeAll (
+    v_group group,
+    c_time t,
+    c_ulong flags);
+
+OS_API v_writeResult
 v_groupDeleteHistoricalData (
     v_group _this,
     c_time t);
+
+OS_API v_writeResult
+v_groupResend (
+    v_group _this,
+    v_message o,
+    v_groupInstance *instancePtr,
+    v_resendScope *resendScope,
+    v_networkId writingNetworkId);
 
 OS_API c_bool
 v_groupNwAttachedGet (
@@ -258,6 +300,14 @@ v_groupLookupInstance(
     v_group group,
     c_value keyValue[]);
 
+OS_API v_groupInstance
+v_groupLookupInstanceAndRegistration(
+    v_group group,
+    c_value keyValue[],
+    v_gid gidTemplate,
+    v_matchIdentityAction predicate,
+    v_registration *registration);
+
 OS_API v_message
 v_groupCreateUntypedInvalidMessage(
     v_kernel kernel,
@@ -267,6 +317,41 @@ OS_API void
 v_groupRemoveAwareness (
     v_group _this,
     const c_char* serviceName);
+
+OS_API void
+v_groupCheckForSampleLost(
+    v_group group,
+    v_message msg);
+
+/**
+ * \brief Set the specified flags in the instanceStates
+ * of all dataReader instances associated with the specified group.
+ *
+ * \param group The group for which all instanceStates of all DataReaders must set the flags.
+ * \param flags The flags to set for all instanceStates of the DataReaders.
+ *
+ * \remark The function is thread-safe. During the execution of the function access
+ * to the group is locked.
+ */
+OS_API void
+v_groupMarkReaderInstanceStates (
+    v_group group,
+    c_ulong flags);
+
+/**
+ * \brief Reset the specified flags in the instanceStates
+ * of all dataReader instances associated with the specified group.
+ *
+ * \param group The group for which all instanceStates of all DataReaders must reset the flags.
+ * \param flags The flags to reset for all instanceStates of the DataReaders.
+ *
+ * \remark The function is thread-safe. During the execution of the function access
+ * to the group is locked.
+ */
+OS_API void
+v_groupUnmarkReaderInstanceStates (
+    v_group group,
+    c_ulong flags);
 
 #undef OS_API
 

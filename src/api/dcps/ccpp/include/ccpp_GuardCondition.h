@@ -32,7 +32,7 @@ namespace DDS
         ~GuardCondition();
 
         virtual ::DDS::ReturnCode_t set_trigger_value (
-            ::CORBA::Boolean value
+            ::DDS::Boolean value
         ) THROW_ORB_EXCEPTIONS;
     };
 }

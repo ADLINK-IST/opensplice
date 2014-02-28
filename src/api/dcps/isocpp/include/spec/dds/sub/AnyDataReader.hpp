@@ -23,49 +23,88 @@
 #include <dds/core/ref_traits.hpp>
 #include <dds/sub/detail/AnyDataReader.hpp>
 
-namespace dds {
-  namespace sub {
+namespace dds
+{
+namespace sub
+{
 
-    class AnyDataReader;
+class AnyDataReader;
 
-    /**
-     * Extracts a typed <code>DataReader</code> from an
-     * <code>AnyDataReader</code>.
-     */
-    template <typename T>
-    DataReader<T> get(const AnyDataReader& adr);
-  }
+/**
+ * Get a typed DataReader from an
+ * AnyDataReader
+ *
+ * @return the typed DataReader
+ */
+template <typename T>
+DataReader<T> get(const AnyDataReader& adr);
+}
 }
 
-class OMG_DDS_API dds::sub::AnyDataReader {
+class OMG_DDS_API dds::sub::AnyDataReader
+{
 public:
-  inline AnyDataReader(const dds::core::null_type& src);
+    /**
+     * Contruct an AnyDataReader using null type
+     */
+    inline AnyDataReader(const dds::core::null_type& src);
 
-  template <typename T>
-  AnyDataReader(const dds::sub::DataReader<T>& dr);
+    /**
+     * Construct an AnyDataReader based on a typed DataReader
+     */
+    template <typename T>
+    AnyDataReader(const dds::sub::DataReader<T>& dr);
 
-  inline const detail::DRHolderBase* operator->() const;
+    /**
+     * operator overload to get
+     */
+    inline const detail::DRHolderBase* operator->() const;
 
-  inline detail::DRHolderBase* operator->();
+    /**
+     * operator overload to get
+     */
+    inline detail::DRHolderBase* operator->();
 
 
 public:
-  inline AnyDataReader& swap(AnyDataReader& rhs);
+    /**
+     * Swap two AnyDataReaders
+     */
+    inline AnyDataReader& swap(AnyDataReader& rhs);
 
-  template <typename T>
-  AnyDataReader& operator =(const DataReader<T>& rhs);
+    /**
+     * Assign a typed DataReader to an AnyDataReader
+     */
+    template <typename T>
+    AnyDataReader& operator =(const DataReader<T>& rhs);
 
-  inline AnyDataReader& operator =(AnyDataReader rhs);
+    /**
+     * Assign AnyDataReader to another AnyDataReader
+     */
+    inline AnyDataReader& operator =(AnyDataReader rhs);
 
 public:
-  /**
-   * Get a typed <code>DataReader</code> from this.
-   */
-  template <typename T>
-  dds::sub::DataReader<T> get();
+    /**
+     * Get a typed DataReader from this
+     *
+     * @return the typed DataReader
+     */
+    template <typename T>
+    dds::sub::DataReader<T> get();
+
+    /**
+     * Compare this AnyDataReader to another AnyDataReader
+     *
+     * @param AnyDataReader
+     * @return true if match return false otherwise
+     */
+    bool operator==(const dds::sub::AnyDataReader& other) const
+    {
+        return holder_.get()->get_dds_datareader() == other.holder_.get()->get_dds_datareader();
+    }
 
 private:
-  dds::core::smart_ptr_traits<detail::DRHolderBase>::ref_type holder_;
+    dds::core::smart_ptr_traits<detail::DRHolderBase>::ref_type holder_;
 };
 
 #endif /* OMG_DDS_SUB_ANY_DATA_READER_HPP_ */

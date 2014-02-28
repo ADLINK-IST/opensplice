@@ -1,5 +1,5 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>`%
+<html>
   <head>
   <title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V6</title>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
@@ -25,23 +25,97 @@
     OpenSplice V6.x series of releases<br>
 
     <h2><a name="highlights">Release Highlights</a></h2>
-    <h3>OpenSplice DDS V6.3OSS contains the following new features:</h3>
+    <h3>OpenSplice DDS V6.4.0 contains the following new features:</h3>
+    <p>
+    <ul>
+      <li>The ISO C++ API has been taken out of beta status and is now the 
+      primary C++ API for OpenSplice DDS. Additionally, the new DDS-PSM-CXX 
+      specification IDL type mapping is now implemented.
+      This allows simplified usage of IDL generated types through full compatibility with the STL.
+      The older CORBA compatible types are also supported.
+      Please see the 
+      <a href="../isocpp/html/index.html">ISO C++ Release Notes</a> for further details</li>
+      </li>
+      <li>A performance boost has been made to OpenSplice. The libraries are now 
+      consolidated to a single dcps library ddskernel, but the other libraries are still
+      available as stubs to avoid user build system changes. Additionally, other 
+      optimisations have been introduced to increase performance and reduce CPU.
+      <br><i>Note: If you are using a static library OpenSplice build and 'ddskernel'
+      is before any of the other dds libraries e.g. -lddskernel -lddsrrstorage -lddsos then
+      you may get unresolved symbols that were previously satisfied by the 'ddsos'
+      at the end of the link line. To resolve this move 'ddskernel' to the end of the link line.
+      </i>
+      </li>
+      <li>TCP support for DDSI has been implemented. Configuration options are available
+      to run DDSI over a single connection.
+      </li>
+      <li>The CORBA cohabitation libraries have been upgraded to use TAO 2.1.
+      Where customer demand exists for TAO 1.6 support, these have been left at TAO 1.6.
+      </li>
+      <li>The DCPS API's for Java, C, C++ and C# have been extended with a
+      A QoS provider API that allows users to define QoS settings for DCPS
+      entities in an XML file as standardized in the DDS For Lightweight CCM
+      OMG (DDS4CCM) standard. Please see the Reference manuals for more information.</li> 
+      <li>Support for Visual Studio 2012 and 2013 on both 32-bit and 64-bit Windows
+      platforms.</li>
+      <li>Support for Raspberry Pi.</li>
+      <li><a href="../pdf/EvaluatingOSPLEnterprise.pdf"> New evaluation and 
+      benchmarking guide</a> and examples. Please see the RoundTrip
+      and Throughput examples.</li>
+    </ul>
+    <h3>OpenSplice DDS V6.3.3p2 contains the following new features:</h3>
+    <p>
+    <ul>
+        <li>The DCPS API's for Java, C, C++ and C# have been extended with a
+        A QoS provider API that allows users to define QoS settings for DCPS
+        entities in an XML file as standardized in the DDS For Lightweight CCM
+        OMG (DDS4CCM) standard.</li>
+        <li>Support for Visual Studio 2013 on both 32-bit and 64-bit Windows
+        platforms.</li>
+    </ul>
+    </p>
+    <h3>OpenSplice DDS V6.3.2 contains the following new features:</h3>
+    <p>
+    <ul>
+      <li>The Durability Service now supports the REPLACE and DELETE merge policies.
+
+      <ul>
+         <li>With the REPLACE merge policy it is possible to dispose
+              and delete historical data on a node, and replace it with the
+              transient and persistent data from another node. Immediately after
+              successful completion of the REPLACE merge action the replacement
+              data will be available to late joining readers, the data in the
+              reader queue of existing readers will be disposed and replaced with
+              the replacement data, and the generation count of the replacement
+              data is increased.</li>
+          <li>With the DELETE merge policy it is possible to dispose and delete
+              historical data on a node. Immediately after successful completion
+              of the DELETE merge action the historical data in the reader queue
+              of existing readers will be disposed and is not available any more
+              to late joining readers.</li>
+       </ul>
+         Please see the deployment guide for more details.
+      </li>
+    </ul>
+    </p>
+    <h3>OpenSplice DDS V6.3.1 contains the following new features:</h3>
     <p>
     <ul>
       <li>The Durability Service has new pluggable persistent stores. In previous
       versions, XML was allowed on all platforms and Memory Mapped File was also
-      available on Linux only. From V6.3OSS, Memory Mapped File is now deprecated.
+      available on Linux only. From V6.3.1, Memory Mapped File is now deprecated.
       The new persistence stores are:</li>
       <ul>
          <li><a href="http://www.sqlite.org/">SQLLite</a></li>
          <li><a href="https://code.google.com/p/leveldb/">LevelDB</a></li>
       </ul>
-      <li>The ISO C++ API (beta) has had a new set of features added. See the 
+      <li>The ISO C++ API (beta) has had a new set of features added. See the
       <a href="../isocpp/html/index.html">ISO C++ Release Notes</a> for further details</li>
       </li>
-    </ul>  
+      <li>Support for Yocto Linux on Freescale P4080ds.</li>
+    </ul>
     </p>
-      
+
     <h3>OpenSplice DDS V6.3.0 contains the following new features:</h3>
     <p>
     <ul>
@@ -55,7 +129,7 @@
       <li>DDSI2 and DDSI2E are now taken out of beta and considered as GA services.
           In completing the work on
           DDSI2 and DDSI2E, which includes adding support for IPV6, there has been a change
-          to the configuration options. In all previous versions DDSI2 and DDSI2E 
+          to the configuration options. In all previous versions DDSI2 and DDSI2E
           used "Unsupported". This has now been changed to "Internal". Old configuration
           files will still be supported on V6 series, but a WARNING message
           will be raised to highlight the deprecated "Unsupported". The Internal
@@ -70,7 +144,7 @@
       and would therefore limit throughput, especially on multi-core platforms.
       See OSPL-1078 in the API changes section.</li>
       <li>The ospl tool is enhanced (see ospl -help for detailed info). It no
-      longer returns negative error nunbers. Its default is no longer stop, but -help.</li>   
+      longer returns negative error numbers. Its default is no longer stop, but -help.</li>
       <li>Support for kernel mode is added to the RTP support for VxWorks V6 series.</li>
       <li>Support for SMP (Symmetric MultiProcessing) on VxWorks V6 series.</li>
       <li>DLRL is deprecated. It will be removed from the product at V6.4.</li>
@@ -79,13 +153,13 @@
     <h3>OpenSplice DDS V6.2.3 contains the following new features:</h3>
     <p>
     <ul>
-      <li>Support for PikeOS 3.1.7 on PowerPC for Windows hosts. For more information click <a href="win-pike.html">here</a>.
+      <li>Support for PikeOS 3.1.7 on PowerPC for Windows hosts.</a>.
       <li>Support for VxWorks 6.9 on Pentium for Windows hosts.</li>
       <li>Support for VxWorks 6.9 on Pentium3 for Windows hosts.</li>
       <li>Support for VxWorks 6.9 on PowerPC P1010/P1013 for Windows hosts.</li>
     </ul>
     </p>
-    
+
     <h3>OpenSplice DDS V6.2.2 contains the following new features:</h3>
     <p>
     <ul>
@@ -159,7 +233,7 @@
          <li>Record topics to an xml storage</li>
          <li>Manipulate the recorded data</li>
          <li>Ability to control the recording and replay service remotely</li>
-         <li>A new tool (seperate installer) to drive the recording and replay service and view its output.</li>
+         <li>A new tool (separate installer) to drive the recording and replay service and view its output.</li>
       </ul>
       </li><br>
     </ul>
@@ -213,7 +287,7 @@
     source code, to run applications, and how Listener classes must be written. Additionally extra care must be taken
     not to mix the CORBA and Standalone DCPS APIs on the same compilation or VM classpath.
     <ul><li>IDL to Java code generation changes
-    <p>Given the below IDL defintion:<br><br>
+    <p>Given the below IDL definition:<br><br>
     /* @file: Foo.idl */<br>
     struct Bar {/<br>
         long key;/<br>
@@ -436,8 +510,929 @@
     </p>
 
     <h2><a name="issues_not_api">Fixed Bugs and Changes not affecting API</a></h2>
-    <p>
-      <h3>6.3OSS</h3>
+    <p>    
+       <h3>6.4.0</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>  
+        <tr>
+          <td>OSPL-31<br/>
+          </td>
+          <td>
+            <b>idlpp did not generate valid java-code when a union had a case
+            called 'discriminator'</b><br/>
+            <i>
+               When an idl-union contained a case called 'discriminator', the
+               generated java-code would contain two conflicting definitions for
+               the 'discriminator' method. This method is always included in a
+               class generated from a union to obtain the value of the
+               union-discriminator. With a discriminator case an additional
+               discriminator method is added with the same signature that returns
+               the value of the discriminator field. 
+              </br>
+              </br>
+              <b>Solution:  The solution is according to the IDL to Java
+              specification which prescribes that the function returning the
+              discriminator-value should be prefixed with a '_' if the union
+              contains a case called 'discriminator'.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-1631<br/>11194
+          </td>
+          <td>
+            <b>Reporting does not include timezone information</b><br/>
+            <i>
+               In scenario's where nodes are joining and/or leaving a domain
+               The timestamps in the default info and error logs did not include
+               timezone information. When the timezone of a system is altered
+               while OpenSplice is running, the reports may appear out of order. 
+              </br>
+              </br>
+              <b>Solution: To resolve any uncertainty the locale-dependent
+              abbreviated timezone has been added to the date format.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-1705/1713/1714<br/>
+          </td>
+          <td>
+            <b>Durability service XML persistency handles topics with string keys
+            incorrectly</b><br/>
+            <i>
+                If multiple string keys exist for a Topic that is being persisted
+                by the durability service, samples for different instances may be
+                interpreted as samples for the same instance causing potentially
+                samples to be overwritten while they both are supposed to be
+                maintained. Secondly, if one or more key-values contained new-lines,
+                storage in XML was also done in a way that prevented the data from
+                being republished correctly after system restart. Finally, if the
+                string key was matching the "</TOPIC>" closing tag in the XML
+                implementation, samples matching this key would not be persisted in all cases. 
+              </br>
+              </br>
+              <b>Solution: Key-values are now escaped when storing them in XML.
+              The change is backwards compatible meaning that the new version can
+              cope with old persistent stores.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2360<br/>
+          </td>
+          <td>
+            <b>Strange error message from DDSI2 for truncated packets on Windows</b><br/>
+            <i>
+               On Windows, when a message is truncated because there is insufficient
+               receive buffer space available, the error message produced by DDSI2
+               would be somewhat confusing, because Windows reports this as an
+               error whereas DDSI2 assumed POSIX behaviour of treating this as
+               an unusual situation rather than an actual error. The behaviour
+               of DDSI2 was ok, in that it discarded the message regardless of
+               the platform.
+              </br>
+              </br>
+              <b>Solution: The error reported by Windows is now recognised and
+              reported properly.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2485<br/>
+          </td>
+          <td>
+            <b>Idlpp generated invalid java for a union with only a default case</b><br/>
+            <i>
+               When a union only contained a default-usecase, java-code was
+               generated which did an invalid check on discriminator and therefore
+               did not compile.
+              </br>
+              </br>
+              <b>Solution: The discriminator-check is not valid when there is
+              only a default case. The applied fix removes the check in this scenario.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2519<br/>
+          </td>
+          <td>
+            <b>OS_INVALID_PID is accepted as a valid processID in the abstraction layer</b><br/>
+            <i>
+               The OS abstraction layer functions os_procDestory and os_procCheckStatus
+               accepted OS_INVALID_PID as a valid input. Especially in
+               os_procDestory, which is able to send signals to processes,
+               this could have caused undesired behavior.
+              </br>
+              </br>
+              <b>Solution: The functions os_procDestory and os_procCheckStatus
+              now return invalid when processID OS_INVALID_PID is passed.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2616<br/>
+          </td>
+          <td>
+            <b>Internal change: File extension change for files generated for Corba co-habitation CPP</b><br/>
+            <i>
+               When generating from your idl file, the tao idl compiler would generated .i. 
+              </br>
+              </br>
+              <b>Solution: For the inline files these have now been changed to
+              the default file extension used by TAO, which is .inl.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-3042<br/>
+          </td>
+          <td>
+            <b>The library versions of sqlite and leveldb supplied by Opensplice
+            may conflict with system supplied builds.</b><br/>
+            <i>
+               An Opensplice delivery contains particular versions of the sqlite
+               and leveldb libraries on which Opensplice is dependent. These 
+               libraries are installed in the Opensplice install directory. 
+               owever the versions of these libraries may conflict with newer
+               versions which are available on the system on which Opensplice
+               is installed. 
+              </br>
+              </br>
+              <b>Solution: The names of the supplied sqlite and leveldb libraries
+              are made Opensplice specific by adding an ospl postfix.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-3151-1<br/>
+          </td>
+          <td>
+            <b>Receiving unidentifiable duplicate messages during durability
+            alignment when using DDSI2</b><br/>
+            <i>
+               When using DDSI2 it was possible that during durability alignment
+               a duplicate message was received which could not be identified as
+               a duplicate because the sequencenumbers were different. DDSI2
+               increments the sequencenumber for each message it sends, this
+               sequencenumber is unrelated to the message sequencenumber which
+               is not communicated to the receiving node when using DDSI2. 
+              </br>
+              </br>
+              <b>Solution: Communicate the message sequencenumber to the receiving
+              node. Add a PrismTech specific flag to the SPDP to indicates that
+              the message sequencenumber is send. Add the message sequencenumber
+              to all messages transferred using DDSI2. Based on the existence of
+              the PrismTech specific flag copy either the message sequencenumber
+              or the DDSI2 sequence number into the internal messages.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-3151-2<br/>
+          </td>
+          <td>
+            <b>Publication/Subscription matched logic incorrect</b><br/>
+            <i>
+               On every non dispose Publication/Subscription matched message
+               (with compatible reader/writer) the Publication/Subscription
+               matched count was incremented. Only with a dispose
+               Publication/Subscription matched message the Publication/Subscription
+               matched count was decremented. 
+              </br>
+              </br>
+              <b>Solution: Now the Publication/Subscription matched count is only
+              incremented when it's noticed for the first time or when QoS settings
+              have become compatible when it was not before. The
+              Publication/Subscription matched count is decremented on dispose
+              Publication/Subscription matched message or on
+              Publication/Subscription matched message when QoS settings are no
+              longer compatible.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3462<br>
+         </td>
+          <td>
+            <b>idlpp issues compiling in standalone C++ mode</b><br/>
+            <i>
+              Description: idlpp generated uncompilable code from anonymous sequence
+              of sequences of basic IDL types following typedefs of those same
+              basic types. It also produced incorrect definition of anonymous
+              array slice types.    
+              <br><br>
+              <b>Solution: idlpp generates the correct code in these circumstances.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3463<br>
+         </td>
+          <td>
+            <b>Durability using KV persistency may report error while backing up</b><br/>
+            <i>
+              Description: When durability has been configured to use KV persistency
+              and is backing up the persistent store an error may be reported when
+              no data exists yet for a given name-space even though nothing goes wrong.   
+              <br><br>
+              <b>Solution: The error message is not reported any more.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3512/<br>12427
+         </td>
+          <td>
+            <b>Potential crash during initial alignment after a dispose_all_data call.</b><br/>
+            <i>
+              Description: The dispose_all_data call creates specific samples that
+              were not compatible with durability alignment. The durability service
+              could not handle these samples, while there are possible scenario's
+              where these samples get stored in a persistent store. The service
+              incorrectly forwarded all initial alignment data to the networking
+              service, which could result in a crash since it could also not
+              handle these samples, which are meant for local delivery only. A
+              crash could also occur if the dispose_all_data sample was the first
+              sample to be received, which could happen because of order reversal
+              during alignment or in combination with lifespan QoS on the
+              corresponding data. 
+              <br><br>
+              <b>Solution: The durability service was modified to only exchange
+              initial alignment data over the durability partition and not by
+              directly delivering it to a networking service. Order reversal
+              during initial alignment was changed such that samples are ordered
+              first by timestamp, then by writer (instead of the other way around).
+              Support was added for handling the case where it is still the first
+              to be received, i.e. when the lifespan of data samples has expired.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3520<br>
+         </td>
+          <td>
+            <b>Opensplice host and target type for Linux OS's has changed from
+            x86.linux2.6 to x86.linux and x86_64.linux2.6 to x86_64.linux</b><br/>
+            <i>
+              Description: The installation path will be affected by this change,
+              the top level directory on a linux platform would have been
+              &ltARCH&gt.linux2.6 it will now be &ltARCH&gt.linux
+              <br><br>
+              <b>Solution: Before - PrismTech/OpenSpliceDDS/V6.3.2/HDE/x86_64.linux2.6/<br>
+              Now - PrismTech/OpenSpliceDDS/V6.4.0/HDE/x86_64.linux/</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3587<br>
+         </td>
+          <td>
+            <b>Durability exposes and aligns local DDSI2 partitions</b><br/>
+            <i>
+              Description: The DDSI2 service creates some local partitions 
+              formatted as '__NODE<ID>BUILT-IN PARTITION__' that are purely local
+              to the federation. The durability service however aligns them with
+              others causing the local data to be exposed to other federations as well.   
+              <br><br>
+              <b>Solution: The durability service now checks whether a partition
+              has the aforementioned format and refrains from exposing them to
+              other durability services.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3601<br>
+         </td>
+          <td>
+            <b>Extend support for network service data compression and durability datastores.</b><br/>
+            <i>
+              Description: Windows, Enterprise Linux and Solaris distributions
+              now include support for zlib, lzf and snappy compressors in the
+              networking service, and for LevelDB (not windows) and SQLite (not solaris)
+              datastore plugins for durability.  
+              <br><br>
+              <b>Solution: Extra platform support added.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3603<br>
+         </td>
+          <td>
+            <b>Various internal trace messages are reported in ospl-info.log</b><br/>
+            <i>
+              Description: The ospl-info.log shows various messages about internal
+              threads being started and stopped. These messages make no sense nor
+              are they relevant to users. Also these message makes it harder to
+              find the actual messages that are important.  
+              <br><br>
+              <b>Solution: These internal messages are no longer reported.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3625/<br>12529
+         </td>
+          <td>
+            <b>Spliced could crash when terminating under abnormal circumstances</b><br/>
+            <i>
+              Description: The spliced exit handling must stop all OpenSplice
+              threads accessing shared memory before detaching from the shared
+              memory. However, if processes have been killed using the KILL signal,
+              this did not always happen correctly because spliced would
+              incorrectly assuming the shared memory to still be in use.  
+              <br><br>
+              <b>Solution: The termination code now ensures thread termination.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3644<br>
+         </td>
+          <td>
+            <b>Durability service may perform alignment multiple times</b><br/>
+            <i>
+              Description: The durability service aligns sample per partition-topic
+              combination and in some cases could perform this alignment multiple times. 
+              <br><br>
+              <b>Solution: The durability service now checks actively whether it
+              already performed alignment for a given partition-topic combination
+              before initiating the alignment.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-3755-1<br/>12573
+          </td>
+          <td>
+            <b>Durability service does not terminate in time.</b><br/>
+            <i>
+              Termination hung because listener termination is unable to stop
+              with active listener actions. Listener actions remained active
+              because they were unaware of termination. 
+              </br>
+              </br>
+              <b>Solution: Listener actions are now aware of termination and stop.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-3755-2<br/>12573
+          </td>
+          <td>
+            <b>Services are able to outlive the splice daemon</b><br/>
+            <i>
+              When the splice daemon terminated without the use of the ospl tool,
+              it was possible that a service outlived the splice daemon. 
+              </br>
+              </br>
+              <b>Solution: The splice daemon now kills all services which remain
+              alive after the service terminate period elapsed.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-3755-3<br/>12573
+          </td>
+          <td>
+            <b>After failure action systemhalt it was possible that shared memory
+             was not cleaned-up/deleted.</b><br/>
+            <i>
+               When a service failed with failure action systemhalt set it was 
+               possible that shared memory and key-file were not cleaned-up/deleted.
+               This occurred because the splice daemon incorrectly assumed that
+               the died service was unable to decrease the kernel attach count
+               upon its termination, the attach count was decreased twice 
+               causing failing calls to shared memory cleanup/deletion.
+              </br>
+              </br>
+              <b>Solution: The splice daemon no longer assumes died services
+              are incapable to preform proper termination, it now only decreases 
+              kernel attach count during termination when all services are terminated.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3761/4002<br>/12570
+         </td>
+          <td>
+            <b>OSPL_LOGPATH included in host:port check for tcp logging mode</b><br/>
+            <i>
+              Description:  Log file names are checked for host:port combinations
+              twice. The second check is done when the path prefix and log file
+              name are concatenated, which leads to incorrect behavior if the
+              value specified in OSPL_LOGPATH contains a colon. 
+              <br><br>
+              <b>Solution: Split prefix and log file name before checking for a
+              host:port combination.</b>
+            </i>
+          </td>
+        </tr>
+       
+        <tr>
+         <td>
+            OSPL-3786<br>
+         </td>
+          <td>
+            <b>Latency spikes on reliable channel</b><br/>
+            <i>
+              Description: On some occasions the latency on a reliable channel
+              would spike periodically (at most once per resolution) due to a
+              mechanism used to limit bandwidth kicking in even when the limit
+              didn't need to be enforced. 
+              <br><br>
+              <b>Solution: The logic has been enhanced to only activate the
+              mechanism when bandwidth needs limiting.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3791/<br>12576
+         </td>
+          <td>
+            <b>More strict SAC idlpp sequence support functions creation</b><br/>
+            <i>
+              Description: SAC idlpp creates support functions for sequences
+              (like allocbuf()). These are created when an idl file defines an
+              actual sequence (like sequence<Type>) but also when the type is
+              related to a Topic (in other words, '#pragma keylist' is added to
+              the type) to be able to create readers and writers. When idl file
+              A contains a topic Type and idl file B includes A and defines a
+              sequence of that topic, then sequence support functions are created
+              in both A and B result files. The effect is that the generated code
+              doesn't compile due to 'multiple definitions'. 
+              <br><br>
+              <b>Solution: When creating a sequence, check if the sequence is within the
+              same file as the type. If not, check if the type has a keylist
+              related to it. If so, then the type is a topic and the sequence
+              support function have already been created: do not create them a
+              second time.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3851/<br>12627
+         </td>
+          <td>
+            <b>DDSI uses more ports beyond those specified in the Deployment Guide</b><br/>
+            <i>
+              Description: The Deployment Guide describes exactly which set of
+              ports is used by DDSI and how this set can be configured. Some
+              versions of OpenSplice (6.3.x except 6.3.0) additionally used two 
+              or more (one more than the number of configured channels)
+              kernel-allocated port numbers strictly for transmitting data. 
+              <br><br>
+              <b>Solution: The use of the additional ports has been eliminated
+              and the behaviour is in line with the deployment guide again.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3853<br>
+         </td>
+          <td>
+            <b>Improve the performance of the waitset wait operation.</b><br/>
+            <i>
+              Description: The performance of the waitset wait operation can be
+              improved by evaluating the conditions trigger status within the
+              kernel layer. 
+              <br><br>
+              <b>Solution: Evaluate the trigger status of the conditions
+              attached to the waitset within the kernel layer.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3860<br>
+         </td>
+          <td>
+            <b>Remove unnecessary allocation of a timestamp when updating the
+            deadline administration.</b><br/>
+            <i>
+              Description: When updating the deadline information of a writer
+              or reader a new timestamp is allocated. By using the timestamps
+              already present in the corresponding sample the extra timestamp
+              allocation can be removed. 
+              <br><br>
+              <b>Solution: Use the timestamps present in the sample when updating
+              the deadline information of the corresponding instance.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3861<br>
+         </td>
+          <td>
+            <b>Improve the performance of the read/take operations by updating
+            the corresponding administration without extra memory allocations.</b><br/>
+            <i>
+              Description: A read or take operation will update the reader
+              administration. For this update memory is allocated. The performance
+              of the read or take operation can be improved by removing the extra
+              memory allocation. 
+              <br><br>
+              <b>Solution: Update the reader administration without allocating
+              temporal memory during this update.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3993<br>
+         </td>
+          <td>
+            <b>The Java QosProvider constructor may throw a NullPointerException</b><br/>
+            <i>
+              Description: When a parse-error occurs, the Java constructor explicitly
+              throws a NullPointerException. This is not in line with the other
+              API's and the language-mapping. 
+              <br><br>
+              <b>Solution: The QosProvider constructor doesn't throw a
+              NullPointerException anymore. Instead the constructor always
+              succeeds and subsequent invocations on the QosProvider will
+              return DDS.RETCODE_PRECONDITION_NOT_MET.The API furthermore has more
+              thorough error-checking within JNI. If an exception occurs,
+              DDS.RETCODE_ERROR is returned instead of an exception.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3997<br>
+         </td>
+          <td>
+            <b>Networking defragmentation buffers refcount issue</b><br/>
+            <i>
+              Description: Static analysis of RTnetworking code revealed a potential
+              issue with the administration of the defragmentation buffers. An
+              atomically modified counter was accessed without atomic access,
+              allowing a potential race-condition. 
+              <br><br>
+              <b>Solution: The counter is correctly accessed now.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-4007<br>/12660
+         </td>
+          <td>
+            <b>Workaround for issue when using Jamaica VM</b><br/>
+            <i>
+              Description: When OpenSplice is used with JamaicaVM, JamaicaVM 
+              crashes due to a differnece in how a jni call to NewStringUTF is
+              handled. 
+              <br><br>
+              <b>Solution: A workaround is implemented in OpenSplice to assure 
+              that JamaicaVM does not crash anymore.</b>
+            </i>
+          </td>
+        </tr>
+      </table>
+    
+       <h3>6.3.3p3</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>  
+        <tr>
+          <td>
+            OSPL-3887<br/>
+          </td>
+          <td>
+            <b>SAC QoS-provider doesn't return DDS_RETCODE_NO_DATA</b><br/>
+            <i>
+              When a QoS cannot be found, the SAC QoS-provider returns
+              DDS_RETCODE_ERROR instead of DDS_RETCODE_NO_DATA.<br/><br/>
+              <b>Solution: The API has been changed to return DDS_RETCODE_NO_DATA
+              when a QoS cannot be found.</b>
+            </i>
+          </td>
+        </tr>
+       </table>    
+       <h3>6.3.3p2</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>  
+        <tr>
+          <td>
+            OSPL-3732/<br/>12565
+          </td>
+          <td>
+            <b>DCPSPublication built-in Topic published unnecessarily</b><br/>
+            <i>
+              Even when publication of built-in topics is disabled through the
+              configuration file, the DCPSPublication instance that corresponds
+              to a DataWriter is still write-disposed and unregistered as
+              volatile data when the DataWriter is deleted to allow DataReaders to
+              clean up the resources associated with that DataWriter. However,
+              if no instances are registered by a DataWriter at the time it
+              is deleted, there is no need to publish it.<br/><br/>
+              <b>Solution:If built-in topics are disabled through
+              configuration and no instances are registered by a DataWriter when
+              it is deleted, no more write-dispose and unregister of the
+              DCPSPublication are performed.</b>
+            </i>
+          </td>
+        </tr>
+       </table>
+     </p>
+     <p>
+       <h3>6.3.3p1</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>  
+        <tr>
+         <td>
+            OSPL-2452<br>
+         </td>
+          <td>
+            <b>Sample loss using DDSI2 and readers with resource limits</b><br/>
+            <i>
+              Description: DDSI2 could silently drop samples destined for readers
+              at their resource limit, rather than blocking the writer and/or
+              notifying the application or writing messages in the log.   
+              <br><br>
+              <b>Solution: DDSI2 now blocks the data stream until the reader
+              accepts the data, but for an unresponsive reader, it will
+              eventually drop the data anyway. When this happens, a message to
+              that effect will be logged.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-2823/3626/<br>12526
+         </td>
+          <td>
+            <b>Sample lost administration memory leaks and unlocked modifications</b><br/>
+            <i>
+              Description: The internal administration related to the sample lost
+               mechanism would leak some memory each time it was accessed. Also it
+               could be accessed by multiple threads at the same time without
+               any locking, which could potentially lead to undefined behaviour.    
+              <br><br>
+              <b>Solution: The issues were resolved by freeing the administration
+              when required to prevent memory leaks, and only allowing access
+              while a lock is taken.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-2960/<br>12243
+         </td>
+          <td>
+            <b>Improved Durability alignment through DDSI2</b><br/>
+            <i>
+              Description: The Durability Service assumes that all writer/reader connections
+              are available when one is discovered. DDSI2 however discovers one 
+              by one. This means that Durability sometimes sends data which DDSI2
+              will drop (because there's no related connection yet), which will
+              cause Durability to never complete alignment. Also, DDSI2 had a
+              problem that would sometimes increase the discovery time dramatically,
+              which would trigger the Durability alignment issue.     
+              <br><br>
+              <b>Solution: The Durability now creates all readers before enabling
+              the listeners connected to them, meaning that required writer/reader
+              connections are discovered before acting on incoming data.
+              The DDSI2 service increases the writer heartbeat when a new reader
+              is detected, making the writer/reader connection discovery more robust
+              and quicker. </b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3186<br>
+         </td>
+          <td>
+            <b>DDSI2 could use freed memory in its reordering of incoming samples</b><br/>
+            <i>
+              Description: The sample re-ordering mechanism internal to DDSI2 could
+              use freed memory under very particular circumstances, requiring the
+              number of buffered samples to have reached its maximum size as well
+              as a particular order of arrival of out-of-sequence samples at the
+              high end of the sequence number range. This is unlikely to occur
+              in normal circumstances, using networks of "normal" reliability 
+              (such as Ethernet) and with receivers that generally keep up with the data flow.  
+              <br><br>
+              <b>Solution: The algorithm has been adjusted to avoid referencing freed memory.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3187<br>
+         </td>
+          <td>
+            <b>DDSI2 fails to work with small WHC water mark settings</b><br/>
+            <i>
+              Description: DDSI2 would completely fail to work when the WHC water
+              marks were set very low. More precisely, if DDSI2 would block because
+              the number of outstanding unacknowledged messages (N_UNACK) exceeded
+              the high water mark, and its dynamic message packer had buffered so
+              many samples that the readers would not yet be able to acknowledge
+              enough samples to drop N_UNACK below the low water mark,
+              communication would stop. This also affects endpoint discovery.<br> 
+
+              One of the consequences of the inability to operate with low water
+              mark settings meant that it was impossible to operate DDSI2 in the
+              safest configuration, where each sample must be acknowledged before
+              sending the next, thereby potentially causing many more
+              retransmissions. This is especially problematic if the network is
+              unreliable, or the receivers are unable to keep up with the influx of data. 
+              <br><br>
+              <b>Solution: The samples are now always flushed to the network before blocking.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3470/<br>12422
+         </td>
+          <td>
+            <b>Compatible typeSupport is rejected without cause</b><br/>
+            <i>
+              Description: When a type was being registered that conflicted with
+              a type that was registered earlier (for example because they had a
+              conflicting keyList), then a PRECONDITION_NOT_MET was being
+              returned, but no descriptive message was included as to the root cause.
+              <br><br>
+              <b>Solution: A message is now written into the error log and also
+              accessible through the ErrorInfo interface.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3509<br>
+         </td>
+          <td>
+            <b>Minimum networking ThrottleLimit is based on networking FragmentSize</b><br/>
+            <i>
+              Description: When the fragmentsize > throttlelimit, a scenario with
+              high load can cause the throttlevalue to go below the fragmentsize.
+              At that point networking is unable to send any messages.
+              <br><br>
+              <b>Solution: The minimum value of the 
+              "OpenSplice/NetworkService/Channels/Channel/Sending/ThrottleLimit" config
+              element is now based on the "OpenSplice/NetworkService/Channels/Channel/FragmentSize" value.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3528/<br>124264
+         </td>
+          <td>
+            <b>Excessive Lease manager logging</b><br/>
+            <i>
+              Description: In some cases where a writer was using the
+              autounregister_instance_delay, the info log file would be flooded
+              with messages stating that the leaseManager did not wake up in time.
+              <br><br>
+              <b>Solution: Logging has been cleaned up.</b>
+            </i>
+          </td>
+        </tr>
+        <tr> 
+         <td> 
+            OSPL-3596 
+         </td> 
+          <td> 
+            <b>RnR storage has problem replaying types containing arrays</b><br/> 
+            <i> 
+              The RnR storage does not correctly handle types which contain 
+              bounded array's or sequences. When the array or sequence contain 
+              references then the corresponding reference counts are not 
+              properly handled. 
+              <br><br> 
+              <b>Solution: The algorithm now correctly updates the reference 
+              counts when objects are copied. This includes references 
+              contained in bounded array's and sequences.</b> 
+            </i> 
+          </td> 
+        </tr>
+        <tr>
+         <td>
+            OSPL-3636/<br>12534
+         </td>
+          <td>
+            <b>Communication does not restart after ethernet cable unplug/replug</b><br/>
+            <i>
+              Description: When the network cable is unplugged and then replugged 
+              the reliable communication is not restored when reconnect is
+              enabled and discovery is disabled.
+              <br><br>
+              <b>Solution: When discovery is disabled the send component of a channel
+              detects the network communication problem and the recovery of the
+              network communication. This status change should also be communicated
+              to the receive component of the channel which should reset it's
+              status in case a reconnect occurs.</b>
+            </i>
+          </td>
+        </tr>
+       </table>
+
+       
+       
+
+       <h3>6.3.3</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>  
+        <tr>
+         <td>
+            OSPL-3281/<br>12378
+         </td>
+          <td>
+            <b>To monitor the behaviour of the
+            networking service and the durability service additional statistics of the
+            internal queues have been added.</b><br/>
+            <i>
+              Description: The networking service maintains internal queues to
+              provide reliability and fragmentation/defragmentation. The
+              durability service maintains a queue for persistent data that has
+              to be stored on disk. To monitor the behaviour of these queues extra
+              statistics have been added which will be available through the C&M API. 
+              <br><br>
+              <b>Solution: For the networking service additional statistic counters 
+              are available on the queues used by the resend administration (ResendQueue), the
+              reorder administration (ReorderQueue) and the network queue between
+              the writers and the networking service. For the durability service
+              statistic counters are now on the persistent data queue (GroupQueue)</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3579<br>
+         </td>
+          <td>
+            <b>Durability service may crash when aligning historical data</b><br/>
+            <i>
+              Description: In some cases while aligning historical data with another
+              durability service, some variable in an internal algorithm may not
+              be initialised, but used and freed later on anyway. This causes
+              undefined behaviour, but mostly leads to a crashing durability service.
+              <br><br>
+              <b>Solution: The internal algorithm has been modified to initialize
+              the aforementioned variable in any case.</b>
+            </i>
+          </td>
+        </tr>
+      </table>  
+
+
+       <h3>6.3.2p4</h3>
        <table width="90%">
         <tr>
           <th width="14%">
@@ -448,14 +1443,1348 @@
           </th>
         </tr>
         <tr>
-          <td>OSPL-614/ OSPL-1843/<br>10335
+         <td>
+            OSPL-2362/<br>11911
+          </td>
+          <td>
+            <b>Ownership strength changes in DataWriter's QoS go unnoticed</b><br/>
+            <i>
+              Decreasing or increasing ownership strength would have no effect on
+              ownership strength registered with instances on DataReader.
+              <br><br>
+              <b>Solution: Take into account ownership strength during evaluation
+              of QoS updates.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-2480/<br>11804
+          </td>
+          <td>
+            <b>When an idl files contains "too many" nested modules idlpp crashes
+            when Java code is generated from the idl files.</b><br/>
+            <i>
+              If an IDL file contains "too many" nested modules the IDL preprocessor
+              idlpp crashes when Java is generated. This is because in Java nested
+              modules will lead to the generation of path names containing the
+              names of modules: the deeper the nesting, the longer the path names
+              will become. Because a fixed size container for path names was used,
+              an overflow would lead to memory failure which could result in a crash.
+              <br><br>
+              <b>Solution: By dynamically allocating the path names there is
+              always enough room available to hold the complete path of a module,
+              thus preventing an overflow.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-2482<br>
+          </td>
+          <td>
+            <b>Removed possible deadlock in d_storeGroupStoreXML if result is
+            D_STORE_RESULT_PRECONDITION_NOT_MET or D_STORE_RESULT_ILL_PARAM</b><br/>
+            <i>
+              Lock on peristent XML store was not unlocked in case of a
+              D_STORE_RESULT_PRECONDITION_NOT_MET or D_STORE_RESULT_ILL_PARAM
+              result. This would have caused a deadlock.
+              <br><br>
+              <b>Solution: Lock is now always unlocked in all cases.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-2661<br>
+          </td>
+          <td>
+            <b>Crash when using reliable-under-publisher-crash (RUPC) functionality</b><br/>
+            <i>
+              When a publisher node crashes and RUPC is enabled then it appears
+              that a node that has not received all messages from the crashing
+              publisher is not updated by the other nodes. The problem occurs
+              because the announce messages that the RUPC function uses are
+              sent to the wrong network addresses.
+              <br><br>
+              <b>Solution: The announce messages used by the RUPC protocol have
+              to be send to all addresses associated with the global partition.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3084/<br>12328
+          </td>
+          <td>
+            <b>C++ copyIn/copyOut code generated from idl containing sequences
+            of anonymous sequences failed</b><br/>
+            <i>
+              idlpp generated invalid code for sequences of anonymous sequences.
+              The copyIn/copyOut routines generated did not recurse into sequences
+              and kept overwriting the base sequence resulting in memory corruption.
+              <br><br>
+              <b>Solution: Using the loop index to indicate sequence depth during
+              code generation produces copyIn/copyOut routines that recurse into sequences.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3085/<br>12326
+          </td>
+          <td>
+            <b>Cast warning in generated idlpp c++ code due to cast from const
+            pointer into non const pointer</b><br/>
+            <i>
+              The generated c++ code from idlpp contains a copy function for
+              arrays (if present) which cast away a const pointer into a non
+              const pointer. This will cause a warning with strict compiler
+              warnings set.
+              <br><br>
+              <b>Solution: Generated copy code in c++ for arrays contains now
+              also a const pointer for the from pointer.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-3222/<br>12371
+          </td>
+          <td>
+            <b>Available traces for the throttling mechanism enhanced to be less performance
+            intrusive</b><br/>
+            <i>
+              The trace level needed to obtain information on the throttling mechanism
+              could be performance intrusive.
+              <br><br>
+              <b>Solution: A new tracing category "Throttling" has been introduced
+              for both RTNetworking and secure networking, which allows throttling
+              traces to be enabled separate from the other categories. On level 1
+              throttling traces are only emitted on change.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-3280/<br>12379
+          </td>
+          <td>
+            <b>The domain service heartbeat properties should be made configurable seperately.</b><br/>
+            <i>
+              Currently the properties of the domain service heartbeat are
+              controlled by the settings of the lease element. We want to split this
+              coupling because it is desirable to specify the heartbeat frequency
+              independently. Further it should allow to specify the heartbeat
+              transport priority and the scheduling parameters of the heartbeat
+              sending thread.
+              <br><br>
+              <b>Solution: Added a Heartbeat configuration item to the Daemon
+              element of the Domain service configuration which allows to
+              specify the frequency (expiry time and update factor) of the
+              heartbeat, the transport priority QoS setting of the heartbeat
+              writer and the scheduling parameters of the heartbeat sending thread.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-3284/<br>12382
+          </td>
+          <td>
+            <b>Manual start of networking doesn't allow communication.</b><br/>
+            <i>
+              The kernel group write is only allowed if the number of registered
+              services is equal to the number found in the configuration. This is
+              done to be sure all networking services are up and running before
+              actually doing group writes. Writes before they are up and running
+              are done again later with a resend, but where a manual start of
+              working is done later, communication doesn't occur.
+              <br><br>
+              <b>Solution: The number of registered services must be equal or
+              greater then the number found in the configuration to perform a
+              write. A manually started, but later networking service will now join
+              the system.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-3355/<br>12382
+          </td>
+          <td>
+            <b>When an aligner for a namespace appears and durability
+            services exist that do not have a aligner for this namespace then no
+            conflict is detected and no merge action is triggered, although it should.</b><br/>
+            <i>
+              In the scenario where a durability service has its 'aligner="false"'
+              -property set for a namespace and its last available aligner leaves,
+              the durability service will notice that no aligner is available
+              anymore. When an aligner (re)appears for the namespace the
+              durability service should perform the merge action as specified in
+              the configuration, because the aligner may have "injected" new
+              data in the system.
+              <br><br>
+              <b>Solution: When the last aligner for a namespace has left, the
+              state for the namespace and the role will be cleared. When a new
+              aligner arrives its initial state for the namespace is set to zero.
+              Because the cleared state differs from the initial state a
+              namespace state conflict is detected as soon as an aligner appears
+              and a merge action is performed (when specified in the configuration).</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-3466/<br>12420
+          </td>
+          <td>
+            <b>Report plugin configuration not applied to applications</b><br/>
+            <i>
+              In certain scenario's, a user-defined report plugin was only used
+              by OpenSplice services and not by applications using OpenSplice.
+              <br><br>
+              <b>Solution: The issue was fixed and the report-plugin
+              configuration is now also used by applications</b>
+            </i>
+          </td>
+        </tr>
+      </table>
+
+       <h3>6.3.2p3</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        <tr>
+          <td>
+            OSPL-350/<br>bugzilla-44
+          </td>
+          <td>
+            <b>Segmentation fault when writing or registering a sample with a null
+            member in Java</b><br/>
+            <i>
+              saj_cfoiStruct did not check if structObject is NULL, which would
+              result in a segmentation fault when writing or registering a sample
+              with a null member in Java
+              <br><br>
+              <b>Solution: The saj_cfoiStruct function now checks if structObject
+               is NULL.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-492/<br>bugzilla-49
+          </td>
+          <td>
+            <b>Invalid conversion of multidimensional arrays from IDL to C#</b><br/>
+            <i>
+              Before invalid code was generated for multidimensional arrays,
+              sequences of arrays, and operations on them for C#
+              <br><br>
+              <b>Solution: Some functions have been updated and use
+              of snprintf has been removed.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-2243/<br>11714
+          </td>
+          <td>
+            <b>Resend of unregister message may cause a crash.</b><br/>
+            <i>
+              When an unregister message is rejected by the RT networking service then
+              the resend of the unregister message may cause a crash because the
+              corresponding instance administration is already freed.
+              <br><br>
+              <b>Solution: The RT networking service should not reject an unregister
+              message which is consistent with the behaviour of the other readers.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-2799<br>
+          </td>
+          <td>
+            <b>Maximum termination wait time is displayed incorrectly when doing ospl stop</b><br/>
+            <i>
+              When terminating OpenSplice with ospl stop a message appears on the
+              command line with the maximum waiting time. This message was not in
+              line with the possible configured ServiceTerminatePeriod.
+              <br><br>
+              <b>Solution: The maximum termination time will now be displayed correctly.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-2789<br>
+          </td>
+          <td>
+            <b>Compression may fail on Linux when using a large FragmentSize in
+            RTNetworking</b><br/>
+            <i>
+              When a large FragmentSize was configured in RTNetworking, the
+              service might run out of stack on Linux platforms.
+              <br><br>
+              <b>Solution: Memory needed for handling the (de-)compression of
+              packets is now (pre-)allocated on heap.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-2865/<br>12165
+          </td>
+          <td>
+            <b>RT Networking dies when the status of an unused network interface
+            changes to down.</b><br/>
+            <i>
+              The RT networking service is reported dead when the status of a
+              network interface that is not used changes its status; for example
+              is configured down. This network state change triggers an event
+              within the RT networking service which is not handled correctly
+              which causes that the network service stops updating it's lease.
+              <br><br>
+              <b>Solution: The function checks the network interface status
+              and correctly handles the network interface status events.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3023.1<br>
+          </td>
+          <td>
+            <b>Could not add priority_kind to Domain/GeneralWatchdog/Scheduling/Priority in osplconf</b><br/>
+            <i>
+              osplconf did not know about priority_kind for Domain/GeneralWatchdog/Scheduling/Priority.
+              <br><br>
+              <b>Solution: osplconf metadata is updated.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3023.2<br>
+          </td>
+          <td>
+            <b>OpenSplice_Deployment.pdf referred to old style configuration paths</b><br/>
+            <i>
+              OpenSplice_Deployment.pdf instructed the user to use
+              Domain/Daemon/GeneralWatchdog, but user should use Domain/GeneralWatchdog.
+              <br><br>
+              <b>Solution: Documentation is correct now</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3023.3<br>
+          </td>
+          <td>
+            <b>DDSI2 and DDSI2E services did not recognize both Scheduling element
+            and the priority_kind attribute</b><br/>
+            <i>
+              The parser for both services had no notion of the Scheduling element,
+              while the common code in the user layer requires it in order to work.
+              <br><br>
+              <b>Solution: The parser code is updated now and the osplconf
+              metadata file is corrected.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3053/<br>12324
+          </td>
+          <td>
+            <b>Crash on deletion of DataWriter.</b><br/>
+            <i>
+              In some cases where a Reader or a Writer with an activated deadline
+              or auto_unregister policy was being destroyed, the leaseManager
+              would still try to notify about missed deadlines or actively send
+              unregister messages to an already partially deleted Reader or
+              Writer. This rarely occurred, but it is clearly unwanted and might
+              crash or corrupt the system.
+              <br><br>
+              <b>Solution: By now stopping the deadline and auto_unregister
+              algorithms before the actual destruction of the Reader or Writer,
+              this particular sequence of events should no longer occur.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3209/<br>12368
+          </td>
+          <td>
+            <b>Durability may fail to align non-volatile data when configuring
+            delayed alignment for one or more name-spaces</b><br/>
+            <i>
+              With the delayed alignment enabled, durability accepts the
+              introduction of a new persistent data-set in the system even after
+              the start-up phase in case no data has been re-published from
+              permanent storage by any durability service and no application has
+              published any sample so far either. When a new data-set is detected
+              in the operational phase and delayed alignment is required, the
+              durability service marked all partition-topic combinations as
+              incomplete instead of only marking the ones that match the name-space
+              for which delayed alignment is required. As a result the
+              partition-topic combinations that do not belong to the name-space
+              will never be marked as complete again. In case another durability
+              service wants to align from this durability service after that, it
+              concludes that the set of data over there is incomplete, where it
+              actually is complete. This leads the alignment process on the
+              newly joining node to fail.
+              <br><br>
+              <b>Solution: The algorithm that marks the groups as incomplete
+              (when detecting that delayed alignment needs to take place for a
+              given name-space), has been modified to only mark those
+              partition-topic combinations that match the name-space.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-3224<br>
+          </td>
+          <td>
+            <b>Durability KV store may access memory that is already freed.</b><br/>
+            <i>
+              When cleaning up the instance administration it may occur that an
+              already freed reference is accessed.
+              <br><br>
+              <b>Solution: Set the freed reference to NULL and check if it is
+              not NULL when accessing it.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3254<br>
+          </td>
+          <td>
+            <b>Failed termination messages on windows when closing OpenSplice</b><br/>
+            <i>
+              When terminating OpenSplice with ospl stop on windows a number of
+              messages with the following text "Failed to send the SIGTERM signal
+              to the splice daemon process 0" could appear in the info log file.
+              These messages appear for each service that is configured in the
+              configuration file. In fact, the service is correctly terminated.
+              <br><br>
+              <b>Solution: These messages will no longer be reported when the
+              services are terminated correctly.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3290<br>
+          </td>
+          <td>
+            <b>When rebuilding custom_libs with Visual Studio the dll files in
+            $OSPL_HOME/bin are not replaced.</b><br/>
+            <i>
+               When rebuilding custom_libs with Visual Studio the dll files
+               in bin were not replaced. The dll files were produced to the
+               $OSPL_HOME/lib directory and required manually copying into the
+               $OSPL_HOME/bin directory.
+              <br><br>
+              <b>Solution: When rebuilding custom_libs with Visual Studio the
+              dll files in $OSPL_HOME/bin are replaced.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3342<br>
+          </td>
+          <td>
+            <b>Potential uninitialized memory access in the Java language-binding</b><br/>
+            <i>
+              In the Java language binding there were (internal) error paths in
+              which uninitialized values could be returned.
+              <br><br>
+              <b>Solution: The return-values have been initialized for the
+              error-case aswell.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         <td>
+            OSPL-3351<br>
+          </td>
+          <td>
+            <b>RT Networking : Parallel demarshalling administration may leak</b><br/>
+            <i>
+              Due to an error in a method used by the cleanup routines to access
+              the parallel demarshalling administration for Java, the related
+              administration may leak if the number of threads is changed or the
+              application stops.
+              <br><br>
+              <b>Solution: The error in the cleanup routines is resolved
+              ensuring that the right pointer is returned.</b>
+            </i>
+          </td>
+        </tr>
+       </table>
+     </p>
+
+     <p>
+       <h3>6.3.2p2</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        <tr>
+          <td>
+            OSPL-2283/<br>11750
+          </td>
+          <td>
+            <b>Memory leak in lookup_participant</b><br/>
+            <i>
+              The domain identifier was not freed.
+              <br><br>
+              <b>Solution: The domain identifier is now freed before leaving
+              gapi_domainParticipantFactory_lookup_participant.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-3158/<br>12351
+          </td>
+          <td>
+            <b>Memory leak after deleting a waitset</b><br/>
+            <i>
+              The common destructor in GAPI did not free object if object was of type waitset.
+              <br><br>
+              <b>Solution: Memory leak fixed.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-3188<br>
+          </td>
+          <td>
+            <b>Error in throughput measurement of streams example</b><br/>
+            <i>
+              The streams example measures throughput by taking the total amount
+              of samples divided by the amount of time in one run. It consists
+              out of a reader and a writer process which are started
+              independently. Previously the reader would start the
+              time-measurement when the process started, even though the
+              writer-process was not yet running. This resulted in throughput
+              that was too low because more time was spent measuring than was
+              spent sending data.
+              <br><br>
+              <b>Solution: The example now starts the measurement when it
+              receives the first sample.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-3198<br>
+          </td>
+          <td>
+            <b>Durability could crash during startup when doing initial merge</b><br/>
+            <i>
+              Due to a timing dependency on whether the role of a fellow was set the durability
+              service sometimes assumed that the role was available when it wasn't, resulting
+              in trying to read a NULL-pointer. Additionally, the service would use a fast
+              spinning loop to determine whether communication with another fellow was approved
+              and would loop forever if the fellow would not be approved.
+              <br><br>
+              <b>Solution: The role is now only accessed when it is available. Furthermore the
+              spinning loop that determines whether communication with another service is possible
+              is made less cpu-hungry (by introducing a sleep) and the loop skips a service for
+              which the communication state is not approved instead of looping forever.</b>
+            </i>
+          </td>
+        </tr>
+        </tr>
+            <tr>
+          <td>
+            OSPL-3200<br>
+          </td>
+          <td>
+            <b>Consistent final value not always guaranteed with BY_SOURCE_TIMESTAMP</b><br/>
+            <i>
+              Where a single writer updates an instance with the same timestamp,
+              a consistent final value for that instance was not guaranteed
+              across all subscribers. Also when a time with all zeroes was supplied,
+              the actual time would be used instead of the supplied time.
+              <br><br>
+              <b>Solution: When updating the administration of the readers the
+              consistent final value is guaranteed by incorporating a writer-generated
+              sequence number and time zero has no special meaning anymore.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-3218<br>
+          </td>
+          <td>
+            <b>Streams API returns old sample multiple times</b><br/>
+            <i>
+              After the streams get_w_filter API call returned NO_DATA,
+              administration in the StreamReader caused a consecutive
+              get_w_filter to return the last received sample. This pattern
+              (NO_DATA, last sample) repeated itself until new data was
+              received.
+              <br><br>
+              <b>Solution: The administration is now left in a correct state
+              after NO_DATA is returned.</b>
+            </i>
+          </td>
+        </tr>
+       </table>
+     </p>
+     <p>
+       <h3>6.3.2p1</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>OSPL-3096</td>
+          <td>
+            <b>In single-process deployment CTRL-C doesn't work</b><br/>
+            <i>
+              Due to a signal-handler being overruled on POSIX systems,
+              termination requests like CTRL-C (e.g., the signals SIGINT,
+              SIGQUIT, SIGTERM, SIGHUP and SIGPIPE) would not result in an
+              immediate stop of the application.
+              </br>
+              </br>
+              <b>Solution: The signal-handler for single-process deployments is
+              no longer overruled by handlers that don't stop the application.
+               </b>
+            </i>
+          </td>
+        </tr>
+       </table>
+     </p>
+     <p>
+       <h3>6.3.2</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>OSPL-10<br/>4508
+          </td>
+          <td>
+            <b>TypeSupport with invalid type name causes crash during register_type</b><br/>
+            <i>
+              When a type support object is created with an type name which is not
+              known in the meta database the register_type function crashes.
+              </br>
+              </br>
+              <b>Solution: Code change made to prevent the crash and doc updated
+              to improve descriptin of register_type.
+               </b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-1430<br/>7255
+          </td>
+          <td>
+            <b>Durability Service behaviour with no aligner</b><br/>
+            <i>
+              The current behaviour of a durability service is: when no aligner
+              is available a durability service that cannot act as aligner itself
+              will wait until an aligner becomes available. This is not desirable
+              in all cases.
+
+              When no aligner is available a durability service that cannot act
+              as aligner itself will wait until an aligner becomes available. If
+              no aligner becomes available, the durability service will wait forever.
+              In some situations it may be desirable to exit instead. This behaviour
+              has been made configurable using the TimeToWaitForAligner-option.
+              Currently two values are supported, 0.0 (exit if no aligner is available)
+              and 1.0 (wait until an aligner becomes available). The default is
+              1.0 which matches the original behaviour.
+              When the durability service exits error code 1 (recoverable error) is returned.
+              </br>
+              </br>
+              <b>Solution: The behavior of the durability service is configurable
+              when no aligner is present.
+               </b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-1431<br/>10964
+          </td>
+          <td>
+            <b>idlpp multiple prefix support for Java</b><br/>
+            <i>
+              idlpp did not support prefixing multiple modules for the java
+              language binding using the -j option.
+              </br>
+              </br>
+              <b>Solution: idlpp now supports prefixing multiple modules.
+               </b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2307-1<br/>11751
+          </td>
+          <td>
+            <b>Recursively resolved header files all present in top level header file.</b><br/>
+            <i>
+              idlpp would include all generated header files for C++ for which
+              it found an idl preprocessor directive.
+              </br>
+              </br>
+              <b>Solution: idlpp generated C++ code does not include all
+              recursively resolved header files anymore and instead only
+              references the top level include file.
+               </b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2307-2<br/>11751
+          </td>
+          <td>
+            <b>idlpp sometimes forgets top level line markers in preprocessor output</b><br/>
+            <i>
+              idlpp would forget to include top level line markers in preprocessor
+              output if the included file contained a idl preprocessor include
+              directive itself and no actual idl code was declared before the
+              include directive.
+              </br>
+              </br>
+              <b>Solution: idlpp preprocessor now prints a line marker for the
+              file it's in, as soon as it finds a preprocessor include directive
+              and the line marker wasn't printed yet.
+               </b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2696<br/>11998
+          </td>
+          <td>
+            <b>REPLACE and DELETE merge policy</b><br/>
+            <i>
+              </br>
+              </br>
+              <b>Solution: With the REPLACE merge policy it is possible to dispose
+              and delete historical data on a node, and replace it with the
+              transient and persistent data from another node. Immediately after
+              successful completion of the REPLACE merge action the replacement
+              data will be available to late joining readers, the data in the
+              reader queue of existing readers will be disposed and replaced with
+              the replacement data, and the generation count of the replacement
+              data is increased.<br><br>
+              With the DELETE merge policy it is possible to dispose and delete
+              historical data on a node. Immediately after successful completion
+              of the DELETE merge action the historical data in the reader queue
+              of existing readers will be disposed and is not available any more
+              to late joining readers.
+               </b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2705<br/>12008
+          </td>
+          <td>
+            <b>Java deadlock during shutdown</b><br/>
+            <i>
+              Newly spawned thread in shutdown hook to delete contained entities
+              causes a deadlock.
+              </br>
+              </br>
+              <b>Solution: In OSPL v6 a user should not request an exit from within a listener thread (until the final
+               solution has been implemented - expected in v7). A solution is to
+               spawn a thread that calls System.exit() instead of calling the
+               method from within the Listener callback itself. OSPL now tries to detect
+               this deadlock, reports an error and calls system.halt.
+               </b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2762<br/>12045
+          </td>
+          <td>
+            <b>Deadlock on receiving SIGSEGV in Java language binding </b><br/>
+            <i>
+              The signal handler used to install the default signal handler and
+              re-raise SIGSEGV. This caused JVM to pass a SIGABRT to the signal
+              handler thread itself which would try to notify itself, and as a
+              result end up in a deadlock.
+              </br>
+              </br>
+              <b>Solution: Upon receiving a SIGSEGV (synchronous signal)
+              asynchronously the signal handler thread does not change the signal
+              mask and now invokes kill instead of raise to avoid possible deadlocks.
+               </b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2844<br/>12163
+          </td>
+          <td>
+            <b>Alignment of transient data can cause a crash after several restarts
+            on a second node where the first one keeps running</b><br/>
+            <i>
+               Node a is started and publishes transient data. Node b is started
+               and aligns with the first node. Result is stored in persistent file.
+               After several restarts of node b the internal hash table in the
+               durability service is out of sync caused by the data from the
+               persistent file and the data received from node a and causes a crash.
+              </br>
+              </br>
+              <b>Solution: Internal hash table in durability service was out of sync with the reality.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2889<br/>12174
+          </td>
+          <td>
+            <b>Writing data with empty strings in Java may not result in correct data being received in DDS</b><br/>
+            <i>
+               Due to an issue with the routines used by the Java
+               language-binding to do empty-string interning, non-empty strings
+               could show up in the data received in DDS.
+              </br>
+              </br>
+              <b>Solution: The empty-string interning mechanism has been fixed
+              to prevent this issue.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2891<br/>12167
+          </td>
+          <td>
+            <b>Data reader statistic "numberOfSamplesTaken" not being updated</b><br/>
+            <i>
+              The "numberOfSamplesTaken" statistic was not being updated correctly
+              in the Tuner.
+              </br>
+              </br>
+              <b>Solution: Fix applied and Tuner works ok.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2894<br/>
+          </td>
+          <td>
+            <b>Logger example failed to build on Solaris</b><br/>
+            <i>
+              The logger example failed to build on Solaris due to make complications.
+              </br>
+              </br>
+              <b>Solution: Make file corrected.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2900<br/>12235
+          </td>
+          <td>
+            <b>Instances may be corrupted when using small reader_data_lifecycle.autopurge_*_delay</b><br/>
+            <i>
+               In case a durability_service.service_cleanup_delay > 0.0 is used
+               for a Topic in combination with a very small value (or zero) as
+               reader_data_lifecycle.autopurge_*_delay by a DataReader for the
+               same Topic, instances may be corrupted in that DataReader during
+               the delivery of historical instances in case they had been
+               disposed prior to delivery already, no more live writers exist
+               for it and of which the service_cleanup_delay has not expired
+               yet.
+              </br>
+              </br>
+              <b>Solution: The internal algorithm that deals with the above Qos
+              policies has been altered and no longer causes memory corruption.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2904<br/>12236
+          </td>
+          <td>
+            <b>OSPL_LOGAPPEND does not work as expected</b><br/>
+            <i>
+              The environment variable OSPL_LOGAPPEND does not work like expected.
+              A "true" has the same effect as "false". Only if the variable
+              is not defined do you get the append behaviour.
+              </br>
+              </br>
+              <b>Solution: The evaluation of OSPL_LOGAPPEND has been corrected.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2919<br/>12244
+          </td>
+          <td>
+            <b>Opensplice DDS services always wait worst-case terminate period
+            in case of a service crash</b><br/>
+            <i>
+              When using Opensplice DDS and for some reason a service crashes or
+              is deliberately crashed, the Opensplice DDS services always wait
+              the complete ServiceTerminatePeriod to exit.
+              </br>
+              </br>
+              <b>Solution: This extra delay in the termination of services has now
+              been resolved and the services will now close as soon as possible.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2972<br/>
+          </td>
+          <td>
+            <b>Invalid configuration values on Windows 64-bit</b><br/>
+            <i>
+              On Windows 64-bit platforms, some configuration values were parsed
+              incorrectly, leading to unexpected behaviour. For example the
+              MaxBurstSize of the RTNetworking service didn't seem to work on
+              Windows 64-bit platforms.
+              </br>
+              </br>
+              <b>Solution: The parsing and printing of 64-bit values has been
+              fixed for Windows 64-bit platforms.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2977<br/>
+          </td>
+          <td>
+            <b>Appending to a stream may return RETCODE_TIMEOUT if flush limit is reached</b><br/>
+            <i>
+              Users of the Streams API should take into account that the append
+              call may return RETCODE_TIMEOUT, as a result of an implicit flush
+              that hits the writer resource limits.
+              </br>
+              </br>
+              <b>Solution:  To handle this situation the following snippet of code is suggested:<br>
+               <PRE><code>
+              result = stream->append( ... );
+              while (result == RETCODE_TIMEOUT) {
+              result = stream->flush( ... );
+              }</code></PRE></b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2979<br/>
+          </td>
+          <td>
+            <b>Out of range user-friendly configuration values might result in strange values being used.</b><br/>
+            <i>
+              When a out-of-range user-friendly size expression with the suffixes
+              k/K/m/M was used, the reported replacement value wasn't actually used.
+              </br>
+              </br>
+              <b>Solution:  When an out-of-range value is specified,
+              the reported replacement value is actually used.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-3036<br/>12173
+          </td>
+          <td>
+            <b>Applications using DCPS Java API may crash when creating a
+            participant in case stack-traces are not available.</b><br/>
+            <i>
+              The DCPS Java API is trying to resolve the class name of the
+              main-class as name of the participant. The algorithm that
+              determines this information was not robust against stack traces
+              not being available causing an ArrayIndexOutOfBoundsException.
+              </br>
+              </br>
+              <b>Solution:  Made algorithm robust against not being able to
+              inspect the stack. In this case a warning is issued in the logs
+              and an alternative name is chosen based on process id.</b>
+            </i>
+          </td>
+        </tr>
+       </table>
+     </p>
+     <p>
+       <h3>6.3.1p5</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>OSPL-707/2546/2590/2735<br/>10333/11875/11882/12037
+          </td>
+          <td>
+            <b>Crash in memory manager</b><br/>
+            <i>
+              In case of concurrent allocating and freeing small blocks distributed
+              over the memory in a particular way, a free operation could shrink
+              the region of used memory by multiple blocks of memory where it
+              should have shrunk by only one. This in turn could lead to the
+              shared memory allocator to allocate a block of memory twice, most
+              of the time leading to a crash in the allocator itself.
+              </br>
+              </br>
+              <b>Solution: The condition for shrinking the region has been fixed
+              such that this can no longer occur. There is no effect on memory usage.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2246/<br/>11720
+          </td>
+          <td>
+            <b>Topic content filter doesn't work with no-writers or disposed events</b><br/>
+            <i>
+               Data is not filtered as expected when using a content filtered
+               topic and the events are disposed or the writer is deleted.
+              </br>
+              </br>
+              <b>Solution: Changes have been made to the content filtered topic
+              code so that now the instance part of the filter will be always be
+              evaluated, but the data part of the filter will only evaluated
+              when a valid sample is written.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2303/<br/>11761
+          </td>
+          <td>
+            <b>OpenSplice DDS services always wait worst-case terminate period in case of a service crash.</b><br/>
+            <i>
+              When using Opensplice DDS and a service crashes or is deliberately crashed,
+              the Opensplice DDS services always wait the complete ServiceTerminatePeriod to exit.
+              </br>
+              </br>
+              <b>Solution: This extra delay in the termination of services has now been
+              fixed and the services will now close as soon as possible.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2535<br/>
+          </td>
+          <td>
+            <b>New reader statistic numberOfSamplesLost</b><br/>
+            <i>
+              </br>
+              </br>
+              <b>Solution: The new reader statistic numberOfSamplesLost counts the
+              number of samples that have been lost for that reader during
+              network transportation.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2631<br/>
+          </td>
+          <td>
+            <b>wait_for_historical_data_w_condition accepted DURATION convenience types as Time input.</b><br/>
+            <i>
+               The reference manuals advocated the use of DDS_DURATION_ZERO and
+               DDS_DURATION_INFINITE as valid input arguments for the Time_t
+               min_source_timestamp and max_source_timestamp parameters. This is
+               confusing because timestamps are expected, but durations are
+               considered valid input. Furthermore, supplying DDS_DURATION_INFINITE
+               leads to an uninitialized variable, which could potentially lead
+               to non-deterministic behavior.
+              </br>
+              </br>
+              <b>Solution: The reference manuals have been updated, so now it is
+              more clear what parameters are expected. Also the initialized
+              variable bug has been fixed.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2720<br/>
+          </td>
+          <td>
+            <b>Configurator Tool does not handle lower case values for sizes</b><br/>
+            <i>
+              Values such as 32k are not accepted by the configurator, but are valid
+              by OpenSplice.
+              </br>
+              </br>
+              <b>Solution: Setting size values with k, m and g are now valid in the configurator.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2754/<br/>12042
+          </td>
+          <td>
+            <b>ospl tool updated to ensure orphaned key files on unix are cleaned</b><br/>
+            <i>
+              On Windows ospl tool ensures that any orphaned key files (i.e. where there are
+              no running processes present that match the key file) are deleted before
+              starting OpenSplice.
+              </br>
+              </br>
+              <b>Solution: Extended the Windows functionality to Linux, but additionally only tidy
+              orphaned files that belong to the same user starting OpenSplice.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2781<br/>
+          </td>
+          <td>
+            <b>Configurator doesn't recognize throttle_limit as a number</b><br/>
+            <i>
+              The Configurator did not allow the use of k, m or g when setting its value.
+              </br>
+              </br>
+              <b>Solution: Configurator fixed.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2787/<br/>12056
+          </td>
+          <td>
+            <b>DCPS C++ CORBA co-habitation custom library rebuild failed to re-build</b><br/>
+            <i>
+              The DCPS C++ CORBA co-habitation custom library failed to re-build
+              because of a missing macro definition in the supplied makefile.
+              </br>
+              </br>
+              <b>Solution: The missing macro definition has been added to the makefile.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2790/<br/>12047
+          </td>
+          <td>
+            <b>Missing PID when displaying Java participants in the tuner</b><br/>
+            <i>
+              When using the Tuner in the participant view and the participant
+              application is a Java application which is not a DDS service like
+              the Tuner or the Tester, only the name of the class is displayed,
+              not the PID. When several instances of the same application are
+              running on the same node, it is not possible to distinguish one from another.
+              </br>
+              </br>
+              <b>Solution: The java participant applications now show also a pid
+              behind their name to make it easier to distinguish them. The
+              participant naming is now also consistent with the C, C++ and C#
+              applications.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2804/<br/>12123
+          </td>
+          <td>
+            <b>Alignment of transient data failed in multiple writer-scenario</b><br/>
+            <i>
+              In a scenario with two writers writing the same instance where the
+              2nd writer is deleted, alignment of transient data failed because
+              the registration for the first writer was not aligned while the
+              unregistration of the 2nd writer was.
+              </br>
+              </br>
+              <b>Solution: For each registration that has no samples anymore in the
+              store, durability sends an extra registration for that writer.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2816/<br/>12145
+          </td>
+          <td>
+            <b>Deadlock involving groups using synchronous write</b><br/>
+            <i>
+              Incorrect initialisation of a lock involved in processing acknowledgements
+              on synchronous writes could cause a deadlock when different processes
+              were trying to access the data structure. At the point where this
+              occurs, a lock on the group with which that synchronous write is
+              associated may be held, which could cause hanging processes in
+              various configurations and for seemingly unrelated reasons.
+              </br>
+              </br>
+              <b>Solution: The initialisation of the lock has been corrected.</b>
+            </i>
+          </td>
+        </tr>
+      </table>
+    </p>
+     <p>
+       <h3>6.3.1p4</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>OSPL-2763<br/>
+          </td>
+          <td>
+            <b>Shared memory leaks on deletion of DataReader.</b><br/>
+            <i>
+              Under certain conditions memory would leak when a DataReader was deleted.
+              </br>
+              </br>
+              <b>Solution:  The leak has been fixed.</b>
+            </i>
+          </td>
+        </tr>
+      </table>
+    </p>
+     <p>
+       <h3>6.3.1p3</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>TSTTOOL-123<br/>
+          </td>
+          <td>
+            <b>Quoted partition name in Tester script is interpreted as part of actual partition name.</b><br/>
+            <i>
+              If a user wanted to execute a reader command in a Tester script that specified a partition
+              with dots or stars in its name, then the only way for compilation of the script to be successful
+              was to surround the partition name in quotes. However, the quotes were then interpreted as part of
+              the partition name when the reader is created.
+              </br>
+              </br>
+              <b>Solution:  In a reader command, if the partition name is wrapped in quotes, then the quotes are dropped
+              after compilation. If a user still wanted to include quotes as part of the actual partition name, then
+              they can escape the quotation marks in the partition name in script.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+         </tr>
+      </table>
+    </p>
+	 <p>
+	   <h3>6.3.1p2</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+		<tr>
+          <td>OSPL-2733
+          </td>
+          <td>
+            <b>Issue in Streams API could result in crash on Windows.</b><br/>
+            <i>
+              A problem was found in the Streams API with the initialization of mutexes and condition variables, that could
+			  result in data not being published and/or undefined behaviour of applications build on top of the Streams API on Windows.
+              </br>
+			  </br>
+              <b>Solution: The incorrect initialization was fixed.</b>
+            </i>
+          </td>
+        </tr>
+      </table>
+    </p>
+    <p>
+	      <h3>6.3.1p1</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+		<tr>
+          <td>OSPL-2729
+          </td>
+          <td>
+            <b>Problems starting OpenSplice when OSPL_URI is quoted.</b><br/>
+            <i>
+              OpenSplice DDS will not start with an OSPL_URI surrounded by quotes (" ").
+              <br><br>
+              <b>Solution: OSPL Tool now handles a quoted OSPL_URI.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+		 </tr>
+      </table>
+    </p>
+
+      <h3>6.3.1</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>OSPL-614/OSPL-1843/<br>10335
           </td>
           <td>
             <b>New durability persistence store implementation using a key-value storage</b><br/>
             <i>
               To store durable data the durability persistency store implementation
               should be extended with a robust and fast storage mechanism
-              which will replace the MMF store implementation which is known to 
+              which will replace the MMF store implementation which is known to
               suffer from robustness issues when a crash occurs.
               <br><br>
               <b>Solution: The new persistency store implementation is based on a
@@ -470,10 +2799,38 @@
           <td>
             <b>Durability crashes when starting a new instance of ospl if there is no aligner</b><br/>
             <i>
-              A fix was applied for this issue n 6.3.0p5. This fix has been removed 
-              in 6.3OSS and a new fix will be applied in a subsequent release.
+              A fix was applied for this issue n 6.3.0p5. This fix has been removed
+              in 6.3.1 and a new fix will be applied in a subsequent release.
               <br><br>
               <b>Solution: N/A</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2131/<br>11470
+          </td>
+          <td>
+            <b>Improvement in read performance of certain complex Java CORBA DDS data structures </b><br/>
+            <i>
+              <br>
+              <b>Solution: An option has been added to improve the read performance
+              of certain complex Java CORBA DDS data structures by limiting the
+              overhead caused by JNI invocations during data passing from C to Java.</b>
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>OSPL-2244<br>
+          </td>
+          <td>
+            <b> IPv6 interface detection in Windows causes a crash</b><br/>
+            <i>
+              If an application in Windows used the networking service and
+              tried to detect available IPv6 interfaces a system crash occurred.
+              This made IPv6 on Windows unusable.
+              <br><br>
+              <b>Solution: The implementation of the IPv6 interface detection
+              is improved so that it no longer causes crashes.</b>
             </i>
           </td>
         </tr>
@@ -507,7 +2864,7 @@
               the Record and Replay service causes issues if particular character-data
               is present in DDS samples which are recorded and or replayed.
               Specifically newline characters and unbounded character sequences
-              containing illegal XML content are not supported.  
+              containing illegal XML content are not supported.
               <br><br>
               <b>Solution: Relavant parts of the product were changed and the
               limitations are lifted.</b>
@@ -529,7 +2886,7 @@
               registers the new name-space as well and applies the configured
               policies to data that matches that name-space. One of the internal
               algorithms assumed that all name-spaces for a given durability
-              service are fixed after start-up.  
+              service are fixed after start-up.
               <br><br>
               <b>Solution: The internal algorithm in the durability service has
               been changed to be robust against a changing set of name-spaces.</b>
@@ -543,7 +2900,7 @@
             <b>Deployment guide on OSPL behavioue for signals incorrect.</b><br/>
             <i>
               The deployment guide for SIGINT was incorrect in the deployment
-              guide. Additionally, SIGQUIT behaviour was incorrect in the codebase. 
+              guide. Additionally, SIGQUIT behaviour was incorrect in the codebase.
               <br><br>
               <b>Solution: Deployment guide and codebase corrected for signals.</b>
             </i>
@@ -575,8 +2932,8 @@
               If there is no aligner and a new nodes starts, then the two nodes
               will reach a inconsistent state.
               <br><br>
-              <b>Solution: Durability will now check if there is a aligner. 
-              If durability service cannot find an aligner, then it will send a 
+              <b>Solution: Durability will now check if there is a aligner.
+              If durability service cannot find an aligner, then it will send a
               signal to splicedemon to perform system halt.</b>
             </i>
           </td>
@@ -765,7 +3122,7 @@
               A race condition existed in the product which could, in specific
               circumstances, result in a crash of the spliced process. The crash
               could occur when a pair of synchronous reader and writer are
-              deleted at roughly the same time. 
+              deleted at roughly the same time.
               <br><br>
               <b>A lock was introduced to protect shared parts of the
               administration related to synchronous readers and writers.
@@ -819,7 +3176,7 @@
             <b>Namespace mismatch in durability service</b><br/>
             <i>
               The namespace configuration of the durability service allows
-              catch-all partition expressions and also more specific 
+              catch-all partition expressions and also more specific
               partition.topic expressions. By mixing these two methods on
               different nodes in a domain, a durability service could incorrectly
               determine a topic does not belong to a particular namespace and
@@ -899,7 +3256,7 @@
           <td>OSPL-2409/<br>11792
           </td>
           <td>
-            <b>Durability never reaches the state 'operational' in a scenario 
+            <b>Durability never reaches the state 'operational' in a scenario
             containing two or more nodes without the explicit configuration of
             a namespace for the builtin topics. </b><br/>
             <i>
@@ -1015,8 +3372,8 @@
              <b>Memory leak of the database type v_message&lt;kernelModule::v_participantInfo&gt;</b><br/>
              <i>
                In the case that a restart failure action is enabled on a service
-               it can be observed that the database object count of 
-               v_message&lt;kernelModule::v_participantInfo&gt; rapidly increases.<br/><br/> 
+               it can be observed that the database object count of
+               v_message&lt;kernelModule::v_participantInfo&gt; rapidly increases.<br/><br/>
                <b>Solution: The defect in the service restart mechanism is now
                fixed and the v_message&lt;kernelModule::v_participantInfo&gt; will not
                leak anymore.</b>
@@ -1031,7 +3388,7 @@
              <i>
                The C++ ping application does not initialise its string parameter
                leading to errors in the Java pong application. <br/><br/>
-               <b>Solution: The C++ ping example has been updated to 
+               <b>Solution: The C++ ping example has been updated to
                initialise all sample data before writing it.</b>
              </i>
            </td>
@@ -1103,8 +3460,8 @@
            <td>
              <b>idlpp OSPL_BOUNDS_CHECK NULL detection error log incorrect</b><br/>
              <i>
-               idlpp generated incorrect tracing for OSPL_BOUNDS_CHECKing. When 
-               a variable was initialized to NULL the BOUNDS check reported an 
+               idlpp generated incorrect tracing for OSPL_BOUNDS_CHECKing. When
+               a variable was initialized to NULL the BOUNDS check reported an
                out of range instead of NULL<br/><br/>
                <b>Solution: Updated idlpp so it logs the correct message
                when NULL is detected.</b>
@@ -1194,7 +3551,7 @@
         </tr>
       </table>
 
-    
+
     <p><h3>6.3.0</h3></p>
      <table width="90%">
         <tr>
@@ -1215,7 +3572,7 @@
           already registered but with a different metadescriptor retcode
           DDS_RETCODE_OK is returned. This should be DDS_RETCODE_PRECONDITION_NOT_MET.
           <br><br>
-          <b>Solution: The defect in the register_type function is solved and 
+          <b>Solution: The defect in the register_type function is solved and
           the correct returncode is returned.</b>
         </i>
       </td>
@@ -1233,7 +3590,7 @@
               <b>Solution: The condition variable signal algorithm has been improved
               to test whether there are any waiting threads before opening the
               handle. This resolves the bug and improves performance slightly
-              because it avoids opening the semaphore when it is not required. 
+              because it avoids opening the semaphore when it is not required.
             </i>
           </td>
         </tr>
@@ -1243,7 +3600,7 @@
           <td>
             <b>Memory leak in create_querycondition</b><br/>
             <i>
-              Creating and deleting a QueryCondition leads to a memory leak. 
+              Creating and deleting a QueryCondition leads to a memory leak.
               <br><br>
               <b>Solution: The memory leak has been fixed.
             </i>
@@ -1255,8 +3612,8 @@
           <td>
             <b>C# idlpp crash when no module given in IDL</b><br/>
             <i>
-              When defining idl for C# and a structure is defined without a 
-              module the idlpp compiler crashes. 
+              When defining idl for C# and a structure is defined without a
+              module the idlpp compiler crashes.
               <br><br>
               <b>Solution: The defect in C# Idlpp is now fixed and it is now
               possible to define structures without a module tag.
@@ -1276,10 +3633,10 @@
               not receive this data when they are not connected to that specific
               partition. Currently when networking receives data from a partition
               which is not connected or unknown then networking delivers this data
-              in the default partition. 
+              in the default partition.
               <br><br>
               <b>Solution: When networking receives data on a network partititon
-              that is either not connected or unknown to that networking instance 
+              that is either not connected or unknown to that networking instance
               then the data should be dropped.
             </i>
           </td>
@@ -1292,7 +3649,7 @@
             <b>Removal of Sun Code snippet and license acknowledgement</b><br/>
             <i>
               OpenSplice Tuner and Tester used a code snippet from Sun that
-              had a license accreditation. 
+              had a license accreditation.
               <br><br>
               <b>Solution: Removal of the code means license acknowledgement is removed.
             </i>
@@ -1314,10 +3671,10 @@
           <td>
             <b>Visual studio limitation on large topic structure definitions</b><br/>
             <i>
-               For very large topic structure definitions, the Visual Studio 
+               For very large topic structure definitions, the Visual Studio
                compiler runs into a limitation of the maximum length of a string.
                If the metaDescriptor character string data exceeds 64k in size,
-               the Visual Studio C++ compiler fails to build the generated code. 
+               the Visual Studio C++ compiler fails to build the generated code.
               <br><br>
               <b>Solution: The metaDescriptor string is replaced by an array
               which resolves the maximum string limitation in Visual Studio.
@@ -1346,12 +3703,12 @@
           <td>
             <b>spliced may crash after a service with the "systemhalt" failure action dies</b><br/>
             <i>
-               If a service dies it may not have performed a detach from the 
+               If a service dies it may not have performed a detach from the
                OpenSplice kernel/database and so the attached services count may
                 be incorrect. That could lead to a crash of a database thread
                 because the spliced may get detached too early.
               <br><br>
-              <b>Solution: When spliced detects that a service has died, it 
+              <b>Solution: When spliced detects that a service has died, it
               ensures that attached services count is correctly maintained,
               so such a crash cannot occur.
             </i>
@@ -1374,7 +3731,7 @@
                In case there locally is no older complete set, the error is reported.
                The report is not deemed very clear though and besides that it is
                not considered an error but merely a warning. Alignment will still
-               be able to continue. 
+               be able to continue.
               <br><br>
               <b>Solution: The report has been rewritten to make situation clearer
               and is now reported as warning instead of as error.
@@ -1443,7 +3800,7 @@
             <i>
               The statically initialized default QoS set for each DDS Entity
               (Publisher, Data Writer etc) are stored as pointer types and they
-              are not deallocated, so they will appear as a leak when main exits. 
+              are not deallocated, so they will appear as a leak when main exits.
               <br><br>
               <b>Solution: Storing these default QoS sets as _var types means
               that the container class takes care of the deallocation, even for
@@ -1458,7 +3815,7 @@
             <b>Inappropriate warning when retrieving network interface information on Windows</b><br/>
             <i>
               When a network interface is present but not connected or configured
-              then a warning is given which is not appropriate. 
+              then a warning is given which is not appropriate.
               <br><br>
               <b>Solution: The discovery of the network interfaces should only
               consider network interfaces that are available and the warning is
@@ -1488,10 +3845,10 @@
           <td>
             <b>Dispose/writedispose action returns error in the Tuner</b><br/>
             <i>
-              When creating a reader/writer in the Tuner and then clicking on the 
+              When creating a reader/writer in the Tuner and then clicking on the
               Dispose or WriteDispose button an error message may be shown in the
               status pane stating that the dispose failed while the dispose
-              from system-perspective was successful. 
+              from system-perspective was successful.
               <br><br>
               <b>Solution: The algorithm for showing this message is fixed and
               the message will not be displayed anymore.
@@ -1507,9 +3864,9 @@
             <i>
               When selecting MMF as persistency and running in single-process mode,
               the durability service would not start due to wrong default settings
-              for mapping address and size of the store. 
+              for mapping address and size of the store.
               <br><br>
-              <b>Solution: The default settings are changed in case of single-process 
+              <b>Solution: The default settings are changed in case of single-process
               mode to ensure proper functioning of the durability service in that
               deployment mode as well.
             </i>
@@ -1524,7 +3881,7 @@
               When starting DDSI2 in a locale in which the decimal separator
               character was different from "." (for example, the French locale,
               in which it is ","), some DDSI2 default values would be flagged
-              as erroneous, preventing DDSI2 from starting.  
+              as erroneous, preventing DDSI2 from starting.
               <br><br>
               <b>Solution: DDSI2 has been modified to avoid this problem.
             </i>
@@ -1538,14 +3895,14 @@
             that is not set to infinite</b><br/>
             <i>
               The Tuner crashes when trying to read samples which have a
-              limited lifespan set. 
+              limited lifespan set.
               <br><br>
               <b>Solution: The defect is now fixed and the Tuner will not crash.
             </i>
           </td>
         </tr>
         <tr>
-           <td>OSPL-1889 
+           <td>OSPL-1889
            </td>
            <td>
              <b>An IDL file that contains a typedef to an enum causes problems in Java.</b><br/>
@@ -1554,7 +3911,7 @@
                unwind the typedef to retrieve the definition of the enum. This was
                not done properly, which effectively caused the system to crash.
                To avoid this, customers had to rewrite their IDL in such a way
-               that it did not contain any typedef to enums. 
+               that it did not contain any typedef to enums.
                <br><br>
                <b>Solution: The implementation of the IDL processing function for
                Java has been modified so that the issue does not cause crashes
@@ -1572,7 +3929,7 @@
                way of sending a new sample that contains the transaction information.
                That sample is created as a clone from the last sample sent from within
                the set. That sample was not being stored correctly in the case of a
-               dispose or writedispose so was not being sent. 
+               dispose or writedispose so was not being sent.
                <br><br>
                <b>Solution: The algorithm has been corrected so that any form of a
                writing a sample will store the sample so it can be resent when
@@ -1614,7 +3971,7 @@
                Even though the application signal handler is properly called from
                the thread that caused synchronous signal, it is ALSO called from
                within the signalHandlerThread before that. It is obviously not
-               supposed to do that. 
+               supposed to do that.
                <br><br>
                <b>Solution: Modified POSIX signal handler to not invoke application
                signal handler from within our dedicated signal handler thread
@@ -1630,9 +3987,9 @@
              <b>Wireshark on windows</b><br/>
              <i>
                Wireshark for RT networking was extremely difficult to build by a
-               user on Windows platforms.   
+               user on Windows platforms.
                <br><br>
-               <b>Solution: PrismTech has decided to provide this 
+               <b>Solution: PrismTech has decided to provide this
                now pre-built on its website. We continue to leave the source code
                and build files in place, should a user want to use them.</b>
              </i>
@@ -1644,13 +4001,13 @@
            <td>
              <b>Incorrect dependencies for dcpssaj.jar</b><br/>
              <i>
-               The manifest file of the dcpssaj.jar file contains a lot of dependencies which are not needed. 
+               The manifest file of the dcpssaj.jar file contains a lot of dependencies which are not needed.
                <br><br>
                <b>Solution: The unrequired dependencies are now removed.</b>
              </i>
            </td>
         </tr>
-     </table>        
+     </table>
 
      <p><h3>6.2.3p1</h3></p>
      <table width="90%">
@@ -1672,7 +4029,7 @@
           A status change of the network interface triggers an event. A memory
           leak occurs when handling this event. Because the status of the event
           is not automatically reset the function to handle event is called
-          repeatedly.  
+          repeatedly.
           <br><br>
           <b>Solution: The memory leak is removed and the network interface status
           change event notification is re-enabled to allow new network interface
@@ -1700,11 +4057,11 @@
         partitions simultaneously</b><br/>
         <i>
           A write in multiple partitions simultaneously is received by DDSI2 as a
-          number of messages from a single writer, one for each partition. 
+          number of messages from a single writer, one for each partition.
           All these message were forwarded by DDSI2 and filtered out by the
           subscribers running OpenSplice. However, this required extra bandwidth
           and besides caused other vendors' implementations of the DDSI protocol
-          to report them as independent updates. 
+          to report them as independent updates.
           <br><br>
           <b>Solution: This behaviour has now been changed, so that DDSI2 filters
           out such duplicates in the vast majority of cases. In particular, as long
@@ -1733,7 +4090,7 @@
           configured size of the shared memory segment. However, the tool determined
           the size of a shared memory segment in the wrong manner. Due to this
           issue the tool reports perfectly valid addresses as 'faulty' and no
-          further processing is done. 
+          further processing is done.
           <br><br>
           <b>Solution: The algorithm that calculates the size of the shared memory
           and correct range for addresses has been repaired to ensure valid
@@ -1756,7 +4113,7 @@
          itself especially in the way the disposed data was delivered to late
          joiners (which sometimes couldn't see that the data was actually disposed)
          and in the way disposed data ignored the cleanup delay specified on the
-         durability service. 
+         durability service.
          <br><br>
          <b>Solution: The new implementation of dispose_all_data is much
          more inline with sending separate dispose messages for every instance,
@@ -1776,7 +4133,7 @@
             <b>Terminating applications report pthread_join failed with error 35</b><br/>
             <i>
               When an application with a defined exithandler terminates and this
-              exithandler contains an exit call the ospl-error file will report 
+              exithandler contains an exit call the ospl-error file will report
               the message: pthread_join failed with error 35.
               <br><br>
               <b>Solution: The defect in the OpenSplice signalhandling is fixed
@@ -1834,8 +4191,8 @@
           When in a multithreaded application, one thread uses the API find_topic
           function while the topic is not defined and the timeout is set, and another
           thread executes a function that needs the domain participant, the last
-          thread will get blocked because the API find_topic function locks the 
-          domain participant and does not release it until the topic is found. 
+          thread will get blocked because the API find_topic function locks the
+          domain participant and does not release it until the topic is found.
           <br><br>
           <b>Solution: The defect in the find_topic API function is now fixed
           and no deadlock will occur.</b>
@@ -1851,10 +4208,10 @@
         <i>
           When a topic contains unsigned integer fields the mapping to the
           corresponding database schema is not correct. This means that the
-          data written from DDS to database is not equal to the data that is 
-          stored in the database. This mapping is dependent on the DBMS used. 
+          data written from DDS to database is not equal to the data that is
+          stored in the database. This mapping is dependent on the DBMS used.
           For example MySQL supports unsigned integer fields while Microsoft SQL
-          does not.  
+          does not.
           <br><br>
           <b>Solution: The mapping of the DDS Topic fields to the corresponding
           database schema should be made dependent on the type of DBMS that is
@@ -1874,7 +4231,7 @@
           be re-published locally when an instance handle is provided by the
           durability service while doing so. In some scenario's, the durability
           service did not use an instance handle while doing so, which made the
-          service crash while locally republishing an aligned unregistration. 
+          service crash while locally republishing an aligned unregistration.
           <br><br>
           <b>Solution: The durability service now ensures an instance handle is
           created in any case while also making sure a registration is created
@@ -1903,7 +4260,7 @@
         <b>Not receiving data locally when networking is configured but network
         interface is disconnected</b><br/>
         <i>
-          When networking does not find an suitable and available network 
+          When networking does not find an suitable and available network
           interface networking will terminate. Because the configuration specifies
           networking to be present the sending of data by a publisher will be
           affected because it will wait until the network service becomes available.
@@ -1949,7 +4306,7 @@
          these invalid warnings will not occur anymore.</b>
        </i>
      </td>
-    </tr>    
+    </tr>
     <tr>
      <td>OSPL-1682/<br>11291
      </td>
@@ -1965,7 +4322,7 @@
          improving the overall stability of the system.</b>
        </i>
      </td>
-    </tr>    
+    </tr>
     <tr>
       <td>OSPL-1703/<br>11354
       </td>
@@ -2002,10 +4359,10 @@
         <i>
           A issue in the Record and Replay service caused unexpected behaviour when
           a storage is re-used while it is was previously set to pause using the
-          setreplayspeed command. 
+          setreplayspeed command.
           <br><br>
           <b>Solution: The issue is resolved so now a storage can be used multiple
-          times during the lifecycle of a Record and Replay service without any 
+          times during the lifecycle of a Record and Replay service without any
           constraints.</b>
         </i>
       </td>
@@ -2020,7 +4377,7 @@
           the system, but for which a duplicate was created by another application
           before the original could enable its topic, a refCount to the resulting
           topic got dropped and that topic could suddenly disappear while still
-          being used by the system. 
+          being used by the system.
           <br><br>
           <b>Solution: A change in the refCounting algorithm has now solved
           this issue.</b>
@@ -2034,7 +4391,7 @@
         <b>Synchronous signals sent by external mechanism could cause deadocks.</b><br/>
         <i>
           <br><br>
-          <b>Solution: Signals that are raised by an asynchronous mechanism 
+          <b>Solution: Signals that are raised by an asynchronous mechanism
           will now be handled in an asynchronous manner. That means that handling
           of the signal is delayed until all threads have successfully finished
           their consultations/modifications of the shared memory, leaving it in
@@ -2070,7 +4427,7 @@
         participants.</b><br/>
         <i>
           When an application creates 2 or more participants and all these
-          participants are deleted using the delete_participant function, 
+          participants are deleted using the delete_participant function,
           the application still hold a reference to the shared memory.
           <br><br>
           <b>Solution: The defect is now fixed and when all participants from an
@@ -2157,7 +4514,7 @@
           recreate them after start-up. When using this particular serializer it
           is possible that types can be resolved from DDS already by other
           services or applications before they are finalized. When such an
-          incomplete type is used the process that uses it crashes. 
+          incomplete type is used the process that uses it crashes.
           <br><br>
           <b>Solution: The durability service now uses a new (de)serializer that
           ensures that types cannot be resolved before being finalised. For
@@ -2175,10 +4532,10 @@
         <b>Durability and Memory Consumption</b><br/>
         <i>
           When using the durability service in combination with the XML persistent
-          store and the following topic QoS settings: durability_service 
-          QosPolicy: history_kind = KEEP_LAST_HISTORY_QOS, history_depth = 1 
+          store and the following topic QoS settings: durability_service
+          QosPolicy: history_kind = KEEP_LAST_HISTORY_QOS, history_depth = 1
           destination_order QosPolicy: kind = BY_RECEPTION_TIMESTAMP_DESTINATIONORDER_QOS.
-          Memory leakage can be observed.  
+          Memory leakage can be observed.
           <br><br>
           <b>Solution: The defect in durability service is now fixed and in the
           described scenario data will not leak anymore.</b>
@@ -2212,7 +4569,7 @@
          improving the overall stability of the system.</b>
        </i>
      </td>
-    </tr>    
+    </tr>
     <tr>
       <td>OSPL-1729<br>
       </td>
@@ -2236,7 +4593,7 @@
           the system, but for which a duplicate was created by another application
           before the original could enable its topic, a refCount to the resulting
           topic got dropped and that topic could suddenly disappear while still
-          being used by the system. 
+          being used by the system.
           <br><br>
           <b>Solution: A change in the refCounting algorithm has now solved
           this issue.</b>
@@ -2255,7 +4612,7 @@
             <b>New rmipp option to export generated code</b><br/>
             <i>
               <br><br>
-              <b>Solution: A new command line option has been added to the RMI 
+              <b>Solution: A new command line option has been added to the RMI
               pre-processor to be able to create a Windows DLL from generated code.
               This option is: -P dll_macro_name[,<header-file>]<br>
               Only applicable to C and C++. Sets export macro that will be
@@ -2277,7 +4634,7 @@
               <br><br>
               <b>Solution: The compression "level" of the existing zlib compressor may now be
               configured. Other compression algorithms may also be used. See the
-              <a href="network_compression.html">release note</a> for details.</b>
+              Deployment Guide for details.</b>
             </i>
           </td>
         </tr>
@@ -2310,7 +4667,7 @@
              When multiple services are known to the service framework, a failure
              action can be taken multiple times.
              <br><br>
-             <b>Solution: The defect in the service failure action algorithm is 
+             <b>Solution: The defect in the service failure action algorithm is
              now fixed and the action will only be done once.</b>
            </i>
          </td>
@@ -2322,19 +4679,19 @@
            <b>OpenSplice RMI Services Activation/De-activation in one call</b><br/>
            <i>
              Services activation was done in a per-service basis. A given service
-             becomes active (waits for incoming requests) by calling 
+             becomes active (waits for incoming requests) by calling
              'DDS_Service::run(service_name, ...)' which could be either blocking
              or non-blocking according based on the provided arguments. To activate
              multiple services, the "run" operation must be called as many times
-             as there are services. 
+             as there are services.
              <br><br>
              <b>Solution: Two new operations has been added to the "CRuntime" class
              to activate and de-activate all the registered services in one call:<br>
               - CRuntime::run()<br>
               - CRuntime::shutdown(bool wait_for_completion = true)<br>
              The "run" operation is a blocking operation that blocks the calling
-             thread until the shutdown is called. DDS_Service::run operation is 
-             kept but it becomes non blocking. It is recommended to use the 
+             thread until the shutdown is called. DDS_Service::run operation is
+             kept but it becomes non blocking. It is recommended to use the
              CRuntime object for services activation and de-activation.
            </i>
          </td>
@@ -2366,7 +4723,7 @@
              In certain scenarios the subscriber listener handling is faster than
              the datareader listener handling.
              <br><br>
-             <b>Solution: The handling algorithm of the datareader listener is 
+             <b>Solution: The handling algorithm of the datareader listener is
              improved to match the subscriber handling.</b>
            </i>
          </td>
@@ -2378,14 +4735,14 @@
            <b>The reliable network communication may not operate correctly when the
            first messages of a sending node arrive out of order.</b><br/>
            <i>
-             When reconnection is enabled and when the first messages of another 
-             starting node arrive out of order and also the discovery heartbeats 
+             When reconnection is enabled and when the first messages of another
+             starting node arrive out of order and also the discovery heartbeats
              arrive later then the first message the reliable network channel will
              not operate correctly.
              <br><br>
-             <b>Solution: The notification that a node has become alive by the 
-             discovery protocol should not reinitialize the reliable channel 
-             administration associated with that node when the reliable channel 
+             <b>Solution: The notification that a node has become alive by the
+             discovery protocol should not reinitialize the reliable channel
+             administration associated with that node when the reliable channel
              had already detected that the node was alive.
            </i>
          </td>
@@ -2409,7 +4766,7 @@
            <i>
              The DDSI2 service incorrectly used the NetworkService/Watchdog element
              instead of DDSI2Service/Watchdog element from the OpenSplice configuration
-             file for determining the scheduling parameters of the watchdog thread. 
+             file for determining the scheduling parameters of the watchdog thread.
              <br><br>
              <b>Solution: It now uses DDSI2Service/Watchdog.
            </i>
@@ -2422,19 +4779,19 @@
            <b>OpenSplice RMI Services Activation/De-activation in one call</b><br/>
            <i>
              Services activation was done in a per-service basis. A given service
-             becomes active (waits for incoming requests) by calling 
+             becomes active (waits for incoming requests) by calling
              'DDS_Service::run(service_name, ...)' which could be either blocking
              or non-blocking according based on the provided arguments. To activate
              multiple services, the "run" operation must be called as many times
-             as there are services. 
+             as there are services.
              <br><br>
              <b>Solution: Two new operations has been added to the "CRuntime" class
              to activate and de-activate all the registered services in one call:<br>
               - CRuntime::run()<br>
               - CRuntime::shutdown(bool wait_for_completion = true)<br>
              The "run" operation is a blocking operation that blocks the calling
-             thread until the shutdown is called. DDS_Service::run operation is 
-             kept but it becomes non blocking. It is recommended to use the 
+             thread until the shutdown is called. DDS_Service::run operation is
+             kept but it becomes non blocking. It is recommended to use the
              CRuntime object for services activation and de-activation.
         <tr>
          <td>OSPL-1478/<br>11042
@@ -2442,7 +4799,7 @@
          <td>
            <b>BOUNDS_CHECK does not report the name of the incorrect member when the member is null.</b><br/>
            <i>
-             The copyin routines for C and C++ did not check for null-values in string fields. 
+             The copyin routines for C and C++ did not check for null-values in string fields.
              <br><br>
              <b>Solution: Check for null-values in string-fields is added.
            </i>
@@ -2454,7 +4811,7 @@
          <td>
            <b>Bugfix to allow correct rebuilding of the C++ APIs ( customlibs ) on 64bit linux systems..</b><br/>
            <i>
-              Rebuild would fail due to an incorrect makefile. 
+              Rebuild would fail due to an incorrect makefile.
              <br><br>
              <b>Solution: Makefile corrected.
            </i>
@@ -2478,11 +4835,11 @@
          <td>
            <b>Setting the buffer size of the receive socket to the configured value may fail</b><br/>
            <i>Setting the receive buffer size of the receive socket to the configured value
-              may fail which may cause message loss in case of worst case expected network load. 
+              may fail which may cause message loss in case of worst case expected network load.
              <br><br>
              <b>Solution: When setting the receive buffer size of the receive socket
              to the configured value a warning report is logged if the operating system
-             doesn't apply the setting.</b> 
+             doesn't apply the setting.</b>
            </i>
          </td>
        </tr>
@@ -2490,10 +4847,10 @@
          <td>OSPL-1558
          </td>
          <td>
-           <b>Durability sometimes creates conflicting namespace for __BUILT-IN 
+           <b>Durability sometimes creates conflicting namespace for __BUILT-IN
            PARTITION__ when partitionTopic is used in namespace-definition.</b><br/>
            <i>Durability could automatically create conflicting namespace for
-             __BUILT-IN PARTITION__ when partitionTopic is used. 
+             __BUILT-IN PARTITION__ when partitionTopic is used.
              <br><br>
              <b>Solution: Durability now only creates a namespace in which the
              builtin-topics are matched, instead of matching the whole
@@ -2536,11 +4893,11 @@
           <td>
             <b>Leakage of instances when built in topics not configured.</b><br/>
             <i>
-              When OpenSplice is configured not to transmit builtin topics 
+              When OpenSplice is configured not to transmit builtin topics
               the deletion of a datawriter was no longer reported to the rest of
               the Domain resulting in the leakage of instances that belonged to
               that datawriter and that were not unregistered explicitly prior to
-              the deletion of that datawriter. 
+              the deletion of that datawriter.
               <br><br>
               <b>Solution: A sample for the DCPSPublication topic is now always
               sent on the deletion of a datawriter, regardless of the configuration
@@ -2656,7 +5013,7 @@
           <td>OSPL-1522/<br>11074
           </td>
           <td>
-            <b>A reader subscribing to transient data using the "*" (wildcard) 
+            <b>A reader subscribing to transient data using the "*" (wildcard)
 						partition when samples are written to multiple partitions may lead to
 						duplicate samples at the reader</b><br/>
             <i>
@@ -2665,7 +5022,7 @@
 							request the historical data associated with combination. The issue was
 							that it was actually being delivered the historical data for all
 							partitions, including those for which samples may have already been
-							delivered and read/taken. 
+							delivered and read/taken.
               <br><br>
               <b>Solution: The behaviour has been changed so that historical samples
 							are only delivered for the specific topic/partition that the reader
@@ -4911,7 +7268,33 @@
 
 
     <h2><a name="issues_api">Fixed Bugs and Changes affecting API / behaviour</a></h2>
-    <p>    
+	 <p>
+      <h3>6.3.1p2</h3>
+       <table width="90%">
+        <tr>
+          <th width="14%">
+            Report ID.
+          </th>
+          <th width="86%">
+            Description
+          </th>
+        </tr>
+        <tr>
+          <td>OSPL-2733<br>
+          </td>
+          <td>
+            <b>Change in QoS settings of Streams API</b><br/>
+            <i>
+            The QoS settings of the internal DataWriters of the Streams API allowed potentially
+			unlimited memory usage, because the resource limits were not set.
+			</br></br><b>Solution: The internal resource-limit QoS settings of a StreamDataWriter have been set to </br>max_samples = 10,
+			to prevent potential unlimited memory usage.
+            </i>
+          </td>
+        </tr>
+		</table>
+		</p>
+    <p>
       <h3>6.3.0</h3>
        <table width="90%">
         <tr>
@@ -4928,9 +7311,9 @@
           <td>
             <b>OSPL_EXIT_CODEs are not useful in a shell.</b><br/>
             <i>
-            When using ospl two return values OSPL_EXIT_CODE_RECOVERABLE_ERROR (-1) and 
+            When using ospl two return values OSPL_EXIT_CODE_RECOVERABLE_ERROR (-1) and
             OSPL_EXIT_CODE_UNRECOVERABLE_ERROR (-2) are indistinguishable in a shell.
-            
+
             <b>Solution: The return codes are now postive +1 and +2</b>
             </i>
           </td>
@@ -5003,7 +7386,7 @@
           <td>
             <b>Default for ospl changed</b><br/>
             <i>
-            Inexperienced users finding ospl hard to use as the default isn't friendly.<br><br> 
+            Inexperienced users finding ospl hard to use as the default isn't friendly.<br><br>
             <b>Solution: ospl used to stop by default. It now displays the usage.</b>
             </i>
           </td>
@@ -5019,11 +7402,11 @@
             DataReaderView.
             <code><PRE>
             virtual ReadCondition_ptr create_readcondition (SampleStateMask sample_states,
-              ViewStateMask view_states, InstanceStateMask instance_states) = 0; 
+              ViewStateMask view_states, InstanceStateMask instance_states) = 0;
             virtual QueryCondition_ptr create_querycondition (SampleStateMask sample_states,
               ViewStateMask view_states, InstanceStateMask instance_states,
-              const DDS::Char* query_expression, const StringSeq& query_parameters) = 0; 
-            virtual ReturnCode_t delete_readcondition (ReadCondition_ptr a_condition) = 0; 
+              const DDS::Char* query_expression, const StringSeq& query_parameters) = 0;
+            virtual ReturnCode_t delete_readcondition (ReadCondition_ptr a_condition) = 0;
             virtual ReturnCode_t delete_contained_entities () = 0;</PRE></code>
             <b>Solution: The DataReaderView in the Standalone C++ language binding
             is extended with the missing functions.</b>
@@ -5036,7 +7419,7 @@
           <td>
             <b>Function calls on deleted entities in ccpp and sacpp now correctly return already_deleted</b><br/>
             <i>
-            Calling functions on deleted entities in ccpp and sacpp returned BAD_PARAMETER instead of ALREADY_DELETED. <br><br> 
+            Calling functions on deleted entities in ccpp and sacpp returned BAD_PARAMETER instead of ALREADY_DELETED. <br><br>
             <b>Solution: Code fixed to match OMG specification.</b>
             </i>
           </td>

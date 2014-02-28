@@ -58,6 +58,9 @@
  * allowing communication between them.
  */
 
+/* Prototype function used in checkAlignerForRole */
+static d_nameSpace d_adminGetNameSpaceNoLock(d_admin admin, c_char *name);
+
 void
 d_adminUpdateStatistics(
     d_admin admin,
@@ -667,84 +670,139 @@ struct fellowsExistForRoleHelper
     c_bool found;
 };
 
+struct checkAlignerForNameSpaceHelper {
+    d_fellow fellow;         /* the fellow to check*/
+    d_nameSpace nameSpace;   /* the namespace for find a master for */
+    c_char *role;            /* the role of the namespace to find a master for */
+};
+
+/* Check if the fellow is an aligner for the namespace and role
+ * that are specified in the userData.
+ */
 c_bool
-d_adminFellowsExistForRoleWalk(
-    void* o,
-    void* userData)
-{
-    d_fellow fellow;
-    d_name role;
-    struct fellowsExistForRoleHelper* helper;
+checkAlignerForNameSpace (d_fellow fellow, struct checkAlignerForNameSpaceHelper *userData) {
 
-    fellow = d_fellow(o);
-    role = d_fellowGetRole(fellow);
-    helper = (struct fellowsExistForRoleHelper*)userData;
+    c_char * role;
+    c_bool result;
 
-    if (!helper->found) {
-        if (role && !strcmp (helper->role, role)) {
-            helper->found = TRUE;
+    assert(userData->fellow);
+    assert(userData->nameSpace);
+
+    role = userData->role;
+    if (role) {
+        if  (d_fellowIsAlignerForNameSpace(fellow, userData->nameSpace) &&
+             (strcmp(d_fellowGetRole(fellow), role) == 0)) {
+            result = FALSE;
+        } else {
+            result = TRUE;
+        }
+    } else {
+        result = TRUE;
+    }
+    return result;
+}
+
+
+struct checkAlignerForRoleHelper {
+    d_admin admin;     /* the admininistration */
+    d_fellow fellow;   /* the fellow */
+    c_char *role;      /* the fellow role */
+};
+
+
+/* Check if there exists an alternative aligner for the
+ * given namespace. If no alternative aligner exists the
+ * merge state for the namespace and role is cleared,
+ * indicating that no master can be found.
+ * If an alternative aligner is found nothing happens
+ * because the new master already has an up-to-date state.
+ *
+ * return values:
+ *   FALSE if no alternative aligner has been found for
+ *       my namespace and the merge state of my namespace
+ *       is cleared successfully
+ *   TRUE otherwise
+ */
+c_bool
+checkAlignerForRole (d_nameSpace nameSpace, void *userData) {
+
+    struct checkAlignerForNameSpaceHelper nameSpaceHelper;
+    struct checkAlignerForRoleHelper *roleHelper;
+    c_bool noAlignerFound, result;
+    d_nameSpace myNameSpace;
+
+    roleHelper = (struct checkAlignerForRoleHelper *)userData;
+
+    assert(roleHelper->admin);
+    assert(roleHelper->fellow);
+
+    nameSpaceHelper.fellow = roleHelper->fellow;
+    nameSpaceHelper.nameSpace = nameSpace;
+    nameSpaceHelper.role = roleHelper->role;
+
+    result = TRUE;
+    /* Retrieve the local namespace corresponding to the fellow's namespace 
+     * from my own administration. */
+    myNameSpace = d_adminGetNameSpaceNoLock(roleHelper->admin, d_nameSpaceGetName(nameSpace));
+    if (myNameSpace != NULL) {
+        /* Check if there is an alternative aligner */
+        if (!d_nameSpaceIsAligner(myNameSpace)) {
+            noAlignerFound = d_tableWalk(roleHelper->admin->fellows, checkAlignerForNameSpace, &nameSpaceHelper);
+            if (noAlignerFound) {
+                /* No alternative aligner has been found.
+                 * Clear the current state of the namespace for this role */
+                d_nameSpaceClearMergeState (myNameSpace, roleHelper->role);
+                result = FALSE;
+                /* Log the clearing of the state because no aligner is available for the namespace. */
+                d_printTimedEvent(roleHelper->admin->durability, D_LEVEL_FINER, D_THREAD_UNSPECIFIED, 
+                                  "State of namespace '%s' for role '%s' cleared\n",
+                                  d_nameSpaceGetName(nameSpace),
+                                  roleHelper->role);
+            }
         }
     }
-
-    return TRUE;
+    return result;
 }
 
-static void
-d_adminClearRoleWalk (
-    void* o,
-    void* userData)
-{
-    d_nameSpace nameSpace;
-    d_name role;
 
-    nameSpace = d_nameSpace(o);
-    role = (c_string)userData;
-
-    d_nameSpaceClearMergeState (nameSpace, role);
-}
-
+/* Remove a fellow.
+ * If the fellow was a master for a namespace and a role
+ * then check if an alternative master can be found.
+ * If no alternative aligner can be found then the state
+ * is cleared.
+ */
 d_fellow
 d_adminRemoveFellow(
     d_admin admin,
     d_fellow fellow)
 {
-    d_durability durability;
     d_fellow result;
     d_networkAddress fellowAddr;
     d_adminStatisticsInfo info;
-    struct fellowsExistForRoleHelper walkData;
-    d_name role, ownRole;
+    struct checkAlignerForRoleHelper helper;
 
     assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
     assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
     result = NULL;
 
     if(admin && fellow){
-        durability = d_adminGetDurability(admin);
-        ownRole = d_durabilityGetConfiguration(durability)->role;
 
         d_lockLock(d_lock(admin));
 
+        /* first remove the fellow from the admin */
         result = d_tableRemove(admin->fellows, fellow);
 
-        /* Check if this is the last fellow for its role */
-        role = d_fellowGetRole(fellow);
-        if (role && strcmp(ownRole, role)) {
-            walkData.role = role;
-            walkData.found = FALSE;
-            d_tableWalk (admin->fellows, d_adminFellowsExistForRoleWalk, &walkData);
+        /* Walk over all namespaces of the remaining fellows
+         * and check if an alternative aligner can be found.
+         * If not found the merge state for this namespace
+         * and role is cleared.
+         */
+        helper.fellow = fellow;
+        helper.admin = admin;
+        helper.role = d_fellowGetRole(fellow);
+        d_fellowNameSpaceWalk(fellow, checkAlignerForRole, &helper);
 
-            /* If this fellow is the last for its role, clear role states on own namespaces */
-            if (!walkData.found) {
-                d_printTimedEvent(durability, D_LEVEL_FINEST, D_THREAD_MAIN,
-                        "No fellows left for role '%s'. Clearing namespace merge states for role.\n",
-                        role);
-
-                c_iterWalk (admin->nameSpaces, d_adminClearRoleWalk, role);
-            }
-        }
-
-        if(result){
+        if(result) {
             info = d_adminStatisticsInfoNew();
             info->fellowsKnownDif = -1;
 
@@ -786,7 +844,7 @@ findNsWalk (
     void* o, void* userData)
 {
     struct findNsWalkData* walkData = (struct findNsWalkData*)userData;
-    if (!walkData->found && !strcmp (d_nameSpaceGetName(d_nameSpace(o)), walkData->name))
+    if (!walkData->found && (strcmp (d_nameSpaceGetName(d_nameSpace(o)), walkData->name) == 0))
     {
         walkData->found = TRUE;
     }
@@ -1354,8 +1412,8 @@ d_adminGetNameSpacesCount(
     return result;
 }
 
-d_nameSpace
-d_adminGetNameSpace(
+static d_nameSpace
+d_adminGetNameSpaceNoLock(
     d_admin admin,
     os_char* name)
 {
@@ -1364,9 +1422,7 @@ d_adminGetNameSpace(
 
     assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
 
-
     if(admin && name){
-        d_lockLock(d_lock(admin));
 
         for(i=0; i<c_iterLength(admin->nameSpaces) && !nameSpace; i++){
             nameSpace = d_nameSpace(c_iterObject(admin->nameSpaces, i));
@@ -1377,6 +1433,23 @@ d_adminGetNameSpace(
                 nameSpace = NULL;
             }
         }
+    }
+    return nameSpace;
+}
+
+
+d_nameSpace
+d_adminGetNameSpace(
+    d_admin admin,
+    os_char* name)
+{
+    d_nameSpace nameSpace = NULL;
+
+    assert(d_objectIsValid(d_object(admin), D_ADMIN) == TRUE);
+
+    if(admin && name){
+        d_lockLock(d_lock(admin));
+        nameSpace = d_adminGetNameSpaceNoLock(admin, name);
         d_lockUnlock(d_lock(admin));
     }
     return nameSpace;
@@ -1434,6 +1507,7 @@ static void
 deleteNsWalk(
    void* o, void* userData)
 {
+    OS_UNUSED_ARG(userData);
     d_objectFree(d_object(o), D_NAMESPACE);
 }
 
@@ -1450,6 +1524,7 @@ void d_adminNameSpaceCollectFree(
     d_admin admin,
     c_iter nameSpaces)
 {
+    OS_UNUSED_ARG(admin);
     c_iterWalk(nameSpaces, deleteNsWalk, NULL);
     c_iterFree(nameSpaces);
 }
@@ -1670,7 +1745,6 @@ d_adminEventThreadStart(
     d_adminEvent event;
     d_eventListener listener;
     int i;
-    c_bool result;
     os_result waitResult;
 
     admin = d_admin(arg);
@@ -1685,7 +1759,7 @@ d_adminEventThreadStart(
                 listener = d_eventListener(c_iterObject(admin->eventListeners, i));
 
                 if((listener->interest & event->event) == event->event){
-                    result = listener->func(event->event, event->fellow, event->nameSpace,
+                    listener->func(event->event, event->fellow, event->nameSpace,
                                                 event->group, event->userData, listener->args);
                 }
             }
@@ -1955,7 +2029,7 @@ d_nameSpaceCountMastersForRoleWalk (
     fellowRole = d_fellowGetRole(fellow);
 
     if (fellowRole) {
-        if (!strcmp(fellowRole, helper->role)) {
+        if (strcmp(fellowRole, helper->role) == 0) {
             fellowNameSpace = d_fellowGetNameSpace (fellow, helper->nameSpace);
 
             if (fellowNameSpace) {
@@ -2018,7 +2092,7 @@ d_adminNameSpaceCheckConflicts(
 
     d_adminFellowWalk (admin, d_nameSpaceCountMastersForRoleWalk, &walkData);
 
-    /* Only take action when mastercount for role is exactly one */
+    /* Only take action when fellow mastercount for role is exactly one */
     if (walkData.masterCount == 1) {
         nameSpaceName = d_nameSpaceGetName (nameSpace);
         fellowMaster = d_nameSpaceGetMaster (helper->fellowNameSpace);
@@ -2029,11 +2103,14 @@ d_adminNameSpaceCheckConflicts(
         oldFellowState = NULL;
         stateConflicts = NULL;
 
-        /* If old fellow namespace did not exist, this can mean a reconnection (fellow is new) or fellow was not yet aware of the namespace */
+        /* If old fellow namespace did not exist, this can mean a
+         * reconnection (fellow is new) or fellow was not yet aware
+         * of the namespace
+         */
         if (!helper->oldFellowNameSpace) {
             fellowNativeStateChanged = TRUE;
             fellowOtherStatesChanged = TRUE;
-        }else {
+        } else {
             oldFellowState = d_nameSpaceGetMergeState(helper->oldFellowNameSpace, fellowRole);
 
             if (fellowState->value != oldFellowState->value) {
@@ -2054,7 +2131,7 @@ d_adminNameSpaceCheckConflicts(
                 fellowOtherStatesChanged);
 
         /* Fellow is in own role */
-        if (!strcmp (role, fellowRole)) {
+        if (strcmp (role, fellowRole) == 0) {
             /* Check if masters are different for namespace in admin and from fellow */
             ownMaster = d_nameSpaceGetMaster(nameSpace);
             if (d_networkAddressCompare (ownMaster, fellowMaster) && d_nameSpaceIsMasterConfirmed(nameSpace)){
@@ -2071,7 +2148,7 @@ d_adminNameSpaceCheckConflicts(
                 d_nameSpaceMasterPending(nameSpace);
 
             /* Conflict in own state */
-            }else if (fellowNativeStateChanged || (!ownState || (fellowState->value != ownState->value))) {
+            } else if (fellowNativeStateChanged || (!ownState || (fellowState->value != ownState->value))) {
                 d_printTimedEvent(
                         helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
                         "Conflicting (or new) state %d found for namespace %s from own role '%s'\n",
@@ -2082,7 +2159,7 @@ d_adminNameSpaceCheckConflicts(
                 helper->conflictEvent = D_NAMESPACE_STATE_CONFLICT;
 
             /* Conflict in other state? (note that fellowOtherStatesChanged without explicit stateConflicts is already covered by the above statement) */
-            }else if (fellowOtherStatesChanged && stateConflicts) {
+            } else if (fellowOtherStatesChanged && stateConflicts) {
                 d_printTimedEvent(
                         helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
                         "Conflicting state %d found for namespace %s in one or more mergedStates\n",
@@ -2091,7 +2168,7 @@ d_adminNameSpaceCheckConflicts(
 
                 helper->stateConflicts = stateConflicts;
                 helper->conflictEvent = D_NAMESPACE_STATE_CONFLICT;
-            }else {
+            } else {
                 d_printTimedEvent(
                         helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
                         "No conflicts found in own or other states for namespace %s\n",
@@ -2100,7 +2177,7 @@ d_adminNameSpaceCheckConflicts(
             d_free (ownMaster);
 
         /* In other role */
-        }else {
+        } else {
             if (fellowNativeStateChanged && (!ownState || (fellowState->value != ownState->value))) {
                 d_printTimedEvent(
                         helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
@@ -2110,7 +2187,7 @@ d_adminNameSpaceCheckConflicts(
                         fellowRole);
 
                 helper->conflictEvent = D_NAMESPACE_STATE_CONFLICT;
-            }else {
+            } else {
                 d_printTimedEvent(
                         helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
                         "No conflicts found in other role for namespace %s\n",
@@ -2127,7 +2204,7 @@ d_adminNameSpaceCheckConflicts(
         if (ownState) {
             d_mergeStateFree (ownState);
         }
-    }else {
+    } else {
         d_printTimedEvent(
                 helper->durability, D_LEVEL_INFO, D_THREAD_NAMESPACES_LISTENER,
                 "Inconsistent number of masters (%d) found in role %s, no action required for now.\n",
@@ -2152,12 +2229,14 @@ d_adminReportMaster(
     d_nameSpace nameSpace, nameSpaceCopy;
     d_durability durability;
     d_serviceState durabilityState;
+    d_networkAddress master;
 
     durability = d_adminGetDurability(admin);
     durabilityState = d_durabilityGetState (durability);
 
     nameSpaceName = d_nameSpaceGetName (fellowNameSpace);
     nameSpace = d_adminGetNameSpace(admin, nameSpaceName);
+    master = d_nameSpaceGetMaster(nameSpace);
 
     if (nameSpace) {
         helper.durability = d_adminGetDurability(admin);
@@ -2167,8 +2246,11 @@ d_adminReportMaster(
         helper.conflictEvent = D_NONE;
         helper.stateConflicts = 0;
 
-        /* Only check when I'm complete and fellow is past injecting persistent data */
-        if ((durabilityState >= D_STATE_DISCOVER_PERSISTENT_SOURCE) && (d_fellowGetState(fellow) >= D_STATE_INJECT_PERSISTENT)) {
+        /* Only check when I'm complete and fellow is past injecting persistent data, or
+         * when I have a confirmed but non-existent (0) master.
+         */
+        if ( ((durabilityState >= D_STATE_DISCOVER_PERSISTENT_SOURCE) && (d_fellowGetState(fellow) >= D_STATE_INJECT_PERSISTENT)) ||
+             ((d_nameSpaceIsMasterConfirmed(nameSpace) && (master->systemId == 0)))) {
             d_adminNameSpaceCheckConflicts (admin, nameSpace, &helper);
 
             /* If a conflict occured, create D_NAMESPACE_MASTER_CONFLICT or D_NAMESPACE_STATE_CONFLICT event */
@@ -2182,6 +2264,9 @@ d_adminReportMaster(
         }
 
         d_nameSpaceFree (nameSpace);
+    }
+    if(master){
+        d_networkAddressFree(master);
     }
 }
 

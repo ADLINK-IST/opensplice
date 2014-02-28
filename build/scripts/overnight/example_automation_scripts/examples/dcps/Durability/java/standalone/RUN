@@ -1,7 +1,6 @@
 
 
 rm -rf ./tmp/pstore/*
-rm -f *.log
 rm -f *.txt
 
 if [ "$OSPL_HOME" = "" ];then

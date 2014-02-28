@@ -152,6 +152,8 @@ public class ponger {
         p.get_default_datawriter_qos (dwQos);
         s.get_default_datareader_qos (drQos);
 
+        dwQos.value.reliability.kind = DDS.ReliabilityQosPolicyKind.BEST_EFFORT_RELIABILITY_QOS;
+
         /*
          * Get default Topic Qos settings
          */

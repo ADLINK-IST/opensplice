@@ -1,0 +1,48 @@
+#ifndef OSPL_DDS_NAMED_QOS_TYPES_IDL
+#define OSPL_DDS_NAMED_QOS_TYPES_IDL
+
+#include "dds_dcps_builtintopics.idl"
+
+module DDS {
+
+    /* qos_profile and qos_name together provide the means to uniquely identify
+       a named QoS. "DDS for Lightweight CCM" states: Each XML tag with an
+       associated name can be uniquely identified by its fully qualified name
+       in C++ style. */
+
+    struct NamedDomainParticipantQos {
+        string name;
+        /* 'DDS for lightweigth CCM v1.1' is ambiguous regarding the
+         * "participant_qos"; the provided example and XML Schema use
+         * "domainparticipant_qos", so we will use that as well. */
+        DomainParticipantQos domainparticipant_qos;
+    };
+
+    struct NamedPublisherQos {
+        string name;
+        PublisherQos publisher_qos;
+    };
+
+    struct NamedSubscriberQos {
+        string name;
+        SubscriberQos subscriber_qos;
+    };
+
+    struct NamedTopicQos {
+        string name;
+        TopicQos topic_qos;
+    };
+
+    struct NamedDataWriterQos {
+        string name;
+        DataWriterQos datawriter_qos;
+    };
+
+    struct NamedDataReaderQos {
+        string name;
+        DataReaderQos datareader_qos;
+    };
+};
+
+#endif
+

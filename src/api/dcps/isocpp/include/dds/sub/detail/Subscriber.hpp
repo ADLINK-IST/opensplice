@@ -32,6 +32,8 @@ namespace detail
 
 typedef dds::sub::TSubscriber<org::opensplice::sub::SubscriberDelegate> Subscriber;
 
-}}}
+}
+}
+}
 // End of implementation
 #endif /* OSPL_DDS_SUB_DETAIL_SUBSCRIBER_HPP_ */

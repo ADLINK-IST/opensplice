@@ -111,7 +111,7 @@ public:
         handler_->on_offered_incompatible_qos(nstatus);
     }
     virtual void on_liveliness_lost(DDS::DataWriter_ptr reader,
-                                       const DDS::LivelinessLostStatus& status)
+                                    const DDS::LivelinessLostStatus& status)
     {
         OMG_DDS_LOG("EVT", "on_liveliness_lost");
         dds::core::status::LivelinessLostStatus nstatus;
@@ -119,7 +119,7 @@ public:
         handler_->on_liveliness_lost(nstatus);
     }
     virtual void on_publication_matched(DDS::DataWriter_ptr reader,
-                                         const DDS::PublicationMatchedStatus& status)
+                                        const DDS::PublicationMatchedStatus& status)
     {
         OMG_DDS_LOG("EVT", "on_publication_matched");
         dds::core::status::PublicationMatchedStatus nstatus;
@@ -143,38 +143,46 @@ class EventHandler : public dds::pub::detail::DataWriterEventHandler<T>
 {
 public:
     EventHandler(const DW& dw,
-                    dds::pub::DataWriterListener<T>* l)
+                 dds::pub::DataWriterListener<T>* l)
         : dw_(dw),
-            listener_(l)
+          listener_(l)
     { }
 public:
     virtual void
     on_offered_deadline_missed(const dds::core::status::OfferedDeadlineMissedStatus& status)
     {
-        if (listener_ != 0)
+        if(listener_ != 0)
+        {
             listener_->on_offered_deadline_missed(dw_, status);
+        }
     }
 
     virtual void
     on_offered_incompatible_qos(const dds::core::status::OfferedIncompatibleQosStatus& status)
     {
-        if (listener_ != 0)
+        if(listener_ != 0)
+        {
             listener_->on_offered_incompatible_qos(dw_, status);
+        }
     }
 
 
     virtual void
     on_liveliness_lost(const dds::core::status::LivelinessLostStatus& status)
     {
-        if (listener_ != 0)
+        if(listener_ != 0)
+        {
             listener_->on_liveliness_lost(dw_, status);
+        }
     }
 
     virtual void
     on_publication_matched(const dds::core::status::PublicationMatchedStatus& status)
     {
-        if (listener_ != 0)
+        if(listener_ != 0)
+        {
             listener_->on_publication_matched(dw_, status);
+        }
     }
 
     dds::pub::DataWriterListener<T>*
@@ -222,24 +230,28 @@ public:
                                           dwqos,
                                           event_forwarder_,
                                           mask.to_ulong());
-        if (w.in() == 0)
+        if(w.in() == 0)
             throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                        OSPL_CONTEXT_LITERAL(
-                            "dds::core::NullReferenceError : Unable to create DataWriter. "
-                            "Nil return from ::create_datawriter")));
+                                                    OSPL_CONTEXT_LITERAL(
+                                                            "dds::core::NullReferenceError : Unable to create DataWriter. "
+                                                            "Nil return from ::create_datawriter")));
 
         raw_writer_ = DW::_narrow(w.in());
 
         org::opensplice::core::DDS_DW_REF tmp = org::opensplice::core::DDS_DW_REF(raw_writer_, org::opensplice::core::DWDeleter(pub_->pub_));
         writer_ = tmp;
+        entity_ = DDS::Entity::_narrow(raw_writer_);
     }
 
 
     virtual ~DataWriter()
     {
-        DDS::ReturnCode_t result = raw_writer_->set_listener(0, DDS::STATUS_MASK_NONE);
-        org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_listener"));
-        delete event_forwarder_;
+        if(event_forwarder_ != 0)
+        {
+            DDS::ReturnCode_t result = raw_writer_->set_listener(0, DDS::STATUS_MASK_NONE);
+            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_listener"));
+            DDS::release(event_forwarder_);
+        }
     }
 
 
@@ -253,7 +265,7 @@ public:
     void write(const T& sample, const dds::core::Time& timestamp)
     {
         DDS::Time_t ddsTime;
-        /** @bug OSPL-2308 RTF Time-ish coercion issue
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
             @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
         ddsTime.sec = static_cast<DDS::Long>(timestamp.sec());
         ddsTime.nanosec = timestamp.nanosec();
@@ -273,7 +285,7 @@ public:
                const dds::core::Time& timestamp)
     {
         DDS::Time_t ddsTime;
-        /** @bug OSPL-2308 RTF Time-ish coercion issue
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
             @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
         ddsTime.sec = static_cast<DDS::Long>(timestamp.sec());
         ddsTime.nanosec = timestamp.nanosec();
@@ -292,7 +304,7 @@ public:
                const dds::core::Time& timestamp)
     {
         DDS::Time_t ddsTime;
-        /** @bug OSPL-2308 RTF Time-ish coercion issue
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
             @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
         ddsTime.sec = static_cast<DDS::Long>(timestamp.sec());
         ddsTime.nanosec = timestamp.nanosec();
@@ -309,7 +321,7 @@ public:
     const ::dds::core::InstanceHandle register_instance(const T& key, const dds::core::Time& ts)
     {
         DDS::Time_t ddsTime;
-        /** @bug OSPL-2308 RTF Time-ish coercion issue
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
             @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
         ddsTime.sec = static_cast<DDS::Long>(ts.sec());
         ddsTime.nanosec = ts.nanosec();
@@ -327,7 +339,7 @@ public:
     void unregister_instance(const ::dds::core::InstanceHandle& i, const dds::core::Time& ts)
     {
         DDS::Time_t ddsTime;
-        /** @bug OSPL-2308 RTF Time-ish coercion issue
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
             @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
         ddsTime.sec = static_cast<DDS::Long>(ts.sec());
         ddsTime.nanosec = ts.nanosec();
@@ -349,7 +361,7 @@ public:
     void dispose_instance(const ::dds::core::InstanceHandle& i, const dds::core::Time& ts)
     {
         DDS::Time_t ddsTime;
-        /** @bug OSPL-2308 RTF Time-ish coercion issue
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
             @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
         ddsTime.sec = static_cast<DDS::Long>(ts.sec());
         ddsTime.nanosec = ts.nanosec();
@@ -408,7 +420,7 @@ public:
     void wait_for_acknowledgments(const ::dds::core::Duration& timeout)
     {
         DDS::Duration_t ddsTime;
-        /** @bug OSPL-2308 RTF Time-ish coercion issue
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
             @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
         ddsTime.sec = static_cast<DDS::Long>(timeout.sec());
         ddsTime.nanosec = timeout.nanosec();
@@ -418,17 +430,17 @@ public:
     }
 
     void event_handler(dds::pub::detail::DataWriterEventHandler<T>* handler,
-                        const dds::core::status::StatusMask& mask)
+                       const dds::core::status::StatusMask& mask)
     {
-        if (handler == 0)
+        if(handler == 0)
         {
-            if (event_forwarder_)
+            if(event_forwarder_)
             {
                 DDS::release(event_forwarder_);
                 event_forwarder_ = 0;
             }
         }
-        else if (event_forwarder_ == 0)
+        else if(event_forwarder_ == 0)
         {
             event_forwarder_ =
                 new DataWriterEventForwarder<T>(handler);
@@ -508,6 +520,20 @@ public:
     DW* get_raw_writer()
     {
         return raw_writer_;
+    }
+
+    void close()
+    {
+        org::opensplice::core::DWDeleter* d = OSPL_CXX11_STD_MODULE::get_deleter<org::opensplice::core::DWDeleter>(writer_);
+        if(d)
+        {
+            d->close(raw_writer_);
+        }
+    }
+
+    void retain()
+    {
+
     }
 
 private:

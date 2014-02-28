@@ -5,10 +5,6 @@ CC		 = gcc
 CXX		 = g++
 CSC		 = gmcs
 
-    # Binary used for filtering
-ifeq ($(INCLUDE_FILTERS),yes)
-FILTER           = filter_gcc
-endif
     # Binary used for linking
 LD_SO            = $(CC)
     # Binary used for linking executables
@@ -67,14 +63,18 @@ SOAPCPP		= soapcpp2
 SHCFLAGS         = -fpic
 
 # Values of compiler flags can be overruled
-CFLAGS_OPT       = -O4 -DNDEBUG
+CFLAGS_OPT       = -O4 -DNDEBUG -g -fno-strict-aliasing
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
 #CFLAGS_STRICT	 = -Wall
 CFLAGS_STRICT	 = -Wall -W -pedantic -Wno-long-long
+ifeq ($(GCC_WERROR_IS_SWITCH_SUPPORT),1)
+    # Seperate from STRICT because this option won't work with -O0 on older compilers now it can be overruled
+    CFLAGS_STRICT_UNINITIALIZED = -Werror=uninitialized
+endif
 
 # Set compiler options for single threaded process
-CFLAGS		 = -m32 -march=i686 -pipe -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = -m32 -march=i686 -pipe -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CFLAGS		 = -m32 -march=i686 -pipe -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT) $(CFLAGS_STRICT_UNINITIALIZED)
+CXXFLAGS	 = -m32 -march=i686 -pipe -DOSPL_LINUX $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT_UNINITIALIZED)
 CSFLAGS	     = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # For Linux, this test release version supports symbolic names in stead of IP addresses
@@ -98,12 +98,19 @@ LDFLAGS += -Wl,-no-as-needed
 endif
 
 # Identify linker options for building shared libraries
-SHLDFLAGS	 = -shared -fpic
+SHLDFLAGS		= -shared -fpic -Wl,-Bsymbolic
+SHLDCXXFLAGS	= -shared -fpic
 
 # Set library context
-#RP: -lrt cannot be found
-#LDLIBS          = -lc -lm -lrt -lpthread
-LDLIBS           = -lc -lm -lpthread# -lposix4
+LDLIBS = -lc -lm -ldl
+LDLIBS += -lpthread
+
+RT_LIB=librt.so
+#If it returns just the name it was not found
+GCC_PATH_LIBRT=$(shell gcc -m32 -print-file-name=$(RT_LIB))
+ifneq "$(RT_LIB)" "$(GCC_PATH_LIBRT)"
+LDLIBS += -lrt
+endif
 
 # Set library context for building shared libraries
 SHLDLIBS	 =
@@ -128,7 +135,7 @@ DLIB_POSTFIX = .so
 EXEC_PREFIX =
 EXEC_POSTFIX =
 EXEC_LD_POSTFIX =
-INLINESRC_POSTFIX = .i
+INLINESRC_POSTFIX = .inl
 CSLIB_PREFIX =
 CSLIB_POSTFIX = .dll
 CSMOD_PREFIX =

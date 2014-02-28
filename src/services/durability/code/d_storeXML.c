@@ -118,6 +118,12 @@ d_storeNsMarkCompleteXMLBasedOnPath(
     const d_nameSpace nameSpace,
     c_bool isComplete);
 
+static d_storeResult
+getDataVersion(
+    const d_storeXML persistentStore,
+    const c_char* partition,
+    const c_char* topic,
+    c_ulong* version);
 
 static d_storeFile
 d_storeFileNew(
@@ -232,6 +238,187 @@ setKernelGroup(
     d_groupSetKernelGroup(group,v_group(entity));
 }
 
+
+static c_char*
+stringKeyEscape(
+    const c_char* str,
+    c_bool escapeComma)
+{
+    os_size_t i, length, index, allocLength;
+    c_char c;
+    c_char* result = NULL;
+
+    if(str){
+        length = strlen(str);
+        allocLength = length;
+        result = (c_char*)(os_malloc(length + 1));
+        index = 0;
+
+        for(i=0; i<length; i++){
+            if(index >= allocLength){
+                allocLength += length;
+                result = os_realloc(result, allocLength + 1);
+            }
+            if(result == NULL){
+                break;
+            }
+            c = str[i];
+
+            switch(c){
+                case '\n':
+                    result[index++] = '%';
+                    result[index++] = '0';
+                    result[index++] = '1';
+                    result[index++] = '0';
+                    break;
+                case '%':
+                    result[index++] = '%';
+                    result[index++] = '0';
+                    result[index++] = '3';
+                    result[index++] = '7';
+                    break;
+                case '&':
+                    result[index++] = '%';
+                    result[index++] = '0';
+                    result[index++] = '3';
+                    result[index++] = '8';
+                    break;
+                case ',':
+                    if(escapeComma){
+                        result[index++] = '%';
+                        result[index++] = '0';
+                        result[index++] = '4';
+                        result[index++] = '4';
+                    } else {
+                        result[index++] = c;
+                    }
+                    break;
+                case '<':
+                    result[index++] = '%';
+                    result[index++] = '0';
+                    result[index++] = '6';
+                    result[index++] = '0';
+                    break;
+                case '>':
+                    result[index++] = '%';
+                    result[index++] = '0';
+                    result[index++] = '6';
+                    result[index++] = '2';
+                    break;
+                default:
+                    result[index++] = c;
+                    break;
+            }
+        }
+        if(result){
+            result[index++] = '\0';
+        }
+    }
+    return result;
+}
+
+/*
+static c_char*
+stringKeyUnescape(
+    const c_char* escaped)
+{
+    int i, length, index, code;
+    c_char c;
+    c_char *tmp;
+    c_char *str = NULL;
+    c_char codeString[4];
+
+    if(escaped){
+        length = (int)strlen(escaped);
+        index = 0;
+
+        tmp = os_malloc(length+1);
+
+        for(i=0; i<length; i++){
+            c = escaped[i];
+
+            switch(c){
+                case '%':
+                    i++;
+                    codeString[0] = escaped[i++];
+                    codeString[1] = escaped[i++];
+                    codeString[2] = escaped[i];
+                    codeString[3] = '\0';
+
+                    code = atoi(codeString);
+
+                    switch(code){
+                        case 10:
+                            tmp[index++] = '\n';
+                            break;
+                        case 37:
+                            tmp[index++] = '%';
+                            break;
+                        case 38:
+                            tmp[index++] = '&';
+                            break;
+                        case 44:
+                            tmp[index++] = ',';
+                            break;
+                        case 60:
+                            tmp[index++] = '<';
+                            break;
+                        case 62:
+                            tmp[index++] = '>';
+                            break;
+                        default:
+                            OS_REPORT(OS_ERROR, "durability", 0, "Found unsupported ASCII code.");
+                            tmp[index++] = c;
+                            break;
+                    }
+                    break;
+                default:
+                    tmp[index++] = c;
+                    break;
+            }
+        }
+        tmp[index++] = '\0';
+        str = (c_char*)(os_malloc(strlen(tmp) + 1));
+
+        if(str){
+            os_sprintf(str, "%s", tmp);
+        }
+        os_free(tmp);
+    }
+    return str;
+}
+*/
+
+static c_bool
+convertOldToNewKeyList(
+    const c_char* oldKeyValues,
+    c_char** newKeyList)
+{
+    c_char *escapedKeyValues;
+    os_size_t length;
+    c_bool converted = FALSE;
+
+    if(newKeyList && oldKeyValues){
+        escapedKeyValues = stringKeyEscape(oldKeyValues, FALSE);
+
+        if(escapedKeyValues){
+            length = strlen(KEY_START_TAG) +
+                     strlen(escapedKeyValues) +
+                     strlen(KEY_END_TAG) + 1;
+
+            *newKeyList = (c_char *)os_malloc(length);
+
+            if(*newKeyList){
+                os_sprintf(*newKeyList, "%s%s%s",
+                        KEY_START_TAG, escapedKeyValues, KEY_END_TAG);
+                converted = TRUE;
+            }
+            os_free(escapedKeyValues);
+        }
+    }
+    return converted;
+}
+
 /*****************************************************************************
        0 NUL   1 SOH    2 STX    3 ETX    4 EOT    5 ENQ    6 ACK    7 BEL
        8 BS    9 HT    10 NL    11 VT    12 NP    13 CR    14 SO    15 SI
@@ -316,6 +503,12 @@ stringToURI(
                     tmp[index++] = '0';
                     tmp[index++] = '3';
                     tmp[index++] = '9';
+                    break;
+                case ',':
+                    tmp[index++] = '%';
+                    tmp[index++] = '0';
+                    tmp[index++] = '4';
+                    tmp[index++] = '4';
                     break;
                 case '.':
                     tmp[index++] = '%';
@@ -484,6 +677,9 @@ URIToString(
                             break;
                         case 39:
                             tmp[index++] = '\'';
+                            break;
+                        case 44:
+                            tmp[index++] = ',';
                             break;
                         case 46:
                             tmp[index++] = '.';
@@ -1652,7 +1848,6 @@ processFile(
     topicName[0] = '\0';
     /* QAC EXPECT 2100; */
 
-
     if ((fileNameIsOK(topic, topicName) == TRUE)) {
 
 
@@ -1733,19 +1928,24 @@ processPartition(
     }
 }
 
+
+/* TODO: Update implementation to use stringKeyEscape() for each key-value
+ * that is a string
+ */
 static c_char*
 determineInstance(
     const v_groupAction msg)
 {
     v_message message;
     v_group group;
-    c_type type;
-    c_base base;
-    c_ulong nrOfKeys, totalSize, i;
+    c_long nrOfKeys, i;
     c_char* keyValues;
     c_value value;
-    c_char* valueImage;
+    c_char* valueImage, *notEscaped;
     c_array keyList;
+    c_iter keyValuesIter;
+    os_size_t totalSize;
+    c_bool proceed = TRUE;
 
     keyValues   = NULL;
 
@@ -1753,46 +1953,78 @@ determineInstance(
         message  = msg->message;
         group    = msg->group;
         keyList  = v_topicMessageKeyList(group->topic);
-        type     = c_getType(message);
-        base     = c_getBase(type);
         nrOfKeys = c_arraySize(keyList);
 
         if (nrOfKeys < 1) {
-            keyValues = os_strdup(",");
+            keyValues = (c_char *)os_malloc(strlen(KEY_START_TAG) +
+                                        + strlen(KEY_END_TAG) + 1);
+            if(keyValues){
+                os_sprintf(keyValues, "%s%s", KEY_START_TAG, KEY_END_TAG);
+            }
         } else {
             totalSize = 0;
+            keyValuesIter = c_iterNew(NULL);
 
-            for (i = 0; i < nrOfKeys; i++) {
-                value = c_fieldValue(keyList[i], (c_object)message);
-                valueImage = c_valueImage(value);
-                totalSize += (c_long)((c_long)strlen(valueImage)+(c_long)1);
-                os_free(valueImage);
-                c_valueFreeRef(value);
-            }
-            keyValues = (c_char *)os_malloc(totalSize + 1);
-
-            if(keyValues){
-                keyValues[0] = '\0';
-
-                for (i=0;i<nrOfKeys;i++) {
+            if(keyValuesIter){
+                for (i = 0; (i < nrOfKeys) && (proceed == TRUE); i++) {
                     value = c_fieldValue(keyList[i], (c_object)message);
-                    valueImage = c_valueImage(value);
 
+                    switch(value.kind){
+                    case V_STRING:
+                        /*fallthrough on purpose */
+                    case V_CHAR:
+                        notEscaped = c_valueImage(value);
+                        valueImage = stringKeyEscape(notEscaped, TRUE);
+                        os_free(notEscaped);
+                        break;
+                    default:
+                        valueImage = c_valueImage(value);
+                        break;
+                    }
                     if(valueImage){
-                        os_strncat(keyValues, valueImage, strlen(valueImage));
-                        os_free(valueImage);
-
-                        if (i<(nrOfKeys-1)) {
-                            os_strncat(keyValues, ",", 1);
-                        }
+                        totalSize += strlen(valueImage) + 1;
+                        c_iterAppend(keyValuesIter, valueImage);
+                    } else {
+                        proceed = FALSE;
+                        break;
                     }
                     c_valueFreeRef(value);
-
                 }
+                if(proceed == TRUE){
+                    keyValues = (c_char *)os_malloc(strlen(KEY_START_TAG) +
+                            totalSize + strlen(KEY_END_TAG) + 1);
+
+                    if(keyValues){
+                        keyValues[0] = '\0';
+                        os_strncat(keyValues, KEY_START_TAG, strlen(KEY_START_TAG));
+                        assert(c_iterLength(keyValuesIter) == nrOfKeys);
+
+                        for (i=0;i<nrOfKeys;i++) {
+                            valueImage = (c_char*)c_iterTakeFirst(keyValuesIter);
+
+                            if(valueImage){
+                                os_strncat(keyValues, valueImage, strlen(valueImage));
+                                os_free(valueImage);
+
+                                if (i<(nrOfKeys-1)) {
+                                    os_strncat(keyValues, ",", 1);
+                                }
+                            }
+                        }
+                        os_strncat(keyValues, KEY_END_TAG, strlen(KEY_END_TAG));
+                    }
+                } else {
+                    valueImage = (c_char*)c_iterTakeFirst(keyValuesIter);
+
+                    while(valueImage){
+                        os_free(valueImage);
+                        valueImage = (c_char*)c_iterTakeFirst(keyValuesIter);
+                    }
+                }
+                c_iterFree(keyValuesIter);
             }
         }
     }
-
     return keyValues;
 }
 
@@ -2357,12 +2589,14 @@ openFile(
         fseek(*fdes, len-10, SEEK_SET);
         testEnd[14] = '\0';
         fscanf(*fdes, "%s", testEnd);
-        status = strncmp(testEnd, "</TOPIC>", 8);
+        status = strncmp(testEnd, D_STORE_END_STRING_NO_NL, strlen(D_STORE_END_STRING_NO_NL));
 
         if  (status != 0) {
-           OS_REPORT_2(OS_WARNING, D_CONTEXT, 0,
-               "Data for group '%s.%s' on disk mutilated, some data might be lost.",
-               partitionName, topicName);
+           OS_REPORT_4(OS_WARNING, D_CONTEXT, 0,
+               "Data for group '%s.%s' on disk mutilated "
+               "(expected=\"%s\", found=\"%s\"), some data might be lost.",
+               partitionName, topicName,
+               D_STORE_END_STRING_NO_NL, testEnd);
 
         }
         fseek(*fdes, 0, SEEK_SET);
@@ -2619,13 +2853,13 @@ deleteHistoricalData(
                            RR_TOPIC_SHOULD_BEGIN_WITH_TOPIC_TAG, topic);
                 result = D_STORE_RESULT_MUTILATED;
             } else {
-                fprintf(tmpfdes, "<TOPIC><message>Do_not_edit_this_file</message>\n");
+                fprintf(tmpfdes, D_STORE_START_STRING);
                 data[0] = '\0';
                 /*read keys*/
                 readLine(fdes, MAX_KEY_SIZE, keys);
                 status1 = feof(fdes);
 
-                if(strncmp(keys, "</TOPIC>", 8) != 0){
+                if(strncmp(keys, D_STORE_END_STRING_NO_NL, strlen(D_STORE_END_STRING_NO_NL)) != 0){
                     while (status1 == 0) {
                         /*read data*/
                         readObject(fdes, MAX_MESSAGE_SIZE, data);
@@ -2644,7 +2878,7 @@ deleteHistoricalData(
                         status1 = feof(fdes);
 
                         if(status1 == 0){
-                            if(strncmp(keys, "</TOPIC>", 8) == 0){
+                            if(strncmp(keys, D_STORE_END_STRING_NO_NL, strlen(D_STORE_END_STRING_NO_NL)) == 0){
                                 status1 = -1;
                             }
                         }
@@ -2653,7 +2887,7 @@ deleteHistoricalData(
             }
             sd_serializerFree(serializer);
         }
-        fprintf(tmpfdes, "</TOPIC>\n");
+        fprintf(tmpfdes, D_STORE_END_STRING);
         closeFile(persistentStore, fdes);
         closeFile(persistentStore, tmpfdes);
     } else {
@@ -2667,8 +2901,8 @@ deleteHistoricalData(
                 tmpfdes = openPersistentTempFile(persistentStore, partition, topic, "w");
 
                 if(tmpfdes){
-                    fprintf(tmpfdes, "<TOPIC><message>Do_not_edit_this_file</message>\n");
-                    fprintf(tmpfdes, "</TOPIC>\n");
+                    fprintf(tmpfdes, D_STORE_START_STRING);
+                    fprintf(tmpfdes, D_STORE_END_STRING);
                     closeFile(persistentStore, tmpfdes);
                 } else {
                     d_storeReport(d_store(persistentStore),
@@ -2692,6 +2926,9 @@ deleteHistoricalData(
         if(renameSuccess == TRUE){
             result = D_STORE_RESULT_OK;
         }
+        /* empty the expunge list */
+        d_tableFree(persistentStore->expungeActions);
+        persistentStore->expungeActions = d_tableNew(groupExpungeActionsCompare, groupExpungeActionsFree);
     }
     return result;
 }
@@ -2747,13 +2984,13 @@ persistentInstanceRead(
                     OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0,
                                RR_TOPIC_SHOULD_BEGIN_WITH_TOPIC_TAG, topic);
                 } else {
-                    fprintf(tmpfdes, "<TOPIC><message>Do_not_edit_this_file</message>\n");
+                    fprintf(tmpfdes, D_STORE_START_STRING);
                     data[0] = '\0';
                     /*read keys*/
                     readLine(fdes, MAX_KEY_SIZE, data);
                     status1 = feof(fdes);
 
-                    if(strncmp(data, "</TOPIC>", 8) != 0){
+                    if(strncmp(data, D_STORE_END_STRING, strlen(D_STORE_END_STRING)) != 0){
 
                         while (status1 == 0) {
                             pInstance = persistentInstanceFindKey(instance, data);
@@ -2791,7 +3028,7 @@ persistentInstanceRead(
                             status1 = feof(fdes);
 
                             if(status1 == 0){
-                                if(strncmp(data, "</TOPIC>", 8) == 0){
+                                if(strncmp(data, D_STORE_END_STRING, strlen(D_STORE_END_STRING)) == 0){
                                     status1 = -1;
                                 }
                             }
@@ -2815,7 +3052,7 @@ persistentInstanceRead(
                 tmpfdes = openPersistentTempFile(persistentStore, partition, topic, "w");
 
                 if(tmpfdes){
-                    fprintf(tmpfdes, "<TOPIC><message>Do_not_edit_this_file</message>\n");
+                    fprintf(tmpfdes, D_STORE_START_STRING);
                     closeFile(persistentStore, tmpfdes);
                 }
             }
@@ -2868,7 +3105,7 @@ persistentInstanceStore(
                 message = (v_message)c_iterTakeFirst(instance->messages);
             }
             sd_serializerFree(serializer);
-            fprintf(tmpfdes, "</TOPIC>\n");
+            fprintf(tmpfdes, D_STORE_END_STRING);
             closeFile(persistentStore, tmpfdes);
             renameSuccess = renameTempToActual(persistentStore, partition, topic);
 
@@ -2914,7 +3151,7 @@ appendMessage(
                 fdes = openPersistentFile(persistentStore, partition, topic, "w");
 
                 if(fdes){
-                    fprintf(fdes, "<TOPIC><message>Do_not_edit_this_file</message>\n");
+                    fprintf(fdes, D_STORE_START_STRING);
                     serializer = sd_serializerXMLNewTyped(c_getType(msg->message));
 
                     if(serializer){
@@ -2928,7 +3165,7 @@ appendMessage(
 
                                 if(keys){
                                     fprintf(fdes, "%s\n%s\n", keys, data);
-                                    fprintf(fdes, "</TOPIC>\n");
+                                    fprintf(fdes, D_STORE_END_STRING);
                                     os_free(keys);
                                     closeFile(persistentStore, fdes);
                                     result = D_STORE_RESULT_OK;
@@ -2979,7 +3216,7 @@ appendMessage(
 
                     if(keys){
                         fprintf(fdes, "%s\n%s\n", keys, data);
-                        fprintf(fdes, "</TOPIC>\n");
+                        fprintf(fdes, D_STORE_END_STRING);
                         os_free(keys);
                         closeFile(persistentStore, fdes);
                         result = D_STORE_RESULT_OK;
@@ -3011,7 +3248,6 @@ expungeMessage(
     c_long i;
     persistentInstance instance;
     v_topicQos qos;
-    c_char *topic, *partition;
     d_storeResult result;
     v_message message, newMessage, old;
     c_iter toRemove;
@@ -3042,8 +3278,6 @@ expungeMessage(
             } else {
                 group     = v_group(instance->newMessage->group);
                 qos       = v_topicQosRef(group->topic);
-                partition = v_partitionName(v_groupPartition(group));
-                topic     = v_topicName(v_groupTopic(group));
 
                 if(qos->orderby.kind == V_ORDERBY_RECEPTIONTIME) {
                     for(i=0; i<c_iterLength(instance->messages); i++){
@@ -3106,12 +3340,10 @@ processExpungeAction(
     c_type type;
     sd_serializer serializer;
     v_message perData;
-    v_topicQos qos;
     sd_serializedData serData;
     c_long status1;
     int cleanupCount, totalCount;
     persistentInstance pInstance, instance;
-    v_duration cleanupDelay;
     c_time deleteTime;
 
     partition = g->partition;
@@ -3129,8 +3361,6 @@ processExpungeAction(
 
         if(pInstance && pInstance->newMessage){
             type = c_getType(pInstance->newMessage->message);
-            qos = v_topicQosRef(pInstance->newMessage->group->topic);
-            cleanupDelay = qos->durabilityService.service_cleanup_delay;
             pInstance = NULL;
 
             data = persistentStore->dataBuffer;
@@ -3150,14 +3380,14 @@ processExpungeAction(
                     OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0,
                                RR_TOPIC_SHOULD_BEGIN_WITH_TOPIC_TAG, topic);
                 } else {
-                    fprintf(tmpfdes, "<TOPIC><message>Do_not_edit_this_file</message>\n");
+                    fprintf(tmpfdes, D_STORE_START_STRING);
                     data[0] = '\0';
                     key[0] = '\0';
                     /*read keys*/
                     readLine(fdes, MAX_KEY_SIZE, key);
                     status1 = feof(fdes);
 
-                    if(strncmp(key, "</TOPIC>", 8) != 0){
+                    if(strncmp(key, D_STORE_END_STRING, strlen(D_STORE_END_STRING)) != 0){
                         while (status1 == 0) {
                             instance = persistentInstanceDummyNew(key);
                             pInstance = d_tableFind(g->instances, instance);
@@ -3206,7 +3436,7 @@ processExpungeAction(
                             status1 = feof(fdes);
 
                             if(status1 == 0){
-                                if(strncmp(key, "</TOPIC>", 8) == 0){
+                                if(strncmp(key, D_STORE_END_STRING, strlen(D_STORE_END_STRING)) == 0){
                                     status1 = -1;
                                 }
                             }
@@ -3218,7 +3448,7 @@ processExpungeAction(
                 d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE,
                             "Unable to allocate serializer\n");
             }
-            fprintf(tmpfdes, "</TOPIC>\n");
+            fprintf(tmpfdes, D_STORE_END_STRING);
         } else {
             d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE,
                     "Unable to get instance for group %s.%s' (2)\n", partition, topic);
@@ -3256,12 +3486,10 @@ unregisterLookupWalk (
         void* o,
         c_iterActionArg userData)
 {
-    c_bool messageFound;
     unregisterFindData* walkData;
     v_message message;
 
     message = v_message(o);
-    messageFound = FALSE;
     walkData = (unregisterFindData*)userData;
 
     /* Only search if no unregister message has is found */
@@ -3327,10 +3555,11 @@ d_storeXMLOptimizeGroup(
     d_partition       partition,
     d_topic           topic,
     c_bool            inject,
-    c_bool              optimize)
+    c_bool            optimize,
+    c_ulong           dataVersion)
 {
     FILE *             fdes, *tmpfdes;
-    c_char *           data, *data2;
+    c_char *           data, *data2, *newKeyList;
     c_long             len;
     c_type             type;
     sd_serializer      serializer;
@@ -3389,7 +3618,15 @@ d_storeXMLOptimizeGroup(
                     status1 = feof(fdes);
 
                     while (status1 == 0) {
-                        dummy = persistentInstanceDummyNew(data);
+                        if(dataVersion < 6){
+                            /* convert key-values */
+                            newKeyList = NULL;
+                            (void)convertOldToNewKeyList(data, &newKeyList);
+                            dummy = persistentInstanceDummyNew(newKeyList);
+                            os_free(newKeyList);
+                        } else {
+                            dummy = persistentInstanceDummyNew(data);
+                        }
                         instance = d_tableInsert(instances, dummy);
 
                         if(instance){
@@ -3465,7 +3702,7 @@ d_storeXMLOptimizeGroup(
                     perData = NULL;
 
                     if (optimize) {
-                        fprintf(tmpfdes, "<TOPIC><message>Do_not_edit_this_file</message>\n");
+                        fprintf(tmpfdes, D_STORE_START_STRING);
                     }
 
                     if(serializer){
@@ -3478,12 +3715,12 @@ d_storeXMLOptimizeGroup(
 
                                 /* Inject data */
                                 if(inject == TRUE){
-                                    wr = v_groupWriteNoStream(group, message, NULL, V_NETWORKID_LOCAL);
+                                    wr = v_groupWriteNoStream(group, message, NULL, V_NETWORKID_ANY);
                                     oneSec.tv_sec  = 1;
                                     oneSec.tv_nsec = 0;
 
                                     while(wr == V_WRITE_REJECTED){
-                                        wr = v_groupWriteNoStream(group, message, NULL, V_NETWORKID_LOCAL);
+                                        wr = v_groupWriteNoStream(group, message, NULL, V_NETWORKID_ANY);
                                         os_nanoSleep(oneSec);
                                     }
 
@@ -3560,7 +3797,7 @@ d_storeXMLOptimizeGroup(
 
                     if (optimize)
                     {
-                        fprintf(tmpfdes, "</TOPIC>\n");
+                        fprintf(tmpfdes, D_STORE_END_STRING);
                         closeFile(persistentStore, tmpfdes);
                         renameSuccess = renameTempToActual(persistentStore, partition, topic);
 
@@ -3597,28 +3834,36 @@ d_storeXMLInjectTopicXML(
     d_storeResult     result;
     c_char*           keys;
     c_bool            optimized;
+    c_ulong           dataVersion;
 
     optimized = isOptimized(persistentStore, partition, topic);
 
-    /*if(optimized == FALSE){*/
-    type = v_topicMessageType(group->topic);
-    keys = v_topicKeyExpr(group->topic);
+    result = getDataVersion(persistentStore, partition, topic, &dataVersion);
 
-    if(!keys){
-        check = metaDataIsCorrect(type, persistentStore, topic, partition,
-            "", v_topicQosRef(group->topic));
+    if(result == D_STORE_RESULT_OK){
+       /*if(optimized == FALSE){*/
+        type = v_topicMessageType(group->topic);
+        keys = v_topicKeyExpr(group->topic);
+
+        if(!keys){
+            check = metaDataIsCorrect(type, persistentStore, topic, partition,
+                "", v_topicQosRef(group->topic));
+        } else {
+            check = metaDataIsCorrect(type, persistentStore, topic, partition,
+                keys, v_topicQosRef(group->topic));
+        }
+        if (check == FALSE) {
+            d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE, RR_META_DATA_MISMATCH, topic);
+            OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0, RR_META_DATA_MISMATCH, topic);
+            result = D_STORE_RESULT_METADATA_MISMATCH;
+            /* metaData is not OK: should the maintainer remove topic and meta data ?? */
+        } else {
+            /* Inject XML and optimize if necessary */
+            result = d_storeXMLOptimizeGroup(persistentStore, group, partition, topic, TRUE, !optimized, dataVersion);
+        }
     } else {
-        check = metaDataIsCorrect(type, persistentStore, topic, partition,
-            keys, v_topicQosRef(group->topic));
-    }
-    if (check == FALSE) {
-        d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE, RR_META_DATA_MISMATCH, topic);
-        OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0, RR_META_DATA_MISMATCH, topic);
-        result = D_STORE_RESULT_METADATA_MISMATCH;
-        /* metaData is not OK: should the maintainer remove topic and meta data ?? */
-    } else {
-        /* Inject XML and optimize if necessary */
-        result = d_storeXMLOptimizeGroup(persistentStore, group, partition, topic, TRUE, !optimized);
+        d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE, "Unable to resolve persistent data version.");
+        OS_REPORT(OS_ERROR, STORE_READ_TOPIC_XML, 0, "Unable to resolve persistent data version.");
     }
 
     return result;
@@ -3707,6 +3952,8 @@ d_storeNewXML(u_participant participant)
     os_mutexAttr mutexAttr;
     os_result resultInit;
 
+    OS_UNUSED_ARG(participant);
+
     storeXML = d_storeXML(os_malloc(C_SIZEOF(d_storeXML)));
     store = d_store(storeXML);
     d_storeInit(store, d_storeDeinitXML);
@@ -3740,6 +3987,7 @@ d_storeNewXML(u_participant participant)
     store->openFunc                 = d_storeOpenXML;
     store->closeFunc                = d_storeCloseXML;
     store->groupsReadFunc           = d_storeGroupsReadXML;
+    store->groupListFreeFunc        = NULL;
     store->groupInjectFunc          = d_storeGroupInjectXML;
     store->groupStoreFunc           = d_storeGroupStoreXML;
     store->getQualityFunc           = d_storeGetQualityXML;
@@ -3851,7 +4099,7 @@ d_storeOpenXML(
 
             storeXML->diskStorePath = (c_char *)os_malloc((os_uint32)
                                         ((c_long)strlen(store->config->persistentStoreDirectory) + 1));
-           os_strncpy(storeXML->diskStorePath, store->config->persistentStoreDirectory,
+            os_strncpy(storeXML->diskStorePath, store->config->persistentStoreDirectory,
                         (os_uint32)((c_long)strlen(store->config->persistentStoreDirectory)+1));
             d_storeXMLInitGroups(storeXML);
 
@@ -4090,7 +4338,7 @@ d_storeGroupInjectXML(
                         }  else {
                             d_storeReport(store, D_LEVEL_SEVERE, "PartitionQos could NOT be created.\n");
                         }
-                        u_topicFree(utopic);
+                        (void)u_topicFree(utopic);
                     } else {
                         d_storeReport(store, D_LEVEL_SEVERE,
                             "Topic '%s' with typeName '%s' and keyList '%s' could NOT be created.\n",
@@ -4151,7 +4399,6 @@ d_storeGroupStoreXML(
     c_char *    topicName = NULL;
     c_char *    partitionName = NULL;
     os_time     curTime;
-    char        testEnd[15];
     c_bool      storeMetaSuccess;
     v_group     group;
     d_storeResult result;
@@ -4171,7 +4418,6 @@ d_storeGroupStoreXML(
             result = D_STORE_RESULT_ILL_PARAM;
         } else {
             group = d_groupGetKernelGroup(dgroup);
-            testEnd[0] = '\0';
             topicName     = v_topicName(v_groupTopic(group));
             partitionName = v_partitionName(v_groupPartition(group));
             d_storeReport(store, D_LEVEL_FINE,
@@ -4201,9 +4447,8 @@ d_storeGroupStoreXML(
                 result = D_STORE_RESULT_PRECONDITION_NOT_MET;
             }
             c_free(group);
-
-            d_lockUnlock(d_lock(persistentStore));
         }
+        d_lockUnlock(d_lock(persistentStore));
     } else {
         result = D_STORE_RESULT_ILL_PARAM;
     }
@@ -4301,6 +4546,9 @@ d_storeRestoreBackupXML (
                     os_free(fileStorePath);
                     os_free(backupStorePath);
                 }
+                /* Reset quality */
+                groupList->quality.seconds = 0;
+                groupList->quality.nanoseconds = 0;
                 groupList = groupList->next;
             }
 
@@ -4686,6 +4934,7 @@ d_storeOptimizeGroupXML(
     d_partition   partition;
     d_topic       topic;
     c_bool        isOptimal;
+    c_ulong       dataVersion;
 
     assert(d_objectIsValid(d_object(store), D_STORE));
     assert(store->type == D_STORE_TYPE_XML);
@@ -4706,16 +4955,20 @@ d_storeOptimizeGroupXML(
 
                 isOptimal = isOptimized(d_storeXML(store), partition, topic);
 
-                if(isOptimal == FALSE){
-                    result = d_storeXMLOptimizeGroup(d_storeXML(store),
-                                                     vgroup,
-                                                     partition, topic,
-                                                     FALSE,
-                                                     TRUE);
-                } else {
-                    result = D_STORE_RESULT_OK;
-                }
+                result = getDataVersion(d_storeXML(store), partition, topic, &dataVersion);
 
+                if(result == D_STORE_RESULT_OK){
+                    if((isOptimal == FALSE) || (dataVersion < D_STORE_VERSION)){
+                        result = d_storeXMLOptimizeGroup(d_storeXML(store),
+                                                         vgroup,
+                                                         partition, topic,
+                                                         FALSE,
+                                                         TRUE,
+                                                         dataVersion);
+                    } else {
+                        result = D_STORE_RESULT_OK;
+                    }
+                }
                 c_free(vgroup);
             } else {
                 result = D_STORE_RESULT_ILL_PARAM;
@@ -4908,4 +5161,64 @@ d_storeNsMarkCompleteXML (
     return result;
 }
 
+static d_storeResult
+getDataVersion(
+    const d_storeXML persistentStore,
+    const c_char* partition,
+    const c_char* topic,
+    c_ulong* version)
+{
+    c_long status;
+    FILE *fdes;
+    c_char *data, *dataFileName;
+    d_storeResult result;
+    int dataVersionFound, len;
 
+    dataFileName = getDataFileName(persistentStore, partition, topic);
+
+    if(dataFileName){
+        fdes = fopen(dataFileName, "r");
+
+        if (fdes) {
+            len = 4096;
+            data = (c_char *)d_malloc((os_uint32)len, "readData");
+
+            if (data == NULL) {
+                result = D_STORE_RESULT_OUT_OF_RESOURCES;
+                d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE, "No more resources\n");
+                OS_REPORT(OS_ERROR, D_CONTEXT, 0, "No more resources available\n");
+                result = D_STORE_RESULT_OUT_OF_RESOURCES;
+            } else {
+                data[0] = '\0';
+                readLine(fdes, len, data);
+                status = strncmp(data, "<TOPIC>", 7);
+
+                if (status != 0) {
+                    d_storeReport(d_store(persistentStore), D_LEVEL_SEVERE,
+                            RR_TOPIC_SHOULD_BEGIN_WITH_TOPIC_TAG, topic);
+                    OS_REPORT_1(OS_ERROR, STORE_READ_TOPIC_XML, 0,
+                               RR_TOPIC_SHOULD_BEGIN_WITH_TOPIC_TAG, topic);
+                    result = D_STORE_RESULT_MUTILATED;
+                } else {
+                    dataVersionFound = sscanf(data, "<TOPIC><message version=\"%u\"", version);
+
+                    if(dataVersionFound != 1){
+                        *version = 0;
+                    }
+                    d_storeReport(d_store(persistentStore), D_LEVEL_INFO,
+                                "Found store version: %u for group %s.%s\n",
+                                version, partition, topic);
+                    result = D_STORE_RESULT_OK;
+                }
+                d_free(data);
+            }
+            fclose(fdes);
+        } else {
+            result = D_STORE_RESULT_MUTILATED;
+        }
+        os_free(dataFileName);
+    } else {
+        result = D_STORE_RESULT_OUT_OF_RESOURCES;
+    }
+    return result;
+}

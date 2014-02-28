@@ -127,7 +127,6 @@ d_groupRemoteListenerAction(
     d_message message)
 {
     d_newGroup remote;
-    d_configuration config;
     d_durability durability;
     d_admin admin;
     d_group group, group2;
@@ -146,17 +145,28 @@ d_groupRemoteListenerAction(
     remote     = d_newGroup(message);
     admin      = d_listenerGetAdmin(listener);
     durability = d_adminGetDurability(admin);
-    config     = d_durabilityGetConfiguration(durability);
     addr       = d_networkAddressNew(message->senderAddress.systemId,
                                      message->senderAddress.localId,
                                      message->senderAddress.lifecycleId);
+
+
+    d_printTimedEvent(durability, D_LEVEL_FINEST,
+                      D_THREAD_GROUP_REMOTE_LISTENER,
+                      "DEBUG: Lookup fellow %u.%u\n",
+                      message->senderAddress.systemId, message->senderAddress.localId);
+
+
     fellow     = d_adminGetFellow(admin, addr);
 
     if(remote->partition && remote->topic){
         d_printTimedEvent(durability, D_LEVEL_FINEST,
                           D_THREAD_GROUP_REMOTE_LISTENER,
-                          "Received remote group '%s.%s'.\n",
-                          remote->partition, remote->topic);
+                          "Received remote group '%s.%s' with completeness=%d and quality=%d.%d from fellow: %u.\n",
+                          remote->partition, remote->topic,
+                          remote->completeness,
+                          remote->quality.seconds,
+                          remote->quality.nanoseconds,
+                          message->senderAddress.systemId);
     }
     if(fellow){
         if(d_fellowGetCommunicationState(fellow) == D_COMMUNICATION_STATE_APPROVED){
@@ -184,10 +194,34 @@ d_groupRemoteListenerAction(
                                                  remote->durabilityKind);
 
                         if(group){
+                            d_printTimedEvent(durability, D_LEVEL_FINER,
+                                D_THREAD_GROUP_REMOTE_LISTENER,
+                                "Remote group %s.%s already known for fellow %u, updating quality=%d.%d and completeness=%d.\n",
+                                remote->partition, remote->topic,
+                                message->senderAddress.systemId,
+                                remote->quality.seconds,
+                                remote->quality.nanoseconds,
+                                remote->completeness);
+
                             d_groupUpdate(group, remote->completeness,
                                           remote->quality);
                             d_groupFree(group);
+                        } else {
+                            d_printTimedEvent(durability, D_LEVEL_WARNING,
+                                D_THREAD_GROUP_REMOTE_LISTENER,
+                                "Remote group %s.%s not added for fellow %u, but also not found.\n",
+                                remote->partition, remote->topic,
+                                message->senderAddress.systemId);
                         }
+                    } else {
+                        d_printTimedEvent(durability, D_LEVEL_FINER,
+                            D_THREAD_GROUP_REMOTE_LISTENER,
+                            "Remote group %s.%s registered for fellow %u with quality=%d.%d and completeness=%d.\n",
+                            remote->partition, remote->topic,
+                            message->senderAddress.systemId,
+                            remote->quality.seconds,
+                            remote->quality.nanoseconds,
+                            remote->completeness);
                     }
                     /* Group unknown locally, check if it should be aligned
                      * initially.
@@ -199,7 +233,7 @@ d_groupRemoteListenerAction(
                     if(createLocally == TRUE){
                         d_printTimedEvent(durability, D_LEVEL_FINE,
                                             D_THREAD_GROUP_REMOTE_LISTENER,
-                                            "Remote group %s.%s in initial alignee namespace.\n",
+                                            "Remote group %s.%s in initial alignee namespace, so creating locally...\n",
                                             remote->partition, remote->topic);
 
                         duration.seconds = 0;
@@ -248,6 +282,13 @@ d_groupRemoteListenerAction(
                     }
                 } else {
                     localCompleteness = d_groupGetCompleteness(group);
+
+                    d_printTimedEvent(durability, D_LEVEL_FINEST,
+                          D_THREAD_GROUP_REMOTE_LISTENER,
+                          "Remote group '%s.%s' already known locally with completeness=%d.\n",
+                          remote->partition, remote->topic,
+                          localCompleteness);
+
                     group = d_fellowGetGroup(fellow, remote->partition,
                                                      remote->topic,
                                                      remote->durabilityKind);
@@ -257,8 +298,11 @@ d_groupRemoteListenerAction(
                                       remote->quality);
                         d_printTimedEvent(durability, D_LEVEL_FINEST,
                               D_THREAD_GROUP_REMOTE_LISTENER,
-                              "Updating remote group '%s.%s' completeness: '%d'.\n",
-                              remote->partition, remote->topic, remote->completeness);
+                              "Updating remote group '%s.%s' for fellow %u with completeness=%d and quality=%d.%d.\n",
+                              remote->partition, remote->topic,
+                              message->senderAddress.systemId,
+                              remote->completeness, remote->quality.seconds,
+                              remote->quality.nanoseconds);
                         d_groupFree(group);
                     } else if(localCompleteness != D_GROUP_COMPLETE){
                         group = d_groupNew(remote->partition, remote->topic,
@@ -267,22 +311,38 @@ d_groupRemoteListenerAction(
                         added = d_fellowAddGroup(fellow, group);
 
                         if(added == FALSE){
+                            d_printTimedEvent(durability, D_LEVEL_FINEST,
+                                  D_THREAD_GROUP_REMOTE_LISTENER,
+                                  "Remote group '%s.%s' with completeness=%d and quality=%d.%d could not be registered for fellow %u.\n",
+                                  remote->partition, remote->topic,
+                                  remote->completeness, remote->quality.seconds,
+                                  remote->quality.nanoseconds,
+                                  message->senderAddress.systemId);
+
                             d_groupFree(group);
                             group = d_fellowGetGroup(fellow, remote->partition,
                                                      remote->topic,
                                                      remote->durabilityKind);
 
                             if(group){
+                                d_printTimedEvent(durability, D_LEVEL_FINEST,
+                                      D_THREAD_GROUP_REMOTE_LISTENER,
+                                      "Updating remote group '%s.%s' for fellow %u with completeness=%d and quality=%d.%d.\n",
+                                      remote->partition, remote->topic,
+                                      message->senderAddress.systemId,
+                                      remote->completeness, remote->quality.seconds,
+                                      remote->quality.nanoseconds);
                                 d_groupUpdate(group, remote->completeness,
                                               remote->quality);
                                 d_groupFree(group);
                             }
                         } else {
-
                             d_printTimedEvent(durability, D_LEVEL_FINEST,
-                                                      D_THREAD_GROUP_REMOTE_LISTENER,
-                                                      "Remote group '%s.%s' with completeness: '%d' registered for fellow.\n",
-                                                      remote->partition, remote->topic, remote->completeness);
+                                  D_THREAD_GROUP_REMOTE_LISTENER,
+                                  "Remote group '%s.%s' with completeness=%d and quality=%d registered for fellow %u.\n",
+                                  remote->partition, remote->topic,
+                                  remote->completeness, remote->quality,
+                                  message->senderAddress.systemId);
                         }
                     }
                     /* A complete group might be interesting in case there are
@@ -291,7 +351,7 @@ d_groupRemoteListenerAction(
                     if(remote->completeness == D_GROUP_COMPLETE){
                         d_printTimedEvent(durability, D_LEVEL_FINEST,
                                                   D_THREAD_GROUP_REMOTE_LISTENER,
-                                                  "Remote group '%s.%s' complete, check for unfullfilled chains.\n",
+                                                  "Remote group '%s.%s' complete, check for unfulfilled chains.\n",
                                                   remote->partition, remote->topic);
                         subscriber = d_adminGetSubscriber(admin);
                         sampleChainListener = d_subscriberGetSampleChainListener(subscriber);
@@ -309,15 +369,21 @@ d_groupRemoteListenerAction(
         } else {
             d_printTimedEvent(durability, D_LEVEL_WARNING,
                        D_THREAD_GROUP_REMOTE_LISTENER,
-                      "Fellow not approved, so ignore the message.\n");
+                      "Fellow %u not approved, so ignoring remote group message.\n",
+                      message->senderAddress.systemId);
         }
         d_fellowFree(fellow);
     } else {
         d_printTimedEvent(durability, D_LEVEL_WARNING,
                 D_THREAD_GROUP_REMOTE_LISTENER,
-                "Fellow unknown so far, so ignore the message.\n");
+                "Fellow %u unknown so far, so ignoring remote group message.\n",
+                message->senderAddress.systemId);
     }
     d_networkAddressFree(addr);
+
+    d_printTimedEvent(durability, D_LEVEL_FINEST,
+                      D_THREAD_GROUP_REMOTE_LISTENER,
+                      "DEBUG: gruopRemoteListener action finished.\n");
 
     return;
 }

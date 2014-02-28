@@ -17,6 +17,7 @@
  */
 package org.opensplice.cm.com;
 
+import org.opensplice.cm.CMException;
 import org.opensplice.cm.DataReader;
 import org.opensplice.cm.DataTypeUnsupportedException;
 import org.opensplice.cm.Entity;
@@ -171,7 +172,19 @@ public interface Communicator {
      *             communication with SPLICE failed.
      */
     public Statistics entityGetStatistics(Entity entity) throws CommunicationException;
-
+    
+    /**
+     * Provides access to the statistics of the supplied Entities.
+     * 
+     * @param entities
+     *            The entities, which statistics must be resolved.
+     * @return The statistics of the Entities or null if they have none.
+     * @throws CommunicationException
+     *             Thrown when: - The Entities are not available. - The
+     *             communication with SPLICE failed.
+     */
+	public Statistics[] entityGetStatistics(Entity[] entities)	throws CommunicationException;
+	
     /**
      * Resets (a part of) the statistics of the supplied entity.
      * 
@@ -600,8 +613,9 @@ public interface Communicator {
      *         current version of the remote system will be given
      * @throws CommunicationException
      *             Thrown when resolve failed.
+     * @throws CMException
      */
-    public String getVersion() throws CommunicationException;
+    public String getVersion() throws CommunicationException, CMException;
 
     /**
      * Creates a snapshot of the database of the supplied Reader.

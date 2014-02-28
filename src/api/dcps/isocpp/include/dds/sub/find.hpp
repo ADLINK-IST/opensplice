@@ -20,6 +20,7 @@
  * OMG PSM class declaration
  */
 #include <spec/dds/sub/find.hpp>
+#include <dds/sub/detail/find.hpp>
 
 // Implementation
 
@@ -31,7 +32,7 @@ namespace sub
 template <typename READER, typename FwdIterator>
 uint32_t
 find(const dds::sub::Subscriber& sub,
-     const std::string& topic_name,
+     const std::string topic_name,
      FwdIterator begin, uint32_t max_size)
 {
     return ::dds::sub::detail::find<READER, FwdIterator>(sub,
@@ -43,7 +44,7 @@ find(const dds::sub::Subscriber& sub,
 template <typename READER, typename BinIterator>
 uint32_t
 find(const dds::sub::Subscriber& sub,
-     const std::string& topic_name,
+     const std::string topic_name,
      BinIterator begin)
 {
     return ::dds::sub::detail::find<READER, BinIterator>(sub,

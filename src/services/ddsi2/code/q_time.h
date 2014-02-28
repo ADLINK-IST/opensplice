@@ -3,6 +3,10 @@
 
 #include "os_defs.h"
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #define T_NEVER 0x7fffffffffffffffll
 #define T_MILLISECOND 1000000ll
 #define T_SECOND (1000 * T_MILLISECOND)
@@ -37,6 +41,10 @@ nn_ddsi_time_t nn_to_ddsi_time (os_int64 t);
 os_int64 nn_from_ddsi_time (nn_ddsi_time_t x);
 nn_duration_t nn_to_ddsi_duration (os_int64 t);
 os_int64 nn_from_ddsi_duration (nn_duration_t x);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* NN_TIME_H */
 

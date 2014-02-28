@@ -116,6 +116,11 @@ d_waitsetEventHandler(
     userWaitset      = helper->userWaitset;
     ur               = U_RESULT_OK;
 
+    d_printTimedEvent(durability, D_LEVEL_FINEST,
+                          D_THREAD_UNSPECIFIED,
+                          "DEBUG: waitset %s eventhandler\n",
+                          we->name);
+
     while((helper->terminate == FALSE) && (ur == U_RESULT_OK)) {
         events = NULL;
         if(helper->waitset->timedWait == TRUE){
@@ -127,9 +132,22 @@ d_waitsetEventHandler(
             event = u_waitsetEvent(c_iterTakeFirst(events));
 
             while(event){
+                d_printTimedEvent(durability, D_LEVEL_FINEST,
+                                      D_THREAD_UNSPECIFIED,
+                                      "DEBUG: waitset %s triggered\n",
+                                      we->name);
+
                 /* Only dispatch event when durability is not terminating */
                 if (d_durabilityGetState(durability) != D_STATE_TERMINATING){
+                    d_printTimedEvent(durability, D_LEVEL_FINEST,
+                                          D_THREAD_UNSPECIFIED,
+                                          "DEBUG: waitset %s: calling action (dispatcher=%p)\n",
+                                          we->name, we->dispatcher);
                     we->action(we->dispatcher, event, we->usrData);
+                    d_printTimedEvent(durability, D_LEVEL_FINEST,
+                                          D_THREAD_UNSPECIFIED,
+                                          "DEBUG: waitset %s: action called\n",
+                                          we->name);
                 }
                 u_waitsetEventFree(event);
                 event = u_waitsetEvent(c_iterTakeFirst(events));
@@ -137,6 +155,12 @@ d_waitsetEventHandler(
             c_iterFree(events);
         }
     }
+
+    d_printTimedEvent(durability, D_LEVEL_FINEST,
+                          D_THREAD_UNSPECIFIED,
+                          "DEBUG: waitset %s event handled\n",
+                          we->name);
+
     if(ur != U_RESULT_OK){
         d_printTimedEvent(durability, D_LEVEL_SEVERE,
             we->name,
@@ -145,7 +169,7 @@ d_waitsetEventHandler(
         OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
             "Waitset no longer available (result: %d). Fatal error, terminating now...\n",
             ur);
-        d_durabilityTerminate(durability);
+        d_durabilityTerminate(durability, TRUE);
     }
     return NULL;
 }

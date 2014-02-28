@@ -362,6 +362,126 @@ s_configurationSetServiceTerminatePeriod(
 }
 
 /**
+ * Sets the heartbeat expiry time-period. After this call the heartbeat-
+ * period will be set to MAX(S_CFG_HEARBEAT_EXPIRYTIME_MINIMUM, expiryTime).
+ * @param config The configuration struct to store the heartbeat expiry time in
+ * @param expiryTime The ExpiryTime of the heartbeat.
+ */
+static void
+s_configurationSetHeartbeatExpiryTime(
+    s_configuration config,
+    c_float expiryTime)
+{
+    if (expiryTime < S_CFG_HEARTBEAT_EXPIRYTIME_MINIMUM) {
+        expiryTime = S_CFG_HEARTBEAT_EXPIRYTIME_MINIMUM;
+    }
+
+    s_configurationSetDuration(&(config->heartbeatExpiryTime), expiryTime);
+}
+
+/**
+ * Sets the heartbeat update interval, which is defined by
+ * Heartbeat.ExpiryTime * Heartbeat.ExpiryTime@update_factor.
+ * After this call the renewal period will be set to
+ *  Heartbeat.ExpiryTime * MIN(S_CFG_HEARTBEAT_UPDATE_FACTOR_MAXIMUM,
+ * MAX(S_CFG_HEARTBEAT_UPDATE_FACTOR_MINIMUM, update_factor)).
+ * @param config The configuration struct to store the heartbeat update interval in
+ * @param update_factor The update-factor that needs to be applied to the ExpiryTime
+ */
+static void
+s_configurationSetHeartbeatUpdateInterval(
+    s_configuration config,
+    c_float update_factor)
+{
+    os_time expiryTime;
+
+    if (update_factor < S_CFG_HEARTBEAT_UPDATE_FACTOR_MINIMUM) {
+        update_factor = S_CFG_HEARTBEAT_UPDATE_FACTOR_MINIMUM;
+    }
+
+    if (update_factor > S_CFG_HEARTBEAT_UPDATE_FACTOR_MAXIMUM) {
+        update_factor = S_CFG_HEARTBEAT_UPDATE_FACTOR_MAXIMUM;
+    }
+
+    expiryTime.tv_sec = config->heartbeatExpiryTime.seconds;
+    expiryTime.tv_nsec = config->heartbeatExpiryTime.nanoseconds;
+    update_factor = update_factor * (c_float)os_timeToReal(expiryTime);
+    s_configurationSetDuration(&(config->heartbeatUpdateInterval), update_factor);
+}
+
+/**
+ * Sets the transport priority of the Heartbeat writer
+ * @param config The configuration struct to store the transport priority in
+ * @param prio The transport priority
+ */
+void
+s_configurationSetHeartbeatTransportPriority(
+    s_configuration config,
+    c_long prio)
+{
+    if (prio < S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_MINIMUM) {
+        prio = S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_MINIMUM;
+    }
+    if (prio > S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_MAXIMUM) {
+        prio = S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_MAXIMUM;
+    }
+    config->heartbeatTransportPriority = prio;
+}
+
+/**
+ * Sets the scheduling class of the Heartbeat manager.
+ * @param config The configuration struct to store the scheduling class in
+ * @param class The scheduling class
+ */
+void
+s_configurationSetHeartbeatSchedulingClass(
+    s_configuration config,
+    const c_char* class)
+{
+    if (config->heartbeatScheduling == NULL) {
+        config->heartbeatScheduling = os_malloc(sizeof(os_threadAttr));
+        if (config->heartbeatScheduling) {
+            os_threadAttrInit(config->heartbeatScheduling);
+            config->heartbeatScheduling->stackSize = 512*1024; /* 512KB */
+        }
+    }
+
+    if (config->heartbeatScheduling) {
+        if (os_strcasecmp(class, "Timeshare") == 0) {
+            config->heartbeatScheduling->schedClass = OS_SCHED_TIMESHARE;
+        } else if (os_strcasecmp(class, "Realtime") == 0) {
+            config->heartbeatScheduling->schedClass = OS_SCHED_REALTIME;
+        } else {
+            config->heartbeatScheduling->schedClass = OS_SCHED_DEFAULT;
+        }
+    }
+}
+
+/**
+ * Sets the scheduling priority of the Heartbeat manager.
+ * @param config The configuration struct to store the scheduling class in
+ * @param priority The scheduling priority
+ */
+void
+s_configurationSetHeartbeatSchedulingPriority(
+    s_configuration config,
+    c_long priority)
+{
+    if (config->heartbeatScheduling == NULL) {
+        config->heartbeatScheduling = os_malloc(sizeof(os_threadAttr));
+        if (config->heartbeatScheduling) {
+            os_threadAttrInit(config->heartbeatScheduling);
+            config->heartbeatScheduling->stackSize = 512*1024; /* 512KB */
+        }
+    }
+
+    if (config->heartbeatScheduling) {
+        config->heartbeatScheduling->schedPriority = priority;
+    }
+}
+
+
+/**
  * Sets the lease-period, which is the ExpiryTime. After this call the lease-
  * period will be set to MAX(S_CFG_LEASE_EXPIRYTIME_MINIMUM, expiryTime).
  * @param config The configuration struct to store the renewal-period in
@@ -639,6 +759,11 @@ s_configurationInit(
         s_configurationSetLeasePeriod(config, S_CFG_LEASE_EXPIRYTIME_DEFAULT);
         s_configurationSetLeaseRenewalPeriod(config, S_CFG_LEASE_UPDATE_FACTOR_DEFAULT);
 
+        s_configurationSetHeartbeatExpiryTime(config, S_CFG_HEARTBEAT_EXPIRYTIME_DEFAULT);
+        s_configurationSetHeartbeatUpdateInterval(config, S_CFG_HEARTBEAT_UPDATE_FACTOR_DEFAULT);
+
+        s_configurationSetHeartbeatTransportPriority(config, S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_DEFAULT);
+
         /* Apply defaults to rest of configuration */
         os_threadAttrInit(&config->kernelManagerScheduling);
         config->kernelManagerScheduling.stackSize = 512*1024; /* 512KB */
@@ -654,6 +779,8 @@ s_configurationInit(
 
         os_threadAttrInit(&config->leaseRenewScheduling);
         config->leaseRenewScheduling.stackSize = 512*1024; /* 512KB */
+
+        config->heartbeatScheduling = NULL;
     }
 }
 
@@ -678,9 +805,8 @@ s_configurationDeinit(
                 os_free(config->domainName);
                 config->domainName = NULL;
             }
-
         }
-
+        os_free(config->heartbeatScheduling);
     }
     return;
 }
@@ -830,13 +956,20 @@ s_configurationRead(
             }
             u_cfNodeFree(node);
             node = u_cfNode(c_iterTakeFirst(iter));
-         }
-         c_iterFree(iter);
+        }
+        c_iterFree(iter);
         s_configurationValueFloat(config, domain, "ServiceTerminatePeriod/#text", s_configurationSetServiceTerminatePeriod);
         s_configurationValueFloat(config, domain, "Lease/ExpiryTime/#text", s_configurationSetLeasePeriod);
         s_configurationAttrValueFloat(config, domain, "Lease/ExpiryTime", "update_factor", s_configurationSetLeaseRenewalPeriod);
         s_configurationValueString (config, domain, "Watchdog/Scheduling/Class/#text", s_configurationSetLeaseRenewSchedulingClass);
         s_configurationValueLong   (config, domain, "Watchdog/Scheduling/Priority/#text", s_configurationSetLeaseRenewSchedulingPriority);
+
+        /* Heartbeat */
+        config->heartbeatExpiryTime.seconds = config->leasePeriod.seconds;
+        config->heartbeatExpiryTime.nanoseconds = config->leasePeriod.nanoseconds;
+
+        config->heartbeatUpdateInterval.seconds = config->leaseRenewalPeriod.seconds;
+        config->heartbeatUpdateInterval.nanoseconds = config->leaseRenewalPeriod.nanoseconds;
     }
 
     if (dcfg) {
@@ -857,6 +990,15 @@ s_configurationRead(
          /* ResendManager */
          s_configurationValueString(config, dcfg, "ResendManager/Scheduling/Class/#text", s_configurationSetResendManagerSchedulingClass);
          s_configurationValueLong(config, dcfg, "ResendManager/Scheduling/Priority/#text", s_configurationSetResendManagerSchedulingPriority);
+
+         /* Heartbeat */
+         s_configurationAttrValueLong(config, dcfg, "Heartbeat", "transport_priority", s_configurationSetHeartbeatTransportPriority);
+
+         s_configurationValueFloat(config, dcfg, "Heartbeat/ExpiryTime/#text", s_configurationSetHeartbeatExpiryTime);
+         s_configurationAttrValueFloat(config, dcfg, "Heartbeat/ExpiryTime", "update_factor", s_configurationSetHeartbeatUpdateInterval);
+
+         s_configurationValueString(config, dcfg, "Heartbeat/Scheduling/Class/#text", s_configurationSetHeartbeatSchedulingClass);
+         s_configurationValueLong(config, dcfg, "Heartbeat/Scheduling/Priority/#text", s_configurationSetHeartbeatSchedulingPriority);
 
          /* Control and Monitoring Command Receiver */
          iter = u_cfElementXPath(domain,

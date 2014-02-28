@@ -11,6 +11,7 @@
  */
 #include <stddef.h>
 #include <ctype.h>
+#include <assert.h>
 
 #include "os_stdlib.h"
 #include "os_defs.h"
@@ -23,7 +24,7 @@
 #include "v_message.h"
 #include "v_state.h"
 
-#include "q_avl.h"
+#include "ut_avl.h"
 #include "q_osplser.h"
 #include "q_osplserModule.h"
 #include "q_bswap.h"
@@ -34,6 +35,7 @@
 #include "q_unused.h"
 #include "q_misc.h"
 #include "q_error.h"
+#include "q_globals.h"
 
 #include "sysdeps.h"
 
@@ -133,7 +135,7 @@ struct keyinfo {
 };
 
 struct topic {
-  STRUCT_AVLNODE (topic_avlnode, struct topic *) avlnode;
+  ut_avlNode_t avlnode;
   char *name_typename;
   char *name;
   char *typename;
@@ -170,7 +172,9 @@ topic_t osplser_topicpmd;
 c_type osplser_topicpmd_type;
 c_type osplser_topicpmd_value_type;
 
-static STRUCT_AVLTREE (topictree, struct topic *) topictree;
+static const ut_avlTreedef_t topictree_treedef =
+  UT_AVL_TREEDEF_INITIALIZER_INDKEY (offsetof (struct topic, avlnode), offsetof (struct topic, name_typename), (int (*) (const void *, const void *)) strcmp, 0);
+static ut_avlTree_t topictree;
 static os_mutex topiclock;
 
 #ifndef NDEBUG
@@ -199,7 +203,7 @@ static unsigned ceiling_lg2 (unsigned x)
   }
 }
 
-static typeclass_t size_to_tc (unsigned sz)
+static typeclass_t size_to_tc (os_address sz)
 {
   switch (sz)
   {
@@ -277,7 +281,7 @@ static int findkey (struct keyinfo *ki, C_STRUCT(c_type) const *type, const char
   ki->off = 0;
   type = c_typeActualType ((c_type) type); /* WT? not const? */
   nn_log (LC_TOPIC, "findkey: looking for %s ...\n", key);
-  while ((name = ddsi2_strsep (&cursor, ".")) != NULL && *name != '\0' &&
+  while ((name = os_strsep (&cursor, ".")) != NULL && *name != '\0' &&
          c_baseObjectKind (type) == M_STRUCTURE)
   {
     C_STRUCT(c_structure) const * const structure = c_structure ((c_object) type);
@@ -432,7 +436,7 @@ static topic_t deftopic_unl (const char *name, C_STRUCT(v_topic) const * const o
   topic_t tp;
   int i;
   unsigned *maxstrlengths; /* for fixed-length strings: maximum string length; anything else: 0 */
-  avlparent_t parent;
+  ut_avlIPath_t path;
   char *name_typename;
 
   /* Reuse known definition, if available; compare is on name+typeame,
@@ -440,7 +444,7 @@ static topic_t deftopic_unl (const char *name, C_STRUCT(v_topic) const * const o
   if ((name_typename = os_malloc (strlen (name) + 1 + strlen (typename) + 1)) == NULL)
     return NULL;
   os_sprintf (name_typename, "%s/%s", name, typename);
-  tp = avl_lookup (&topictree, name_typename, &parent);
+  tp = ut_avlLookupIPath (&topictree_treedef, &topictree, name_typename, &path);
   if (tp != NULL)
   {
     nn_log (LC_TOPIC, "deftopic_unl: reusing definition for %s\n", name_typename);
@@ -454,7 +458,6 @@ static topic_t deftopic_unl (const char *name, C_STRUCT(v_topic) const * const o
     goto fail00;
   if ((tp = os_malloc (offsetof (struct topic, keys) + (nkeys+1) * sizeof (tp->keys[0]))) == NULL)
     goto fail0;
-  avl_init_node (&tp->avlnode, parent);
   tp->name_typename = name_typename;
   if ((tp->name = os_strdup (name)) == NULL)
     goto fail1;
@@ -491,7 +494,7 @@ static topic_t deftopic_unl (const char *name, C_STRUCT(v_topic) const * const o
   /* sentinel (only "off" really matters, the others are never read) */
   tp->keys[tp->nkeys].off = ~0u;
   os_free (maxstrlengths);
-  avl_insert (&topictree, tp);
+  ut_avlInsertIPath (&topictree_treedef, &topictree, tp, &path);
   return tp;
  fail4:
  fail3:
@@ -527,7 +530,7 @@ topic_t deftopic (C_STRUCT(v_topic) const * const ospl_topic, const char *keystr
   pos = keystr_copy = os_strdup (keystr);
   if (*keystr != 0)
   {
-    while ((k = ddsi2_strsep (&pos, ", \t")) != NULL)
+    while ((k = os_strsep (&pos, ", \t")) != NULL)
     {
       if (nkeys == MAX_NKEYS)
         goto fail;
@@ -595,7 +598,7 @@ void freetopic (UNUSED_ARG (topic_t tp))
      is to track references in the queue, yet another is to defer
      freeing a writer until a bubble has passed through the queue,
      &c. &c. */
-  avl_delete (&topictree, tp);
+  ut_avlDelete (&topictree_treedef, &topictree, tp);
   freetopic_helper (tp);
 #endif
 }
@@ -628,16 +631,16 @@ static topic_t deftopicpmd (c_base base)
   return tp;
 }
 
-int osplser_init (void *vbase)
+int osplser_init (void)
 {
-  c_base base = vbase;
+  c_base base = gv.ospl_base;
   os_mutexAttr attr;
   if (!loadq_osplserModule (base))
     return ERR_UNSPECIFIED;
   os_mutexAttrInit (&attr);
   attr.scopeAttr = OS_SCOPE_PRIVATE;
   os_mutexInit (&topiclock, &attr);
-  avl_init_indkey (&topictree, offsetof (struct topic, avlnode), offsetof (struct topic, name_typename), (int (*) (const void *, const void *)) strcmp, 0);
+  ut_avlInit (&topictree_treedef, &topictree);
   osplser_topic4u = deftopic4u (base);
   osplser_topicpmd = deftopicpmd (base);
   return 0;
@@ -645,7 +648,7 @@ int osplser_init (void *vbase)
 
 void osplser_fini (void)
 {
-  avl_free (&topictree, freetopic_helper);
+  ut_avlFree (&topictree_treedef, &topictree, freetopic_helper);
   os_mutexDestroy (&topiclock);
 }
 
@@ -918,6 +921,7 @@ serdata_t serialize (serstatepool_t pool, const struct topic *tp, C_STRUCT (v_me
     d->v.msginfo.wrinfo.transactionId = msg->transactionId;
     d->v.msginfo.wrinfo.writerGID = msg->writerGID;
     d->v.msginfo.wrinfo.writerInstanceGID = msg->writerInstanceGID;
+    d->v.msginfo.wrinfo.sequenceNumber = msg->sequenceNumber;
   }
   return d;
 }
@@ -952,6 +956,7 @@ serdata_t serialize_key (serstatepool_t pool, const struct topic *tp, C_STRUCT (
     d->v.msginfo.wrinfo.transactionId = msg->transactionId;
     d->v.msginfo.wrinfo.writerGID = msg->writerGID;
     d->v.msginfo.wrinfo.writerInstanceGID = msg->writerInstanceGID;
+    d->v.msginfo.wrinfo.sequenceNumber = msg->sequenceNumber;
   }
   return st->data;
 }
@@ -1020,12 +1025,12 @@ void serstatepool_free (serstatepool_t pool)
 
 static void serstate_ref (serstate_t st)
 {
-  pa_increment (&st->refcount);
+  atomic_inc_u32_nv (&st->refcount);
 }
 
 static void serstate_release (serstate_t st)
 {
-  if (pa_decrement (&st->refcount) == 0)
+  if (atomic_dec_u32_nv (&st->refcount) == 0)
   {
     serstatepool_t pool = st->pool;
 #if USE_ATOMIC_LIFO
@@ -1323,7 +1328,7 @@ static void copykey (serstate_t st, const char *p)
 static int serprim (serstate_t st, C_STRUCT(c_type) const * const type, const char *data, unsigned off)
 {
   char *p;
-  if ((p = serstate_append_aligned (st, type->size)) == NULL)
+  if ((p = serstate_append_aligned (st, (os_uint32) type->size)) == NULL)
     return ERR_OUT_OF_MEMORY;
   switch (c_primitiveKind ((c_type) type))
   {
@@ -1386,7 +1391,7 @@ static int sercoll (serstate_t st, C_STRUCT(c_type) const * const type, const ch
         }
         else
         {
-          unsigned n = strlen (s) + 1;
+          unsigned n = (int) strlen (s) + 1;
           if (ctype->maxSize > 0 && n-1 > (unsigned) ctype->maxSize)
             return 0;
           sersize = (int) (sizeof (unsigned) + n);
@@ -1433,7 +1438,7 @@ static int sercoll (serstate_t st, C_STRUCT(c_type) const * const type, const ch
         }
         if (subtypekind == M_PRIMITIVE || subtypekind == M_ENUMERATION)
         {
-          unsigned size1 = subtype->size;
+          unsigned size1 = (unsigned) subtype->size;
           unsigned sizeN = length * size1;
           if ((p = serstate_append_specific_alignment (st, sizeN, size1)) == NULL)
             return ERR_OUT_OF_MEMORY;
@@ -1442,7 +1447,7 @@ static int sercoll (serstate_t st, C_STRUCT(c_type) const * const type, const ch
         }
         else
         {
-          unsigned datasize1 = (c_typeIsRef ((c_type) subtype)) ? sizeof (void *) : subtype->size;
+          unsigned datasize1 = (c_typeIsRef ((c_type) subtype)) ? (unsigned) sizeof (void *) : (unsigned) subtype->size;
           const char *src1 = array;
           unsigned i;
           for (i = 0; i < length; i++)
@@ -1472,7 +1477,7 @@ static int serstruct (serstate_t st, C_STRUCT(c_type) const * const type, const 
   for (i = 0; i < n; i++)
   {
     C_STRUCT(c_member) const * const member = structure->members[i];
-    const unsigned disp = member->offset;
+    const unsigned disp = (unsigned) member->offset;
     C_STRUCT(c_type) const * const subtype = c_typeActualType (c_specifierType (member));
     int sersize1 = serialize1 (st, subtype, data + disp, off + disp);
     if (sersize1 < 0)
@@ -1559,7 +1564,7 @@ static int serunion (serstate_t st, C_STRUCT(c_type) const * const type, const c
   sersize += sersize1;
   if (activecase)
   {
-    const unsigned disp = alignup (dtype->size, c_type (utype)->alignment);
+    const unsigned disp = alignup ((unsigned) dtype->size, (unsigned) c_type (utype)->alignment);
     C_STRUCT(c_type) const * const subtype = c_typeActualType (c_specifierType (activecase));
     sersize1 = serialize1 (st, subtype, data + disp, off + disp);
     if (sersize1 < 0)
@@ -1856,7 +1861,7 @@ static int deserlengthG (unsigned *n, const char *src, unsigned *srcoff, unsigne
 
 static int deserprimarray (C_STRUCT(c_type) const * const subtype, char *array, const char *src, unsigned srcoff, unsigned srcsize, unsigned n)
 {
-  const unsigned size1 = subtype->size;
+  const unsigned size1 = (unsigned) subtype->size;
   if (n == 0) /* no array elements => no need for alignment */
     return srcoff;
   srcoff = alignup (srcoff, size1);
@@ -1872,7 +1877,7 @@ static int deserprimarray (C_STRUCT(c_type) const * const subtype, char *array, 
 
 static int deserprimarrayS (C_STRUCT(c_type) const * const subtype, char *array, const char *src, unsigned srcoff, unsigned srcsize, unsigned n)
 {
-  const unsigned size1 = subtype->size;
+  const unsigned size1 = (unsigned) subtype->size;
   unsigned i;
   if (n == 0)
     return srcoff;
@@ -2034,7 +2039,7 @@ static int desercollG (C_STRUCT(c_type) const * const type, char *dst, const cha
            *their* logic, not mine!) */
         C_STRUCT(c_type) const * const subtype = ctype->subType;
         const c_metaKind subtypekind = c_baseObjectKind (c_baseObject (subtype));
-        const unsigned size1 = (c_typeIsRef ((c_type) subtype)) ? sizeof (void *) : subtype->size;
+        const unsigned size1 = (c_typeIsRef ((c_type) subtype)) ? (unsigned) sizeof (void *) : (unsigned) subtype->size;
         void *array;
         unsigned n;
         if (ctype->kind == C_ARRAY && ctype->maxSize > 0)
@@ -2154,7 +2159,7 @@ static int desercollP (C_STRUCT(c_type) const * const type, char **dst, int *dst
            bother? Existing DDSI service does, so maybe I do. This is
            *their* logic, not mine!) */
         C_STRUCT(c_type) const * const subtype = ctype->subType;
-        const unsigned size1 = (c_typeIsRef ((c_type) subtype)) ? sizeof (void *) : subtype->size;
+        const unsigned size1 = (c_typeIsRef ((c_type) subtype)) ? (unsigned) sizeof (void *) : (unsigned) subtype->size;
         unsigned n;
         mysnprintf (dst, dstsize, "{");
         if (ctype->kind == C_ARRAY && ctype->maxSize > 0)
@@ -2325,7 +2330,7 @@ static int deserunion (C_STRUCT(c_type) const * const type, char *dst, const cha
   activecase = active_union_case (utype, dvalue);
   if (activecase)
   {
-    const unsigned disp = alignup (dtype->size, c_type (utype)->alignment);
+    const unsigned disp = alignup ((unsigned) dtype->size, (unsigned) c_type (utype)->alignment);
     C_STRUCT(c_type) const * const subtype = c_typeActualType (c_specifierType (activecase));
     if ((off1 = deserialize1 (subtype, dst + disp, src, srcoff, srcsize)) < 0)
       return off1;
@@ -2348,7 +2353,7 @@ static int deserunionS (C_STRUCT(c_type) const * const type, char *dst, const ch
   activecase = active_union_case (utype, dvalue);
   if (activecase)
   {
-    const unsigned disp = alignup (dtype->size, c_type (utype)->alignment);
+    const unsigned disp = alignup ((unsigned) dtype->size, (unsigned) c_type (utype)->alignment);
     C_STRUCT(c_type) const * const subtype = c_typeActualType (c_specifierType (activecase));
     if ((off1 = deserialize1S (subtype, dst + disp, src, srcoff, srcsize)) < 0)
       return off1;
@@ -2768,7 +2773,7 @@ static int vercoll (C_STRUCT(c_type) const * const type, const char *a, const ch
         const char *a1;
         const char *b1;
         unsigned length_a, length_b;
-        unsigned datasize1 = (c_typeIsRef ((c_type) subtype)) ? sizeof (void *) : subtype->size;
+        unsigned datasize1 = (c_typeIsRef ((c_type) subtype)) ? (unsigned) sizeof (void *) : (unsigned) subtype->size;
         unsigned i;
         if (ctype->kind == C_ARRAY && ctype->maxSize > 0) {
           a1 = a;
@@ -2809,7 +2814,7 @@ static int verstruct (C_STRUCT(c_type) const * const type, const char *a, const 
   for (i = 0; i < n; i++)
   {
     C_STRUCT(c_member) const * const member = structure->members[i];
-    const unsigned disp = member->offset;
+    const unsigned disp = (unsigned) member->offset;
     C_STRUCT(c_type) const * const subtype = c_typeActualType (c_specifierType (member));
     if (!verdata (subtype, a + disp, b + disp))
       return 0;
@@ -2832,7 +2837,7 @@ static int verunion (C_STRUCT(c_type) const * const type, const char *a, const c
   assert (activecase_a == activecase_b);
   if (activecase_a)
   {
-    const unsigned disp = alignup (dtype->size, c_type (utype)->alignment);
+    const unsigned disp = (unsigned) alignup ((unsigned) dtype->size, (unsigned) c_type (utype)->alignment);
     C_STRUCT(c_type) const * const subtype = c_typeActualType (c_specifierType (activecase_a));
     if (!verdata (subtype, a + disp, b + disp))
       return 0;

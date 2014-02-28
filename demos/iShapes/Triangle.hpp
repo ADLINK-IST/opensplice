@@ -9,6 +9,7 @@
  */
 /** @{*/
 
+namespace demo { namespace ishapes {
 class Triangle : public Shape
 {
 public:
@@ -33,6 +34,8 @@ private:
     ShapeDynamics::ref_type dynamics_;
     QPolygon triangle_;
 };
+}
+}
 
 /** @}*/
 

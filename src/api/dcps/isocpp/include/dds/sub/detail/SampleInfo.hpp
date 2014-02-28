@@ -18,7 +18,7 @@
 
 // Implementation
 
-#include <org/opensplice/sub/SampleInfoInpl.hpp>
+#include <org/opensplice/sub/SampleInfoImpl.hpp>
 #include <dds/sub/TSampleInfo.hpp>
 
 namespace dds

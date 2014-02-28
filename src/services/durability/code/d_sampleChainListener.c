@@ -98,7 +98,6 @@ updateGroupStatistics(
     return;
 }
 
-
 struct writeBeadHelper {
     d_resendAction action;
     v_entry entry;
@@ -108,10 +107,12 @@ struct writeBeadHelper {
     c_ulong writeDisposeCount;
     c_ulong registerCount;
     c_ulong unregisterCount;
+    d_mergePolicy mergePolicy;
 };
 
 struct chainRequestHelper{
     d_chain chain;
+    d_durability durability;
     d_fellow fellow;
     d_networkAddress master;
     d_name role;
@@ -126,13 +127,15 @@ findAligner(
     c_bool fellowComplete = FALSE;
     c_bool fellowMightKnowGroup = FALSE;
     c_bool checkFurther = TRUE;
+    c_bool fellowHasGroup = FALSE;
     struct chainRequestHelper* helper;
     d_fellowAlignStatus status = D_ALIGN_FALSE;
-    d_networkAddress fellowAddress;
+    d_networkAddress fellowAddress, oldAddress;
     d_name fellowRole;
 
 
     helper = (struct chainRequestHelper*)args;
+    fellowAddress = d_fellowGetAddress(fellow);
 
     if(d_fellowGetCommunicationState(fellow) == D_COMMUNICATION_STATE_APPROVED) {
         fellowRole = d_fellowGetRole(fellow);
@@ -144,6 +147,11 @@ findAligner(
                                             helper->chain->request->durabilityKind);
 
             if(fellowComplete == FALSE){
+                fellowHasGroup = d_fellowHasGroup(fellow,
+                        helper->chain->request->partition,
+                       helper->chain->request->topic,
+                       helper->chain->request->durabilityKind);
+
                 status = d_fellowIsAlignerForGroup(fellow,
                                             helper->chain->request->partition,
                                             helper->chain->request->topic,
@@ -159,16 +167,28 @@ findAligner(
                                             helper->chain->request->durabilityKind);
             }
         }
+        d_printTimedEvent(helper->durability, D_LEVEL_FINEST,
+                D_THREAD_SAMPLE_CHAIN_LISTENER,
+                "Finding aligner: myRole='%s', fellow=%u, fellowRole='%s', fellowComplete=%d, fellowHasGroup=%d, fellowMightKnowGroup=%d and status=%d.\n",
+                helper->role, fellowAddress->systemId, fellowRole, fellowComplete,
+                fellowHasGroup, fellowMightKnowGroup, status);
+    } else {
+        d_printTimedEvent(helper->durability, D_LEVEL_FINEST,
+            D_THREAD_SAMPLE_CHAIN_LISTENER,
+            "Finding aligner: fellow %u not approved (yet).\n",
+            fellowAddress->systemId);
     }
 
     if((fellowComplete == TRUE) && (helper->fellow) && (status != D_ALIGN_FALSE)){
-
         /*fellow complete and aligner  and old complete fellow exists.*/
         count = d_fellowRequestCountGet(helper->fellow);
-        fellowAddress = d_fellowGetAddress(fellow);
 
         if(d_networkAddressEquals(fellowAddress, helper->master)){
             /*select the master.*/
+            d_printTimedEvent(helper->durability, D_LEVEL_FINEST,
+                        D_THREAD_SAMPLE_CHAIN_LISTENER,
+                        "Finding aligner: select fellow %u as it is the master.\n",
+                        fellowAddress->systemId);
             d_tableFree(helper->chain->fellows);
             helper->chain->fellows = d_tableNew(d_fellowCompare, d_chainFellowFree);
             d_objectKeep(d_object(fellow));
@@ -178,6 +198,13 @@ findAligner(
             checkFurther = FALSE;
         } else if(count > d_fellowRequestCountGet(fellow)){
             /*select the one with the least open requests.*/
+            oldAddress = d_fellowGetAddress(helper->fellow);
+            d_printTimedEvent(helper->durability, D_LEVEL_FINEST,
+                    D_THREAD_SAMPLE_CHAIN_LISTENER,
+                    "Finding aligner: select fellow %u as it has %u open requests whereas current fellow %u has %u open requests.\n",
+                    fellowAddress->systemId, d_fellowRequestCountGet(fellow),
+                    oldAddress->systemId, count);
+            d_networkAddressFree(oldAddress);
             d_tableFree(helper->chain->fellows);
             helper->chain->fellows = d_tableNew(d_fellowCompare, d_chainFellowFree);
             d_objectKeep(d_object(fellow));
@@ -186,10 +213,12 @@ findAligner(
             d_fellowRequestAdd(fellow);
         } else {
             /*Do nothing here*/
+            d_printTimedEvent(helper->durability, D_LEVEL_FINEST,
+                D_THREAD_SAMPLE_CHAIN_LISTENER,
+                "Finding aligner: do nothing for fellow %u as current selected fellow is better.\n",
+                fellowAddress->systemId);
         }
-        d_networkAddressFree(fellowAddress);
     } else if((fellowComplete == TRUE) && (status != D_ALIGN_FALSE)){
-
         /*Fellow complete and no old complete fellow exists*/
         d_tableFree(helper->chain->fellows);
         helper->chain->fellows = d_tableNew(d_fellowCompare, d_chainFellowFree);
@@ -198,20 +227,36 @@ findAligner(
         helper->fellow = fellow;
         d_fellowRequestAdd(fellow);
 
-        fellowAddress = d_fellowGetAddress(fellow);
-
         if(d_networkAddressEquals(fellowAddress, helper->master)){
             checkFurther = FALSE;
+            d_printTimedEvent(helper->durability, D_LEVEL_FINEST,
+                            D_THREAD_SAMPLE_CHAIN_LISTENER,
+                            "Finding aligner: selecting fellow %u and not checking further.\n",
+                            fellowAddress->systemId);
+        } else {
+            d_printTimedEvent(helper->durability, D_LEVEL_FINEST,
+                                        D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                        "Finding aligner: selecting fellow %u and checking further.\n",
+                                        fellowAddress->systemId);
         }
-        d_networkAddressFree(fellowAddress);
     } else if((fellowMightKnowGroup == TRUE) && (!helper->fellow)){
         /*No complete fellow found (yet).*/
         d_objectKeep(d_object(fellow));
         d_fellowRequestAdd(fellow);
         d_tableInsert(helper->chain->fellows, fellow);
+        d_printTimedEvent(helper->durability, D_LEVEL_FINEST,
+                D_THREAD_SAMPLE_CHAIN_LISTENER,
+                "Finding aligner: adding fellow %u to list of candidates that is now %u long.\n",
+                fellowAddress->systemId, d_tableSize(helper->chain->fellows));
     } else {
         /*Do nothing here*/
+        d_printTimedEvent(helper->durability, D_LEVEL_FINEST,
+                D_THREAD_SAMPLE_CHAIN_LISTENER,
+                "Finding aligner: do nothing for fellow %u as it is not suitable.\n",
+                fellowAddress->systemId);
     }
+    d_networkAddressFree(fellowAddress);
+
     return checkFurther;
 }
 
@@ -357,7 +402,6 @@ d_sampleChainListenerGetMergeAction(
     helper.chain = chain;
     helper.action = NULL;
     d_tableWalk(listener->mergeActions, findMergeAction, &helper);
-
     return helper.action;
 }
 
@@ -663,14 +707,12 @@ d_sampleChainListenerReportGroup(
     d_publisher publisher;
     d_durabilityKind kind;
     c_bool inNameSpace;
-    d_configuration config;
     d_durability durability;
     d_quality quality;
 
     if(!d_groupIsPrivate(group)){
         admin        = d_listenerGetAdmin(d_listener(listener));
         durability   = d_adminGetDurability(admin);
-        config       = d_durabilityGetConfiguration(durability);
         publisher    = d_adminGetPublisher(admin);
 
         completeness = d_groupGetCompleteness(group);
@@ -1040,7 +1082,6 @@ requestGroupFromMasterIfUnknown(
     d_fellow fellow;
     d_group fellowGroup;
     d_groupsRequest request;
-    c_bool result;
 
     assert(d_objectIsValid(d_object(nameSpace), D_NAMESPACE));
     assert(d_objectIsValid(d_object(admin), D_ADMIN));
@@ -1063,7 +1104,7 @@ requestGroupFromMasterIfUnknown(
                     publisher  = d_adminGetPublisher(admin);
 
                     d_messageSetAddressee(d_message(request), master);
-                    result = d_publisherGroupsRequestWrite(publisher, request, master);
+                    d_publisherGroupsRequestWrite(publisher, request, master);
 
                     d_printTimedEvent(durability, D_LEVEL_FINE,
                             D_THREAD_SAMPLE_CHAIN_LISTENER,
@@ -1090,7 +1131,6 @@ d_sampleChainListenerInsertRequest(
     d_chain chain,
     c_bool reportGroupWhenUnfullfilled)
 {
-    d_publisher publisher;
     d_admin admin;
     d_durability durability;
     d_configuration configuration;
@@ -1110,7 +1150,6 @@ d_sampleChainListenerInsertRequest(
     if(listener && chain){
         admin      = d_listenerGetAdmin(d_listener(listener));
         durability = d_adminGetDurability(admin);
-        publisher  = d_adminGetPublisher(admin);
 
         d_listenerLock(d_listener(listener));
         assert(d_tableFind(listener->chains, chain) == NULL);
@@ -1124,28 +1163,48 @@ d_sampleChainListenerInsertRequest(
         data.chain       = chain;
         data.fellow      = NULL;
         data.role        = configuration->role;
+        data.durability  = durability;
 
         if(nameSpace){
             data.master = d_nameSpaceGetMaster(nameSpace);
+
+            d_printTimedEvent(durability, D_LEVEL_FINE,
+                    D_THREAD_SAMPLE_CHAIN_LISTENER,
+                    "Trying to find an aligner for group %s.%s for nameSpace %s that has master %u.\n",
+                    chain->request->partition, chain->request->topic,
+                    d_nameSpaceGetName(nameSpace),
+                    data.master->systemId);
+
         } else {
             data.master = NULL;
+
+            d_printTimedEvent(durability, D_LEVEL_FINE,
+                        D_THREAD_SAMPLE_CHAIN_LISTENER,
+                        "Trying to find an aligner for group %s.%s for nameSpace %s that has no master.\n",
+                        chain->request->partition, chain->request->topic,
+                        d_nameSpaceGetName(nameSpace));
         }
 
         d_adminFellowWalk(admin, findAligner, &data);
 
         if(d_tableSize(chain->fellows) == 0){
+            d_printTimedEvent(durability, D_LEVEL_FINE,
+                D_THREAD_SAMPLE_CHAIN_LISTENER,
+                "Found no (potential) aligner for group %s.%s.\n",
+                chain->request->partition, chain->request->topic);
+
             iAmAligner    = d_adminGroupInAlignerNS(
                                 admin,
                                 chain->request->partition,
                                 chain->request->topic);
 
             if(iAmAligner == FALSE){
-                if(reportGroupWhenUnfullfilled){
-                    d_printTimedEvent(durability, D_LEVEL_FINE,
-                            D_THREAD_SAMPLE_CHAIN_LISTENER,
-                            "Group %s.%s will not be aligned until an aligner fellows becomes available.\n",
-                            chain->request->partition, chain->request->topic);
+                d_printTimedEvent(durability, D_LEVEL_FINE,
+                    D_THREAD_SAMPLE_CHAIN_LISTENER,
+                    "Group %s.%s will not be aligned until an aligner fellow becomes available.\n",
+                    chain->request->partition, chain->request->topic);
 
+                if(reportGroupWhenUnfullfilled){
                     if(notInitial){
                         requestGroupFromMasterIfUnknown(admin, nameSpace,
                                                 chain->request->partition,
@@ -1155,6 +1214,10 @@ d_sampleChainListenerInsertRequest(
                 }
                 listener->unfulfilledChains = c_iterInsert(listener->unfulfilledChains, chain);
             } else {
+                d_printTimedEvent(durability, D_LEVEL_FINE,
+                    D_THREAD_SAMPLE_CHAIN_LISTENER,
+                    "Group %s.%s will be marked as complete as no (potential) other aligners exist.\n",
+                    chain->request->partition, chain->request->topic);
                 group = d_adminGetLocalGroup   (admin,
                                                 chain->request->partition,
                                                 chain->request->topic,
@@ -1224,6 +1287,12 @@ d_sampleChainListenerInsertRequest(
                 as->aligneeRequestsOpenDif = 1;
                 d_networkAddressFree(addressee);
             } else {
+                d_printTimedEvent(durability, D_LEVEL_FINE,
+                        D_THREAD_SAMPLE_CHAIN_LISTENER,
+                        "Found %u (potential) aligners for group %s.%s.\n",
+                        d_tableSize(chain->fellows),
+                        chain->request->partition, chain->request->topic);
+
                 d_tableFree(chain->fellows);
                 chain->fellows = d_tableNew(d_fellowCompare, d_chainFellowFree);
                 listener->unfulfilledChains = c_iterInsert(listener->unfulfilledChains, chain);
@@ -1232,12 +1301,16 @@ d_sampleChainListenerInsertRequest(
                                                 chain->request->partition,
                                                 chain->request->topic,
                                                 chain->request->durabilityKind);
+
+                d_printTimedEvent(durability, D_LEVEL_INFO,
+                        D_THREAD_SAMPLE_CHAIN_LISTENER,
+                        "Group %s.%s will not be aligned until the master fellow becomes complete (reportGroupWhenUnfullfilled=%s, notInitial=%s).\n",
+                        chain->request->partition, chain->request->topic,
+                        reportGroupWhenUnfullfilled?"TRUE":"FALSE",
+                        notInitial?"TRUE":"FALSE");
+
                 if(reportGroupWhenUnfullfilled){
                     d_sampleChainListenerReportGroup(listener, group);
-                    d_printTimedEvent(durability, D_LEVEL_INFO,
-                        D_THREAD_SAMPLE_CHAIN_LISTENER,
-                        "Group %s.%s will not be aligned until the master fellow becomes complete.\n",
-                        chain->request->partition, chain->request->topic);
 
                     if(notInitial){
                         requestGroupFromMasterIfUnknown(admin, nameSpace,
@@ -1290,7 +1363,6 @@ d_sampleChainListenerAction(
                                  message->senderAddress.localId,
                                  message->senderAddress.lifecycleId);
 
-
     if(chain){
         dummy = d_fellowNew(sender, D_STATE_COMPLETE);
         fellow = d_tableFind(chain->fellows, dummy);
@@ -1325,7 +1397,7 @@ d_sampleChainListenerAction(
                 "Unrecoverable error: service memory threshold reached; terminating.");
             OS_REPORT(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                 "Unrecoverable error: service memory threshold reached; terminating.");
-            d_durabilityTerminate(durability);
+            d_durabilityTerminate(durability, TRUE);
         } else {
             switch(sampleChain->msgBody._d){
                 case BEAD:
@@ -1333,17 +1405,23 @@ d_sampleChainListenerAction(
                                             chain->serializer,
                                             (sd_serializedData)(sampleChain->msgBody._u.bead.value)));
 
-                    /* Do not receive alignment data that belongs to yourself.
-                     * To verify if the data belongs to youself the systemId of the writer
-                     * that was wrote the data is compared with the system Id.
+                    /* Do not insert implicit unregistrations and disposes about yourself that are
+                     * aligned by fellows. Typically, this situation occurs when the fellow's splice
+                     * daemon unregisters (and/or  disposes) writers on a node that is disconnected.
+                     * This reflects the state that the fellow THINKS the writers on my node are not
+                     * alive anymore. When connection is restored, the conclusion of the fellow that
+                     * the writer is not alive should NOT be forwarded to the node that got reconnected
+                     * because it is local knowledge of fellow that is not true.
                      */
                     myAddr = d_adminGetMyAddress(admin);
-                    if (vmessage->writerGID.systemId != myAddr->systemId) {
-                        /* the message is written by somebody else, create a bead */
+                    if ( ! ( v_messageStateTest(vmessage, L_IMPLICIT) &&
+                             (vmessage->writerGID.systemId == myAddr->systemId) ) ) {
+                        /* the message is not implicit or is not supposedly written by
+                         * myself so can be inserted safely
+                         */
                         bead = d_chainBeadNew(sender, vmessage, chain);
                         inserted = d_tableInsert(chain->beads, bead);
-                        /*
-                         * Duplicates are not inserted
+                        /* Duplicates are not inserted
                          * A message is considered a duplicate if the writer GID and the
                          * source timestamp are equal to the ones in the other message.
                          */
@@ -1356,7 +1434,11 @@ d_sampleChainListenerAction(
                             chain->receivedSize += sd_serializedDataGetTotalSize((sd_serializedData)(sampleChain->msgBody._u.bead.value));
                         }
                     } else {
-                        /* the message orginated from myself, no need to create a bead */
+                        /* The message was an implicit unregister or dispose message with 
+                         * a writerGID from myself, so it is a local conclusion by the 
+                         * fellow about my presence. No need to add it to the bead, I know
+                         * best whether I am alive or not.
+                         */
                         chain->samplesExpect--;
                     }
                     d_networkAddressFree(myAddr);
@@ -1486,6 +1568,7 @@ d_sampleChainListenerCheckChainComplete(
     c_ulong chainCount;
     d_subscriber subscriber;
     d_nameSpacesRequestListener nsrListener;
+    v_writeResult writeResult;
 
     myNameSpace = NULL;
 
@@ -1605,29 +1688,149 @@ d_sampleChainListenerCheckChainComplete(
                         myNameSpace = d_adminGetNameSpace(admin, d_nameSpaceGetName(nameSpace));
                         newState = d_mergeActionGetNewState(mergeAction);
                         mergePolicy = d_nameSpaceGetMergePolicy(myNameSpace, newState->role);
+                        /* set the merge policy in the beadHelper */
+                        beadHelper.mergePolicy = mergePolicy; 
 
                         switch(mergePolicy){
                         case D_MERGE_DELETE:
-                            /*TODO: remove all historical data */
+                            /* apply the DELETE merge policy */
+                            d_printTimedEvent(
+                                    durability, D_LEVEL_INFO,
+                                    D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                    "Applying DELETE merge policy for group %s.%s\n",
+                                    chain->request->partition, chain->request->topic);
+                            /* Dispose all data before the requestTime of the 
+                             * the sampleRequest that lead to the retrieval of the
+                             * sampleChain.
+                             */
+                            writeResult = v_groupDisposeAll(vgroup, chain->request->requestTime, L_REPLACED);
+                            if ( writeResult == V_WRITE_SUCCESS ) {
+                                d_printTimedEvent(durability, D_LEVEL_FINE,
+                                                    D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                                    "Samples before timestamp %d.%9.9d disposed for group %s.%s\n",
+                                                    chain->request->requestTime.seconds,
+                                                    chain->request->requestTime.nanoseconds,
+                                                    chain->request->partition,
+                                                    chain->request->topic);
+                                /* Delete all historical data for the group with a writeTime up to and
+                                 * including timestamp.
+                                 */
+                                writeResult = v_groupDeleteHistoricalData(vgroup, chain->request->requestTime);
+                                if ( writeResult == V_WRITE_SUCCESS ) {
+                                    d_printTimedEvent(durability, D_LEVEL_FINE,
+                                                        D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                                        "Historical data before timestamp %d.%9.9d deleted for group %s.%s\n",
+                                                        chain->request->requestTime.seconds,
+                                                        chain->request->requestTime.nanoseconds,
+                                                        chain->request->partition,
+                                                        chain->request->topic);
+                                } else {
+                                    OS_REPORT_4(OS_ERROR,
+                                                "d_sampleChainListenerCheckChainComplete",0,
+                                                "Failed to delete historical data before timestamp %d.%9.9d for group %s.%s",
+                                                chain->request->requestTime.seconds,
+                                                chain->request->requestTime.nanoseconds,
+                                                chain->request->partition,
+                                                chain->request->topic);
+                                }
+                            } else {
+                                OS_REPORT_2(OS_ERROR,
+                                            "d_sampleChainListenerCheckChainComplete",0,
+                                            "Failed to dispose all instances for group %s.%s",
+                                            chain->request->partition, chain->request->topic);
+                            }
                             break;
                         case D_MERGE_REPLACE:
-                            /*TODO: remove all historical data */
+                            /* Apply the REPLACE merge policy */
+                            d_printTimedEvent(
+                                    durability, D_LEVEL_INFO,
+                                    D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                    "Applying REPLACE merge policy for group %s.%s\n",
+                                    chain->request->partition, chain->request->topic);
+                            /* Dispose all data before the requestTime of the 
+                             * the sampleRequest that lead to the retrieval of the
+                             * sampleChain.
+                             */
+                            writeResult = v_groupDisposeAll(vgroup, chain->request->requestTime, L_REPLACED);
+                            if ( writeResult == V_WRITE_SUCCESS ) {
+                                d_printTimedEvent(durability, D_LEVEL_FINE,
+                                                    D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                                    "Samples before timestamp %d.%9.9d disposed for group %s.%s\n",
+                                                    chain->request->requestTime.seconds,
+                                                    chain->request->requestTime.nanoseconds,
+                                                    chain->request->partition,
+                                                    chain->request->topic);
+                                /* Mark all reader instances with the L_REPLACED flag to indicate
+                                 * that the REPLACE merge policy is about to inject historical samples.
+                                 */
+                                v_groupMarkReaderInstanceStates(vgroup, L_REPLACED);
+                                /* Delete all historical data for the group with a writeTime up to and
+                                 * including timestamp.
+                                 */
+                                writeResult = v_groupDeleteHistoricalData(vgroup, chain->request->requestTime);
+                                if ( writeResult == V_WRITE_SUCCESS ) {
+                                    d_printTimedEvent(durability, D_LEVEL_FINE,
+                                                        D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                                        "Historical data before timestamp %d.%9.9d deleted for group %s.%s\n",
+                                                        chain->request->requestTime.seconds,
+                                                        chain->request->requestTime.nanoseconds,
+                                                        chain->request->partition,
+                                                        chain->request->topic);
+                                    /* Per bead, remove the dispose message that was generated by the
+                                     * v_groupDisposeAll() from the reader instance, update the reader
+                                     * state, and inject historical data.
+                                     */
+                                     d_tableWalk(chain->beads, d_chainBeadInject, &beadHelper);
+                                } else {
+                                    OS_REPORT_4(OS_ERROR,
+                                                "d_sampleChainListenerCheckChainComplete",0,
+                                                "Failed to delete historical data before timestamp %d.%9.9d for group %s.%s",
+                                                chain->request->requestTime.seconds,
+                                                chain->request->requestTime.nanoseconds,
+                                                chain->request->partition,
+                                                chain->request->topic);
+                                }
+                                /* Reset the marker. */
+                                v_groupUnmarkReaderInstanceStates(vgroup, L_REPLACED);
+                            } else {
+                                OS_REPORT_2(OS_ERROR,
+                                            "d_sampleChainListenerCheckChainComplete",0,
+                                            "Failed to dispose all instances for group %s.%s",
+                                            chain->request->partition, chain->request->topic);
+                            }
                             break;
                         case D_MERGE_MERGE:
-                            /*Do nothing.*/
+                            /* Apply the MERGE merge policy */
+                            d_printTimedEvent(
+                                    durability, D_LEVEL_INFO,
+                                    D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                    "Applying MERGE merge policy for group %s.%s\n",
+                                    chain->request->partition, chain->request->topic);
+                             /* inject the beads */
+                            d_tableWalk(chain->beads, d_chainBeadInject, &beadHelper);
                             break;
                         case D_MERGE_IGNORE:
                             /*I shouldn't get here!*/
                             assert(FALSE);
+                            /* Apply the IGNORE merge policy */
+                            d_printTimedEvent(
+                                    durability, D_LEVEL_INFO,
+                                    D_THREAD_SAMPLE_CHAIN_LISTENER,
+                                    "Applying IGNORE merge policy for group %s.%s\n",
+                                    chain->request->partition, chain->request->topic);
                             break;
                         default:
                             /* A new merge policy? How exciting...*/
                             assert(FALSE);
                             break;
                         }
+                    } else {
+                        /* The chain is not part of a mergeAction, but it can be
+                         * an initial merge action. Simply inject the beads
+                         */
+                        beadHelper.mergePolicy = D_MERGE_IGNORE;
+                        d_tableWalk(chain->beads, d_chainBeadInject, &beadHelper);
                     }
-
-                    d_tableWalk(chain->beads, d_chainBeadInject, &beadHelper);
 
                     /** Messages have been rejected. A resend must be scheduled.
                      */
@@ -2226,9 +2429,10 @@ d_chainBeadCompare(
         if(bead1->message == bead2->message){
             result = 0;
         } else if(bead1->message && bead2->message){
-            eq = v_gidCompare(bead1->message->writerGID,bead2->message->writerGID);
+            eq = v_timeCompare(bead1->message->writeTime, bead2->message->writeTime);
+
             if (eq == C_EQ) {
-                eq = v_timeCompare(bead1->message->writeTime, bead2->message->writeTime);
+                eq = v_gidCompare(bead1->message->writerGID,bead2->message->writerGID);
 
                 if(eq == C_GT){
                     result = 1;
@@ -2324,7 +2528,15 @@ d_chainBeadInject(
     action = d_resendAction(helper->action);
     group = d_groupGetKernelGroup(action->group);
 
-    instance = v_groupLookupInstance(group, bead->keyValues);
+    /* When the REPLACE policy is applied, mark the message in
+     * the bead with the L_REPLACED flag.
+     */
+    if (helper->mergePolicy == D_MERGE_REPLACE) {
+        v_stateSet(v_nodeState(bead->message), L_REPLACED);
+    }
+
+    instance = v_groupLookupInstanceAndRegistration(
+                   group, bead->keyValues, bead->message->writerGID, v_gidCompare, &registration);
 
     /* We need to determine whether the instance still has a registration
      * for the DataWriter that wrote bead->message, because the instance
@@ -2333,17 +2545,9 @@ d_chainBeadInject(
      * handle cannot be used as an implicit registration is needed to ensure the
      * instance pipeline is reconstructed for existing data-readers.
      */
-
-    if(instance){
-        registration = v_groupInstanceGetRegistration(
-                instance, bead->message->writerGID, v_gidCompare);
-
-        if (registration) {
-            c_free(registration);
-            doRegister = FALSE;
-        } else {
-            doRegister = TRUE;
-        }
+    if(instance && registration){
+        c_free(registration);
+        doRegister = FALSE;
     } else {
         doRegister = TRUE;
     }

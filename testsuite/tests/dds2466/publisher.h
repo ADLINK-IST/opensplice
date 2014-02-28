@@ -139,10 +139,10 @@ class DDS2466Publisher: public virtual OSPLTestLib::CPPTestProcess
                 return -1;
             }
 
-            DDS::DataWriterQos dw_qos = DATAWRITER_QOS_DEFAULT; 
+            DDS::DataWriterQos dw_qos = DATAWRITER_QOS_DEFAULT;
             dw_qos.durability.kind = ::DDS::PERSISTENT_DURABILITY_QOS;
             dw_qos.destination_order.kind = ::DDS::BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
-            dw_qos.writer_data_lifecycle.autodispose_unregistered_instances = FALSE;
+            dw_qos.writer_data_lifecycle.autodispose_unregistered_instances = false;
 
             ::DDS::DataWriter_var generic_writer =
                 publisher->create_datawriter(

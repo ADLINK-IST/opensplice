@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef __OS__DEBUG_H__
@@ -30,5 +30,11 @@
 
 void os_debugModeInit();
 void os_debugModeExit();
+
+/* These declarations have no earthly business here but I point blank refuse
+ * to add *another* __local__ include file to the abstraction layer and this file
+ * is the only 'common' include. */
+void os_timeModuleInit(void);
+void os_timeModuleExit(void);
 
 #endif /* __OS__DEBUG_H__ */

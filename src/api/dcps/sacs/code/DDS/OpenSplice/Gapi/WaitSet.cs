@@ -28,7 +28,7 @@ namespace DDS.OpenSplice.Gapi
          *     WaitSet__alloc (
          *         void);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_waitSet__alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_waitSet__alloc")]
         public static extern IntPtr alloc();
 
         /*     ReturnCode_t
@@ -36,7 +36,7 @@ namespace DDS.OpenSplice.Gapi
          *         inout ConditionSeq active_conditions,
          *         in Duration_t timeout);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_waitSet_wait")]
+        [DllImport("ddskernel", EntryPoint = "gapi_waitSet_wait")]
         public static extern ReturnCode wait(
             IntPtr _this,
             IntPtr active_conditions,
@@ -46,7 +46,7 @@ namespace DDS.OpenSplice.Gapi
          *     attach_condition(
          *         in Condition cond);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_waitSet_attach_condition")]
+        [DllImport("ddskernel", EntryPoint = "gapi_waitSet_attach_condition")]
         public static extern ReturnCode attach_condition(
             IntPtr _this,
             IntPtr cond);
@@ -55,7 +55,7 @@ namespace DDS.OpenSplice.Gapi
          *     detach_condition(
          *         in Condition cond);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_waitSet_detach_condition")]
+        [DllImport("ddskernel", EntryPoint = "gapi_waitSet_detach_condition")]
         public static extern ReturnCode detach_condition(
             IntPtr _this,
             IntPtr cond);
@@ -64,7 +64,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_conditions(
          *         inout ConditionSeq attached_conditions);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_waitSet_get_conditions")]
+        [DllImport("ddskernel", EntryPoint = "gapi_waitSet_get_conditions")]
         public static extern ReturnCode get_conditions(
             IntPtr _this,
             IntPtr attached_conditions);

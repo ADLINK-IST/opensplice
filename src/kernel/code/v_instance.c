@@ -28,7 +28,7 @@ v_instanceInit(
 
     instance->next = instance;
     instance->prev = instance;
-    instance->lastDeadlineResetTime = C_TIME_ZERO;
+    instance->lastDeadlineResetTime = C_TIME_MIN_INFINITE;
 }
 
 void
@@ -94,11 +94,12 @@ v_instanceAlone(
 
 void
 v_instanceUpdate(
-    v_instance instance)
+    v_instance instance,
+    c_time timestamp)
 {
     assert(C_TYPECHECK(instance, v_instance));
 
-    instance->lastDeadlineResetTime = v_timeGet();
+    instance->lastDeadlineResetTime = timestamp;
 }
 
 v_writeResult

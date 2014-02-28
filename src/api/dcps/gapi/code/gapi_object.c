@@ -346,8 +346,8 @@ gapi_handleFree (
     gapi_handle handle = (gapi_handle) o;
     gapi_deleteEntityAction action = NULL;
     gapi_boolean result = TRUE;
-    void *userData;
-    void *actionData;
+    void *userData = NULL;
+    void *actionData = NULL;
 
     UT_TRACE("gapi_handleFree(%x) %d\n",(unsigned int)handle, handle->kind);
     if (gapi_handleClaim(handle) == GAPI_RETCODE_OK) {
@@ -367,7 +367,6 @@ gapi_handleFree (
                 (handle->registry != NULL)) {
                 _ObjectRegistryDeregister(handle->registry, handle);
                 handle->registry = NULL;
-                handle->object = NULL;
             }
             /* Only release _Object when deallocator returned successfully. */
             if (result)

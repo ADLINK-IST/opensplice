@@ -21,47 +21,51 @@
 
 #include <dds/core/Reference.hpp>
 
-namespace dds {
-  namespace core {
-    template <typename T>
-    class WeakReference;
-  }
+namespace dds
+{
+namespace core
+{
+template <typename T>
+class WeakReference;
+}
 }
 /**
- * The <code>WeakReference</code> class allow to maintain a
- * weak reference to a DDS reference type. Meaning that the existence
+ * The WeakReference class enables you to maintain a weak
+ * reference to a DDS reference type. The existence
  * of a weak link will not prevent the garbage collection of the
  * reference type.
  */
 template <typename T>
-class dds::core::WeakReference {
+class dds::core::WeakReference
+{
 public:
-  typedef T ReferenceType;
+    typedef T ReferenceType;
 
 public:
-  /**
-   * Creates a weak reference for the reference type passed as argument
-   *
-   */
-  WeakReference(const T& t);
+    WeakReference();
+    /**
+     * Creates a weak reference for the reference type passed as argument.
+     *
+     */
+    WeakReference(const T& t);
 
-  ~WeakReference();
+    ~WeakReference();
 
-  /**
-   * Checks whether the underlying reference has been collected.
-   *
-   * @returns true if the underlying reference has expired, false otherwise
-   */
-  bool expired();
+    /**
+     * Checks whether the underlying reference has been collected.
+     *
+     * @returns true if the underlying reference has expired, false otherwise
+     */
+    bool expired();
 
-  /**
-   * Gives access to the underlying reference. If the reference has expired the
-   * returned object will be referencing to <code>null</code>
-   */
-  T lock();
+    /**
+     * Gives access to the underlying reference. If the reference has expired the
+     * returned object will be referencing 'null'.
+     */
+    T lock();
 
 private:
-  typename T::DELEGATE_WEAK_REF_T impl_;
+    typename T::DELEGATE_WEAK_REF_T impl_;
 };
 
 #endif /* OMG_DDS_CORE_WEAK_REFERENCE_HPP_ */

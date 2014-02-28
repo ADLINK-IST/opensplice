@@ -20,20 +20,65 @@
 
 #include <dds/core/Value.hpp>
 
-namespace dds { namespace sub {
-  template <typename DELEGATE>
-  class TGenerationCount;
-} }
-
+namespace dds
+{
+namespace sub
+{
 template <typename DELEGATE>
-class dds::sub::TGenerationCount : public dds::core::Value<DELEGATE> {
+class TGenerationCount;
+}
+}
+
+/**
+ * For each instance the middleware internally maintains two counts: the
+ * disposed_generation_count and no_writers_generation_count, relative to
+ * each DataReader:
+ *
+ * * The disposed_generation_count and no_writers_generation_count are
+ *   initialized to zero when the DataReader first detects the presence of
+ *   a never-seen-before instance.
+ *
+ * * The disposed_generation_count is incremented each time the instance_state
+ *   of the corresponding instance changes from not_alive_disposed to alive.
+ *
+ * * The no_writers_generation_count is incremented each time the instance_state
+ *   of the corresponding instance changes from not_alive_no_writers to alive.
+ *
+ * The disposed_generation_count and no_writers_generation_count available in
+ * the SampleInfo capture a snapshot of the corresponding counters at the time
+ * the sample was received.
+ */
+template <typename DELEGATE>
+class dds::sub::TGenerationCount : public dds::core::Value<DELEGATE>
+{
 public:
-  TGenerationCount();
-  TGenerationCount(int32_t dgc, int32_t nwgc);
+    /**
+     * Creates a new GenerationCount instance.
+     */
+    TGenerationCount();
+
+    /**
+     * Creates a new GenerationCount instance.
+     *
+     * @param disposed_generation_count the disposed_generation_count
+     * @param no_writers_generation_count the no_writers_generation_count
+     */
+    TGenerationCount(int32_t disposed_generation_count, int32_t no_writers_generation_count);
 
 public:
-  int32_t      disposed() const;
-  inline int32_t no_writers() const;
+    /**
+     * Gets the disposed_generation_count.
+     *
+     * @return the disposed_generation_count
+     */
+    int32_t disposed() const;
+
+    /**
+     * Gets the no_writers_generation_count.
+     *
+     * @return the no_writers_generation_count
+     */
+    inline int32_t no_writers() const;
 
 };
 

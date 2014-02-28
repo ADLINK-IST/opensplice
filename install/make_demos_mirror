@@ -1,0 +1,18 @@
+#!/bin/bash
+#
+# Make DEMOS mirror
+#
+. ${OSPL_HOME}/install/make_functions
+
+echo "* Build SPLICE Demos"
+
+set_demos_envs "$@"
+
+remove_demos_mirror
+create_demos_mirror
+
+echo "*   Prepare DEMOS for target ${DEMOS_subdir}"
+install_demos_target
+echo "*   DEMOS prepared for target ${DEMOS_subdir} Ready"
+
+echo "* SPLICE DEMOS ready"

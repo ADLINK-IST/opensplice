@@ -2,7 +2,7 @@
 // $Id:$
 
 project : ospl_ddsconfparser, ospl_ddskernel, ospl_base {
-  lit_libs += ddsuser
+//  lit_libs += ddsuser
 }
 
 feature(src_co) {

@@ -60,7 +60,7 @@ os_osInit(void)
         os_processModuleInit();
         os_sharedMemoryInit();
         os_threadModuleInit();
-
+	os_socketModuleInit();
     } /* Else initialization is already done. */
     return;
 }
@@ -76,6 +76,7 @@ os_osExit(
     initCount = pa_decrement(&_ospl_osInitCount);
 
     if (initCount == 0) {
+    	os_socketModuleExit();
         os_threadModuleExit();
         os_sharedMemoryExit();
         os_processModuleExit();

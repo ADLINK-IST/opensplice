@@ -22,10 +22,10 @@ namespace dds
 {
 namespace sub
 {
-    SubscriberListener::~SubscriberListener() { }
+SubscriberListener::~SubscriberListener() { }
 
-    NoOpSubscriberListener::~NoOpSubscriberListener() { }
+NoOpSubscriberListener::~NoOpSubscriberListener() { }
 
-    void NoOpSubscriberListener::on_data_on_readers(dds::sub::Subscriber&) { }
+void NoOpSubscriberListener::on_data_on_readers(dds::sub::Subscriber&) { }
 }
 }

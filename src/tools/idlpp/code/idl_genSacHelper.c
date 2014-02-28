@@ -378,7 +378,7 @@ c_char *
 idl_sacTypeFromTypeSpec (
     const idl_typeSpec typeSpec)
 {
-    c_char *typeName;
+    c_char *typeName = NULL;
 
     /* QAC EXPECT 3416; No side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {

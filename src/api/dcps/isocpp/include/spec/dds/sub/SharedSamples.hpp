@@ -24,58 +24,85 @@
 #include <dds/sub/LoanedSamples.hpp>
 #include <dds/sub/detail/SharedSamples.hpp>
 
-namespace dds {
-  namespace sub {
-    template <typename T,
-    template <typename Q> class DELEGATE = detail::SharedSamples>
-    class SharedSamples;
-  }
+namespace dds
+{
+namespace sub
+{
+template <typename T,
+          template <typename Q> class DELEGATE = detail::SharedSamples>
+class SharedSamples;
+}
 }
 
 /**
- * The class <code>SharedSamples</code> is used as a container safe
- * and sharable version of the <code>LoanedSamples</code> class.
+ * The class SharedSamples is used as a container safe
+ * and sharable version of the LoanedSamples class.
  *
  *
  */
 template <typename T,
-template <typename Q> class DELEGATE>
+          template <typename Q> class DELEGATE>
 class dds::sub::SharedSamples : public dds::core::Reference< DELEGATE<T> >
 {
 public:
-  typedef T                     DataType;
-  typedef typename DELEGATE<T>::iterator              iterator;
-  typedef typename DELEGATE<T>::const_iterator        const_iterator;
+    typedef T                     DataType;
+    typedef typename DELEGATE<T>::iterator              iterator;
+    typedef typename DELEGATE<T>::const_iterator        const_iterator;
 
-  typedef typename dds::core::smart_ptr_traits< DELEGATE<T> >::ref_type DELEGATE_REF_T;
-
-public:
-  /**
-   * Constructs an instance of <code>SharedSamples</code> and
-   * removes the ownership of the loan from the <code>LoanedSamples</code>.
-   * As a result the destruction of the <code>LoanedSamples</code> object
-   * or the explicit invocation of its method return_loan will have no effect
-   * on loaned data. Loaned data will be returned automatically once
-   * the delegate of this reference type will have a zero reference count.
-   *
-   * @param ls the loaned samples.
-   *
-   */
-  SharedSamples(dds::sub::LoanedSamples<T> ls);
-
-  ~SharedSamples();
-
+    typedef typename dds::core::smart_ptr_traits< DELEGATE<T> >::ref_type DELEGATE_REF_T;
 
 public:
-  const_iterator begin() const;
+    /**
+     * Constructs an instance of SharedSamples and
+     * removes the ownership of the loan from the LoanedSamples.
+     * As a result the destruction of the LoanedSamples object
+     * will have no effect on loaned data. Loaned data will be returned
+     * automatically once the delegate of this reference type will have a
+     * zero reference count.
+     *
+     * @param ls the loaned samples
+     *
+     */
+    SharedSamples(dds::sub::LoanedSamples<T> ls);
 
-  const_iterator  end() const;
+    ~SharedSamples();
 
-  const DELEGATE_REF_T& delegate() const;
 
-  DELEGATE_REF_T& delegate();
+public:
+    /**
+     * Gets an iterator pointing to the beginning of the samples.
+     *
+     * @return an iterator pointing to the beginning of the samples
+     */
+    const_iterator begin() const;
 
-  uint32_t length() const;
+    /**
+     * Gets an iterator pointing to the beginning of the samples.
+     *
+     * @return an iterator pointing to the beginning of the samples
+     */
+    const_iterator  end() const;
+
+    /**
+     * Gets the delegate.
+     *
+     * @return the delegate
+     */
+    const DELEGATE_REF_T& delegate() const;
+
+    /**
+     * Gets the delegate.
+     *
+     * @return the delegate
+     */
+    DELEGATE_REF_T& delegate();
+
+    /**
+     * Returns the number of samples.
+     *
+     * @return the number of samples
+     */
+    uint32_t length() const;
 
 };
 

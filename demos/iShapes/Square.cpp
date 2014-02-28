@@ -4,6 +4,8 @@
 #include "Square.hpp"
 #include <iostream>
 
+namespace demo { namespace ishapes {
+
 Square::Square(const QRect& bounds,
                SharedShapeDynamics dynamics,
                const QPen& pen,
@@ -69,3 +71,4 @@ Square::paint(QPainter& painter)
 Square::~Square()
 {
 }
+}}

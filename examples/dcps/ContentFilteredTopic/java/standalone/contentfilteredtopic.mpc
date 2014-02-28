@@ -2,7 +2,7 @@
 project (saj*types) : saj_typesupport, java_only, java_example, java_ospl_dcpssaj {
 
     TypeSupport_Files {
-        ../../idl/ContentFilteredTopicData.idl >> ContentFilteredTopicData/*.java
+        ../../idl/ContentFilteredTopicData.idl >> StockMarket/*.java
     }
 
 }

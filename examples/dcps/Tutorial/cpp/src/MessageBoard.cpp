@@ -45,11 +45,34 @@ using namespace Chat;
 #define TERMINATION_MESSAGE -1
 
 
-
+#ifdef _WRS_KERNEL /* Entry points for VxWorks kernel build */
+#define USE_NANOSLEEP
+int messageboard_main (int argc, char ** argv);
+extern "C" {
+   int messageboard (char * args);
+}
+int messageboard (char * args)
+{
+   int argc=1;
+   char *argv[256];
+   char *str1;
+   argv[0] = (char*) strdup ("messageboard");
+   str1 = (char*) strtok(args, " ");
+   while (str1)
+   {
+      argv[argc] = (char*) strdup (str1);
+      argc++;
+      str1 = strtok(NULL, " ");
+   }
+   return messageboard_main (argc, argv);
+}
+int messageboard_main (int argc, char ** argv)
+#else
 int
 OSPL_MAIN (
     int argc,
     char *argv[])
+#endif
 {
     /* Generic DDS entities */
     DomainParticipantFactory_var    dpf;

@@ -22,22 +22,29 @@
 #include <foo/bar/topic/BuiltinTopicImpl.hpp>
 #include <dds/topic/TBuiltinTopic.hpp>
 
-namespace dds { namespace topic { namespace detail {
+namespace dds
+{
+namespace topic
+{
+namespace detail
+{
 
-    typedef dds::topic::TParticipantBuiltinTopicData<foo::bar::topic::ParticipantBuiltinTopicDataImpl>
-    ParticipantBuiltinTopicData;
+typedef dds::topic::TParticipantBuiltinTopicData<foo::bar::topic::ParticipantBuiltinTopicDataImpl>
+ParticipantBuiltinTopicData;
 
 
-    typedef dds::topic::TTopicBuiltinTopicData<foo::bar::topic::TopicBuiltinTopicDataImpl>
-    TopicBuiltinTopicData;
+typedef dds::topic::TTopicBuiltinTopicData<foo::bar::topic::TopicBuiltinTopicDataImpl>
+TopicBuiltinTopicData;
 
-    typedef dds::topic::TPublicationBuiltinTopicData<foo::bar::topic::PublicationBuiltinTopicDataImpl>
-    PublicationBuiltinTopicData;
+typedef dds::topic::TPublicationBuiltinTopicData<foo::bar::topic::PublicationBuiltinTopicDataImpl>
+PublicationBuiltinTopicData;
 
-    typedef dds::topic::TSubscriptionBuiltinTopicData<foo::bar::topic::SubscriptionBuiltinTopicDataImpl>
-    SubscriptionBuiltinTopicData;
+typedef dds::topic::TSubscriptionBuiltinTopicData<foo::bar::topic::SubscriptionBuiltinTopicDataImpl>
+SubscriptionBuiltinTopicData;
 
-} } }
+}
+}
+}
 
 
 #endif /* OMG_DDS_TOPIC_DETAIL_BUILTIN_TOPIC_HPP_ */

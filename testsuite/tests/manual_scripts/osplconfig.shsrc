@@ -89,6 +89,10 @@ function create_ospl_config ()
     else
        patch=gpatch
     fi
+ 
+    # n=$RANDOM
+
+    # let domainID=$(( n %= 200 ))
 
     if [ "$transport" = 'broadcast' -o "$transport" = 'multicast' ]; then
         local besteffort_port="$my_port" reliable_port discovery_port
@@ -149,8 +153,8 @@ _EOF
     <Domain>
 -      <Name>ospl_sp_nativeRT</Name>
 -      <Id>0</Id>
-+      <Name>${ospl_distver}_ospl_sp_nativeRT</Name>
-+      <Id>219</Id>
++      <Name>${ospl_distver}_ospl_sp_nativeRT_${transport}_${domain_suffix}</Name>
++      <Id>129</Id>
        <SingleProcess>true</SingleProcess>
        <Service name="networking">
           <Command>networking</Command>
@@ -187,10 +191,10 @@ _EOF
     <Domain>
 -      <Name>ospl_shmem_nativeRT</Name>
 -      <Id>0</Id>
-+      <Name>${ospl_distver}_ospl_shmem_nativeRT_${transport}</Name>
-+      <Id>219</Id>
++      <Name>${ospl_distver}_ospl_shmem_nativeRT_${transport}_${domain_suffix}</Name>
++      <Id>129</Id>
        <Database>
-          <Size>7340032</Size>
+          <Size>10485760</Size>
        </Database>
        <Service name="networking">
 @@ -17,18 +17,18 @@
@@ -247,7 +251,7 @@ _EOF
 -      <Name>OpenSplice${ospl_distver}_with_DDSI2</Name>
 +      <Name>OpenSplice${ospl_distver}_with_DDSI2_${USER}_${domain_suffix}</Name>
        <Database>
-          <Size>7340032</Size>
+          <Size>10485760</Size>
        </Database>
 @@ -13,7 +13,7 @@
     </Domain>
@@ -269,8 +273,8 @@ _EOF
     <Domain>
 -      <Name>ospl_sp_ddsi</Name>
 -      <Id>0</Id>
-+      <Name>${ospl_distver}_ospl_sp_ddsi_statistics</Name>
-+      <Id>199</Id>
++      <Name>${ospl_distver}_ospl_sp_ddsi_${domain_suffix}</Name>
++      <Id>145</Id>
        <SingleProcess>true</SingleProcess>
        <Service name="ddsi2">
           <Command>ddsi2</Command>
@@ -293,8 +297,8 @@ _EOF
     <Domain>
 -      <Name>ospl_shmem_ddsi</Name>
 -      <Id>0</Id>
-+      <Name>${ospl_distver}_ospl_shmem_ddsi</Name>
-+      <Id>199</Id>
++      <Name>${ospl_distver}_ospl_shmem_ddsi_${domain_suffix}</Name>
++      <Id>145</Id>
        <Database>
           <Size>10485760</Size>
        </Database>

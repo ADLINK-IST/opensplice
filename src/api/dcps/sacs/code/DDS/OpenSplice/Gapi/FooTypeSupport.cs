@@ -29,13 +29,13 @@ namespace DDS.OpenSplice.Gapi
          *     in DomainParticipant domain,
          *     in string type_name);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooTypeSupport_register_type")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooTypeSupport_register_type")]
         public static extern ReturnCode register_type(
             IntPtr _this,
             IntPtr domain,
             string name);
 
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooTypeSupport__alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooTypeSupport__alloc")]
         public static extern IntPtr alloc(
             string type_name,
             string type_keys,

@@ -30,16 +30,27 @@
 #include <org/opensplice/core/config.hpp>
 #include <org/opensplice/topic/TopicTraits.hpp>
 
-namespace dds { namespace topic {
-    template <typename T>
-    class TopicListener;
-} }
+namespace dds
+{
+namespace topic
+{
+template <typename T>
+class TopicListener;
+}
+}
 
-namespace dds { namespace topic { namespace detail {
-    template <typename T>
-    class Topic;
-    // Vendors should provide implementation.
+namespace dds
+{
+namespace topic
+{
+namespace detail
+{
+template <typename T>
+class Topic;
+// Vendors should provide implementation.
 
-} } }
+}
+}
+}
 
 #endif /* OMG_DDS_TOPIC_DETAIL_TOPIC_HPP_ */

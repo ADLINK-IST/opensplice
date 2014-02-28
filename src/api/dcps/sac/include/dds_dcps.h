@@ -921,8 +921,6 @@ DDS_WaitSet_wait (
     DDS_ConditionSeq *active_conditions,
     const DDS_Duration_t *timeout);
 
-
-
 /*     ReturnCode_t
  *     attach_condition(
  *         in Condition cond);
@@ -1373,6 +1371,10 @@ typedef struct {
 OS_API DDS_sequence_octet *DDS_sequence_octet__alloc (void);
 OS_API DDS_octet *DDS_sequence_octet_allocbuf (DDS_unsigned_long len);
 #endif /* _DDS_sequence_octet_defined */
+
+typedef DDS_sequence_octet DDS_octSeq;
+OS_API DDS_octSeq *DDS_octSeq__alloc (void);
+OS_API DDS_octet *DDS_octSeq_allocbuf (DDS_unsigned_long len);
 
 typedef struct DDS_UserDataQosPolicy_s DDS_UserDataQosPolicy;
 struct DDS_UserDataQosPolicy_s {
@@ -1986,6 +1988,60 @@ struct DDS_SubscriberQos_s {
     DDS_ShareQosPolicy share;
 };
 OS_API DDS_SubscriberQos *DDS_SubscriberQos__alloc (void);
+
+typedef struct DDS_NamedDomainParticipantQos_s DDS_NamedDomainParticipantQos;
+struct DDS_NamedDomainParticipantQos_s {
+    DDS_string name;
+    DDS_DomainParticipantQos participant_qos;
+};
+#if 0
+OS_API DDS_NamedDomainParticipantQos *DDS_NamedDomainParticipantQos__alloc (void);
+#endif
+
+typedef struct DDS_NamedPublisherQos_s DDS_NamedPublisherQos;
+struct DDS_NamedPublisherQos_s {
+    DDS_string name;
+    DDS_PublisherQos publisher_qos;
+};
+#if 0
+OS_API DDS_NamedPublisherQos *DDS_NamedPublisherQos__alloc (void);
+#endif
+
+typedef struct DDS_NamedSubscriberQos_s DDS_NamedSubscriberQos;
+struct DDS_NamedSubscriberQos_s {
+    DDS_string name;
+    DDS_SubscriberQos subscriber_qos;
+};
+#if 0
+OS_API DDS_NamedSubscriberQos *DDS_NamedSubscriberQos__alloc (void);
+#endif
+
+typedef struct DDS_NamedTopicQos_s DDS_NamedTopicQos;
+struct DDS_NamedTopicQos_s {
+    DDS_string name;
+    DDS_TopicQos topic_qos;
+};
+#if 0
+OS_API DDS_NamedTopicQos *DDS_NamedTopicQos__alloc (void);
+#endif
+
+typedef struct DDS_NamedDataWriterQos_s DDS_NamedDataWriterQos;
+struct DDS_NamedDataWriterQos_s {
+    DDS_string name;
+    DDS_DataWriterQos datawriter_qos;
+};
+#if 0
+OS_API DDS_NamedDataWriterQos *DDS_NamedDataWriterQos__alloc (void);
+#endif
+
+typedef struct DDS_NamedDataReaderQos_s DDS_NamedDataReaderQos;
+struct DDS_NamedDataReaderQos_s {
+    DDS_string name;
+    DDS_DataReaderQos datareader_qos;
+};
+#if 0
+OS_API DDS_NamedDataReaderQos *DDS_NamedDataReaderQos__alloc (void);
+#endif
 
 /*
  * struct ParticipantBuiltinTopicData {
@@ -3944,6 +4000,15 @@ OS_API DDS_ReturnCode_t
 DDS_DataReader_get_default_datareaderview_qos (
     DDS_DataReader _this,
     DDS_DataReaderViewQos *qos);
+
+/*     ReturnCode_t
+ *     set_notread_threshold(
+ *         in long threshold);
+ */
+OS_API DDS_ReturnCode_t
+DDS_DataReader_set_notread_threshold (
+    DDS_DataReader _this,
+    DDS_long threshold);
 
 /*
  * interface DataReaderView : Entity
@@ -6026,6 +6091,86 @@ DDS_ErrorInfo_get_message(
  */
 OS_API DDS_ErrorInfo
 DDS_ErrorInfo__alloc (void);
+
+
+/*
+ * interface QosProvider
+ */
+typedef DDS_Object DDS_QosProvider;
+
+/*     ReturnCode_t
+ *     get_participant_qos(
+ *         inout ParticipantQos _this,
+ *         in String id);
+ */
+OS_API DDS_ReturnCode_t
+DDS_QosProvider_get_participant_qos(
+    DDS_QosProvider _this,
+    DDS_DomainParticipantQos *qos,
+    const char *id);
+
+/*     ReturnCode_t
+ *     get_topic_qos(
+ *         inout TopicQos _this,
+ *         in String id);
+ */
+OS_API DDS_ReturnCode_t
+DDS_QosProvider_get_topic_qos(
+    DDS_QosProvider _this,
+    DDS_TopicQos *qos,
+    const char *id);
+
+/*     ReturnCode_t
+ *     get_subscriber_qos(
+ *         inout SubscriberQos _this,
+ *         in String id);
+ */
+OS_API DDS_ReturnCode_t
+DDS_QosProvider_get_subscriber_qos(
+     DDS_QosProvider _this,
+     DDS_SubscriberQos *qos,
+     const char *id);
+
+/*     ReturnCode_t
+ *     get_datareader_qos(
+ *         inout DataReaderQos _this,
+ *         in String id);
+ */
+OS_API DDS_ReturnCode_t
+DDS_QosProvider_get_datareader_qos(
+    DDS_QosProvider _this,
+    DDS_DataReaderQos *qos,
+    const char *id);
+
+/*     ReturnCode_t
+ *     get_publisher_qos(
+ *         inout PubliserQos _this,
+ *         in String id);
+ */
+OS_API DDS_ReturnCode_t
+DDS_QosProvider_get_publisher_qos(
+    DDS_QosProvider _this,
+    DDS_PublisherQos *qos,
+    const char *id);
+
+/*     ReturnCode_t
+ *     get_datawriter_qos(
+ *         inout DataWriterQos _this,
+ *         in String id);
+ */
+OS_API DDS_ReturnCode_t
+DDS_QosProvider_get_datawriter_qos(
+    DDS_QosProvider _this,
+    DDS_DataWriterQos *qos,
+    const char *id);
+
+/*     QosProvider
+ *     QosProvider__alloc (
+ *         void);
+ */
+OS_API DDS_QosProvider DDS_QosProvider__alloc (
+    const char *uri,
+    const char *profile);
 
 #undef OS_API
 

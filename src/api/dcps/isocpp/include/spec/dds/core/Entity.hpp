@@ -20,8 +20,12 @@
  */
 
 #include <dds/core/detail/Entity.hpp>
-namespace dds { namespace core {
-  typedef dds::core::detail::Entity Entity;
-} }
+namespace dds
+{
+namespace core
+{
+typedef dds::core::detail::Entity Entity;
+}
+}
 
 #endif /* OMG_DDS_CORE_ENTITY_HPP_ */

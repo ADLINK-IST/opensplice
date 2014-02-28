@@ -505,7 +505,7 @@ q_expr
 gapi_parseExpression (
     const char *queryString)
 {
-    q_expr e;
+    q_expr e = NULL;
 
     assert(queryString != NULL);
     

@@ -4,15 +4,16 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl_program.h"
 #include "idl_scope.h"
 #include "idl_genCxxTypedClassImpl.h"
 #include "idl_genCxxHelper.h"
+#include "idl_genLanguageHelper.h"
 #include "idl_tmplExp.h"
 #include "idl_keyDef.h"
 #include "idl_dll.h"
@@ -60,7 +61,7 @@ idl_fileOpen(
     /* Prepare file header template */
     snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ccorbaCxxClassBodyHeader", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
     /* QAC EXPECT 3416; No unexpected side effects here */
-    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) || 
+    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
         printf("No template found or protection violation (%s)\n", tmplFileName);
         return (idl_abort);
@@ -81,6 +82,13 @@ idl_fileOpen(
         idl_macroNew(IDL_DLL_TMPLMACRO_MACRO_NAME, idl_dllGetMacro()));
     idl_macroSetAdd(idlpp_macroSet,
                 idl_macroNew(IDL_DLL_TMPLMACRO_HEADER_NAME, idl_dllGetHeader()));
+    /** @internal
+     * @bug This is already 'wrong' for unions (and typedefs?) thereof
+     * in the 'old' mapping. They are classes. Would try to fix but typedefs
+     * queer the pitch. Compile union.idl with VS(2012?) to see warning */
+    /* Macro for either keyword class or struct */
+    idl_macroSetAdd(idlpp_macroSet, idl_macroNew("class_or_struct",
+                idl_getIsISOCpp() && idl_getIsISOCppTypes() ? "class" : "struct"));
 
     te = idl_tmplExpNew(idlpp_macroSet);
     idl_tmplExpProcessTmpl(te, idlpp_inStream, idl_fileCur());
@@ -90,7 +98,7 @@ idl_fileOpen(
     /* Prepare class definition template */
     snprintf(tmplFileName, (size_t)sizeof(tmplFileName), "%s%c%s%ccorbaCxxClassBody", tmplPath, OS_FILESEPCHAR, orbPath, OS_FILESEPCHAR);
     /* QAC EXPECT 3416; No unexpected side effects here */
-    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) || 
+    if ((os_stat(tmplFileName, &tmplStat) != os_resultSuccess) ||
         (os_access(tmplFileName, OS_ROK) != os_resultSuccess)) {
         printf("No template found or protection violation (%s)\n", tmplFileName);
         return (idl_abort);
@@ -101,7 +109,7 @@ idl_fileOpen(
     nRead = (unsigned int)read(tmplFile, idlpp_template, (size_t)tmplStat.stat_size);
     memset(&idlpp_template[nRead], 0, (size_t)((int)tmplStat.stat_size+1-nRead));
     close(tmplFile);
-    
+
     idlpp_indent_level = 0;
 
     return idl_explore;

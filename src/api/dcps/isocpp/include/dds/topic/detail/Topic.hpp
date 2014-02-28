@@ -77,14 +77,15 @@ public:
         t_ = dp->dp_->create_topic(name.c_str(), tn, tqos, 0,
                                    mask.to_ulong());
 
-        if (t_ == 0)
+        if(t_ == 0)
             throw dds::core::NullReferenceError(
-                        org::opensplice::core::exception_helper(
-                            OSPL_CONTEXT_LITERAL(
-                                "dds::core::NullReferenceError : Unable to create Topic! "
-                                "Nil return from ::create_topic")));
+                org::opensplice::core::exception_helper(
+                    OSPL_CONTEXT_LITERAL(
+                        "dds::core::NullReferenceError : Unable to create Topic! "
+                        "Nil return from ::create_topic")));
 
         topic_ = org::opensplice::core::DDS_TOPIC_REF(t_, org::opensplice::core::TopicDeleter(dp->dp_));
+        this->entity_ = DDS::Entity::_narrow(t_);
     }
 
     Topic(const dds::domain::DomainParticipant& dp,
@@ -95,7 +96,7 @@ public:
           qos_(),
           listener_(0),
           mask_(dds::core::status::StatusMask())
-        {
+    {
         char* tn = ts_.get_type_name();
         ts_.register_type(dp->dp_.get(), tn);
 
@@ -104,14 +105,24 @@ public:
         t_ = dp->dp_->create_topic(name.c_str(), tn, tqos, 0,
                                    mask_.to_ulong());
 
-        if (t_ == 0)
+        if(t_ == 0)
             throw dds::core::NullReferenceError(
-                        org::opensplice::core::exception_helper(
-                            OSPL_CONTEXT_LITERAL(
-                                "dds::core::NullReferenceError : Unable to create Topic! "
-                                "Nil return from ::create_topic")));
+                org::opensplice::core::exception_helper(
+                    OSPL_CONTEXT_LITERAL(
+                        "dds::core::NullReferenceError : Unable to create Topic! "
+                        "Nil return from ::create_topic")));
 
         topic_ = org::opensplice::core::DDS_TOPIC_REF(t_, org::opensplice::core::TopicDeleter(dp->dp_));
+        this->entity_ = DDS::Entity::_narrow(t_);
+    }
+
+    void close()
+    {
+        org::opensplice::core::TopicDeleter* d = OSPL_CXX11_STD_MODULE::get_deleter<org::opensplice::core::TopicDeleter>(topic_);
+        if(d)
+        {
+            d->close(topic_.get());
+        }
     }
 
     virtual ~Topic()
@@ -127,9 +138,9 @@ public:
         return qos_;
     }
 
-    void qos(const dds::topic::qos::TopicQos& the_qos)
+    void qos(const dds::topic::qos::TopicQos& qos)
     {
-        qos_ = the_qos;
+        qos_ = qos;
     }
 
     const ::dds::core::status::InconsistentTopicStatus& inconsistent_topic_status()

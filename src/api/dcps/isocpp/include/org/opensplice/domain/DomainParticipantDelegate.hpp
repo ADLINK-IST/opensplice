@@ -26,7 +26,6 @@
 #include <dds/core/status/State.hpp>
 #include <dds/topic/qos/TopicQos.hpp>
 
-
 // OpenSplice Includes
 #include <org/opensplice/core/config.hpp>
 #include <org/opensplice/domain/Domain.hpp>
@@ -94,22 +93,21 @@ public:
     static const dds::domain::qos::DomainParticipantQos init_default_participant_qos();
     static const ::dds::domain::qos::DomainParticipantQos default_participant_qos();
     static void default_participant_qos(const ::dds::domain::qos::DomainParticipantQos& qos);
-    void event_forwarder (dds::domain::DomainParticipantListener* listener,
-                          const dds::core::smart_ptr_traits<DDS::DomainParticipantListener>::ref_type& forwarder,
-                          const dds::core::status::StatusMask& event_mask);
-
+    void event_forwarder(dds::domain::DomainParticipantListener* listener,
+                         const dds::core::smart_ptr_traits<DDS::DomainParticipantListener>::ref_type& forwarder,
+                         const dds::core::status::StatusMask& event_mask);
 
 protected:
     static dds::domain::qos::DomainParticipantQos default_participant_qos_;
 
 private:
     /**
-    * Common initialisation routine for use by constructors.
+    *  @internal Common initialisation routine for use by constructors.
     * Creates the particiapnt and initialises cached default QoS
     * copies.
     */
     void common_init(::DDS::DomainId_t domainId,
-                     const ::DDS::DomainParticipantQos & qos,
+                     const ::DDS::DomainParticipantQos& qos,
                      ::DDS::DomainParticipantListener_ptr a_listener,
                      ::DDS::StatusMask mask);
 

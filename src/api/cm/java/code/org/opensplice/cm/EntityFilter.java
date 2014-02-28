@@ -79,7 +79,7 @@ public class EntityFilter {
         } else if(filter.equals(EntityFilter.PUBLISHER)){
             r = "PUBLISHER";
         } else if(filter.equals(EntityFilter.PARTICIPANT)){
-            r = "DOMAIN";
+            r = "PARTICIPANT";
         } else if(filter.equals(EntityFilter.SERVICE)){
             r = "SERVICE";
         } else if(filter.equals(EntityFilter.SERVICESTATE)){

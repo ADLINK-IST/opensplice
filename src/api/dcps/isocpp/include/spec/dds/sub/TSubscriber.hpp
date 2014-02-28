@@ -24,114 +24,157 @@
 #include <dds/domain/DomainParticipant.hpp>
 #include <dds/sub/qos/DataReaderQos.hpp>
 
-namespace dds { namespace sub {
-  template <typename DELEGATE>
-  class TSubscriber;
-
-  class SubscriberListener;
-} }
-
+namespace dds
+{
+namespace sub
+{
 template <typename DELEGATE>
-class dds::sub::TSubscriber : public dds::core::TEntity<DELEGATE> {
-public:
-  OMG_DDS_REF_TYPE(TSubscriber, dds::core::TEntity, DELEGATE)
+class TSubscriber;
 
-public:
-  typedef dds::sub::SubscriberListener                 Listener;
+class SubscriberListener;
+}
+}
 
+/**
+ * A Subscriber is the object responsible for the actual reception of the
+ * data resulting from its subscriptions.
+ *
+ * A Subscriber acts on the behalf of one or several DataReader objects
+ * that are related to it. When it receives data (from the other parts of
+ * the system), it builds the list of concerned DataReader objects, and then
+ * indicates to the application that data is available, through its listener
+ * or by enabling related conditions. The application can access the list of
+ * concerned DataReader objects through the operation get_datareaders and
+ * then access the data available through operations on the DataReader.
+ */
+template <typename DELEGATE>
+class dds::sub::TSubscriber : public dds::core::TEntity<DELEGATE>
+{
 public:
-  /**
-   * Create a <code>Subscriber</code> attached to the given domain participant.
-   * The subscriber QoS will be set to the default as provided by the domain
-   * participant.
-   *
-   * @param dp the domain participant that will own this subscriber.
-   * @param builtin if the subscriber is to be the built in subscriber
-   */
-  TSubscriber(const ::dds::domain::DomainParticipant& dp, bool builtin = false);
-
-  /**
-   * Create a <code>Subscriber</code> attached to the given domain participant.
-   *
-   * @param dp the domain participant that will own this subscriber.
-   * @param qos the subscriber qos
-   * @param listener the subscriber listener.
-   * @param mask the listener event mask.
-   */
-  TSubscriber(const ::dds::domain::DomainParticipant& dp,
-      const dds::sub::qos::SubscriberQos& qos,
-      dds::sub::SubscriberListener* listener = NULL,
-      const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::all());
+    OMG_DDS_REF_TYPE(TSubscriber, dds::core::TEntity, DELEGATE)
 
 public:
-  ~TSubscriber();
+    typedef dds::sub::SubscriberListener                 Listener;
 
 public:
-  /**
-   * This operation invokes the operation on_data_available on the
-   * DataReaderListener objects attached to contained DataReader
-   * entities with a DATA_AVAILABLE status that is considered changed
-   * as described in Section 7.1.4.2.2, Changes in Read Communication
-   * Statuses.
-   */
-  void notify_datareaders();
+    /**
+     * Create a Subscriber attached to the given domain participant.
+     * The subscriber QoS will be set to the default as provided by the domain
+     * participant.
+     *
+     * @param dp the domain participant that will own this subscriber
+     */
+    TSubscriber(const ::dds::domain::DomainParticipant& dp);
 
-  /**
-   * Attach a listener to this.
-   *
-   * @param listener the listener
-   * @param event_mask the event mask for the listener.
-   */
-  void listener(Listener* listener,
-      const dds::core::status::StatusMask& event_mask);
+    /**
+     * Create a Subscriber attached to the given domain participant.
+     *
+     * @param dp the domain participant that will own this subscriber
+     * @param qos the subscriber qos
+     * @param listener the subscriber listener
+     * @param mask the listener event mask
+     */
+    TSubscriber(const ::dds::domain::DomainParticipant& dp,
+                const dds::sub::qos::SubscriberQos& qos,
+                dds::sub::SubscriberListener* listener = NULL,
+                const dds::core::status::StatusMask& mask = dds::core::status::StatusMask::all());
 
-  /**
-   * Get the <code>Subscriber</code> listener.
-   */
-  Listener* listener() const;
+public:
+    virtual ~TSubscriber();
 
+public:
+    /**
+     * This operation invokes the operation on_data_available on the
+     * DataReaderListener objects attached to contained DataReader
+     * entities with a data_available status that is considered changed
+     * as described in Section 7.1.4.2.2, Changes in Read Communication
+     * Statuses.
+     */
+    void notify_datareaders();
 
-  /**
-   * Get the <code>Subscriber</code> QoS.
-   */
-  const dds::sub::qos::SubscriberQos qos() const;
+    /**
+     * By virtue of extending Entity, a Subscriber can be attached to a
+     * Listener at creation time or later by using the set_listener
+     * operation. The Listener attached must extend SubscriberListener.
+     * Listeners are described in Section 7.1.4, “Listeners, Conditions,
+     * and Wait-sets,”.
+     *
+     * @param listener the listener
+     * @param event_mask the event mask for the listener
+     */
+    void listener(Listener* listener,
+                  const dds::core::status::StatusMask& event_mask);
 
-  /**
-   * Set the new qos policies for this subscriber.
-   *
-   * @param sqos the new subscriber QoS
-   */
-  void qos(const dds::sub::qos::SubscriberQos& sqos);
+    /**
+     * Get the Subscriber listener.
+     *
+     * @return the Subscriber listener
+     */
+    Listener* listener() const;
 
-  /**
-   * Get the default <code>DataReader</code> QoS.
-   */
-  dds::sub::qos::DataReaderQos default_datareader_qos() const;
+    /**
+     * Get the Subscriber QoS.
+     *
+     * @return the Subscriber QoS
+     */
+    const dds::sub::qos::SubscriberQos& qos() const;
 
-  /**
-   * Set the default <code>DataReader</code> QoS.
-   *
-   * @param qos the default <code>DataReader</code> QoS.
-   */
-  TSubscriber& default_datareader_qos(const dds::sub::qos::DataReaderQos &qos);
+    /**
+     * Set the new qos policies for this subscriber.
+     *
+     * @param sqos the new subscriber QoS
+     */
+    void qos(const dds::sub::qos::SubscriberQos& sqos);
 
-  /**
-   * Return the <code>DomainParticipant</code> that owns this Subscriber.
-   */
-  const dds::domain::DomainParticipant& participant() const;
+    /**
+     * Get the default DataReader QoS.
+     *
+     * @return the default DataReader QoS
+     */
+    dds::sub::qos::DataReaderQos default_datareader_qos() const;
 
-  /**
-   * Set the QoS associated with this Subscriber.
-   * @param the_qos the new Subscriber QoS.
-   */
-  TSubscriber& operator << (const dds::sub::qos::SubscriberQos& the_qos);
+    /**
+     * Set the default DataReader QoS.
+     *
+     * @param qos the default DataReader QoS.
+     */
+    TSubscriber& default_datareader_qos(const dds::sub::qos::DataReaderQos& qos);
 
-  /**
-   * Get the QoS associated with this Subscriber.
-   *
-   * @param the_qos the current Subscriber QoS.
-   */
-  const TSubscriber& operator >> (dds::sub::qos::SubscriberQos& the_qos) const;
+    /**
+     * Return the DomainParticipant that owns this Subscriber.
+     *
+     * @return the DomainParticipant that owns this Subscriber
+     */
+    const dds::domain::DomainParticipant& participant() const;
+
+    /**
+     * Set the QoS associated with this Subscriber.
+     *
+     * @param qos the new Subscriber QoS
+     */
+    dds::sub::qos::SubscriberQos& operator << (const dds::sub::qos::SubscriberQos& qos);
+
+    /**
+     * Get the QoS associated with this Subscriber.
+     *
+     * @param qos the current Subscriber QoS
+     */
+    const TSubscriber& operator >> (dds::sub::qos::SubscriberQos& qos) const;
+
+    /**
+     * This function closes the entity and releases all resources associated with
+     * DDS, such as threads, sockets, buffers, etc. Any attempt to invoke
+     * functions on a closed entity will raise an exception.
+     */
+    virtual void close();
+
+    /**
+     * Indicates that references to this object may go out of scope but that
+     * the application expects to look it up again later. Therefore, the
+     * Service must consider this object to be still in use and may not
+     * close it automatically.
+     */
+    virtual void retain();
 };
 
 

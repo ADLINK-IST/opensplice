@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "xbe_cppfwd.h"
@@ -15,13 +15,13 @@
 
 TList<be_CppFwdDecl*> * be_CppFwdDecl::sm_fwdDeclList = new TList<be_CppFwdDecl*>;
 const char * const be_CppFwdDecl::keywords[3] = { "class", "struct", "class" };
- 
+
 void be_CppFwdDecl::Generate (be_ClientHeader& source) const
 {
    ostream& os = source.Stream();
    be_Tab tab (source);
 
-   if (m_declType == be_CppFwdDecl::INTERFACE)      
+   if (m_declType == be_CppFwdDecl::INTERFACE)
    {
       if (!BE_Globals::ignore_interfaces)
       {
@@ -35,7 +35,14 @@ void be_CppFwdDecl::Generate (be_ClientHeader& source) const
    else if (!BE_Globals::ignore_interfaces ||
             !m_beType->IsInterfaceDependant ())
    {
-      os << tab << keywords[m_declType] << " " << m_beType->LocalName() << ';' << nl;
+      if (BE_Globals::isocpp_new_types)
+      {
+        os << tab << "class " << m_beType->LocalName() << ';' << nl;
+      }
+      else
+      {
+        os << tab << keywords[m_declType] << " " << m_beType->LocalName() << ';' << nl;
+      }
    }
 }
 
@@ -117,7 +124,7 @@ idl_bool be_CppFwdDecl::IsAlreadyDeclared
    {
       const be_CppFwdDecl& fwdDecl = *(*iter);
 
-      if ( (fwdDecl.m_cppScope == cppScope) && 
+      if ( (fwdDecl.m_cppScope == cppScope) &&
            (fwdDecl.m_beType->ScopedName() == name) )
       {
          return ( (fwdDecl.m_generated) ? I_TRUE : I_FALSE );

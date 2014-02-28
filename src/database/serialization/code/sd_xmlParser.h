@@ -15,7 +15,7 @@
 #include "c_base.h"
 
 #include "sd_list.h"
-#include "sd_deepwalkMeta.h"
+#include "sd__deepwalkMeta.h"
 #include "sd_errorReport.h"
 
 C_CLASS(sd_xmlParser);

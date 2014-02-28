@@ -32,7 +32,7 @@ namespace cond
 
 template <typename FUN>
 QueryCondition::QueryCondition(const dds::sub::Query& query,
-    const dds::sub::status::DataState& data_state, const FUN& functor)
+                               const dds::sub::status::DataState& data_state, const FUN& functor)
     : dds::sub::cond::TReadCondition<DELEGATE>(new DELEGATE(query, data_state, functor))
 { }
 

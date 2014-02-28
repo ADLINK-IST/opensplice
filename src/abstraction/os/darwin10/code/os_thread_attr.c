@@ -21,10 +21,10 @@
 
 #ifndef OSPL_ENV_PURIFY
 /**
- * Default stack size set to 64KB, when it is too small the OS
+ * Default stack size set to 256KB, when it is too small the OS
  * will automatically increase the stack size
  */
-#define OS_STACKSIZE_DEFAULT ((size_t)64*1024)
+#define OS_STACKSIZE_DEFAULT ((size_t)256*1024)
 #else
 #define OS_STACKSIZE_DEFAULT ((size_t)10*1024*1024)
 #endif

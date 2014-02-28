@@ -7,4 +7,4 @@ set EXAMPLE_LANG=sacs
 
 call %FUNCTIONS% :runContentFilteredTopic
 
-call %FUNCTIONS% :contentfilteredtopicCheckResult
+call %FUNCTIONS% :contentfilteredtopicCheckResult >> run.log

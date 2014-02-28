@@ -32,7 +32,6 @@ SAJ_FUNCTION(jniCreateReadcondition)(
     jobject jcondition;
     gapi_dataReaderView dataReaderView;
     gapi_readCondition condition;
-    saj_returnCode rc;
 
     jcondition = NULL;
     condition = GAPI_OBJECT_NIL;
@@ -45,7 +44,7 @@ SAJ_FUNCTION(jniCreateReadcondition)(
                                 (const gapi_instanceStateMask)jinstanceStates);
 
     if (condition != GAPI_OBJECT_NIL){
-        rc = saj_construct_java_object(env,  PACKAGENAME "ReadConditionImpl",
+        saj_construct_java_object(env,  PACKAGENAME "ReadConditionImpl",
                                         (PA_ADDRCAST)condition, &jcondition);
     }
     return jcondition;

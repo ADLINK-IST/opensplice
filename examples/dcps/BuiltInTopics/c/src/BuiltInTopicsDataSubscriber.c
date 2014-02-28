@@ -10,12 +10,9 @@
  *
  */
 
-/************************************************************************
- * LOGICAL_NAME:    BuiltInTopicsDataSubscriber.cpp
- * FUNCTION:        BuiltInTopicsDataSubscriber's main for the BuiltInTopics OpenSplice programming example.
- * MODULE:          OpenSplice BuiltInTopics example for the C programming language.
- * DATE             September 2010.
- ***********************************************************************/
+/**
+ * @file
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -32,29 +29,26 @@ typedef struct {
    DDS_long nodeId;
    DDS_string hostName;
    DDS_long participantCount;
+
 } NodeInfo;
 
-NodeInfo* updateNode ( DDS_ParticipantBuiltinTopicData* newNode,
+void updateNode ( DDS_ParticipantBuiltinTopicData* newNode,
          NodeInfo* nodeInfoArray,
          unsigned long nodeInfoIndex)
 {
-   if(newNode->user_data.value._length > 0)
+   if(newNode->user_data.value._length > 0 && *newNode->user_data.value._buffer != '<' )
    {
-       nodeInfoArray[ nodeInfoIndex ].hostName = DDS_string_alloc( newNode->user_data.value._length );
-       memcpy( nodeInfoArray[ nodeInfoIndex ].hostName, newNode->user_data.value._buffer, newNode->user_data.value._length );
-       nodeInfoArray[ nodeInfoIndex ].hostName[ newNode->user_data.value._length ] = '\0';
+        nodeInfoArray[ nodeInfoIndex ].hostName = DDS_string_alloc( newNode->user_data.value._length );
+        memcpy( nodeInfoArray[ nodeInfoIndex ].hostName, newNode->user_data.value._buffer, newNode->user_data.value._length );
+        nodeInfoArray[ nodeInfoIndex ].hostName[ newNode->user_data.value._length ] = '\0';
    }
    nodeInfoArray[ nodeInfoIndex ].nodeId = newNode->key[ 0 ];
-   nodeInfoArray[ nodeInfoIndex ].participantCount = 1;
-
-   return nodeInfoArray;
 }
 
 NodeInfo* getNodeInfo ( DDS_ParticipantBuiltinTopicData* node,
          NodeInfo** nodeInfoArray,
          unsigned long* nodeInfoArraySize )
 {
-   NodeInfo* nodeInfo = NULL;
    unsigned long nodeIndex;
 
    for( nodeIndex = 0 ; nodeIndex < *nodeInfoArraySize ; ++nodeIndex )
@@ -62,7 +56,6 @@ NodeInfo* getNodeInfo ( DDS_ParticipantBuiltinTopicData* node,
       if( (*nodeInfoArray)[ nodeIndex ].nodeId == node->key[ 0 ] )
       {
           updateNode(node, *nodeInfoArray, nodeIndex);
-         nodeInfo = &(*nodeInfoArray)[ nodeIndex ];
           break;
       }
    }
@@ -70,15 +63,13 @@ NodeInfo* getNodeInfo ( DDS_ParticipantBuiltinTopicData* node,
    {
        NodeInfo* newNodeInfoArray;
        int newByteSize = ++(*nodeInfoArraySize) * sizeof(NodeInfo);
-       newNodeInfoArray = realloc(*nodeInfoArray, newByteSize);
+       newNodeInfoArray = (NodeInfo *)realloc(*nodeInfoArray, newByteSize);
        *nodeInfoArray = newNodeInfoArray;
        (*nodeInfoArray)[ nodeIndex ].hostName = NULL;
+       (*nodeInfoArray)[ nodeIndex ].participantCount = 0;
        updateNode(node, *nodeInfoArray, nodeIndex);
    }
-   nodeInfo = &(*nodeInfoArray[ nodeIndex ]);
-
-
-   return nodeInfo;
+   return &(*nodeInfoArray)[ nodeIndex ];
 }
 
 void freeNodeInfoArray ( NodeInfo** nodeInfoArray,
@@ -90,7 +81,7 @@ void freeNodeInfoArray ( NodeInfo** nodeInfoArray,
    {
       if( (*nodeInfoArray)[ nodeIndex ].hostName != NULL )
       {
-         DDS_free(*nodeInfoArray);
+         DDS_free((*nodeInfoArray)[ nodeIndex ].hostName);
       }
    }
 
@@ -134,7 +125,8 @@ int OSPL_MAIN (int argc, char *argv[])
    // Lookup the DataReader for the DCPSParticipant built-in Topic.
    builtInTopicsReader = DDS_Subscriber_lookup_datareader(builtInTopicsSubscriber, "DCPSParticipant");
 
-   printf("\n=== [BuiltInTopicsDataSubscriber] : Waiting for historical data ... ");
+   printf("=== [BuiltInTopicsDataSubscriber] : Waiting for historical data ... ");
+   fflush(stdout);
 
    // Make sure all historical data is delivered in the DataReader.
    DDS_DataReader_wait_for_historical_data(builtInTopicsReader, &waitForHistoricalDataTimeout);
@@ -211,9 +203,9 @@ int OSPL_MAIN (int argc, char *argv[])
                      // If it's the first participant, report the node is up.
                      if( nodeInfo->participantCount == 1 )
                      {
-                        printf ( "\n=== [BuiltInTopicsDataSubscriber] Node '%d' started (Total nodes running: %lu) participantCount = %d", nodeInfo->nodeId, nodeInfoArraySize, nodeInfo->participantCount );
+                        printf ( "\n=== [BuiltInTopicsDataSubscriber] Node '%d' started (Total nodes running: %lu)", nodeInfo->nodeId, nodeInfoArraySize);
                      }
-                     if( builtInTopicsDataSeq->_buffer[ j ].user_data.value._length > 0)
+                     if( builtInTopicsDataSeq->_buffer[ j ].user_data.value._length > 0 && *builtInTopicsDataSeq->_buffer[ j ].user_data.value._buffer != '<')
                      {
                          printf( "\n=== [BuiltInTopicsDataSubscriber] Hostname for node '%d' is '%s'.", nodeInfo->nodeId, nodeInfo->hostName );
                      }
@@ -245,6 +237,7 @@ int OSPL_MAIN (int argc, char *argv[])
       }
    }
    while( isStopping == FALSE && g_status == DDS_RETCODE_OK );
+   printf( "\n");
 
    // Delete the read condition
    g_status = DDS_DataReader_delete_readcondition(builtInTopicsReader, readCondition);

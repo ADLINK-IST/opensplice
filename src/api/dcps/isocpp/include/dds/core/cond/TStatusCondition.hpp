@@ -30,7 +30,7 @@ namespace cond
 {
 
 template <typename DELEGATE>
-TStatusCondition<DELEGATE>::TStatusCondition(const dds::core::null_type&) : dds::core::cond::TCondition<DELEGATE>(new DELEGATE()) { }
+TStatusCondition<DELEGATE>::TStatusCondition(const dds::core::null_type&) : dds::core::cond::TCondition<DELEGATE>(dds::core::null) { }
 
 template <typename DELEGATE>
 TStatusCondition<DELEGATE>::TStatusCondition(const dds::core::Entity& e) : dds::core::cond::TCondition<DELEGATE>(new DELEGATE(e)) { }

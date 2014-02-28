@@ -3,10 +3,13 @@
 
 #include <stddef.h>
 
-#include "os_socket.h"
-
 #include "q_protocol.h" /* for, e.g., SubmessageKind_t */
 #include "q_xqos.h" /* for, e.g., octetseq, stringseq */
+#include "ddsi_tran.h"
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 struct serdata;
 struct addrset;
@@ -89,13 +92,12 @@ void *nn_xmsg_payload (unsigned *sz, struct nn_xmsg *m);
 enum nn_xmsg_kind nn_xmsg_kind (const struct nn_xmsg *m);
 void nn_xmsg_guid_seq_fragid (const struct nn_xmsg *m, nn_guid_t *wrguid, os_int64 *wrseq, nn_fragment_number_t *wrfragid);
 
-void *nn_xmsg_append_aligned (struct nn_xmsg *m, struct nn_xmsg_marker *marker, unsigned sz, unsigned a);
+void *nn_xmsg_append (struct nn_xmsg *m, struct nn_xmsg_marker *marker, unsigned sz);
 void nn_xmsg_shrink (struct nn_xmsg *m, struct nn_xmsg_marker marker, unsigned sz);
 int nn_xmsg_serdata (struct nn_xmsg *m, struct serdata *serdata, unsigned off, unsigned len);
 void nn_xmsg_submsg_setnext (struct nn_xmsg *msg, struct nn_xmsg_marker marker);
 void nn_xmsg_submsg_init (struct nn_xmsg *msg, struct nn_xmsg_marker marker, SubmessageKind_t smkind);
 int nn_xmsg_add_timestamp (struct nn_xmsg *m, os_int64 t);
-int nn_xmsg_add_pl_cdr_header (struct nn_xmsg *m);
 void *nn_xmsg_addpar (struct nn_xmsg *m, int pid, int len);
 int nn_xmsg_addpar_string (struct nn_xmsg *m, int pid, const char *str);
 int nn_xmsg_addpar_octetseq (struct nn_xmsg *m, int pid, const nn_octetseq_t *oseq);
@@ -106,16 +108,26 @@ int nn_xmsg_addpar_4u (struct nn_xmsg *m, int pid, unsigned x);
 int nn_xmsg_addpar_keyhash (struct nn_xmsg *m, const struct serdata *serdata);
 int nn_xmsg_addpar_statusinfo (struct nn_xmsg *m, unsigned statusinfo);
 int nn_xmsg_addpar_reliability (struct nn_xmsg *m, int pid, const struct nn_reliability_qospolicy *rq);
+
+struct nn_prismtech_writer_info;
+int nn_xmsg_addpar_wrinfo (struct nn_xmsg *m, const struct nn_prismtech_writer_info *wri);
+struct nn_prismtech_participant_version_info;
+int nn_xmsg_addpar_parvinfo (struct nn_xmsg *m, int pid, const struct nn_prismtech_participant_version_info *pvi);
 int nn_xmsg_addpar_sentinel (struct nn_xmsg *m);
+int nn_xmsg_addpar_sentinel_ifparam (struct nn_xmsg *m);
 
 /* XPACK */
 
-struct nn_xpack *nn_xpack_new (os_socket sock);
+struct nn_xpack * nn_xpack_new (ddsi_tran_conn_t conn);
 void nn_xpack_free (struct nn_xpack *xp);
-size_t nn_xpack_send (struct nn_xpack *xp);
+void nn_xpack_send (struct nn_xpack *xp);
 int nn_xpack_addmsg (struct nn_xpack *xp, struct nn_xmsg *m);
 os_int64 nn_xpack_maxdelay (const struct nn_xpack *xp);
 unsigned nn_xpack_packetid (const struct nn_xpack *xp);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* NN_XMSG_H */
 

@@ -11,6 +11,7 @@
 #include <ShapeDynamics.hpp>
 #include <Shape.hpp>
 
+namespace demo { namespace ishapes {
 class Circle : public Shape
 {
 public:
@@ -31,6 +32,8 @@ private:
 private:
     ShapeDynamics::ref_type dynamics_;
 };
+}
+}
 
 /** @}*/
 

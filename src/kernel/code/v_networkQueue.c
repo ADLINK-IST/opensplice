@@ -24,6 +24,7 @@
 #include "v__reader.h"    /* for v_reader() */
 #include "v_readerQos.h" /* for v_readerQosNew() */
 #include "v_entry.h"     /* for v_entry()  */
+#include "v_state.h"
 #include "v_subscriber.h"
 #include "v_groupSet.h"
 #include "v_topic.h"
@@ -63,18 +64,15 @@ v_networkQueueUpdateNextWakeup(
     c_bool *hasChanged)
 {
     c_time now;
-    c_time soon;
     c_time newWakeup;
     c_ulonglong msecsTime;
     c_ulonglong msecsResult;
     c_ulonglong msecsLeftOver;
-    static c_time minSleepTime = MIN_SLEEPTIME;
     
     *hasChanged = FALSE;
     if (queue->periodic) {
         now = v_timeGet();
-        soon = c_timeAdd(now, minSleepTime);
-        TIME_TO_MSEC(soon, msecsTime);
+        TIME_TO_MSEC(now, msecsTime);
         /* Do a ++ because we are doing a ceil and TIME_TO_MSEC is doing a trunc.
          * Only if time was an exact multiple of milliseconds, this approach is
          * not completely correct. But it saves us the hassle and this works fine */
@@ -210,11 +208,24 @@ v_networkQueueWrite(
     /* numberOfSamplesArrived statistics */
     v_networkQueueStatisticsAdd(numberOfSamplesArrived,queue->statistics);
 
-    if (queue->currentMsgCount == queue->maxMsgCount) {
-        c_mutexUnlock(&queue->mutex);
-        /* numberOfSamplesRejected stat */
-        v_networkQueueStatisticsAdd(numberOfSamplesRejected,queue->statistics);
-        return FALSE;
+    /* When the network queue is full then the message should be rejected.
+     * The exception is an UNREGISTER message. The UNREGISTER message should
+     * always be accepted because rejecting it may bring the system into an
+     * inconsistent state (an instance cannot be NO_WRITERS for some readers
+     * and still alive for the network reader). Because state changes as a
+     * result of invalid message do not count towards resource limits this
+     * is a valid exception. The DISPOSE message does not need to fall into
+     * the same category because the group never acts on only the DISPOSE
+     * messages. It is the transition to the NO_WRITERS state that potentially
+     * triggers the purge mechanism.
+     */
+    if (!v_messageStateTest(msg,L_UNREGISTER)) {
+        if (queue->currentMsgCount == queue->maxMsgCount) {
+            c_mutexUnlock(&queue->mutex);
+            /* numberOfSamplesRejected stat */
+            v_networkQueueStatisticsAdd(numberOfSamplesRejected,queue->statistics);
+            return FALSE;
+        }
     }
 
     currentMarkerPtr = &(queue->firstStatusMarker);

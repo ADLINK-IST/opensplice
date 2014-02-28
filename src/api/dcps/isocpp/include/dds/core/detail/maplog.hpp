@@ -23,7 +23,7 @@ namespace core
 namespace detail
 {
 
-os_reportType OMG_DDS_API_DETAIL maplog(std::string kind);
+os_reportType OMG_DDS_API_DETAIL maplog(const std::string& kind);
 
 }
 }

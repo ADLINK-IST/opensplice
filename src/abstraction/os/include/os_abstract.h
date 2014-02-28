@@ -21,7 +21,7 @@ extern "C" {
 #include "os_defs.h"
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_OS
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -41,11 +41,16 @@ typedef enum {
 
 OS_API pa_endianNess    pa_getEndianNess(void);
 
+
+#if (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) >= 40100 && !defined (__cplusplus)
+#define pa_increment(c) __sync_add_and_fetch ((c), 1)
+#define pa_decrement(c) __sync_sub_and_fetch ((c), 1)
+#else
 OS_API os_uint32        pa_increment(os_uint32 *count);
-
 OS_API os_uint32        pa_decrement(os_uint32 *count);
+#endif
 
-#define PA_ADDRCAST	os_address
+#define PA_ADDRCAST     os_address
 
 #define PA_PRId16 PA_PA_PRId16
 #define PA_PRIo16 PA_PA_PRIo16
@@ -77,8 +82,8 @@ OS_API os_uint32        pa_decrement(os_uint32 *count);
 #define PA_PRIxSIZE PA_PA_PRIxSIZE
 #define PA_PRIXSIZE PA_PA_PRIXSIZE
 
-#define PA_ADDRFMT	"%"PA_PRIxADDR
-#define PA_SIZEFMT	"%"PA_PRIuSIZE
+#define PA_ADDRFMT  "%" PA_PRIxADDR
+#define PA_SIZEFMT  "%" PA_PRIuSIZE
 #define PA_SIZESPEC     PA_PRIuSIZE
 
 #define PA_INT64_C(x)   PA_PA_INT64_C(x)

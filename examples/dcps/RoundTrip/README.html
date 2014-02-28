@@ -1,0 +1,219 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "
+http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="fr" lang="fr">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+<title>OpenSplice DDS examples - PingPong</title>
+<link rel="stylesheet" href="../../../docs/css/prismstyle.css" type="text/css">
+</head>
+
+<body>
+<h1> EXAMPLES </h1>
+<ul>
+  <li><a href ="../README.html">Summary</a></li>
+  <li><a href ="../PingPong/README.html">PingPong </a></li>
+  <li><a href ="../Tutorial/README.html">Tutorial </a></li>
+  <li><a href ="../HelloWorld/README.html">HelloWorld </a></li>
+  <li><a href ="../WaitSet/README.html">WaitSet</li>
+  <li><a href ="../Listener/README.html">Listener </a></li>
+  <li><a href ="../ContentFilteredTopic/README.html">ContentFilteredTopic </a></li>
+  <li><a href ="../QueryCondition/README.html">QueryCondition </a></li>
+  <li><a href ="../Lifecycle/README.html">Lifecycle</a></li>
+  <li><a href ="../Durability/README.html">Durability </a></li>
+  <li><a href ="../Ownership/README.html">Ownership</a></li>
+  <li><a href ="../BuiltInTopics/README.html">BuiltInTopics</a></li>
+  <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
+  <li>RoundTrip</li>
+  <li><a href ="../Throughput/README.html">Throughput</a></li>
+</ul>
+<h2> RoundTrip </h2>
+<ul>
+  <li><a href ="#STANDALONE">Running of examples in Standalone Mode</a></li>
+</ul>
+
+<h3>1) Description</h3>
+<p>The Roundtrip example allows the measurement of roundtrip duration when sending and receiving
+back a single message.</p>
+
+<h3>2) Design</h3>
+<p>It consists of 2 units :</p>
+ <ul><li> pong : Waits for messages from ping and sends the same message back</li>
+     <li> ping : Sends a message to pong and waits for its return</li></ul>
+
+<h3>3) Scenario</h3>
+
+   <p>A message is sent by the <b>ping</b> executable on the "PING" partition, which the <b>pong</b> executable is waiting for.
+   The <b>pong</b> executable sends the same message back on the "PONG" partition, which
+   the <b>ping</b> executable is waiting for. This sequence is repeated a configurable number of times.</p>
+
+   <p>The <b>ping</b> executable measures:</p>
+   <ul>
+      <li>writeAccess time: time the write() method took.</li>
+      <li>readAccess time:  time the take() method took.</li>
+      <li>roundTrip time:   time between the call to the write() method
+                                   and the return of the take() method.</li>
+      <li><b>ping</b> also calculates min/max/average statistics on these values over a configurable
+      number of samples and/or time out period</li></ul>
+
+   <p>Configurable:</p>
+      <ul>
+         <li>payloadSize:  the size of the payload in bytes</li>
+         <li>numSamples:   the number of samples to send</li>
+         <li>timeOut:      the number of seconds ping should run for</li>
+      </ul>
+
+<h2><balise id="STANDALONE">Running of examples in Standalone Mode</balise></h2>
+<ul>
+  <li><a href ="#Posix">Running examples in Posix</a></li>
+  <li><a href ="#VS">Running examples in Visual Studio</a></li>
+</ul>
+
+<h3><balise id="Posix">Running the examples in a Posix environment</balise></h3>
+
+<h4>Environment Setup</h4>
+<p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
+<p>The OpenSpliceDDS environment variables must be set in order for the examples to build/run correctly.
+To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.com</i>" script supplied with the distribution.</p>
+
+<h4><balise id="C_C++">C, C++ and ISO C++ Executables</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables and a two libraries are generated in the example directory when the example is built:</p>
+<p>For ISO C++</p>
+<ul>
+  <li>ping</li>
+  <li>pong</li>
+  <li>libISO_Cxx_RoundTrip_Impl.so</li>
+  <li>libISO_Cxx_RoundTrip_Types.so</li>
+</ul>
+
+<p>For C++</p>
+<ul>
+  <li>ping</li>
+  <li>pong</li>
+  <li>libSA_Cxx_RoundTrip_Impl.so</li>
+  <li>libSA_Cxx_RoundTrip_Types.so</li>
+</ul>
+
+<p>For C</p>
+<ul>
+  <li>ping</li>
+  <li>pong</li>
+  <li>libSA_C_RoundTrip_Impl.so</li>
+  <li>libSA_C_RoundTrip_Types.so</li>
+</ul>
+
+<h4>Running the example</h4>
+ <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new terminal used.  If running the C, C++ or ISO C++ examples, ensure that
+    . is added to the LD_LIBRARY_PATH.</p>
+ <p>It is recommended that you run the subscriber and publisher in separate terminals to avoid mixing the output</p>
+
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <ul>
+     <li>OpenSpliceDDS is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 terminals. Setup the environment and go to the example directory as described above</li>
+   </ul>
+
+   <p><b>Running in multiple process shared memory configuration</b></p>
+   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>
+    <ul>
+          <li>Open 2 terminals.  In each terminal:</li>
+          <li>Setup the environment and go to the example directory as described above</li>
+          <li>Set the required configuration file e.g. <i>OSPL_URI=file://$OSPL_HOME/etc/config/ospl_shmem_ddsi.xml</i></li>
+          <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+    </ul>
+
+   <p><b>Starting ping and pong</b></p>
+
+   <p>In the first terminal start pong by running the pong executable</p>
+
+    <pre>
+    pong usage:
+      ./pong
+    </pre>
+
+   <p>In the second terminal start ping by the ping executable</p>
+
+    <pre>
+    ping usage (parameters must be supplied in order):
+      ./ping [payloadSize (bytes, 0 - 655536)] [numSamples (0 = infinite)] [timeOut (seconds, 0 = infinite)]
+      ./ping quit - ping sends a quit signal to pong.
+    defaults:
+      ./ping 0 0 0
+    </pre>
+
+    <p>To achieve optimal performance it is recommended to set the CPU affinity so that ping and pong
+    run on separate CPU cores. You must have su privileges to run the following commands.</p>
+
+    <pre>
+    pong usage:
+      taskset -c 0 chrt -f 80 ./pong
+    ping usage:
+      taskset -c 1 chrt -f 80 ./ping [payloadSize (bytes, 0 - 655536)] [numSamples (0 = infinite)] [timeOut (seconds, 0 = infinite)]
+    </pre>
+
+<h3><balise id="VS">Running C/C++/ISO C++ on Windows</balise></h3>
+
+<h4>Environment Setup</h4>
+<p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
+<p>The OpenSpliceDDS environment variables must be set in order for the examples to run correctly.
+To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the environment variables for OpenSpliceDDS automatically.  The <i>OpenSpliceDDS Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
+
+<h4><balise id="C_C++_CS_Win">C/C++/ISO C++</balise></h4>
+<p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
+<p>Two executables are generated in the example directory when the example is built:
+<p>For C, C++ and C#</p>
+<ul>
+    <li>ping.exe</li>
+    <li>pong.exe</li>
+</ul>
+
+<h4><balise id="C_C++_ISO C++_Win">Running the C/C++/ISO C++ Examples</balise></h4>
+   <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new command prompt used.</p>
+   <p>The following steps describe how to run the examples:</p>
+
+   <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
+   <ul>
+     <li>OpenSpliceDDS is deployed in this mode by default.</li>
+     <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
+     <li>Open 2 OpenSpliceDDS Command Prompts and go to directory <b>standalone</b> as described above</li>
+   </ul>
+
+   <p><b>Running in multiple process shared memory configuration</b></p>
+   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>
+    <ul>
+          <li>Open 2 OpenSpliceDDS Command Prompts.  In each window:</li>
+          <li>Go to directory <b>standalone</b> as described above</li>
+          <li>Set the required configuraton file e.g. <i>set OSPL_URI="file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml"</i></li>
+          <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
+    </ul>
+
+    <p>In the first terminal start pong by running the pong executable</p>
+
+    <pre>
+    pong usage:
+      pong.exe
+    </pre>
+
+   <p>In the second terminal start ping by the ping executable</p>
+
+    <pre>
+    ping usage (parameters must be supplied in order):
+      ./ping [payloadSize (bytes, 0 - 655536)] [numSamples (0 = infinite)] [timeOut (seconds, 0 = infinite)]
+      ./ping quit - ping sends a quit signal to pong.
+    defaults:
+      ./ping 0 0 0
+    </pre>
+
+    <p>To achieve optimal performance it is recommended to set the CPU affinity so that ping and pong
+    run on separate CPU cores</p>
+
+    <pre>
+    pong usage:
+      START /affinity 1 /high cmd /k "pong.exe"
+    ping usage:
+      START /affinity 2 /high cmd /k "ping.exe" [payloadSize (bytes, 0 - 655536)] [numSamples (0 = infinite)] [timeOut (seconds, 0 = infinite)]
+    </pre>
+</body>
+</html>

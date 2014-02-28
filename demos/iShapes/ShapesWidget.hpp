@@ -14,6 +14,7 @@
 
 #include <Shape.hpp>
 
+namespace demo { namespace ishapes {
 class ShapesWidget  : public QWidget
 {
     Q_OBJECT
@@ -48,6 +49,8 @@ private:
     QPixmap ptpcm_;
     QPixmap simd_;
 };
+}
+}
 
 /** @}*/
 

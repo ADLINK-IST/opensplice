@@ -1,9 +1,0 @@
-#! /bin/sh
-args=
-while [ $# -gt 0 ]
-do
-args="$args $1 "
-shift
-done
-
-java -classpath bld:bld/WhiteListedMessageBoard:$OSPL_HOME/jar/dcpssaj.jar:$OSPL_HOME/jar/dlrlsaj.jar WhiteListedMessageBoard.WhiteListedMessageBoard $args

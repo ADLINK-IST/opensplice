@@ -42,6 +42,9 @@ idl_fileOpen (
     size_t i;
     (void) scope; /* Unused */
     (void) userData; /* Unused */
+    idl_fileOutPrintf(idl_fileCur(), "#ifndef OPENSPLICE_ISOCXX_PSM\n");
+    idl_fileOutPrintf(idl_fileCur(), "#define OPENSPLICE_ISOCXX_PSM\n");
+    idl_fileOutPrintf(idl_fileCur(), "#endif\n");
     /* below always returns idl_abort regardless of success or failure */
     (void) idl_genCorbaCxxCcppProgram()->fileOpen(scope, name, userData);
     tmpName = os_strdup(name);

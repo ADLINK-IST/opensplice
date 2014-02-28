@@ -7,14 +7,55 @@ REM #####################
 set SLEEP5=@C:\WINDOWS\system32\ping.exe -n 5 localhost
 
 SET FAIL=0
-SET MESSAGE=FAILED
+SET MESSAGE=
+SET /a count=0
+SET /a hbcount=0
 REM ignore the print out from ospl describing the location of the error log
 ECHO Checking log file "< %LOGFILE% >" for errors 
 FindStr -i "error" %LOGFILE% | findstr /v "ospl-error.log"
 if %ERRORLEVEL% EQU 0 (
    SET FAIL=1
-   SET MESSAGE=" - Errors occurred"
+   SET MESSAGE="FAILED - Errors occurred"
 )
+findstr /i /c:"failed" %LOGFILE%
+if %ERRORLEVEL% EQU 0 (
+   SET FAIL=1 
+   SET MESSAGE="FAILED - Failures occurred"
+)
+REM This fancy stuff is not working.  I did have something working locally but it goes to po
+REM once it's applied in the overnights.  Comment out so we get examples back and have a
+REM look at it later.  Put the old stuff back in and check manually
+REM ECHO Check for timeouts....
+REM for /f %%c in ('C:\WINDOWS\system32\find.exe /i /c "timeout" ^< %LOGFILE%') do set count=%%c
+REM if %count% neq 0 (
+REM   SET MESSAGE=%count% - TIMEOUTS occurred
+REM   SET OK=- 5 or less so thats OK
+REM )
+REM ECHO Check count > 5
+REM if %count% gtr 5 (
+REM   SET FAIL=1 
+REM   SET MESSAGE=FAILED - %MESSAGE%
+REM ) else
+REM   SET MESSAGE=%MESSAGE% %OK%
+REM )  
+REM ECHO Check for WARNINGs....
+REM set count=0
+REM if EXIST "%OSPL_HOME%examples\%EXAMPLE%\ospl-info.log" (
+REM   for /f %%c in ('C:\WINDOWS\system32\find.exe /c "WARNING" ^< %OSPL_HOME%examples\%EXAMPLE%\ospl-info.log') do set count=%%c
+REM   for /f %%c in ('C:\WINDOWS\system32\find.exe /c "Missed heartbeat" ^< %OSPL_HOME%examples\%EXAMPLE%\ospl-info.log') do set hbcount=%%c
+REM )
+REM ECHO Check number of missing heartbeats......
+REM if %count% neq 0 (
+REM   SET MESSAGE=%count% - WARNINGS found in ospl-info.log
+REM   SET OK=- %hbcount% Missed heartbeat WARNINGS - OK
+REM )
+REM ECHO Check if all warnings are missing heartbeats .....
+REM if %count% equ %hbcount (
+REM   SET MESSAGE=%MESSAGE% %OK%
+REM ) else (
+REM   SET FAIL=1 
+REM   SET MESSAGE=FAILED - %MESSAGE% - %hbcount% Missed heartbeat WARNINGS
+REM )
 findstr /i /c:"timeout" %LOGFILE%
 if %ERRORLEVEL% EQU 0 (
    SET FAIL=1 
@@ -30,16 +71,16 @@ if %ERRORLEVEL% EQU 0 (
 findstr /i /c:"NoCLassDefFound" %LOGFILE%
 if %ERRORLEVEL% EQU 0 (
    SET FAIL=1
-   SET MESSAGE=" - NoClassDefFound errors"
+   SET MESSAGE="FAILED - NoClassDefFound errors"
 )
 findstr /i /c:"assertion failed" %LOGFILE%
 if %ERRORLEVEL% EQU 0 (
    SET FAIL=1
-   SET MESSAGE=" - Assertions failures"
+   SET MESSAGE="FAILED - Assertions failures"
 )
 if EXIST "%OSPL_HOME%examples\%EXAMPLE%\ospl-error.log" (
    SET FAIL=1
-   SET MESSAGE=" - ospl-error.log found"
+   SET MESSAGE="FAILED - ospl-error.log found"
 )
 %SLEEP5% >NUL
 ECHO Adding result to log file

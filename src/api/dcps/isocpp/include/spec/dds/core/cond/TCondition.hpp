@@ -22,39 +22,45 @@
 #include <dds/core/Reference.hpp>
 
 
-namespace dds {
-  namespace core {
-    namespace cond {
-      template <typename DELEGATE>
-      class TCondition;
-    }
-  }
+namespace dds
+{
+namespace core
+{
+namespace cond
+{
+template <typename DELEGATE>
+class TCondition;
+}
+}
 }
 /**
- * A Condition is a root class for all the conditions that may be attached
+ * A Condition is a root class for all the Conditions that may be attached
  * to a WaitSet. This basic class is specialized in three classes that are
  * known by the middleware: GuardCondition (Section 7.1.2.1.8),
  * StatusCondition (Section 7.1.2.1.9), and ReadCondition (Section 7.1.2.5.8).
  *
  */
 template <typename DELEGATE>
-class dds::core::cond::TCondition : public dds::core::Reference<DELEGATE> {
+class dds::core::cond::TCondition : public dds::core::Reference<DELEGATE>
+{
 public:
-  OMG_DDS_REF_TYPE(TCondition, dds::core::Reference, DELEGATE)
+    OMG_DDS_REF_TYPE(TCondition, dds::core::Reference, DELEGATE)
 
 public:
-  ~TCondition();
+    virtual ~TCondition();
 
 public:
-  /**
-   * Dispatches the functors that have been registered with the condition.
-   */
-  virtual void dispatch();
+    /**
+     * Dispatches the functors that have been registered with the Condition.
+     */
+    virtual void dispatch();
 
-  /**
-   * This operation retrieves the trigger_value of the Condition.
-   */
-  bool trigger_value() const;
+    /**
+     * This operation retrieves the trigger_value of the Condition.
+     *
+     * @return True if the Condition has been triggered.
+     */
+    virtual bool trigger_value() const;
 
 };
 

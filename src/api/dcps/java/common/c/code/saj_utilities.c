@@ -59,8 +59,10 @@ void
 saj_exceptionCheck (
     JNIEnv *javaEnv)
 {
-    if ((*javaEnv)->ExceptionOccurred(javaEnv))
+    if ((*javaEnv)->ExceptionCheck(javaEnv)){
+        (*javaEnv)->ExceptionDescribe(javaEnv); /* Will output exception info to stderr */
         assert(0);
+    }
 }
 
 PA_ADDRCAST
@@ -78,7 +80,7 @@ saj_read_gapi_address(
 
         if(rc == SAJ_RETCODE_OK){
             if(GET_CACHED(sajSuperClassGapiPeer_fid) == NULL){
-                SET_CACHED(sajSuperClassGapiPeer_fid, (*env)->GetFieldID(env, GET_CACHED(gapiSuperClass_class), "gapiObject", "J"));
+                SET_CACHED(sajSuperClassGapiPeer_fid, (*env)->GetFieldID(env, GET_CACHED(gapiSuperClass_class), "gapiPeer", "J"));
                 saj_exceptionCheck(env);
             }
             /* read field gapiObject from the object */
@@ -102,9 +104,7 @@ saj_write_gapi_address(
 
         if( rc == SAJ_RETCODE_OK){
             if (GET_CACHED(sajSuperClassGapiPeer_fid) == NULL) {
-                SET_CACHED(sajSuperClassGapiPeer_fid, (*env)->GetFieldID(env, GET_CACHED(gapiSuperClass_class),
-                           "gapiPeer",
-                           "J"));
+                SET_CACHED(sajSuperClassGapiPeer_fid, (*env)->GetFieldID(env, GET_CACHED(gapiSuperClass_class), "gapiPeer", "J"));
                 saj_exceptionCheck(env);
             }
             /* write value to java object */
@@ -251,7 +251,8 @@ saj_write_java_statusCondition_address(
     saj_userData ud;
 
     assert(env != NULL);
-    assert(java_object != NULL);
+
+    OS_UNUSED_ARG(java_object);
 
     if(gapi_obj != GAPI_OBJECT_NIL){
         ud = saj_userData(gapi_object_get_user_data(gapi_obj));
@@ -275,6 +276,8 @@ saj_destroy_user_data_callback(
     saj_userData ud;
     JNIEnv* env;
     void* threadData;
+
+    OS_UNUSED_ARG(userData);
 
     ud = saj_userData(entityUserData);
     threadData = os_threadMemGet(OS_THREAD_JVM);
@@ -388,7 +391,7 @@ saj_register_weak_java_object(
     /* write the adress of the java object to the gapi object */
     saj_write_weak_java_address(env, (gapi_object)gapi_obj_address, new_java_object);
 
-    return SAJ_RETCODE_OK;;
+    return SAJ_RETCODE_OK;
 }
 
 saj_returnCode
@@ -847,8 +850,10 @@ saj_subscriptionBuiltinTopicDataCopyOut(
     }
     if (rc == SAJ_RETCODE_OK)
     {
-        javaTopic_name = (*env)->NewStringUTF(env, src->topic_name);
-        saj_exceptionCheck(env);
+        if (src != NULL && src->topic_name != NULL) {
+            javaTopic_name = (*env)->NewStringUTF(env, src->topic_name);
+            saj_exceptionCheck(env);
+        }
 
         if(javaTopic_name == NULL){ /* src->topic_name was also NULL */
             javaTopic_name = (*env)->NewStringUTF(env, "");
@@ -856,8 +861,10 @@ saj_subscriptionBuiltinTopicDataCopyOut(
     }
     if (rc == SAJ_RETCODE_OK)
     {
-        javaType_name = (*env)->NewStringUTF(env, src->type_name);
-        saj_exceptionCheck(env);
+        if (src != NULL && src->type_name != NULL) {
+            javaType_name = (*env)->NewStringUTF(env, src->type_name);
+            saj_exceptionCheck(env);
+        }
 
         if(javaType_name == NULL){ /* src->type_name was also NULL */
             javaType_name = (*env)->NewStringUTF(env, "");
@@ -1071,8 +1078,10 @@ saj_publicationBuiltinTopicDataCopyOut(
     }
     if (rc == SAJ_RETCODE_OK)
     {
-        javaTopic_name = (*env)->NewStringUTF(env, src->topic_name);
-        saj_exceptionCheck(env);
+        if (src != NULL && src->topic_name != NULL) {
+            javaTopic_name = (*env)->NewStringUTF(env, src->topic_name);
+            saj_exceptionCheck(env);
+        }
 
         if(javaTopic_name == NULL){ /* src->topic_name was also NULL */
             javaTopic_name = (*env)->NewStringUTF(env, "");
@@ -1080,8 +1089,10 @@ saj_publicationBuiltinTopicDataCopyOut(
     }
     if (rc == SAJ_RETCODE_OK)
     {
-        javaType_name = (*env)->NewStringUTF(env, src->type_name);
-        saj_exceptionCheck(env);
+        if (src != NULL && src->type_name != NULL) {
+            javaType_name = (*env)->NewStringUTF(env, src->type_name);
+            saj_exceptionCheck(env);
+        }
 
         if(javaType_name == NULL){ /* src->type_name was also NULL */
             javaType_name = (*env)->NewStringUTF(env, "");
@@ -1455,8 +1466,11 @@ saj_stringSequenceCopyOut(
     /* get the c strings from the buffer */
     for (i = 0; i < seqLength && rc == SAJ_RETCODE_OK; i++)
     {
-        javaString = (*env)->NewStringUTF(env, src._buffer[i]);
-        saj_exceptionCheck(env);
+        gapi_string gapi_str = src._buffer[i];
+        if (gapi_str != NULL) {
+            javaString = (*env)->NewStringUTF(env, gapi_str);
+            saj_exceptionCheck(env);
+        }
 
         if (javaString != NULL)
         {
@@ -1773,14 +1787,15 @@ saj_read_parallelDemarshallingContext_address(
             if( rc == SAJ_RETCODE_OK){
                 assert(GET_CACHED(dataReaderImplClassParallelDemarshallingContext_fid));
                 /* get value from java object */
-                *address = (sajParDemContext)(*env)->GetLongField(env, java_object, GET_CACHED(dataReaderImplClassParallelDemarshallingContext_fid));
+                *address = (sajParDemContext)(PA_ADDRCAST) (*env)->GetLongField(env, java_object, GET_CACHED(dataReaderImplClassParallelDemarshallingContext_fid));
                 saj_exceptionCheck(env);
             }
         }
     }
     if(rc != SAJ_RETCODE_OK){
-    }
         *address = NULL; /* Ensure out-param is always initialized */
+    }
+
     return rc;
 }
 
@@ -1794,7 +1809,7 @@ static saj_returnCode saj_prepare_CDRCopy (JNIEnv *env, jobject obj)
   saj_copyCache copyCache;
   if (fid == NULL)
     return SAJ_RETCODE_ERROR;
-  copyCache = (saj_copyCache) (*env)->GetLongField (env, obj, fid);
+  copyCache = (saj_copyCache)(PA_ADDRCAST) (*env)->GetLongField (env, obj, fid);
   if (sd_cdrCompile (saj_copyCacheCdrInfo (copyCache)) < 0) {
     return SAJ_RETCODE_ERROR;
   } else {

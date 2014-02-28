@@ -76,6 +76,7 @@ C_STRUCT(d_configuration){
     os_time       operationalRequestCombinePeriod;
     c_bool        timeAlignment;
     d_name        role;
+    os_time       timeToWaitForAligner;
 };
 
 #define d_configuration(d) ((d_configuration)(d))

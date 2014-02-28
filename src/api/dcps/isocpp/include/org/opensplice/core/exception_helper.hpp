@@ -22,8 +22,13 @@
 #include <sstream>
 #include <org/opensplice/core/config.hpp>
 #include <dds/core/Exception.hpp>
-
-namespace org { namespace opensplice { namespace core {
+#include <ios>
+namespace org
+{
+namespace opensplice
+{
+namespace core
+{
 
 #define OSPL_INT_TO_STRING(n) OSPL_I_TO_STR(n)
 #define OSPL_I_TO_STR(n) #n
@@ -74,9 +79,9 @@ throw dds::core::NullReferenceError(
 * @return A string fit for passing to an exception constructor
 */
 OSPL_ISOCPP_IMPL_API std::string exception_helper(const char* message,
-                                                  const char* function,
-                                                  bool ospl_error_info = true,
-                                                  bool stack_trace = true);
+        const char* function,
+        bool ospl_error_info = true,
+        bool stack_trace = true);
 
 /**
 * Produce a string suitable for populating an exception 'what' field.
@@ -99,8 +104,8 @@ throw dds::core::NullReferenceError(
 * @return A string fit for passing to an exception constructor
 */
 OSPL_ISOCPP_IMPL_API std::string exception_helper(const std::string& message,
-                                                 bool ospl_error_info = true,
-                                                 bool stack_trace = true);
+        bool ospl_error_info = true,
+        bool stack_trace = true);
 
 /**
 * Turn an old school return code into it's string form, e.g.: DDS::RETCODE_OK,
@@ -118,15 +123,15 @@ OSPL_ISOCPP_IMPL_API std::string dds_return_code_to_string(DDS::ReturnCode_t cod
          context_to_string(
              OSPL_CONTEXT_LITERAL("Tried to create a topic")));
   @endcode
-* @param code The value returned from the DCPS API method.
+* @param code The value returned from the DCPS API function.
 * @param context Some sort of clue to the receiver about what was
 * called or what you were trying to do.
 */
 OSPL_ISOCPP_IMPL_API void check_and_throw_impl(DDS::ReturnCode_t code,
-                                               const std::string& context = "");
+        const std::string& context = "");
 
 /**
- * Turns an OSPL_CONTEXT_LITERAL exapnasion into a std::string.
+ *  @internal Turns an OSPL_CONTEXT_LITERAL exapnasion into a std::string.
  * An OSPL_CONTEXT_LITERAL expands to two comma separated
  * stringish things. This function concatenates them.
  * @param context First stringish.
@@ -146,7 +151,7 @@ inline std::string context_to_string(const char* context = "",
   check_and_throw(result,
                   OSPL_CONTEXT_LITERAL("Trying to create a topic"));
   @endcode
-* @param code The value returned from the DCPS API method.
+* @param code The value returned from the DCPS API function.
 * @param context Some sort of clue to the receiver about what was
 * called or what you were trying to do. Must be a literal or c_str.
 * Defaults to "".
@@ -158,8 +163,10 @@ inline void check_and_throw(DDS::ReturnCode_t code,
                             const char* context = "",
                             const char* function = "")
 {
-    if (code)
+    if(code)
+    {
         org::opensplice::core::check_and_throw_impl(code, context_to_string(context, function));
+    }
 }
 
 /**
@@ -169,15 +176,17 @@ inline void check_and_throw(DDS::ReturnCode_t code,
   std::string my_message = "Oh noes, it's all gone wrong";
   check_and_throw(result, my_message);
   @endcode
-* @param code The value returned from the DCPS API method.
+* @param code The value returned from the DCPS API function.
 * @param context Some sort of clue to the receiver about what was
 * called or what you were trying to do.
 */
 inline void check_and_throw(DDS::ReturnCode_t code,
                             const std::string& context)
 {
-    if (code)
+    if(code)
+    {
         org::opensplice::core::check_and_throw_impl(code, context);
+    }
 }
 
 /**
@@ -192,7 +201,7 @@ bool is_valid_for_arithmetic(const TIMEISH& t)
 {
     return (t.sec() != -1 // Invalid
             && t.sec() != 0xFFFFFFFF // Infinity
-            && t.nanosec() < 1000000000 ); // Invalid & infinity are > 10^9
+            && t.nanosec() < 1000000000);  // Invalid & infinity are > 10^9
 }
 
 /**
@@ -210,7 +219,7 @@ bool is_valid_for_arithmetic(const TIMEISH& t)
 template <typename TIMEISH>
 void validate(const TIMEISH& t, const char* context = "", const char* function = "")
 {
-    if (! is_valid_for_arithmetic<TIMEISH>(t))
+    if(! is_valid_for_arithmetic<TIMEISH>(t))
     {
         std::stringstream message("dds::core::InvalidDataError");
         message << "Value invalid for arithmetic operations" << context << function
@@ -220,6 +229,8 @@ void validate(const TIMEISH& t, const char* context = "", const char* function =
     }
 }
 
-} } }
+}
+}
+}
 
 #endif /* ORG_OPENSPLICE_CORE_EXCEPTION_HELPER_HPP_ */

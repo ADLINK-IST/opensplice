@@ -25,40 +25,45 @@
 #include <dds/core/types.hpp>
 #include <dds/topic/TopicDescription.hpp>
 
-namespace dds { namespace topic {
+namespace dds
+{
+namespace topic
+{
 
 #ifdef OMG_DDS_MULTI_TOPIC_SUPPORT
 
-  template <typename T, template <typename Q> class DELEGATE>
-  class MultiTopic : public TopicDescription <T, DELEGATE> {
-  public:
+template <typename T, template <typename Q> class DELEGATE>
+class MultiTopic : public TopicDescription <T, DELEGATE>
+{
+public:
     OMG_DDS_REF_TYPE_T(MultiTopic, TopicDescription, T, DELEGATE)
 
-  public:
+public:
     template <typename FWDIterator>
     MultiTopic(const dds::domain::DomainParticipant& dp,
-        const std::string& name,
-        const std::string expression,
-        const FWDIterator& params_begin,
-        const FWDIterator& params_end);
+               const std::string& name,
+               const std::string expression,
+               const FWDIterator& params_begin,
+               const FWDIterator& params_end);
 
     virtual ~MultiTopic();
 
-  public:
-  public:
+public:
+public:
 
     const std::string expression() const;
 
     void expression_parameters(const FWDIterator& params_begin,
-        const FWDIterator& params_end);
+                               const FWDIterator& params_end);
 
     dds::core::StringSeq void expression_parameters() const;
 
-  };
+};
 
 #endif  // OMG_DDS_MULTI_TOPIC_SUPPORT
 
-} }
+}
+}
 
 
 #endif /* OMG_DDS_T_TOPIC_CONTENT_FILTERED_TOPIC_HPP_ */

@@ -26,71 +26,127 @@
 
 #ifdef OMG_DDS_CONTENT_SUBSCRIPTION_SUPPORT
 
-namespace dds { namespace sub { namespace cond {
-  class QueryCondition;
-} } }
+namespace dds
+{
+namespace sub
+{
+namespace cond
+{
+class QueryCondition;
+}
+}
+}
 
 /**
- * ReadCondition objects are conditions specifically dedicated
- * to read operations and attached to one DataReader.
- * <br>
- * ReadCondition objects allow an application to specify the data samples
- * it is interested in (by specifying the desired sample states, view states,
- * and instance states). See the parameter definitions for DataReader's
- * read/take operations.) This allows the middleware to enable the condition
- * only when suitable information is available. They are to be used in
- * conjunction with a WaitSet as normal conditions. More than one
- * ReadCondition may be attached to the same DataReader.
+ * QueryCondition objects are specialized ReadCondition objects that allow
+ * the application to also specify a filter on the locally available data.
+ *
+ * The query (query_expression) is similar to an SQL WHERE clause can be
+ * parameterized by arguments.
+ *
+ * Precise syntax for the query expression can be found in Annex A.
  */
 
-class OMG_DDS_API dds::sub::cond::QueryCondition : public dds::sub::cond::TReadCondition<detail::QueryCondition> {
+class OMG_DDS_API dds::sub::cond::QueryCondition : public dds::sub::cond::TReadCondition<dds::sub::cond::detail::QueryCondition>
+{
     typedef detail::QueryCondition DELEGATE;
 public:
-  // Random access iterators
-  typedef DELEGATE::iterator iterator;
-  typedef DELEGATE::const_iterator const_iterator;
+    // Random access iterators
+    typedef DELEGATE::iterator iterator;
+    typedef DELEGATE::const_iterator const_iterator;
 public:
+    /**
+     * Creates a null QueryCondition.
+     */
+    QueryCondition(const dds::core::null_type&);
 
-  QueryCondition(const dds::sub::Query& query,
-      const dds::sub::status::DataState& status);
+    /**
+     * Creates a QueryCondition instance.
+     *
+     * @param query a query
+     * @param status the data state
+     */
+    QueryCondition(const dds::sub::Query& query,
+                   const dds::sub::status::DataState& status);
 
-  template <typename FUN>
-  QueryCondition(const dds::sub::Query& query,
-      const dds::sub::status::DataState& status, const FUN& functor);
+    /**
+     * Creates a QueryCondition instance.
+     *
+     * @param query a query
+     * @param status the data state
+     * @param functor the functor to be called when the condition is triggered
+     */
+    template <typename FUN>
+    QueryCondition(const dds::sub::Query& query,
+                   const dds::sub::status::DataState& status, const FUN& functor);
 
-  ~QueryCondition();
+    virtual ~QueryCondition();
 
 public:
+    /**
+     * Set the Query expression.
+     *
+     * @param expr the expression
+     */
+    void expression(const std::string& expr);
 
-  void expression(const std::string& expr);
-  const std::string& expression();
+    /**
+     * Get the Query expression.
+     *
+     * @return the expression
+     */
+    const std::string& expression();
 
-  /**
-   * Provides the begin iterator to the parameter list.
-   */
-  const_iterator begin() const;
+    /**
+     * Provides the beginning iterator of the parameter list.
+     *
+     * @return the beginning iterator
+     */
+    const_iterator begin() const;
 
-  /**
-   * The end iterator to the parameter list.
-   */
-  const_iterator end() const;
+    /**
+     * Provides the end iterator of the parameter list.
+     *
+     * @param the end iterator
+     */
+    const_iterator end() const;
 
-  /**
-   * Provides the begin iterator to the parameter list.
-   */
-  iterator begin();
+    /**
+     * Provides the beginning iterator of the parameter list.
+     *
+     * @return the beginning iterator
+     */
+    iterator begin();
 
-  /**
-   * The end iterator to the parameter list.
-   */
-  iterator end();
+    /**
+     * Provides the end iterator of the parameter list.
+     *
+     * @param the end iterator
+     */
+    iterator end();
 
-  template<typename FWIterator>
-  void parameters(const FWIterator& begin, const FWIterator end);
+    /**
+     * Sets the Query parameters.
+     *
+     * @param begin an iterator pointing to the beginning of the parameters to set
+     * @param end an iterator pointing to the end of the parameters to set
+     */
+    template<typename FWIterator>
+    void parameters(const FWIterator& begin, const FWIterator end);
 
-  void add_parameter(const std::string& param);
+    /**
+     * Adds a parameter to the Query.
+     *
+     * @param param the parameter to add
+     */
+    void add_parameter(const std::string& param);
 
-  uint32_t parameters_length() const;
+    /**
+     * Gets the number of parameters in the Query.
+     *
+     * @return the number of parameters in the Query
+     */
+    uint32_t parameters_length() const;
 };
 
 #endif  // OMG_DDS_CONTENT_SUBSCRIPTION_SUPPORT

@@ -56,7 +56,7 @@ DDS::ReadCondition_ptr DDS::DataReaderView_impl::create_readcondition (
       myUD = new ccpp_UserData(readCondition);
       if (myUD)
       {
-        gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
+        gapi_object_set_user_data(handle, (DDS::Object *)myUD,
                                   ccpp_CallBack_DeleteUserData, NULL);
       }
       else
@@ -107,7 +107,7 @@ DDS::QueryCondition_ptr DDS::DataReaderView_impl::create_querycondition (
         myUD = new DDS::ccpp_UserData(queryCondition);
         if (myUD)
         {
-           gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
+           gapi_object_set_user_data(handle, (DDS::Object *)myUD,
                                          ccpp_CallBack_DeleteUserData, NULL);
         }
         else
@@ -226,7 +226,7 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::get_qos (
 DDS::ReturnCode_t DDS::DataReaderView_impl::read (
     void * data_values,
     DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    DDS::Long max_samples,
     DDS::SampleStateMask sample_states,
     DDS::ViewStateMask view_states,
     DDS::InstanceStateMask instance_states
@@ -246,7 +246,7 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::read (
 DDS::ReturnCode_t DDS::DataReaderView_impl::take (
     void * data_values,
     DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    DDS::Long max_samples,
     DDS::SampleStateMask sample_states,
     DDS::ViewStateMask view_states,
     DDS::InstanceStateMask instance_states
@@ -266,7 +266,7 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::take (
 DDS::ReturnCode_t DDS::DataReaderView_impl::read_w_condition (
     void * data_values,
     DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    DDS::Long max_samples,
     DDS::ReadCondition_ptr a_condition
 ) THROW_ORB_EXCEPTIONS
 {
@@ -290,7 +290,7 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::read_w_condition (
 DDS::ReturnCode_t DDS::DataReaderView_impl::take_w_condition (
     void * data_values,
     DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    DDS::Long max_samples,
     DDS::ReadCondition_ptr a_condition
 ) THROW_ORB_EXCEPTIONS
 {
@@ -356,7 +356,7 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::take_next_sample (
 DDS::ReturnCode_t DDS::DataReaderView_impl::read_instance (
     void * data_values,
     DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    DDS::Long max_samples,
     DDS::InstanceHandle_t a_handle,
     DDS::SampleStateMask sample_states,
     DDS::ViewStateMask view_states,
@@ -378,7 +378,7 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::read_instance (
 DDS::ReturnCode_t DDS::DataReaderView_impl::take_instance (
     void * data_values,
     DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    DDS::Long max_samples,
     DDS::InstanceHandle_t a_handle,
     DDS::SampleStateMask sample_states,
     DDS::ViewStateMask view_states,
@@ -400,7 +400,7 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::take_instance (
 DDS::ReturnCode_t DDS::DataReaderView_impl::read_next_instance (
     void * data_values,
     DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    DDS::Long max_samples,
     DDS::InstanceHandle_t a_handle,
     DDS::SampleStateMask sample_states,
     DDS::ViewStateMask view_states,
@@ -422,7 +422,7 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::read_next_instance (
 DDS::ReturnCode_t DDS::DataReaderView_impl::take_next_instance (
     void * data_values,
     DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    DDS::Long max_samples,
     DDS::InstanceHandle_t a_handle,
     DDS::SampleStateMask sample_states,
     DDS::ViewStateMask view_states,
@@ -444,7 +444,7 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::take_next_instance (
 DDS::ReturnCode_t DDS::DataReaderView_impl::read_next_instance_w_condition (
     void * data_values,
     DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    DDS::Long max_samples,
     DDS::InstanceHandle_t a_handle,
     DDS::ReadCondition_ptr a_condition
 ) THROW_ORB_EXCEPTIONS
@@ -470,7 +470,7 @@ DDS::ReturnCode_t DDS::DataReaderView_impl::read_next_instance_w_condition (
 DDS::ReturnCode_t DDS::DataReaderView_impl::take_next_instance_w_condition (
     void * data_values,
     DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    DDS::Long max_samples,
     DDS::InstanceHandle_t a_handle,
     DDS::ReadCondition_ptr a_condition
 ) THROW_ORB_EXCEPTIONS
@@ -528,7 +528,7 @@ THROW_ORB_EXCEPTIONS
 
     gapi_sc = gapi_dataReaderView_get_statuscondition((gapi_dataReaderView)_gapi_self);
     myUD = dynamic_cast<DDS::ccpp_UserData_ptr>
-                          ((CORBA::Object *)gapi_object_get_user_data(
+                          ((DDS::Object *)gapi_object_get_user_data(
                                   gapi_sc));
     if (myUD)
     {
@@ -560,13 +560,13 @@ THROW_ORB_EXCEPTIONS
 DDS::DataReader_ptr DDS::DataReaderView_impl::get_datareader()
 THROW_ORB_EXCEPTIONS
 {
-    DataReader_ptr reader;
+    DataReader_ptr reader = NULL;
     DDS::ccpp_UserData_ptr myUD;
     gapi_dataReader gapi_dr;
 
     gapi_dr = gapi_dataReaderView_get_datareader((gapi_dataReaderView)_gapi_self);
     myUD = dynamic_cast<DDS::ccpp_UserData_ptr>
-                          ((CORBA::Object *)gapi_object_get_user_data(
+                          ((DDS::Object *)gapi_object_get_user_data(
                                   gapi_dr));
     if (myUD)
     {

@@ -4,7 +4,7 @@
 project : isosacpp_typesupport, ospl_testframe {
     //exename += $(CFG)
     specific (make) {
-        obj_dir = .obj$(CFG)/
+        obj_dir = .obj$(CFG)<%slash%>
     }
     includes += .
 }

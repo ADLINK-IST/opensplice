@@ -3,16 +3,50 @@ ISO/IEC C++ DCPS API                                                            
 
 [TOC]
 
+ISO CPP is the latest DDS DCPS API for the C++ Language. It is more user friendly
+and simpler to use.
+
+If you are new to ISOCPP we would recommend that you start by looking at the example
+code provided in your OpenSplice installation directory as well as the documentation
+below.
+
+- \subpage isocpp_examples
+
+   + \subpage examplesdcpsTutorialisocpp
+   + \subpage examplesdcpsHelloWorldisocpp
+   + \subpage examplesdcpsContentFilteredTopicisocpp
+   + \subpage examplesdcpsDurabilityisocpp
+   + \subpage examplesdcpsListenerisocpp
+   + \subpage examplesdcpsLifecycleisocpp
+   + \subpage examplesdcpsOwnershipisocpp
+   + \subpage examplesdcpsQueryConditionisocpp
+   + \subpage examplesdcpsRoundTripisocpp
+   + \subpage examplesdcpsThroughputisocpp
+   + \subpage examplesdcpsWaitSetisocpp
+
 API documentation                                                               {#mainpage_api}
 =================
+
+The namespaces below contain all of the major functionality of the ISOCPP api.
 
 - \subpage isocpp_dcps
 
    + \subpage isocpp_dcps_domain
+    + The dds::domain namespace provides facilities for creating a DomainParticipant
+      that establishes a virtual network in which an application and it's entities
+      can operate.
    + \subpage isocpp_dcps_topic
+    + The dds::topic namespace provides facilities for the creation of Topics which
+      can be published or subscribed to, as well as providing more advanced filtering
+      through ContentFilteredTopics.
    + \subpage isocpp_dcps_pub
+    + The dds::pub namespace provides facilities for writing samples based on a Topic.
    + \subpage isocpp_dcps_sub
+    + The dds::sub namespace provides facilities for reading samples based on a Topic,
+      as well as providing the ability to query a read.
    + \subpage isocpp_dcps_core
+    + The dds::core namespace provides core facilities such as QoS policies and the
+      ability to wait on particular conditions using a WaitSet.
 
 Platform requirements & re-building                                             {#mainpage_build}
 ===================================
@@ -53,7 +87,7 @@ Version             | Default | Optional
 --------------------|---------|---------------
 Visual Studio 2010  | C++11   | TR1 or [Boost]
 Visual Studio 2008  | TR1*    | [Boost]
-Visual Stusio 2005  | [Boost] | none
+Visual Studio 2005  | [Boost] | none
 
 * TR1 support was added to Visual Studio 2008 in Feature Pack 1. If this is not
 installed you should use [Boost] instead.
@@ -70,13 +104,3 @@ See \subpage isocpp_customlibs for instructions.
 
 [Boost]: http://www.boost.org/ "Boost"
 
-See also                                                                        {#mainpage_also}
-========
-
-- \subpage isocpp_examples
-
-   + \subpage examplesdcpsHelloWorldisocpp
-   + \subpage examplesdcpsListenerisocpp
-   + \subpage examplesdcpsContentFilteredTopicisocpp
-
-- \subpage ishapes_readme

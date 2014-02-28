@@ -140,7 +140,7 @@ cms_configurationSetDefaults(cms_configuration config)
     config->leasePeriod.nanoseconds=0;
     config->leaseRenewalPeriod.seconds=2; /* = defaultExpiryTime * defaultUpdateFactor == 10.0 * 0.2 */
     config->leaseRenewalPeriod.nanoseconds=0;
-    config->clientLeasePeriod.seconds=10;
+    config->clientLeasePeriod.seconds=15;
     config->clientLeasePeriod.nanoseconds=0;
 
     os_threadAttrInit(&config->clientScheduling);
@@ -435,8 +435,10 @@ cms_configurationInitPort(
                          "%s Configuration: 'Port' <= 0 not valid. Applying default", config->name);
                     }
                 }
+                os_free(value);
             }
             u_cfDataFree(data);
+
         }
     }
 }

@@ -1,11 +1,11 @@
 // -*- MPC -*-
 // $Id:$
 
-project : ospl_dcpssacpp, ospl_dcpsisocpp, c_or_cplusplus_example {
+project :  ospl_dcpsisocpp, c_or_cplusplus_example {
     libpaths += .
     requires += dcps_isocpp_example
-    after += ISO_Cxx*Implementation
-    libs += ISO_Cxx*Implementation ISO_Cxx*Typesupport
+    after += ISO_Cxx*Impl
+    libs += ISO_Cxx*Impl ISO_Cxx*Types
     Header_Files {
     }
 

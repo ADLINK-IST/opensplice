@@ -435,6 +435,25 @@ idl_structureMemberOpenClose(
     }
 }
 
+static c_bool
+idl_unionHasCase(c_union _union, char *name) {
+    c_long caseCount, i;
+    c_unionCase _case;
+    c_bool result = FALSE;
+
+    caseCount = c_arraySize(_union->cases);
+
+    for(i=0; i<caseCount; i++) {
+        _case = _union->cases[i];
+        if(!strcmp(c_specifier(_case)->name, name)) {
+            result = TRUE;
+            break;
+        }
+    }
+
+    return result;
+}
+
 /** @brief callback function called on definition of a union in the IDL input file.
  *
  * Generate code for the following IDL construct:
@@ -486,7 +505,11 @@ idl_unionOpen(
     /* public final class <struct-name> { */
     idl_fileOutPrintf(idl_fileCur(), "public final class %s {\n\n", idl_javaId(name));
     idl_fileOutPrintf(idl_fileCur(), "    private %s _d;\n\n", unionSwitchType);
-    idl_fileOutPrintf(idl_fileCur(), "    public %s discriminator ()\n", unionSwitchType);
+    if(idl_unionHasCase((c_union)idl_typeSpecDef((idl_typeSpec)unionSpec), "discriminator")) {
+        idl_fileOutPrintf(idl_fileCur(), "    public %s _discriminator ()\n", unionSwitchType);
+    }else {
+        idl_fileOutPrintf(idl_fileCur(), "    public %s discriminator ()\n", unionSwitchType);
+    }
     idl_fileOutPrintf(idl_fileCur(), "    {\n");
     idl_fileOutPrintf(idl_fileCur(), "        return _d;\n");
     idl_fileOutPrintf(idl_fileCur(), "    }\n\n");
@@ -700,16 +723,18 @@ idl_unionCaseOpenClose(
         idl_fileOutPrintf(idl_fileCur(), "            throw Utilities.createException(Utilities.EXCEPTION_TYPE_BAD_OPERATION, null);\n");
         idl_fileOutPrintf(idl_fileCur(), "        }\n");
     } else {
-        labelImage = os_iterObject(labelsUsedIter, 0);
-        idl_fileOutPrintf(idl_fileCur(), "        if (_d == %s", labelImage);
-	nrElements = os_iterLength(labelsUsedIter);
-        for (i = 1; i < nrElements; i++) {
-	    labelImage = os_iterObject(labelsUsedIter, i);
-            idl_fileOutPrintf(idl_fileCur(), " ||\n            _d == %s", labelImage);
+        if(os_iterLength(labelsUsedIter)) {
+            labelImage = os_iterObject(labelsUsedIter, 0);
+            idl_fileOutPrintf(idl_fileCur(), "        if (_d == %s", labelImage);
+                nrElements = os_iterLength(labelsUsedIter);
+            for (i = 1; i < nrElements; i++) {
+            labelImage = os_iterObject(labelsUsedIter, i);
+                idl_fileOutPrintf(idl_fileCur(), " ||\n            _d == %s", labelImage);
+            }
+            idl_fileOutPrintf(idl_fileCur(), ") {\n");
+            idl_fileOutPrintf(idl_fileCur(), "            throw Utilities.createException(Utilities.EXCEPTION_TYPE_BAD_OPERATION, null);\n");
+            idl_fileOutPrintf(idl_fileCur(), "        }\n");
         }
-        idl_fileOutPrintf(idl_fileCur(), ") {\n");
-        idl_fileOutPrintf(idl_fileCur(), "            throw Utilities.createException(Utilities.EXCEPTION_TYPE_BAD_OPERATION, null);\n");
-        idl_fileOutPrintf(idl_fileCur(), "        }\n");
     }
     idl_fileOutPrintf(idl_fileCur(), "        return __%s;\n", idl_javaId(name));
     idl_fileOutPrintf(idl_fileCur(), "    }\n\n");
@@ -754,16 +779,18 @@ idl_unionCaseOpenClose(
         idl_fileOutPrintf(idl_fileCur(), "            throw Utilities.createException(Utilities.EXCEPTION_TYPE_BAD_OPERATION, null);\n");
         idl_fileOutPrintf(idl_fileCur(), "        }\n");
     } else {
-        labelImage = os_iterTakeFirst(labelsUsedIter);
-        idl_fileOutPrintf(idl_fileCur(), "        if (d == (%s)%s", unionSwitchType, labelImage);
-        labelImage = os_iterTakeFirst(labelsUsedIter);
-        while (labelImage) {
-            idl_fileOutPrintf(idl_fileCur(), " ||\n            d == (%s)%s", unionSwitchType, labelImage);
+        if(os_iterLength(labelsUsedIter)) {
             labelImage = os_iterTakeFirst(labelsUsedIter);
+            idl_fileOutPrintf(idl_fileCur(), "        if (d == (%s)%s", unionSwitchType, labelImage);
+            labelImage = os_iterTakeFirst(labelsUsedIter);
+            while (labelImage) {
+                idl_fileOutPrintf(idl_fileCur(), " ||\n            d == (%s)%s", unionSwitchType, labelImage);
+                labelImage = os_iterTakeFirst(labelsUsedIter);
+            }
+            idl_fileOutPrintf(idl_fileCur(), ") {\n");
+            idl_fileOutPrintf(idl_fileCur(), "            throw Utilities.createException(Utilities.EXCEPTION_TYPE_BAD_OPERATION, null);\n");
+            idl_fileOutPrintf(idl_fileCur(), "        }\n");
         }
-        idl_fileOutPrintf(idl_fileCur(), ") {\n");
-        idl_fileOutPrintf(idl_fileCur(), "            throw Utilities.createException(Utilities.EXCEPTION_TYPE_BAD_OPERATION, null);\n");
-        idl_fileOutPrintf(idl_fileCur(), "        }\n");
     }
     idl_fileOutPrintf(idl_fileCur(), "        __%s = val;\n", idl_javaId(name));
     idl_fileOutPrintf(idl_fileCur(), "        _d = d;\n");
@@ -805,16 +832,19 @@ idl_artificialDefaultLabelOpenClose(
 
     idl_fileOutPrintf(idl_fileCur(), "    public void __default (%s d)\n", idl_corbaJavaTypeFromTypeSpec (typeSpec));
     idl_fileOutPrintf(idl_fileCur(), "    {\n");
-    labelImage = os_iterTakeFirst(labelsUsedIter);
-    idl_fileOutPrintf(idl_fileCur(), "        if (d == (%s)%s", unionSwitchType, labelImage);
-    labelImage = os_iterTakeFirst(labelsUsedIter);
-    while (labelImage) {
-        idl_fileOutPrintf(idl_fileCur(), " ||\n            d == (%s)%s", unionSwitchType, labelImage);
+
+    if(os_iterLength(labelsUsedIter)) {
         labelImage = os_iterTakeFirst(labelsUsedIter);
+        idl_fileOutPrintf(idl_fileCur(), "        if (d == (%s)%s", unionSwitchType, labelImage);
+        labelImage = os_iterTakeFirst(labelsUsedIter);
+        while (labelImage) {
+            idl_fileOutPrintf(idl_fileCur(), " ||\n            d == (%s)%s", unionSwitchType, labelImage);
+            labelImage = os_iterTakeFirst(labelsUsedIter);
+        }
+        idl_fileOutPrintf(idl_fileCur(), ") {\n");
+        idl_fileOutPrintf(idl_fileCur(), "            throw Utilities.createException(Utilities.EXCEPTION_TYPE_BAD_OPERATION, null);\n");
+        idl_fileOutPrintf(idl_fileCur(), "        }\n");
     }
-    idl_fileOutPrintf(idl_fileCur(), ") {\n");
-    idl_fileOutPrintf(idl_fileCur(), "            throw Utilities.createException(Utilities.EXCEPTION_TYPE_BAD_OPERATION, null);\n");
-    idl_fileOutPrintf(idl_fileCur(), "        }\n");
     idl_fileOutPrintf(idl_fileCur(), "        _d = d;\n");
     idl_fileOutPrintf(idl_fileCur(), "    }\n\n");
 }

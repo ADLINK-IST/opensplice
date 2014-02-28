@@ -3,8 +3,8 @@
 
 #include "os_defs.h"
 
-#ifndef NDEBUG
-#include "q_thread.h" /* for vtime_t */
+#if defined (__cplusplus)
+extern "C" {
 #endif
 
 struct ephash;
@@ -14,7 +14,6 @@ struct writer;
 struct proxy_participant;
 struct proxy_reader;
 struct proxy_writer;
-struct v_gid_s;
 struct nn_guid;
 
 struct ephash_chain_entry {
@@ -32,18 +31,13 @@ struct ephash_chain_entry {
   struct ephash_chain_entry *enum_next;
 };
 
-struct ephash_enum {
+struct ephash_enum
+{
   struct ephash_chain_entry *cursor;
   struct ephash *ephash;
   struct ephash_enum *next_live;
   struct ephash_enum *prev_live;
-#ifndef NDEBUG
-  vtime_t vtime;
-#endif
 };
-
-int ephash_init (void);
-void ephash_fini (void);
 
 /* Readers & writers are both in a GUID- and in a GID-keyed table. If
    they are in the GID-based one, they are also in the GUID-based one,
@@ -63,6 +57,8 @@ void ephash_fini (void);
    at the protocol level slightly before the network reader can use it
    to transmit data. */
 
+struct ephash *ephash_new (os_uint32 soft_limit);
+void ephash_free (struct ephash *ephash);
 
 void ephash_insert_participant_guid (struct participant *pp);
 void ephash_insert_proxy_participant_guid (struct proxy_participant *proxypp);
@@ -85,16 +81,15 @@ struct reader *ephash_lookup_reader_guid (const struct nn_guid *guid);
 struct proxy_writer *ephash_lookup_proxy_writer_guid (const struct nn_guid *guid);
 struct proxy_reader *ephash_lookup_proxy_reader_guid (const struct nn_guid *guid);
 
-void ephash_insert_writer_gid (struct writer *wr);
-void ephash_insert_reader_gid (struct reader *rd);
-void ephash_remove_writer_gid (struct writer *wr);
-void ephash_remove_reader_gid (struct reader *rd);
-struct writer *ephash_lookup_writer_gid (const struct v_gid_s *gid);
-struct reader *ephash_lookup_reader_gid (const struct v_gid_s *gid);
+struct v_gid_s;
+void ephash_insert_writer_gid (struct ephash *gid_hash, struct writer *wr);
+void ephash_insert_reader_gid (struct ephash *gid_hash, struct reader *rd);
+void ephash_remove_writer_gid (struct ephash *gid_hash, struct writer *wr);
+void ephash_remove_reader_gid (struct ephash *gid_hash, struct reader *rd);
+struct writer *ephash_lookup_writer_gid (const struct ephash *gid_hash, const struct v_gid_s *gid);
+struct reader *ephash_lookup_reader_gid (const struct ephash *gid_hash, const struct v_gid_s *gid);
 
 /* Enumeration of entries in the hash table:
-
-   - these use the guid tables, never the gid ones;
 
    - "next" visits at least all entries that were in the hash table at
      the time of calling init and that have not subsequently been
@@ -134,6 +129,10 @@ void ephash_enum_proxy_writer_fini (struct ephash_enum_proxy_writer *st);
 void ephash_enum_proxy_reader_fini (struct ephash_enum_proxy_reader *st);
 void ephash_enum_participant_fini (struct ephash_enum_participant *st);
 void ephash_enum_proxy_participant_fini (struct ephash_enum_proxy_participant *st);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* Q_EPHASH_H */
 

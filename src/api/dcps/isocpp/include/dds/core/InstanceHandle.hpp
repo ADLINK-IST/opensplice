@@ -23,9 +23,10 @@
 
 // Implementation
 
-inline std::ostream& operator << (std::ostream& os, const dds::core::InstanceHandle& h) {
-  os << h.delegate();
-  return os;
+inline std::ostream& operator << (std::ostream& os, const dds::core::InstanceHandle& h)
+{
+    os << h.delegate();
+    return os;
 }
 
 // End of implementation

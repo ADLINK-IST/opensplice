@@ -77,6 +77,6 @@ DDS_QueryCondition createQueryCondition(DDS_DataReader dataReader, DDS_char *que
 
 void deleteQueryCondition(DDS_DataReader dataReader, DDS_QueryCondition queryCondition);
 
-void writeStockSample(DDS_DataWriter dataWriter, DDS_InstanceHandle_t userHandle, ContentFilteredTopicData_Stock* ContentFilteredTopicDataSample);
+void writeStockSample(DDS_DataWriter dataWriter, DDS_InstanceHandle_t userHandle, StockMarket_Stock* ContentFilteredTopicDataSample);
 
 #endif

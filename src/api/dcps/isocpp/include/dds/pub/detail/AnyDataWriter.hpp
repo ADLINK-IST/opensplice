@@ -58,13 +58,18 @@ public:
     virtual void close() = 0;
 
     virtual void retain(bool b) = 0;
+
+    virtual DDS::DataWriter_ptr get_dds_datawriter() = 0;
 };
 
 template <typename T>
 class dds::pub::detail::DWHolder : public DWHolderBase
 {
 public:
-    DWHolder(const dds::pub::DataWriter<T>& dw) : dw_(dw) { }
+    DWHolder(const dds::pub::DataWriter<T>& dw) : dw_(dw)
+    {
+        dw_var_ = DDS::DataWriter::_narrow(((dds::pub::DataWriter<T>)dw)->get_raw_writer());
+    }
     virtual ~DWHolder() { }
 public:
     virtual const ::dds::pub::qos::DataWriterQos& qos() const
@@ -72,9 +77,9 @@ public:
         return dw_.qos();
     }
 
-    virtual void qos(const ::dds::pub::qos::DataWriterQos& the_qos)
+    virtual void qos(const ::dds::pub::qos::DataWriterQos& qos)
     {
-        dw_.qos(the_qos);
+        dw_.qos(qos);
     }
 
     virtual const std::string& topic_name() const
@@ -109,8 +114,14 @@ public:
         return dw_;
     }
 
+    DDS::DataWriter_ptr get_dds_datawriter()
+    {
+        return dw_var_.in();
+    }
+
 private:
     dds::pub::DataWriter<T> dw_;
+    DDS::DataWriter_var dw_var_;
 };
 
 

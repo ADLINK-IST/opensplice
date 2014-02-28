@@ -3,6 +3,8 @@
  */
 #include <FilterDialog.hpp>
 
+namespace demo { namespace ishapes {
+
 FilterDialog::FilterDialog(ShapesWidget* widget)
     : widget_(widget),
       enabled_(false)
@@ -89,3 +91,4 @@ FilterDialog::filterOutside()
 {
     return filterDialog_.filterCombo->currentIndex() == 0;
 }
+}}

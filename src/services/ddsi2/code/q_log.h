@@ -15,6 +15,11 @@
 #include <stdarg.h>
 
 #include "os_report.h"
+#include "os_defs.h"
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 #define LC_FATAL 1u
 #define LC_ERROR 2u
@@ -63,6 +68,7 @@ void nn_log_set_tstamp (os_int64 tnow);
       }                                                                 \
     }                                                                   \
   } while (0)
+
 
 #define NN_WARNING0(fmt) do {   \
     nn_log (LC_WARNING, (fmt)); \
@@ -209,6 +215,10 @@ void nn_log_set_tstamp (os_int64 tnow);
     os_report (OS_FATAL, config.servicename, __FILE__, __LINE__,  0, (fmt), a, b, c, d, e, f, g, h, i, j); \
     abort (); \
   } while (0)
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* NN_LOG_H */
 

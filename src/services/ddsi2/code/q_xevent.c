@@ -7,7 +7,7 @@
 #include "os_defs.h"
 #include "os_stdlib.h"
 
-#include "q_avl.h"
+#include "ut_avl.h"
 #include "q_time.h"
 #include "q_log.h"
 #include "q_addrset.h"
@@ -29,8 +29,6 @@
 #include "q_osplser.h"
 #include "q_lease.h"
 #include "q_xmsg.h"
-#include "q_mlv.h"
-#include "q_osplserModule.h"
 #include "q_fibheap.h"
 
 #include "sysdeps.h"
@@ -52,7 +50,6 @@ enum xeventkind {
   XEVK_ACKNACK,
   XEVK_SPDP,
   XEVK_PMD_UPDATE,
-  XEVK_INFO,
   XEVK_END_STARTUP_MODE,
   XEVK_DELETE_WRITER,
   XEVK_CALLBACK
@@ -119,14 +116,14 @@ struct xevent_nt {
       /* xmsg is self-contained / relies on reference counts */
       struct nn_xmsg *msg;
       unsigned queued_rexmit_bytes;
-      STRUCT_AVLNODE (xevent_msg_avlnode, struct xevent_nt *) msg_avlnode;
+      ut_avlNode_t msg_avlnode;
     } msg_rexmit;
   } u;
 };
 
 struct xeventq {
   struct fibheap xevents;
-  STRUCT_AVLTREE (xeventq_msg_avltree, struct xevent_nt *) msg_xevents;
+  ut_avlTree_t msg_xevents;
   struct xevent_nt *non_timed_xmit_list_oldest;
   struct xevent_nt *non_timed_xmit_list_newest; /* undefined if ..._oldest == NULL */
   unsigned queued_rexmit_bytes;
@@ -137,11 +134,14 @@ struct xeventq {
   struct thread_state1 *ts;
   os_mutex lock;
   os_cond cond;
-  os_socket transmit_socket;
+  ddsi_tran_conn_t tev_conn;
 };
 
 static void *xevent_thread (struct xeventq *xevq);
 static os_int64 earliest_in_xeventq (struct xeventq *evq);
+static int msg_xevents_cmp (const void *a, const void *b);
+
+static const ut_avlTreedef_t msg_xevents_treedef = UT_AVL_TREEDEF_INITIALIZER_INDKEY (offsetof (struct xevent_nt, u.msg_rexmit.msg_avlnode), offsetof (struct xevent_nt, u.msg_rexmit.msg), msg_xevents_cmp, 0);
 
 static int compare_xevent_tsched (const void *va, const void *vb)
 {
@@ -184,24 +184,21 @@ static struct xevent_nt *lookup_msg (struct xeventq *evq, struct nn_xmsg *msg)
 {
   assert (nn_xmsg_kind (msg) == NN_XMSG_KIND_DATA_REXMIT);
   trace_msg ("lookup-msg", msg);
-  return avl_lookup (&evq->msg_xevents, msg, NULL);
+  return ut_avlLookup (&msg_xevents_treedef, &evq->msg_xevents, msg);
 }
 
 static void remember_msg (struct xeventq *evq, struct xevent_nt *ev)
 {
-  avlparent_t parent;
   assert (ev->kind == XEVK_MSG_REXMIT);
   trace_msg ("remember-msg", ev->u.msg_rexmit.msg);
-  avl_lookup (&evq->msg_xevents, ev->u.msg_rexmit.msg, &parent);
-  avl_init_node (&ev->u.msg_rexmit.msg_avlnode, parent);
-  avl_insert (&evq->msg_xevents, ev);
+  ut_avlInsert (&msg_xevents_treedef, &evq->msg_xevents, ev);
 }
 
 static void forget_msg (struct xeventq *evq, struct xevent_nt *ev)
 {
   assert (ev->kind == XEVK_MSG_REXMIT);
   trace_msg ("forget-msg", ev->u.msg_rexmit.msg);
-  avl_delete (&evq->msg_xevents, ev);
+  ut_avlDelete (&msg_xevents_treedef, &evq->msg_xevents, ev);
 }
 
 static void add_to_non_timed_xmit_list (struct xeventq *evq, struct xevent_nt *ev)
@@ -221,7 +218,7 @@ static void add_to_non_timed_xmit_list (struct xeventq *evq, struct xevent_nt *e
   os_condSignal (&evq->cond);
 }
 
-static struct xevent_nt *getnext_from_non_timed_xmit_list (struct xeventq *evq)
+static struct xevent_nt *getnext_from_non_timed_xmit_list  (struct xeventq *evq)
 {
   /* function removes and returns the first item in the list
      (from the front) and frees the container */
@@ -263,10 +260,10 @@ static int compute_non_timed_xmit_list_size (struct xeventq *evq)
 
 #ifndef NDEBUG
 static int nontimed_xevent_in_queue (struct xeventq *evq, struct xevent_nt *ev)
-{
+  {
   struct xevent_nt *x;
   for (x = evq->non_timed_xmit_list_oldest; x; x = x->listnode.next)
-  {
+    {
     if (x == ev)
       return 1;
   }
@@ -274,8 +271,9 @@ static int nontimed_xevent_in_queue (struct xeventq *evq, struct xevent_nt *ev)
 }
 #endif
 
-static void free_xevent (struct xevent *ev)
+static void free_xevent (struct xeventq *evq, struct xevent *ev)
 {
+  (void) evq;
   if (ev->tsched != TSCHED_DELETE)
   {
     switch (ev->kind)
@@ -284,7 +282,6 @@ static void free_xevent (struct xevent *ev)
       case XEVK_ACKNACK:
       case XEVK_SPDP:
       case XEVK_PMD_UPDATE:
-      case XEVK_INFO:
       case XEVK_END_STARTUP_MODE:
       case XEVK_DELETE_WRITER:
       case XEVK_CALLBACK:
@@ -303,7 +300,7 @@ static void free_xevent_nt (struct xeventq *evq, struct xevent_nt *ev)
       nn_xmsg_free (ev->u.msg.msg);
       break;
     case XEVK_MSG_REXMIT:
-      assert (avl_lookup (&evq->msg_xevents, ev->u.msg_rexmit.msg, NULL) == NULL);
+      assert (ut_avlLookup (&msg_xevents_treedef, &evq->msg_xevents, ev->u.msg_rexmit.msg) == NULL);
       update_rexmit_counts (evq, ev);
       nn_xmsg_free (ev->u.msg_rexmit.msg);
       break;
@@ -440,15 +437,19 @@ static int msg_xevents_cmp (const void *a, const void *b)
   return nn_xmsg_compare_fragid (a, b);
 }
 
-struct xeventq *xeventq_new (os_socket transmit_socket, unsigned max_queued_rexmit_bytes, unsigned max_queued_rexmit_msgs
-                             )
+struct xeventq * xeventq_new
+(
+  ddsi_tran_conn_t conn,
+  unsigned max_queued_rexmit_bytes,
+  unsigned max_queued_rexmit_msgs
+)
 {
   struct xeventq *evq = os_malloc (sizeof (*evq));
   /* limit to 2GB to prevent overflow (4GB - 64kB should be ok, too) */
   if (max_queued_rexmit_bytes > 2147483648u)
     max_queued_rexmit_bytes = 2147483648u;
   fh_init (&evq->xevents, offsetof (struct xevent, heapnode), compare_xevent_tsched);
-  avl_init_indkey (&evq->msg_xevents, offsetof (struct xevent_nt, u.msg_rexmit.msg_avlnode), offsetof (struct xevent_nt, u.msg_rexmit.msg), msg_xevents_cmp, 0);
+  ut_avlInit (&msg_xevents_treedef, &evq->msg_xevents);
   evq->non_timed_xmit_list_oldest = NULL;
   evq->non_timed_xmit_list_newest = NULL;
   evq->terminate = 0;
@@ -457,7 +458,7 @@ struct xeventq *xeventq_new (os_socket transmit_socket, unsigned max_queued_rexm
   evq->max_queued_rexmit_msgs = max_queued_rexmit_msgs;
   evq->queued_rexmit_bytes = 0;
   evq->queued_rexmit_msgs = 0;
-  evq->transmit_socket = transmit_socket;
+  evq->tev_conn = conn;
   os_mutexInit (&evq->lock, &gv.mattr);
   os_condInit (&evq->cond, &evq->lock, &gv.cattr);
   return evq;
@@ -499,10 +500,10 @@ void xeventq_free (struct xeventq *evq)
   struct xevent *ev;
   assert (evq->ts == NULL);
   while ((ev = fh_extractmin (&evq->xevents)) != NULL)
-    free_xevent (ev);
-  while (!non_timed_xmit_list_is_empty (evq))
+    free_xevent (evq, ev);
+  while (!non_timed_xmit_list_is_empty(evq))
     free_xevent_nt (evq, getnext_from_non_timed_xmit_list (evq));
-  assert (avl_empty (&evq->msg_xevents));
+  assert (ut_avlIsEmpty (&evq->msg_xevents));
   os_condDestroy (&evq->cond);
   os_mutexDestroy (&evq->lock);
   os_free (evq);
@@ -568,7 +569,7 @@ static os_size_t handle_xevk_heartbeat (struct nn_xpack *xp, struct xevent *ev, 
   else
   {
     hbansreq = writer_hbcontrol_ack_required (wr, tnow);
-    msg = writer_hbcontrol_create_heartbeat (wr, tnow, hbansreq);
+    msg = writer_hbcontrol_create_heartbeat (wr, tnow, hbansreq, 0);
     t_next = tnow + writer_hbcontrol_intv (wr, tnow);
   }
 
@@ -577,8 +578,8 @@ static os_size_t handle_xevk_heartbeat (struct nn_xpack *xp, struct xevent *ev, 
           hbansreq ? "" : " final",
           msg ? "sent" : "suppressed",
           (t_next == T_NEVER) ? POS_INFINITY_DOUBLE : (t_next - tnow) / 1e9,
-          avl_empty (&wr->readers) ? (os_int64) -1 : wr->readers.root->min_seq,
-          avl_empty (&wr->readers) || wr->readers.root->all_have_replied_to_hb ? "" : "!",
+          ut_avlIsEmpty (&wr->readers) ? (os_int64) -1 : ((struct wr_prd_match *) ut_avlRoot (&wr_readers_treedef, &wr->readers))->min_seq,
+          ut_avlIsEmpty (&wr->readers) || ((struct wr_prd_match *) ut_avlRoot (&wr_readers_treedef, &wr->readers))->all_have_replied_to_hb ? "" : "!",
           whc_empty (wr->whc) ? (os_int64) -1 : whc_max_seq (wr->whc), wr->seq_xmit));
   resched_xevent_if_earlier (ev, t_next);
   wr->hbcontrol.tsched = t_next;
@@ -689,8 +690,7 @@ static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pw
     bitmap_base = nn_reorder_next_seq (reorder);
   }
 
-  if ((an = nn_xmsg_append_aligned (msg, &sm_marker, ACKNACK_SIZE_MAX, 4)) == NULL)
-    return ERR_OUT_OF_MEMORY;
+  an = nn_xmsg_append (msg, &sm_marker, ACKNACK_SIZE_MAX);
   nn_xmsg_submsg_init (msg, sm_marker, SMID_ACKNACK);
   an->readerId = nn_hton_entityid (rwn->rd_guid.entityid);
   an->writerId = nn_hton_entityid (pwr->e.guid.entityid);
@@ -783,11 +783,7 @@ static int add_AckNack (struct nn_xmsg *msg, struct proxy_writer *pwr, struct pw
        1-based fragment numbers */
     assert (nackfrag_numbits == (int) nackfrag.set.numbits);
 
-    if ((nf = nn_xmsg_append_aligned (msg, &sm_marker, NACKFRAG_SIZE (nackfrag_numbits), 4)) == NULL)
-    {
-      TRACE ((" + nackfrag-lost-for-lack-of-memory\n"));
-      return ERR_OUT_OF_MEMORY;
-    }
+    nf = nn_xmsg_append (msg, &sm_marker, NACKFRAG_SIZE (nackfrag_numbits));
 
     nn_xmsg_submsg_init (msg, sm_marker, SMID_NACK_FRAG);
     nf->readerId = nn_hton_entityid (rwn->rd_guid.entityid);
@@ -835,7 +831,7 @@ static os_size_t handle_xevk_acknack (UNUSED_ARG (struct nn_xpack *xp), struct x
     return 0;
 
   os_mutexLock (&pwr->e.lock);
-  if ((rwn = avl_lookup (&pwr->readers, &ev->u.acknack.rd_guid, NULL)) == NULL)
+  if ((rwn = ut_avlLookup (&pwr_readers_treedef, &pwr->readers, &ev->u.acknack.rd_guid)) == NULL)
   {
     os_mutexUnlock (&pwr->e.lock);
     return 0;
@@ -901,7 +897,7 @@ static os_size_t handle_xevk_acknack (UNUSED_ARG (struct nn_xpack *xp), struct x
   return 0;
 }
 
-static size_t handle_xevk_spdp (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, os_int64 tnow)
+static os_size_t handle_xevk_spdp (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, os_int64 tnow)
 {
   /* Like the writer pointer in the heartbeat event, the participant pointer in the spdp event is assumed valid. */
   const os_int64 mindelta = 10 * T_MILLISECOND;
@@ -1020,11 +1016,16 @@ static size_t handle_xevk_spdp (UNUSED_ARG (struct nn_xpack *xp), struct xevent 
   return 0;
 }
 
-static void write_pmd_message (struct nn_xpack *xp, struct participant *pp, unsigned pmd_kind, os_int64 tnow)
+static void write_pmd_message (struct nn_xpack *xp, struct participant *pp, unsigned pmd_kind)
 {
+#define PMD_DATA_LENGTH 1
   struct writer *wr;
-  struct pmd_s *pl;
+  union {
+    ParticipantMessageData_t pmd;
+    char pad[offsetof (ParticipantMessageData_t, value) + PMD_DATA_LENGTH];
+  } u;
   serdata_t serdata;
+  serstate_t serstate;
 
   if ((wr = get_builtin_writer (pp, NN_ENTITYID_P2P_BUILTIN_PARTICIPANT_MESSAGE_WRITER)) == NULL)
   {
@@ -1032,31 +1033,27 @@ static void write_pmd_message (struct nn_xpack *xp, struct participant *pp, unsi
     return;
   }
 
-  /* It ain't petty: we now use the serializer for PMD, but for that
-     we must provide fully typed data, or else the serializer won't be
-     able to handle the sequence.  That means we must construct it in
-     shared memory, even though it is short-lived, private data. */
-  pl = c_new (osplser_topicpmd_type);
-  /* Guid prefix: endianness causes troubles, which we can avoid using
-     hton_guid_prefix, but the kind we have to do by hand */
-  {
-    nn_guid_prefix_t gp = nn_hton_guid_prefix (pp->e.guid.prefix);
-    pl->a = gp.u[0];
-    pl->b = gp.u[1];
-    pl->c = gp.u[2];
-  }
-  pl->kind = toBE4u (pmd_kind);
-  pl->value = c_newSequence ((c_collectionType) osplser_topicpmd_value_type, 1);
-  memset (pl->value, 0, c_sequenceSize ((c_sequence) pl->value));
-  /* Use serialize_raw to avoid having to also create a v_message */
-  serdata = serialize_raw (gv.serpool, osplser_topicpmd, pl, 0, tnow, 1, NULL);
-  /* Free it - we only need the serialized form from now on */
-  c_free (pl);
+  u.pmd.participantGuidPrefix = nn_hton_guid_prefix (pp->e.guid.prefix);
+  u.pmd.kind = toBE4u (pmd_kind);
+  u.pmd.length = PMD_DATA_LENGTH;
+  memset (u.pmd.value, 0, u.pmd.length);
+
+  serstate = serstate_new (gv.serpool, NULL);
+  serstate_append_blob (serstate, 4, sizeof (u.pad), &u.pmd);
+  serstate_set_key (serstate, 0, 16, &u.pmd);
+  serstate_set_msginfo (serstate, 0, now (), 1, NULL);
+  serdata = serstate_fix (serstate);
+
+  /* HORRIBLE HACK ALERT -- serstate/serdata looks at whether topic is
+     a null pointer to choose PL_CDR_x encoding or regular CDR_x
+     encoding. */
+  serdata->hdr.identifier = PLATFORM_IS_LITTLE_ENDIAN ? CDR_LE : CDR_BE;
 
   write_sample (xp, wr, serdata);
+#undef PMD_DATA_LENGTH
 }
 
-static size_t handle_xevk_pmd_update (struct nn_xpack *xp, struct xevent *ev, os_int64 tnow)
+static os_size_t handle_xevk_pmd_update (struct nn_xpack *xp, struct xevent *ev, os_int64 tnow)
 {
   struct participant *pp;
   os_int64 intv, tnext;
@@ -1064,7 +1061,7 @@ static size_t handle_xevk_pmd_update (struct nn_xpack *xp, struct xevent *ev, os
   if ((pp = ephash_lookup_participant_guid (&ev->u.pmd_update.pp_guid)) == NULL)
     return 0;
 
-  write_pmd_message (xp, pp, PARTICIPANT_MESSAGE_DATA_KIND_AUTOMATIC_LIVELINESS_UPDATE, tnow);
+  write_pmd_message (xp, pp, PARTICIPANT_MESSAGE_DATA_KIND_AUTOMATIC_LIVELINESS_UPDATE);
 
   /* QoS changes can't change lease durations. So the only thing that
      could cause trouble here is that the addition or removal of a
@@ -1083,7 +1080,7 @@ static size_t handle_xevk_pmd_update (struct nn_xpack *xp, struct xevent *ev, os
   }
   else
   {
-    tnext = tnow + (intv - 100 * T_MILLISECOND) / 4;
+    tnext = tnow + intv - 2 * T_SECOND;
     TRACE (("resched pmd(%x:%x:%x:%x): %gs\n", PGUID (pp->e.guid), (tnext - tnow) / 1e9));
   }
 
@@ -1092,30 +1089,7 @@ static size_t handle_xevk_pmd_update (struct nn_xpack *xp, struct xevent *ev, os
   return 0;
 }
 
-static int info_nn_log (const char *fmt, ...)
-{
-  va_list ap;
-  int n;
-  va_start (ap, fmt);
-  n = nn_vlog (LC_INFO, fmt, ap);
-  va_end (ap);
-  return n;
-}
-
-static size_t handle_xevk_info (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, os_int64 tnow)
-{
-  static os_uint64 seq0, seq1;
-  struct mlv_stats st;
-  mlv_stats (&st);
-  nn_log (LC_INFO, "MLV %d %d %d %d #%llu\n", st.current, st.nblocks, st.nzeroblocks, st.nwhiledisabled, st.seq);
-  mlv_printlive (seq0, seq1, info_nn_log);
-  seq0 = seq1;
-  seq1 = st.seq + 1;
-  resched_xevent_if_earlier (ev, tnow + 60 * T_SECOND);
-  return 0;
-}
-
-static size_t handle_xevk_end_startup_mode (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, UNUSED_ARG (os_int64 tnow))
+static os_size_t handle_xevk_end_startup_mode (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, UNUSED_ARG (os_int64 tnow))
 {
   struct ephash_enum_writer est;
   struct writer *wr;
@@ -1131,18 +1105,18 @@ static size_t handle_xevk_end_startup_mode (UNUSED_ARG (struct nn_xpack *xp), st
   return 0;
 }
 
-static size_t handle_xevk_delete_writer (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, UNUSED_ARG (os_int64 tnow))
+static os_size_t handle_xevk_delete_writer (UNUSED_ARG (struct nn_xpack *xp), struct xevent *ev, UNUSED_ARG (os_int64 tnow))
 {
   /* don't worry if the writer is already gone by the time we get here. */
   TRACE (("handle_xevk_delete_writer: %x:%x:%x:%x\n", PGUID (ev->u.delete_writer.guid)));
-  delete_writer_guid_nolinger (&ev->u.delete_writer.guid);
+  delete_writer_nolinger (&ev->u.delete_writer.guid);
   delete_xevent (ev);
   return 0;
 }
 
-static size_t handle_individual_xevent (struct xevent *xev, struct nn_xpack *xp, os_int64 tnow)
+static os_size_t handle_individual_xevent (struct xevent *xev, struct nn_xpack *xp, os_int64 tnow)
 {
-  size_t nbytes = 0;
+  os_size_t nbytes = 0;
   switch (xev->kind)
   {
     case XEVK_HEARTBEAT:
@@ -1157,9 +1131,6 @@ static size_t handle_individual_xevent (struct xevent *xev, struct nn_xpack *xp,
     case XEVK_PMD_UPDATE:
       nbytes = handle_xevk_pmd_update (xp, xev, tnow);
       break;
-    case XEVK_INFO:
-      nbytes = handle_xevk_info (xp, xev, tnow);
-      break;
     case XEVK_END_STARTUP_MODE:
       nbytes = handle_xevk_end_startup_mode (xp, xev, tnow);
       break;
@@ -1173,9 +1144,9 @@ static size_t handle_individual_xevent (struct xevent *xev, struct nn_xpack *xp,
   return nbytes;
 }
 
-static size_t handle_individual_xevent_nt (struct xevent_nt *xev, struct nn_xpack *xp, os_int64 tnow)
+static os_size_t handle_individual_xevent_nt (struct xevent_nt *xev, struct nn_xpack *xp, os_int64 tnow)
 {
-  size_t nbytes = 0;
+  os_size_t nbytes = 0;
   switch (xev->kind)
   {
     case XEVK_MSG:
@@ -1188,11 +1159,11 @@ static size_t handle_individual_xevent_nt (struct xevent_nt *xev, struct nn_xpac
   return nbytes;
 }
 
-static size_t handle_timed_xevent (struct thread_state1 *self, struct xevent *xev, struct nn_xpack *xp, os_int64 tnow)
+static os_size_t handle_timed_xevent (struct thread_state1 *self, struct xevent *xev, struct nn_xpack *xp, os_int64 tnow)
 {
    /* This function handles the individual xevent irrespective of
       whether it is a "timed" or "non-timed" xevent */
-  size_t nbytes;
+  os_size_t nbytes;
   struct xeventq *xevq = xev->evq;
 
   /* We relinquish the lock while processing the event, but require it
@@ -1211,11 +1182,11 @@ static size_t handle_timed_xevent (struct thread_state1 *self, struct xevent *xe
   return nbytes;
 }
 
-static size_t handle_nontimed_xevent (struct thread_state1 *self, struct xevent_nt *xev, struct nn_xpack *xp, os_int64 tnow)
+static os_size_t handle_nontimed_xevent (struct thread_state1 *self, struct xevent_nt *xev, struct nn_xpack *xp, os_int64 tnow)
 {
    /* This function handles the individual xevent irrespective of
       whether it is a "timed" or "non-timed" xevent */
-  size_t nbytes;
+  os_size_t nbytes;
   struct xeventq *xevq = xev->evq;
 
   /* We relinquish the lock while processing the event, but require it
@@ -1234,9 +1205,9 @@ static size_t handle_nontimed_xevent (struct thread_state1 *self, struct xevent_
   return nbytes;
 }
 
-static size_t handle_xevents (struct thread_state1 *self, struct xeventq *xevq, struct nn_xpack *xp, os_int64 tnow)
+static os_size_t handle_xevents (struct thread_state1 *self, struct xeventq *xevq, struct nn_xpack *xp, os_int64 tnow)
 {
-  size_t nbytes = 0;
+  os_size_t nbytes = 0;
   int xeventsToProcess = 1;
 
   ASSERT_MUTEX_HELD (&xevq->lock);
@@ -1256,7 +1227,7 @@ static size_t handle_xevents (struct thread_state1 *self, struct xeventq *xevq, 
       struct xevent *xev = fh_extractmin (&xevq->xevents);
       if (xev->tsched == TSCHED_DELETE)
       {
-        free_xevent (xev);
+        free_xevent (xevq, xev);
         nbytes = 0;
       }
       else
@@ -1274,7 +1245,7 @@ static size_t handle_xevents (struct thread_state1 *self, struct xeventq *xevq, 
       tnow = now ();
     }
 
-    if (!non_timed_xmit_list_is_empty (xevq))
+    if (!non_timed_xmit_list_is_empty(xevq))
     {
       struct xevent_nt *xev = getnext_from_non_timed_xmit_list (xevq);
       nbytes += handle_nontimed_xevent (self, xev, xp, tnow);
@@ -1290,12 +1261,12 @@ static size_t handle_xevents (struct thread_state1 *self, struct xeventq *xevq, 
   return nbytes;
 }
 
-static void *xevent_thread (struct xeventq *xevq)
+static void * xevent_thread (struct xeventq * xevq)
 {
   struct thread_state1 *self = lookup_thread_state ();
   struct nn_xpack *xp;
 
-  xp = nn_xpack_new (xevq->transmit_socket);
+  xp = nn_xpack_new (xevq->tev_conn);
 
   os_mutexLock (&xevq->lock);
   while (!xevq->terminate)
@@ -1314,7 +1285,9 @@ static void *xevent_thread (struct xeventq *xevq)
     thread_state_asleep (self);
 
     if (!non_timed_xmit_list_is_empty (xevq) || xevq->terminate)
-      ; /* continue immediately */
+    {
+      /* continue immediately */
+    }
     else if ((twakeup = earliest_in_xeventq (xevq)) == T_NEVER)
     {
       /* no scheduled events nor any non-timed events */
@@ -1452,16 +1425,6 @@ struct xevent *qxev_pmd_update (os_int64 tsched, const nn_guid_t *pp_guid)
   os_mutexLock (&gv.xevents->lock);
   ev = qxev_common (gv.xevents, tsched, XEVK_PMD_UPDATE);
   ev->u.pmd_update.pp_guid = *pp_guid;
-  qxev_insert (ev);
-  os_mutexUnlock (&gv.xevents->lock);
-  return ev;
-}
-
-struct xevent *qxev_info (os_int64 tsched)
-{
-  struct xevent *ev;
-  os_mutexLock (&gv.xevents->lock);
-  ev = qxev_common (gv.xevents, tsched, XEVK_INFO);
   qxev_insert (ev);
   os_mutexUnlock (&gv.xevents->lock);
   return ev;

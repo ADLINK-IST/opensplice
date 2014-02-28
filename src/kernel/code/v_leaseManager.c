@@ -76,6 +76,7 @@ struct findLeaseActionArg {
     v_lease lease;
 };
 
+
 /**
  * \brief Walk function to find all expired leases in the set of leases
  * managed by a lease manager.
@@ -93,7 +94,9 @@ collectExpired(
 
 struct collectExpiredArg {
     c_iter expiredLeases;
+    c_iter leasesToRenew;
     c_time expiryTime;
+    c_time shortestPeriod;
 };
 
 /**
@@ -519,15 +522,19 @@ v_leaseManagerMain(
     c_time waitTime = C_TIME_ZERO;
     struct collectExpiredArg arg;
     c_syncResult waitResult;
-
-    arg.expiredLeases = NULL;
+    c_time lag;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_leaseManager));
 
+    arg.expiredLeases = NULL;
+    arg.shortestPeriod = C_TIME_INFINITE;
+
     c_mutexLock(&_this->mutex);
-    arg.expiryTime = v_timeGet();
+
     while (_this->quit == FALSE) {
+        arg.expiryTime = v_timeGet();
+
         if (c_timeCompare(_this->nextExpiryTime, C_TIME_INFINITE) == C_EQ) {
             /* The next expiry time is from a lease with an infinite duration, so wait indefinitely */
             waitResult = c_condWait(&_this->cond, &_this->mutex);
@@ -536,13 +543,34 @@ v_leaseManagerMain(
             waitTime = c_timeSub(_this->nextExpiryTime, arg.expiryTime);
             waitResult = c_condTimedWait(&_this->cond, &_this->mutex, waitTime);
         } else {
-            /* The next expiry time lies in the past, log a warning and proceed as normal */
-            OS_REPORT(OS_WARNING, "v_leaseManagerMain", 0,
-                "The lease manager did not wake up in time and missed the "
-                "next expiry time. This means there are likely one or more "
-                "leases that will not be processed in time. This could be due "
-                "to scheduling problems or clock alignment issues on multi-core "
-                "machines. The lease manager will continue to function normally");
+            /* The next expiry time lies in the past, log a warning and proceed
+             * as normal. The first cycle, the leaseManager may be late as the
+             * thread is started asynchronously and leases may have been added
+             * before the thread is really started.
+             */
+
+            /* Current time is apparently > next expiry-time, so calculate
+             * lag by subtracting nextExpiryTime from current time.
+             */
+            lag = c_timeSub(arg.expiryTime, _this->nextExpiryTime);
+
+            /* Only report warning if lag is more than the shortest period
+             * of all registered leases.
+             */
+            if(c_timeCompare(lag, arg.shortestPeriod) == C_GT){
+                OS_REPORT_6(OS_WARNING, "v_leaseManagerMain", 0,
+                    "The lease manager did not wake up on time and missed the "
+                    "next expiry-time (smallest lease-duration is %d.%09us). "
+                    "This means there are likely one or more "
+                    "leases that will not be processed in time. This could be due "
+                    "to scheduling problems or clock alignment issues on multi-core "
+                    "machines. The lease manager will continue to function normally. "
+                    "Wake-up time should be %d.%09us, but current-time is %d.%09us.",
+                    arg.shortestPeriod.seconds, arg.shortestPeriod.nanoseconds,
+                    _this->nextExpiryTime.seconds, _this->nextExpiryTime.nanoseconds,
+                    arg.expiryTime.seconds, arg.expiryTime.nanoseconds);
+            }
+
             waitResult = SYNC_RESULT_SUCCESS;
         }
 
@@ -553,14 +581,24 @@ v_leaseManagerMain(
                 c_setWalk(_this->leases, (c_action)splicedIsDead, NULL);
                 break;
         }
-
         /* Collect expired leases */
         arg.expiredLeases = NULL;
+        arg.leasesToRenew = NULL;
         arg.expiryTime = v_timeGet();
+        arg.shortestPeriod = C_TIME_INFINITE;
         c_setWalk(_this->leases, collectExpired, &arg);
 
         /* Process expired leases */
         c_mutexUnlock(&_this->mutex);
+
+        leaseAction = v_leaseAction(c_iterTakeFirst(arg.leasesToRenew));
+
+        while(leaseAction != NULL){
+            v_leaseRenewInternal(leaseAction->lease, NULL);
+            leaseAction = v_leaseAction(c_iterTakeFirst(arg.leasesToRenew));
+        }
+        c_iterFree(arg.leasesToRenew);
+
         leaseAction = v_leaseAction(c_iterTakeFirst(arg.expiredLeases));
         while (leaseAction != NULL) {
             /* Either renew or unregister the lease */
@@ -682,37 +720,93 @@ collectExpired(
     struct collectExpiredArg *a = (struct collectExpiredArg *)arg;
     c_time leaseExpiryTime;
     v_duration leaseDuration;
-    c_time lag;
+    c_time lag, currentPeriod;
     c_equality expired;
+    c_bool lastRenewInternal;
+    c_time someRidiculousDelay = {10, 0};
+    c_bool ignoreExpiry = FALSE;
 
     v_leaseLock(leaseAction->lease);
     leaseExpiryTime = v_leaseExpiryTimeNoLock(leaseAction->lease);
     leaseDuration = v_leaseDurationNoLock(leaseAction->lease);
+    lastRenewInternal = v_leaseLastRenewInternalNoLock(leaseAction->lease);
     v_leaseUnlock(leaseAction->lease);
 
     /* Add to expiredLeases if the current expiry time is
      * equal or later than the lease expiry time */
     expired = c_timeCompare(a->expiryTime, leaseExpiryTime);
+
     if (expired >= C_EQ) {
-        a->expiredLeases = c_iterInsert(a->expiredLeases, c_keep(leaseAction));
+        /* a->expiryTime is current-time in this case */
+        lag = c_timeSub(a->expiryTime, leaseExpiryTime);
 
-        /* If the difference is larger than the lease duration, the lease
-         * was not renewed in time, thus lease processing is lagging behind
+        /* Ignore long lags of over 2 minutes for some lease types
+         * to allow resuming after hibernation. This is a temporary
+         * workaround until we have real support for hibernation
+         * in the product.
+         *
+         * In this case, the expired lease is renewed, but that renewal
+         * is marked as an internal renewal. This ensures that the lease will
+         * definitely expire in case the one that is actually responsible
+         * for updating the lease does not renew it within the next
+         * period.
+         *
+         * This is only done for service-state-expiry (including spliced)
+         * and liveliness leases. This prevents configured failure actions
+         * from being taken.
          */
+        if(!lastRenewInternal){
+            if( leaseAction->actionId == V_LEASEACTION_SERVICESTATE_EXPIRED ||
+                leaseAction->actionId == V_LEASEACTION_SPLICED_DEATH_DETECTED ||
+                leaseAction->actionId == V_LEASEACTION_LIVELINESS_CHECK)
+            {
 
-        /* only print this warning for periodic leases as we cannot give information about a periodic (deadline) leases see OSPL-1681*/
-        if (leaseAction->repeat) {
-            lag = c_timeSub(c_timeSub(a->expiryTime, leaseExpiryTime), leaseDuration);
-            if (c_timeCompare(lag, leaseDuration) == C_GT) {
-                OS_REPORT_3(OS_WARNING, "v_leaseManager", 0,
-                    "Caution: processing of lease 0x" PA_ADDRFMT " is behind schedule (%u.%.9us). "
-                    "This is often an indication that the machine is too busy. "
-                    "The lease manager will continue to function normally.",
-                    (PA_ADDRCAST)leaseAction->lease, lag.seconds, lag.nanoseconds);
+                if(c_timeCompare(lag, someRidiculousDelay) >= C_EQ){
+                    ignoreExpiry = TRUE;
+
+                    OS_REPORT_8(OS_WARNING, "v_leaseManager", 0,
+                        "Processing of lease 0x" PA_ADDRFMT " is behind schedule; "
+                        "expiry-time=%d.%09us and lag=%d.%09us "
+                        "(actionId=%u and duration=%d.%09us). "
+                        "Assuming resuming after hibernate...",
+                        (PA_ADDRCAST)leaseAction->lease,
+                        leaseExpiryTime.seconds, leaseExpiryTime.nanoseconds,
+                        lag.seconds, lag.nanoseconds, leaseAction->actionId,
+                        leaseDuration.seconds, leaseDuration.nanoseconds);
+                }
             }
         }
-    }
 
+        /* only print this warning for periodic leases as we cannot give information about a periodic (deadline) leases see OSPL-1681*/
+        if (leaseAction->repeat && !ignoreExpiry) {
+            /* If the difference is larger than the lease duration, the lease
+             * was not renewed in time, thus lease processing is lagging behind
+             */
+            if (c_timeCompare(lag, leaseDuration) == C_GT){
+                OS_REPORT_8(OS_WARNING, "v_leaseManager", 0,
+                    "Processing of lease 0x" PA_ADDRFMT " is behind schedule; "
+                    "expiry-time=%d.%09us and lag=%d.%09us "
+                    "(actionId=%u and duration=%d.%09us). "
+                    "This is often an indication that the machine is too busy. "
+                    "The lease manager will continue to function normally.",
+                    (PA_ADDRCAST)leaseAction->lease,
+                    leaseExpiryTime.seconds, leaseExpiryTime.nanoseconds,
+                    lag.seconds, lag.nanoseconds, leaseAction->actionId,
+                    leaseDuration.seconds, leaseDuration.nanoseconds);
+            }
+            currentPeriod.seconds = leaseDuration.seconds;
+            currentPeriod.nanoseconds = leaseDuration.nanoseconds;
+
+            if(c_timeCompare(a->shortestPeriod, currentPeriod) == C_GT){
+                a->shortestPeriod = currentPeriod;
+            }
+        }
+        if(!ignoreExpiry){
+            a->expiredLeases = c_iterInsert(a->expiredLeases, c_keep(leaseAction));
+        } else {
+            a->leasesToRenew = c_iterInsert(a->leasesToRenew, c_keep(leaseAction));
+        }
+    }
     /* Keep going */
     return TRUE;
 }

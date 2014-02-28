@@ -19,6 +19,10 @@
 
 #include "ContentFilteredTopicData_DCPS.hpp"
 
+namespace {
+    const unsigned int write_loop_count = 20;
+}
+
 namespace examples {
 #ifdef GENERATING_EXAMPLE_DOXYGEN
 GENERATING_EXAMPLE_DOXYGEN /* workaround doxygen bug */
@@ -63,7 +67,7 @@ int publisher(int argc, char *argv[])
                 << dds::core::policy::Reliability::Reliable();
 
         /** A dds::topic::Topic is created for our sample type on the domain participant. */
-        dds::topic::Topic<ContentFilteredTopicData::Stock> topic(dp, "StockTrackerExclusive", topicQos);
+        dds::topic::Topic<StockMarket::Stock> topic(dp, "StockTrackerExclusive", topicQos);
 
         /** A dds::pub::Publisher is created on the domain participant. */
         std::string name = "ContentFilteredTopic example";
@@ -82,32 +86,28 @@ int publisher(int argc, char *argv[])
         dwqos << dds::core::policy::WriterDataLifecycle::AutoDisposeUnregisteredInstances();
 
         /** A dds::pub::DataWriter is created on the Publisher & Topic with the modififed Qos. */
-        dds::pub::DataWriter<ContentFilteredTopicData::Stock> dw(pub, topic, dwqos);
+        dds::pub::DataWriter<StockMarket::Stock> dw(pub, topic, dwqos);
 
         /** Two samples are created */
-        ContentFilteredTopicData::Stock geQuote;
-        geQuote.ticker = "GE";
-        geQuote.price = 12.00f;
+        StockMarket::Stock geQuote("GE", 12.00f);
 
-        ContentFilteredTopicData::Stock msftQuote;
-        msftQuote.ticker = "MSFT";
-        msftQuote.price = 25.00f;
+        StockMarket::Stock msftQuote("MSFT", 25.00f);
 
         /** Update sample data and write data each second for 20 seconds */
-        for (int i = 0; i < 20; i++)
+        for (unsigned int i = 0; i < write_loop_count; i++)
         {
-            geQuote.price = geQuote.price + 0.5f;
-            msftQuote.price = msftQuote.price + 1.5f;
+            geQuote.price() += 0.5f;
+            msftQuote.price() += 1.5f;
             std::cout << "=== [ContentFilteredTopicDataPublisher] sends 2 stockQuotes : (GE, "
-                      << geQuote.price << ") (MSFT, " << msftQuote.price << ")" << std::endl;
+                      << geQuote.price() << ") (MSFT, " << msftQuote.price() << ")" << std::endl;
             dw << geQuote;
             dw << msftQuote;
             exampleSleepMilliseconds(1000);
         }
 
         /** A signal to terminate is sent to the subscriber */
-        geQuote.price = -1;
-        msftQuote.price = -1;
+        geQuote.price() = -1;
+        msftQuote.price() = -1;
         dw << geQuote;
         dw << msftQuote;
         /* A short sleep ensures time is allowed for the sample to be written to the network.
@@ -150,7 +150,7 @@ int subscriber(int argc, char *argv[])
         dds::topic::qos::TopicQos topicQos = dp.default_topic_qos()
                                                     << dds::core::policy::Durability::Transient()
                                                     << dds::core::policy::Reliability::Reliable();
-        dds::topic::Topic<ContentFilteredTopicData::Stock> topic(dp, "StockTrackerExclusive", topicQos);
+        dds::topic::Topic<StockMarket::Stock> topic(dp, "StockTrackerExclusive", topicQos);
 
         /** A dds::sub::Subscriber is created on the domain participant. */
         std::string name = "ContentFilteredTopic example";
@@ -167,48 +167,50 @@ int subscriber(int argc, char *argv[])
         std::stringstream ss;
         ss << "ticker = '" << requested_ticker << "'";
         dds::topic::Filter filter(ss.str());
-        dds::topic::ContentFilteredTopic<ContentFilteredTopicData::Stock> cftopic(topic, "CFStockTrackerExclusive", filter);
+        dds::topic::ContentFilteredTopic<StockMarket::Stock> cftopic(topic, "CFStockTrackerExclusive", filter);
 
         /** A dds::sub::DataReader is created on the Subscriber & Topic with the DataReaderQos. */
-        dds::sub::DataReader<ContentFilteredTopicData::Stock> dr(sub, cftopic, drqos);
+        dds::sub::DataReader<StockMarket::Stock> dr(sub, cftopic, drqos);
 
         /** An attempt to take samples is made repeatedly until a stock with a price of -1 is received,
          * or sixty seconds have elapsed. */
         bool terminate_sample_received = false;
-        unsigned int count = 0;
         unsigned int correct_quote_count = 0;
-        while (count < 300 && !terminate_sample_received)
+        for (unsigned int count = 0; count < write_loop_count * 10 && !terminate_sample_received; ++count)
         {
-            dds::sub::LoanedSamples<ContentFilteredTopicData::Stock> samples = dr.take();
-            for (dds::sub::LoanedSamples<ContentFilteredTopicData::Stock>::const_iterator sample = samples.begin();
+            dds::sub::LoanedSamples<StockMarket::Stock> samples = dr.take();
+            for (dds::sub::LoanedSamples<StockMarket::Stock>::const_iterator sample = samples.begin();
                  sample < samples.end();
                  ++sample)
             {
-                if((*sample).info().valid())
+                if(sample->info().valid())
                 {
-                    if ((*sample).data().price == -1)
+                    if (sample->data().price() == -1)
                     {
                         terminate_sample_received = true;
                         break;
                     }
                     std::cout << "=== [ContentFilteredTopicDataSubscriber] receives stockQuote :  ("
-                    << (*sample).data().ticker.in() << ", " << (*sample).data().price << ")" << std::endl;
+                    << sample->data().ticker() << ", " << sample->data().price() << ")" << std::endl;
 
-                    if (requested_ticker == (*sample).data().ticker.in())
+                    if (requested_ticker == sample->data().ticker())
                         ++correct_quote_count;
                     else
+                    {
+                        std::cerr << "=== [ContentFilteredTopicDataSubscriber] Unexpected quote received for "
+                                  << sample->data().ticker() << std::endl;
                         result = 1;
+                    }
                 }
             }
-            exampleSleepMilliseconds(200);
-            ++count;
+            exampleSleepMilliseconds(900);
         }
 
         /** The results are confirmed to be as expected */
         if (terminate_sample_received)
         {
             std::cout << "=== [ContentFilteredTopicDataSubscriber] Market Closed." << std::endl;
-            if (correct_quote_count != (requested_ticker == "GE" || requested_ticker == "MSFT" ? 20 : 0))
+            if (correct_quote_count != (requested_ticker == "GE" || requested_ticker == "MSFT" ? write_loop_count : 0))
             {
                 std::cerr << "=== [ContentFilteredTopicDataSubscriber] Incorrect quote count." << std::endl;
                 result = 1;
@@ -232,3 +234,6 @@ int subscriber(int argc, char *argv[])
 }
 }
 }
+
+EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_ContentFilteredTopic_publisher, examples::dcps::ContentFilteredTopic::isocpp::publisher)
+EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_ContentFilteredTopic_subscriber, examples::dcps::ContentFilteredTopic::isocpp::subscriber)

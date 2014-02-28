@@ -11,7 +11,6 @@
  */
 
 #include "u__writer.h"
-#include "u__handle.h"
 #include "u__types.h"
 #include "u__entity.h"
 #include "u__topic.h"
@@ -81,6 +80,7 @@ u_writerNew(
                                         "Writer initialization failed. "
                                         "For DataWriter: <%s>.", name);
                             u_writerFree(_this);
+                            _this = NULL;
                         }
                     } else {
                         OS_REPORT_1(OS_ERROR, "u_writerNew", 0,
@@ -326,14 +326,13 @@ u_writeWithHandleAction(
             instance = NULL;
         } else {
             result = u_instanceHandleClaim(handle, &instance);
-            if ((result == U_RESULT_ALREADY_DELETED) ||
-                ((result == U_RESULT_OK) &&
+            if ((result == U_RESULT_OK) &&
                  (instance != NULL) &&
-                 (instance->writer != writer))) {
+                 (instance->writer != writer)) {
 
                 result = U_RESULT_PRECONDITION_NOT_MET;
                 u_instanceHandleRelease(handle);
-            } else if(result == V_RESULT_ALREADY_DELETED){ /* if the instance is already deleted, then the result of an unregister is PRECONDITION_NOT_MET */
+            } else if(result == U_RESULT_ALREADY_DELETED){ /* if the instance is already deleted, then the result of an unregister is PRECONDITION_NOT_MET */
                 result = U_RESULT_PRECONDITION_NOT_MET;
                 assert(instance == NULL);
             }

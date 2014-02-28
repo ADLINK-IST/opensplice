@@ -22,9 +22,9 @@ extern "C" {
 
 #define EXTRA_BACKSLS   (4)
 #define EXTRA_BACKSLS_U (4U)
-#define MAX_MESSAGE_SIZE (1000000)
-#define MAX_KEY_SIZE (4096)
-#define D_PERSISTENT_STORE_DIR_SIZE (500)
+#define MAX_MESSAGE_SIZE (10485760)
+#define MAX_KEY_SIZE (8192)
+#define D_PERSISTENT_STORE_DIR_SIZE (512)
 #define RR_NO_DIRECTORY                   "No PersistentStoreDirectory found in URI. "\
                                           "No persistent service possible!\n"
 #define RR_TOPIC_SHOULD_BEGIN_WITH_TOPIC_TAG " topic '%s' should begin with topic tag\n"
@@ -69,6 +69,14 @@ extern "C" {
 #define STRLEN_TOPIC_TAG_OPEN            ((os_uint32)(10))
 #define TOPIC_TAG_CLOSE        "</METADATA>"
 #define STRLEN_TOPIC_TAG_CLOSE           ((os_uint32)(11))
+
+#define KEY_START_TAG "<key>"
+#define KEY_END_TAG   "</key>"
+#define D_STORE_VERSION (6)
+#define D_STORE_START_STRING "<TOPIC><message version=\"6\">Do_not_edit_this_file</message>\n"
+#define D_STORE_END_STRING "</TOPIC>\n"
+#define D_STORE_END_STRING_NO_NL "</TOPIC>"
+
 
 C_CLASS(d_storeFile);
 

@@ -15,6 +15,7 @@ import org.opensplice.cm.CMException;
 import org.opensplice.cm.DataTypeUnsupportedException;
 import org.opensplice.cm.Writer;
 import org.opensplice.cm.WriterSnapshot;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.meta.MetaType;
 
 /**
@@ -32,8 +33,8 @@ public class WriterSnapshotImpl extends SnapshotImpl implements WriterSnapshot {
      * @param _id The heap address of the snapshot.
      * @param _reader The Writer, which contents are in the snapshot.
      */
-    public WriterSnapshotImpl(String _id, Writer _writer) {
-        super(_id);
+    public WriterSnapshotImpl(Communicator communicator, String _id, Writer _writer) {
+        super(communicator, _id);
         writer = _writer;
     }
 

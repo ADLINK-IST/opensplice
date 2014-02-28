@@ -94,6 +94,55 @@ public class StatisticsDeserializerXML implements StatisticsDeserializer{
         }
         return statistics;
     }
+    
+    
+	@Override
+	public Statistics[] deserializeStatistics(Object serialized, Entity[] entities) throws TransformationException {
+	    Document document;
+	    Statistics[] statistics = null;
+	
+	    if(serialized == null){
+	        throw new TransformationException("No statistics supplied.");
+	    }
+	
+	    if(serialized instanceof String){
+	        String xmlStatistics = (String)serialized;
+	        logger.logp(Level.FINEST,  "StatisticsDeserializerXML",
+	                "deserializeStatistics",
+	                xmlStatistics);
+	
+	        try {
+	            document = builder.parse(new InputSource(new StringReader(xmlStatistics)));
+	        }
+	        catch (SAXException se) {
+	            logger.logp(Level.SEVERE,  "StatisticsDeserializerXML",
+	                                       "deserializeStatistics",
+	                                       "SAXException occurred, Statistics could not be deserialized");
+	            throw new TransformationException(se.getMessage());
+	        }
+	        catch (IOException ie) {
+	            logger.logp(Level.SEVERE,  "StatisticsDeserializerXML",
+	                                       "deserializeStatistics",
+	                                       "IOException occurred, Statistics could not be deserialized");
+	            throw new TransformationException(ie.getMessage());
+	        }
+	        if(document == null){
+	            throw new TransformationException("Supplied Statistics is not valid.");
+	        }
+	
+	        Element rootElement = document.getDocumentElement();	        
+	        NodeList statsXML = rootElement.getElementsByTagName("object");
+	               	        		
+	        statistics = new Statistics[entities.length]; 
+	        for(int i = 0 ; i < entities.length ; i++){
+	        	if(entities[i] == null){
+	        		throw new TransformationException("Supplied entities not valid");
+	        	}
+				statistics[i] = this.buildStatistics((Element) statsXML.item(i), entities[i]);
+	        }
+	    }
+	    return statistics;
+	}
 
     private Statistics buildStatistics(Element el, Entity entity) throws TransformationException{
         Statistics statistics;

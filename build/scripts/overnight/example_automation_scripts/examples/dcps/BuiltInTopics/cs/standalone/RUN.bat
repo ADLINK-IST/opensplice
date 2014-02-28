@@ -6,6 +6,6 @@ set EXAMPLE_LANG=sacs
 
 call %FUNCTIONS% :runBuiltInTopics
 
-call %FUNCTIONS% :builtintopicsCheckResult
+call %FUNCTIONS% :builtintopicsCheckResult >> run.log
 
 

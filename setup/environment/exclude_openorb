@@ -1,8 +1,1 @@
 # Unset variables for when OpenOrb is not availible
-
-unset_var INCLUDE_DLRL no
-unset_var INCLUDE_API_DLRL no
-unset_var INCLUDE_API_DLRL_SAJ no
-unset_var INCLUDE_API_DLRL_CCPP no
-unset_var INCLUDE_API_DLRL_SACPP no
-unset_var INCLUDE_TOOLS_DCG no

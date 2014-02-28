@@ -24,7 +24,7 @@ char * DDS::QueryCondition_impl::get_query_expression (
 ) THROW_ORB_EXCEPTIONS
 {
   char * gapi_result = gapi_queryCondition_get_query_expression(_gapi_self);
-  char * result = CORBA::string_dup(gapi_result);
+  char * result = DDS::string_dup(gapi_result);
   gapi_free(gapi_result);
   return result;
 }

@@ -68,6 +68,16 @@
                                 </call-with-map>
                                 <script>tc_hosts.append(STAXResult)</script>
                             </sequence>
+                            <else>
+                                <loop from="0" to="tc_hostsCount - 1">
+                                    <sequence>
+                                        <call-with-map function="'RequestHost'">
+                                            <call-map-arg name="'target'">'.*linux2\.6.*'</call-map-arg>
+                                        </call-with-map>
+                                        <script>tc_hosts.append(STAXResult)</script>
+                                    </sequence>
+                                </loop>
+                            </else>
                         </if>
                     </block>
                     
@@ -119,8 +129,6 @@
                             <call function="'tc_dds2340_subnets_001b'"/>
 
                             <call function="'tc_dds2340_subnets_001c'"/>
-
-                            <call function="'tc_dds2340_subnets_001d'"/>
                         </sequence>
                     </block>
                 </sequence>
@@ -142,9 +150,12 @@
                     <!-- Release, cleanup resources -->
                     <sequence>
                         <if expr="len(tc_hosts) > 0">
-                            <paralleliterate in="tc_hosts" var="host">
-                                <call function="'CleanupHost'">host</call>
-                            </paralleliterate>
+                            <sequence>
+                                <call function="'tc_dds2340_subnets_001d'"/>
+                                <paralleliterate in="tc_hosts" var="host">
+                                    <call function="'CleanupHost'">host</call>
+                                </paralleliterate>
+                            </sequence>
                         </if>
                         <loop var="idx" from="0" to="tc_osplPortsCount - 1">
                             <sequence>

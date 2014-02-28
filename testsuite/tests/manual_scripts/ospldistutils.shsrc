@@ -102,12 +102,12 @@ function source_ospl_classpath ()
 
     if [ "$(uname)" != 'SunOS' ]; then
         if [ "$(uname -o)" = 'Cygwin' ]; then
-            CLASSPATH="$OSPL_HOME/jar/dcpssaj.jar;$OSPL_HOME/jar/dlrlsaj.jar;$CLASSPATH"
+            CLASSPATH="$OSPL_HOME/jar/dcpssaj.jar;$CLASSPATH"
         else
-            CLASSPATH="$local_root/jar/dcpssaj.jar:$local_root/jar/dlrlsaj.jar:$CLASSPATH"
+            CLASSPATH="$local_root/jar/dcpssaj.jar:$CLASSPATH"
         fi
     else
-        CLASSPATH="$local_root/jar/dcpssaj.jar:$local_root/jar/dlrlsaj.jar:$CLASSPATH"
+        CLASSPATH="$local_root/jar/dcpssaj.jar:$CLASSPATH"
     fi
     export CLASSPATH
 }

@@ -2,7 +2,7 @@
 # included by bld/$(SPLICE_TARGET)/makefile
 
 TARGET_CSMOD = $(DDS_DCPSSACS)
-CS_NAMESPCS	 = DDS DDS/OpenSplice DDS/OpenSplice/Gapi DDS/OpenSplice/Database DDS/OpenSplice/CustomMarshalers DDS/OpenSplice/Kernel
+CS_NAMESPCS	 = DDS DDS/OpenSplice DDS/OpenSplice/Gapi DDS/OpenSplice/Common DDS/OpenSplice/Database DDS/OpenSplice/CustomMarshalers DDS/OpenSplice/Kernel
 
 # Also specify an assembly for testing purposes.
 TARGET_ASSEMBLY = $(CSLIB_PREFIX)$(DDS_DCPSSACS)$(CSLIB_POSTFIX)
@@ -10,7 +10,7 @@ TARGET_ASSEMBLY = $(CSLIB_PREFIX)$(DDS_DCPSSACS)$(CSLIB_POSTFIX)
 # Input IDL files.
 IDL_DIR     := $(OSPL_HOME)/etc/idl
 vpath %.idl $(IDL_DIR)
-TOPIC_IDL   := dds_dcps_builtintopics.idl dds_builtinTopics.idl
+TOPIC_IDL   := dds_dcps_builtintopics.idl dds_builtinTopics.idl dds_namedQosTypes.idl
 
 # idlpp compiler settings.
 IDLPP       = $(WINCMD) idlpp 

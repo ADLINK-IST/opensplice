@@ -33,6 +33,9 @@
 #include "os_stdlib.h"
 #include <Windows.h>
 #else
+#ifdef _WRS_KERNEL
+#define USE_NANOSLEEP
+#endif
 #include <unistd.h>
 #endif
 #define MAX_INT_LENGTH 15

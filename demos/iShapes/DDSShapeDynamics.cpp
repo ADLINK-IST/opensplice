@@ -7,6 +7,8 @@
 #ifdef TESTBUILD
     #include "os_time.h"
 #endif
+
+namespace demo { namespace ishapes {
 extern char* colorString_[];
 
 
@@ -55,25 +57,30 @@ DDSShapeDynamics::simulate()
                  << os_timeGet().tv_sec
                  << os_timeGet().tv_nsec
                  << "Colour:"
-                 << (*sample).data().color.m_ptr
-                 << "Size:" << (*sample).data().shapesize
-                 << "x:" << (*sample).data().x
-                 << "y:" << (*sample).data().y;
+                 << (*sample).data().color().c_str()
+                 << "Size:" << (*sample).data().shapesize()
+                 << "x:" << (*sample).data().x()
+                 << "y:" << (*sample).data().y();
         #endif
-        if (strcmp((*sample).data().color.m_ptr, color_.c_str()) == 0)
+        SharedShape shape;
+        if (shape = shape_.lock())
         {
-            tmp.rx() = (*sample).data().x;
-            tmp.ry() = (*sample).data().y;
-            plist_.push_back(tmp);
+          if (strcmp((*sample).data().color().c_str(), color_.c_str()) == 0)
+          {
+              tmp.rx() = (*sample).data().x();
+              tmp.ry() = (*sample).data().y();
+              plist_.push_back(tmp);
 
-            if (attached_ == false)
-            {
-                attached_ = true;
-                QBrush brush = QBrush(colorList_[colorIdx_], Qt::SolidPattern);
-                shape_->setBrush(brush);
-            }
-            QRect bounds(0, 0, (*sample).data().shapesize, (*sample).data().shapesize);
-            shape_->setBounds(bounds);
+              if (attached_ == false)
+              {
+                  attached_ = true;
+                  QBrush brush = QBrush(colorList_[colorIdx_], Qt::SolidPattern);
+                  shape->setBrush(brush);
+              }
+              QRect bounds(0, 0, (*sample).data().shapesize(), (*sample).data().shapesize());
+              shape->setBounds(bounds);
+          }
         }
     }
 }
+}}

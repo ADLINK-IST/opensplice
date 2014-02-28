@@ -12,12 +12,14 @@
 
 #include <ctype.h>
 #include <stddef.h>
+#include <assert.h>
 
 #include "os_socket.h"
 #include "os_if.h"
 #include "os_stdlib.h"
+#include "os_heap.h"
 
-#ifndef OS_WIN32_IF_H
+#ifndef _WIN32
 #include <netdb.h>
 #endif
 
@@ -25,12 +27,21 @@
 #include "q_nwif.h"
 #include "q_globals.h"
 #include "q_config.h"
+#include "q_md5.h"
 #include "q_unused.h"
 
 void print_sockerror (const char *msg)
 {
   int err = os_sockError ();
   NN_ERROR2 ("SOCKET ERROR %s %d\n", msg, err);
+}
+
+unsigned short sockaddr_get_port (const os_sockaddr_storage *addr)
+{
+  if (addr->ss_family == AF_INET)
+    return ntohs (((os_sockaddr_in *) addr)->sin_port);
+  else
+    return ntohs (((os_sockaddr_in6 *) addr)->sin6_port);
 }
 
 void sockaddr_set_port (os_sockaddr_storage *addr, unsigned short port)
@@ -48,7 +59,7 @@ char *sockaddr_to_string_with_port (char addrbuf[INET6_ADDRSTRLEN_EXTENDED], con
   {
     case AF_INET:
       os_sockaddrAddressToString ((const os_sockaddr *) src, addrbuf, INET6_ADDRSTRLEN);
-      pos = strlen (addrbuf);
+      pos = (int) strlen (addrbuf);
       snprintf (addrbuf + pos, INET6_ADDRSTRLEN_EXTENDED - pos,
                 ":%u", ntohs (((os_sockaddr_in *) src)->sin_port));
       break;
@@ -56,13 +67,13 @@ char *sockaddr_to_string_with_port (char addrbuf[INET6_ADDRSTRLEN_EXTENDED], con
     case AF_INET6:
       addrbuf[0] = '[';
       os_sockaddrAddressToString ((const os_sockaddr *) src, addrbuf + 1, INET6_ADDRSTRLEN);
-      pos = strlen (addrbuf);
+      pos = (int) strlen (addrbuf);
       snprintf (addrbuf + pos, INET6_ADDRSTRLEN_EXTENDED - pos,
                 "]:%u", ntohs (((os_sockaddr_in6 *) src)->sin6_port));
       break;
 #endif
     default:
-      NN_WARNING0 ("received packet from unexpected address family\n");
+      NN_WARNING0 ("sockaddr_to_string_with_port: unknown address family\n");
       strcpy (addrbuf, "???");
       break;
   }
@@ -73,6 +84,7 @@ char *sockaddr_to_string_no_port (char addrbuf[INET6_ADDRSTRLEN_EXTENDED], const
 {
   return os_sockaddrAddressToString ((const os_sockaddr *) src, addrbuf, INET6_ADDRSTRLEN);
 }
+
 
 unsigned short get_socket_port (os_socket socket)
 {
@@ -96,6 +108,29 @@ unsigned short get_socket_port (os_socket socket)
       return 0;
   }
 }
+
+
+#ifdef SO_NOSIGPIPE
+static void set_socket_nosigpipe (os_socket sock)
+{
+  int val = 1;
+  if (os_sockSetsockopt (sock, SOL_SOCKET, SO_NOSIGPIPE, (char*) &val, sizeof (val)) != os_resultSuccess)
+  {
+    print_sockerror ("SO_NOSIGPIPE");
+  }
+}
+#endif
+
+#ifdef TCP_NODELAY
+static void set_socket_nodelay (os_socket sock)
+{
+  int val = 1;
+  if (os_sockSetsockopt (sock, IPPROTO_TCP, TCP_NODELAY, (char*) &val, sizeof (val)) != os_resultSuccess)
+  {
+    print_sockerror ("TCP_NODELAY");
+  }
+}
+#endif
 
 static int set_rcvbuf (os_socket socket)
 {
@@ -182,13 +217,12 @@ static int maybe_set_dont_route (os_socket socket)
   return 0;
 }
 
-static int set_reuse_options (os_socket socket, const os_sockaddr_storage *mcip)
+static int set_reuse_options (os_socket socket)
 {
   /* Set REUSEADDR and REUSEPORT (if available on platform) for
      multicast sockets, leave unicast sockets alone. */
   int one = 1;
-  if (mcip == NULL)
-    return 0;
+
   if (os_sockSetsockopt (socket, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof (one)) != os_resultSuccess)
   {
     print_sockerror ("SO_REUSEADDR");
@@ -215,7 +249,7 @@ static int interface_in_recvips_p (const struct nn_interface *interf)
   return 0;
 }
 
-static int bind_socket (os_socket socket, unsigned short port)
+static int bind_socket (os_socket socket, unsigned short port, const char * address)
 {
   int rc;
 #if OS_SOCKET_HAS_IPV6
@@ -224,8 +258,20 @@ static int bind_socket (os_socket socket, unsigned short port)
     os_sockaddr_in6 socketname;
     memset (&socketname, 0, sizeof (socketname));
     socketname.sin6_family = AF_INET6;
-    socketname.sin6_addr = os_in6addr_any;
     socketname.sin6_port = htons (port);
+    if (address)
+    {
+#ifdef WIN32
+      int sslen = sizeof (socketname);
+      WSAStringToAddress ((LPTSTR) address, AF_INET6, NULL, (os_sockaddr*) &socketname, &sslen);
+#else
+      inet_pton (AF_INET6, address, &(socketname.sin6_addr));
+#endif
+    }
+    else
+    {
+      socketname.sin6_addr = os_in6addr_any;
+    }
     rc = os_sockBind (socket, (struct sockaddr *) &socketname, sizeof (socketname));
   }
   else
@@ -234,7 +280,7 @@ static int bind_socket (os_socket socket, unsigned short port)
     struct sockaddr_in socketname;
     socketname.sin_family = AF_INET;
     socketname.sin_port = htons (port);
-    socketname.sin_addr.s_addr = htonl (INADDR_ANY);
+    socketname.sin_addr.s_addr = (address == NULL) ? htonl (INADDR_ANY) : inet_addr (address);
     rc = os_sockBind (socket, (struct sockaddr *) &socketname, sizeof (socketname));
   }
   if (rc != os_resultSuccess)
@@ -268,7 +314,7 @@ static int join_mcgroup (os_socket socket, const os_sockaddr_storage *mcip, cons
     if (interf)
       mreq.imr_interface = ((os_sockaddr_in *) &interf->addr)->sin_addr;
     else
-      mreq.imr_interface.s_addr = INADDR_ANY;
+      mreq.imr_interface.s_addr = htonl (INADDR_ANY);
     rc = os_sockSetsockopt (socket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *) &mreq, sizeof (mreq));
   }
 
@@ -329,6 +375,7 @@ static int set_mc_options_transmit_ipv4 (os_socket socket)
 {
   unsigned char ttl = config.multicast_ttl;
   unsigned char loop;
+
   if (os_sockSetsockopt (socket, IPPROTO_IP, IP_MULTICAST_IF, (char *) &((os_sockaddr_in *) &gv.ownip)->sin_addr, sizeof (((os_sockaddr_in *) &gv.ownip)->sin_addr)) != os_resultSuccess)
   {
     print_sockerror ("IP_MULTICAST_IF");
@@ -340,6 +387,7 @@ static int set_mc_options_transmit_ipv4 (os_socket socket)
     return -2;
   }
   loop = config.enableMulticastLoopback;
+
   if (os_sockSetsockopt (socket, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof (loop)) != os_resultSuccess)
   {
     print_sockerror ("IP_MULTICAST_LOOP");
@@ -360,16 +408,6 @@ static int set_mc_options_transmit (os_socket socket)
   {
     return set_mc_options_transmit_ipv4 (socket);
   }
-}
-
-static int set_mc_options_prejoin (UNUSED_ARG (os_socket socket))
-{
-  return 0;
-}
-
-static int set_mc_options_postjoin (UNUSED_ARG (os_socket socket))
-{
-  return 0;
 }
 
 int join_mcgroups (os_socket socket, const os_sockaddr_storage *mcip)
@@ -393,6 +431,7 @@ int join_mcgroups (os_socket socket, const os_sockaddr_storage *mcip)
       {
         int i, fails = 0, oks = 0;
         for (i = 0; i < gv.n_interfaces; i++)
+        {
           if (gv.interfaces[i].mc_capable)
           {
             if (gv.recvips_mode == RECVIPS_MODE_ALL || interface_in_recvips_p (&gv.interfaces[i]))
@@ -403,6 +442,7 @@ int join_mcgroups (os_socket socket, const os_sockaddr_storage *mcip)
                 oks++;
             }
           }
+        }
         if (fails > 0)
         {
           if (oks > 0)
@@ -416,47 +456,75 @@ int join_mcgroups (os_socket socket, const os_sockaddr_storage *mcip)
   return 0;
 }
 
-int make_socket (os_socket *socket, unsigned short port, const os_sockaddr_storage *mcip)
+int make_socket
+(
+  os_socket * sock,
+  unsigned short port,
+  c_bool stream,
+  c_bool reuse,
+  const os_sockaddr_storage * mcip,
+  const char * address
+)
 {
   int rc = -2;
 
-  *socket = os_sockNew ((config.useIpv6 ? AF_INET6 : AF_INET), SOCK_DGRAM);
+  *sock = os_sockNew ((config.useIpv6 ? AF_INET6 : AF_INET), stream ? SOCK_STREAM : SOCK_DGRAM);
 
-  if (! Q_VALID_SOCKET (*socket))
+  if (! Q_VALID_SOCKET (*sock))
   {
     print_sockerror ("socket");
-    return -2;
-  }
-#if 0 /* really #if unix */
-  if (*socket >= FD_SETSIZE)
-  {
-    NN_FATAL0 ("ddsi2: fatal: numerical value of file descriptor too large for select\n");
-  }
-#endif
-
-  if ((rc = set_rcvbuf (*socket) < 0) ||
-      (rc = set_sndbuf (*socket) < 0) ||
-      (rc = maybe_set_dont_route (*socket)) < 0 ||
-      (rc = set_reuse_options (*socket, mcip)) < 0 ||
-      (rc = bind_socket (*socket, port)) < 0 ||
-      (rc = set_mc_options_transmit (*socket)) < 0)
-  {
-    os_sockFree (*socket);
     return rc;
   }
 
-  if (mcip)
+  if (port && reuse && ((rc = set_reuse_options (*sock)) < 0))
   {
-    if ((rc = set_mc_options_prejoin (*socket)) < 0 ||
-        (rc = join_mcgroups (*socket, mcip)) < 0 ||
-        (rc = set_mc_options_postjoin (*socket)) < 0)
+    goto fail;
+  }
+
+  if
+  (
+    (rc = set_rcvbuf (*sock) < 0) ||
+    (rc = set_sndbuf (*sock) < 0) ||
+    ((rc = maybe_set_dont_route (*sock)) < 0) ||
+    ((rc = bind_socket (*sock, port, address)) < 0)
+  )
+  {
+    goto fail;
+  }
+
+  if (! stream)
+  {
+    if ((rc = set_mc_options_transmit (*sock)) < 0)
     {
-      os_sockFree (*socket);
-      return rc;
+      goto fail;
     }
   }
 
+  if (stream)
+  {
+#ifdef SO_NOSIGPIPE
+    set_socket_nosigpipe (*sock);
+#endif
+#ifdef TCP_NODELAY
+    if (config.tcp_nodelay)
+    {
+      set_socket_nodelay (*sock);
+    }
+#endif
+  }
+
+  if (mcip && ((rc = join_mcgroups (*sock, mcip)) < 0))
+  {
+    goto fail;
+  }
+
   return 0;
+
+fail:
+
+  os_sockFree (*sock);
+  *sock = Q_INVALID_SOCKET;
+  return rc;
 }
 
 int find_own_ip (const char *requested_address)

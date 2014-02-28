@@ -36,7 +36,7 @@ namespace OwnershipPublisher
 		    mgr.registerType(stkTS);
     		
 		    // create Topic
-		    mgr.createTopic("StockTrackerExclusive");
+		    mgr.createTopic("OwnershipStockTracker");
     		
 		    // create Publisher
 		    mgr.createPublisher();

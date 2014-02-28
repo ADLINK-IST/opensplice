@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl.h"
@@ -75,8 +75,8 @@ be_structure::be_structure(UTL_ScopedName *n, const UTL_Pragmas &p)
    m_marshalInCore = FALSE;
 
    InitializeTypeMap(this);
-
-   be_CppFwdDecl::Add(be_CppFwdDecl::STRUCT, this, m_cppScope);
+   if (!imported())
+      be_CppFwdDecl::Add(be_CppFwdDecl::STRUCT, this, m_cppScope);
 }
 
 DDS::Boolean
@@ -159,6 +159,10 @@ be_structure::GenerateTypedefs( const DDS_StdString &scope,
 
    os << tab << "typedef " << relTypeName << " "
    << alias.LocalName() << ";" << nl;
+
+   if (BE_Globals::isocpp_new_types)
+     return;
+
    os << tab << "typedef " << relTypeName << DDSVarExtension << " "
    << alias.LocalName() << DDSVarExtension << ";" << nl;
 
@@ -298,18 +302,18 @@ be_structure::add_field(AST_Field *af)
             {
                maxAlign = structField->get_max_elem_alignment();
             }
-            
-            m_maxElemAlignment = ( m_maxElemAlignment > maxAlign ) 
-               ? m_maxElemAlignment 
+
+            m_maxElemAlignment = ( m_maxElemAlignment > maxAlign )
+               ? m_maxElemAlignment
                : maxAlign;
-            
-            
+
+
             be_array * t_array = 0;
-            
+
             be_Type* type = field->get_be_type();
 
             m_interface_dependant |= type->IsInterfaceDependant ();
-            
+
             be_typedef* pTypedef;
 
             //
@@ -318,14 +322,14 @@ be_structure::add_field(AST_Field *af)
             do
             {
                pTypedef = (be_typedef*) (type->narrow((long) & be_typedef::type_id));
-               
+
                if (pTypedef != 0)
                {
                   type = pTypedef->get_base_be_type();
                }
             }
             while (pTypedef != 0);
-            
+
             DDS::ULong fieldSize = field->get_elem_size();
             if (fieldSize == 0)
             {
@@ -334,8 +338,8 @@ be_structure::add_field(AST_Field *af)
             else if (m_elemSize > 0 || (m_elemSize == 0 && !m_fields.size()))
             {
                m_elemSize += fieldPad;
-               
-               //  
+
+               //
                // check for array
                //
                if ((t_array = (be_array*)(type->narrow((long) & be_array::type_id))))
@@ -391,6 +395,9 @@ be_structure::add_field(AST_Field *af)
 
 void be_structure::GenerateAuxTypes (be_ClientHeader& source)
 {
+   if (BE_Globals::isocpp_new_types)
+     return;
+
    DDS_StdString varName = LocalName () + "_var";
    DDS_StdString outName = LocalName () + "_out";
    ostream & os = source.Stream ();
@@ -400,7 +407,7 @@ void be_structure::GenerateAuxTypes (be_ClientHeader& source)
    {
       os << tab << "typedef DDS_DCPSStruct_var < "
       << LocalName() << "> " << varName << ";" << nl;
-      os << tab << "typedef " << LocalName () 
+      os << tab << "typedef " << LocalName ()
          << "&" << outName << ";" << nl;
    }
    else
@@ -506,30 +513,260 @@ void be_structure::Generate (be_ClientHeader& source)
       // struct definition
 
       os << nl;
-      os << tab << "struct " << DLLMACRO << LocalName () << nl;
+      os << tab << (BE_Globals::isocpp_new_types ? "class " : "struct ") << DLLMACRO << LocalName ()
+                <<  (BE_Globals::isocpp_new_types ? " OSPL_DDS_FINAL" : "") << nl;
       os << tab << "{" << nl;
-      source.Indent ();
+      if (BE_Globals::isocpp_new_types)
+        os << tab << "public:" << nl;
+
+      source.Indent();
 
       // declare nested types
 
+      source.Indent();
       be_CodeGenerator::Generate(source);
 
-      // member declarations
+      // member accessor functions for isocpp new types
+      if (BE_Globals::isocpp_new_types)
+      {
+        /** @internal
+         * @todo OSPL-3369 Repetition; the sort of code people go to hell
+         * for (rightfully); is_sequency is already evideantally a stupid name; &c... */
+        // Constructors
+        if (m_fields.size() > 0)
+        {
+          os << tab << LocalName() << "() {}" << nl;
+          os << tab << "explicit " << LocalName() << "(" << nl;
+          for (mit = m_fields.begin(); mit != m_fields.end(); mit++)
+          {
+            field = *mit;
+            bool is_sequency = !(field->get_be_type()->IsPrimitiveType()
+                                  || field->get_be_type()->IsEnumeratedType());
+            relativeName = BE_Globals::RelativeScope
+                (scopedName, field->StructMemberTypeName ());
+            TList<be_field *>::iterator final_field = m_fields.end();
+            --final_field;
+            os << tab << tab << (is_sequency ? "const " : "") << relativeName
+                << (is_sequency ? "& " : " ") << field->get_local_name();
+            if (mit == final_field)
+              os << ")";
+            else
+              os <<"," << nl;
+          }
+          os << tab << ":" << nl;
+          for (mit = m_fields.begin(); mit != m_fields.end(); mit++)
+          {
+            field = *mit;
+            TList<be_field *>::iterator final_field = m_fields.end();
+            --final_field;
+            os << tab << tab << tab << field->get_local_name() << "_(" << field->get_local_name() << ")" << (mit == final_field ? " {}" : ",") << nl;
+          }
+        }
+        // C++ 11 move constructor, copy consructor, and assignement ops
+        source.Outdent();
+        os << "#ifdef OSPL_DDS_CXX11" << nl;
+        os << "#  ifdef OSPL_CXX11_NO_FUNCTION_DEFAULTS" << nl;
+        source.Indent();
+        os << tab << LocalName() << "(const " << LocalName() << "& _other)" << nl;
+        if (m_fields.size() > 0)
+        {
+          os << tab << ":" << nl;
+          for (mit = m_fields.begin(); mit != m_fields.end(); mit++)
+          {
+            field = *mit;
+            TList<be_field *>::iterator final_field = m_fields.end();
+            --final_field;
+            os << tab << tab << tab << field->get_local_name() << "_(_other." << field->get_local_name() << "_)" << (mit == final_field ? "" : ",") << nl;
+          }
+        }
+        os << tab << "{}" << nl;
+        os << tab << LocalName() << "(" << LocalName() << "&& _other)" << nl;
+        if (m_fields.size() > 0)
+        {
+          os << tab << ":" << nl;
+          for (mit = m_fields.begin(); mit != m_fields.end(); mit++)
+          {
+            field = *mit;
+            TList<be_field *>::iterator final_field = m_fields.end();
+            --final_field;
+            os << tab << tab << tab << field->get_local_name() << "_(::std::move(_other." << field->get_local_name() << "_))" << (mit == final_field ? "" : ",") << nl;
+          }
+        }
+        os << tab << "{}" << nl;
+        os << tab <<  LocalName() << "& operator=(" << LocalName() << "&& _other)" << nl;
+        os << tab << "{" << nl ;
+        if (m_fields.size() > 0)
+        {
+          os << tab << tab << "if (this != &_other)" << nl;
+          os << tab << tab << "{" << nl;
+          for (mit = m_fields.begin(); mit != m_fields.end(); mit++)
+          {
+            field = *mit;
+            TList<be_field *>::iterator final_field = m_fields.end();
+            --final_field;
+            os << tab << tab << tab << field->get_local_name() << "_ = ::std::move(_other." << field->get_local_name() << "_);" << nl;
+          }
+          os << tab << tab << "}" << nl;
+        }
+        os << tab << tab << "return *this;" << nl;
+        os << tab << "}" << nl;
+        os << tab <<  LocalName() << "& operator=(const "  << LocalName() << "& _other)" << nl;
+        os << tab << "{" << nl ;
+        if (m_fields.size() > 0)
+        {
+          os << tab << tab << "if (this != &_other)" << nl;
+          os << tab << tab << "{" << nl;
+          for (mit = m_fields.begin(); mit != m_fields.end(); mit++)
+          {
+            field = *mit;
+            TList<be_field *>::iterator final_field = m_fields.end();
+            --final_field;
+            os << tab << tab << tab << field->get_local_name() << "_ = _other." << field->get_local_name() << "_;" << nl;
+          }
+          os << tab << tab << "}" << nl;
+        }
+        os << tab << tab << "return *this;" << nl;
+        os << tab << "}" << nl;
+        source.Outdent();
+        os << "#  else" << nl;
+        source.Indent();
+        os << tab << LocalName() << "(const " << LocalName() << "& _other) = default;" << nl;
+        os << tab << LocalName() << "(" << LocalName() << "&& _other) = default;" << nl;
+        os << tab <<  LocalName() << "& operator=(" << LocalName() << "&& _other) = default;" << nl;
+        os << tab <<  LocalName() << "& operator=(const "  << LocalName() << "& _other) = default;" << nl;
+        source.Outdent();
+        os << "#  endif" << nl;
+        os << "#endif" << nl;
+        source.Indent();
+        for (mit = m_fields.begin(); mit != m_fields.end(); mit++)
+        {
+          field = *mit;
+          bool is_sequency = !(field->get_be_type()->IsPrimitiveType()
+                                || field->get_be_type()->IsEnumeratedType());
+          relativeName = BE_Globals::RelativeScope
+              (scopedName, field->StructMemberTypeName ());
+          // const get accessor
+          os << tab << (is_sequency ? "const " : "") << relativeName << (is_sequency ? "& " : " ")
+              << field->get_local_name() << "() const { return this->" << field->get_local_name() << "_; }" << nl;
+          // reference get accessor
+          os << tab << relativeName << "& "
+              << field->get_local_name() << "() { return this->" << field->get_local_name() << "_; }" << nl;
+          // const set accessor
+          os << tab << "void "
+              << field->get_local_name() << (is_sequency ? "(const " : "(") << relativeName
+              << (is_sequency ? "&" : "") << " _val_) { this->" << field->get_local_name() << "_ = _val_; }" << nl;
+          source.Outdent();
+          os << "#ifdef OSPL_DDS_CXX11" << nl;
+          source.Indent();
+          // C++ 11 move assignement op
+          os << tab << "void "
+              << field->get_local_name() <<  "(" << relativeName << "&& _val_) { this->" << field->get_local_name() << "_ = _val_; }" << nl;
+          source.Outdent();
+          os << "#endif" << nl;
+          source.Indent();
+        }
+      }
 
+      if (BE_Globals::gen_equality)
+      {
+          os << tab << "bool operator==(const " << LocalName() << "& _other) const" <<
+            nl << tab << "{" << nl << tab << tab << "return ";
+          DDS_StdString relName;
+          for(mit = m_fields.begin(); mit != m_fields.end(); mit++)
+          {
+            field = *mit;
+            relName = BE_Globals::RelativeScope
+            (scopedName, field->get_local_name());
+            TList<be_field *>::iterator final_field = m_fields.end();
+            --final_field;
+
+            if(mit != m_fields.begin())
+                os << tab << tab;
+
+            os  << relName << (BE_Globals::isocpp_new_types ? "_" : "")
+                << " == _other."
+                << relName << (BE_Globals::isocpp_new_types ? "_" : "")
+                << (mit != final_field ? " &&" : ";") << nl;
+
+          }
+          os << tab << "}" << nl;
+
+          os << tab << "bool operator!=(const " << LocalName() << "& other) const" <<
+                nl << tab << "{" << nl << tab << tab << "return !(*this == other);"
+                << nl << tab << "}" << nl;
+
+      }
+
+      // member declarations
       for (mit = m_fields.begin(); mit != m_fields.end(); mit++)
       {
          field = *mit;
          relativeName = BE_Globals::RelativeScope
             (scopedName, field->StructMemberTypeName ());
          os << tab << relativeName << " "
-            << field->get_local_name() << ";" << nl;
+            << field->get_local_name() << (BE_Globals::isocpp_new_types ? "_" : "") << ";" << nl;
       }
 
       source.Outdent();
+      source.Outdent();
 
       source.Stream() << tab << "};" << nl << nl;
-
       g_cppScopeStack.Pop();
+
+
+
+      if (BE_Globals::isocpp_test_methods)
+      {
+          //Get base filename and append _testmethod.h
+          DDS_StdString BaseFilename;
+          BaseFilename = StripExtension(source.Filename());
+          BaseFilename += "_testmethod.h";
+
+          //Open or append to file
+          be_Source testsource;
+          ostream & ts = testsource.Stream();
+          if(!testsource.Open(BaseFilename))
+              cerr << "Cannot open: " << BaseFilename << endl;
+
+          testsource.Indent();
+          ts <<  "namespace {" << nl
+                              <<  "template <>" << nl <<  "::std::vector< ::"
+                              << ScopedName() <<  " > generate_test_values< ::"
+                              << ScopedName() << " >()"  << nl
+                              << "{" << nl;
+
+          ts << tab << "::std::vector< ::" << ScopedName() << " > values;" << nl
+                              << tab << "::" << ScopedName() << " next;" << nl
+                              << tab << "::std::size_t biggest = 0;" << nl;
+
+          for (mit = m_fields.begin(); mit != m_fields.end(); mit++)
+          {
+             field = *mit;
+             relativeName = field->StructMemberTypeName ();
+
+             ts << tab <<"::std::vector< " << field->StructMemberTypeName() << " > " << field->get_local_name() << "_ = generate_test_values< "
+                                 << field->StructMemberTypeName() << " >();" << nl;
+             ts << tab << "if(" << field->get_local_name() << "_.size() > biggest)"
+                                 << nl << tab << tab << "biggest = " << field->get_local_name() << "_.size();"
+                                 << nl;
+          }
+          ts << tab << "for(::std::size_t i = 0; i < biggest; ++i)" << nl << tab << "{" << nl;
+          for (mit = m_fields.begin(); mit != m_fields.end(); mit++)
+          {
+             field = *mit;
+             relativeName = BE_Globals::RelativeScope(scopedName, field->StructMemberTypeName ());
+
+             ts << tab << tab << "next." << field->get_local_name() << "_ = " << field->get_local_name()
+                << "_[i < " << field->get_local_name() << "_.size()? i : " << field->get_local_name()
+                << "_.size() -1];" << nl;
+          }
+          ts << tab << tab << "values.push_back(next);" << nl
+             << tab << "}" << nl
+             << tab << "return values;" << nl;
+          ts << "} }" << nl << nl;
+          testsource.Outdent();
+          testsource.Close();
+      }
 
       GenerateAuxTypes (source);
 
@@ -1030,7 +1267,7 @@ DDS::Boolean be_structure::make_get_param_for_stub
             case VT_Return:
             os << arg << ", DDS::PARAM_OUT ";
             break;
-            
+
             default:
                break;
          }
@@ -1304,7 +1541,7 @@ be_structure::get_for_sequence(
       << sptr << " = &" << arg << "[" << index
       << "];" << nl;
 
-   os << tab << m_tc_get_val << " (is, (void*&)" << sptr 
+   os << tab << m_tc_get_val << " (is, (void*&)" << sptr
       << ", DDS::PARAM_OUT" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
 
    return os;
@@ -1347,7 +1584,7 @@ ostream & be_structure::get_for_array
       << sptr << " = (" << ScopedName() << "*)&"
       << arg << "[" << index << "];" << nl;
 
-   os << tab << m_tc_get_val << " (is, (void*&)" << sptr 
+   os << tab << m_tc_get_val << " (is, (void*&)" << sptr
       << ", DDS::PARAM_OUT" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
 
    return os;

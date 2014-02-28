@@ -31,43 +31,90 @@ template <typename T>
 class Sample
 {
 public:
-    Sample() { }
+    Sample() : has_data_copy_(false), has_info_copy_(false) { }
 
-    Sample(const T& d, const dds::sub::SampleInfo& i)
-        : data_(d), info_(i) { }
+    Sample(const T& d, const dds::sub::SampleInfo& i) :
+        has_data_copy_(true), data_copy_(d), has_info_copy_(true), info_copy_(i)
+    {
+        data_ptr_ = &data_copy_;
+        info_ptr_ = &info_copy_;
+    }
 
-    Sample(const Sample& other) : data_(other.data()), info_(other.info_) { }
+    Sample(const Sample& other) : has_data_copy_(false), has_info_copy_(false)
+    {
+        if(other.has_data_copy_)
+        {
+            data_copy_ = other.data_copy_;
+            data_ptr_ = &data_copy_;
+            has_data_copy_ = true;
+        }
+        else
+        {
+            data_ptr_ = other.data_ptr_;
+        }
+
+        if(other.has_info_copy_)
+        {
+            info_copy_ = other.info_copy_;
+            info_ptr_ = &info_copy_;
+            has_info_copy_ = true;
+        }
+        else
+        {
+            info_ptr_ = other.info_ptr_;
+        }
+    }
 
 public:
     const T& data() const
     {
-        return data_;
+        return *data_ptr_;
     }
 
     void data(const T& d)
     {
-        data_ = d;
+        data_copy_ = d;
+        data_ptr_ = &data_copy_;
+        has_data_copy_ = true;
+    }
+
+    void data(T* d)
+    {
+        data_ptr_ = d;
     }
 
     const dds::sub::SampleInfo& info() const
     {
-        return info_;
+        return *info_ptr_;
     }
+
     void info(const dds::sub::SampleInfo& i)
     {
-        info_ = i;
+        info_copy_ = i;
+        info_ptr_ = &info_copy_;
+        has_info_copy_ = true;
     }
-    /** @bug OSPL-2430 No implementation
+
+    void info(dds::sub::SampleInfo* i)
+    {
+        info_ptr_ = i;
+    }
+
+    /** @internal @bug OSPL-2430 No implementation
     * @todo Implementation required - see OSPL-2430
     * @see http://jira.prismtech.com:8080/browse/OSPL-2430 */
     bool operator ==(const Sample& other) const
     {
-      return false;
+        return false;
     }
 
 private:
-    T data_;
-    dds::sub::SampleInfo info_;
+    const T* data_ptr_;
+    bool has_data_copy_;
+    T data_copy_;
+    const dds::sub::SampleInfo* info_ptr_;
+    bool has_info_copy_;
+    dds::sub::SampleInfo info_copy_;
 };
 }
 }

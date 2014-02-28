@@ -11,8 +11,10 @@
 // -- Shaped Include
 #include <topic-traits.hpp>
 
+namespace demo { namespace ishapes {
 #define CN 9
 typedef ::dds::core::smart_ptr_traits<Shape>::ref_type SharedShape;
+typedef ::dds::core::smart_ptr_traits<Shape>::weak_ref_type WeakSharedShape;
 
 /**
  * @addtogroup demos_iShapes
@@ -33,6 +35,7 @@ public:
         GRAY    = 7,
         BLACK   = 8
     };
+
 public:
     DDSShapeDynamics(
         int x0, int y0,
@@ -55,9 +58,10 @@ public:
 
 
     virtual void simulate();
+
 private:
     //DDSShapeDynamics(const DDSShapeDynamics& orig);
-    SharedShape shape_;
+    WeakSharedShape shape_;
     int x0_;
     int y0_;
     dds::sub::DataReader<ShapeType>  shapeReader_;
@@ -69,6 +73,8 @@ private:
     dds::sub::LoanedSamples<ShapeType> samples;
 
 };
+}
+}
 
 /** @}*/
 

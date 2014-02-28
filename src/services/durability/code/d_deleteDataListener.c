@@ -182,9 +182,7 @@ deleteAction(
     v_participant participant;
     c_time t;
     c_value params[2];
-    d_configuration config;
     d_admin admin;
-    d_durability durability;
     c_char *partition, *topic;
 
     assert(entity != NULL);
@@ -195,8 +193,7 @@ deleteAction(
     t.seconds       = data->deleteTime.seconds;
     t.nanoseconds   = data->deleteTime.nanoseconds;
     admin           = d_listenerGetAdmin(d_listener(data->listener));
-    durability      = d_adminGetDurability(admin);
-    config          = d_durabilityGetConfiguration(durability);
+
     params[0]       = c_stringValue(data->partitionExpression);
     params[1]       = c_stringValue(data->topicExpression);
 

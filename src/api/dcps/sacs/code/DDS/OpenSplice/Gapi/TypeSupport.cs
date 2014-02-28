@@ -87,7 +87,7 @@ namespace DDS.OpenSplice.Gapi
          */
         // TODO: This call fails with BadParameter for some reason, so we use 
         // the FooTypeSupport version of this call
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_typeSupport_register_type")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_typeSupport_register_type")]
         //public static extern ReturnCode register_type (
         //    IntPtr _this,
         //    IntPtr domain,
@@ -96,21 +96,21 @@ namespace DDS.OpenSplice.Gapi
         /*     string
          *     get_type_name();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_typeSupport_get_type_name")]
+        [DllImport("ddskernel", EntryPoint = "gapi_typeSupport_get_type_name")]
         public static extern IntPtr get_type_name(
             IntPtr _this);
 
         /* gapi_char *
          * get_description ();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_typeSupport_get_description")]
+        [DllImport("ddskernel", EntryPoint = "gapi_typeSupport_get_description")]
         public static extern IntPtr get_description(
             IntPtr _this);
 
         /* gapi_string
          * get_key_list ();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_typeSupport_get_key_list")]
+        [DllImport("ddskernel", EntryPoint = "gapi_typeSupport_get_key_list")]
         public static extern IntPtr get_key_list(
             IntPtr _this);
     }

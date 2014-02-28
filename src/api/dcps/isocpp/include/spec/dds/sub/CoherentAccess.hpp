@@ -21,9 +21,13 @@
 
 #include <dds/sub/detail/CoherentAccess.hpp>
 
-namespace dds { namespace sub {
-  typedef dds::sub::detail::CoherentAccess CoherentAccess;
-} }
+namespace dds
+{
+namespace sub
+{
+typedef dds::sub::detail::CoherentAccess CoherentAccess;
+}
+}
 
 
 #endif /* OMG_DDS_SUB_COHERENT_ACCESS_HPP_ */

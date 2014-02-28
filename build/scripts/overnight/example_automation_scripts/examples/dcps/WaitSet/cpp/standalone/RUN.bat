@@ -7,4 +7,4 @@ set EXAMPLE_LANG=sacpp
 
 call %FUNCTIONS% :runWaitSet
 
-call %FUNCTIONS% :waitsetCheckResults
+call %FUNCTIONS% :waitsetCheckResults >> run.log

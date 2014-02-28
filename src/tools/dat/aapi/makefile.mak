@@ -11,6 +11,5 @@ CINCS   += -I$(OSPL_HOME)/src/database/database/code
 
 LDFLAGS += $(SHLDFLAGS)
 LDLIBS  += $(SHLDLIBS)
-LDLIBS  += -l$(DDS_OS)
 
 -include $(DEPENDENCIES)

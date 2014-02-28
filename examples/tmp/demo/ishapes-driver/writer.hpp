@@ -34,7 +34,7 @@ public:
       dds::pub::Publisher pub(dp, pqos);
 
       dds::pub::qos::DataWriterQos dwqos =
-            pub.default_writer_qos() << Durability::Transient() << Reliability::Reliable();
+            pub.default_datawriter_qos() << Durability::Transient() << Reliability::Reliable();
 
       dds::pub::DataWriter<T> dw(pub, topic, dwqos);
 

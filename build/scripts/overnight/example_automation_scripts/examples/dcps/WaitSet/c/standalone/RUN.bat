@@ -7,7 +7,7 @@ set EXAMPLE_LANG=sac
 
 call %FUNCTIONS% :runWaitSet
 
-call %FUNCTIONS% :waitsetCheckResults
+call %FUNCTIONS% :waitsetCheckResults >> run.log
 
 
 

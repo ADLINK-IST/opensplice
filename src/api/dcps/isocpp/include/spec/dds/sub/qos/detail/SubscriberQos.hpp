@@ -22,8 +22,18 @@
 #include <dds/core/TEntityQos.hpp>
 #include <foo/bar/sub/qos/SubscriberQos.hpp>
 
-namespace dds { namespace sub { namespace qos { namespace detail {
-  typedef ::dds::core::TEntityQos< ::foo::bar::sub::qos::SubscriberQos> SubscriberQos;
-} } } }
+namespace dds
+{
+namespace sub
+{
+namespace qos
+{
+namespace detail
+{
+typedef ::dds::core::TEntityQos< ::foo::bar::sub::qos::SubscriberQos> SubscriberQos;
+}
+}
+}
+}
 
 #endif /* OMG_DDS_SUB_QOS_DETAIL_SUBSCRIBER_QOS_HPP_ */

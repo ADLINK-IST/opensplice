@@ -19,4 +19,8 @@
 #define PA__LITTLE_ENDIAN
 #endif
 
+#ifdef _WIN64
+#define PA__64BIT
+#endif
+
 #endif /* PA_WIN32_ABSTRACT_H */

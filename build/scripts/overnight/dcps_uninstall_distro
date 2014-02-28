@@ -15,7 +15,7 @@ UNINSTALLER_NAME="$WORKDIR/$EXAMPLE_INSTALL_DIR/uninstall-$SHORTSETUP-HDE"
 UNINSTALLER_FILE=
 
 # Check if the uninstaller exists (Only if installed with bitrock installer)
-echo "checking for file $UNINSTALLER_FILE..."
+echo "checking for file $UNINSTALLER_NAME ..."
 if [ -f "$UNINSTALLER_NAME" ]
 then
     UNINSTALLER_FILE=$UNINSTALLER_NAME
@@ -30,10 +30,10 @@ fi
 if  [ -n "$UNINSTALLER_FILE" ]
 then
     echo "backing up installation directory"
-    ( cd "$WORKDIR" && tar -cf installed.tar installed/ )
+    ( cd "$WORKDIR" && tar -cf installed.tar "${EXAMPLE_INSTALL_DIR}" )
 
     echo "running $UNINSTALLER_FILE --mode unattended..."
-    $UNINSTALLER_FILE --mode unattended
+    "$UNINSTALLER_FILE" --mode unattended
     if [ $? = 0 ]
     then
         # the uninstaller creates a bitrock log which is not removed even

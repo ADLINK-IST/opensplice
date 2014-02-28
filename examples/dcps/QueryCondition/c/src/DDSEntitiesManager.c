@@ -62,10 +62,10 @@ void deleteParticipant()
 
 void registerStockType(DDS_TypeSupport typeSupport)
 {
-   char* typeName = QueryConditionData_StockTypeSupport_get_type_name(typeSupport);
+   char* typeName = StockMarket_StockTypeSupport_get_type_name(typeSupport);
 
-   g_status = QueryConditionData_StockTypeSupport_register_type(typeSupport, g_domainParticipant, typeName);
-   checkStatus(g_status, "QueryConditionData_StockTypeSupport_register_type");
+   g_status = StockMarket_StockTypeSupport_register_type(typeSupport, g_domainParticipant, typeName);
+   checkStatus(g_status, "StockMarket_StockTypeSupport_register_type");
 
    DDS_free(typeName);
 }
@@ -270,8 +270,8 @@ void deleteQueryCondition(DDS_DataReader dataReader, DDS_QueryCondition queryCon
 
 void writeStockSample(DDS_DataWriter dataWriter,
    DDS_InstanceHandle_t userHandle,
-   QueryConditionData_Stock* QueryConditionDataSample)
+   StockMarket_Stock* QueryConditionDataSample)
 {
-   g_status = QueryConditionData_StockDataWriter_write(dataWriter, QueryConditionDataSample, userHandle);
-   checkStatus(g_status, "QueryConditionData_StockDataWriter_write");
+   g_status = StockMarket_StockDataWriter_write(dataWriter, QueryConditionDataSample, userHandle);
+   checkStatus(g_status, "StockMarket_StockDataWriter_write");
 }

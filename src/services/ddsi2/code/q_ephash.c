@@ -1,20 +1,23 @@
 #include <stddef.h>
+#include <assert.h>
 
 #include "os_heap.h"
 #include "os_mutex.h"
 #include "os_cond.h"
 #include "os_thread.h"
+#include "sysdeps.h" /* pa_membar_..., ASSERT_MUTEX_HELD */
 
-#include "q_avl.h"
+#include "ut_avl.h"
 #include "q_ephash.h"
 #include "q_config.h"
 #include "q_globals.h"
 #include "q_entity.h"
 #include "sysdeps.h" /* pa_membar_..., ASSERT_MUTEX_HELD */
 #include "q_rtps.h" /* guid_t */
+#include "q_thread.h" /* for assert(thread is awake) */
+
 #include "kernelModule.h" /* v_gid */
 #include "v_public.h" /* v_handleIsEqual */
-#include "q_thread.h" /* for assert(thread is awake) */
 
 #define CONTAINER_OF(ptr, type, member) ((type *) ((char *) (ptr) - offsetof (type, member)))
 
@@ -47,28 +50,28 @@ static void ephash_update_enums_on_delete (struct ephash *h, struct ephash_chain
 static int hash_gid (const v_gid *gid, int nbitskey)
 {
   /* Universal hashing relying on 64-bit arithmetic, using localId and
-     serial, which are both 32-bit integers.
+   serial, which are both 32-bit integers.
 
-     SystemId is a constant for local writers and needn't be taken
-     into account.
+   SystemId is a constant for local writers and needn't be taken
+   into account.
 
-     Could consider ignoring "serial" altogether, because two localIds
-     with the same serial is not very likely to happen, and if it
-     happens, the older of the two will be removed shortly.
+   Could consider ignoring "serial" altogether, because two localIds
+   with the same serial is not very likely to happen, and if it
+   happens, the older of the two will be removed shortly.
 
-     See, e.g., http://en.wikipedia.org/wiki/Universal_hash_function. */
+   See, e.g., http://en.wikipedia.org/wiki/Universal_hash_function. */
   return
-    (int) ((((os_uint32) gid->localId + unihashconsts[0]) *
-            ((os_uint32) gid->serial  + unihashconsts[1]))
-           >> (64 - nbitskey));
+  (int) ((((os_uint32) gid->localId + unihashconsts[0]) *
+          ((os_uint32) gid->serial  + unihashconsts[1]))
+         >> (64 - nbitskey));
 }
 
-static int hash_guid (const nn_guid_t *guid, int nbitskey)
+static int hash_guid (const struct nn_guid *guid, int nbitskey)
 {
-  /* DDSI2 generated GUIDs: user-endpoint entityids are obtained by
-     extracting three bytes from the MD5 hash of the GID + some more,
-     so it may be beneficial to give those special treatment.  But for
-     now, give all GUIDs the same treatment (see hash_gid) */
+  /* Universal hashing relying on 64-bit arithmetic, using localId and
+     serial, which are both 32-bit integers.
+
+     See, e.g., http://en.wikipedia.org/wiki/Universal_hash_function. */
   return
     (int) (((((os_uint32) guid->prefix.u[0] + unihashconsts[0]) *
              ((os_uint32) guid->prefix.u[1] + unihashconsts[1])) +
@@ -82,17 +85,16 @@ static int gid_eq (const struct v_gid_s *a, const struct v_gid_s *b)
   return v_gidEqual (*a, *b);
 }
 
-static int guid_eq (const nn_guid_t *a, const nn_guid_t *b)
+static int guid_eq (const struct nn_guid *a, const struct nn_guid *b)
 {
   return
     a->prefix.u[0] == b->prefix.u[0] && a->prefix.u[1] == b->prefix.u[1] &&
     a->prefix.u[2] == b->prefix.u[2] && a->entityid.u == b->entityid.u;
 }
 
-static struct ephash *ephash_new (os_uint32 soft_limit)
+struct ephash *ephash_new (os_uint32 soft_limit)
 {
   struct ephash *ephash;
-  os_mutexAttr mattr;
   os_uint32 limit;
   int i, nbitskey, init_size;
 
@@ -113,9 +115,7 @@ static struct ephash *ephash_new (os_uint32 soft_limit)
   TRACE (("ephash_new: soft_limit %u nbitskey %d init_size %d l.f. %f\n", soft_limit, nbitskey, init_size, (double) soft_limit / init_size));
   if ((ephash = os_malloc (sizeof (*ephash))) == NULL)
     goto fail_ephash;
-  os_mutexAttrInit (&mattr);
-  mattr.scopeAttr = OS_SCOPE_PRIVATE;
-  if (os_mutexInit (&ephash->lock, &mattr) != os_resultSuccess)
+  if (os_mutexInit (&ephash->lock, &gv.mattr) != os_resultSuccess)
     goto fail_mutex;
   ephash->nbitskey = nbitskey;
   if ((ephash->heads = os_malloc (init_size * sizeof (*ephash->heads))) == NULL)
@@ -134,25 +134,12 @@ static struct ephash *ephash_new (os_uint32 soft_limit)
   return NULL;
 }
 
-static void ephash_free (struct ephash *ephash)
+void ephash_free (struct ephash *ephash)
 {
   assert (ephash->live_enums == NULL);
   os_free (ephash->heads);
   os_mutexDestroy (&ephash->lock);
   os_free (ephash);
-}
-
-int ephash_init (void)
-{
-  gv.gid_hash = ephash_new (config.gid_hash_softlimit);
-  gv.guid_hash = ephash_new (config.guid_hash_softlimit);
-  return 0;
-}
-
-void ephash_fini (void)
-{
-  ephash_free (gv.guid_hash);
-  ephash_free (gv.gid_hash);
 }
 
 static void ephash_insert (struct ephash *ephash, int idx, struct ephash_chain_entry *ce, int listidx)
@@ -183,9 +170,9 @@ static void ephash_remove (struct ephash *ephash, int idx, struct ephash_chain_e
   /* removing a local object from the hash chain must:
      (1) prevent any subsequent lookups from finding the lobj
      (2) allow any parallel lookups to keep walking the chain
-     therefore, lobj->gid_wr_hash_next of the removed lobj must not be
+     therefore, obj->hash_next of the removed obj must not be
      changed until no further parallel lookups may need to touch the
-     lobj */
+     obj */
   assert (0 <= idx && idx < (1 << ephash->nbitskey));
   assert (0 <= listidx && listidx < (int) (sizeof (ephash->enum_lists) / sizeof (ephash->enum_lists[0])));
   os_mutexLock (&ephash->lock);
@@ -219,11 +206,11 @@ static void ephash_guid_remove (struct entity_common *e)
   ephash_remove (gv.guid_hash, hash_guid (&e->guid, gv.guid_hash->nbitskey), &e->guid_hash_chain, (int) e->kind);
 }
 
-static void *ephash_lookup_guid (const struct ephash *ephash, const nn_guid_t *guid, enum entity_kind kind)
+static void *ephash_lookup_guid (const struct ephash *ephash, const struct nn_guid *guid, enum entity_kind kind)
 {
   struct ephash_chain_entry *ce;
   int idx = hash_guid (guid, ephash->nbitskey);
-  assert (vtime_awake_p (lookup_thread_state ()->vtime));
+
   assert (idx >= 0 && idx < (1 << ephash->nbitskey));
   for (ce = ephash->heads[idx]; ce; ce = ce->next)
   {
@@ -296,42 +283,42 @@ void ephash_remove_proxy_reader_guid (struct proxy_reader *prd)
   ephash_guid_remove (&prd->e);
 }
 
-struct participant *ephash_lookup_participant_guid (const nn_guid_t *guid)
+struct participant *ephash_lookup_participant_guid (const struct nn_guid *guid)
 {
   assert (guid->entityid.u == NN_ENTITYID_PARTICIPANT);
   assert (offsetof (struct participant, e) == 0);
   return ephash_lookup_guid (gv.guid_hash, guid, EK_PARTICIPANT);
 }
 
-struct proxy_participant *ephash_lookup_proxy_participant_guid (const nn_guid_t *guid)
+struct proxy_participant *ephash_lookup_proxy_participant_guid (const struct nn_guid *guid)
 {
   assert (guid->entityid.u == NN_ENTITYID_PARTICIPANT);
   assert (offsetof (struct proxy_participant, e) == 0);
   return ephash_lookup_guid (gv.guid_hash, guid, EK_PROXY_PARTICIPANT);
 }
 
-struct writer *ephash_lookup_writer_guid (const nn_guid_t *guid)
+struct writer *ephash_lookup_writer_guid (const struct nn_guid *guid)
 {
   assert (is_writer_entityid (guid->entityid));
   assert (offsetof (struct writer, e) == 0);
   return ephash_lookup_guid (gv.guid_hash, guid, EK_WRITER);
 }
 
-struct reader *ephash_lookup_reader_guid (const nn_guid_t *guid)
+struct reader *ephash_lookup_reader_guid (const struct nn_guid *guid)
 {
   assert (is_reader_entityid (guid->entityid));
   assert (offsetof (struct reader, e) == 0);
   return ephash_lookup_guid (gv.guid_hash, guid, EK_READER);
 }
 
-struct proxy_writer *ephash_lookup_proxy_writer_guid (const nn_guid_t *guid)
+struct proxy_writer *ephash_lookup_proxy_writer_guid (const struct nn_guid *guid)
 {
   assert (is_writer_entityid (guid->entityid));
   assert (offsetof (struct proxy_writer, e) == 0);
   return ephash_lookup_guid (gv.guid_hash, guid, EK_PROXY_WRITER);
 }
 
-struct proxy_reader *ephash_lookup_proxy_reader_guid (const nn_guid_t *guid)
+struct proxy_reader *ephash_lookup_proxy_reader_guid (const struct nn_guid *guid)
 {
   assert (is_reader_entityid (guid->entityid));
   assert (offsetof (struct proxy_reader, e) == 0);
@@ -340,23 +327,23 @@ struct proxy_reader *ephash_lookup_proxy_reader_guid (const nn_guid_t *guid)
 
 /* GID-based */
 
-static void ephash_gid_insert (struct generic_endpoint *ep)
+static void ephash_gid_insert (struct ephash *gid_hash, struct generic_endpoint *ep)
 {
   if (v_gidIsValid (ep->c.gid))
-    ephash_insert (gv.gid_hash, hash_gid (&ep->c.gid, gv.gid_hash->nbitskey), &ep->c.gid_hash_chain, (int) ep->e.kind);
+    ephash_insert (gid_hash, hash_gid (&ep->c.gid, gid_hash->nbitskey), &ep->c.gid_hash_chain, (int) ep->e.kind);
 }
 
-static void ephash_gid_remove (struct generic_endpoint *ep)
+static void ephash_gid_remove (struct ephash *gid_hash, struct generic_endpoint *ep)
 {
   if (v_gidIsValid (ep->c.gid))
-    ephash_remove (gv.gid_hash, hash_gid (&ep->c.gid, gv.gid_hash->nbitskey), &ep->c.gid_hash_chain, (int) ep->e.kind);
+    ephash_remove (gid_hash, hash_gid (&ep->c.gid, gid_hash->nbitskey), &ep->c.gid_hash_chain, (int) ep->e.kind);
 }
 
 static struct generic_endpoint *ephash_lookup_gid (const struct ephash *ephash, const struct v_gid_s *gid)
 {
   struct ephash_chain_entry *ce;
   int idx = hash_gid (gid, ephash->nbitskey);
-  assert (vtime_awake_p (lookup_thread_state ()->vtime));
+
   assert (idx >= 0 && idx < (1 << ephash->nbitskey));
   for (ce = ephash->heads[idx]; ce; ce = ce->next)
   {
@@ -367,36 +354,36 @@ static struct generic_endpoint *ephash_lookup_gid (const struct ephash *ephash, 
   return NULL;
 }
 
-void ephash_insert_writer_gid (struct writer *wr)
+void ephash_insert_writer_gid (struct ephash *gid_hash, struct writer *wr)
 {
-  ephash_gid_insert ((struct generic_endpoint *) wr);
+  ephash_gid_insert (gid_hash, (struct generic_endpoint *) wr);
 }
 
-void ephash_insert_reader_gid (struct reader *rd)
+void ephash_insert_reader_gid (struct ephash *gid_hash, struct reader *rd)
 {
-  ephash_gid_insert ((struct generic_endpoint *) rd);
+  ephash_gid_insert (gid_hash, (struct generic_endpoint *) rd);
 }
 
-void ephash_remove_writer_gid (struct writer *wr)
+void ephash_remove_writer_gid (struct ephash *gid_hash, struct writer *wr)
 {
-  ephash_gid_remove ((struct generic_endpoint *) wr);
+  ephash_gid_remove (gid_hash, (struct generic_endpoint *) wr);
 }
 
-void ephash_remove_reader_gid (struct reader *rd)
+void ephash_remove_reader_gid (struct ephash *gid_hash, struct reader *rd)
 {
-  ephash_gid_remove ((struct generic_endpoint *) rd);
+  ephash_gid_remove (gid_hash, (struct generic_endpoint *) rd);
 }
 
-struct writer *ephash_lookup_writer_gid (const struct v_gid_s *gid)
+struct writer *ephash_lookup_writer_gid (const struct ephash *gid_hash, const struct v_gid_s *gid)
 {
-  struct generic_endpoint *ep = ephash_lookup_gid (gv.gid_hash, gid);
+  struct generic_endpoint *ep = ephash_lookup_gid (gid_hash, gid);
   assert (ep == NULL || ep->e.kind == EK_WRITER);
   return (struct writer *) ep;
 }
 
-struct reader *ephash_lookup_reader_gid (const struct v_gid_s *gid)
+struct reader *ephash_lookup_reader_gid (const struct ephash *gid_hash, const struct v_gid_s *gid)
 {
-  struct generic_endpoint *ep = ephash_lookup_gid (gv.gid_hash, gid);
+  struct generic_endpoint *ep = ephash_lookup_gid (gid_hash, gid);
   assert (ep == NULL || ep->e.kind == EK_READER);
   return (struct reader *) ep;
 }
@@ -415,8 +402,8 @@ static void ephash_update_enums_on_delete (struct ephash *ephash, struct ephash_
 static void ephash_enum_init (struct ephash_enum *st, struct ephash *ephash, enum entity_kind kind)
 {
   const int listidx = (int) kind;
+
   assert (0 <= listidx && listidx < (int) (sizeof (ephash->enum_lists) / sizeof (ephash->enum_lists[0])));
-  assert (vtime_awake_p (lookup_thread_state ()->vtime));
   os_mutexLock (&ephash->lock);
   st->ephash = ephash;
   st->next_live = ephash->live_enums;
@@ -425,9 +412,6 @@ static void ephash_enum_init (struct ephash_enum *st, struct ephash *ephash, enu
     st->next_live->prev_live = st;
   ephash->live_enums = st;
   st->cursor = ephash->enum_lists[listidx];
-#ifndef NDEBUG
-  st->vtime = lookup_thread_state ()->vtime;
-#endif
   os_mutexUnlock (&ephash->lock);
 }
 
@@ -516,14 +500,20 @@ struct proxy_participant *ephash_enum_proxy_participant_next (struct ephash_enum
 static void ephash_enum_fini (struct ephash_enum *st)
 {
   struct ephash *ephash = st->ephash;
-  assert (st->vtime == lookup_thread_state ()->vtime);
+
   os_mutexLock (&ephash->lock);
   if (st->next_live)
+  {
     st->next_live->prev_live = st->prev_live;
+  }
   if (st->prev_live)
+  {
     st->prev_live->next_live = st->next_live;
+  }
   else
+  {
     ephash->live_enums = st->next_live;
+  }
   os_mutexUnlock (&ephash->lock);
 }
 

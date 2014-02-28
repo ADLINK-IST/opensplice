@@ -47,9 +47,6 @@ u_serviceTerminationThreadMain(
 #else
         _exit(1);
 #endif
-    } else {
-        OS_REPORT_1(OS_INFO, "u_serviceTerminationThreadMain", 0,
-                   "Service Termination Thread for process %d stopped ",os_procIdToInteger(os_procIdSelf()));
     }
     return NULL;
 }
@@ -91,9 +88,6 @@ u_serviceTerminationThreadNew()
         if (result != os_resultSuccess) {
             OS_REPORT_1(OS_ERROR, "u_serviceTerminationThreadNew", 0,
                       "Could not start the Service Termination Thread for process %d", os_procIdToInteger(os_procIdSelf()));
-        } else {
-            OS_REPORT_1(OS_INFO, "u_serviceTerminationThreadNew", 0,
-                      "Service Termination Thread for process %d started", os_procIdToInteger(os_procIdSelf()));
         }
     }
     return this;

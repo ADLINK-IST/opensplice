@@ -13,6 +13,7 @@ package org.opensplice.cm.impl;
 
 import org.opensplice.cm.CMException;
 import org.opensplice.cm.Queue;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.status.Status;
 
 /**
@@ -35,8 +36,8 @@ public class QueueImpl extends ReaderImpl implements Queue{
      * @param _name The name of the kernel entity that is associated with this
      *              entity.
      */
-    public QueueImpl(long _index, long _serial, String _pointer, String _name) {
-        super(_index, _serial, _pointer, _name);
+    public QueueImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name) {
+        super(communicator, _index, _serial, _pointer, _name);
     }
     
     public Status getStatus() throws CMException{

@@ -141,7 +141,6 @@ d_nameSpacesRequestListenerInit(
     d_nameSpacesRequestListener listener,
     d_subscriber subscriber)
 {
-    d_admin admin;
     os_threadAttr attr;
 
     os_threadAttrInit(&attr);
@@ -154,8 +153,6 @@ d_nameSpacesRequestListenerInit(
                          V_LENGTH_UNLIMITED,
                          attr,
                          d_nameSpacesRequestListenerDeinit);
-
-    admin      = d_subscriberGetAdmin(subscriber);
 }
 
 void
@@ -221,7 +218,7 @@ d_nameSpacesRequestListenerAction(
 
     d_printTimedEvent(durability, D_LEVEL_FINE,
             D_THREAD_NAMESPACES_REQUEST_LISTENER,
-            "Received nameSpacesRequest from fellow %d.\n",
+            "Received nameSpacesRequest from fellow %u.\n",
             message->senderAddress.systemId);
 
     /* Update nameSpaces list for listener */
@@ -240,7 +237,7 @@ d_nameSpacesRequestListenerAction(
             fellow = d_adminGetFellow(admin, addr);
             d_printTimedEvent(durability, D_LEVEL_FINE,
                 D_THREAD_NAMESPACES_REQUEST_LISTENER,
-                "Fellow %d unknown, added to administration and requesting nameSpaces.\n",
+                "Fellow %u unknown, added to administration and requesting nameSpaces.\n",
                 message->senderAddress.systemId);
             request = d_nameSpacesRequestNew(admin);
             d_messageSetAddressee(d_message(request), addr);

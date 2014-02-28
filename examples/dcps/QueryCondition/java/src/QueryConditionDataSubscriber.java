@@ -33,10 +33,10 @@ import DDS.LENGTH_UNLIMITED;
 import DDS.QueryCondition;
 import DDS.ReadCondition;
 import DDS.SampleInfoSeqHolder;
-import QueryConditionData.StockDataReader;
-import QueryConditionData.StockDataReaderHelper;
-import QueryConditionData.StockSeqHolder;
-import QueryConditionData.StockTypeSupport;
+import StockMarket.StockDataReader;
+import StockMarket.StockDataReaderHelper;
+import StockMarket.StockSeqHolder;
+import StockMarket.StockTypeSupport;
 
 public class QueryConditionDataSubscriber {
 

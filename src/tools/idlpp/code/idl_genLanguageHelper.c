@@ -19,7 +19,13 @@
 
 static IDL_LANGUAGE lang = IDL_LANG_UNKNOWN;
 static IDL_CORBA_MODE corba_mode = IDL_MODE_UNKNOWN;
+/** @internal
+ * @bug OSPL-3369 Handle both below as other modes and languages once
+ * re-engineered and no side effects confirmed */
 static os_boolean is_isocpp = OS_FALSE;
+static os_boolean is_isocpp_types = OS_FALSE;
+static os_boolean is_gen_equality = OS_FALSE;
+static os_boolean is_isocpp_testmethods = OS_FALSE;
 /* columns are the IDL_MODE attributes
    rows are the IDL_LANG attributes
 */
@@ -44,27 +50,27 @@ idl_getLanguage(void)
     return lang;
 }
 
-char *
+const char *
 idl_getLanguageStr(void)
 {
-    char *str = NULL;
+    const char *str = NULL;
 
     switch (lang) {
     case IDL_LANG_C:
-        str = os_strdup("C");
+        str = "C";
     break;
     case IDL_LANG_CXX:
-        str = os_strdup("C++");
+        str = "C++";
     break;
     case IDL_LANG_CS:
-        str = os_strdup("C#");
+        str = "C#";
     break;
     case IDL_LANG_JAVA:
-        str = os_strdup("JAVA");
+        str = "JAVA";
     break;
     case IDL_LANG_UNKNOWN:
     default:
-        str = os_strdup("<unknown>");
+        str = "<unknown>";
     break;
     }
     return str;
@@ -83,21 +89,27 @@ idl_getCorbaMode(void)
     return corba_mode;
 }
 
-char *
+const char *
 idl_getCorbaModeStr(void)
 {
-    char *str = NULL;
+    const char *str = NULL;
+
+    /** @internal
+     * @bug OSPL-3369 Have confirmed this is only used in output (where
+     * it leaked previously) */
+    if (idl_getIsISOCppTypes())
+      return "ISO/IEC C++ 2003";
 
     switch (corba_mode) {
     case IDL_MODE_ORB_BOUND:
-        str = os_strdup("CORBA");
+        str = "CORBA";
     break;
     case IDL_MODE_STANDALONE:
-        str = os_strdup("STANDALONE");
+        str ="STANDALONE";
     break;
     case IDL_MODE_UNKNOWN:
     default:
-        str = os_strdup("<unknown>");
+        str = "<unknown>";
     break;
     }
 
@@ -107,7 +119,19 @@ idl_getCorbaModeStr(void)
 int
 idl_languageAndModeSupported(void)
 {
-    return idl_supportedLanguageAndMode[lang][corba_mode];
+    int is_ok = idl_supportedLanguageAndMode[lang][corba_mode];
+    if (is_ok)
+    {
+      /** @internal
+       * @bug OSPL-3369 Temporary sanity check for isocpp settings */
+      if (idl_getIsISOCppTypes()
+            && lang != IDL_LANG_CXX
+            && corba_mode != IDL_MODE_STANDALONE)
+      {
+          is_ok = 0;
+      }
+    }
+    return is_ok;
 }
 
 /* Translate an IDL identifier into a language specific identifier.
@@ -227,4 +251,40 @@ os_boolean
 idl_getIsISOCpp()
 {
     return is_isocpp;
+}
+
+void
+idl_setIsISOCppTypes(os_boolean itIs)
+{
+    is_isocpp_types = itIs;
+}
+
+os_boolean
+idl_getIsISOCppTypes()
+{
+    return is_isocpp_types;
+}
+
+void
+idl_setIsGenEquality(os_boolean itIs)
+{
+    is_gen_equality = itIs;
+}
+
+os_boolean
+idl_getIsGenEquality()
+{
+    return is_gen_equality;
+}
+
+void
+idl_setIsISOCppTestMethods(os_boolean itIs)
+{
+    is_isocpp_testmethods = itIs;
+}
+
+os_boolean
+idl_getIsISOCppTestMethods()
+{
+    return is_isocpp_testmethods;
 }

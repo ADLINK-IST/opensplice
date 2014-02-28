@@ -21,43 +21,48 @@
 #include <dds/core/InstanceHandle.hpp>
 
 #include <org/opensplice/core/EntityDelegate.hpp>
+#include <org/opensplice/core/exception_helper.hpp>
 
 
 volatile unsigned int org::opensplice::core::EntityDelegate::entityID_ = 0;
 
 org::opensplice::core::EntityDelegate::EntityDelegate()
-: enabled_(true)
+    : enabled_(true)
 { }
 
 org::opensplice::core::EntityDelegate::~EntityDelegate()
 { }
 
-/** @todo Implementation required - OSPL-2640, currently autoenabled
- * see http://jira.prismtech.com:8080/browse/OSPL-2640 **/
 void
-org::opensplice::core::EntityDelegate::enable() {
-   // implementation-defined
-   //entity_.in()->enable();
-   //enabled_ = true;
+org::opensplice::core::EntityDelegate::enable()
+{
+    org::opensplice::core::check_and_throw(entity_.in()->enable(), OSPL_CONTEXT_LITERAL("Calling ::enable()"));
+    enabled_ = true;
+}
+
+void
+org::opensplice::core::EntityDelegate::close()
+{
+
+}
+
+void
+org::opensplice::core::EntityDelegate::retain()
+{
+
 }
 
 const dds::core::status::StatusMask
-org::opensplice::core::EntityDelegate::status_changes() {
+org::opensplice::core::EntityDelegate::status_changes()
+{
     return dds::core::status::StatusMask(entity_.in()->get_status_changes());
 }
 
 const dds::core::InstanceHandle
-org::opensplice::core::EntityDelegate::instance_handle() const {
+org::opensplice::core::EntityDelegate::instance_handle() const
+{
     return dds::core::InstanceHandle(entity_.in()->get_instance_handle());
 }
-
-/** @todo Implementation required - OSPL-2640, currently autoenabled
- * see http://jira.prismtech.com:8080/browse/OSPL-2640 **/
-void
-org::opensplice::core::EntityDelegate::close() {  }
-
-void
-org::opensplice::core::EntityDelegate::retain() {  }
 
 DDS::Entity_ptr org::opensplice::core::EntityDelegate::get_dds_entity()
 {

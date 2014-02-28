@@ -6,7 +6,7 @@ localhost1 - Address of first host - localhost by default
 localhost2 - address of second host
 ########################################################################################################
 key format:
-api_key = DCPS | DLRL | ALL
+api_key = DCPS |  ALL
 key1 and key2 = Java | C | C++ | OF_C++ | JO_Java | RTO_Java 
 key1(optional key2 in this case is not required) = CORBA  | STANDALONE  | ALL
 ########################################################################################################

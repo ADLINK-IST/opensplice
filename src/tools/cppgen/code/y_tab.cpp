@@ -61,7 +61,7 @@ typedef union
   double                dval;           /* Double value         */
   float                 fval;           /* Float value          */
   char                  cval;           /* Char value           */
-  
+
   UTL_String            *sval;          /* String value         */
   char                  *strval;        /* char * value         */
   Identifier            *idval;         /* Identifier           */
@@ -1115,7 +1115,7 @@ int yychar;                     /* current input token number */
 #define YYLEX()         yycvtok(yylex())
 /*
 ** yycvtok - return a token if i is a wchar_t value that exceeds 255.
-**      If i<255, i itself is the token.  If i>255 but the neither 
+**      If i<255, i itself is the token.  If i>255 but the neither
 **      of the 30th or 31st bit is on, i is already a token.
 */
 #if defined(__STDC__) || defined(__cplusplus)
@@ -1136,7 +1136,7 @@ int yycvtok(i) int i;
                 while ((last>=first)&&(first>=0)) {/*Binary search loop*/
                         mid = (first+last)/2;
                         j = yymbchars[mid].character;
-                        if( j==i ){/*Found*/ 
+                        if( j==i ){/*Found*/
                                 return yymbchars[mid].tvalue;
                         }else if( j<i ){
                                 first = mid + 1;
@@ -1577,7 +1577,7 @@ int yyparse()
         */
         switch( yytmp )
         {
-                
+
 case 4:
 # line 270 "idl.yy"
 {
@@ -1638,10 +1638,10 @@ case 16:
 {
                 idl_global->set_parse_state(IDL_GlobalData::PS_OpaqueDeclSeen);
                 UTL_Scope *s = idl_global->scopes()->top_non_null();
-                UTL_ScopedName *n = new UTL_ScopedName(new 
+                UTL_ScopedName *n = new UTL_ScopedName(new
                                                 Identifier(yypvt[-0].strval,1,0,I_FALSE),NULL);
                 AST_Opaque *o = NULL;
-        
+
                 if(s != NULL)
                 {
                         o = idl_global->gen()->create_opaque(n,s->get_pragmas());
@@ -1672,7 +1672,7 @@ case 21:
                 if(d)
                 {
                         if((AST_Interface *)d->narrow((long)&AST_Interface::type_id) ||
-                                (AST_Operation *)d->narrow((long)&AST_Operation::type_id)) 
+                                (AST_Operation *)d->narrow((long)&AST_Operation::type_id))
                         {
                                 d->get_decl_pragmas().set_pragma_client_synchronicity(I_TRUE);
                         }
@@ -1694,7 +1694,7 @@ case 22:
                 if(d)
                 {
                         if((AST_Interface *)d->narrow((long)&AST_Interface::type_id) ||
-                                (AST_Operation *)d->narrow((long)&AST_Operation::type_id)) 
+                                (AST_Operation *)d->narrow((long)&AST_Operation::type_id))
                         {
                                 d->get_decl_pragmas().set_pragma_server_synchronicity(I_TRUE);
                         }
@@ -2329,7 +2329,7 @@ case 73:
                     Identifier * id = d->name ()->head ();
                     const char *postfix =
                        (tp->node_type () == AST_Decl::NT_array)
-                       ? "_array" : "_seq";
+                       ? "" : "_seq";
                     // first underscore removed by Identifier constructor
                     DDSString anon_type_name =
                        DDSString ("__") + DDSString (id->get_string ())
@@ -2340,7 +2340,7 @@ case 73:
                        new Identifier (anon_type_name),
                        NULL
                     );
-   
+
                     (void) s->fe_add_typedef
                     (
                        idl_global->gen()->create_typedef
@@ -2595,13 +2595,13 @@ case 115:
            * it in the enclosing scope
            */
 
-          if (yypvt[-0].exval != NULL && s != NULL) 
+          if (yypvt[-0].exval != NULL && s != NULL)
           {
             if (yypvt[-0].exval->coerce (yypvt[-6].etval) == NULL)
             {
               idl_global->err()->coercion_error (yypvt[-0].exval, yypvt[-6].etval);
             }
-            else 
+            else
             {
               c = idl_global->gen()->create_constant
                  (yypvt[-6].etval, yypvt[-0].exval, n, s->get_pragmas ());
@@ -2827,10 +2827,10 @@ case 164:
             l = new UTL_DecllistActiveIterator(yypvt[-0].dlval);
             for (;!(l->is_done()); l->next()) {
               d = l->item();
-              if (d == NULL) 
+              if (d == NULL)
                 continue;
               AST_Type * tp = d->compose(yypvt[-2].dcval);
-              if (tp == NULL) 
+              if (tp == NULL)
                 continue;
               t = idl_global->gen()->create_typedef(tp, d->name(), s->get_pragmas());
               (void) s->fe_add_typedef(t);
@@ -2952,12 +2952,12 @@ case 202:
         } break;
 case 203:
 # line 1766 "idl.yy"
-{ 
+{
           yyval.etval = AST_Expression::EV_octet;
         } break;
 case 204:
 # line 1773 "idl.yy"
-{ 
+{
           yyval.etval = AST_Expression::EV_bool;
         } break;
 case 205:
@@ -3059,10 +3059,10 @@ case 216:
             l = new UTL_DecllistActiveIterator(yypvt[-2].dlval);
             for (;!(l->is_done()); l->next()) {
               d = l->item();
-              if (d == NULL) 
+              if (d == NULL)
                 continue;
               AST_Type *tp = d->compose(yypvt[-4].dcval);
-              if (tp == NULL) 
+              if (tp == NULL)
                 continue;
 
               // Check for anonymous type
@@ -3072,7 +3072,7 @@ case 216:
                  Identifier * id = d->name ()->head ();
                  const char *postfix =
                     (tp->node_type () == AST_Decl::NT_array)
-                    ? "_array" : "_seq";
+                    ? "" : "_seq";
                  // first underscore removed by Identifier constructor
                  DDSString anon_type_name =
                     DDSString ("__") + DDSString (id->get_string ())
@@ -3417,7 +3417,7 @@ case 251:
                  Identifier * id = yypvt[-0].deval->name ()->head ();
                  const char *postfix =
                     (tp->node_type () == AST_Decl::NT_array)
-                    ? "_array" : "_seq";
+                    ? "" : "_seq";
                  // first underscore removed by Identifier constructor
                  DDSString anon_type_name =
                     DDSString ("__") + DDSString (id->get_string ())
@@ -3521,7 +3521,7 @@ case 261:
              */
             if (s != NULL && s->scope_node_type() == AST_Decl::NT_enum) {
               c = AST_Enum::narrow_from_scope(s);
-              if (c != NULL) 
+              if (c != NULL)
                 e = idl_global->gen()->create_enum_val(c->next_enum_val(), n, s->get_pragmas());
               (void) s->fe_add_enum_val(e);
             }
@@ -3555,8 +3555,8 @@ case 264:
           } else if (yypvt[-5].dcval == NULL) {
             yyval.dcval = NULL;
           } else {
-            AST_Type *tp = AST_Type::narrow_from_decl(yypvt[-5].dcval); 
-            if (tp == NULL) 
+            AST_Type *tp = AST_Type::narrow_from_decl(yypvt[-5].dcval);
+            if (tp == NULL)
               yyval.dcval = NULL;
             else {
               yyval.dcval = idl_global->gen()->create_sequence(yypvt[-2].exval, tp);

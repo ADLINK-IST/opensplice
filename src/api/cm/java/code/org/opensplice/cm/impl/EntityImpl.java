@@ -12,10 +12,10 @@
 package org.opensplice.cm.impl;
 
 import org.opensplice.cm.CMException;
-import org.opensplice.cm.CMFactory;
 import org.opensplice.cm.Entity;
 import org.opensplice.cm.EntityFilter;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.qos.QoS;
 import org.opensplice.cm.statistics.Statistics;
 import org.opensplice.cm.status.Status;
@@ -37,8 +37,13 @@ public abstract class EntityImpl implements Entity, Comparable{
   *              entity.
   * @param _enabled Whether the entity is enabled.
   */
- protected EntityImpl(long _index, long _serial, String _pointer, String _name){
-     index   = _index;
+ protected EntityImpl(Communicator _communicator, long _index, long _serial, String _pointer, String _name){
+	 if(_communicator == null) {
+		 throw new IllegalArgumentException("The communicator can not be null.");
+	 }
+	 
+	 communicator = _communicator;
+   index   = _index;
      serial  = _serial;
      pointer = _pointer;
      name    = _name;
@@ -113,7 +118,7 @@ public abstract class EntityImpl implements Entity, Comparable{
          throw new CMException("Supplied entity is not available (anymore).");
      }
      try {
-         status = CMFactory.getCommunicator().entityGetStatus(this);
+         status = getCommunicator().entityGetStatus(this);
      } catch (CommunicationException e) {
          throw new CMException(e.getMessage());
      }
@@ -143,7 +148,7 @@ public abstract class EntityImpl implements Entity, Comparable{
          throw new CMException("Supplied entity is not available (anymore).");
      }
      try {
-         qoS = CMFactory.getCommunicator().entityGetQoS(this);
+         qoS = getCommunicator().entityGetQoS(this);
      } catch (CommunicationException e) {
          throw new CMException(e.getMessage());
      }
@@ -201,7 +206,7 @@ public abstract class EntityImpl implements Entity, Comparable{
          throw new CMException("Entity already freed.");
      }
      try {
-         CMFactory.getCommunicator().entityEnable(this);
+         getCommunicator().entityEnable(this);
          this.enabled = true;
      } catch (CommunicationException ce) {
          throw new CMException(ce.getMessage());
@@ -232,7 +237,7 @@ public abstract class EntityImpl implements Entity, Comparable{
          throw new CMException("Supplied entity is not available (anymore).");
      }
      try {
-         s = CMFactory.getCommunicator().entityGetStatistics(this);
+         s = getCommunicator().entityGetStatistics(this);
      } catch(CommunicationException ce){
          throw new CMException(ce.getMessage());
      }
@@ -251,7 +256,7 @@ public abstract class EntityImpl implements Entity, Comparable{
          throw new CMException("Supplied entity is not available (anymore).");
      }
      try {
-         CMFactory.getCommunicator().entityResetStatistics(this, fieldName);
+         getCommunicator().entityResetStatistics(this, fieldName);
      } catch (CommunicationException e) {
          throw new CMException(e.getMessage());
      }
@@ -291,7 +296,7 @@ public abstract class EntityImpl implements Entity, Comparable{
      }
      Entity[] result;
      try {
-         result = CMFactory.getCommunicator().entityOwnedEntities(this, filter);
+         result = getCommunicator().entityOwnedEntities(this, filter);
      } catch (CommunicationException e) {
          throw new CMException(e.getMessage());
      }
@@ -337,7 +342,7 @@ public abstract class EntityImpl implements Entity, Comparable{
          throw new CMException("Entity already freed.");
      }
      try {
-         result = CMFactory.getCommunicator().entityDependantEntities(this, filter);
+         result = getCommunicator().entityDependantEntities(this, filter);
      } catch (CommunicationException e) {
          throw new CMException(e.getMessage());
      }
@@ -398,7 +403,7 @@ public abstract class EntityImpl implements Entity, Comparable{
          freed = true;
          
          try {
-             CMFactory.getCommunicator().entityFree(this);
+             getCommunicator().entityFree(this);
          } 
          catch (CMException e) {} 
          catch (CommunicationException e) {}
@@ -443,6 +448,10 @@ public abstract class EntityImpl implements Entity, Comparable{
      }
      return result;
  }
+
+  protected Communicator getCommunicator() throws CMException {
+    return communicator;
+  }
      
  /** 
   * The index of the handle of the kernel entity that is associated with
@@ -483,5 +492,10 @@ public abstract class EntityImpl implements Entity, Comparable{
   * Whether the entity is enabled.
   */
  protected boolean enabled;
+
+ /**
+  * The communicator used by the entity. It should never be null.
+  */
+ private final Communicator communicator;
  
 }

@@ -202,7 +202,7 @@ test_perform_dbt_tests ()
     XPASS=`grep 'DBT XPASS count' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
     MISSING=`grep 'DBT missing testcases' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
     CORES=`grep 'DBT Core dumps' $1/management_summary.txt | awk -F': ' '{ print $2 }'`
-    if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" ]
+    if [ $FAIL = 0 -a $XPASS = 0 -a $MISSING = 0 ]
     then
         test_configure $2
         T_PERFORM_DBT_1=$?
@@ -250,7 +250,7 @@ test_perform_rbt_tests ()
     XPASS=`grep 'RBT XPASS' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`
     MISSING=`grep 'Crashed tests amount' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`
     CORES=`grep 'Core dumps' $1/RBTmetrics_${TODAY_RBT}.txt | awk -F': ' '{ print $2 }'`
-    if [ "$FAIL" = "0" -a "$XPASS" = "0" -a "$MISSING" = "0" ]
+    if [ $FAIL = 0 -a $XPASS = 0 -a $MISSING = 0 ]
     then
         test_configure $2
         T_PERFORM_RBT_1=$?

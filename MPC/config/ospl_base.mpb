@@ -14,8 +14,4 @@ feature(!src_co) {
 
 feature(src_co) {
     libpaths += $(OSPL_HOME_NORMALIZED)/lib/$(SPLICE_TARGET)
-    specific (make) {
-        // Right now we're gmake only
-        supports_include = 1
-    }
 }

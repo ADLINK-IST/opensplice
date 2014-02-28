@@ -23,6 +23,3 @@ namespace isocpp  {
 }
 }
 }
-
-ISOCPP_EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_Listener_publisher, examples::dcps::Listener::isocpp::publisher)
-ISOCPP_EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_Listener_subscriber, examples::dcps::Listener::isocpp::subscriber)

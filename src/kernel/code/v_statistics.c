@@ -21,6 +21,7 @@
 #include "v_durabilityStatistics.h"
 #include "v_cmsoapStatistics.h"
 #include "v_rnrStatistics.h"
+#include "v_groupQueueStatistics.h"
 #include "v_time.h"
 #include "os.h"
 
@@ -177,6 +178,8 @@ v_statisticsReset(
             result = v_networkingStatisticsReset(v_networkingStatistics(s), NULL);
         } else if (strcmp(typename, "v_rnrStatistics")==0 ) {
             result = v_rnrStatisticsReset(v_rnrStatistics(s), NULL);
+        } else if (strcmp(typename, "v_groupQueueStatistics") ==0 ) {
+            result = v_groupQueueStatisticsReset(v_groupQueueStatistics(s), NULL);
         } else {
             result = v_statisticsResetAllFields(s);
         }

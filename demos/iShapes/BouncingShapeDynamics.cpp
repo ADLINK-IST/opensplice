@@ -15,6 +15,8 @@ static const float PI = 3.1415926535F;
 #define roundf(a) ((a)>0?floor((a)+0.5):ceil((a)-0.5))
 #endif
 
+namespace demo { namespace ishapes {
+
 BouncingShapeDynamics::BouncingShapeDynamics(int x0, int y0,
         const QRect& shapeBounds,
         const QRect& constraint,
@@ -72,8 +74,8 @@ BouncingShapeDynamics::simulate()
         pos_.ry() = constraint_.height() - shapeBounds_.height();
     }
 
-    shape_.x = pos_.x();
-    shape_.y = pos_.y();
+    shape_.x() = pos_.x();
+    shape_.y() = pos_.y();
     shapeWriter_.write(shape_);
 
     plist_.erase(plist_.begin(), plist_.end());
@@ -83,9 +85,10 @@ BouncingShapeDynamics::simulate()
                  << os_timeGet().tv_sec
                  << os_timeGet().tv_nsec
                  << "Colour:"
-                 << shape_.color
-                 << "Size:" << shape_.shapesize
-                 << "x:" << shape_.x
-                 << "y:" << shape_.y;
+                 << shape_.color().c_str()
+                 << "Size:" << shape_.shapesize()
+                 << "x:" << shape_.x()
+                 << "y:" << shape_.y();
     #endif
 }
+}}

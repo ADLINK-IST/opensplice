@@ -253,7 +253,7 @@ idl_cTypeToCSharp(
         SACSSplDcpsUserData *csUserData)
 {
     c_longlong nrElements;
-    c_char *dbType, *dbTypeTmp, *memberTypeNameTmp;
+    c_char *dbType = NULL, *dbTypeTmp, *memberTypeNameTmp;
     c_long dbTypeSize;
 
     switch (c_baseObjectKind(memberType))
@@ -348,7 +348,7 @@ idl_cTypeToBaseType(
         c_type memberType,
         const char *memberTypeName)
 {
-    const c_char *baseType;
+    const c_char *baseType = NULL;
 
     switch (c_baseObjectKind(memberType))
     {
@@ -752,6 +752,8 @@ idl_CreateArrayIterationIndex(
         c_type collStartType,
         c_long dimension)
 {
+#define IDL_INDEX_BUFFER_LENGTH 32
+
     c_long i;
     c_type nextType;
     c_type currentType = c_typeActualType(collStartType);
@@ -759,6 +761,10 @@ idl_CreateArrayIterationIndex(
     /* maxResultLength = '\0' + dimension * ('[' + ']' + MaxInt + 'i') */
     c_long maxResultLength = 1 + dimension * (2 + 10 + 1);
     c_char *result = os_malloc(maxResultLength);
+    c_char *format = NULL;
+    c_char postfix[IDL_INDEX_BUFFER_LENGTH];
+
+    assert (result != NULL);
 
     /* If no dimension specified, return an empty string. */
     result[0] = '\0';
@@ -775,16 +781,19 @@ idl_CreateArrayIterationIndex(
         switch (c_collectionTypeKind(currentType))
         {
         case C_SEQUENCE:
-            snprintf(result, maxResultLength, "%s][i%d", result, i);
+            format = "][i%d";
+            (void)snprintf (postfix, IDL_INDEX_BUFFER_LENGTH, format, i);
             break;
         case C_ARRAY:
             if (c_collectionTypeKind(nextType) == C_ARRAY)
             {
-                snprintf(result, maxResultLength, "%s,i%d", result, i);
+                format = ",i%d";
+                (void)snprintf (postfix, IDL_INDEX_BUFFER_LENGTH, format, i);
             }
             else
             {
-                snprintf(result, maxResultLength, "%s][i%d", result, i);
+                format = "][i%d";
+                (void)snprintf (postfix, IDL_INDEX_BUFFER_LENGTH, format, i);
             }
             break;
         default:
@@ -792,10 +801,13 @@ idl_CreateArrayIterationIndex(
             assert(FALSE);
         }
         currentType = nextType;
+        os_strncat (result, postfix, maxResultLength);
     }
     os_strncat(result, "]", maxResultLength);
 
     return result;
+
+#undef IDL_INDEX_BUFFER_LENGTH
 }
 
 static void
@@ -1238,8 +1250,7 @@ idl_CreateArrayInitialization(
         const c_char *arrayBrackets,
         SACSSplDcpsUserData *csUserData)
 {
-    c_char *arrayNoIndex, *arrayIndex, *arrayCtor;
-    c_long arrayNoIndexSize = 2, arrayIndexSize = 2;
+    c_char *arrayNoIndex = NULL, *arrayIndex = NULL, *arrayCtor;
     c_type subType = c_typeActualType(c_collectionTypeSubType(currentType));
     idl_typeSpec typeSpec = idl_makeTypeCollection(c_collectionType(currentType));
 
@@ -1251,10 +1262,10 @@ idl_CreateArrayInitialization(
     {
     case C_SEQUENCE:
         arrayIndex = idl_sequenceCsharpIndexString(
-                typeSpec, SACS_INCLUDE_INDEXES, seqLengthName, &arrayIndexSize);
+                typeSpec, SACS_INCLUDE_INDEXES, seqLengthName);
         break;
     case C_ARRAY:
-        arrayIndex = idl_arrayCsharpIndexString(typeSpec, SACS_INCLUDE_INDEXES, &arrayIndexSize);
+        arrayIndex = idl_arrayCsharpIndexString(typeSpec, SACS_INCLUDE_INDEXES);
         break;
     default:
         /* Unsupported collection type. */
@@ -1274,7 +1285,20 @@ idl_CreateArrayInitialization(
     /* Object kind, try to recycle elements as much as possible. */
     case M_STRUCTURE:
     case M_COLLECTION:
-        arrayNoIndex = idl_arrayCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, &arrayNoIndexSize);
+        switch (c_collectionTypeKind(currentType)) {
+            case C_SEQUENCE:
+                arrayNoIndex = idl_sequenceCsharpIndexString(
+                    typeSpec, SACS_EXCLUDE_INDEXES, seqLengthName);
+                break;
+            case C_ARRAY:
+                arrayNoIndex = idl_arrayCsharpIndexString(
+                    typeSpec, SACS_EXCLUDE_INDEXES);
+                break;
+            default:
+                assert(FALSE); /* Unsupported collection type. */
+                break;
+        }
+
         idl_printIndent(indent_level);
         idl_fileOutPrintf(idl_fileCur(), "%s%s target = new %s%s;\n",
                 arrayCtor, arrayNoIndex, arrayCtor, arrayIndex);

@@ -10,5 +10,5 @@ project : dcps_typesupport_base, ospl_dcpssac, ospl_dcps_c_app_base_libs {
     header_outputext      = .h
   }
 
-  splice_ts_flags += -S -l c
+  splice_ts_flags += -l c
 }

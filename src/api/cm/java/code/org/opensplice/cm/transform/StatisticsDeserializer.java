@@ -21,4 +21,5 @@ import org.opensplice.cm.statistics.Statistics;
  */
 public interface StatisticsDeserializer {
     public Statistics deserializeStatistics(Object serialized, Entity entity) throws TransformationException;
+    public Statistics[] deserializeStatistics(Object serialized, Entity[] entities) throws TransformationException;
 }

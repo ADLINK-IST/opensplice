@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#ifdef OSPL_BUILD_DCPSGAPI
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -121,7 +121,6 @@ _TypeSupportCopyCache (
 OS_API gapi_unsigned_long
 _TypeSupportTopicAllocSize (
     _TypeSupport _this);
-
 
 OS_API gapi_topicAllocBuffer
 _TypeSupportTopicAllocBuffer (

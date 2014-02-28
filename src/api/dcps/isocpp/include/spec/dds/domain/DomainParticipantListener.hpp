@@ -24,29 +24,32 @@
 #include <dds/topic/AnyTopicListener.hpp>
 
 
-namespace dds {
-  namespace domain {
+namespace dds
+{
+namespace domain
+{
 
-    class DomainParticipantListener :
-      public virtual dds::pub::PublisherListener,
-      public virtual dds::sub::SubscriberListener,
-      public virtual dds::topic::AnyTopicListener
-    {
-    public:
-      virtual ~DomainParticipantListener() { }
-    };
+class DomainParticipantListener :
+    public virtual dds::pub::PublisherListener,
+    public virtual dds::sub::SubscriberListener,
+    public virtual dds::topic::AnyTopicListener
+{
+public:
+    virtual ~DomainParticipantListener() { }
+};
 
 
-    class NoOpDomainParticipantListener :
-      public virtual DomainParticipantListener,
-      public virtual dds::pub::NoOpPublisherListener,
-      public virtual dds::sub::NoOpSubscriberListener,
-      public virtual dds::topic::NoOpAnyTopicListener
-    {
-    public:
-      virtual ~NoOpDomainParticipantListener();
-    };
+class NoOpDomainParticipantListener :
+    public virtual DomainParticipantListener,
+    public virtual dds::pub::NoOpPublisherListener,
+    public virtual dds::sub::NoOpSubscriberListener,
+    public virtual dds::topic::NoOpAnyTopicListener
+{
+public:
+    virtual ~NoOpDomainParticipantListener();
+};
 
-  }}
+}
+}
 
 #endif /* OMG_DDS_DOMAIN_DOMAINPARTICIPANT_LISTENER_HPP_ */

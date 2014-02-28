@@ -14,6 +14,7 @@ package org.opensplice.cm.impl;
 import org.opensplice.cm.CMException;
 import org.opensplice.cm.GroupQueue;
 import org.opensplice.cm.ReaderSnapshot;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.meta.MetaType;
 import org.opensplice.cm.status.Status;
 
@@ -32,8 +33,8 @@ public class GroupQueueImpl extends ReaderImpl implements GroupQueue {
      * @param _pointer The heap address of the entity.
      * @param _name The name of the entity.
      */
-    public GroupQueueImpl(long _index, long _serial, String _pointer, String _name) {
-        super(_index, _serial, _pointer, _name);
+    public GroupQueueImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name) {
+        super(communicator, _index, _serial, _pointer, _name);
     }
     
     public ReaderSnapshot makeSnapshot() throws CMException{

@@ -36,7 +36,9 @@ saj_listenerDataNew(
 void
 saj_listenerInit(
     struct gapi_listener* listener)
-{ 
+{
+    OS_UNUSED_ARG(listener);
+
     return;
 }
 
@@ -63,7 +65,7 @@ saj_listenerAttach(
 
     jvm = (JavaVM*)listener_data;
     jresult = (*jvm)->AttachCurrentThread(jvm, (void**)&env, NULL);
-    assert(jresult == 0);
+    assert(jresult == 0); OS_UNUSED_ARG(jresult);
     threadData = os_threadMemMalloc(OS_THREAD_JVM, sizeof(env));
     *(JNIEnv**)threadData = env;
 }
@@ -76,9 +78,11 @@ saj_listenerDetach(
     JNIEnv* env;
     jint jresult;
     
+    OS_UNUSED_ARG(listener_data);
+
     env = *(JNIEnv**)os_threadMemGet(OS_THREAD_JVM);
     jresult = (*env)->GetJavaVM(env, &jvm);
-    assert(jresult == 0);
+    assert(jresult == 0); OS_UNUSED_ARG(jresult);
     jresult = (*jvm)->DetachCurrentThread(jvm);
     os_threadMemFree(OS_THREAD_JVM);
     assert(jresult == 0);

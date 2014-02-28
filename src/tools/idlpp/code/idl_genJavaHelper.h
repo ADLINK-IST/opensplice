@@ -13,7 +13,7 @@
 #define IDL_GENJAVAHELPER_H
 
 #include "c_typebase.h"
-
+#include "c_iterator.h"
 #include "idl_scope.h"
 #include "idl_program.h"
 #include "idl_typeSpecifier.h"
@@ -36,17 +36,17 @@ c_char *idl_arrayJavaIndexString(idl_typeArray typeArray);
 
 c_char *idl_genJavaConstantGetter(void);
 
-os_char*
-idl_genJavaHelperGetTgtPName(
+const os_char*
+idl_genJavaHelperGetTgtLastSubstituted(
     void);
 
-os_char*
-idl_genJavaHelperGetOrgPName(
+const os_char*
+idl_genJavaHelperGetOrgLastSubstituted(
     void);
 
 void
 idl_genJavaHelperInit(
-    os_char* originalPackageName,
-    os_char* targetPackageName);
+    c_iter originalPackageName,
+    c_iter targetPackageName);
 
 #endif /* IDL_GENJAVAHELPER_H */

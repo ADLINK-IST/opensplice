@@ -35,7 +35,6 @@ SAJ_FUNCTION(jniCreateReadcondition)(
     jobject jcondition;
     gapi_dataReader dataReader;
     gapi_readCondition condition;
-    saj_returnCode rc;
 
     jcondition = NULL;
     condition = GAPI_OBJECT_NIL;
@@ -48,7 +47,7 @@ SAJ_FUNCTION(jniCreateReadcondition)(
                                 (const gapi_instanceStateMask)jinstanceStates);
 
     if (condition != GAPI_OBJECT_NIL){
-        rc = saj_construct_java_object(env,  PACKAGENAME "ReadConditionImpl",
+        saj_construct_java_object(env,  PACKAGENAME "ReadConditionImpl",
                                         (PA_ADDRCAST)condition, &jcondition);
     }
     return jcondition;
@@ -619,7 +618,7 @@ SAJ_FUNCTION(jniWaitForHistoricalDataWCondition)(
     saj_returnCode rc;
     gapi_char* filterExpression;
     gapi_stringSeq* filterParameters;
-    jint jresult;
+    jint jresult = (jint)GAPI_RETCODE_ERROR;
     gapi_time_t minSourceTimestamp, maxSourceTimestamp;
     gapi_resourceLimitsQosPolicy resourceLimits;
 
@@ -934,6 +933,7 @@ SAJ_FUNCTION(jniParallelDemarshallingMain) (
     jobject jdatareader,
     jlong ctx)
 {
+    OS_UNUSED_ARG(jdatareader);
     return saj_fooDataReaderParallelDemarshallingMain(env, (sajParDemContext)((PA_ADDRCAST)ctx));
 }
 
@@ -1022,8 +1022,10 @@ SAJ_FUNCTION(jniGetProperty) (
     jobject jdatareader,
     jobject jpropHolder)
 {
+    OS_UNUSED_ARG(env);
+    OS_UNUSED_ARG(jdatareader);
+    OS_UNUSED_ARG(jpropHolder);
     return (jint)GAPI_RETCODE_UNSUPPORTED;
 }
-
 
 #undef SAJ_FUNCTION

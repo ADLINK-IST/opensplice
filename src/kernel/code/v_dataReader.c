@@ -46,11 +46,14 @@
 #include "v__statCat.h"
 #include "v__topic.h"
 #include "v__kernel.h"
+#include "v__policy.h"
 
 #include "c_stringSupport.h"
 
 #include "os.h"
 #include "os_report.h"
+
+#include "q_helper.h"
 
 #define v_dataReaderAllInstanceSet(_this) \
         (v_dataReader(_this)->index->objects)
@@ -231,6 +234,8 @@ struct onNewIndexArg {
     c_value **params;
 };
 
+
+
 static void
 onNewIndex(
     v_index index,
@@ -238,12 +243,28 @@ onNewIndex(
     c_voidp arg)
 {
     struct onNewIndexArg *a = (struct onNewIndexArg *)arg;
-    v_dataReaderEntry entry, found;
-    v_filter filter;
+    v_dataReaderEntry entry = NULL, found;
+    c_array filterInstance;
+    c_array filterData;
 
-    filter = v_filterNew(topic, a->_where, *a->params);
-    entry = v_dataReaderEntryNew(a->dataReader, topic, filter);
-    c_free(filter);
+    v_filterSplit(topic, a->_where, *(a->params), &filterInstance, &filterData, index);
+
+    if ((filterInstance == NULL)||(filterData == NULL))
+    {
+        OS_REPORT_2(OS_ERROR,
+                "kernel::v_dataReader::onNewIndex", 0,
+                "v_filerSplit failed"
+                OS_REPORT_NL "filterInstance = %p, filterData = %p",
+                filterInstance, filterData);
+    }
+    else
+    {
+        entry = v_dataReaderEntryNew(a->dataReader, topic, filterInstance, filterData);
+    }
+
+    c_free(filterData);
+    c_free(filterInstance);
+
     if (entry != NULL) {
         found = v_dataReaderAddEntry(a->dataReader,entry);
         if (found == entry) {
@@ -259,10 +280,10 @@ onNewIndex(
         c_free(entry);
         c_free(found);
     } else {
-        OS_REPORT_3(OS_ERROR,
+        OS_REPORT_4(OS_ERROR,
                     "kernel::v_dataReader::onNewIndex", 0,
-                    "Operation v_dataReaderEntryNew(dataReader=0x%x, topic=0x%x, filter=0x%x) failed.",
-                     a->dataReader, topic, filter);
+                    "Operation v_dataReaderEntryNew(dataReader=0x%x, topic=0x%x, filterInstance=0x%x, filterData=0x%x) failed.",
+                     a->dataReader, topic, filterInstance, filterData);
     }
 }
 
@@ -279,36 +300,6 @@ dataReaderEntryUpdatePurgeLists(
 /*
  * Precondition: dataReader is locked (v_dataReaderLock).
  */
-static void
-dataReaderEntriesUpdatePurgeLists(
-    c_iter entries,
-    c_voidp args)
-{
-    c_object entry;
-
-    entry = c_iterTakeFirst(entries);
-
-    while(entry){
-        dataReaderEntryUpdatePurgeLists(entry, args);
-        c_free(entry);
-        entry = c_iterTakeFirst(entries);
-    }
-}
-
-static void
-datareaderEntriesFree(
-    c_iter entries)
-{
-    c_object entry;
-
-    entry = c_iterTakeFirst(entries);
-
-    while(entry){
-        c_free(entry);
-        entry = c_iterTakeFirst(entries);
-    }
-    c_iterFree(entries);
-}
 
 c_long
 v_dataReaderInstanceCount(
@@ -330,7 +321,14 @@ v_dataReaderUpdatePurgeLists(
                         NULL);
 }
 
+void
+v_dataReaderUpdatePurgeListsLocked(
+    v_dataReader _this)
+{
+    assert(C_TYPECHECK(_this,v_dataReader));
 
+    c_setWalk(v_reader(_this)->entrySet.entries, dataReaderEntryUpdatePurgeLists, NULL);
+}
 
 #ifdef _MSG_STAMP_
 
@@ -775,6 +773,16 @@ v_dataReaderEnable(
     return result;
 }
 
+static c_bool
+instanceFree(
+    c_object o,
+    c_voidp arg)
+{
+    OS_UNUSED_ARG(arg);
+    v_publicFree(o);
+    return TRUE;
+}
+
 void
 v_dataReaderFree (
     v_dataReader _this)
@@ -815,6 +823,9 @@ v_dataReaderFree (
         }
         v_readerFree(v_reader(_this));
         v_dataReaderLock(_this);
+        if(_this->deadLineList){
+            v_deadLineInstanceListFree(_this->deadLineList);
+        }
         if (_this->views != NULL) {
             views = ospl_c_select(_this->views, 0);
             view = v_dataView(c_iterTakeFirst(views));
@@ -828,6 +839,10 @@ v_dataReaderFree (
             v_dataReaderTriggerValueFree(_this->triggerValue);
             _this->triggerValue = NULL;
         }
+        if(_this->index){
+            (void) c_tableWalk(v_dataReaderAllInstanceSet(_this),instanceFree,NULL); /* Always returns TRUE. */
+            (void) c_tableWalk(v_dataReaderNotEmptyInstanceSet(_this), instanceFree, NULL); /* Always returns TRUE. */
+        }
         v_dataReaderUnLock(_this);
 
         v_writeDisposeBuiltinTopic(kernel, V_SUBSCRIPTIONINFO_ID, builtinMsg);
@@ -839,16 +854,6 @@ v_dataReaderFree (
                 "dataReader already freed (shareCount is now %d).", sc);
         assert(sc == 0);
     }
-}
-
-static c_bool
-instanceFree(
-    c_object o,
-    c_voidp arg)
-{
-    OS_UNUSED_ARG(arg);
-    v_publicFree(o);
-    return TRUE;
 }
 
 static c_bool
@@ -868,14 +873,6 @@ v_dataReaderDeinit (
     assert(_this != NULL);
     assert(C_TYPECHECK(_this,v_dataReader));
     v_readerDeinit(v_reader(_this));
-
-    if(_this->index){
-        c_tableWalk(v_dataReaderAllInstanceSet(_this),instanceFree,NULL);
-        c_tableWalk(v_dataReaderNotEmptyInstanceSet(_this), instanceFree, NULL);
-    }
-    if(_this->deadLineList){
-        v_deadLineInstanceListFree(_this->deadLineList);
-    }
 }
 
 /* Help function for writing into the dataViews */
@@ -1066,7 +1063,6 @@ v_dataReaderRead(
     c_voidp arg)
 {
     c_bool proceed;
-    c_iter entries;
     C_STRUCT(readSampleArg) argument;
     v_dataReaderInstance emptyInstance;
 
@@ -1076,11 +1072,11 @@ v_dataReaderRead(
     /* Collect entries for purging outside of observer lock to prevent deadlock
      * between observer, entrySet and group locks with three different threads.
      */
-    entries = v_readerCollectEntries(v_reader(_this));
+
     v_dataReaderLock(_this);
     _this->readCnt++;
 
-    dataReaderEntriesUpdatePurgeLists(entries, NULL);
+    v_dataReaderUpdatePurgeListsLocked(_this);
 
     argument.reader = _this;
     argument.action = action;
@@ -1114,7 +1110,6 @@ v_dataReaderRead(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfReads, _this);
     v_dataReaderUnLock(_this);
-    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1147,7 +1142,6 @@ v_dataReaderReadInstance(
     c_voidp arg)
 {
     c_bool proceed;
-    c_iter entries;
 
     assert(_this != NULL);
     assert(C_TYPECHECK(_this, v_dataReader));
@@ -1161,11 +1155,10 @@ v_dataReaderReadInstance(
     /* Collect entries for purging outside of observer lock to prevent deadlock
      * between observer, entrySet and group locks with three different threads.
      */
-    entries = v_readerCollectEntries(v_reader(_this));
     v_dataReaderLock(_this);
     _this->readCnt++;
     if (!v_dataReaderInstanceEmpty(instance)) {
-        dataReaderEntriesUpdatePurgeLists(entries, NULL);
+        v_dataReaderUpdatePurgeListsLocked(_this);
         proceed = v_dataReaderInstanceReadSamples(instance,NULL,action,arg);
         v_statusReset(v_entity(_this)->status,V_EVENT_DATA_AVAILABLE);
 
@@ -1179,7 +1172,6 @@ v_dataReaderReadInstance(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfInstanceReads, _this);
     v_dataReaderUnLock(_this);
-    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1191,7 +1183,6 @@ v_dataReaderReadNextInstance(
     v_readerSampleAction action,
     c_voidp arg)
 {
-    c_iter entries;
     c_bool proceed = TRUE;
     v_dataReaderInstance next, cur;
 
@@ -1199,10 +1190,10 @@ v_dataReaderReadNextInstance(
     assert(C_TYPECHECK(_this, v_dataReader));
     assert(C_TYPECHECK(instance, v_dataReaderInstance));
 
-    entries = v_readerCollectEntries(v_reader(_this));
     v_dataReaderLock(_this);
     _this->readCnt++;
-    dataReaderEntriesUpdatePurgeLists(entries, NULL);
+
+    v_dataReaderUpdatePurgeListsLocked(_this);
 
     cur = v_dataReaderNextInstance(_this,instance);
     while ((cur != NULL) && v_dataReaderInstanceEmpty(cur))
@@ -1225,7 +1216,6 @@ v_dataReaderReadNextInstance(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfNextInstanceReads, _this);
     v_dataReaderUnLock(_this);
-    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1273,6 +1263,10 @@ instanceTakeSamples(
                               numberOfSamples,
                               a->reader,
                               v_dataReader(a->reader)->sampleCount);
+	v_statisticsULongValueAdd(v_reader,
+                              numberOfSamplesTaken,
+                              a->reader,
+                              count);
 
 #if 0
       /* This code snippet is functionally correct, but in typical
@@ -1371,7 +1365,8 @@ v_dataReaderRemoveInstance(
                  */
                 UPDATE_READER_STATISTICS_REMOVE_INSTANCE(_this->index,
                                                          instance);
-                instance->purgeInsertionTime = C_TIME_ZERO;
+                instance->purgeInsertionTime = C_TIME_MIN_INFINITE;
+                v_dataReaderInstanceStateSet(instance, L_REMOVED);
                 v_publicFree(v_public(instance));
                 c_free(found);
             } else {
@@ -1400,7 +1395,6 @@ v_dataReaderTake(
     v_readerSampleAction action,
     c_voidp arg)
 {
-    c_iter entries;
     c_bool proceed;
     C_STRUCT(takeSampleArg) argument;
     v_dataReaderInstance emptyInstance;
@@ -1411,10 +1405,10 @@ v_dataReaderTake(
     /* Collect entries for purging outside of observer lock to prevent deadlock
      * between observer, entrySet and group locks with three different threads.
      */
-    entries = v_readerCollectEntries(v_reader(_this));
     v_dataReaderLock(_this);
     _this->readCnt++;
-    dataReaderEntriesUpdatePurgeLists(entries, NULL);
+
+    v_dataReaderUpdatePurgeListsLocked(_this);
 
     argument.action = action;
     argument.arg = arg;
@@ -1444,7 +1438,6 @@ v_dataReaderTake(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfTakes, _this);
     v_dataReaderUnLock(_this);
-    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1456,7 +1449,6 @@ v_dataReaderTakeInstance(
     v_readerSampleAction action,
     c_voidp arg)
 {
-    c_iter entries;
     c_bool proceed = TRUE;
     c_long count;
 
@@ -1471,12 +1463,12 @@ v_dataReaderTakeInstance(
     /* Collect entries for purging outside of observer lock to prevent deadlock
      * between observer, entrySet and group locks with three different threads.
      */
-    entries = v_readerCollectEntries(v_reader(_this));
+
     v_dataReaderLock(_this);
     _this->readCnt++;
 
     if (!v_dataReaderInstanceEmpty(instance)) {
-        dataReaderEntriesUpdatePurgeLists(entries, NULL);
+        v_dataReaderUpdatePurgeListsLocked(_this);
         count = v_dataReaderInstanceSampleCount(instance);
         proceed = v_dataReaderInstanceTakeSamples(instance,NULL,action,arg);
         count -= v_dataReaderInstanceSampleCount(instance);
@@ -1502,7 +1494,6 @@ v_dataReaderTakeInstance(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfInstanceTakes, _this);
     v_dataReaderUnLock(_this);
-    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1514,7 +1505,6 @@ v_dataReaderTakeNextInstance(
     v_readerSampleAction action,
     c_voidp arg)
 {
-    c_iter entries;
     v_dataReaderInstance next, cur;
     c_bool proceed = TRUE;
     c_long count;
@@ -1526,11 +1516,11 @@ v_dataReaderTakeNextInstance(
     /* Collect entries for purging outside of observer lock to prevent deadlock
      * between observer, entrySet and group locks with three different threads.
      */
-    entries = v_readerCollectEntries(v_reader(_this));
     v_dataReaderLock(_this);
     _this->readCnt++;
 
-    dataReaderEntriesUpdatePurgeLists(entries, NULL);
+    v_dataReaderUpdatePurgeListsLocked(_this);
+
     cur = v_dataReaderNextInstance(_this,instance);
 
     while ((cur != NULL) && v_dataReaderInstanceEmpty(cur))
@@ -1563,7 +1553,6 @@ v_dataReaderTakeNextInstance(
     action(NULL,arg);
     v_statisticsULongValueInc(v_reader, numberOfNextInstanceTakes, _this);
     v_dataReaderUnLock(_this);
-    datareaderEntriesFree(entries);
 
     return proceed;
 }
@@ -1684,6 +1673,28 @@ v_dataReaderNotifySampleRejected(
     if (changed) {
         /* Also notify myself, since the user reader might be waiting. */
         event.kind = V_EVENT_SAMPLE_REJECTED;
+        event.source = v_publicHandle(v_public(_this));
+        event.userData = NULL;
+        v_observerNotify(v_observer(_this), &event, NULL);
+        v_observableNotify(v_observable(_this), &event);
+    }
+}
+
+void
+v_dataReaderNotifySampleLost(
+    v_dataReader _this,
+    c_ulong nrSamplesLost)
+{
+    c_bool changed;
+    C_STRUCT(v_event) event;
+
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this,v_dataReader));
+
+    changed = v_statusNotifySampleLost(v_entity(_this)->status,nrSamplesLost);
+    if (changed) {
+        /* Also notify myself, since the user reader might be waiting. */
+        event.kind = V_EVENT_SAMPLE_LOST;
         event.source = v_publicHandle(v_public(_this));
         event.userData = NULL;
         v_observerNotify(v_observer(_this), &event, NULL);
@@ -1904,6 +1915,38 @@ v_dataReaderNotifyLivelinessChanged(
         }
         v_dataReaderUnLock(_this);
     }
+}
+
+static c_bool
+v__dataReaderNotifyOwnershipStrengthChangedCallback (
+    c_object obj,
+    c_voidp arg)
+{
+    assert (C_TYPECHECK (obj, v_dataReaderInstance));
+    assert (arg != NULL);
+
+    (void)v_determineOwnershipByStrength (
+       &(v_dataReaderInstance (obj)->owner),
+        (struct v_owner *)(arg),
+        (v_dataReaderInstance (obj)->liveliness > 0));
+
+    return TRUE;
+}
+
+void
+v_dataReaderNotifyOwnershipStrengthChanged (
+    v_dataReader _this,
+    struct v_owner *ownership)
+{
+    assert (C_TYPECHECK (_this, v_dataReader));
+    assert (ownership != NULL);
+
+    v_dataReaderLock(_this);
+    (void)c_tableWalk (
+        v_dataReaderAllInstanceSet (_this),
+       &v__dataReaderNotifyOwnershipStrengthChangedCallback,
+        ownership);
+    v_dataReaderUnLock(_this);
 }
 
 c_type
@@ -2209,4 +2252,30 @@ v_dataReaderNotReadCount(
     v_dataReaderUnLock(_this);
 
     return count;
+}
+
+v_result
+v_dataReaderSetNotReadThreshold(
+    v_dataReader _this,
+    c_long threshold)
+{
+    assert(C_TYPECHECK(_this, v_reader));
+    if(_this){
+      v_dataReaderLock(_this);
+        _this->notReadTriggerThreshold = threshold;
+        /* FIXME: should trigger if threshold lowered, but can't be
+           bothered for this PoC */
+        v_dataReaderUnLock(_this);
+    }
+    return V_RESULT_OK;
+}
+
+c_bool
+v_dataReaderUpdateSampleLost(
+    v_reader _this,
+    c_ulong missedSamples)
+{
+    v_dataReaderNotifySampleLost(v_dataReader(_this), missedSamples);
+    v_statisticsULongValueAdd(v_reader, numberOfSamplesLost, _this, missedSamples);
+    return TRUE;
 }

@@ -15,10 +15,12 @@
 #include "ccpp.h"
 #include "ccpp_DomainParticipantFactory.h"
 #include "ccpp_GuardCondition.h"
+#include "ccpp_QosProvider.h"
 #include "ccpp_WaitSet.h"
 #include "ccpp_ErrorInfo.h"
 #include "ccpp_dds_builtinTopics.h"
 #include "ccpp_dds_dcps_builtintopics.h"
+#include "ccpp_dds_namedQosTypes.h"
 
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
@@ -35,16 +37,15 @@
 
 namespace DDS
 {
-  const ::DDS::Duration_t DURATION_ZERO               = {0L,0U};
+  const ::DDS::Duration_t DURATION_ZERO               = {DURATION_ZERO_SEC, DURATION_ZERO_NSEC};
   const ::DDS::Duration_t DURATION_INFINITE           = {DURATION_INFINITE_SEC, DURATION_INFINITE_NSEC};
+  const ::DDS::Time_t     TIMESTAMP_INVALID           = {TIMESTAMP_INVALID_SEC, TIMESTAMP_INVALID_NSEC};
   // Note: ANY_STATUS is deprecated, please use spec version specific constants.
   const ::DDS::StatusKind ANY_STATUS                  = 0x7FE7;
-  // STATUS_MASK_ANY_V1_2 is all standardised status bits as of V1.2 of the 
+  // STATUS_MASK_ANY_V1_2 is all standardised status bits as of V1.2 of the
   // specification.
   const ::DDS::StatusKind STATUS_MASK_ANY_V1_2        = 0x7FE7;
   const ::DDS::StatusKind STATUS_MASK_NONE            = 0x0;
-
-  using CORBA::is_nil;
 }
 
 #endif /* CCPP_DDS_DCPS_H */

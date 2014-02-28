@@ -27,7 +27,7 @@ namespace DDS.OpenSplice.Gapi
         /*     string
          *     get_subscription_expression();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_multiTopic_get_subscription_expression")]
+        [DllImport("ddskernel", EntryPoint = "gapi_multiTopic_get_subscription_expression")]
         public static extern IntPtr get_subscription_expression(
             IntPtr _this);
 
@@ -35,7 +35,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_expression_parameters(
          *         inout StringSeq expression_parameters);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_multiTopic_get_expression_parameters")]
+        [DllImport("ddskernel", EntryPoint = "gapi_multiTopic_get_expression_parameters")]
         public static extern ReturnCode get_expression_parameters(
             IntPtr _this,
             IntPtr expression_parameters
@@ -45,7 +45,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_expression_parameters(
          *         in StringSeq expression_parameters);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_multiTopic_set_expression_parameters")]
+        [DllImport("ddskernel", EntryPoint = "gapi_multiTopic_set_expression_parameters")]
         public static extern ReturnCode set_expression_parameters(
             IntPtr _this,
             IntPtr expression_parameters);

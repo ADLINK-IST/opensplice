@@ -11,6 +11,9 @@
  */
 package org.opensplice.cm;
 
+import java.util.HashMap;
+import java.util.Set;
+
 import org.opensplice.cm.com.CommunicationException;
 import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.com.JniCommunicator;
@@ -33,15 +36,6 @@ import org.opensplice.cm.qos.ParticipantQoS;
 public class CMFactory {
 
     /**
-     * Checks whether the Control & Monitoring API is currently initialised.
-     *
-     * @return true if it is initialised, false otherwise.
-     */
-    public static boolean isInitialised() {
-        return (instance != null);
-    }
-
-    /**
      * Detaches the Control & Monitoring API. All entities that not have been
      * freed are freed before the API is detached.
      *
@@ -50,125 +44,127 @@ public class CMFactory {
      *             not be detached.
      */
     public static synchronized void detach() throws CMException {
-        if(instance == null){
-            throw new CMException("Not initialised.");
-        }
+        Communicator communicator;
+        Set<String> domains = communicators.keySet();
 
         try {
-            communicator.detach();
+            for(String domain: domains){
+                communicator = communicators.get(domain);
+                communicator.detach();
+            }
+            communicators.clear();
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
-        instance = null;
-        communicator = null;
+    }
+
+    public static synchronized void detach(String domain) throws CMException {
+        Communicator communicator;
+
+        try {
+            communicator = communicators.remove(domain);
+
+            if(communicator != null){
+                communicator.detach();
+            }
+        } catch (CommunicationException e) {
+            throw new CMException(e.getMessage());
+        }
     }
 
     /**
-     * Provides access to the communication handler of the Control & Monitoring
-     * API.
-     *
-     * @return The communicator of the Control & Monitoring API.
+     * Provides access to the communication handler for a given domain.
+     * 
+     * @return The communicator for the given domain
      * @throws CMException
-     *             Thrown when the Control & Monitoring API currently is not
+     *             Thrown when communicator could not be constructed or
      *             initialised.
      */
-    public static Communicator getCommunicator() throws CMException {
-        if(instance == null){
-            throw new CMException(initMsg);
+    private synchronized static Communicator getCommunicator(String domain) throws CMException {
+    	Communicator c = communicators.get(domain);
+
+        if(c == null){
+        	try {
+        		if (domain.toLowerCase().startsWith("http://") && !domain.equalsIgnoreCase("http://")) {
+					c = new SOAPCommunicator();
+	        	} else {
+	        		c = new JniCommunicator();
+	        	}
+        		c.initialise(domain);
+        	} catch (CommunicationException e) {
+				throw new CMException(e.getMessage());
+			}  catch (NoClassDefFoundError ne){
+                throw new CMException("Required Java SOAP extensions not available.");
+            }
+        	communicators.put(domain, c);
         }
-        return communicator;
+        return c;
     }
 
-    public static Participant createParticipant(int uri, int timeout, String name, ParticipantQoS qos)
+    public static Participant createParticipant(int domain, int timeout, String name, ParticipantQoS qos)
             throws CMException {
-    	return createParticipant(Integer.toString(uri),timeout,name,qos);
+    	return createParticipant(Integer.toString(domain),timeout,name,qos);
     }
 
-    /*
-     * Initialises the Control & Monitoring API. When there is no instance
-     * initiated a new one will be initiated with the current COMMUNICATION_MODE
-     * the following COMMUNICATION_MODE are available - COMMUNICATION_MODE_JNI :
-     * local connection using JNI. - COMMUNICATION_MODE_SOAP : remote connection
-     * using SOAP.
-     */
-    public synchronized static Participant createParticipant(String uri, int timeout, String name, ParticipantQoS qos)
-            throws CMException {
-        if (instance == null) {
-            if (uri.toLowerCase().startsWith("http://") && !uri.equalsIgnoreCase("http://")) {
-                /* soap mode */
-                COMMUNICATION_MODE = COMMUNICATION_MODE_SOAP;
-            } else {
-                /* we are a local */
-                COMMUNICATION_MODE = COMMUNICATION_MODE_JNI;
-            }
-            instance = new CMFactory(uri);
 
-        } else {
-            if (uri.toLowerCase().startsWith("http://") && !uri.equalsIgnoreCase("http://")) {
-                if (COMMUNICATION_MODE != COMMUNICATION_MODE_SOAP) {
-                    throw new CMException("Can not create Participant in SOAP mode because current active mode is JNI");
-                }
-            } else {
-                if (COMMUNICATION_MODE != COMMUNICATION_MODE_JNI) {
-                    throw new CMException("Can not create Participant in JNI mode because current active mode is SOAP");
-                }
-            }
-        }
+    public static Participant createParticipant(String domain, int timeout, String name, ParticipantQoS qos)
+            throws CMException {
         try {
-            matchCMVersions(getLocalVersion(), getVersion());
+            matchCMVersions(getLocalVersion(), getVersion(domain));
         } catch (NoSuchMethodError er) {
-            return new ParticipantImpl(uri, timeout, name, qos);
+        	/* Ignore and continue */
         }
-        return new ParticipantImpl(uri, timeout, name, qos);
+        return new ParticipantImpl(CMFactory.getCommunicator(domain), domain, timeout, name, qos);
     }
 
     /**
      * Creates a storage object described by the provided storage attributes.
      */
-    public static Storage createStorage() throws CMException {
-        return new StorageImpl();
-    }
-
-    private CMFactory(String url) throws CMException{
-        if(COMMUNICATION_MODE == COMMUNICATION_MODE_JNI){
-            try {
-                communicator = new JniCommunicator();
-            } catch (CommunicationException e) {
-                throw new CMException("JNI library could not be loaded.");
-            }
-        } else if(COMMUNICATION_MODE == COMMUNICATION_MODE_SOAP){
-            try {
-                /*init soap communicator.*/
-                communicator = new SOAPCommunicator();
-            } catch (CommunicationException ce) {
-                throw new CMException("Could not connect to : " + url);
-            } catch (NoClassDefFoundError ne){
-                throw new CMException("Required Java SOAP extensions not available.");
-
-            }
-        }
-        try {
-            communicator.initialise(url);
-        } catch (CommunicationException e) {
-            throw new CMException(e.getMessage());
-        }
+    public static Storage createStorage(String domain) throws CMException {
+        return new StorageImpl(CMFactory.getCommunicator(domain));
     }
 
     /**
-     * Resolves the current remote version of the CM API.
-     *
-     * @return The current remote version of the CM API.
+     * Resolves the version of the federation identified by the domain
+     * parameter.
+     * 
+     * @return The version of federation identified by the domain parameter.
      * @throws CMException
-     *             Thrown when the service has already been freed, or when its
-     *             kernel service could not be claimed.
+     *             Thrown when communication with the federation fails.
      */
-    public static String getVersion() throws CMException {
+    public synchronized static String getVersion(String domain) throws CMException {
         String version;
+        Communicator communicator = null;
 
-        try {
-            version = CMFactory.getCommunicator().getVersion();
-        } catch (CommunicationException e) {
-            throw new CMException(e.getMessage());
+        if(domain == null){
+            throw new CMException("Invalid domain id provided.");
+        }
+
+        communicator = communicators.get(domain);
+        if(communicator == null){
+            try {
+                if (domain.toLowerCase().startsWith("http://") && !domain.equalsIgnoreCase("http://")) {
+                    communicator = new SOAPCommunicator();
+                } else {
+                    communicator = new JniCommunicator();
+                }
+                communicator.initialise(domain);
+                version = communicator.getVersion();
+            } catch (CommunicationException e) {
+                throw new CMException(e.getMessage());
+            } finally {
+                try {
+                    communicator.detach();
+                } catch (CommunicationException e) {
+                    throw new CMException(e.getMessage());
+                }
+            }
+        } else {
+            try {
+                version = communicator.getVersion();
+            } catch (CommunicationException e) {
+                throw new CMException(e.getMessage());
+            }
         }
         return version;
     }
@@ -222,35 +218,8 @@ public class CMFactory {
     }
 
     /**
-     * JNI communication mode. The API will communicate with Splice using
-     * JNI.
-     */
-    public static final int COMMUNICATION_MODE_JNI = 0;
-
-    /**
-     * SOAP communication mode. The API will communicate with Splice using SOAP.
-     */
-    public static final int COMMUNICATION_MODE_SOAP = 1;
-
-    /**
-     * The current communication mode.
-     */
-    private static int COMMUNICATION_MODE = COMMUNICATION_MODE_JNI;
-
-    /**
-     * The CMFactory instance.
-     */
-    private static CMFactory    instance                = null;
-
-    /**
      * The commmunicator.
      */
-    private static Communicator communicator = null;
-
-    /**
-     * Message that is used to notify that the API is used without being
-     * initialized.
-     */
-    private static final String initMsg = "C&M API not initialised.";
+    private static HashMap<String,Communicator> communicators = new HashMap<String,Communicator>();
 
 }

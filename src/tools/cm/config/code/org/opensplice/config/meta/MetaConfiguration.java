@@ -223,15 +223,15 @@ public class MetaConfiguration {
             tempValue = Long.parseLong(m.group());
         }
         for (int i=0;i<strValue.length()&&!found;i++) {
-            if (strValue.charAt(i) == 'K') {
+            if (strValue.charAt(i) == 'K' || strValue.charAt(i) == 'k') {
                 base =1024;
                 found = true;
             }
-            if (strValue.charAt(i) == 'M') {
+            if (strValue.charAt(i) == 'M'  || strValue.charAt(i) == 'm') {
                 base =Math.pow(1024,2);
                 found = true;
             }
-            if (strValue.charAt(i) == 'G') {
+            if (strValue.charAt(i) == 'G'  || strValue.charAt(i) == 'g') {
                 base =Math.pow(1024,3);
                 found = true;
             }

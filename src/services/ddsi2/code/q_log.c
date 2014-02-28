@@ -13,9 +13,10 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "os_stdlib.h"
-#include "os_report.h"
+#include "os_heap.h"
 
 #include "q_config.h"
 #include "q_globals.h"
@@ -28,8 +29,6 @@
 #define MAX_HDR_LENGTH (MAX_TIMESTAMP_LENGTH + 1 + MAX_TID_LENGTH +  + 2)
 
 #define BUF_OFFSET MAX_HDR_LENGTH
-
-
 
 static void logbuf_flush_real (struct thread_state1 *self, logbuf_t lb)
 {

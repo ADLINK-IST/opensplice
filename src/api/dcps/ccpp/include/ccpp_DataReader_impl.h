@@ -75,7 +75,7 @@ namespace DDS
         ::DDS::ReturnCode_t read (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
-            CORBA::Long max_samples,
+            DDS::Long max_samples,
             ::DDS::SampleStateMask sample_states,
             ::DDS::ViewStateMask view_states,
             ::DDS::InstanceStateMask instance_states
@@ -84,7 +84,7 @@ namespace DDS
         ::DDS::ReturnCode_t take (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
-            CORBA::Long max_samples,
+            DDS::Long max_samples,
             ::DDS::SampleStateMask sample_states,
             ::DDS::ViewStateMask view_states,
             ::DDS::InstanceStateMask instance_states
@@ -93,14 +93,14 @@ namespace DDS
         ::DDS::ReturnCode_t read_w_condition (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
-            CORBA::Long max_samples,
+            DDS::Long max_samples,
             ::DDS::ReadCondition_ptr a_condition
         ) THROW_ORB_EXCEPTIONS;
 
         ::DDS::ReturnCode_t take_w_condition (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
-            CORBA::Long max_samples,
+            DDS::Long max_samples,
             ::DDS::ReadCondition_ptr a_condition
         ) THROW_ORB_EXCEPTIONS;
 
@@ -117,7 +117,7 @@ namespace DDS
         ::DDS::ReturnCode_t read_instance (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
-            CORBA::Long max_samples,
+            DDS::Long max_samples,
             ::DDS::InstanceHandle_t a_handle,
             ::DDS::SampleStateMask sample_states,
             ::DDS::ViewStateMask view_states,
@@ -127,7 +127,7 @@ namespace DDS
         ::DDS::ReturnCode_t take_instance (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
-            CORBA::Long max_samples,
+            DDS::Long max_samples,
             ::DDS::InstanceHandle_t a_handle,
             ::DDS::SampleStateMask sample_states,
             ::DDS::ViewStateMask view_states,
@@ -137,7 +137,7 @@ namespace DDS
         ::DDS::ReturnCode_t read_next_instance (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
-            CORBA::Long max_samples,
+            DDS::Long max_samples,
             ::DDS::InstanceHandle_t a_handle,
             ::DDS::SampleStateMask sample_states,
             ::DDS::ViewStateMask view_states,
@@ -147,7 +147,7 @@ namespace DDS
         ::DDS::ReturnCode_t take_next_instance (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
-            CORBA::Long max_samples,
+            DDS::Long max_samples,
             ::DDS::InstanceHandle_t a_handle,
             ::DDS::SampleStateMask sample_states,
             ::DDS::ViewStateMask view_states,
@@ -157,7 +157,7 @@ namespace DDS
         ::DDS::ReturnCode_t read_next_instance_w_condition (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
-            CORBA::Long max_samples,
+            DDS::Long max_samples,
             ::DDS::InstanceHandle_t a_handle,
             ::DDS::ReadCondition_ptr a_condition
         ) THROW_ORB_EXCEPTIONS;
@@ -165,7 +165,7 @@ namespace DDS
         ::DDS::ReturnCode_t take_next_instance_w_condition (
             void * data_values,
             ::DDS::SampleInfoSeq & info_seq,
-            CORBA::Long max_samples,
+            DDS::Long max_samples,
             ::DDS::InstanceHandle_t a_handle,
             ::DDS::ReadCondition_ptr a_condition
         ) THROW_ORB_EXCEPTIONS;
@@ -184,7 +184,7 @@ namespace DDS
             const void * instance
         ) THROW_ORB_EXCEPTIONS;
 
-    public:
+  public:
         virtual ::DDS::ReadCondition_ptr
         create_readcondition (
             ::DDS::SampleStateMask sample_states,
@@ -317,7 +317,6 @@ namespace DDS
         get_property (
             ::DDS::Property & prop
         ) THROW_ORB_EXCEPTIONS;
-
     };
     typedef DataReader_impl* DataReader_impl_ptr;
 

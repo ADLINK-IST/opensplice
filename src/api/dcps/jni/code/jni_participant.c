@@ -42,14 +42,15 @@ jni_participantNew(
     p = NULL;
     
     if(up != NULL){
-        p = jni_participant(os_malloc((size_t)(C_SIZEOF(jni_participant))));
-        
-        p->uparticipant = up;
-        p->domainId     = domainId;
-        p->publishers   = c_iterNew(NULL);
-        p->subscribers  = c_iterNew(NULL);
-        p->topics       = c_iterNew(NULL);
-        p->partitions   = c_iterNew(NULL);
+        p = os_malloc(sizeof *p);
+        if (p) {
+            p->uparticipant = up;
+            p->domainId     = domainId;
+            p->publishers   = c_iterNew(NULL);
+            p->subscribers  = c_iterNew(NULL);
+            p->topics       = c_iterNew(NULL);
+            p->partitions   = c_iterNew(NULL);
+        }
     }
     return p;
 }

@@ -7,10 +7,9 @@ include $(OSPL_HOME)/setup/makefiles/target.mak
 CPPFLAGS	+= -DOSPL_BUILD_REPORTSERVICE
 CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
 LDFLAGS  += $(SHLDFLAGS)
-LDLIBS   += $(SHLDLIBS)
+LDLIBS   += -l$(DDS_CORE) $(SHLDLIBS)
 
 CINCS    += -I$(OSPL_HOME)/src/database/database/include
 
-LDLIBS	+= -l$(DDS_OS)
 
 -include $(DEPENDENCIES)

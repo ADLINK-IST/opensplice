@@ -26,7 +26,7 @@
       <function-optional-arg name="ospl_root1" default="'/home/user'">
         Location of OSPL root on machine 1 in double quotes and double backslash, use the following format: "dir1\\dir2"
       </function-optional-arg>
-      <function-optional-arg name="ospl_release_name1" default="'x86.linux2.6-release'">
+      <function-optional-arg name="ospl_release_name1" default="'x86.linux-release'">
         TODO: create description
       </function-optional-arg>
       
@@ -39,7 +39,7 @@
       <function-optional-arg name="ospl_root2" default="'/home/user'">
         Location of OSPL root on machine 2 in double quotes and double backslash, use the following format: "dir1\\dir2"
       </function-optional-arg>
-      <function-optional-arg name="ospl_release_name2" default="'x86_64.linux2.6-release'">
+      <function-optional-arg name="ospl_release_name2" default="'x86_64.linux-release'">
         TODO: create description
       </function-optional-arg>
       
@@ -52,7 +52,7 @@
       <function-optional-arg name="ospl_root3" default="'/home/user'">
         Location of OSPL root on machine 3 in double quotes and double backslash, use the following format: "dir1\\dir2"
       </function-optional-arg>
-      <function-optional-arg name="ospl_release_name3" default="'x86.linux2.6-release'">
+      <function-optional-arg name="ospl_release_name3" default="'x86.linux-release'">
         TODO: create description
       </function-optional-arg>
 
@@ -65,7 +65,7 @@
       <function-optional-arg name="ospl_root4" default="'empty'">
         Location of OSPL root on machine 4 in double quotes and double backslash, use the following format: "dir1\\dir2"
       </function-optional-arg>
-      <function-optional-arg name="ospl_release_name4" default="'x86.linux2.6-release'">
+      <function-optional-arg name="ospl_release_name4" default="'x86.linux-release'">
         TODO: create description
       </function-optional-arg>
 
@@ -78,7 +78,7 @@
       <function-optional-arg name="ospl_root5" default="'empty'">
         Location of OSPL root on machine 5 in double quotes and double backslash, use the following format: "dir1\\dir2"
       </function-optional-arg>
-      <function-optional-arg name="ospl_release_name5" default="'x86.linux2.6-release'">
+      <function-optional-arg name="ospl_release_name5" default="'x86.linux-release'">
         TODO: create description
       </function-optional-arg>
 
@@ -91,7 +91,7 @@
       <function-optional-arg name="ospl_root6" default="'empty'">
         Location of OSPL root on machine 6 in double quotes and double backslash, use the following format: "dir1\\dir2"
       </function-optional-arg>
-      <function-optional-arg name="ospl_release_name6" default="'x86.linux2.6-release'">
+      <function-optional-arg name="ospl_release_name6" default="'x86.linux-release'">
         TODO: create description
       </function-optional-arg>
 
@@ -104,7 +104,7 @@
       <function-optional-arg name="ospl_root7" default="'empty'">
         Location of OSPL root on machine 7 in double quotes and double backslash, use the following format: "dir1\\dir2"
       </function-optional-arg>
-      <function-optional-arg name="ospl_release_name7" default="'x86.linux2.6-release'">
+      <function-optional-arg name="ospl_release_name7" default="'x86.linux-release'">
         TODO: create description
       </function-optional-arg>
 
@@ -117,7 +117,7 @@
       <function-optional-arg name="ospl_root8" default="'empty'">
         Location of OSPL root on machine 8 in double quotes and double backslash, use the following format: "dir1\\dir2"
       </function-optional-arg>
-      <function-optional-arg name="ospl_release_name8" default="'x86.linux2.6-release'">
+      <function-optional-arg name="ospl_release_name8" default="'x86.linux-release'">
         TODO: create description
       </function-optional-arg>
       

@@ -26,12 +26,12 @@ module DDS {
 
     struct UserDataQosPolicy {
         octSeq value;
-        // replaced deprected anonymous sequence<octet> value;
+        // replaced deprecated anonymous sequence<octet> value;
     };
 
     struct TopicDataQosPolicy {
         octSeq value;
-        // replaced deprected anonymous sequence<octet> value;
+        // replaced deprecated anonymous sequence<octet> value;
     };
 
     struct GroupDataQosPolicy {

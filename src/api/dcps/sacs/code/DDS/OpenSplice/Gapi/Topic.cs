@@ -28,7 +28,7 @@ namespace DDS.OpenSplice.Gapi
          *     ReturnCode_t
          *     get_inconsistent_topic_status( inout InconsistentTopicStatus);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_topic_get_inconsistent_topic_status")]
+        [DllImport("ddskernel", EntryPoint = "gapi_topic_get_inconsistent_topic_status")]
         public static extern ReturnCode get_inconsistent_topic_status(
             IntPtr _this,
             InconsistentTopicStatus status
@@ -39,7 +39,7 @@ namespace DDS.OpenSplice.Gapi
          *         in TopicListener a_listener,
          *         in StatusKindMask mask);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_topic_set_listener")]
+        [DllImport("ddskernel", EntryPoint = "gapi_topic_set_listener")]
         public static extern ReturnCode set_listener(
             IntPtr _this,
             IntPtr a_listener,
@@ -49,7 +49,7 @@ namespace DDS.OpenSplice.Gapi
         /*     TopicListener
          *     get_listener();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_topic_get_listener")]
+        [DllImport("ddskernel", EntryPoint = "gapi_topic_get_listener")]
         public static extern IntPtr get_listener(
             IntPtr _this);
 
@@ -57,7 +57,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_qos(
          *         in TopicQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_topic_set_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_topic_set_qos")]
         public static extern ReturnCode set_qos(
             IntPtr _this,
             IntPtr qos);
@@ -67,7 +67,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_qos(
          *         inout TopicQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_topic_get_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_topic_get_qos")]
         public static extern ReturnCode get_qos(
             IntPtr _this,
             IntPtr qos);
@@ -77,14 +77,14 @@ namespace DDS.OpenSplice.Gapi
         // call the static method where the "real" function exists.
         //
         // EntryPointNotFoundException: Unable to find an entry point named 
-        // '<name of function>' in DLL 'dcpsgapi'.
+        // '<name of function>' in DLL 'ddskernel'.
         //
 
         // gapi_topicDescription_get_type_name
         /*     string
         *     get_type_name();
         */
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_topic_get_type_name")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_topic_get_type_name")]
         //public static extern IntPtr get_type_name(
         //    IntPtr _this);
 
@@ -92,7 +92,7 @@ namespace DDS.OpenSplice.Gapi
         /*     string
          *     get_name();
          */
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_topic_get_name")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_topic_get_name")]
         //public static extern IntPtr get_name(
         //    IntPtr _this);
 
@@ -101,7 +101,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_participant();
          */
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_topic_get_participant")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_topic_get_participant")]
         //public static extern IntPtr get_participant(
         //    IntPtr _this);
     }

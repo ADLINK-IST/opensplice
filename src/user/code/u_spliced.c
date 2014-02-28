@@ -27,6 +27,7 @@
 
 static c_bool splicedStartedInThisProcess = FALSE;
 
+
 /**************************************************************
  * Private functions
  **************************************************************/
@@ -453,20 +454,44 @@ u_splicedPrepareTermination(
     return r;
 }
 
+v_leaseManager
+u_splicedGetHeartbeatManager(
+    u_spliced spliced,
+    c_bool create)
+{
+    v_leaseManager lm = NULL;
+    v_spliced s;
+    u_result result;
+
+    result = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
+    if(result == U_RESULT_OK)
+    {
+        assert(s);
+        lm = v_splicedGetHeartbeatManager(s, create);
+        u_entityRelease(u_entity(spliced));
+    } else {
+         OS_REPORT(OS_WARNING, "u_splicedGetHeartbeatManager", 0,
+                   "Could not claim spliced.");
+    }
+
+    return lm;
+}
+
 u_result
 u_splicedStartHeartbeat(
     u_spliced spliced,
     v_duration period,
-    v_duration renewal)
+    v_duration renewal,
+    c_long priority)
 {
     u_result r;
     v_spliced s;
-    c_bool started;
+    c_bool started = TRUE;
 
     r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
     if (r == U_RESULT_OK) {
         assert(s);
-        started = v_splicedStartHeartbeat(s, period, renewal);
+        started = v_splicedStartHeartbeat(s, period, renewal, priority);
         if (started == FALSE) {
             r = U_RESULT_INTERNAL_ERROR;
             u_entityRelease(u_entity(spliced));
@@ -488,8 +513,7 @@ u_splicedStopHeartbeat(
     v_spliced s;
     c_bool stopped;
 
-    if(spliced)
-    {
+    if(spliced) {
         r = u_entityReadClaim(u_entity(spliced), (v_entity*)(&s));
         if (r == U_RESULT_OK) {
             assert(s);
@@ -504,8 +528,7 @@ u_splicedStopHeartbeat(
             OS_REPORT_1(OS_WARNING, "u_splicedStopHeartbeat", 0,
                       "Could not claim spliced, result was %s.", u_resultImage(r));
         }
-    } else
-    {
+    } else {
         r = U_RESULT_ILL_PARAM;
     }
     return r;

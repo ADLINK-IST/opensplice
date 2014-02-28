@@ -32,6 +32,9 @@ typedef d_storeResult   (*d_storeCloseFunc)                 (d_store store);
 typedef d_storeResult   (*d_storeGroupsReadFunc)            (const d_store store,
                                                              d_groupList *list);
 
+typedef d_storeResult   (*d_storeGroupListFreeFunc)         (const d_store store,
+                                                             d_groupList list);
+
 typedef d_storeResult   (*d_storeActionStartFunc)           (const d_store store);
 
 typedef d_storeResult   (*d_storeActionStopFunc)            (const d_store store);
@@ -110,6 +113,7 @@ C_STRUCT(d_store){
     d_storeBackupFunc           	backupFunc;
     d_storeRestoreBackupFunc		restoreBackupFunc;
     d_storeGroupsReadFunc       	groupsReadFunc;
+    d_storeGroupListFreeFunc        groupListFreeFunc;
     d_storeGroupStoreFunc       	groupStoreFunc;
     d_storeGroupInjectFunc      	groupInjectFunc;
     d_storeMessageStoreFunc     	messageStoreFunc;

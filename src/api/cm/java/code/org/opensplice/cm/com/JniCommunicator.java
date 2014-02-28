@@ -85,26 +85,27 @@ public class JniCommunicator implements Communicator {
     private boolean initialized;
     private static boolean connectionAlive;
 
-    /**
-     * Creates a new JNI communication handler for the Control & Monitoring API.
-     *
-     * @throws CMException
-     *             Thrown when the C JNI library cannot be loaded (libcmjni) or
-     *             one of the XML (de)serializers cannot be initialised.
-     */
-    public JniCommunicator() throws CommunicationException{
+    static {
         try {
             System.loadLibrary("cmjni");
         }
         catch (UnsatisfiedLinkError e) {
             System.err.println("Could not load JNI library 'cmjni'. Reason:\n" +
                      e.getMessage());
-            throw new CommunicationException("Could not load JNI library 'cmjni': " + e.getMessage());
         }
+    }
 
+    /**
+     * Creates a new JNI communication handler for the Control & Monitoring API.
+     * 
+     * @throws org.opensplice.cm.CMException
+     *             Thrown when the C JNI library cannot be loaded (libcmjni) or
+     *             one of the XML (de)serializers cannot be initialised.
+     */
+    public JniCommunicator() throws CommunicationException{
         initialized = false;
         JniCommunicator.connectionAlive = false;
-        entityDeserializer = DataTransformerFactory.getEntityDeserializer(
+        entityDeserializer = DataTransformerFactory.getEntityDeserializer(this,
                                 DataTransformerFactory.XML);
         typeDeserializer = DataTransformerFactory.getMetaTypeDeserializer(
                                 DataTransformerFactory.XML);
@@ -112,7 +113,7 @@ public class JniCommunicator implements Communicator {
                                 DataTransformerFactory.XML);
         statusDeserializer = DataTransformerFactory.getStatusDeserializer(
                                 DataTransformerFactory.XML);
-        snapshotDeserializer = DataTransformerFactory.getSnapshotDeserializer(
+        snapshotDeserializer = DataTransformerFactory.getSnapshotDeserializer(this,
                                 DataTransformerFactory.XML);
         snapshotSerializer = DataTransformerFactory.getSnapshotSerializer(
                                 DataTransformerFactory.XML);
@@ -916,10 +917,29 @@ public class JniCommunicator implements Communicator {
                 statistics = statisticsDeserializer.deserializeStatistics(result, entity);
             }
         } catch (TransformationException e) {
-            throw new CommunicationException("Could not reset statistics.");
+            throw new CommunicationException("Could not get statistics.");
         }
         return statistics;
     }
+    
+	@Override
+	public Statistics[] entityGetStatistics(Entity[] entities) throws CommunicationException {
+        Statistics [] statistics = null;
+        this.checkConnection();
+
+        try {
+            String xmlEntities = entitySerializer.serializeEntities(entities);
+            String result = this.jniEntitiesGetStatistics(xmlEntities);
+            this.checkConnection();
+
+            if(result != null){
+                statistics = statisticsDeserializer.deserializeStatistics(result, entities);
+            }
+        } catch (TransformationException e) {
+            throw new CommunicationException("Could not get statistics.");
+        }
+        return statistics;
+	}
 
     @Override
     public void entityResetStatistics(Entity entity, String fieldName) throws CommunicationException {
@@ -1083,6 +1103,8 @@ public class JniCommunicator implements Communicator {
     private void checkConnection() throws CommunicationException{
         if(this.initialized && !JniCommunicator.connectionAlive){
             throw new ConnectionLostException();
+        } else if (!this.initialized){
+           throw new CommunicationException ("Connection has been closed already.");
         }
     }
 
@@ -1207,7 +1229,7 @@ public class JniCommunicator implements Communicator {
     private native String   jniInitialise();
     private native String   jniDetach();
 
-    private native String jniGetVersion();
+    private native String	jniGetVersion();
 
     /*Entity functions.*/
     private native void     jniEntityFree(String xmlEntity);
@@ -1218,6 +1240,7 @@ public class JniCommunicator implements Communicator {
     private native String   jniGetDependantEntities(String xmlEntity, String filter);
     private native String   jniEntityResetStatistics(String xmlEntity, String fieldName);
     private native String   jniEntityGetStatistics(String xmlEntity);
+    private native String   jniEntitiesGetStatistics(String xmlEntities);
     private native String   jniEntityEnable(String xmlEntity);
 
     /*Participant functions.*/

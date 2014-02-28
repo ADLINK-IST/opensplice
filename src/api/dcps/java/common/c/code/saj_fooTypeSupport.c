@@ -52,12 +52,8 @@ SAJ_FUNCTION(jniAlloc) (
     int statusOK = TRUE;
     jsize type_descriptor_length;
 
-#if 0
-    char line[100];
+    OS_UNUSED_ARG(object);
 
-    printf ("Waiting:\n");
-    gets (line);
-#endif
     typeName = (*env)->GetStringUTFChars (env, type_name, 0);
     /* Convert key_list */
     keyList = (*env)->GetStringUTFChars (env, key_list, 0);
@@ -131,6 +127,8 @@ SAJ_FUNCTION(jniFree) (
     jclass object,
     jobject TypeSupport)
 {
+    OS_UNUSED_ARG(object);
+
     gapi_free ((gapi_fooTypeSupport)saj_read_gapi_address (env, TypeSupport));
 
     return GAPI_RETCODE_OK;
@@ -161,6 +159,8 @@ SAJ_FUNCTION(jniRegisterType) (
     jfieldID copyCache_fid;
     c_metaObject typeMeta;
     saj_copyCache copyCache;
+
+    OS_UNUSED_ARG(object);
 
     /* Convert type_alias */
     if (type_alias != NULL) {

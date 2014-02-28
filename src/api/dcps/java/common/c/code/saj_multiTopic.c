@@ -25,7 +25,7 @@ SAJ_FUNCTION(jniGetSubscriptionExpression)(
     jobject jmultiTopic)
 {
     gapi_multiTopic multiTopic;
-    jstring jexpression;
+    jstring jexpression = NULL;
     gapi_string expression;
     
     multiTopic = (gapi_multiTopic) saj_read_gapi_address(env, jmultiTopic);

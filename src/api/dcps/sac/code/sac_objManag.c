@@ -194,6 +194,18 @@ DDS_sequence_octet_allocbuf (
     return (DDS_octet *)DDS_sequence_allocbuf (NULL, sizeof (DDS_octet), len);
 }
 
+DDS_octSeq *
+DDS_octSeq__alloc (void)
+{
+    return (DDS_octSeq *)DDS_sequence_octet__alloc ();
+}
+
+DDS_octet *
+DDS_octSeq_allocbuf (DDS_unsigned_long len)
+{
+    return (DDS_octet *)DDS_sequence_octet_allocbuf(len);
+}
+
 DDS_sequence_DDS_InstanceHandle_t *
 DDS_sequence_DDS_InstanceHandle_t__alloc (
     void

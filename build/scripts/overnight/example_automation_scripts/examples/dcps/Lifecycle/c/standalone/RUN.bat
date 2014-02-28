@@ -7,4 +7,4 @@ set EXAMPLE_LANG=sac
 
 call %FUNCTIONS% :runLifecycle
 
-call %FUNCTIONS% :lifecycleCheckResults
+call %FUNCTIONS% :lifecycleCheckResults >> run.log

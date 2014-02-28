@@ -22,8 +22,15 @@
 #include <dds/core/TInstanceHandle.hpp>
 #include <foo/bar/core/InstanceHandleImpl.hpp>
 
-namespace dds { namespace core { namespace detail {
-      typedef dds::core::TInstanceHandle<foo::bar::core::InstanceHandleImpl> InstanceHandle;
-} } }
+namespace dds
+{
+namespace core
+{
+namespace detail
+{
+typedef dds::core::TInstanceHandle<foo::bar::core::InstanceHandleImpl> InstanceHandle;
+}
+}
+}
 
 #endif /* !defined(OMG_DDS_CORE_DETAIL_INSTANCE_HANDLE_HPP_) */

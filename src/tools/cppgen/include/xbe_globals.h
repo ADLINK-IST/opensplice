@@ -83,6 +83,10 @@ public:
    static DDS::Boolean map_wide;
    static DDS::Boolean case_sensitive;
    static DDS::Boolean ignore_interfaces;
+   static DDS::Boolean isocpp;
+   static DDS::Boolean isocpp_new_types;
+   static DDS::Boolean isocpp_test_methods;
+   static DDS::Boolean gen_equality;
    static DDS::Boolean collocated_direct;
 
    static unsigned long max_char_per_line;

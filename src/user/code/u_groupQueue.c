@@ -54,6 +54,7 @@ u_groupQueueNew(
                                         "Initialisation failed. "
                                         "For groupQueue: <%s>.", name);
                             u_groupQueueFree(_this);
+                            _this = NULL;
                         }
                     } else {
                         OS_REPORT_1(OS_ERROR, "u_groupQueueNew", 0,

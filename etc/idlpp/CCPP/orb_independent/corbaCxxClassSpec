@@ -32,7 +32,7 @@ $sp($(spaces))    $(typename)TypeSupport (const $(typename)TypeSupport &);
 $sp($(spaces))    void operator= (const $(typename)TypeSupport &);
 $sp($(spaces))
 $sp($(spaces))    static const char *metaDescriptor[];
-$sp($(spaces))    static const CORBA::ULong metaDescriptorArrLength;
+$sp($(spaces))    static const ::DDS::ULong metaDescriptorArrLength;
 $sp($(spaces))};
 $sp($(spaces))
 $sp($(spaces))typedef $(typename)TypeSupportInterface_var $(typename)TypeSupport_var;
@@ -113,7 +113,7 @@ $sp($(spaces))public:
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
 $sp($(spaces))        ::DDS::InstanceStateMask instance_states) THROW_ORB_EXCEPTIONS;
@@ -121,7 +121,7 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t take(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
 $sp($(spaces))        ::DDS::InstanceStateMask instance_states) THROW_ORB_EXCEPTIONS;
@@ -129,13 +129,13 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read_w_condition(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS;
 $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t take_w_condition(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS;
 $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read_next_sample(
@@ -149,7 +149,7 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read_instance(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
@@ -158,7 +158,7 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t take_instance(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
@@ -167,7 +167,7 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read_next_instance(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
@@ -176,7 +176,7 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t take_next_instance(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
@@ -185,14 +185,14 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read_next_instance_w_condition(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS;
 $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t take_next_instance_w_condition(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS;
 $sp($(spaces))
@@ -220,7 +220,7 @@ $sp($(spaces))
 $sp($(spaces))    static ::DDS::ReturnCode_t check_preconditions(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples
+$sp($(spaces))        ::DDS::Long max_samples
 $sp($(spaces))    );
 $sp($(spaces))};
 $sp($(spaces))
@@ -231,7 +231,7 @@ $sp($(spaces))public:
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
 $sp($(spaces))        ::DDS::InstanceStateMask instance_states) THROW_ORB_EXCEPTIONS;
@@ -239,7 +239,7 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t take(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
 $sp($(spaces))        ::DDS::InstanceStateMask instance_states) THROW_ORB_EXCEPTIONS;
@@ -247,13 +247,13 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read_w_condition(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS;
 $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t take_w_condition(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS;
 $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read_next_sample(
@@ -267,7 +267,7 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read_instance(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
@@ -276,7 +276,7 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t take_instance(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
@@ -285,7 +285,7 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read_next_instance(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
@@ -294,7 +294,7 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t take_next_instance(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::SampleStateMask sample_states,
 $sp($(spaces))        ::DDS::ViewStateMask view_states,
@@ -303,14 +303,14 @@ $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t read_next_instance_w_condition(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS;
 $sp($(spaces))
 $sp($(spaces))    virtual ::DDS::ReturnCode_t take_next_instance_w_condition(
 $sp($(spaces))        $(typename)Seq & received_data,
 $sp($(spaces))        ::DDS::SampleInfoSeq & info_seq,
-$sp($(spaces))        CORBA::Long max_samples,
+$sp($(spaces))        ::DDS::Long max_samples,
 $sp($(spaces))        ::DDS::InstanceHandle_t a_handle,
 $sp($(spaces))        ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS;
 $sp($(spaces))

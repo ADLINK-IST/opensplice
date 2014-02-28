@@ -88,7 +88,7 @@ static void free_expr (EORB_CPP_node * n)
 
 static int exec_free (EORB_CPP_node * n)
 {
-   int rv;
+   int rv = 0;
    int l;
    int r;
 

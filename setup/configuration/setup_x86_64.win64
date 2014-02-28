@@ -3,6 +3,7 @@ unset_var INCLUDE_FILTERS
 unset_var INCLUDE_TESTENGINE
 
 # "Tests we don't build for this platform.
-unset_var INCLUDE_DBT_API_DLRL_SACPP
 
 set_undefined_var INCLUDE_API_DCPS_ISOCPP yes
+set_var INCLUDE_LZF yes
+set_var INCLUDE_SNAPPY yes

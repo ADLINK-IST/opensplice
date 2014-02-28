@@ -42,6 +42,8 @@ C_STRUCT(watchSplicedAdmin) {
     c_voidp                       usrData;
 };
 
+static u_service callbackService;
+
 /**************************************************************
  * private functions
  **************************************************************/
@@ -144,6 +146,30 @@ lockPages(
 }
 #undef SERVICE_PATH
 #endif
+
+static void
+freeKernelServiceObject (
+    v_entity e,
+    c_voidp argument)
+{
+    v_serviceFree(v_service(e));
+}
+
+static os_result
+u__serviceExceptionCallbackWrapper(void)
+{
+    os_result result = os_resultSuccess;
+
+    /* do not detach when using single process as this does not function correctly for single process*/
+    if(!os_serviceGetSingleProcess()) {
+        OS_REPORT(OS_ERROR, "u__serviceExceptionCallbackWrapper", 0,
+                "Exception occurred, will detach service from domain.");
+        /* calling the kernel service free directly because only the kernel administration needs to be removed */
+        if (u_entityAction(u_entity(callbackService),freeKernelServiceObject,NULL) != U_RESULT_OK)
+            result = os_resultFail;
+    }
+    return result;
+}
 
 /**************************************************************
  * constructor/destructor
@@ -258,6 +284,8 @@ u_serviceNew(
                     u_serviceFree(s);
                     s = NULL;
                 }
+                callbackService = s;
+                (void) os_signalHandlerSetExceptionCallback(u__serviceExceptionCallbackWrapper);
             } else {
                 OS_REPORT(OS_WARNING,"u_serviceNew",0,
                           "Failed to retrieve the Service Manager");
@@ -477,8 +505,7 @@ u_serviceWatchSpliceDaemon(
             admin->callback = listener;
             admin->usrData = usrData;
             mask |= V_EVENT_SERVICESTATE_CHANGED;
-            u_dispatcherInsertListener(u_dispatcher(service),
-                u_serviceSpliceListener, admin);
+            r = u_dispatcherInsertListener(u_dispatcher(service), u_serviceSpliceListener, admin);
         }
         u_dispatcherSetEventMask(u_dispatcher(service), mask);
     }

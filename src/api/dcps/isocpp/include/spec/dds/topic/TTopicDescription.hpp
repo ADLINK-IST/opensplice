@@ -22,11 +22,15 @@
 #include <dds/core/TEntity.hpp>
 #include <dds/topic/TopicTraits.hpp>
 
-namespace dds { namespace topic {
-  template <typename T,
-  template <typename Q> class DELEGATE>
-  class TopicDescription;
-} }
+namespace dds
+{
+namespace topic
+{
+template <typename T,
+          template <typename Q> class DELEGATE>
+class TopicDescription;
+}
+}
 
 
 /**
@@ -38,34 +42,49 @@ namespace dds { namespace topic {
  * name that allows it to be retrieved locally.
  */
 template <typename T, template <typename Q> class DELEGATE>
-class dds::topic::TopicDescription : public ::dds::core::TEntity< DELEGATE<T> > {
+class dds::topic::TopicDescription : public ::dds::core::TEntity< DELEGATE<T> >
+{
 public:
-  typedef T DataType;
-
-public:
-  OMG_DDS_REF_TYPE(TopicDescription, ::dds::core::TEntity, DELEGATE<T>)
+    typedef T DataType;
 
 public:
-  virtual ~TopicDescription();
+    OMG_DDS_REF_TYPE(TopicDescription, ::dds::core::TEntity, DELEGATE<T>)
 
 public:
-  /**
-   * Get the name used to create the TopicDescription.
-   */
-  const std::string& name() const;
+    virtual ~TopicDescription();
 
-  /**
-   * The type_name used to create the TopicDescription.
-   */
-  const std::string& type_name() const;
+public:
+    /**
+     * Gets the Topic name.
+     *
+     * @return the Topic name
+     */
+    const std::string& name() const;
 
-  const dds::domain::DomainParticipant& domain_participant() const;
+    /**
+     * Gets the type_name.
+     *
+     * @return the type_name
+     */
+    const std::string& type_name() const;
 
-protected:
+    /**
+     * Gets the DomainParticipant associated with the TopicDescription.
+     *
+     * @return the DomainParticipant
+     */
+    const dds::domain::DomainParticipant& domain_participant() const;
 
-  TopicDescription(const dds::domain::DomainParticipant& dp,
-      const std::string& name,
-      const std::string& type_name = dds::topic::topic_type_name<T>::value());
+    /**
+     * Creates a TopicDescription instance.
+     *
+     * @param dp the DomainParticipant
+     * @param name the Topic name
+     * @param type_name the type_name
+     */
+    TopicDescription(const dds::domain::DomainParticipant& dp,
+                     const std::string& name,
+                     const std::string& type_name = dds::topic::topic_type_name<T>::value());
 };
 
 

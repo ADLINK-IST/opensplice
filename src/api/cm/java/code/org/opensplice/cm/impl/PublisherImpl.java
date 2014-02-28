@@ -17,6 +17,7 @@ import org.opensplice.cm.Publisher;
 import org.opensplice.cm.Topic;
 import org.opensplice.cm.Writer;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.qos.PublisherQoS;
 import org.opensplice.cm.qos.QoS;
 import org.opensplice.cm.qos.WriterQoS;
@@ -41,8 +42,8 @@ public class PublisherImpl extends EntityImpl implements Publisher{
      * @param _name The name of the kernel entity that is associated with this
      *              entity.
      */
-    public PublisherImpl(long _index, long _serial, String _pointer, String _name) {
-        super(_index, _serial, _pointer, _name);
+    public PublisherImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name) {
+        super(communicator, _index, _serial, _pointer, _name);
     }
     
     /**
@@ -55,11 +56,11 @@ public class PublisherImpl extends EntityImpl implements Publisher{
      * @throws CMException Thrown when the publisher could not be created.
      */
     public PublisherImpl(ParticipantImpl participant, String name, PublisherQoS qos) throws CMException{
-        super(0, 0, "", "");
+        super(participant.getCommunicator(), 0, 0, "", "");
         owner = true;
         PublisherImpl p;
         try {
-            p = (PublisherImpl)CMFactory.getCommunicator().publisherNew(participant, name, qos);
+            p = (PublisherImpl)getCommunicator().publisherNew(participant, name, qos);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -88,7 +89,7 @@ public class PublisherImpl extends EntityImpl implements Publisher{
             throw new CMException("Publisher already freed.");
         }
         try {
-            CMFactory.getCommunicator().publisherPublish(this, expression);
+            getCommunicator().publisherPublish(this, expression);
         } catch (CommunicationException e) {
             throw new CMException("publish failed for: " + expression);
         }
@@ -103,7 +104,7 @@ public class PublisherImpl extends EntityImpl implements Publisher{
             throw new CMException("Supplied entity is not available (anymore).");
         } else if(qos instanceof PublisherQoS){
             try {
-                CMFactory.getCommunicator().entitySetQoS(this, qos);
+                getCommunicator().entitySetQoS(this, qos);
             } catch (CommunicationException ce) {
                 throw new CMException(ce.getMessage());
             }

@@ -22,8 +22,18 @@
 #include <dds/core/TEntityQos.hpp>
 #include <foo/bar/pub/qos/DataWriterQos.hpp>
 
-namespace dds { namespace pub { namespace qos { namespace detail {
-  typedef dds::core::TEntityQos<foo::bar::pub::qos::DataWriterQos> DataWriterQos;
-} } } }
+namespace dds
+{
+namespace pub
+{
+namespace qos
+{
+namespace detail
+{
+typedef dds::core::TEntityQos<foo::bar::pub::qos::DataWriterQos> DataWriterQos;
+}
+}
+}
+}
 
 #endif /* OMG_DDS_QOS_DETAIL_DATA_WRITER_QOS_HPP_ */

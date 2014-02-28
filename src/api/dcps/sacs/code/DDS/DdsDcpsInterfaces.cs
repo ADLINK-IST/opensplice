@@ -3212,6 +3212,67 @@ namespace DDS
     public interface IDomainParticipantListener : ITopicListener, IPublisherListener, ISubscriberListener
     {
     }
+    
+    /// <summary>
+    /// Create a QosProvider fetching QoS configuration from the specified
+    /// URI. For instance, the following code:
+    ///
+    /// <pre><code>
+    /// QosProvider xml_file_provider("file://somewhere/on/disk/qos-config.xml");
+    /// QosProvider json_file_provider("file://somewhere/on/disk/json-config.json");
+    /// QosProvider json_http_provider("http:///somewhere.org/here/json-config.json");
+    /// </code></pre>
+    ///
+    /// The URI determines the how the Qos configuration is fetched and the
+    /// format in which it is represented. This specification requires compliant
+    /// implementations to support at least one file based configuration using
+    /// the XML syntax defined as part of the DDS for CCM specification (formal/12.02.01).
+    ///
+    /// constructor (
+    ///     in string uri,
+    ///     in string name);
+    /// </summary>
+    public interface IQosProvider {
+
+
+        ReturnCode
+        GetParticipantQos (
+            ref DomainParticipantQos participantQos,
+            string id);
+
+        ReturnCode
+        GetTopicQos (
+            ref TopicQos topicQos,
+            string id);
+
+        ReturnCode
+        GetSubscriberQos (
+            ref SubscriberQos subscriberQos,
+            string id);
+
+        ReturnCode
+        GetDataReaderQos (
+            ref DataReaderQos datareaderQos,
+            string id);
+
+        ReturnCode
+        GetPublisherQos (
+            ref PublisherQos publisherQos,
+            string id);
+
+        ReturnCode
+        GetDataWriterQos (
+            ref DataWriterQos datawriterQos,
+            string id);
+
+        // Future expansion will allow the user to share QoSs over DDS
+        //
+        // ReturnCode_t
+        // subscribe ();
+        //
+        // ReturnCode_t
+        // publish ();
+    }
 
 
 } // end namespace DDS

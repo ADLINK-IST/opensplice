@@ -11,11 +11,11 @@
  */
 
 #include "u__dataReader.h"
-#include "u__handle.h"
 #include "u__types.h"
 #include "u__entity.h"
 #include "u__dataView.h"
 #include "u__subscriber.h"
+#include "u__user.h"
 
 #include "v_subscriber.h"
 #include "v_topic.h"
@@ -201,6 +201,7 @@ u_dataReaderDeleteContainedEntities (
                   "u_dataReaderDeleteContainedEntities",0,
                   "Operations failed on invalid DataReader."
                   "DataReader = NULL");
+        result = U_RESULT_PRECONDITION_NOT_MET;
     }
     return result;
 }
@@ -1123,7 +1124,7 @@ u_result
 u_dataReaderCopyKeysFromInstanceHandle(
     u_dataReader _this,
     u_instanceHandle handle,
-    u_readerAction action,
+    u_copyOut action,
     void *copyArg)
 {
     v_dataReaderInstance instance;
@@ -1157,6 +1158,30 @@ u_dataReaderCopyKeysFromInstanceHandle(
             u_entityRelease(u_entity(_this));
         }
         u_instanceHandleRelease(handle);
+    }
+    return result;
+}
+
+u_result
+u_dataReaderSetNotReadThreshold(
+    u_reader _this,
+    c_long threshold)
+{
+    v_dataReader reader;
+    u_result result;
+
+    result = U_RESULT_PRECONDITION_NOT_MET;
+    if (_this != NULL) {
+        result = u_entityWriteClaim(u_entity(_this), (v_entity*)(&reader));
+        if (result == U_RESULT_OK){
+            result = u_resultFromKernel(
+                    v_dataReaderSetNotReadThreshold(reader,
+                                                    threshold));
+            u_entityRelease(u_entity(_this));
+        } else {
+            OS_REPORT(OS_ERROR, "u_readerSetNotReadThreshold", 0,
+                      "Illegal handle detected");
+        }
     }
     return result;
 }

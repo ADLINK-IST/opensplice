@@ -51,7 +51,7 @@ public:
 
     template<typename T, typename FWIterator>
     FooQuery(const dds::sub::DataReader<T>& dr, const std::string& query_expression,
-          const FWIterator& params_begin, const FWIterator& params_end)
+             const FWIterator& params_begin, const FWIterator& params_end)
         : adr_(dr),
           expression_(query_expression)
     {
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * Provides the begin iterator to the parameter list.
+     *  @internal Provides the begin iterator to the parameter list.
      */
     iterator begin()
     {
@@ -78,7 +78,7 @@ public:
     }
 
     /**
-     * The end iterator to the parameter list.
+     *  @internal The end iterator to the parameter list.
      */
     iterator end()
     {
@@ -91,7 +91,7 @@ public:
     }
 
     /**
-     * The end iterator to the parameter list.
+     *  @internal The end iterator to the parameter list.
      */
     const_iterator end() const
     {
@@ -113,7 +113,7 @@ public:
 
     uint32_t parameters_length() const
     {
-        return static_cast<uint32_t> (params_.size());
+        return static_cast<uint32_t>(params_.size());
     }
 
     const dds::sub::AnyDataReader& data_reader() const

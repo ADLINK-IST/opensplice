@@ -86,7 +86,7 @@ DDS::Topic_ptr DDS::ContentFilteredTopic_impl::get_related_topic (
   {
     if (os_mutexLock(&cft_mutex) == os_resultSuccess)
     {
-      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
       if (myUD)
       {
         result = dynamic_cast<DDS::Topic_impl_ptr>(myUD->ccpp_object);

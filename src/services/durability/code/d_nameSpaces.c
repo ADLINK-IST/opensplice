@@ -46,7 +46,6 @@ d_nameSpacesNew(
     c_ulong total)
 {
     d_nameSpaces ns = NULL;
-    d_durability durability;
     d_networkAddress master;
     d_mergeState state;
     c_sequence *mergedStatesPtr;
@@ -56,7 +55,6 @@ d_nameSpacesNew(
         ns = d_nameSpaces(os_malloc(C_SIZEOF(d_nameSpaces)));
 
         if(ns){
-            durability = d_adminGetDurability(admin);
             master     = d_networkAddressUnaddressed();
             d_messageInit(d_message(ns), admin);
 
@@ -75,9 +73,14 @@ d_nameSpacesNew(
             ns->masterConfirmed            = d_nameSpaceIsMasterConfirmed(nameSpace);
 
             state = d_nameSpaceGetMergeState(nameSpace, NULL);
-            ns->state.role                 = os_strdup(state->role);
-            ns->state.value                = state->value;
-            d_mergeStateFree(state);
+            if(state) {
+                ns->state.role                 = os_strdup(state->role);
+                ns->state.value                = state->value;
+                d_mergeStateFree(state);
+            } else {
+                ns->state.role                 = d_nameSpaceGetRole(nameSpace);
+                ns->state.value                = -1;
+            }
 
             ns->mergedStatesCount          = d_tableSize(nameSpace->mergedRoleStates);
 

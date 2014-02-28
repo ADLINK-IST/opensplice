@@ -22,14 +22,17 @@
 #include <dds/core/xtypes/detail/DynamicData.hpp>
 
 
-namespace dds {
-  namespace code {
-    namespace xtypes {
+namespace dds
+{
+namespace code
+{
+namespace xtypes
+{
 
-      typedef TDynamicData<detail::DynamicData> DynamicData;
+typedef TDynamicData<detail::DynamicData> DynamicData;
 
-    }
-  }
+}
+}
 }
 
 

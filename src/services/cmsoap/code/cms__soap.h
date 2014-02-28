@@ -181,12 +181,12 @@ int cms__entityGetQos(char* entity, char** result);
 int cms__entitySetQos(char* entity, char* qos, char** result);
 
 /**
- * Resolves the statisics of the supplied entity.
+ * Resolves the statistics of the supplied entity.
  *
  * @param entity The XML representation of the entity where to resolve the
  *               statistics of.
  * @param result The XML representation of the statistics.
- * @return SOAP_OK if successfull, any other SOAP returncode if failed.
+ * @return SOAP_OK if successful, any other SOAP returncode if failed.
  */
 int cms__entityStatistics(char* entity, char** result);
 
@@ -200,7 +200,7 @@ int cms__entityStatistics(char* entity, char** result);
 int cms__entityEnable(char* entity, char** result);
 
 /**
- * Resets (a part of) the statisics of the supplied entity.
+ * Resets (a part of) the statistics of the supplied entity.
  *
  * @param entity The XML representation of the entity where to reset the
  *               statistics of.
@@ -613,3 +613,5 @@ int cms__storageRead(char* storage, char** result);
 int cms__storageGetType(char* storage, char* typeName, char** result);
 
 int cms__getVersion(char* dummy, char** result);
+
+int cms__entitiesStatistics(char* entities, char** result);

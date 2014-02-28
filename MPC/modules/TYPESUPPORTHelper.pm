@@ -71,14 +71,17 @@ sub get_output {
 
   ## Need to know what to generate now
   my $language = '';
-  my $standalone = '';
+  my $standalone = 1;
   my $output_dir = '';
   my $is_streams = '';
+  my $generate_tests = '';
   my $left_over_args;
   my $ret;
   ($ret, $left_over_args) = _GetOptionsFromString($idlpp_args,
                               'S' => \$standalone,
+                              'N' => \$standalone,
                               'C' => sub { $standalone = 0 },
+                              'T' => \$generate_tests,
                               'd=s' => \$output_dir,
                               'l=s' => \$language);
 
@@ -113,8 +116,11 @@ sub get_output {
     {
         # @todo - This is a workaround hack. Headers and inline are
         # getting picked up but these aren't. Remove & raise / fix bug.
-        push @filenames, "$output_dir$base" . "DcpsC.cpp";
-        push @filenames, "$output_dir$base" . "DcpsS.cpp";
+        push @filenames, "$output_dir$base" . "Dcps.idl";
+    }
+    if ($generate_tests == 1)
+    {
+       push @filenames, "$output_dir$base" . "_testmethod.h";
     }
   }
   else

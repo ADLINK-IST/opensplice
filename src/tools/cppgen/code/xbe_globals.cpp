@@ -64,6 +64,10 @@ pbbool BE_Globals::CFileOpen = pbfalse;
 pbbool BE_Globals::map_wide = pbfalse;
 pbbool BE_Globals::case_sensitive = pbfalse;
 pbbool BE_Globals::ignore_interfaces = pbfalse;
+pbbool BE_Globals::isocpp = pbfalse;
+pbbool BE_Globals::isocpp_new_types = pbfalse;
+pbbool BE_Globals::gen_equality = pbfalse;
+pbbool BE_Globals::isocpp_test_methods = pbfalse;
 pbbool BE_Globals::collocated_direct = pbfalse;
 
 unsigned long BE_Globals::max_char_per_line = 1024;

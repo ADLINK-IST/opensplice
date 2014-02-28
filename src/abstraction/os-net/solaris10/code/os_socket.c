@@ -15,10 +15,6 @@
  * OpenSplice requirements                                      *
  ****************************************************************/
 
-/** \file os/linux2.6/code/os_socket.c
- *  \brief socket management
- */
-
 #include "os_heap.h"
 #include <string.h>
 #include <unistd.h>

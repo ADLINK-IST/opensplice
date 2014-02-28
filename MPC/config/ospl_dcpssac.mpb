@@ -4,12 +4,6 @@
 project : ospl_dcpsgapi, ospl_base {
   lit_libs += dcpssac
   requires += ospl_dcpssac
-  specific(make) {
-      ld = $(CC)
-  }
-  specific(wb30) {
-      ld = $(CC)
-  }
 }
 
 feature(!src_co) {
@@ -22,14 +16,24 @@ feature(src_co) {
 
 feature (!ospl_os_pikeos) {
   specific(make) {
-      ld = $(CC) $(CFLAGS) $(CPPFLAGS)
+      ld = $(CC)
+  }
+  specific(wb30) {
+      ld = $(CC)
   }
 }
 
-feature (ospl_os_pikeos) {
+feature (ospl_os_pikeos, ospl_arch_ppc) {
   specific (make) {
     ldlibs = -llwip4 -lm -lc -lp4 -lvm -lstand -lgcc
     linkflags = -e _start -T$(PIKEOS_HOME)/target/ppc/oea/scripts/app-ld-script -static $(PIKEOS_HOME)/target/ppc/oea/bposix/lib/crt0.o
+  }
+}
+
+feature (ospl_os_pikeos, ospl_arch_x86) {
+  specific (make) {
+    ldlibs = -llwip4 -lsbuf -lm -lc -lp4 -lvm -lstand -lgcc
+    linkflags = -e _start -T$(PIKEOS_HOME)/target/x86/i586/scripts/app-ld-script -static $(PIKEOS_HOME)/target/x86/i586/bposix/os/up/crt0.o
   }
 }
 

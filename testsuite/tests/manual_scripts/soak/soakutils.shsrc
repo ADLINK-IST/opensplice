@@ -166,7 +166,9 @@ function source_soak_env ()
     local scriptdir="$PWD/$(dirname "$BASH_SOURCE")"
     pushd "$PWD" &>/dev/null
     cd "$g_unix_ts_root" || return 1
-    svn revert -R "bin/start_recording.sh" || return 1
+    #we cannot do the following line because we do not have the actual 
+    #touchstone checked out from sourceforge so we cannot update it
+    #svn revert -R "bin/start_recording.sh" || return 1
     echo -e "\nPatching for starting recorder in background..."
     patch -p0 <"$scriptdir/diffs/bin+start_recording.sh.diff" || return 1
     popd &>/dev/null
@@ -185,12 +187,13 @@ function source_ospl_uri ()
     local ospl_home orig_ospl my_ospl soak_ospl soak_port cur_path
     ospl_home="$(remote_var_value "$g_local" OSPL_DISTPATH)" || return 1
     ospl_home="$(to_unix_path "$ospl_home")"
-    orig_ospl="$(orig_ospl_config "$g_transport")" || return 1
-    my_ospl="$(my_ospl_config "$g_local" "$g_transport")" || return 1
+    orig_ospl="$(orig_ospl_config "$g_runtype" "$g_transport")" || return 1
+    my_ospl="$(my_ospl_config  "$g_local" "$g_runtype" "$g_transport")" || return 1
 
     soak_port="$(soak_test_port)" || return 1
 
-    "$(dirname "$BASH_SOURCE")/../.cp_chmod" "$ospl_home/etc/config/$orig_ospl" "$(osplconfig_current_path)/$my_ospl" || return 1
+    "$(dirname "$0")/../.cp_chmod" "$ospl_home/etc/config/$orig_ospl" "$(osplconfig_current_path)/$my_ospl" || return 1
+
     echo -e "\nPatching ospl.xml..."
     create_ospl_config "$g_local" "$g_runtype" "$g_transport" "$soak_port" "$g_soak_id" || return 1
     mv -f "$(osplconfig_current_path)/$my_ospl" "$g_unix_logdir/ospl_${g_soak_id}_${g_runtype}_${g_transport}.xml" || return 1
@@ -294,7 +297,9 @@ function start_ospl ()
     ospl start || result=$?
     echo -e "\nAvailable domain(s):"
     # 'oslp list' returns a number of running OSPLs. So, it fails if returns 0.
-    ospl list && result=1
+    ospl list && result=0
+
+    echo "result of starting ospl is $result"
 
     popd &>/dev/null
     return $result
@@ -315,6 +320,8 @@ function stop_ospl ()
 
 function start_touchstone ()
 {
+    echo -e "\n Starting touchstone"
+
     local group_id
     group_id="$(ts_group_id "$g_local" "$g_remote")" || return 1
 
@@ -347,6 +354,8 @@ function stop_touchstone ()
 
 function start_watcher ()
 {
+    echo -e "\n Starting watcher"
+
     pushd "$PWD" &>/dev/null
     cd "$g_unix_logdir"
 
@@ -376,6 +385,8 @@ function stop_watcher ()
 
 function setup_recording_scripts ()
 {
+    echo -e "\n Doing setup_recording_scripts"
+
     # Hardcode the hosts that do recording.
     if [ "$(plain_hostname)" = "$LIN32_HOSTNAME" -o "$(plain_hostname)" = "$WIN32_HOSTNAME" ]; then
         echo -e "\nPatching recorder scripts..."
@@ -386,6 +397,8 @@ function setup_recording_scripts ()
 
 function start_latency_recording ()
 {
+    echo -e "\n Doing start_latency_recording" 
+
     # Hardcode the hosts that do recording.
     if [ "$(plain_hostname)" = "$LIN32_HOSTNAME" -o "$(plain_hostname)" = "$WIN32_HOSTNAME" ]; then
         pushd "$PWD" &>/dev/null
@@ -419,6 +432,8 @@ function stop_latency_recording ()
 
 function start_throughput_recording ()
 {
+    echo -e "\n Doing start_throughtput_recording"
+
     # Hardcode the hosts that do recording.
     if [ "$(plain_hostname)" = "$LIN32_HOSTNAME" -o "$(plain_hostname)" = "$WIN32_HOSTNAME" ]; then
         pushd "$PWD" &>/dev/null
@@ -452,6 +467,8 @@ function stop_throughput_recording ()
 
 function start_mmstat ()
 {
+    echo -e "\n Starting mmstat"
+
     pushd "$PWD" &>/dev/null
     cd "$g_unix_logdir"
 
@@ -466,15 +483,21 @@ function run_soak_test ()
     source_soak_env || g_soak_test_failed=1
     source_ospl_uri || g_soak_test_failed=1
 
+    echo -e "\n Starting ospl"
+
     test $g_soak_test_failed -eq 0 && start_ospl || g_soak_test_failed=1
 
     test $g_soak_test_failed -eq 0 && start_touchstone || g_soak_test_failed=1
+
     test $g_soak_test_failed -eq 0 && start_watcher || g_soak_test_failed=1
 
     # These steps are done conditionally on the host where the script is run.
     test $g_soak_test_failed -eq 0 && setup_recording_scripts || g_soak_test_failed=1
+
     test $g_soak_test_failed -eq 0 && start_latency_recording || g_soak_test_failed=1
+
     test $g_soak_test_failed -eq 0 && start_throughput_recording || g_soak_test_failed=1
+
 
     # Start the blocking part only if all the previous steps were allgoodful.
     test $g_soak_test_failed -eq 0 && start_mmstat

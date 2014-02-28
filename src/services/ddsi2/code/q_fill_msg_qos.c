@@ -10,6 +10,7 @@
  *
  */
 #include <stddef.h>
+#include <assert.h>
 
 /* FIXME: rename this file -- there is not even a fill_msg_qos anymore ... */
 
@@ -24,7 +25,7 @@
 #include "u_participant.h"
 #include "os_abstract.h" /* big or little endianness */
 
-#include "q_avl.h"
+#include "ut_avl.h"
 #include "q_log.h"
 #include "q_osplser.h"
 #include "q_protocol.h"
@@ -242,7 +243,7 @@ c_array new_v_message_qos (const nn_xqos_t *xqos)
   qosbase[0] = byte0;
   qosbase[1] = byte1;
 
-  msgqos = c_newArray (gv.ospl_qostype, dst - qosbase);
+  msgqos = c_newArray (gv.ospl_qostype, (int) (dst - qosbase));
   if (msgqos != NULL)
     memcpy (msgqos, qosbase, dst - qosbase);
   return msgqos;

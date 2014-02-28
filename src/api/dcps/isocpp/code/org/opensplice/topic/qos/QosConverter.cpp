@@ -25,11 +25,11 @@ org::opensplice::topic::qos::convertQos(const DDS::TopicQos& from)
 {
     dds::topic::qos::TopicQos to;
     to = to << convertPolicy(from.durability) << convertPolicy(from.durability_service)
-      << convertPolicy(from.deadline) << convertPolicy(from.latency_budget)
-      << convertPolicy(from.liveliness) << convertPolicy(from.reliability)
-      << convertPolicy(from.destination_order) << convertPolicy(from.history)
-      << convertPolicy(from.resource_limits) << convertPolicy(from.transport_priority)
-      << convertPolicy(from.lifespan) << convertPolicy(from.ownership);
+         << convertPolicy(from.deadline) << convertPolicy(from.latency_budget)
+         << convertPolicy(from.liveliness) << convertPolicy(from.reliability)
+         << convertPolicy(from.destination_order) << convertPolicy(from.history)
+         << convertPolicy(from.resource_limits) << convertPolicy(from.transport_priority)
+         << convertPolicy(from.lifespan) << convertPolicy(from.ownership);
     return to;
 }
 

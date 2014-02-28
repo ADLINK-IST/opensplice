@@ -41,6 +41,9 @@ typedef enum d_connectivity_s {
     D_CONNECTIVITY_INCOMPATIBLE_DATA_MODEL
 } d_connectivity;
 
+#define D_OSPL_NODE "__NODE"
+#define D_OSPL_BUILTIN_PARTITION "BUILT-IN PARTITION__"
+
 d_durability    d_durabilityNew                     (const c_char* uri, 
                                                      const c_char* serviceName,
                                                      c_long domainId);

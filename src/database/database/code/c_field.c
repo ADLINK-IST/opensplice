@@ -179,24 +179,23 @@ c_fieldNew (
                     c_free(path);
                     return NULL;
                 }
-                switch (c_baseObject(type)->kind) {
-                case M_INTERFACE:
-                case M_CLASS:
-                case M_COLLECTION:
-                    /*Longs are inserted in an iterator? Explanation please...*/
-                    refsList = c_iterInsert(refsList,(c_voidp)offset);
-                    offset = 0;
-                break;
-                default:
-                break;
+                if (n < length -1) {
+                    switch (c_baseObject(type)->kind) {
+                    case M_INTERFACE:
+                    case M_CLASS:
+                    case M_COLLECTION:
+                        /*Longs are inserted in an iterator? Explanation please...*/
+                        refsList = c_iterInsert(refsList,(c_voidp)offset);
+                        offset = 0;
+                    break;
+                    default:
+                    break;
+                    }
                 }
             }
-            if (offset > 0) {
-                refsList = c_iterInsert(refsList,(c_voidp)offset);
-            }
-
 
             field = c_new(c_field_t(base));
+            field->offset = offset;
             field->name = c_stringNew(base,fieldName);
             field->path = path;
             field->type = c_keep(type);
@@ -205,7 +204,6 @@ c_fieldNew (
 
             if (refsList) {
                 length = c_iterLength(refsList);
-                field->offset = 0;
                 if (length > 0) {
                     field->refs = c_newArray(c_fieldRefs_t(base),length);
                     if (field->refs) {
@@ -221,8 +219,6 @@ c_fieldNew (
                     }
                 }
                 c_iterFree(refsList);
-            } else {
-                field->offset = offset;
             }
         } else {
             OS_REPORT(OS_ERROR,
@@ -247,13 +243,18 @@ c_fieldConcat (
     c_field tail)
 {
     c_base base;
-    c_long i, len1, len2, totlen;
+    c_ulong i, len1, len2, totlen;
     c_field field;
+    c_bool headIsRef = FALSE;
 
     base = c__getBase(head);
 
-    len1 = c_arraySize(head->path);
-    len2 = c_arraySize(tail->path);
+    if (c_typeIsRef(head->type)) {
+        headIsRef = TRUE;
+    };
+
+    len1 = (c_ulong) c_arraySize(head->path);
+    len2 = (c_ulong) c_arraySize(tail->path);
 
     field = c_new(c_field_t(base));
 
@@ -268,27 +269,38 @@ c_fieldConcat (
             field->path[i+len1] = c_keep(tail->path[i]);
         }
 
-        len1 = c_arraySize(head->refs);
-        len2 = c_arraySize(tail->refs);
+        len1 = (c_ulong) c_arraySize(head->refs);
+        len2 = (c_ulong) c_arraySize(tail->refs);
 
-        totlen = len1 + len2;
+        totlen = len1 + len2 + (headIsRef ? 1 : 0);
         if (totlen > 0) {
-            field->offset = 0;
             field->refs = c_newArray(c_fieldRefs_t(base),totlen);
-            if (len1) {
-                for (i=0;i<len1;i++) {
-                    field->refs[i] = head->refs[i];
-                }
-            } else {
-                tail->refs[0] = (c_voidp)head->offset;
-                len1 = 1;
-            }
-            for (i=0;i<len2;i++) {
-                field->refs[i+len1] = tail->refs[i];
-            }
         } else {
-            field->offset = head->offset + tail->offset;
             field->refs = NULL;
+        }
+        if (len1) {
+            for (i = 0; i < len1; i++) {
+                field->refs[i] = head->refs[i];
+            }
+        }
+        if (headIsRef) {
+            field->refs[len1++] = (c_voidp)head->offset;
+        }
+        for (i = len1; i < totlen; i++) {
+            field->refs[i] = tail->refs[i - len1];
+        }
+
+        /* If the tail does not add any additional refs (in which case
+         * len2 equals 0 AND the head field is not a ref itself so that
+         * totlen = len1), then the tail offset may be added to the head
+         * offset.
+         * In all other cases the tail already refers to the correct offset
+         * of the inner-most indirection.
+         */
+        if (totlen == len1) {
+            field->offset = head->offset + tail->offset;
+        } else {
+            field->offset = tail->offset;
         }
 
         len1 = strlen(head->name);
@@ -312,8 +324,8 @@ static void *get_field_address (c_field field, c_object o)
     c_array refs;
     if (field->refs) {
         refs = field->refs;
-        n = c_arraySize(refs)-1;
-        for(i=0;i<n;i++) {
+        n = c_arraySize(refs);
+        for(i = 0; i < n; i++) {
             if ((p = C_DISPLACE(p,refs[i])) == NULL) {
                 return NULL;
             }
@@ -321,12 +333,9 @@ static void *get_field_address (c_field field, c_object o)
         }
         if(p == NULL) {
             return NULL;
-        } else {
-            p = C_DISPLACE(p,refs[n]);
         }
-    } else {
-        p = C_DISPLACE(p,field->offset);
     }
+    p = C_DISPLACE(p,field->offset);
     return p;
 }
 
@@ -371,7 +380,7 @@ c_fieldFreeRef (
     }
 }
 
-    void
+void
 c_fieldAssign (
     c_field field,
     c_object o,

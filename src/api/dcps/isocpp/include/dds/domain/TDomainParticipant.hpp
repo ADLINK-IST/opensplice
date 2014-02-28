@@ -20,40 +20,48 @@
  * OMG PSM class declaration
  */
 #include <spec/dds/domain/TDomainParticipant.hpp>
+#include <org/opensplice/domain/DomainEventForwarder.hpp>
+#include <org/opensplice/core/EntityRegistry.hpp>
 
 // Implementation
-#include <org/opensplice/domain/DomainEventForwarder.hpp>
+
 namespace dds
 {
 namespace domain
 {
 
 template <typename DELEGATE>
-TDomainParticipant<DELEGATE>::TDomainParticipant(uint32_t did): ::dds::core::TEntity<DELEGATE>(new DELEGATE(did)) { }
+TDomainParticipant<DELEGATE>::TDomainParticipant(uint32_t did): ::dds::core::TEntity<DELEGATE>(new DELEGATE(did))
+{
+    org::opensplice::core::EntityRegistry<DDS::DomainParticipant_ptr, dds::domain::TDomainParticipant<DELEGATE> >::insert(this->delegate()->dp_.get(), *this);
+}
 
 template <typename DELEGATE>
 TDomainParticipant<DELEGATE>::TDomainParticipant(uint32_t id,
         const dds::domain::qos::DomainParticipantQos& qos,
         dds::domain::DomainParticipantListener* listener,
         const dds::core::status::StatusMask& mask) :
-    ::dds::core::TEntity<DELEGATE>(new DELEGATE(id, qos, mask)) {
-        if (listener)
-        {
-            dds::core::smart_ptr_traits<DDS::DomainParticipantListener>::ref_type h (new org::opensplice::domain::DomainParticipantEventForwarder<TDomainParticipant>(*this, listener));
-            this->delegate()->event_forwarder(listener, h, mask);
-        }
-        }
+    ::dds::core::TEntity<DELEGATE>(new DELEGATE(id, qos, mask))
+{
+    if(listener)
+    {
+        dds::core::smart_ptr_traits<DDS::DomainParticipantListener>::ref_type h(new org::opensplice::domain::DomainParticipantEventForwarder<TDomainParticipant>(*this, listener));
+        this->delegate()->event_forwarder(listener, h, mask);
+    }
+    org::opensplice::core::EntityRegistry<DDS::DomainParticipant_ptr, dds::domain::TDomainParticipant<DELEGATE> >::insert(this->delegate()->dp_.get(), *this);
+}
 
 template <typename DELEGATE>
 TDomainParticipant<DELEGATE>::~TDomainParticipant() { }
 
 template <typename DELEGATE>
-void TDomainParticipant<DELEGATE>::listener(Listener* the_listener,
+void TDomainParticipant<DELEGATE>::listener(Listener* listener,
         const ::dds::core::status::StatusMask& event_mask)
 {
-            dds::core::smart_ptr_traits<DDS::DomainParticipantListener>::ref_type h (new org::opensplice::domain::DomainParticipantEventForwarder<TDomainParticipant>(*this, the_listener));
-            this->delegate()->event_forwarder(the_listener, h, event_mask);
-    //this->delegate()->listener(the_listener, event_mask);
+    dds::core::smart_ptr_traits<DDS::DomainParticipantListener>::ref_type h(new org::opensplice::domain::DomainParticipantEventForwarder<TDomainParticipant>(*this, listener));
+    this->delegate()->event_forwarder(listener, h, event_mask);
+    //this->delegate()->listener(listener, event_mask);
+    org::opensplice::core::EntityRegistry<DDS::DomainParticipant_ptr, dds::domain::TDomainParticipant<DELEGATE> >::insert(this->delegate()->dp_.get(), *this);
 }
 
 template <typename DELEGATE>
@@ -70,9 +78,9 @@ TDomainParticipant<DELEGATE>::qos() const
 }
 
 template <typename DELEGATE>
-void TDomainParticipant<DELEGATE>::qos(const dds::domain::qos::DomainParticipantQos& the_qos)
+void TDomainParticipant<DELEGATE>::qos(const dds::domain::qos::DomainParticipantQos& qos)
 {
-    this->delegate()->qos(the_qos);
+    this->delegate()->qos(qos);
 }
 
 template <typename DELEGATE>
@@ -153,16 +161,16 @@ TDomainParticipant<DELEGATE>&  TDomainParticipant<DELEGATE>::default_topic_qos(c
 }
 
 template <typename DELEGATE>
-TDomainParticipant<DELEGATE>& TDomainParticipant<DELEGATE>::operator << (const dds::domain::qos::DomainParticipantQos& the_qos)
+dds::domain::qos::DomainParticipantQos& TDomainParticipant<DELEGATE>::operator << (const dds::domain::qos::DomainParticipantQos& qos)
 {
-    this->delegate()->qos(the_qos);
-    return *this;
+    this->qos(qos);
+    return (dds::domain::qos::DomainParticipantQos&)this->qos();
 }
 
 template <typename DELEGATE>
-const TDomainParticipant<DELEGATE>& TDomainParticipant<DELEGATE>::operator >> (dds::domain::qos::DomainParticipantQos& the_qos) const
+const TDomainParticipant<DELEGATE>& TDomainParticipant<DELEGATE>::operator >> (dds::domain::qos::DomainParticipantQos& qos) const
 {
-    the_qos = this->delegate()->qos();
+    qos = this->qos();
     return *this;
 }
 
@@ -171,3 +179,4 @@ const TDomainParticipant<DELEGATE>& TDomainParticipant<DELEGATE>::operator >> (d
 // End of implementation
 
 #endif /* OSPL_DDS_DOMAIN_TDOMAINPARTICIPANT_HPP_ */
+

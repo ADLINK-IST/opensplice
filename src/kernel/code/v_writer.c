@@ -89,9 +89,10 @@ v_writeResultString(
 static void
 deadlineUpdate(
     v_writer writer,
-    v_writerInstance instance)
+    v_writerInstance instance,
+    c_time timestamp)
 {
-    v_deadLineInstanceListUpdate(writer->deadlineList, v_instance(instance));
+    v_deadLineInstanceListUpdate(writer->deadlineList, v_instance(instance), timestamp);
     instance->deadlineCount = 0;
 }
 
@@ -890,7 +891,7 @@ writerDispose(
     now = message->allocTime;
 #endif
 
-    if (c_timeIsZero(timestamp)) {
+    if (c_timeIsInvalid(timestamp)) {
         timestamp = now;
     }
 
@@ -977,7 +978,7 @@ writerDispose(
         v_state oldState = instance->state;
         message->writerInstanceGID = v_publicGid(v_public(instance));
         message->sequenceNumber = w->sequenceNumber++;
-        deadlineUpdate(w, instance);
+        deadlineUpdate(w, instance, now);
         v_stateSet(instance->state, L_DISPOSED);
 
         /* Now that all attributes of the message are populated, store the
@@ -1027,7 +1028,7 @@ writerUnregister(
     now = message->allocTime;
 #endif
 
-    if (c_timeIsZero(timestamp)) {
+    if (c_timeIsInvalid(timestamp)) {
         timestamp = now;
     }
 
@@ -1104,7 +1105,6 @@ writerUnregister(
         v_state oldState = instance->state;
         message->writerInstanceGID = v_publicGid(v_public(instance));
         message->sequenceNumber = w->sequenceNumber++;
-
         if (v_writerInstanceTestState(instance, L_EMPTY)) {
             result = writerWrite(instance,message,FALSE);
             if (v_writerInstanceTestState(instance, L_EMPTY)) {
@@ -1560,7 +1560,7 @@ v_writerEnable(
         kernel = v_objectKernel(writer);
         assert(kernel != NULL);
 
-        /* Register lease for liveliness check, iff duration not infinite.
+        /* Register lease for liveliness check, if duration not infinite.
          * When liveliness is AUTOMATIC, the liveliness is determined at
          * node level (i.e. splice daemon)
          */
@@ -1631,56 +1631,6 @@ reconnectToGroup(
     return TRUE;
 }
 
-
-void
-v_writerFree(
-    v_writer w)
-{
-    v_kernel kernel;
-    v_publisher p;
-    v_message builtinMsg;
-    v_message unregisterMsg;
-
-    assert(C_TYPECHECK(w,v_writer));
-
-    /* First create message, only at the end dispose. Applications expect
-       the disposed sample to be the last!
-       In the free algorithm the writer is unpublished from the partitions,
-       which also involves the production of the builtin topic.
-    */
-    v_observerLock(v_observer(w));
-
-    kernel = v_objectKernel(w);
-
-    builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
-    unregisterMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
-    v_observerUnlock(v_observer(w));
-
-    p = v_publisher(w->publisher);
-
-    if (w->deliveryGuard) {
-        v_deliveryGuardFree(w->deliveryGuard);
-        w->deliveryGuard = NULL;
-    }
-    v_leaseManagerDeregister(kernel->livelinessLM, w->livelinessLease);
-
-    if (p != NULL) {
-        v_participantResendManagerRemoveWriterBlocking(v_participant(p->participant), w);
-        v_publisherRemoveWriter(p,w);
-    } else {
-        OS_REPORT(OS_ERROR,"v_writerFree",0,
-                  "Unexpected invalid publisher");
-    }
-    v_writerGroupSetWalk(&w->groupSet,removeFromGroup,w);
-    v_writeDisposeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
-    c_free(builtinMsg);
-    v_unregisterBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, unregisterMsg);
-    c_free(unregisterMsg);
-
-    w->publisher = NULL;
-    v_observerFree(v_observer(w));
-}
-
 static c_bool
 instanceFree(
     c_object o,
@@ -1696,6 +1646,69 @@ instanceFree(
 }
 
 void
+v_writerFree(
+    v_writer w)
+{
+    v_kernel kernel;
+    v_publisher p;
+    v_message builtinMsg;
+    v_message unregisterMsg;
+
+    assert(C_TYPECHECK(w,v_writer));
+
+    /* A writer cannot dynamically change its Publisher, so not writer lock
+     * needed yet. We don't want to take the writer lock here, because that
+     * would lock the writer first, and then the publisher, while other
+     * functions like v_publisherAddWriter take the locks in reverse order.
+     */
+    p = v_publisher(w->publisher);
+    v_publisherRemoveWriter(p,w);
+    assert(p);
+
+    /* Before starting to destroy the writer, make sure its ResendManager
+     * has transmitted all pending samples. Because retransmissions will
+     * require the writer lock, wait with acquiring the writer lock till
+     * after successful completion of this call.
+     */
+    v_participantResendManagerRemoveWriterBlocking(v_participant(p->participant), w);
+
+    v_observerLock(v_observer(w));
+    kernel = v_objectKernel(w);
+
+    /* First create message, only at the end dispose. Applications expect
+       the disposed sample to be the last!
+       In the free algorithm the writer is unpublished from the partitions,
+       which also involves the production of the builtin topic.
+    */
+    builtinMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+    unregisterMsg = v_builtinCreatePublicationInfo(kernel->builtin,w);
+
+    if (w->deliveryGuard) {
+        v_deliveryGuardFree(w->deliveryGuard);
+        w->deliveryGuard = NULL;
+    }
+    v_deadLineInstanceListFree(w->deadlineList);
+
+    v_leaseManagerDeregister(kernel->livelinessLM, w->livelinessLease);
+
+    v_writerGroupSetWalk(&w->groupSet,removeFromGroup,w);
+
+    (void) c_tableWalk(w->instances,instanceFree,w); /* Always returns TRUE. */
+
+    v_observerUnlock(v_observer(w));
+
+    if (kernel->qos->builtin.enabled || (c_tableCount(w->instances) > 0) ) {
+        v_writeDisposeBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, builtinMsg);
+        v_unregisterBuiltinTopic(kernel, V_PUBLICATIONINFO_ID, unregisterMsg);
+    }
+    c_free(builtinMsg);
+    c_free(unregisterMsg);
+
+    w->publisher = NULL;
+    v_observerFree(v_observer(w));
+}
+
+void
 v_writerDeinit(
     v_writer w)
 {
@@ -1703,9 +1716,6 @@ v_writerDeinit(
         return;
     }
     assert(C_TYPECHECK(w,v_writer));
-
-    c_tableWalk(w->instances,instanceFree,w);
-    v_deadLineInstanceListFree(w->deadlineList);
     v_observerDeinit(v_observer(w));
 }
 
@@ -1957,7 +1967,7 @@ v_writerRegister(
         now = message->allocTime;
 #endif
 
-    if (c_timeIsZero(timestamp)) {
+    if (c_timeIsInvalid(timestamp)) {
         timestamp = now;
     }
 
@@ -2003,10 +2013,9 @@ v_writerRegister(
         }
         if (result == V_WRITE_SUCCESS) {
             v_publicInit(v_public(instance));
-            deadlineUpdate(w, instance);
+            deadlineUpdate(w, instance, now);
             message->writerInstanceGID = v_publicGid(v_public(instance));
             message->sequenceNumber = w->sequenceNumber++;
-
             result = writerWrite(instance,message,TRUE);
             /* The writer statistics are updated for the newly inserted
             * instance (with its initial values). The previous state
@@ -2120,7 +2129,7 @@ v_writerWrite(
         now = message->allocTime;
 #endif
 
-    if (c_timeIsZero(timestamp)) {
+    if (c_timeIsInvalid(timestamp)) {
         timestamp = now;
     }
 
@@ -2238,7 +2247,7 @@ v_writerWrite(
         }
 #endif
         v_stateClear(instance->state, L_DISPOSED);
-        deadlineUpdate(w, instance);
+        deadlineUpdate(w, instance, now);
         UPDATE_WRITER_STATISTICS(w, instance, oldState);
     } else if (result == V_WRITE_TIMEOUT){
         v_statisticsULongValueInc(v_writer, numberOfTimedOutWrites, w);
@@ -2360,7 +2369,7 @@ v_writerWriteDispose(
         now = message->allocTime;
 #endif
 
-    if (c_timeIsZero(timestamp)) {
+    if (c_timeIsInvalid(timestamp)) {
         timestamp = now;
     }
 
@@ -2441,7 +2450,7 @@ v_writerWriteDispose(
         v_state oldState = instance->state;
         message->writerInstanceGID = v_publicGid(v_public(instance));
         message->sequenceNumber = w->sequenceNumber++;
-        deadlineUpdate(w, instance);
+        deadlineUpdate(w, instance, now);
         v_stateSet(instance->state, L_DISPOSED);
         if (v_writerIsSynchronous(w)) {
             waitlist = v_deliveryWaitListNew(w->deliveryGuard,message);
@@ -2883,6 +2892,11 @@ v_writerCheckDeadlineMissed(
     instance = v_writerInstance(c_iterTakeFirst(missed));
     while (instance != NULL) {
         instance->deadlineCount++;
+
+        /* The deadlineCountlimit drives the behavior of the auto_unregister policy of the writer. It piggybacks
+         * on the deadline mechanism and uses the deadlineCountLimit to express the ratio between deadline period and
+         * autounregister period.
+         */
         if (instance->deadlineCount == w->deadlineCountLimit) { /* unregister */
             message = v_writerInstanceCreateMessage(instance);
             writerUnregister(w, message, now, instance);
@@ -3149,6 +3163,8 @@ v_writerCoherentEnd (
                 result = V_RESULT_PRECONDITION_NOT_MET;
             }
             c_free(instance);
+        } else {
+            result = V_RESULT_OK;
         }
         /* Even if the transactionsLastMessage is NULL (indicating that no samples
          * were sent during the transaction), the transaction should still be ended

@@ -24,7 +24,7 @@ sleep 2
 
 sleep 2
 
-./ping $BLOKCOUNT $BLOKSIZE b PongRead PongWrite
+./ping $BLOKCOUNT $BLOKSIZE a PongRead PongWrite
 
 sleep 2
 

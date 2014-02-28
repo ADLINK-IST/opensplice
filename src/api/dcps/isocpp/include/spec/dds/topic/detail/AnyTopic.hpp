@@ -25,13 +25,20 @@
 #include <dds/topic/qos/TopicQos.hpp>
 #include <dds/topic/detail/AnyTopicDescription.hpp>
 
-namespace dds { namespace topic { namespace detail {
+namespace dds
+{
+namespace topic
+{
+namespace detail
+{
 
-  class THolderBase;
+class THolderBase;
 
-  template <typename T>
-  class THolder;
-  // Vendors should provide implementation.
-} } }
+template <typename T>
+class THolder;
+// Vendors should provide implementation.
+}
+}
+}
 
 #endif /* OMG_DDS_TOPIC_DETAIL_ANY_TOPIC_HPP_ */

@@ -19,7 +19,7 @@
 #define OS_SOCK_REVISION        0
 #include "os_report.h"
 #include "os_if.h"
-#ifdef OSPL_BUILD_OSNET
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT

@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 package org.opensplice.cm.meta;
@@ -17,15 +17,15 @@ import java.util.LinkedHashMap;
 import java.util.StringTokenizer;
 
 /**
- * Represents a type of a Splice database object (c_type). 
- * 
- * This object can be used to get information about the structure of data and
- * so it enables the possibility to read/write data of this type.
+ * Represents a type of a Splice database object (c_type).
+ *
+ * This object can be used to get information about the structure of data and so
+ * it enables the possibility to read/write data of this type.
  */
 public class MetaType {
     /**
      * Constructs new MetaType.
-     */   
+     */
     public MetaType(String xmlType){
         isValid = false;
         mayFinalize = true;
@@ -34,7 +34,7 @@ public class MetaType {
         this.xmlType = xmlType;
         this.normalizeXMLType();
     }
-    
+
     private void normalizeXMLType(){
         boolean inTag = false;
         boolean inCloseTag = false;
@@ -42,14 +42,14 @@ public class MetaType {
         StringWriter writer = new StringWriter();
         char[] chars = this.xmlType.toCharArray();
         char cur;
-        
+
         for(int i=0; i<chars.length; i++){
             cur = chars[i];
-            
+
             if(inTag){
                 if(cur == '>'){
                     inTag = false;
-                    
+
                     if(inCloseTag){
                         inCloseTag = false;
                     } else {
@@ -69,9 +69,9 @@ public class MetaType {
                 }
             } else {
                 if(cur == ' '){
-                    
+
                 } else if(cur == '\n'){
-                    
+
                 } else {
                     writer.write(cur);
                 }
@@ -79,76 +79,72 @@ public class MetaType {
         }
         this.xmlType = writer.toString();
     }
-    
+
     /**
      * Adds a typedef to the type.
-     * 
-     * @param typedefName The name of the typedef.
-     * @param field The field that is 'typedeffed'.
+     *
+     * @param typedefName
+     *            The name of the typedef.
+     * @param field
+     *            The field that is 'typedeffed'.
      */
     public void addTypedef(String typedefName, MetaField field){
         typedefs.put(field, typedefName);
     }
-    
+
     /**
      * Provides access to all typedefs in the type.
-     * 
+     *
      * @return A hashmap that contains all typedefs in the type.
      */
     public LinkedHashMap<MetaField, String> getTypedefs() {
         return typedefs;
     }
-    
+
     /**
      * Provides access to the name of the typedef in this type.
-     * 
-     * @param field The field to look the typedef for.
-     * @return The name of the typedef if the field is indeed typedeffed or
-     *         null otherwise.
+     *
+     * @param field
+     *            The field to look the typedef for.
+     * @return The name of the typedef if the field is indeed typedeffed or null
+     *         otherwise.
      */
     public String getFieldTypedefName(MetaField field){
         return (typedefs.get(field));
     }
-    
+
     /**
      * Provides access to the isValid boolean.
-     * 
+     *
      * @return true if the type is valid, false otherwise.
      */
     public boolean isValid(){
         return isValid;
     }
-    
+
     /**
      * Assigns the supplied field to the type.
-     * 
-     * @param field The field to assign to this type.
+     *
+     * @param field
+     *            The field to assign to this type.
      */
     public void setField(MetaField field){
         metaField = field;
-        
+
     }
-    
+
     /**
      * Provides access to the field in the type with the supplied name.
-     * 
+     *
      * Nested names are allowed.Example
-     * @verbatim
-       IDL:
-       module my_mod{
-           struct my_structure{
-               long a;
-               struct my_inner_struct{
-                   long b;             
-               } my_struct;
-           };
-       };
-     * @endverbatim
-     * Fields in this type can be accessed as:
-     * - my_structure.a
-     * - my_structure.my_struct.b
-     * 
-     * @param fieldName The name of the field the resolve the value of.
+     *
+     * @verbatim IDL: module my_mod{ struct my_structure{ long a; struct
+     *           my_inner_struct{ long b; } my_struct; }; };
+     * @endverbatim Fields in this type can be accessed as: - my_structure.a -
+     *              my_structure.my_struct.b
+     *
+     * @param fieldName
+     *            The name of the field the resolve the value of.
      * @return The field associated with the supplied fieldname or null if it
      *         cannot be found.
      */
@@ -157,108 +153,114 @@ public class MetaType {
         MetaField current = metaField;
         MetaField temp;
         String token;
-        
+
         while(tokenizer.hasMoreTokens()){
-             token = tokenizer.nextToken();
-            
-             temp = current.getField(token);
-             
-             if((temp != null) && (tokenizer.hasMoreTokens())){
+            token = tokenizer.nextToken();
+
+            temp = current.getField(token);
+
+            if((temp != null) && (tokenizer.hasMoreTokens())){
                 current = temp;
-             }
-             else if(temp != null){
-                 return temp;
-             }
-             else if((temp == null) && (tokenizer.hasMoreTokens())){
-                 return null;
-             }
-             else{
-                 /* Maybe it is a subType, continue search
-                  * it should look like: memberName[i][j]
-                  */
-                 StringTokenizer tokenizer2 = new StringTokenizer(token, "[");
-                 int depth = tokenizer2.countTokens() - 1;
+            }
+            else if(temp != null){
+                return temp;
+            }
+            if ((temp != null) && (tokenizer.hasMoreTokens())) {
+                current = temp;
+            }
+            else{
+                /* Maybe it is a subType, continue search
+                 * it should look like: memberName[i][j]
+                 */
+                StringTokenizer tokenizer2 = new StringTokenizer(token, "[");
+                int depth = tokenizer2.countTokens() - 1;
 
-                 if(depth > 0){
-                     String token2 = tokenizer2.nextToken();
-                     temp = current.getField(token2);
+                if(depth > 0){
+                    String token2 = tokenizer2.nextToken();
+                    temp = current.getField(token2);
 
-                     for(int i=0; i<depth; i++){
-                         if(temp != null){
-                             if(temp instanceof MetaCollection){
-                                 temp = ((MetaCollection)temp).getSubType();
-                             }
-                             else{
-                                 return null;
-                             }
-                         }
-                         else{
-                             return null;
-                         }
-                     }
-                 }
-                 return temp;
-             }
+                    for(int i=0; i<depth; i++){
+                        if(temp != null){
+                            if(temp instanceof MetaCollection){
+                                temp = ((MetaCollection)temp).getSubType();
+                            }
+                            else{
+                                return null;
+                            }
+                        }
+                        else{
+                            return null;
+                        }
+                    }
+                }
+                if (!tokenizer.hasMoreTokens()) {
+                    return temp;
+                } else {
+                    if (temp != null) {
+                        current = temp;
+                    }
+                }
+            }
         }
         return null;
     }
-    
+
     /**
      * Provides access to all fieldnames in the type.
-     * 
+     *
      * @return The array of all fieldnames in the type.
-     */    
+     */
     public String[] getFieldNames(){
         String[] result;
         MetaField[] fields = metaField.getFields();
         ArrayList<Object> alist = new ArrayList<Object>();
-        
+
         for(int i=0; i<fields.length; i++){
             alist.addAll(fields[i].getFieldNames());
-            
+
         }
         result = (alist.toArray(new String[1]));
-        
+
         return result;
     }
-    
+
     /**
      * Provides access to all fields in the root field.
-     * 
+     *
      * @return The array of fields in the root field.
-     */ 
+     */
     public MetaField[] getFields(){
         return metaField.getFields();
     }
-    
+
     /**
      * Provides access to the root field.
-     * 
+     *
      * @return The root field of the data.
      */
     public MetaField getRootField(){
         return metaField;
     }
-    
+
     /**
      * Function to notify that the type will not be correct and/or complete
-     * after deserialization. 
-     * 
-     * After calling this function, a call to finalizeType will
-     * NOT result in setting the isValid field to true.
-     * 
+     * after deserialization.
+     *
+     * After calling this function, a call to finalizeType will NOT result in
+     * setting the isValid field to true.
+     *
      * @see finalizeType
      */
     public void mayNotBeFinalized(){
         mayFinalize = false;
     }
-    
+
     /**
-     * Finalizes the type by setting the isValid field. If the 
-     * mayNotBeFinalized() function has been called prior to calling
-     * this function, this will not result in a valid type and false will be
+     * Finalizes the type by setting the isValid field. If the
+     * mayNotBeFinalized() function has been called prior to calling this
+     * function, this will not result in a valid type and false will be
      * returned.
-     * 
+     *
      * @return true if the type is valid, false otherwise.
      * @see mayNotBeFinalized()
      */
@@ -268,15 +270,15 @@ public class MetaType {
         }
         return isValid;
     }
-    
+
     public String toXML(){
         return this.xmlType;
     }
-    
+
     @Override
     public boolean equals(Object obj){
         boolean result = false;
-        
+
         if(obj instanceof MetaType){
             if(((MetaType)obj).toXML().equals(this.xmlType)){
                 result = true;
@@ -284,7 +286,7 @@ public class MetaType {
         }
         return result;
     }
-    
+
     @Override
     public int hashCode() {
         int var_gen_code;
@@ -577,27 +579,26 @@ public class MetaType {
      * The root field in the type.
      */
     private MetaField metaField;
-    
+
     /**
-     * Boolean that specifies if the type is valid.
-     * This field is used by the deserializer, so it can specify if the type
-     * could be completely deserialized. If this is not the case, this field 
-     * will be false. 
-     */ 
+     * Boolean that specifies if the type is valid. This field is used by the
+     * deserializer, so it can specify if the type could be completely
+     * deserialized. If this is not the case, this field will be false.
+     */
     private boolean mayFinalize;
-    
+
     /**
      * Boolean that specifies if the type is complete and correct
      * This is used to catch unknown types in the deserializer. In the
      * future it is not necessary anymore.
      */
     private boolean isValid;
-    
+
     /**
      * Ordered HashMap that contains all typedefs in the type.
      * (<MetaField field, String typedefName>)
      */
     private final LinkedHashMap<MetaField, String> typedefs;
-    
+
     private String xmlType;
 }

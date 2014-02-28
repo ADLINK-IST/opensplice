@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stddef.h>
+#include <assert.h>
 
 #include "os_defs.h"
 #include "os_heap.h"
@@ -9,7 +10,7 @@
 #include "v_groupSet.h"
 #include "kernelModule.h"
 
-#include "q_avl.h"
+#include "ut_avl.h"
 #include "q_log.h"
 #include "q_config.h"
 #include "q_xqos.h"
@@ -23,14 +24,19 @@
 #define UNLOCK(gs) (os_mutexUnlock (&((struct nn_groupset *) (gs))->lock))
 
 struct nn_groupset_entry {
-  STRUCT_AVLNODE (nn_groupset_entry_avlnode, struct nn_groupset_entry *) avlnode;
+  ut_avlNode_t avlnode;
   v_group group;
 };
 
 struct nn_groupset {
   os_mutex lock;
-  STRUCT_AVLTREE (nn_groupset_avltree, struct nn_groupset_entry *) grouptree;
+  ut_avlTree_t grouptree;
 };
+
+static int compare_group_ptr (const void *va, const void *vb);
+
+static const ut_avlTreedef_t grouptree_treedef =
+  UT_AVL_TREEDEF_INITIALIZER (offsetof (struct nn_groupset_entry, avlnode), offsetof (struct nn_groupset_entry, group), compare_group_ptr, 0);
 
 static int compare_group_ptr (const void *va, const void *vb)
 {
@@ -41,15 +47,14 @@ static int compare_group_ptr (const void *va, const void *vb)
 
 static int add_group (struct nn_groupset *gs, v_group g)
 {
-  avlparent_t parent;
-  if (avl_lookup (&gs->grouptree, &g, &parent) == NULL)
+  ut_avlIPath_t path;
+  if (ut_avlLookupIPath (&grouptree_treedef, &gs->grouptree, &g, &path) == NULL)
   {
     struct nn_groupset_entry *e;
     if ((e = os_malloc (sizeof (*e))) == NULL)
       return ERR_OUT_OF_MEMORY;
-    avl_init_node (&e->avlnode, parent);
     e->group = g;
-    avl_insert (&gs->grouptree, e);
+    ut_avlInsertIPath (&grouptree_treedef, &gs->grouptree, e, &path);
   }
   return 0;
 }
@@ -79,7 +84,7 @@ struct nn_groupset *nn_groupset_new (void)
   if ((gs = os_malloc (sizeof (*gs))) == NULL)
     return NULL;
   os_mutexInit (&gs->lock, &gv.mattr);
-  avl_init (&gs->grouptree, offsetof (struct nn_groupset_entry, avlnode), offsetof (struct nn_groupset_entry, group), compare_group_ptr, 0);
+  ut_avlInit (&grouptree_treedef, &gs->grouptree);
   return gs;
 }
 
@@ -109,7 +114,7 @@ int nn_groupset_fromqos (struct nn_groupset *gs, v_kernel kernel, const nn_xqos_
 
 void nn_groupset_free (struct nn_groupset *gs)
 {
-  avl_free (&gs->grouptree, os_free);
+  ut_avlFree (&grouptree_treedef, &gs->grouptree, os_free);
   os_mutexDestroy (&gs->lock);
   os_free (gs);
 }
@@ -119,7 +124,7 @@ int nn_groupset_foreach (const struct nn_groupset *gs, nn_groupset_foreach_t f, 
   struct nn_groupset_entry *e;
   int result = 0;
   LOCK (gs);
-  for (e = avl_findmin (&gs->grouptree); e && result >= 0; e = avl_findsucc (&gs->grouptree, e))
+  for (e = ut_avlFindMin (&grouptree_treedef, &gs->grouptree); e && result >= 0; e = ut_avlFindSucc (&grouptree_treedef, &gs->grouptree, e))
   {
     int r;
     if ((r = f (e->group, arg)) < 0)
@@ -159,7 +164,7 @@ int nn_groupset_empty (const struct nn_groupset *gs)
 {
   int res;
   LOCK (gs);
-  res = avl_empty (&gs->grouptree);
+  res = ut_avlIsEmpty (&gs->grouptree);
   UNLOCK (gs);
   return res;
 }

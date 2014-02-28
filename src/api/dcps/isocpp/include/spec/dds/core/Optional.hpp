@@ -20,26 +20,30 @@
  * limitations under the License.
  */
 
-namespace dds { namespace core {
+namespace dds
+{
+namespace core
+{
 
-  /**
-   * The optional class is used to wrap attributes annotated with the
-   * \@optional annotation. This class provides a simple and safe way of
-   * accessing, setting and resetting the stored attribute.
-   */
-  template <typename T, template <typename Q> class DELEGATE>
-  class optional : public dds::core::Value< DELEGATE<T> > {
-  public:
+/**
+ * The optional class is used to wrap attributes annotated with the
+ * \@optional annotation. This class provides a simple and safe way of
+ * accessing, setting and resetting the stored attribute.
+ */
+template <typename T, template <typename Q> class DELEGATE>
+class optional : public dds::core::Value< DELEGATE<T> >
+{
+public:
     optional(const T& t);
 
-  public:
+public:
     /**
      * Returns true only if the attribute is set.
      */
     bool is_set() const;
 
     /**
-     * Reset the attribute
+     * Reset the attribute.
      */
     void reset();
 
@@ -52,7 +56,8 @@ namespace dds { namespace core {
      *  Get the attribute. An exception is thrown if the attribute is not set.
      */
     T& get();
-  };
+};
 
-} }
+}
+}
 #endif /* OMG_DDS_CORE_OPTIONAL_HPP_ */

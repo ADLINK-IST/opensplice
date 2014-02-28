@@ -13,8 +13,8 @@
 #include "ccpp_ListenerUtils.h"
 
 DDS::Topic_impl::Topic_impl(gapi_topic handle) :
-  DDS::TopicDescription_impl(handle),
-  DDS::Entity_impl (handle)
+  DDS::Entity_impl (handle),
+  DDS::TopicDescription_impl(handle)
 {
   os_mutexAttr mutexAttr = { OS_SCOPE_PRIVATE };
   if (os_mutexInit(&t_mutex, &mutexAttr) != os_resultSuccess)
@@ -87,7 +87,7 @@ DDS::ReturnCode_t DDS::Topic_impl::set_qos (
   const DDS::TopicQos & qos
 ) THROW_ORB_EXCEPTIONS
 {
-  DDS::ReturnCode_t result;
+  DDS::ReturnCode_t result = DDS::RETCODE_ERROR;
   if (&qos == &DDS::DefaultQos::TopicQosDefault.in())
   {
     result = gapi_topic_set_qos( _gapi_self, GAPI_TOPIC_QOS_DEFAULT );
@@ -112,7 +112,7 @@ DDS::ReturnCode_t DDS::Topic_impl::set_qos (
 DDS::TopicListener_ptr DDS::Topic_impl::get_listener (
 ) THROW_ORB_EXCEPTIONS
 {
-  DDS::TopicListener_ptr result;
+  DDS::TopicListener_ptr result = 0;
   gapi_topicListener gapi_listener;
   if (os_mutexLock(&t_mutex) == os_resultSuccess)
   {
@@ -139,7 +139,7 @@ DDS::TopicListener_ptr a_listener,
 DDS::StatusMask mask
 ) THROW_ORB_EXCEPTIONS
 {
-    DDS::ReturnCode_t result;
+    DDS::ReturnCode_t result = DDS::RETCODE_ERROR;
     gapi_topicListener * gapi_listener = NULL;
     if (mask & ALL_DATA_DISPOSED_TOPIC_STATUS
         && dynamic_cast<DDS::ExtTopicListener *>(a_listener) == NULL)
@@ -161,7 +161,7 @@ DDS::StatusMask mask
              if (result == DDS::RETCODE_OK)
              {
                 DDS::ccpp_UserData_ptr myUD;
-                myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
+                myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(_gapi_self));
                 if (myUD)
                 {
                    myUD->setListener(a_listener);

@@ -25,40 +25,55 @@ jni_topicNew(
     v_topicQos qos)
 {
     jni_topic topic;
-    u_topic ut;
-    size_t size, temp;
     
-    topic = NULL;
+    assert(name);
+    assert(typeName);
     
-    if((p != NULL) && (p->uparticipant != NULL)){
-        ut = u_topicNew(p->uparticipant, name, typeName, keyList, qos);
-        
-        if(ut != NULL){
-            temp = 1;
-            topic = jni_topic(os_malloc((size_t)(C_SIZEOF(jni_topic))));
-            topic->utopic = ut;
-            
-            size = (size_t)(strlen(name) + temp);
-            jni_topicDescription(topic)->name = (char*)(os_malloc(size));
-           os_strncpy(jni_topicDescription(topic)->name, name, size);
-            
-            size = (size_t)(strlen(typeName) + temp);
-            jni_topicDescription(topic)->typeName = (char*)(os_malloc(size));
-           os_strncpy(jni_topicDescription(topic)->typeName, typeName, size);
-            
-            if(keyList != NULL){
-                size = (size_t)(strlen(keyList) + temp);
-                jni_topicDescription(topic)->keyList = (char*)(os_malloc(size));
-               os_strncpy(jni_topicDescription(topic)->keyList, keyList, size);
-            }
-            else{
-                jni_topicDescription(topic)->keyList = NULL;
-            }
-            
-            jni_topicDescription(topic)->participant = p;
-        }
+    if((p == NULL) || (p->uparticipant == NULL)){
+        goto err_badParam;
     }
+
+    if((topic = os_malloc(sizeof *topic)) == NULL){
+        goto err_mallocTopic;
+    }
+
+    jni_topicDescription(topic)->participant = p;
+
+    if((topic->utopic = u_topicNew(p->uparticipant, name, typeName, keyList, qos)) == NULL){
+        goto err_u_topicNew;
+    }
+
+    if((jni_topicDescription(topic)->name = os_strdup(name)) == NULL){
+        goto err_strdupName;
+    }
+
+    if((jni_topicDescription(topic)->typeName = os_strdup(typeName)) == NULL){
+        goto err_strdupTypeName;
+    }
+
+    if(keyList){
+        if((jni_topicDescription(topic)->keyList = os_strdup(keyList)) == NULL){
+            goto err_strdupKeyList;
+        }
+    } else  {
+        jni_topicDescription(topic)->keyList = NULL;
+    }
+
     return topic;
+
+/* Error handling */
+err_strdupKeyList:
+    os_free(jni_topicDescription(topic)->typeName);
+err_strdupTypeName:
+    os_free(jni_topicDescription(topic)->name);
+err_strdupName:
+    /* Ignore return value since we are already in an error condition. */
+    (void) u_topicFree(topic->utopic);
+err_u_topicNew:
+    os_free(topic);
+err_mallocTopic:
+err_badParam:
+    return NULL;
 }    
 
 jni_result

@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 package org.opensplice.common.model.table;
@@ -23,14 +23,14 @@ import org.opensplice.common.controller.AssignmentResult;
 import org.opensplice.common.controller.UserDataEditTableEditor;
 
 /**
- * Table model which contains one instance of UserData and offers facilities to 
+ * Table model which contains one instance of UserData and offers facilities to
  * edit the values of the fields in the data.
  * 
- * @date Oct 28, 2004 
+ * @date Oct 28, 2004
  */
 public class UserDataEditTableModel extends UserDataSingleTableModel {
     /**
-     * 
+     *
      */
     private static final long serialVersionUID = -4385577459386129238L;
 
@@ -45,19 +45,21 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
     public UserDataEditTableModel(MetaType _userDataType) {
         super(_userDataType, true);
     }
-    
+
     public UserDataEditTableModel(MetaType _userDataType, String _struct) {
         super(_userDataType, true, _struct);
     }
-    
+
     /**
      * Called when user wants to edit a field in the table.
      * 
      * Returns true if the user wants to edit one of the value fields and the
-     *         editor is set, false otherwise.
+     * editor is set, false otherwise.
      * 
-     * @param row The row to edit.
-     * @param column The column to edit.
+     * @param row
+     *            The row to edit.
+     * @param column
+     *            The column to edit.
      * @return true if editable, false otherwise.
      */
     @Override
@@ -70,14 +72,11 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
                 result = true;
             } else if (ud.isUnboundedSequence(name) && rows > 1) {
                 result = false;
-            } 
+            }
             else if (ud.isCollection(name) && rows >1 && structName != null) {
                 result = false;
             }
             else if(editor == null){
-                result = false;
-            }
-            else if(column < 2){
                 result = false;
             }
             else{
@@ -88,7 +87,7 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
         }
         return result;
     }
-    
+
     /**
      * Provides access to the UserData, that is currently in the table.
      * 
@@ -99,14 +98,14 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
         if(editor != null){
             AssignmentResult result = editor.testAssignment(false);
             editor.stopCellEditing();
-            
+
             if(!result.isValid()){
                 throw new CommonException(result.getErrorMessage());
             }
         }
         return ud;
     }
-    
+
     /**
      * Provides stops the table edit so edited data can be written.
      * 
@@ -122,14 +121,15 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
             }
         }
     }
-    
+
     /**
      * Sets the supplied data in the model.
      * 
-     * @param data The data to administrate in this model.
-     * @return true if the data != null and the type of the data equals the
-     *              type of this model.
-     * @todo TODO: Compare data types. 
+     * @param data
+     *            The data to administrate in this model.
+     * @return true if the data != null and the type of the data equals the type
+     *         of this model.
+     * @todo TODO: Compare data types.
      */
 
     public boolean setData(UserData data, String colName, int index) {
@@ -227,7 +227,7 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
         }
         return result;
     }
-    
+
     @Override
     public boolean setData(Sample sample, String colName) {
         UserData data;
@@ -283,7 +283,8 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
     /**
      * Sets the supplied editor as the editor for data in this model.
      * 
-     * @param _editor The new editor.
+     * @param _editor
+     *            The new editor.
      */
     public void setEditor(UserDataEditTableEditor _editor){
         editor = _editor;
@@ -295,13 +296,12 @@ public class UserDataEditTableModel extends UserDataSingleTableModel {
             this.setValueAt("", i, 2);
         }
     }
-    
 
-        
+
     /**
-     * The editor that offers the cell editors and validates input. 
+     * The editor that offers the cell editors and validates input.
      */
     protected UserDataEditTableEditor editor;
 
-    
+
 }

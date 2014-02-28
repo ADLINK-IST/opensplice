@@ -75,6 +75,10 @@ splicedGetServiceInfo(
     spliced spliceDaemon,
     const c_char *name);
 
+void
+splicedRemoveKnownService(
+    const c_char *name);
+
 #undef OS_API
 
 #if defined (__cplusplus)

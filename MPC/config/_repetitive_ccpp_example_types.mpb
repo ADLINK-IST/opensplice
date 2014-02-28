@@ -12,11 +12,6 @@ feature(!src_co, ospl_dcpsccpp, !no_tao) : ccpp_typesupport, _example_dcps_type_
         ../../idl
     }
 
-    Modify_Custom(TypeSupport) {
-        generic_pre_extension = Dcps
-        generic_outputext     = .idl
-    }
-
     TypeSupport_Files {
         gendir = .
         ../../idl
@@ -35,11 +30,6 @@ feature(src_co, ospl_dcpsccpp, !no_tao) : ccpp_typesupport, _example_dcps_type_l
     IDL_Files {
         gendir = .
         ../../idl
-    }
-
-    Modify_Custom(TypeSupport) {
-        generic_pre_extension = Dcps
-        generic_outputext     = .idl
     }
 
     TypeSupport_Files {

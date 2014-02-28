@@ -38,6 +38,8 @@ SAJ_FUNCTION(jniGetInstance)(
     char* ldPreload;
     jParticipantFactory = NULL;
 
+    OS_UNUSED_ARG(jDomainParticipantFactory);
+
     ldPreload = os_getenv("LD_PRELOAD");
 
     if(ldPreload){
@@ -223,13 +225,10 @@ SAJ_FUNCTION(jniDeleteParticipant) (
     gapi_returnCode_t rc;
     gapi_domainParticipantFactory factory;
     gapi_domainParticipant participant;
-    saj_userData ud;
     c_bool must_free;
 
     factory = (gapi_domainParticipantFactory)saj_read_gapi_address(env, this);
     participant = (gapi_domainParticipant)saj_read_gapi_address(env, jParticipant);
-
-    ud = gapi_object_get_user_data(participant);
 
     must_free = saj_setThreadEnv(env);
     rc = gapi_domainParticipantFactory_delete_participant(factory, participant);
@@ -378,6 +377,8 @@ SAJ_FUNCTION(jniGetQos) (
             }
         }
         gapi_free(gapiQos);
+    } else {
+        result = GAPI_RETCODE_BAD_PARAMETER;
     }
     return (jint)result;
 }

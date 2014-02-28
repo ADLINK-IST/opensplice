@@ -40,13 +40,14 @@ cmx_serviceStateKindToString(
     r = NULL;
     
     switch(stateKind){
-        case STATE_NONE:            r = "NONE";         break;
-        case STATE_INITIALISING:    r = "INITIALISING"; break;
-        case STATE_OPERATIONAL:     r = "OPERATIONAL";  break;
-        case STATE_TERMINATING:     r = "TERMINATING";  break;
-        case STATE_TERMINATED:      r = "TERMINATED";   break;
-        case STATE_DIED:            r = "DIED";         break;
-        default:                    assert(FALSE);      break;
+        case STATE_NONE:                        r = "NONE";         break;
+        case STATE_INITIALISING:                r = "INITIALISING"; break;
+        case STATE_OPERATIONAL:                 r = "OPERATIONAL";  break;
+        case STATE_INCOMPATIBLE_CONFIGURATION:  r = "INCOMPATIBLE_CONFIGURATION"; break;
+        case STATE_TERMINATING:                 r = "TERMINATING";  break;
+        case STATE_TERMINATED:                  r = "TERMINATED";   break;
+        case STATE_DIED:                        r = "DIED";         break;
+        default:                                assert(FALSE);      break;
     }
     return r;
 }
@@ -63,6 +64,8 @@ cmx_serviceStateKindFromString(
         result = STATE_INITIALISING;
     } else if(strcmp(stateKind, "OPERATIONAL") == 0){
         result = STATE_OPERATIONAL;
+    } else if(strcmp(stateKind, "INCOMPATIBLE_CONFIGURATION") == 0){
+        result = STATE_INCOMPATIBLE_CONFIGURATION;
     } else if(strcmp(stateKind, "TERMINATING") == 0){
         result = STATE_TERMINATING;
     } else if(strcmp(stateKind, "TERMINATED") == 0){

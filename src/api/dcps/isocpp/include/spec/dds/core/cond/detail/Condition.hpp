@@ -21,14 +21,18 @@
 
 #include <dds/core/cond/TCondition.hpp>
 #include <foo/bar/core/cond/ConditionImpl.hpp>
-namespace dds {
-  namespace core {
-    namespace cond {
-      namespace detail {
-        typedef dds::core::cond::TCondition<foo::bar::core::cond::Condition> Condition;
-      }
-    }
-  }
+namespace dds
+{
+namespace core
+{
+namespace cond
+{
+namespace detail
+{
+typedef dds::core::cond::TCondition<foo::bar::core::cond::Condition> Condition;
+}
+}
+}
 }
 
 #endif  /* OMG_DDS_CORE_CONDITION_DETAIL_HPP_ */

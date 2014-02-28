@@ -13,11 +13,6 @@ feature(ospl_dcpsccpp, !no_tao) : taoidldefaults, taolib, dcps_typesupport_base,
 
   splice_ts_flags += \
     -C -l cpp -b CCPP<%slash%>$(SPLICE_ORB)
-
-  Modify_Custom(TypeSupport) {
-        generic_pre_extension = Dcps
-        generic_outputext     = .idl
-  }
 }
 
 feature(!src_co, !no_tao) {

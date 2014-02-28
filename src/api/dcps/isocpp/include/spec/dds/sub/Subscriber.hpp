@@ -22,7 +22,11 @@
 
 #include <dds/sub/detail/Subscriber.hpp>
 
-namespace dds { namespace sub {
-  typedef ::dds::sub::detail::Subscriber Subscriber;
-} }
+namespace dds
+{
+namespace sub
+{
+typedef ::dds::sub::detail::Subscriber Subscriber;
+}
+}
 #endif /* OMG_DDS_SUB_SUBSCRIBER_HPP_ */

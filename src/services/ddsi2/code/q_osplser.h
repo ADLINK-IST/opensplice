@@ -82,7 +82,7 @@ extern topic_t osplser_topicpmd;
 extern c_type osplser_topicpmd_type;
 extern c_type osplser_topicpmd_value_type;
 
-int osplser_init (void *base);
+int osplser_init (void);
 void osplser_fini (void);
 
 topic_t deftopic (C_STRUCT(v_topic) const * const ospl_topic, const char *keystr);

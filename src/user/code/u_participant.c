@@ -57,15 +57,7 @@ leaseManagerMain(
     {
         assert(kp);
         lm = v_participantGetLeaseManager(kp);
-        OS_REPORT_1(OS_INFO,
-                    "u_participant::leaseManagerMain", 1,
-                    "Lease Manager for Participant 0x%x started",
-                    _this);
         v_leaseManagerMain(lm);
-        OS_REPORT_1(OS_INFO,
-                    "u_participant::leaseManagerMain", 1,
-                    "Lease Manager for Participant 0x%x stopped",
-                    _this);
         c_free(lm);
         u_entityRelease(u_entity(_this));
     } else {
@@ -87,15 +79,7 @@ resendManagerMain(
     if(result == U_RESULT_OK)
     {
         assert(kp);
-        OS_REPORT_1(OS_INFO,
-                    "u_participant::resendManagerMain", 1,
-                    "Resend Manager for Participant 0x%x started",
-                    _this);
         v_participantResendManagerMain(kp);
-        OS_REPORT_1(OS_INFO,
-                    "u_participant::resendManagerMain", 1,
-                    "Resend Manager for Participant 0x%x stopped",
-                    _this);
         u_entityRelease(u_entity(_this));
     } else {
         OS_REPORT(OS_WARNING, "u_participant::resendManagerMain", 0,

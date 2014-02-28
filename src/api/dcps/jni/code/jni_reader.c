@@ -27,6 +27,7 @@
 #include "jni_reader.h"
 #include "jni_misc.h"
 #include "os.h"
+#include "os_report.h"
 #include "os_heap.h"
 
 static v_actionResult jni_readerSerializeData(c_object o, c_voidp copyArg);
@@ -37,49 +38,58 @@ jni_readerNew(
     jni_topicDescription top,
     v_readerQos qos)
 {
-    u_dataReader uDataReader;
     jni_reader reader;
-    char* expr;
+    char *expr;
+    const char *select = "select * from ";
     q_expr qexpr;
-    size_t size, st;
-    jni_entityKernelArg kernelArg;
+    size_t size;
 
-    reader = NULL;
+    assert(sub);
+    assert(sub->participant);
+    assert(sub->usubscriber);
+    assert(sub->participant->uparticipant);
+    assert(top);
+    assert(top->name);
 
-    if( (sub != NULL) &&
-        (sub->participant != NULL) &&
-        (sub->usubscriber != NULL) &&
-        (sub->participant->uparticipant != NULL)){
-
-        st = 15;
-        size = (size_t)((strlen(top->name)) + st);
-        expr = (char*)(os_malloc(size));
-        snprintf(expr, size, "select * from %s", top->name);
-        qexpr = q_parse(expr);
-        os_free(expr);
-
-        if(qexpr != NULL){
-            kernelArg = jni_entityKernelArg(os_malloc(C_SIZEOF(jni_entityKernelArg)));
-            u_entityAction(u_entity(sub->usubscriber),
-                           jni_entityKernelAction,
-                           (c_voidp)kernelArg);
-            uDataReader = u_dataReaderNew(sub->usubscriber,
-                                          NULL,
-                                          qexpr,
-                                          NULL,
-                                          v_readerQosNew(kernelArg->kernel, NULL), TRUE);
-            os_free(kernelArg);
-
-            if(uDataReader != NULL){
-                reader = jni_reader(os_malloc((size_t)(C_SIZEOF(jni_reader))));
-                reader->ureader = uDataReader;
-                reader->subscriber = sub;
-                reader->description = top;
-                reader->uquery = NULL;
-            }
-        }
+    size = strlen(top->name) + strlen(select) + 1;
+    if((expr = os_malloc(size)) == NULL){
+        goto err_qexpr;
     }
+
+    (void) snprintf(expr, size, "%s%s", select, top->name);
+    qexpr = q_parse(expr);
+    os_free(expr);
+    if(qexpr == NULL){
+        goto err_qexpr;
+    }
+
+    if((reader = os_malloc(sizeof *reader)) == NULL){
+        OS_REPORT_1(OS_ERROR, "jni_readerNew", 0,
+                    "Memory claim of %" PA_PRIuSIZE " denied.",
+                    sizeof *reader);
+        goto err_malloc;
+    }
+
+    if((reader->ureader = u_dataReaderNew(sub->usubscriber, NULL, qexpr, NULL, qos, TRUE)) == NULL){
+        /* Error reported by u_dataReaderNew */
+        goto err_ureader;
+    }
+
+    reader->subscriber = sub;
+    reader->description = top;
+    reader->uquery = NULL;
+
+    q_dispose(qexpr);
+
     return reader;
+
+/* Error handling */
+err_ureader:
+    os_free(reader);
+err_malloc:
+    q_dispose(qexpr);
+err_qexpr:
+    return NULL;
 }
 
 jni_result

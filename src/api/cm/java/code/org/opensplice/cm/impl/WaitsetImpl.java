@@ -18,6 +18,7 @@ import org.opensplice.cm.Event;
 import org.opensplice.cm.Time;
 import org.opensplice.cm.Waitset;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.qos.QoS;
 import org.opensplice.cm.status.Status;
 
@@ -36,17 +37,17 @@ public class WaitsetImpl extends EntityImpl implements Waitset {
      * @param _pointer The heap address of the entity.
      * @param _name The name of the entity.
      */
-    public WaitsetImpl(long _index, long _serial, String _pointer, String _name) {
-        super(_index, _serial, _pointer, _name);
+    public WaitsetImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name) {
+        super(communicator, _index, _serial, _pointer, _name);
     }
     
     public WaitsetImpl(ParticipantImpl participant) throws CMException {
-        super(0, 0, "", "");
+        super(participant.getCommunicator(), 0, 0, "", "");
         
         WaitsetImpl w;
         
         try {
-            w = (WaitsetImpl)CMFactory.getCommunicator().waitsetNew(participant);
+            w = (WaitsetImpl)getCommunicator().waitsetNew(participant);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -74,7 +75,7 @@ public class WaitsetImpl extends EntityImpl implements Waitset {
             throw new CMException("Entity already freed.");
         }
         try {
-            CMFactory.getCommunicator().waitsetAttach(this, entity);
+            getCommunicator().waitsetAttach(this, entity);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -86,7 +87,7 @@ public class WaitsetImpl extends EntityImpl implements Waitset {
             throw new CMException("Entity already freed.");
         }
         try {
-            CMFactory.getCommunicator().waitsetDetach(this, entity);
+            getCommunicator().waitsetDetach(this, entity);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -100,7 +101,7 @@ public class WaitsetImpl extends EntityImpl implements Waitset {
             throw new CMException("Entity already freed.");
         }
         try {
-            entities = CMFactory.getCommunicator().waitsetWait(this);
+            entities = getCommunicator().waitsetWait(this);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -114,7 +115,7 @@ public class WaitsetImpl extends EntityImpl implements Waitset {
             throw new CMException("Entity already freed.");
         }
         try {
-            entities = CMFactory.getCommunicator().waitsetTimedWait(this, time);
+            entities = getCommunicator().waitsetTimedWait(this, time);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -128,7 +129,7 @@ public class WaitsetImpl extends EntityImpl implements Waitset {
             throw new CMException("Entity already freed.");
         }
         try {
-            result = CMFactory.getCommunicator().waitsetGetEventMask(this);
+            result = getCommunicator().waitsetGetEventMask(this);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -140,7 +141,7 @@ public class WaitsetImpl extends EntityImpl implements Waitset {
             throw new CMException("Entity already freed.");
         }
         try {
-            CMFactory.getCommunicator().waitsetSetEventMask(this, mask);
+            getCommunicator().waitsetSetEventMask(this, mask);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }

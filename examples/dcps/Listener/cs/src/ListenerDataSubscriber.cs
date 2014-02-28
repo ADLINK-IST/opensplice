@@ -41,7 +41,8 @@ namespace ListenerDataSubscriber
             ListenerDataListener myListener;
             String partitionName = "Listener Example";
             int count = 0;
-            
+            Duration wait_timeout = new Duration(0, 200000000);
+
             // create Domain Participant
             mgr.createParticipant(partitionName);
 
@@ -58,7 +59,7 @@ namespace ListenerDataSubscriber
             // create DataReader
             mgr.createReader(false);
 
-            IDataReader dreader = mgr.getReader();            
+            IDataReader dreader = mgr.getReader();
 
             myListener = new ListenerDataListener();
             myListener.MsgDR = dreader as MsgDataReader;
@@ -76,10 +77,11 @@ namespace ListenerDataSubscriber
             ws.AttachCondition(myListener.guardCond);
             ICondition[] cond = null;
 
+
             while (!myListener.terminated && count < 1500)
             {
                 Console.WriteLine("=== [SubscriberUsingListener] waiting waitset ...");
-                ws.Wait(ref cond, Duration.Infinite);
+                ws.Wait(ref cond, wait_timeout);
                 myListener.guardCond.SetTriggerValue(false);
                 ++count;
             }

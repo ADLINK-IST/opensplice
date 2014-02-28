@@ -51,6 +51,7 @@ extern "C" {
  *      -# NONE
  *      -# INITIALISING
  *      -# OPERATIONAL
+ *      -# INCOMPATIBLE_CONFIGURATION
  *      -# TERMINATING
  *      -# TERMINATED
  *      -# DIED

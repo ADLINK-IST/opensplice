@@ -242,7 +242,7 @@ public class SampleHandler extends CommonHandler {
                 mes.getInstanceGid().setLocalId(Long.parseLong(s));
             } else if (scope.equals("object.message.writerInstanceGID.systemId")) {
                 mes.getInstanceGid().setSystemId(Long.parseLong(s));
-            } else if (scope.equals("object.message.sequenceNumber")) {
+            } else if (scope.equals("object.message.sampleSequenceNumber")) {
                 mes.setSampleSequenceNumber(Long.parseLong(s));
             } else if (scope.equals("object.message.qos.size")) {
                 mes.setQos(new MessageQoS(new int[Integer.parseInt(s)]));

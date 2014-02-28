@@ -28,12 +28,19 @@
 #include <dds/topic/Topic.hpp>
 #include <dds/topic/Filter.hpp>
 
-namespace dds { namespace topic { namespace detail {
+namespace dds
+{
+namespace topic
+{
+namespace detail
+{
 
 #ifdef OMG_DDS_CONTENT_SUBSCRIPTION_SUPPORT
 
-   template <typename T>
-   class ContentFilteredTopic;
-   // Vendors should provide implementation.
-} } }
+template <typename T>
+class ContentFilteredTopic;
+// Vendors should provide implementation.
+}
+}
+}
 #endif /* OMG_DDS_TOPIC_DETAIL_CONTENTFILTEREDTOPIC_HPP_ */

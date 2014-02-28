@@ -25,10 +25,9 @@ install_git_files_dir_recursive ()
     from=$1
     to=$2
     pushd $from > /dev/null
-    git rev-parse > /dev/null 2>&1
-    if [ $? != 0 ]
+    if [ ! -d "$OSPL_HOME/.git" ]
     then
-        # Non-zero from git rev-parse - we're not in a repo, or no git
+        # we're not in a repo
         echo "INFO: Not working from a git repository. Copying *all* files from $from to $to. If your source tree was not clean this could be a problem."
         mkdir -p "$to"
         cp -r * "$to"
@@ -360,28 +359,19 @@ install_example()
 
 doTar ()
 {
-    echo ${OSPL_BUILDER} cf ${OUT}.tar ${INSTTYPE}/${SOURCE_TARGET}
+    echo ${OSPL_BUILDER} cf ${OUT}.tar ${INSTTYPE}
     (
         cd $OSPL_HOME/install
-        ${OSPL_BUILDER} cf ${OUT}.tar ${INSTTYPE}/${SOURCE_TARGET}
-    )
-}
-
-doGtar ()
-{
-    echo ${OSPL_BUILDER} -czf ${OUT}.tar.gz ${INSTTYPE}/${SOURCE_TARGET}
-    (
-        cd $OSPL_HOME/install
-        ${OSPL_BUILDER} -czf ${OUT}.tar.gz ${INSTTYPE}/${SOURCE_TARGET}
+        ${OSPL_BUILDER} cf ${OUT}.tar ${INSTTYPE}
     )
 }
 
 doZip ()
 {
-    echo ${OSPL_BUILDER} -9 -r ${OUT}.zip ${INSTTYPE}/${SOURCE_TARGET}
+    echo ${OSPL_BUILDER} -r ${OUT}.zip ${INSTTYPE}
     (
         cd $OSPL_HOME/install
-        ${OSPL_BUILDER} -9 -r ${OUT}.zip ${INSTTYPE}/${SOURCE_TARGET}
+        ${OSPL_BUILDER} -r ${OUT}.zip ${INSTTYPE}
     )
 }
 
@@ -390,6 +380,11 @@ doStandardPackage()
     PLATFORM=${SOURCE_TARGET}${TARGET_ENV}
 
     OUT=${OUTPUTDIR}/${INSTALLER_FILENAME}
+
+    if [ "${INSTTYPE}" = "DEMOS" ]
+    then
+        unset OSPL_BUILDER
+    fi
     if [ -z "${OSPL_BUILDER}" ]
     then
         # If empty try zip or tar depending upon platform
@@ -404,19 +399,13 @@ doStandardPackage()
                 doZip
             fi
         else
-            OSPL_BUILDER=`which $TAR`
+            OSPL_BUILDER=`which tar`
             if [ "$?" != "0" ]
             then
-                OSPL_BUILDER=`which tar`
-                if [ "$?" != "0" ]
-                then
-                    echo "Error - No packager found please set OSPL_BUILDER"
-                    return 1
-                else
-                    doTar
-                fi
+                echo "Error - No packager found please set OSPL_BUILDER"
+                return 1
             else
-                doGtar
+                doTar
             fi
         fi
     else
@@ -483,6 +472,77 @@ make_rts_mirror_and_builder ()
     INSTTYPE="RTS"
     FULLINSTTYPE="Runtime_System"
     make_mirror_and_builder "rts"
+}
+
+make_demos_mirror_and_builder ()
+{
+    INSTTYPE="DEMOS"
+    FULLINSTTYPE="Standalone_demos"
+    make_mirror_and_builder "demos"
+}
+
+install_demos_target ()
+{
+    mkdir -p ${DEMOS_dir}
+
+    mkdir ${DEMOS_dir}/iShapes
+
+    # Executable
+
+    cp ${OSPL_HOME}/exec/${target}${source_env}/demo_ishapes${target_suffix_exe} ${DEMOS_dir}/iShapes/ishapes${target_suffix_exe}
+
+    # DDS libs
+
+    for i in dcpsgapi dcpssacpp dcpsisocpp ddsconf ddsconfparser ddsdatabase ddsi2 ddskernel ddsos ddsosnet ddsserialization ddsuser ddsutil durability spliced
+    do
+        if [ "${SOURCE_TARGET_SHORT}" = "win" -o "${SOURCE_TARGET_SHORT}" = "wince" ]
+        then
+            cp ${OSPL_HOME}/lib/${target}${source_env}/${i}.dll ${DEMOS_dir}/iShapes
+        else
+            cp ${OSPL_HOME}/lib/${target}${source_env}/lib${i}.so ${DEMOS_dir}/iShapes
+        fi
+    done
+
+    # GUI toolkit
+
+    for i in QtGui QtCore
+    do
+        if [ "${SOURCE_TARGET_SHORT}" = "win" -o "${SOURCE_TARGET_SHORT}" = "wince" ]
+        then
+            cp ${QTLIBDIR}/${i}4.dll ${DEMOS_dir}/iShapes
+        else
+            cp `readlink -f ${QTLIBDIR}/lib${i}.so` ${DEMOS_dir}/iShapes/lib${i}.so
+        fi
+    done
+
+    # Visual C++ redistributable on Windows
+
+    if [ "${SOURCE_HOST_SHORT}" = "win" ]
+    then
+        copy_windows_redist "${DEMOS_dir}/redist"
+    fi
+
+    # Other fixed files
+
+    cp ${OSPL_HOME}/demos/iShapes/distrib/* ${DEMOS_dir}/iShapes/
+
+    # Launch script
+
+    if [ "${SOURCE_TARGET_SHORT}" = "win" -o "${SOURCE_TARGET_SHORT}" = "wince" ]
+    then
+        echo '@echo off' > ${DEMOS_dir}/iShapes/ishapes.bat
+        echo 'set OSPL_HOME=%~dp0' >> ${DEMOS_dir}/iShapes/ishapes.bat
+        echo "set OSPL_TARGET=${SOURCE_TARGET}" >> ${DEMOS_dir}/iShapes/ishapes.bat
+        echo 'set OSPL_URI="file://.\ishapes.xml"' >> ${DEMOS_dir}/iShapes/ishapes.bat
+        echo 'call ishapes.exe' >> ${DEMOS_dir}/iShapes/ishapes.bat
+    else
+        echo '#!/bin/sh' > ${DEMOS_dir}/iShapes/ishapes.sh
+        echo 'OSPL_HOME=`dirname $0` export OSPL_HOME' >> ${DEMOS_dir}/iShapes/ishapes.sh
+        echo "OSPL_TARGET=${SOURCE_TARGET} export OSPL_TARGET" >> ${DEMOS_dir}/iShapes/ishapes.sh
+        echo 'OSPL_URI="file://./ishapes.xml" export OSPL_URI' >> ${DEMOS_dir}/iShapes/ishapes.sh
+        echo './ishapes' >> ${DEMOS_dir}/iShapes/ishapes.sh
+        chmod +x ${DEMOS_dir}/iShapes/ishapes.sh
+    fi
 }
 
 set_envs ()
@@ -613,6 +673,7 @@ set_init_envs ()
     TXTFILE_CONVERTER="$6"
     SOURCE_HOST_SHORT="$7"
     SOURCE_TARGET_SHORT="$8"
+    SOURCE_TARGET="$target"
     TAR="tar"
 
     if [ "${SOURCE_HOST_SHORT}" = "win" ]
@@ -645,6 +706,14 @@ set_rts_envs ()
 
 }
 
+set_demos_envs ()
+{
+    set_init_envs "$@"
+    DEMOS_base=${OSPL_HOME}/install/DEMOS
+    DEMOS_subdir=${target}${target_env}
+    DEMOS_dir=${DEMOS_base}/${DEMOS_subdir}
+}
+
 set_hde_envs ()
 {
     set_init_envs "$@"
@@ -658,11 +727,12 @@ set_hde_envs ()
                 DDS_Mico_2_3_11
                 DDS_OpenFusion_1_4_1
                 DDS_OpenFusion_1_5_1
-                DDS_OpenFusion_1_6_1"
+                DDS_OpenFusion_1_6_1
+                DDS_OpenFusion_2"
 
     PLATFORM_EXT=unix
     case ${SPLICE_TARGET} in
-        x86_64.linux2.6*)
+        x86_64.linux*)
             PLATFORM_EXT=unix64
         ;;
         *.pikeos*)
@@ -776,11 +846,7 @@ make_mirror_and_builder ()
             "${BUILDER_TARGET}" "${SCRIPT_NAME}" "${ENV}" "${GETLIC_INFO_NAME}" "normal"
         set_hde_envs "${SOURCE_TARGET}" "${SOURCE_HOST}" "${PACKAGE_VERSION}" "${PACKAGE_DATE}" \
             "${ENV}" "${TXTFILE_CONVERTER}" "${SOURCE_HOST_SHORT}" "${SOURCE_TARGET_SHORT}"
-
-        if [ "$EVAL" = "true" -o "$NOSRC" = "true" ]
-        then
-            backup_orig "${HDE_dir}"
-        fi
+        backup_orig "${HDE_dir}"
 
         if [ "$EVAL" = "true" -a "$TYPE" = "hde" ]
         then
@@ -819,10 +885,7 @@ make_mirror_and_builder ()
         fi
 
         #Last one just to make sure to remove the left over tar.
-        if [ "$EVAL" = "true" -o "$NOSRC" = "true" ]
-        then
-            restore_orig "${HDE_dir}" "true"
-        fi
+        restore_orig "${HDE_dir}" "true"
      fi
 }
 
@@ -830,7 +893,7 @@ installer_setup ()
 {
     # $1 = release type   : HDE or RTS
     # $2 = full release name : Host Development Environment of Runtime System
-    # $3 = source target  : x86.linux-2.6 or sparc.solaris8
+    # $3 = source target  : x86.linux or sparc.solaris8
     # $4 = builder target : linux or solaris-sparc
     # $5 = name of script to setup environment
     # $6 = environment : for example '-release' or '-dev'
@@ -874,9 +937,16 @@ installer_setup ()
     #determine if licensing is enabled
     if [ "${DDS_USE_LICENSE}" = "yes" ]
     then
-        WITHLICENSE=true;
+        WITHHOSTLICENSE=true;
     else
-        WITHLICENSE=false;
+        WITHHOSTLICENSE=false;
+    fi
+
+    if [ "${DDS_TARGET_USE_LICENSE}" = "yes" ]
+    then
+        WITHTARGETLICENSE=true;
+    else
+        WITHTARGETLICENSE=false;
     fi
 
     echo "Making builder for ${INSTTYPE_FULL} (${INSTTYPE}, ${SOURCE_TARGET}${TARGET_ENV}, ${BUILDER_TARGET})"
@@ -953,56 +1023,88 @@ create_rts_mirror ()
     mkdir -p ${RTS_dir}; echo "Ready"
 }
 
+remove_demos_mirror ()
+{
+    if [ -d ${DEMOS_dir} ]
+    then
+        printf "*   Remove old DEMOS/$target directory ... "
+        chmod -R 777 ${DEMOS_dir} 2> /dev/null
+        rm -rf ${DEMOS_dir};
+        echo "Ready"
+    fi
+}
+
+create_demos_mirror ()
+{
+    printf "*   Prepare DEMOS master directory ... "
+    mkdir -p ${DEMOS_dir}; echo "Ready"
+}
+
 copy_windows_redist ()
 {
+    TARGET_DIR=$1
     if [ "${host}" = "x86.win32" ]
     then
-        if [ -n "${REDIST_OVERRIDE}" ]
+        if [ "$VS_VER" = "17" -o "$VS_VER" = "18" ]
         then
-            # The redist pack from Windows is usually in a predictable location.  Unfortunately
-            # the directory structure provided by Microsoft VS 9.0 is different from its
-            # associated Windows SDK directory - "Program Files" vs "Program Files (x86)".
-            # It was resolved in more recent versions where everything was in the (x86) version,
-            # but for now we have a special case with that combination of Microsoft products,
-            # since changing WINDOWSSDKDIR (from which FrameworkSDKDir is derived) would break
-            # the compile stage
-            cp -r "${REDIST_OVERRIDE}/BootStrapper/Packages/vcredist_x86" "$1"
+            TARGET_DIR=$1/vcredist_x86
+            mkdir -p $TARGET_DIR
+            cp "${VS_HOME}/VC/redist/1033/vcredist_x86.exe" "$TARGET_DIR/."
         else
-            cp -r "${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x86" "$1"
+            if [ -n "${REDIST_OVERRIDE}" ]
+            then
+                # The redist pack from Windows is usually in a predictable location.  Unfortunately
+                # the directory structure provided by Microsoft VS 9.0 is different from its
+                # associated Windows SDK directory - "Program Files" vs "Program Files (x86)".
+                # It was resolved in more recent versions where everything was in the (x86) version,
+                # but for now we have a special case with that combination of Microsoft products,
+                # since changing WINDOWSSDKDIR (from which FrameworkSDKDir is derived) would break
+                # the compile stage
+                cp -r "${REDIST_OVERRIDE}/BootStrapper/Packages/vcredist_x86" "$TARGET_DIR"
+            else
+                cp -r "${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x86" "$TARGET_DIR"
+            fi
         fi
         cp "${OSPL_HOME}/install/bin/install_vcredist.bat" "$1/."
     elif [ "${host}" = "x86_64.win64" ]
     then
-        ORIG_DOS_VERSION=`cygpath -d ${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x64 2> /dev/null`
-        if [ "$?" = "2" ]
+        if [ "$VS_VER" = "17" -o "$VS_VER" = "18" ]
         then
-            #Could not make it a Dos path because it already is, however cygpath errors so reset it
-            ORIG_DOS_VERSION="${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x64"
-        fi
-        ORIG_UNIX_VERSION=`cygpath -u $ORIG_DOS_VERSION`
-        redistStartDir=$ORIG_UNIX_VERSION
-        redistDir=$redistStartDir
-        if [ ! -d "${redistDir}" ]
-        then
-            DOS_VERSION1=`cygpath -d /cygdrive/c/Program\ Files\ \(x86\)/Microsoft\ SDKs`
-            DOS_VERSION2=`cygpath -d /cygdrive/c/Program\ Files/Microsoft\ SDKs`
-            START_UNIX_VERSION1=`cygpath -u $DOS_VERSION1`
-            START_UNIX_VERSION2=`cygpath -u $DOS_VERSION2`
-
-            redistDir=`echo "$redistStartDir" | sed "s@$START_UNIX_VERSION1@$START_UNIX_VERSION2@"`
+            TARGET_DIR=$1/vcredist_x64
+            mkdir -p $TARGET_DIR
+            cp "${VS_HOME}/VC/redist/1033/vcredist_x64.exe" "$TARGET_DIR/."
+        else
+            ORIG_DOS_VERSION=`cygpath -d ${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x64 2> /dev/null`
+            if [ "$?" = "2" ]
+            then
+		#Could not make it a Dos path because it already is, however cygpath errors so reset it
+		ORIG_DOS_VERSION="${FrameworkSDKDir}/BootStrapper/Packages/vcredist_x64"
+            fi
+            ORIG_UNIX_VERSION=`cygpath -u $ORIG_DOS_VERSION`
+            redistStartDir=$ORIG_UNIX_VERSION
+            redistDir=$redistStartDir
             if [ ! -d "${redistDir}" ]
             then
-                redistDir=`echo "$redistStartDir" | sed "s@$START_UNIX_VERSION2@$START_UNIX_VERSION1@"`
+		DOS_VERSION1=`cygpath -d /cygdrive/c/Program\ Files\ \(x86\)/Microsoft\ SDKs`
+		DOS_VERSION2=`cygpath -d /cygdrive/c/Program\ Files/Microsoft\ SDKs`
+		START_UNIX_VERSION1=`cygpath -u $DOS_VERSION1`
+		START_UNIX_VERSION2=`cygpath -u $DOS_VERSION2`
+
+		redistDir=`echo "$redistStartDir" | sed "s@$START_UNIX_VERSION1@$START_UNIX_VERSION2@"`
+		if [ ! -d "${redistDir}" ]
+		then
+                    redistDir=`echo "$redistStartDir" | sed "s@$START_UNIX_VERSION2@$START_UNIX_VERSION1@"`
+		fi
+            fi
+
+            if [ -d "${redistDir}" ]
+            then
+		cp -r "${redistDir}" "$1"
+            else
+		echo "* ##    Cannot find the Visual Studio Redist"
             fi
         fi
-
-        if [ -d "${redistDir}" ]
-        then
-            cp -r "${redistDir}" "$1"
-            cp "${OSPL_HOME}/install/bin/install_vcredist_x64.bat" "$1/install_vcredist.bat"
-        else
-            echo "* ##    Cannot find the Visual Studio Redist"
-        fi
+        cp "${OSPL_HOME}/install/bin/install_vcredist_x64.bat" "$1/install_vcredist.bat"
     fi
 }
 
@@ -1108,7 +1210,7 @@ generate_doxygen ()
 
             #generate doxygen
             pushd ${HDE_dir} >/dev/null
-            doxygen ${OSPL_HOME}/etc/$DOXYGEN_CFG
+            doxygen $DOXYGEN_CFG
             if [ $? -ne 0 ]
             then
                 echo "Error: failed to generate doxygen documentation for $DOXYGEN_CFG"
@@ -1151,7 +1253,7 @@ generate_doxygen ()
 
             #generate doxygen
             pushd ${HDE_dir} >/dev/null
-            doxygen ${OSPL_HOME}/etc/$DOXYGEN_CFG
+            doxygen $DOXYGEN_CFG
             if [ $? -ne 0 ]
             then
                 echo "Error: failed to generate doxygen documentation for $DOXYGEN_CFG"
@@ -1478,9 +1580,6 @@ install_hde_target ()
     then
         mkdir -p ${HDE_dir}/bin
         install_ascii_file "${release}/osplconf${suffix_script}" "${HDE_dir}/bin"
-        if [ "${INCLUDE_TOOLS_DCG}" = "yes" ]; then
-            install_ascii_file "${release}/ospldcg${suffix_script}" "${HDE_dir}/bin"
-        fi
         if [ "${SOURCE_HOST_SHORT}" = "win" ]
         then
             install_ascii_file "${release}/run.vbs" "${HDE_dir}/bin"
@@ -1603,40 +1702,7 @@ install_hde_target ()
     install_ascii_fileset "${OSPL_HOME}/src/database/database/include/[cq]_*.h" "${HDE_dir}/include/sys"
     install_ascii_fileset "${OSPL_HOME}/src/kernel/include/v_*.h" "${HDE_dir}/include/sys"
     install_ascii_fileset "${OSPL_HOME}/src/user/include/u_*.h" "${HDE_dir}/include/sys"
-    install_ascii_file    "${OSPL_HOME}/src/kernel/bld/${SPLICE_TARGET}/kernelModule.h" "${HDE_dir}/include/sys"
-
-    #
-    # Copy DLRL related include files
-    #
-    echo "*     Copy include files"
-    echo "*       For DLRL"
-
-    mkdir -p ${HDE_dir}/include/dlrl
-    #
-    # DLRL C++ SACPP
-    #
-    if [ "${INCLUDE_API_DLRL_SACPP}" = "yes" ]
-    then
-        release=`ls -d ${OSPL_HOME}/src/api/dlrl/sacpp/bld/${target}${source_env} 2>/dev/null`
-        echo "*           For SACPP ... "
-        if [ ! -d ${HDE_dir}/include/dlrl/C++ ]
-        then
-            mkdir ${HDE_dir}/include/dlrl/C++
-        fi
-        mkdir ${HDE_dir}/include/dlrl/C++/SACPP
-        install_ascii_fileset "${release}/*.[ih]" "${HDE_dir}/include/dlrl/C++/SACPP"
-
-        install_ascii_fileset "${OSPL_HOME}/src/api/dlrl/sacpp/include/*.[ih]" "${HDE_dir}/include/dlrl/C++/SACPP"
-        install_ascii_fileset "${OSPL_HOME}/src/api/dlrl/ccpp/include/*.[ih]" "${HDE_dir}/include/dlrl/C++/SACPP"
-        install_ascii_fileset "${OSPL_HOME}/src/api/dlrl/ccpp/idl/*.idl" "${HDE_dir}/include/dlrl/C++/SACPP"
-        install_ascii_file "${OSPL_HOME}/src/loc/kernel/include/DLRL_Kernel.h" "${HDE_dir}/include/dlrl/C++/SACPP"
-        install_ascii_file "${OSPL_HOME}/src/loc/metamodel/include/DMM_Mapping.h" "${HDE_dir}/include/dlrl/C++/SACPP"
-        install_ascii_file "${OSPL_HOME}/src/loc/metamodel/include/DMM_KeyType.h" "${HDE_dir}/include/dlrl/C++/SACPP"
-        install_ascii_file "${OSPL_HOME}/src/loc/metamodel/include/DMM_Basis.h" "${HDE_dir}/include/dlrl/C++/SACPP"
-        install_ascii_file "${OSPL_HOME}/src/loc/metamodel/include/DMM_AttributeType.h" "${HDE_dir}/include/dlrl/C++/SACPP"
-        install_ascii_fileset "${OSPL_HOME}/src/loc/util/include/*.[ih]" "${HDE_dir}/include/dlrl/C++/SACPP"
-    fi
-    echo "*       DLRL Ready"
+    install_ascii_file    "${OSPL_HOME}/src/osplcore/bld/${SPLICE_TARGET}/kernelModule.h" "${HDE_dir}/include/sys"
 
     #
     # Copy C&M related include files
@@ -1674,7 +1740,7 @@ install_hde_target ()
         # that will set all these variables correctly and call the appropriate mono
         # executable for the assembly linker.
 
-        generate_doxygen cs_api doxygen_cs_api.cfg
+        generate_doxygen cs_api ${OSPL_HOME}/etc/doxygen_cs_api.cfg
         if [ $? -ne 0 ]
         then
             return 1
@@ -1704,17 +1770,20 @@ install_hde_target ()
         for ORB_TMPL in ${ORB_TMPLS}
         do
             mkdir ${HDE_dir}/include/dcps/C++/CCPP/${ORB_TMPL}
-            install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/orb/${ORB_TMPL}/*.[ih]" \
+            install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/orb/${ORB_TMPL}/*.h" \
               "${HDE_dir}/include/dcps/C++/CCPP/${ORB_TMPL}"
         done
 
-        install_ascii_fileset "${release}/*.[ih]" "${HDE_dir}/include/dcps/C++/CCPP/${SPLICE_ORB}"
+        install_ascii_fileset "${release}/*.h" "${HDE_dir}/include/dcps/C++/CCPP/${SPLICE_ORB}"
+        install_ascii_fileset "${release}/*.inl" "${HDE_dir}/include/dcps/C++/CCPP/${SPLICE_ORB}"
 
-        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih]"  \
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/include/*.h"  \
             "${HDE_dir}/include/dcps/C++/CCPP"
         install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi.h"  \
             "${HDE_dir}/include/dcps/C++/CCPP"
         install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi_loanRegistry.h"  \
+            "${HDE_dir}/include/dcps/C++/CCPP"
+        install_ascii_file "${OSPL_HOME}/src/api/dcps/common/include/qp_qosProvider.h"  \
             "${HDE_dir}/include/dcps/C++/CCPP"
         echo "*           CCPP Ready"
     fi
@@ -1734,16 +1803,18 @@ install_hde_target ()
         mkdir ${HDE_dir}/include/dcps/C++/SACPP
         mkdir ${HDE_dir}/include/dcps/C++/SACPP/mapping
 
-        install_ascii_fileset "${release}/*.[ih]" "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_fileset "${release}/*.h" "${HDE_dir}/include/dcps/C++/SACPP"
         install_ascii_fileset "${OSPL_HOME}/src/api/dcps/sacpp/include/*.h" \
             "${HDE_dir}/include/dcps/C++/SACPP"
         install_ascii_fileset "${OSPL_HOME}/src/api/dcps/sacpp/include/mapping/*.h" \
             "${HDE_dir}/include/dcps/C++/SACPP/mapping"
-        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/include/*.[ih]" \
+        install_ascii_fileset "${OSPL_HOME}/src/api/dcps/ccpp/include/*.h" \
             "${HDE_dir}/include/dcps/C++/SACPP"
         install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi.h" \
             "${HDE_dir}/include/dcps/C++/SACPP"
         install_ascii_file "${OSPL_HOME}/src/api/dcps/gapi/include/gapi_loanRegistry.h" \
+            "${HDE_dir}/include/dcps/C++/SACPP"
+        install_ascii_file "${OSPL_HOME}/src/api/dcps/common/include/qp_qosProvider.h"  \
             "${HDE_dir}/include/dcps/C++/SACPP"
         echo "*           SACPP  Ready"
         echo "*         C++ Ready"
@@ -1760,23 +1831,30 @@ install_hde_target ()
         install_git_files_dir_recursive "${OSPL_HOME}/src/api/dcps/isocpp/include" ${HDE_dir}/include/dcps/C++/isocpp
         install_git_files_dir_recursive "${OSPL_HOME}/src/api/dcps/isocpp/code"    ${HDE_dir}/custom_lib/isocpp
         install_ascii_fileset "${OSPL_HOME}/src/api/dcps/isocpp/*.mp?" "${HDE_dir}/custom_lib"
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/HelloWorld/isocpp" ${HDE_dir}/examples/dcps/HelloWorld/isocpp
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Listener/isocpp" ${HDE_dir}/examples/dcps/Listener/isocpp
+        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/BuiltInTopics/isocpp" ${HDE_dir}/examples/dcps/BuiltInTopics/isocpp
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/ContentFilteredTopic/isocpp" ${HDE_dir}/examples/dcps/ContentFilteredTopic/isocpp
+        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Durability/isocpp" ${HDE_dir}/examples/dcps/Durability/isocpp
+        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/HelloWorld/isocpp" ${HDE_dir}/examples/dcps/HelloWorld/isocpp
+        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Lifecycle/isocpp" ${HDE_dir}/examples/dcps/Lifecycle/isocpp
+        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Listener/isocpp" ${HDE_dir}/examples/dcps/Listener/isocpp
+        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Ownership/isocpp" ${HDE_dir}/examples/dcps/Ownership/isocpp
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/QueryCondition/isocpp" ${HDE_dir}/examples/dcps/QueryCondition/isocpp
+        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/RoundTrip/isocpp" ${HDE_dir}/examples/dcps/RoundTrip/isocpp
+        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Throughput/isocpp" ${HDE_dir}/examples/dcps/Throughput/isocpp
+        install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Tutorial/isocpp" ${HDE_dir}/examples/dcps/Tutorial/isocpp
         install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/WaitSet/isocpp" ${HDE_dir}/examples/dcps/WaitSet/isocpp
-        install_git_files_dir_recursive "${OSPL_HOME}/examples/common" ${HDE_dir}/examples/common
         install_ascii_fileset "${OSPL_HOME}/examples/*.md" "${HDE_dir}/examples"
-        install_git_files_dir_recursive "${OSPL_HOME}/demos" ${HDE_dir}/demos
         if [ "${OSPL_QT_IS_ON}" = "yes" ]
         then
+            mkdir -p ${HDE_dir}/demos
             install_bin_file ${target_release} ${HDE_dir} bin demo_ishapes${target_suffix_exe}
+            install_git_files_dir_recursive "${OSPL_HOME}/demos/iShapes" ${HDE_dir}/demos/iShapes
         fi
         # delete the 'detail' directories from the ISO C++ spec headers - these are examples to vendors
         # We keep them in the repo to simplify bi-directional merges spec <-> wor implementation
         find ${HDE_dir}/include/dcps/C++/isocpp/spec -name "detail" -type d | xargs rm -rf 2>/dev/null
 
-        generate_doxygen isocpp doxygen_isocpp_distrib.cfg
+        generate_doxygen isocpp ${OSPL_HOME}/etc/doxygen_isocpp_distrib.cfg
         if [ $? -ne 0 ]
         then
             return 1
@@ -1794,6 +1872,8 @@ install_hde_target ()
         mkdir ${HDE_dir}/include/dcps/C
         mkdir ${HDE_dir}/include/dcps/C/SAC
         install_ascii_fileset "${OSPL_HOME}/src/api/dcps/sac/include/*.h" \
+            "${HDE_dir}/include/dcps/C/SAC"
+        install_ascii_file "${OSPL_HOME}/src/api/dcps/common/include/qp_qosProvider.h"  \
             "${HDE_dir}/include/dcps/C/SAC"
         echo "*           SAC Ready"
         echo "*         C Ready"
@@ -1835,6 +1915,7 @@ install_hde_target ()
         mkdir -p ${HDE_dir}/custom_lib/ccpp
 
         install_ascii_fileset "${release}/code/*.cpp" "${HDE_dir}/custom_lib/ccpp"
+        install_ascii_fileset "${release}/DCPS_CORBA_Cohab_Cpp.mpc" "${HDE_dir}/custom_lib"
 
         if [ -f ${release}/custom/makefile_$PLATFORM_EXT ]
         then
@@ -1874,57 +1955,6 @@ install_hde_target ()
         install_ascii_file "${release}/DCPS_Stand_Alone_Cpp.mpc" "${HDE_dir}/custom_lib"
 
         echo "*     custom SACPP support Ready"
-    fi
-
-    #
-    # Copy DCG XSL templates.
-    #
-    if [ "${INCLUDE_TOOLS_DCG}" = "yes" ]; then
-        echo "*     Copy DCG XSL templates"
-        mkdir ${HDE_dir}/etc/dcg
-        install_ascii_file "${OSPL_HOME}/etc/dcg/dds_dlrl.idl" "${HDE_dir}/etc/dcg/"
-        install_ascii_file "${OSPL_HOME}/etc/dcg/dds_dlrl.idl" "${HDE_dir}/etc/idl/"
-        install_ascii_file "${OSPL_HOME}/etc/dcg/Dlrl.dtd" "${HDE_dir}/etc/dcg/"
-        echo "*       common part ..."
-        mkdir ${HDE_dir}/etc/dcg/common
-        install_ascii_fileset "${OSPL_HOME}/etc/dcg/common/*.xsl" "${HDE_dir}/etc/dcg/common/"
-    fi
-
-    #
-    # Copy DCG XSL templates for DLRL SAJ
-    #
-    if [ "${INCLUDE_API_DLRL_SAJ}" = "yes" ]
-    then
-        echo "*       For SAJ ..."
-        mkdir ${HDE_dir}/etc/dcg/SAJ
-        install_ascii_fileset "${OSPL_HOME}/etc/dcg/SAJ/*.xsl" "${HDE_dir}/etc/dcg/SAJ/"
-    fi
-
-    #
-    # Generate Javadoc for DLRL SAJ
-    #
-    if [ "${INCLUDE_API_DLRL_SAJ}" = "yes" ]
-    then
-        printf "*     Generating Javadoc ... "
-
-        ${WINCMD} javadoc -classpath ${OSPL_HOME}/jar/${SPLICE_TARGET}/dcpssaj.jar -public -quiet \
-        -d ${HDE_dir}/docs/html/dds/dlrl/saj -sourcepath ${OSPL_HOME}/src/api/dlrl/saj/java/code/ \
-        ${OSPL_HOME}/src/api/dlrl/saj/java/code/DDS/*.java
-        echo "Ready"
-    fi
-
-    #
-    # Copy DCG XSL templates for DLRL SACPP
-    #
-    if [ "${INCLUDE_API_DLRL_SACPP}" = "yes" ]
-    then
-        echo "*       For SACPP ..."
-        mkdir ${HDE_dir}/etc/dcg/idl
-        mkdir ${HDE_dir}/etc/dcg/CCPP
-        mkdir ${HDE_dir}/etc/dcg/SACPP
-        install_ascii_fileset "${OSPL_HOME}/etc/dcg/idl/*.xsl" "${HDE_dir}/etc/dcg/idl/"
-        install_ascii_fileset "${OSPL_HOME}/etc/dcg/CCPP/*.xsl" "${HDE_dir}/etc/dcg/CCPP/"
-        install_ascii_fileset "${OSPL_HOME}/etc/dcg/SACPP/*.xsl" "${HDE_dir}/etc/dcg/SACPP/"
     fi
 
     #
@@ -1972,7 +2002,10 @@ install_hde_target ()
     install_git_files_dir_recursive "${OSPL_HOME}/examples/utilities" "${HDE_dir}/examples/utilities"
     install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Tutorial" "${HDE_dir}/examples/dcps/Tutorial"
     install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/PingPong" "${HDE_dir}/examples/dcps/PingPong"
+    install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/RoundTrip" "${HDE_dir}/examples/dcps/RoundTrip"
+    install_git_files_dir_recursive "${OSPL_HOME}/examples/dcps/Throughput" "${HDE_dir}/examples/dcps/Throughput"
     install_git_files_dir_recursive "${OSPL_HOME}/examples/include" "${HDE_dir}/examples/include"
+    install_git_files_dir_recursive "${OSPL_HOME}/examples/common" ${HDE_dir}/examples/common
 
     if [ "${SOURCE_TARGET_SHORT}" = "win" -o "${SOURCE_TARGET_SHORT}" = "wince" ]
     then
@@ -1993,22 +2026,31 @@ install_hde_target ()
             rm -rf ${HDE_dir}/examples/dcps/PingPong/cpp/corba
     fi
 
+    if [ "${INCLUDE_API_DCPS_ISOCPP}" != "yes" ]
+    then
+        rm -rf ${HDE_dir}/examples/dcps/RoundTrip/isocpp
+        rm -rf ${HDE_dir}/examples/dcps/Tutorial/isocpp
+        rm -rf ${HDE_dir}/examples/dcps/Throughput/isocpp
+    fi
+
     if [ "${INCLUDE_CXX}" != "yes" ]
     then
         rm -rf ${HDE_dir}/examples/dcps/Tutorial/cpp
         rm -rf ${HDE_dir}/examples/dcps/PingPong/cpp
+        rm -rf ${HDE_dir}/examples/dcps/RoundTrip/cpp
     fi
 
     if [ "${INCLUDE_C}" != "yes" ]
     then
         rm -rf ${HDE_dir}/examples/dcps/Tutorial/c
         rm -rf ${HDE_dir}/examples/dcps/PingPong/c
+        rm -rf ${HDE_dir}/examples/dcps/RoundTrip/c
     fi
 
-    # Tutorial example not yet ported to VxWorks kernel mode
+    # RoundTrip example doesn't seem to work on Kernel Mode VxWorks at the moment.
     if [ "${VXWORKS_KERNEL_MODE}" = "yes" ]
     then
-        rm -rf ${HDE_dir}/examples/dcps/Tutorial
+        rm -rf ${HDE_dir}/examples/dcps/RoundTrip
     fi
 
     if [ "${INCLUDE_CS}" != "yes" ] || [ "${SOURCE_TARGET_SHORT}" != "win" -a "${SOURCE_TARGET_SHORT}" != "wince" ]
@@ -2034,147 +2076,6 @@ install_hde_target ()
         rm -rf ${HDE_dir}/examples/dcps/PingPong/java
     fi
 
-    echo "*       DCPS Ready"
-    echo "*       For DLRL"
-    if [ "${INCLUDE_API_DLRL_SAJ}" = "yes" ]
-    then
-        [ -d ${HDE_dir}/examples/dlrl ] || mkdir ${HDE_dir}/examples/dlrl
-        [ -d ${HDE_dir}/examples/dlrl/standalone ] || mkdir ${HDE_dir}/examples/dlrl/standalone
-        echo "*         For standalone java"
-        mkdir ${HDE_dir}/examples/dlrl/standalone/java
-        echo "*           For Tutorial... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/java/Tutorial
-        echo "*             For Common... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/java/Tutorial/Common
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/Common/*.java" \
-            ${HDE_dir}/examples/dlrl/standalone/java/Tutorial/Common
-        echo "*             Ready"
-        echo "*             For data_files... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/java/Tutorial/data_files
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/data_files/*.idl" \
-            ${HDE_dir}/examples/dlrl/standalone/java/Tutorial/data_files
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/data_files/*.xml" \
-            ${HDE_dir}/examples/dlrl/standalone/java/Tutorial/data_files
-        echo "*             Ready"
-        echo "*             For WhiteListEditor... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/java/Tutorial/WhiteListEditor
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/WhiteListEditor/*.java" \
-            ${HDE_dir}/examples/dlrl/standalone/java/Tutorial/WhiteListEditor
-        echo "*             Ready"
-        echo "*             For WhiteListedMessageBoard... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/java/Tutorial/WhiteListedMessageBoard
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/WhiteListedMessageBoard/*.java" \
-            ${HDE_dir}/examples/dlrl/standalone/java/Tutorial/WhiteListedMessageBoard
-        echo "*             Ready"
-        echo "*             For WhiteListViewer... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/java/Tutorial/WhiteListViewer
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/WhiteListViewer/*.java" \
-            ${HDE_dir}/examples/dlrl/standalone/java/Tutorial/WhiteListViewer
-        echo "*             Ready"
-        install_ascii_file ${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/BUILD${suffix_script} \
-            ${HDE_dir}/examples/dlrl/standalone/java/Tutorial
-        install_ascii_file ${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/run_editor${suffix_script} \
-            ${HDE_dir}/examples/dlrl/standalone/java/Tutorial
-        install_ascii_file ${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/run_viewer${suffix_script} \
-            ${HDE_dir}/examples/dlrl/standalone/java/Tutorial
-        install_ascii_file ${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/run_messageboard${suffix_script} \
-            ${HDE_dir}/examples/dlrl/standalone/java/Tutorial
-        cp ${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/OpenSpliceDDS-dlrl-example-guide.pdf \
-            ${HDE_dir}/examples/dlrl/standalone/java/Tutorial
-        echo "*           Ready"
-        echo "*         java Ready"
-    fi
-
-    if [ "${INCLUDE_API_DLRL_SACPP}" = "yes" ]
-    then
-        [ -d ${HDE_dir}/examples/dlrl ] || mkdir ${HDE_dir}/examples/dlrl
-        [ -d ${HDE_dir}/examples/dlrl/standalone ] || mkdir ${HDE_dir}/examples/dlrl/standalone
-        echo "*         For standalone C++"
-        mkdir ${HDE_dir}/examples/dlrl/standalone/cpp
-        echo "*           For Tutorial... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial
-        echo "*             For Common... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/Common
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/Common/*.cpp" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/Common
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/Common/*.h" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/Common
-        echo "*             Ready"
-        echo "*             For data_files... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/data_files
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/data_files/*.idl" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/data_files
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/data_files/*.xml" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/data_files
-        echo "*             Ready"
-        echo "*             For whitelisteditor... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelisteditor
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/whitelisteditor/*.cpp" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelisteditor
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/whitelisteditor/*.h" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelisteditor
-        echo "*             Ready"
-        echo "*             For whitelistedmessageboard... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelistedmessageboard
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/whitelistedmessageboard/*.cpp" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelistedmessageboard
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/whitelistedmessageboard/*.h" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelistedmessageboard
-        echo "*             Ready"
-        echo "*             For whitelistviewer... "
-        mkdir ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelistviewer
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/whitelistviewer/*.cpp" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelistviewer
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/whitelistviewer/*.h" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelistviewer
-        mkdir ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjects
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjects/*.cpp" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjects
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjects/*.h" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjects
-        mkdir ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjectsEditor
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjectsEditor/*.cpp" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjectsEditor
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjectsEditor/*.h" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjectsEditor
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/Common/common.mpc" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/Common
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/whitelisteditor/whitelisteditor.mpc" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelisteditor
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/whitelistedmessageboard/whitelistedmessageboard.mpc" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelistedmessageboard
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjects/whitelistobjects.mpc" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjects
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjectsEditor/whitelistobjectseditor.mpc" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/WhiteListObjectsEditor
-        install_ascii_fileset "${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/whitelistviewer/whitelistviewer.mpc" \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial/whitelistviewer
-
-        echo "*             Ready"
-
-        case ${OSPL_TARGET_HEADERS} in
-            vxworks6*)
-                ;;
-            vxworks5*)
-                ;;
-            *)
-                install_ascii_file ${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/run_editor${suffix_script} \
-                    ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial
-                install_ascii_file ${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/run_viewer${suffix_script} \
-                    ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial
-                install_ascii_file ${OSPL_HOME}/examples/dlrl/standalone/cpp/Tutorial/run_messageboard${suffix_script} \
-                    ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial
-                ;;
-        esac
-
-        #copy pdf guide from java directory!
-        cp ${OSPL_HOME}/examples/dlrl/standalone/java/Tutorial/OpenSpliceDDS-dlrl-example-guide.pdf \
-            ${HDE_dir}/examples/dlrl/standalone/cpp/Tutorial
-        echo "*           Ready"
-        echo "*         C++ Ready"
-    fi
-    echo "*       DLRL Ready"
-
     echo "*     Copy examples Ready"
 
     #
@@ -2194,18 +2095,15 @@ install_hde_target ()
     fi
     CURRENT_WD="`pwd`"
     cd $OSPL_HOME
-    git rev-parse > /dev/null 2>&1
-    if [ $? != 0 ]
+    if [ ! -d "$OSPL_HOME/.git" ]
     then
-        echo "WARNING - Not in a repository &/or git unavailable. Will not include a source package into the distribution - presumably you are building this distribution from a source package already?"
+        echo "WARNING - Not in a repository. Will not include a source package into the distribution - presumably you are building this distribution from a source package already?"
     else
         git archive --prefix=${OSPL_SRC}/ --format=tar HEAD | $TAR -P -xf -
         if [ $? != 0 ]
         then
             echo "ERROR - archiving $OSPL_HOME failed "
         fi
-        rm -rf $OSPL_SRC/docs
-        rm -rf $OSPL_SRC/.gitmodules
         MPC_PATH=submods/MPC_ROOT
         cd $MPC_PATH
         git archive --prefix=${OSPL_SRC}/$MPC_PATH/ --format=tar HEAD | $TAR -P -xf -
@@ -2213,6 +2111,7 @@ install_hde_target ()
         then
             echo "ERROR - archiving $OSPL_HOME/$MPC_PATH failed "
         fi
+
         BUILD=buildTarGZ
         if [ "${SOURCE_HOST_SHORT}" = "win" ]
         then
@@ -2252,7 +2151,6 @@ install_hde_target ()
             echo "if \"%SPLICE_ORB%\"==\"\" set SPLICE_ORB=${SPLICE_ORB}" >> $RELF
         fi
         echo "set OSPL_HOME=%~dp0" >> $RELF
-        echo "set OSPL_TARGET=${target}${target_env}" >> $RELF
         if [ "${SPLICE_TARGET}" != "${SPLICE_HOST}" ]
         then
             echo "set PATH=%OSPL_HOME%\bin;%OSPL_HOME%\host\lib;%PATH%" >> $RELF
@@ -2260,12 +2158,7 @@ install_hde_target ()
             echo "set PATH=%OSPL_HOME%\bin;%OSPL_HOME%\lib;%OSPL_HOME%\examples\lib;%PATH%" >> $RELF
         fi
         echo "set OSPL_TMPL_PATH=%OSPL_HOME%\etc\idlpp" >> $RELF
-        echo "set OSPL_URI=\"file://%OSPL_HOME%\etc\config\ospl.xml\"" >> $RELF
-        if [ -z "$OSPL_OUTER_HOME" ]
-        then
-            echo "%*" >> $RELF
-        fi
-
+        echo "set OSPL_URI=file://%OSPL_HOME%\etc\config\ospl.xml" >> $RELF
         echo "Ready"
     fi
     if [ "${SOURCE_HOST_SHORT}" != "win" -o "${SOURCE_TARGET_SHORT}" = "pikeos" ]
@@ -2316,7 +2209,6 @@ install_hde_target ()
         else
             echo "OSPL_HOME=\"@@INSTALLDIR@@/HDE/${target}${target_env}\"" >> ${RELF}
         fi
-        echo "OSPL_TARGET=${target}${target_env}" >> ${RELF}
         echo "PATH=\$OSPL_HOME/bin:\$PATH" >> ${RELF}
         if [ "${SPLICE_TARGET}" != "${SPLICE_HOST}" ]
         then
@@ -2334,15 +2226,11 @@ install_hde_target ()
             echo "OSPL_TMPL_PATH=\$OSPL_HOME/etc/idlpp" >> ${RELF}
             echo ". \$OSPL_HOME/etc/java/defs.\$SPLICE_JDK" >> ${RELF}
         fi
-        echo "export OSPL_HOME OSPL_TARGET PATH $ld_lib_path_var CPATH OSPL_TMPL_PATH OSPL_URI" >> $RELF
+        echo "export OSPL_HOME PATH $ld_lib_path_var CPATH OSPL_TMPL_PATH OSPL_URI" >> $RELF
 
         if [ "$VALGRIND" = "yes" ]
         then
             cat $OSPL_HOME/bin/valgrind_cmds >> $RELF
-        fi
-        if [ -z "$OSPL_OUTER_HOME" ]
-        then
-            echo "\$@" >> $RELF
         fi
         echo "Ready"
     fi
@@ -2371,10 +2259,6 @@ install_hde_target ()
     then
         rm -f ${HDE_dir}/docs/pdf/OpenSplice_refman_CPP.pdf
     fi
-    if [ "${INCLUDE_TOOLS_DCG}" = "yes" ]
-    then
-        cp ${OSPL_HOME}/docs/pdf/OpenSplice_DCG_Guide.pdf ${HDE_dir}/docs/pdf
-    fi
     echo "Ready"
     return 0
 }
@@ -2388,9 +2272,13 @@ install_rts_target ()
     #
     # Copy general license file
     #
-    printf "*     Copy General LICENSE file in place "
-    cp ${OSPL_HOME}/LICENSE ${RTS_dir}/.
-    echo "Ready"
+
+    if [ "${DDS_TARGET_USE_LICENSE}" = "yes" ]
+    then
+        printf "*     Copy General LICENSE file in place "
+        cp ${OSPL_HOME}/LICENSE ${RTS_dir}/.
+        echo "Ready"
+    fi
 
     #
     # Copy default configuration file for OpenSplice
@@ -2477,8 +2365,6 @@ install_rts_target ()
         then
             mkdir -p ${RTS_dir}/jar
             install_dir ${release} ${RTS_dir} jar
-            rm -f ${RTS_dir}/jar/openorb*
-            rm -f ${RTS_dir}/jar/ospldcg.jar
         else
             echo "* ##    No JAVA archive files detected"
         fi
@@ -2611,33 +2497,42 @@ install_rts_target ()
 
     if [ "${SOURCE_TARGET_SHORT}" != "win" -a "${SOURCE_TARGET_SHORT}" != "wince" ]
     then
-        printf "*     Prepare default release.com ... "
-        RELF=${RTS_dir}/release.com
-        echo "echo \"<<< OpenSplice RTS Release ${target_version} For ${target}${target_env} Date ${target_date} >>>\"" >> $RELF
-        echo 'if [ "${SPLICE_ORB:=}" = "" ]' >> $RELF
-        echo "then" >> $RELF
-        echo "    SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
-        echo "    export SPLICE_ORB" >> $RELF
-        echo "fi"  >> $RELF
-        echo 'if [ "${SPLICE_JDK:=}" = "" ]' >> ${RELF}
-        echo "then" >> ${RELF}
-        if [ "${JAVA_IS_PERC}" = "yes" ]
+        # release.com on VxWorks isn't needed in the RTS installer.
+        if [ "${SOURCE_TARGET_SHORT}" != "vxworks" ]
         then
-            echo "    SPLICE_JDK=perc" >> ${RELF}
-        else
-            echo "    SPLICE_JDK=jdk" >> ${RELF}
-        fi
-        echo "    export SPLICE_JDK" >> ${RELF}
-        echo "fi"  >> ${RELF}
-        echo "OSPL_HOME=\"@@INSTALLDIR@@/RTS/${target}${target_env}\"" >> $RELF
-        echo "PATH=\$OSPL_HOME/bin:\$PATH" >> $RELF
-        echo "LD_LIBRARY_PATH=\$OSPL_HOME/lib:\${LD_LIBRARY_PATH:=}" >> $RELF
-        echo "OSPL_URI=file://\$OSPL_HOME/etc/config/ospl.xml" >> $RELF
-        echo ". \$OSPL_HOME/etc/java/defs.\$SPLICE_JDK" >> ${RELF}
-        echo "export OSPL_HOME PATH LD_LIBRARY_PATH OSPL_URI" >> $RELF
-        if [ -z "$OSPL_OUTER_HOME" ]
-        then
-            echo "\$@" >> $RELF
+            printf "*     Prepare default release.com ... "
+            RELF=${RTS_dir}/release.com
+            echo "echo \"<<< OpenSplice RTS Release ${target_version} For ${target}${target_env} Date ${target_date} >>>\"" >> $RELF
+            if [ "${SPLICE_ORB}" = "" ]
+            then
+                echo 'if [ "${SPLICE_ORB:=}" = "" ]' >> $RELF
+                echo "then" >> $RELF
+                echo "    SPLICE_ORB=DDS_OpenFusion_1_6_1" >> $RELF
+                echo "    export SPLICE_ORB" >> $RELF
+                echo "fi"  >> $RELF
+            else
+                echo 'if [ "${SPLICE_ORB:=}" = "" ]' >> $RELF
+                echo "then" >> $RELF
+                echo "    SPLICE_ORB=${SPLICE_ORB}" >> $RELF
+                echo "    export SPLICE_ORB" >> $RELF
+                echo "fi"  >> $RELF
+            fi
+            echo 'if [ "${SPLICE_JDK:=}" = "" ]' >> ${RELF}
+            echo "then" >> ${RELF}
+            if [ "${JAVA_IS_PERC}" = "yes" ]
+            then
+                echo "    SPLICE_JDK=perc" >> ${RELF}
+            else
+                echo "    SPLICE_JDK=jdk" >> ${RELF}
+            fi
+            echo "    export SPLICE_JDK" >> ${RELF}
+            echo "fi"  >> ${RELF}
+            echo "OSPL_HOME=\"@@INSTALLDIR@@/RTS/${target}${target_env}\"" >> $RELF
+            echo "PATH=\$OSPL_HOME/bin:\$PATH" >> $RELF
+            echo "LD_LIBRARY_PATH=\$OSPL_HOME/lib:\${LD_LIBRARY_PATH:=}" >> $RELF
+            echo "OSPL_URI=file://\$OSPL_HOME/etc/config/ospl.xml" >> $RELF
+            echo ". \$OSPL_HOME/etc/java/defs.\$SPLICE_JDK" >> ${RELF}
+            echo "export OSPL_HOME PATH LD_LIBRARY_PATH OSPL_URI" >> $RELF
         fi
         echo "Ready"
     else
@@ -2648,11 +2543,7 @@ install_rts_target ()
         echo "set OSPL_HOME=%~dp0" >> $RELF
         echo "set PATH=%OSPL_HOME%\bin;%PATH%" >> $RELF
         echo "set OSPL_TMPL_PATH=%OSPL_HOME%\etc\idlpp" >> $RELF
-        echo "set OSPL_URI=\"file://%OSPL_HOME%\etc\config\ospl.xml\"" >> $RELF
-        if [ -z "$OSPL_OUTER_HOME" ]
-        then
-            echo "%*" >> $RELF
-        fi
+        echo "set OSPL_URI=file://%OSPL_HOME%\etc\config\ospl.xml" >> $RELF
         echo "Ready"
     fi
 }

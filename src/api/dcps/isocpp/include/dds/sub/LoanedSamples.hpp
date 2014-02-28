@@ -35,6 +35,12 @@ template <typename T, template <typename Q> class DELEGATE>
 LoanedSamples<T, DELEGATE>::~LoanedSamples() {  }
 
 template <typename T, template <typename Q> class DELEGATE>
+LoanedSamples<T, DELEGATE>::LoanedSamples(const LoanedSamples& other)
+{
+    delegate_ = other.delegate_;
+}
+
+template <typename T, template <typename Q> class DELEGATE>
 typename LoanedSamples<T, DELEGATE>::const_iterator LoanedSamples<T, DELEGATE>::begin() const
 {
     return delegate()->begin();

@@ -15,6 +15,7 @@
 #include "q_ephash.h"
 #include "q_unused.h"
 #include "q_lease.h"
+#include "q_globals.h" /* for mattr, cattr */
 
 #include "q_rtps.h" /* for guid_hash */
 
@@ -70,12 +71,9 @@ static int threads_vtime_check (int *nivs, struct idx_vtime *ivs)
 static void *gcreq_queue_thread (struct gcreq_queue *q)
 {
   struct thread_state1 *self = lookup_thread_state ();
-  struct os_time to, shortsleep;
+  struct os_time to = { 0, 100 * T_MILLISECOND };
+  struct os_time shortsleep = { 0, 1 * T_MILLISECOND };
   struct gcreq *gcreq = NULL;
-  to.tv_sec = 0;
-  to.tv_nsec = 100 * T_MILLISECOND;
-  shortsleep.tv_sec = 0;
-  shortsleep.tv_nsec = 1 * T_MILLISECOND;
   os_mutexLock (&q->lock);
   while (!(q->terminate && q->count == 0))
   {
@@ -141,20 +139,14 @@ static void *gcreq_queue_thread (struct gcreq_queue *q)
 struct gcreq_queue *gcreq_queue_new (void)
 {
   struct gcreq_queue *q;
-  os_mutexAttr mattr;
-  os_condAttr cattr;
   if ((q = os_malloc (sizeof (*q))) == NULL)
     goto fail_q;
   q->first = q->last = NULL;
   q->terminate = 0;
   q->count = 0;
-  os_mutexAttrInit (&mattr);
-  mattr.scopeAttr = OS_SCOPE_PRIVATE;
-  if (os_mutexInit (&q->lock, &mattr) != os_resultSuccess)
+  if (os_mutexInit (&q->lock, &gv.mattr) != os_resultSuccess)
     goto fail_lock;
-  os_condAttrInit (&cattr);
-  cattr.scopeAttr = OS_SCOPE_PRIVATE;
-  if (os_condInit (&q->cond, &q->lock, &cattr) != os_resultSuccess)
+  if (os_condInit (&q->cond, &q->lock, &gv.cattr) != os_resultSuccess)
     goto fail_cond;
   q->ts = create_thread ("gc", (void * (*) (void *)) gcreq_queue_thread, q);
   if (q->ts == NULL)

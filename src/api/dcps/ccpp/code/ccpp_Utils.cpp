@@ -31,22 +31,22 @@ void DDS::ccpp_AllocateGapiSeq( gapi_instanceHandle_t* *buffer, gapi_unsigned_lo
 }
 
 
-void DDS::ccpp_AllocateDdsSeq(CORBA::Octet * *buffer, CORBA::ULong len)
+void DDS::ccpp_AllocateDdsSeq(DDS::Octet * *buffer, DDS::ULong len)
 {
-  *buffer = reinterpret_cast<CORBA::Octet *>(os_malloc(sizeof(CORBA::Octet) * len));
+  *buffer = reinterpret_cast<DDS::Octet *>(os_malloc(sizeof(DDS::Octet) * len));
 }
 
-void DDS::ccpp_AllocateDdsSeq(char** *buffer, CORBA::ULong len)
+void DDS::ccpp_AllocateDdsSeq(char** *buffer, DDS::ULong len)
 {
   *buffer = reinterpret_cast<char**>(os_malloc(sizeof(char*) * len));
 }
 
-void DDS::ccpp_AllocateDdsSeq(DDS::InstanceHandle_t* *buffer, CORBA::ULong len)
+void DDS::ccpp_AllocateDdsSeq(DDS::InstanceHandle_t* *buffer, DDS::ULong len)
 {
   *buffer = reinterpret_cast<DDS::InstanceHandle_t*>(os_malloc(sizeof(DDS::InstanceHandle_t) * len));
 }
 
-void DDS::ccpp_CopySeqElemIn(CORBA::Octet & from, gapi_octet & to)
+void DDS::ccpp_CopySeqElemIn(DDS::Octet & from, gapi_octet & to)
 {
   to = from;
 }
@@ -69,7 +69,7 @@ void DDS::ccpp_CopySeqElemIn(DDS::InstanceHandle_t & from, gapi_instanceHandle_t
 }
 
 
-void DDS::ccpp_CopySeqElemOut(gapi_octet & from, CORBA::Octet & to)
+void DDS::ccpp_CopySeqElemOut(gapi_octet & from, DDS::Octet & to)
 {
   to = from;
 }
@@ -78,7 +78,7 @@ void DDS::ccpp_CopySeqElemOut(gapi_string & from, char* & to)
 {
   if (from)
   {
-    to = CORBA::string_dup(from);
+    to = DDS::string_dup(from);
   }
   else
   {
@@ -105,7 +105,7 @@ void DDS::ccpp_sequenceCopyIn( const DDS::StringSeq &from, gapi_stringSeq &to)
     to._release = TRUE;
     if (to._maximum > 0){
       to._buffer = gapi_stringSeq_allocbuf(to._length);
-      for (CORBA::ULong i=0; i<to._length; i++)
+      for (DDS::ULong i=0; i<to._length; i++)
       {
         const char *value = from[i];
         to._buffer[i] = gapi_string_dup(value);
@@ -118,9 +118,9 @@ void DDS::ccpp_sequenceCopyIn( const DDS::StringSeq &from, gapi_stringSeq &to)
 void DDS::ccpp_sequenceCopyOut( const gapi_stringSeq &from, DDS::StringSeq &to)
 {
    to.length(from._length);
-   for (CORBA::ULong i=0; i<from._length; i++)
+   for (DDS::ULong i=0; i<from._length; i++)
    {
-     to[i] = CORBA::string_dup(reinterpret_cast<const char *>(from._buffer[i]));
+     to[i] = DDS::string_dup(reinterpret_cast<const char *>(from._buffer[i]));
    }
 }
 
@@ -160,8 +160,8 @@ void DDS::ccpp_TopicBuiltinTopicData_copyOut(
     DDS::TopicBuiltinTopicData & to)
 {
     DDS::ccpp_BuiltinTopicKey_copyOut(from.key, to.key);
-    to.name = CORBA::string_dup(from.name);
-    to.type_name = CORBA::string_dup(from.type_name);
+    to.name = DDS::string_dup(from.name);
+    to.type_name = DDS::string_dup(from.type_name);
     DDS::ccpp_DurabilityQosPolicy_copyOut(from.durability, to.durability);
     DDS::ccpp_DurabilityServiceQosPolicy_copyOut(from.durability_service, to.durability_service);
     DDS::ccpp_DeadlineQosPolicy_copyOut(from.deadline, to.deadline);
@@ -183,8 +183,8 @@ void DDS::ccpp_SubscriptionBuiltinTopicData_copyOut(
 {
     DDS::ccpp_BuiltinTopicKey_copyOut(from.key, to.key);
     DDS::ccpp_BuiltinTopicKey_copyOut(from.participant_key, to.participant_key);
-    to.topic_name = CORBA::string_dup(from.topic_name);
-    to.type_name = CORBA::string_dup(from.type_name);
+    to.topic_name = DDS::string_dup(from.topic_name);
+    to.type_name = DDS::string_dup(from.type_name);
     DDS::ccpp_DurabilityQosPolicy_copyOut(from.durability, to.durability);
     DDS::ccpp_DeadlineQosPolicy_copyOut(from.deadline, to.deadline);
     DDS::ccpp_LatencyBudgetQosPolicy_copyOut(from.latency_budget, to.latency_budget);
@@ -206,8 +206,8 @@ void DDS::ccpp_PublicationBuiltinTopicData_copyOut(
 {
     DDS::ccpp_BuiltinTopicKey_copyOut(from.key, to.key);
     DDS::ccpp_BuiltinTopicKey_copyOut(from.participant_key, to.participant_key);
-    to.topic_name = CORBA::string_dup(from.topic_name);
-    to.type_name = CORBA::string_dup(from.type_name);
+    to.topic_name = DDS::string_dup(from.topic_name);
+    to.type_name = DDS::string_dup(from.type_name);
     DDS::ccpp_DurabilityQosPolicy_copyOut(from.durability, to.durability);
     DDS::ccpp_DeadlineQosPolicy_copyOut(from.deadline, to.deadline);
     DDS::ccpp_LatencyBudgetQosPolicy_copyOut(from.latency_budget, to.latency_budget);
@@ -228,12 +228,12 @@ void ccpp_CallBack_DeleteUserData( void * userData, void * arg)
 {
   if (userData)
   {
-    CORBA::Object_ptr cObject;
-    CORBA::LocalObject_ptr anObject;
+    DDS::Object_ptr cObject;
+    DDS::LocalObject_ptr anObject;
 
-    cObject = static_cast<CORBA::Object_ptr>(userData);
-    anObject = dynamic_cast<CORBA::LocalObject_ptr>(cObject);
-    CORBA::release(anObject);
+    cObject = static_cast<DDS::Object_ptr>(userData);
+    anObject = dynamic_cast<DDS::LocalObject_ptr>(cObject);
+    DDS::release(anObject);
   }
 }
 
@@ -255,7 +255,7 @@ void DDS::ccpp_SampleInfo_copyOut(const gapi_sampleInfo & from, DDS::SampleInfo 
     to.sample_state                = from.sample_state;
     to.view_state                  = from.view_state;
     to.instance_state              = from.instance_state;
-    to.valid_data                  = from.valid_data;
+    to.valid_data                  = from.valid_data != 0;
     ccpp_TimeStamp_copyOut(from.source_timestamp, to.source_timestamp);
     to.instance_handle             = from.instance_handle;
     to.publication_handle          = from.publication_handle;

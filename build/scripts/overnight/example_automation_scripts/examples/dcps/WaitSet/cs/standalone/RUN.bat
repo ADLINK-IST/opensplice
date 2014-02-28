@@ -8,4 +8,4 @@ set EXAMPLE_LANG=sacs
 
 call %FUNCTIONS% :runWaitSet
 
-call %FUNCTIONS% :waitsetCheckResults
+call %FUNCTIONS% :waitsetCheckResults >> run.log

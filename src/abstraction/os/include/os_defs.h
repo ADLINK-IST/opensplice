@@ -40,7 +40,7 @@ extern "C" {
 #error this platform must set only one of OS_SOCKET_USE_IOCTL and OS_SOCKET_USE_FCNTL to 1
 #endif
 
-#ifdef OSPL_BUILD_OS
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT

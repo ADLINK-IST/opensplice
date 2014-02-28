@@ -28,26 +28,32 @@
 #include <dds/core/macros.hpp>
 #include <dds/core/detail/conformance.hpp>
 
-namespace dds { namespace core {
-  typedef std::vector<uint8_t> ByteSeq;
-  typedef std::vector<std::string> StringSeq;
+namespace dds
+{
+namespace core
+{
+typedef std::vector<uint8_t> ByteSeq;
+typedef std::vector<std::string> StringSeq;
 
-  // DDS Null-Reference
-  class OMG_DDS_API null_type { };
-  extern const null_type OMG_DDS_API null;
+// DDS Null-Reference
+class OMG_DDS_API null_type { };
+extern const null_type OMG_DDS_API null;
 
 
 #ifdef OMG_DDS_EXTENSIBLE_AND_DYNAMIC_TOPIC_TYPE_SUPPORT
-  namespace policy {
+namespace policy
+{
 
-    typedef uint16_t DataRepresentationId;
-    typedef std::vector<DataRepresentationId> DataRepresentationIdSeq;
-  }
+typedef uint16_t DataRepresentationId;
+typedef std::vector<DataRepresentationId> DataRepresentationIdSeq;
+}
 #endif
 
-  namespace policy {
-    typedef uint32_t QosPolicyId;
-  }
-} }
+namespace policy
+{
+typedef uint32_t QosPolicyId;
+}
+}
+}
 
 #endif /* OMG_DDS_CORE_TYPES_HPP_ */

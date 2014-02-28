@@ -31,7 +31,7 @@ extern "C" {
 #include "os_signal.h"
 #include "os_iterator.h"
 
-#ifdef OSPL_BUILD_OS
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -264,7 +264,7 @@ os_findKeyFileByNameAndId(
     const os_int32 id);
 
 OS_API void
-os_cleanKeyFiles(
+os_cleanSharedMemAndOrKeyFiles(
     void);
 
 OS_API os_int32
@@ -287,6 +287,10 @@ os_sharedMemoryListDomainNamesFree(
 OS_API os_int32
 os_destroyKeyFile(
     const char * name);
+
+OS_API os_int32
+os_sharedMemorySegmentFree(
+    const char * fname);
 
 
 #undef OS_API

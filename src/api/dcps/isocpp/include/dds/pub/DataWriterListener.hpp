@@ -36,7 +36,7 @@ void NoOpDataWriterListener<T>::on_offered_deadline_missed(dds::pub::DataWriter<
         const dds::core::status::OfferedDeadlineMissedStatus& status) { }
 
 template <typename T>
-void NoOpDataWriterListener<T>::on_offered_incompatible_qos(dds::pub::DataWriter<T> writer,
+void NoOpDataWriterListener<T>::on_offered_incompatible_qos(dds::pub::DataWriter<T>& writer,
         const dds::core::status::OfferedIncompatibleQosStatus&  status) { }
 
 template <typename T>

@@ -56,26 +56,6 @@ function source_jacorb_runtime ()
         error_help "ERROR: JACORB_HOME is not correctly set to '$JACORB_HOME'"
         return 1
     fi
-
-    if [ "$(uname)" != 'SunOS' ]; then  
-        if [ "$(uname -o)" = 'Cygwin' ]; then
-            CLASSPATH="$JACORB_HOME/lib/endorsed/jacorb.jar;$CLASSPATH"
-            CLASSPATH="$JACORB_HOME/lib/endorsed/logkit.jar;$CLASSPATH"
-            CLASSPATH="$JACORB_HOME/lib/endorsed/avalon-framework.jar;$CLASSPATH"
-            CLASSPATH="$JACORB_HOME/lib/idl.jar;$CLASSPATH"
-        else
-            CLASSPATH="$local_root/lib/endorsed/jacorb.jar:$CLASSPATH"
-            CLASSPATH="$local_root/lib/endorsed/logkit.jar:$CLASSPATH"
-            CLASSPATH="$local_root/lib/endorsed/avalon-framework.jar:$CLASSPATH"
-            CLASSPATH="$local_root/lib/idl.jar:$CLASSPATH"
-        fi
-    else
-        CLASSPATH="$local_root/lib/endorsed/jacorb.jar:$CLASSPATH"
-        CLASSPATH="$local_root/lib/endorsed/logkit.jar:$CLASSPATH"
-        CLASSPATH="$local_root/lib/endorsed/avalon-framework.jar:$CLASSPATH"
-        CLASSPATH="$local_root/lib/idl.jar:$CLASSPATH"
-    fi
-    export CLASSPATH
 }
 
 function source_rtorb_runtime ()
@@ -85,23 +65,6 @@ function source_rtorb_runtime ()
         error_help "ERROR: RTORB_HOME is not correctly set to '$RTORB_HOME'"
         return 1
     fi
-
-    if [ "$(uname)" != 'SunOS' ]; then
-        if [ "$(uname -o)" = 'Cygwin' ]; then
-            CLASSPATH="$RTORB_HOME/lib/idl.jar;$RTORB_HOME/lib/logkit.jar;$CLASSPATH"
-            CLASSPATH="$RTORB_HOME/lib/endorsed/flexlm.jar;$CLASSPATH"
-            CLASSPATH="$RTORB_HOME/lib/endorsed/ofj.jar;$CLASSPATH"
-        else
-            CLASSPATH="$local_root/lib/idl.jar:$local_root/lib/logkit.jar:$CLASSPATH"
-            CLASSPATH="$local_root/lib/endorsed/flexlm.jar:$CLASSPATH"
-            CLASSPATH="$local_root/lib/endorsed/ofj.jar:$CLASSPATH"
-        fi
-    else
-        CLASSPATH="$local_root/lib/idl.jar:$local_root/lib/logkit.jar:$CLASSPATH"
-        CLASSPATH="$local_root/lib/endorsed/flexlm.jar:$CLASSPATH"
-        CLASSPATH="$local_root/lib/endorsed/ofj.jar:$CLASSPATH"
-    fi
-    export CLASSPATH
 }
 
 function source_java_runtime ()

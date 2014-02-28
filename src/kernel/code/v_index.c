@@ -399,7 +399,7 @@ v__indexNew(
             if (action != NULL) {
                 action(index, topic, arg);
             }
-            c_iterAppend(indexList, index);
+            (void)c_iterAppend(indexList, index);
         }
     } else {
         OS_REPORT(OS_ERROR,

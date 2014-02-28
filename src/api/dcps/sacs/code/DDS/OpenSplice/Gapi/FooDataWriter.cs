@@ -28,7 +28,7 @@ namespace DDS.OpenSplice.Gapi
          * register_instance(
          *     in Data instance_data);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_register_instance")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_register_instance")]
         public static extern long register_instance(
             IntPtr _this,
             IntPtr instance_data);
@@ -38,7 +38,7 @@ namespace DDS.OpenSplice.Gapi
          *    in Data instance_data,
          *     in Time_t source_timestamp);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_register_instance_w_timestamp")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_register_instance_w_timestamp")]
         public static extern long register_instance_w_timestamp(
             IntPtr _this,
             IntPtr instance_data,
@@ -49,7 +49,7 @@ namespace DDS.OpenSplice.Gapi
          *     in Data instance_data,
          *     in InstanceHandle_t handle);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_unregister_instance")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_unregister_instance")]
         public static extern ReturnCode unregister_instance(
             IntPtr _this,
             IntPtr instance_data,
@@ -61,7 +61,7 @@ namespace DDS.OpenSplice.Gapi
          *     in InstanceHandle_t handle,
          *     in Time_t source_timestamp);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_unregister_instance_w_timestamp")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_unregister_instance_w_timestamp")]
         public static extern ReturnCode unregister_instance_w_timestamp(
             IntPtr _this,
             IntPtr instance_data,
@@ -73,7 +73,7 @@ namespace DDS.OpenSplice.Gapi
          *     in Data instance_data,
          *     in InstanceHandle_t handle);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_write")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_write")]
         public static extern ReturnCode write(
             IntPtr _this,
             IntPtr instance_data,
@@ -85,7 +85,7 @@ namespace DDS.OpenSplice.Gapi
          *     in InstanceHandle_t handle,
          *     in Time_t source_timestamp);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_write_w_timestamp")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_write_w_timestamp")]
         public static extern ReturnCode write_w_timestamp(
             IntPtr _this,
             IntPtr instance_data,
@@ -97,7 +97,7 @@ namespace DDS.OpenSplice.Gapi
          *     in Data instance_data,
          *     in InstanceHandle_t instance_handle);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_dispose")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_dispose")]
         public static extern ReturnCode dispose(
             IntPtr _this,
             IntPtr instance_data,
@@ -109,7 +109,7 @@ namespace DDS.OpenSplice.Gapi
          *     in InstanceHandle_t instance_handle,
          *     in Time_t source_timestamp);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_dispose_w_timestamp")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_dispose_w_timestamp")]
         public static extern ReturnCode dispose_w_timestamp(
             IntPtr _this,
             IntPtr instance_data,
@@ -121,7 +121,7 @@ namespace DDS.OpenSplice.Gapi
          *     in Data instance_data,
          *     in InstanceHandle_t instance_handle);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_writedispose")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_writedispose")]
         public static extern ReturnCode writedispose(
             IntPtr _this,
             IntPtr instance_data,
@@ -133,7 +133,7 @@ namespace DDS.OpenSplice.Gapi
          *     in InstanceHandle_t instance_handle,
          *     in Time_t source_timestamp);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_writedispose_w_timestamp")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_writedispose_w_timestamp")]
         public static extern ReturnCode writedispose_w_timestamp(
             IntPtr _this,
             IntPtr instance_data,
@@ -145,7 +145,7 @@ namespace DDS.OpenSplice.Gapi
          *     inout Data key_holder,
          *     in InstanceHandle_t handle);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_get_key_value")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_get_key_value")]
         public static extern ReturnCode get_key_value(
             IntPtr _this,
             IntPtr key_holder,
@@ -155,7 +155,7 @@ namespace DDS.OpenSplice.Gapi
          *   lookup_instance(
          *       in Data instance_data);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_fooDataWriter_lookup_instance")]
+        [DllImport("ddskernel", EntryPoint = "gapi_fooDataWriter_lookup_instance")]
         public static extern long lookup_instance(
             IntPtr _this,
             IntPtr instance_data);

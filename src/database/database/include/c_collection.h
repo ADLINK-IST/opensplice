@@ -105,7 +105,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_DB
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -909,7 +909,6 @@ c_sequenceNew(
     c_long maxsize,
     c_long length);
 
-#define c_array(c) ((c_array)(c))
 #define c_sequence(c) ((c_sequence)(c))
 
 #undef OS_API

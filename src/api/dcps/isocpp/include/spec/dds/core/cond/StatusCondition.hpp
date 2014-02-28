@@ -21,8 +21,15 @@
 #include <dds/core/cond/detail/StatusCondition.hpp>
 #include <dds/core/cond/TStatusCondition.hpp>
 
-namespace dds { namespace core { namespace cond {
-  typedef detail::StatusCondition StatusCondition;
-} } }
+namespace dds
+{
+namespace core
+{
+namespace cond
+{
+typedef detail::StatusCondition StatusCondition;
+}
+}
+}
 
 #endif /* OMG_DDS_CORE_STATUSCONDITION_HPP_ */

@@ -36,7 +36,7 @@ HDE_SUBDIR = $(shell expr "${SPLICE_TARGET}" : '\([^-]*\)')
 
 TMP_OSPL_HOME = $(OSPL_HOME_NORMALIZED)/install/HDE/$(HDE_SUBDIR)$(HDE_SUBDIR_SUFFIX)
 
-ifeq (win,$(findstring win,$(SPLICE_HOST)))
+ifneq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
 GEN_OSPL_HOME = $(shell cygpath --mixed "$(TMP_OSPL_HOME)")
 else
 GEN_OSPL_HOME = $(TMP_OSPL_HOME)
@@ -58,7 +58,7 @@ demosmpc:
 
 clean:
 	@rm -rf HDE RTS VC
-	@rm -f x86.linux2.6*.xml
+	@rm -f x86.linux*.xml
 	@rm -f x86.win32*.xml
 	@rm -f x86_64.win64*.xml
 

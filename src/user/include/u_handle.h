@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef U_HANDLE_H
@@ -20,16 +20,16 @@ extern "C" {
 #include "v_public.h"
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_USER
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
 #endif
 /* !!!!!!!!NOTE From here no more includes are allowed!!!!!!! */
 
-typedef c_longlong u_handle;
+typedef v_handle u_handle;
 
-OS_API extern const u_handle U_HANDLE_NIL;
+extern const u_handle U_HANDLE_NIL;
 
 OS_API u_handle
 u_handleNew(

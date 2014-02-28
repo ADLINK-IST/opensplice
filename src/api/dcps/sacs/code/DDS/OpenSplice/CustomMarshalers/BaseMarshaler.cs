@@ -220,7 +220,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         public static string ReadString(IntPtr from, int offset)
         {
             IntPtr stringPtr = Marshal.ReadIntPtr(new IntPtr(from.ToInt64() + offset));
-            return Marshal.PtrToStringAnsi(stringPtr);
+            return stringPtr != IntPtr.Zero ? Marshal.PtrToStringAnsi(stringPtr) : "";
         }
 
         public static object[] ReadArray(IntPtr basePtr, IntPtr from, int offset)
@@ -234,6 +234,5 @@ namespace DDS.OpenSplice.CustomMarshalers
         }
 
         #endregion
-        
     }
 }

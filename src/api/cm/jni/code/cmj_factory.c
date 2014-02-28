@@ -341,6 +341,42 @@ FUNCTION(jniEntityGetStatistics)(
     return jresult;
 }
 
+/**
+ * @brief Resolves the statistics of the supplied entity.
+ *
+ * - Class:     org_opensplice_api_cm_com_JniCommunicator
+ * - Method:    jniEntityGetStatistics
+ * - Signature: (Ljava/lang/String;)Ljava/lang/String;
+ *
+ * @param env The JNI environment.
+ * @param this The Java object that called this function.
+ * @param jentity The entity, which statistics must be resolved.
+ * @return The statistics of the entity.
+ */
+JNIEXPORT jstring JNICALL
+FUNCTION(jniEntitiesGetStatistics)(
+    JNIEnv *env,
+    jobject this,
+    jstring jentities)
+{
+    const c_char* xmlEntities;
+    c_char* statistics;
+    jobject thisCopy;
+    jstring jresult;
+
+    cmj_checkConnection(env);
+    thisCopy = this;
+    jresult = NULL;
+    xmlEntities = (*env)->GetStringUTFChars(env, jentities, 0);
+    statistics = cmx_entitiesStatistics(xmlEntities);
+    (*env)->ReleaseStringUTFChars(env, jentities, xmlEntities);
+
+    if(statistics != NULL){
+        jresult = (*env)->NewStringUTF(env, statistics);
+        os_free(statistics);
+    }
+    return jresult;
+}
 
 /**
  * @brief Applies the supplied QoS to the supplied entity.

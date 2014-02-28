@@ -29,6 +29,10 @@
 #include "q_rtps.h"
 #include "q_time.h"
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 typedef struct {
   unsigned char id[4];
 } nn_protocolid_t;
@@ -93,19 +97,27 @@ struct cdrstring {
 #define NN_LOCATOR_KIND_RESERVED 0
 #define NN_LOCATOR_KIND_UDPv4 1
 #define NN_LOCATOR_KIND_UDPv6 2
+#define NN_LOCATOR_KIND_TCPv4 4
+#define NN_LOCATOR_KIND_TCPv6 8
 #define NN_LOCATOR_PORT_INVALID 0
 
-#define NN_VENDORID_UNKNOWN        {{ 0x00, 0x00 }}
-#define NN_VENDORID_RTI            {{ 0x01, 0x01 }}
-#define NN_VENDORID_PRISMTECH      {{ 0x01, 0x02 }}
-#define NN_VENDORID_OCI            {{ 0x01, 0x03 }}
-#define NN_VENDORID_MILSOFT        {{ 0x01, 0x04 }}
-#define NN_VENDORID_KONGSBERG      {{ 0x01, 0x05 }}
-#define NN_VENDORID_TWINOAKS       {{ 0x01, 0x06 }}
-#define NN_VENDORID_LAKOTA         {{ 0x01, 0x07 }}
-#define NN_VENDORID_ICOUP          {{ 0x01, 0x08 }}
+#define NN_VENDORID_UNKNOWN           {{ 0x00, 0x00 }}
+#define NN_VENDORID_RTI               {{ 0x01, 0x01 }}
+#define NN_VENDORID_PRISMTECH_OSPL    {{ 0x01, 0x02 }}
+#define NN_VENDORID_OCI               {{ 0x01, 0x03 }}
+#define NN_VENDORID_MILSOFT           {{ 0x01, 0x04 }}
+#define NN_VENDORID_KONGSBERG         {{ 0x01, 0x05 }}
+#define NN_VENDORID_TWINOAKS          {{ 0x01, 0x06 }}
+#define NN_VENDORID_LAKOTA            {{ 0x01, 0x07 }}
+#define NN_VENDORID_ICOUP             {{ 0x01, 0x08 }}
+#define NN_VENDORID_ETRI              {{ 0x01, 0x09 }}
+#define NN_VENDORID_RTI_MICRO         {{ 0x01, 0x0a }}
+#define NN_VENDORID_PRISMTECH_JAVA    {{ 0x01, 0x0b }}
+#define NN_VENDORID_PRISMTECH_GATEWAY {{ 0x01, 0x0c }}
+#define NN_VENDORID_PRISMTECH_LITE    {{ 0x01, 0x0d }}
+#define NN_VENDORID_TECHNICOLOR       {{ 0x01, 0x0e }}
 
-#define MY_VENDOR_ID NN_VENDORID_PRISMTECH
+#define MY_VENDOR_ID NN_VENDORID_PRISMTECH_OSPL
 
 /* Only one specific version is grokked */
 #define RTPS_MAJOR 2
@@ -145,8 +157,10 @@ typedef enum SubmessageKind {
   SMID_HEARTBEAT_FRAG = 0x13,
   SMID_DATA = 0x15,
   SMID_DATA_FRAG = 0x16,
-  /** vendor-specific ones (0x80 .. 0xff) */
-  SMID_PT_INFO_CONTAINER = 0x80
+  /* vendor-specific sub messages (0x80 .. 0xff) */
+  SMID_PT_INFO_CONTAINER = 0x80,
+  SMID_PT_MSG_LEN = 0x81,
+  SMID_PT_ENTITY_ID = 0x82
 } SubmessageKind_t;
 
 typedef struct InfoTimestamp {
@@ -207,6 +221,11 @@ typedef struct DataFrag {
 } DataFrag_t;
 #define DATAFRAG_FLAG_INLINE_QOS 0x02
 #define DATAFRAG_FLAG_KEYFLAG 0x04
+
+typedef struct MsgLen {
+  SubmessageHeader_t smhdr;
+  os_uint32 length;
+} MsgLen_t;
 
 typedef struct AckNack {
   SubmessageHeader_t smhdr;
@@ -374,6 +393,7 @@ typedef struct ParticipantMessageData {
 #define PID_RELIABILITY_OFFERED                 0x19
 
 #define PID_PRISMTECH_WRITER_INFO               (PID_VENDORSPECIFIC_FLAG | 0x1)
+#define PID_PRISMTECH_PARTICIPANT_VERSION_INFO  (PID_VENDORSPECIFIC_FLAG | 0x7)
 
 /* parameter ids for READER_DATA_LIFECYCLE & WRITER_DATA_LIFECYCLE are
    undefined, but let's publish them anyway */
@@ -383,6 +403,10 @@ typedef struct ParticipantMessageData {
 /* ENDPOINT_GUID is formally undefined, so in strictly conforming
    mode, we use our own */
 #define PID_PRISMTECH_ENDPOINT_GUID             (PID_VENDORSPECIFIC_FLAG | 0x4)
+
+#if defined (__cplusplus)
+}
+#endif
 
 /* Relaxed QoS matching readers/writers are best ignored by
    implementations that don't understand them.  This also covers "old"

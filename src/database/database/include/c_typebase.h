@@ -20,7 +20,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_DB
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -56,6 +56,7 @@ extern "C" {
         {c_object*r=(c_object *)C_DISPLACE((ptr),(offset));*r=o;}
 
 C_CLASS(c_base);
+C_CLASS(c_type);
 
 #define OS_ALIGNMENT       (8)
 
@@ -225,6 +226,7 @@ OS_API c_value c_objectValue    (const c_voidp     object);
 OS_API c_value c_voidpValue     (const c_voidp     object);
 
 OS_API c_char *   c_valueImage       (const c_value v);
+OS_API c_bool     c_imageValue       (const char *image, c_value *imgValue, c_type imgType);
 OS_API c_equality c_valueCompare     (const c_value v1, const c_value v2);
 OS_API c_value    c_valueStringMatch (const c_value patternValue, const c_value stringValue);
 OS_API c_value    c_valueCalculate   (const c_value v1, const c_value v2, const c_operator o);

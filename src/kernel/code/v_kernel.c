@@ -48,6 +48,7 @@
 #include "v__crc.h"
 #include "os.h"
 #include "os_report.h"
+#include "os_uniqueNodeId.h"
 #include "v__policy.h"
 #include "v__partition.h"
 
@@ -447,8 +448,15 @@ v_kernelWaitForDurabilityAvailability(
             }
             break;
         case STATE_OPERATIONAL:
-            /*Result is ok, move on to next durability service. */
+            /* Result is ok, move on to next durability service. */
             break;
+        case STATE_INCOMPATIBLE_CONFIGURATION:
+            /* The durability service could not match its configuration,
+             * e.g., because no aligner could be found within the specified
+             * time to wait for an aligner. In this case fall-through on
+             * purpose and return PRECONDITION_NOT_MET to the readers that
+             * called this method.
+             */
         case STATE_DIED:
             /*Fall-through on purpose */
         case STATE_TERMINATING:
@@ -604,11 +612,9 @@ v_kernelNew(
     c_lockInit(&kernel->lock,SHARED_LOCK);
     kernel->qos = v_kernelQosNew(kernel, qos);
     {
-        os_time time;
         /* Fill GID with 'random' value */
         memset(&kernel->GID, 0, sizeof(kernel->GID));
-        time = os_timeGet();
-        kernel->GID.systemId = time.tv_nsec;
+        kernel->GID.systemId = os_uniqueNodeIdGet();
     }
     kernel->participants = c_setNew(v_kernelType(kernel,K_PARTICIPANT));
     kernel->partitions = c_tableNew(v_kernelType(kernel,K_DOMAIN),"name");

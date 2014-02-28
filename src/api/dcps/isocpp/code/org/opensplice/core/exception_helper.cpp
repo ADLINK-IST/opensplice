@@ -20,117 +20,127 @@
 
 #include <org/opensplice/core/exception_helper.hpp>
 
-namespace {
-    const char *spec_return_codes[13] = {
-        "DDS::RETCODE_OK",
-        "DDS::RETCODE_ERROR",
-        "DDS::RETCODE_UNSUPPORTED",
-        "DDS::RETCODE_BAD_PARAMETER",
-        "DDS::RETCODE_PRECONDITION_NOT_MET",
-        "DDS::RETCODE_OUT_OF_RESOURCES",
-        "DDS::RETCODE_NOT_ENABLED",
-        "DDS::RETCODE_IMMUTABLE_POLICY",
-        "DDS::RETCODE_INCONSISTENT_POLICY",
-        "DDS::RETCODE_ALREADY_DELETED",
-        "DDS::RETCODE_TIMEOUT",
-        "DDS::RETCODE_NO_DATA",
-        "DDS::RETCODE_ILLEGAL_OPERATION" };
+namespace
+{
+const char* spec_return_codes[13] =
+{
+    "DDS::RETCODE_OK",
+    "DDS::RETCODE_ERROR",
+    "DDS::RETCODE_UNSUPPORTED",
+    "DDS::RETCODE_BAD_PARAMETER",
+    "DDS::RETCODE_PRECONDITION_NOT_MET",
+    "DDS::RETCODE_OUT_OF_RESOURCES",
+    "DDS::RETCODE_NOT_ENABLED",
+    "DDS::RETCODE_IMMUTABLE_POLICY",
+    "DDS::RETCODE_INCONSISTENT_POLICY",
+    "DDS::RETCODE_ALREADY_DELETED",
+    "DDS::RETCODE_TIMEOUT",
+    "DDS::RETCODE_NO_DATA",
+    "DDS::RETCODE_ILLEGAL_OPERATION"
+};
 
-    const std::size_t spec_return_codes_size = (sizeof(spec_return_codes) / sizeof(spec_return_codes[0]));
+const std::size_t spec_return_codes_size = (sizeof(spec_return_codes) / sizeof(spec_return_codes[0]));
 
-    const char * opensplice_error_codes[22] = {
-        "UNDEFINED",
-        "ERROR",
-        "OUT_OF_RESOURCES",
-        "CREATION_KERNEL_ENTITY_FAILED",
-        "INVALID_VALUE",
-        "INVALID_DURATION",
-        "INVALID_TIME",
-        "ENTITY_INUSE",
-        "CONTAINS_ENTITIES",
-        "ENTITY_UNKNOWN",
-        "HANDLE_NOT_REGISTERED",
-        "HANDLE_NOT_MATCH",
-        "HANDLE_INVALID",
-        "INVALID_SEQUENCE",
-        "UNSUPPORTED_VALUE",
-        "INCONSISTENT_VALUE",
-        "IMMUTABLE_QOS_POLICY",
-        "INCONSISTENT_QOS",
-        "UNSUPPORTED_QOS_POLICY",
-        "CONTAINS_CONDITIONS",
-        "CONTAINS_LOANS",
-        "INCONSISTENT_TOPIC" };
+const char* opensplice_error_codes[22] =
+{
+    "UNDEFINED",
+    "ERROR",
+    "OUT_OF_RESOURCES",
+    "CREATION_KERNEL_ENTITY_FAILED",
+    "INVALID_VALUE",
+    "INVALID_DURATION",
+    "INVALID_TIME",
+    "ENTITY_INUSE",
+    "CONTAINS_ENTITIES",
+    "ENTITY_UNKNOWN",
+    "HANDLE_NOT_REGISTERED",
+    "HANDLE_NOT_MATCH",
+    "HANDLE_INVALID",
+    "INVALID_SEQUENCE",
+    "UNSUPPORTED_VALUE",
+    "INCONSISTENT_VALUE",
+    "IMMUTABLE_QOS_POLICY",
+    "INCONSISTENT_QOS",
+    "UNSUPPORTED_QOS_POLICY",
+    "CONTAINS_CONDITIONS",
+    "CONTAINS_LOANS",
+    "INCONSISTENT_TOPIC"
+};
 
-    const std::size_t opensplice_error_codes_size = (sizeof(opensplice_error_codes) / sizeof(opensplice_error_codes[0]));
+const std::size_t opensplice_error_codes_size = (sizeof(opensplice_error_codes) / sizeof(opensplice_error_codes[0]));
 
-    void populate(std::string& message,
-                  bool ospl_error_info,
-                  bool /* stack_trace */)
+void populate(std::string& message,
+              bool ospl_error_info,
+              bool /* stack_trace */)
+{
+    if(ospl_error_info)
     {
-        if (ospl_error_info)
+        try
         {
-            try
+            std::string tmp = message + "\n  Preceding OpenSplice Error Information : ";
+            std::string not_available = "Not available - ";
+            DDS::ErrorInfo tss_error_interface;
+            DDS::ReturnCode_t result = tss_error_interface.update();
+            if(result == DDS::RETCODE_OK)
             {
-                std::string tmp = message + "\n  Preceding OpenSplice Error Information : ";
-                std::string not_available = "Not available - ";
-                DDS::ErrorInfo tss_error_interface;
-                DDS::ReturnCode_t result = tss_error_interface.update();
-                if (result == DDS::RETCODE_OK)
-                {
-                    DDS::ErrorCode_t ospl_error_code = -1;
-                    DDS::String_var error_info_string;
-                    result = tss_error_interface.get_code(ospl_error_code);
-                    tmp += "\n    Error code : ";
-                    tmp += (result == DDS::RETCODE_OK && ospl_error_code >= 0
-                            && static_cast<std::size_t> (ospl_error_code) < opensplice_error_codes_size
-                                ? opensplice_error_codes[ospl_error_code]
-                                :    not_available + (ospl_error_code < 0 || static_cast<std::size_t> (ospl_error_code) > opensplice_error_codes_size
-                                                    ? "value out of known range"
-                                                    : spec_return_codes[result]));
-                    result = tss_error_interface.get_message(error_info_string.out());
-                    tmp += "\n    Message: ";
-                    tmp += (result == DDS::RETCODE_OK
-                            ? error_info_string.in()
-                            : not_available + spec_return_codes[result]);
-                    result = tss_error_interface.get_location(error_info_string.out());
-                    tmp += "\n    Location: ";
-                    tmp += (result == DDS::RETCODE_OK
-                            ? error_info_string.in()
-                            : not_available + spec_return_codes[result]);
-                    result = tss_error_interface.get_source_line(error_info_string.out());
-                    tmp += "\n    Source line: ";
-                    tmp += (result == DDS::RETCODE_OK
-                            ? error_info_string.in()
-                            : not_available + spec_return_codes[result]);
-                    //result = tss_error_interface.get_stack_trace(error_info_string.out());
-                    //tmp += "\n    Pseudo stack trace: ";
-                    //tmp += (result == DDS::RETCODE_OK
-                            //? error_info_string.in()
-                            //: not_available + spec_return_codes[result]);
-                }
-                else
-                {
-                    tmp += not_available + spec_return_codes[result];
-                }
-                message.swap(tmp);
+                DDS::ErrorCode_t ospl_error_code = -1;
+                DDS::String_var error_info_string;
+                result = tss_error_interface.get_code(ospl_error_code);
+                tmp += "\n    Error code : ";
+                tmp += (result == DDS::RETCODE_OK && ospl_error_code >= 0
+                        && static_cast<std::size_t>(ospl_error_code) < opensplice_error_codes_size
+                        ? opensplice_error_codes[ospl_error_code]
+                        :    not_available + (ospl_error_code < 0 || static_cast<std::size_t>(ospl_error_code) > opensplice_error_codes_size
+                                              ? "value out of known range"
+                                              : spec_return_codes[result]));
+                result = tss_error_interface.get_message(error_info_string.out());
+                tmp += "\n    Message: ";
+                tmp += (result == DDS::RETCODE_OK
+                        ? error_info_string.in()
+                        : not_available + spec_return_codes[result]);
+                result = tss_error_interface.get_location(error_info_string.out());
+                tmp += "\n    Location: ";
+                tmp += (result == DDS::RETCODE_OK
+                        ? error_info_string.in()
+                        : not_available + spec_return_codes[result]);
+                result = tss_error_interface.get_source_line(error_info_string.out());
+                tmp += "\n    Source line: ";
+                tmp += (result == DDS::RETCODE_OK
+                        ? error_info_string.in()
+                        : not_available + spec_return_codes[result]);
+                //result = tss_error_interface.get_stack_trace(error_info_string.out());
+                //tmp += "\n    Pseudo stack trace: ";
+                //tmp += (result == DDS::RETCODE_OK
+                //? error_info_string.in()
+                //: not_available + spec_return_codes[result]);
             }
-            catch (...)
+            else
             {
-                // Probably out of mem. Not much we can do.
+                tmp += not_available + spec_return_codes[result];
             }
+            message.swap(tmp);
         }
-
-        /** @todo Proper stack trace */
+        catch(...)
+        {
+            // Probably out of mem. Not much we can do.
+        }
     }
+
+    /** @internal @todo Proper stack trace */
+}
 }
 
-namespace org { namespace opensplice { namespace core {
+namespace org
+{
+namespace opensplice
+{
+namespace core
+{
 
 std::string exception_helper(const char* message,
                              const char* function,
-                            bool ospl_error_info,
-                            bool stack_trace)
+                             bool ospl_error_info,
+                             bool stack_trace)
 {
     std::string str(message);
     str += function;
@@ -139,8 +149,8 @@ std::string exception_helper(const char* message,
 }
 
 std::string exception_helper(const std::string& message,
-                              bool ospl_error_info,
-                              bool stack_trace)
+                             bool ospl_error_info,
+                             bool stack_trace)
 {
     std::string str(message);
     populate(str, ospl_error_info, stack_trace);
@@ -156,11 +166,11 @@ std::string dds_return_code_to_string(DDS::ReturnCode_t code)
 void check_and_throw_impl(DDS::ReturnCode_t code,
                           const std::string& context)
 {
-    if (code && code != DDS::RETCODE_NO_DATA)
+    if(code && code != DDS::RETCODE_NO_DATA)
     {
         std::string message = ". DDS API call returned ";
         message += dds_return_code_to_string(code);
-        switch (code)
+        switch(code)
         {
             case DDS::RETCODE_ERROR:
                 throw dds::core::Error(exception_helper("dds::core::Error : " + context + message));
@@ -191,4 +201,6 @@ void check_and_throw_impl(DDS::ReturnCode_t code,
         }
     }
 }
-} } }
+}
+}
+}

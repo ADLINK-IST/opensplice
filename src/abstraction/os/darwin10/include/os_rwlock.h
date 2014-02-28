@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 
@@ -17,6 +17,8 @@
 extern "C" {
 #endif
 
+/* Here we use <> instead of "" because we want to include
+ * the top level header file and not the local one.*/
 #include <os_mutex.h>
 
 typedef os_mutex os_os_rwlock;

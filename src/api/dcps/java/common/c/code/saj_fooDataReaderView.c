@@ -52,7 +52,7 @@ fillReaderContext(
         ctx->infoSeqLen = 0;
     }
     ctx->max_samples = max_samples;
-    ctx->CDRCopy = NULL;
+    ctx->CDRCopy = 0;
     ctx->pardemCtx = NULL;
     return GAPI_RETCODE_OK;
 }
@@ -118,6 +118,8 @@ SAJ_FUNCTION(jniRead)(
     saj_readerContext ctx;
     gapi_fooDataReaderView dataReaderView;
 
+    OS_UNUSED_ARG(object);
+
     dataReaderView = (gapi_fooDataReaderView)saj_read_gapi_address(env, DataReaderView);
     result = fillReaderContext(env,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -177,6 +179,8 @@ SAJ_FUNCTION(jniTake)(
     saj_readerContext ctx;
     gapi_fooDataReaderView dataReaderView;
 
+    OS_UNUSED_ARG(object);
+
     dataReaderView = (gapi_fooDataReaderView)saj_read_gapi_address(env, DataReaderView);
     result = fillReaderContext(env,
         (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -232,6 +236,8 @@ SAJ_FUNCTION(jniReadWCondition)(
     saj_readerContext ctx;
     gapi_fooDataReaderView dataReaderView;
 
+    OS_UNUSED_ARG(object);
+
     dataReaderView = (gapi_fooDataReaderView)saj_read_gapi_address(env, DataReaderView);
     result = fillReaderContext(env,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -285,6 +291,8 @@ SAJ_FUNCTION(jniTakeWCondition)(
     saj_readerContext ctx;
     gapi_fooDataReaderView dataReaderView;
 
+    OS_UNUSED_ARG(object);
+
     dataReaderView = (gapi_fooDataReaderView)saj_read_gapi_address(env, DataReaderView);
     result = fillReaderContext(env,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -335,9 +343,10 @@ SAJ_FUNCTION(jniReadNextSample)(
     gapi_sampleInfo *si = NULL;
     C_STRUCT(saj_dstInfo) dstInfo;
     gapi_foo *dst = NULL;
-    jobject data_element;
+    jobject data_element = NULL;
     sajReaderCopyCache *rc = saj_copyCacheReaderCache((saj_copyCache)(PA_ADDRCAST)copyCache);
 
+    OS_UNUSED_ARG(object);
     assert (DataReaderView);
 
     if (received_data != NULL) {
@@ -392,8 +401,10 @@ SAJ_FUNCTION(jniTakeNextSample)(
     gapi_sampleInfo *si = NULL;
     C_STRUCT(saj_dstInfo) dstInfo;
     gapi_foo *dst = NULL;
-    jobject data_element;
+    jobject data_element = NULL;
     sajReaderCopyCache *rc = saj_copyCacheReaderCache((saj_copyCache)(PA_ADDRCAST)copyCache);
+
+    OS_UNUSED_ARG(object);
 
     if (received_data != NULL) {
         data_element = (*env)->GetObjectField(env, received_data, rc->dataHolder_value_fid);
@@ -458,6 +469,8 @@ SAJ_FUNCTION(jniReadInstance)(
     saj_readerContext ctx;
     gapi_fooDataReaderView dataReaderView;
 
+    OS_UNUSED_ARG(object);
+
     dataReaderView = (gapi_fooDataReaderView)saj_read_gapi_address(env, DataReaderView);
     result = fillReaderContext(env,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -520,6 +533,8 @@ SAJ_FUNCTION(jniTakeInstance)(
     saj_readerContext ctx;
     gapi_fooDataReaderView dataReaderView;
 
+    OS_UNUSED_ARG(object);
+
     dataReaderView = (gapi_fooDataReaderView)saj_read_gapi_address(env, DataReaderView);
     result = fillReaderContext(env,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -581,6 +596,8 @@ SAJ_FUNCTION(jniReadNextInstance)(
     jint result;
     saj_readerContext ctx;
     gapi_fooDataReaderView dataReaderView;
+
+    OS_UNUSED_ARG(object);
 
     dataReaderView = (gapi_fooDataReaderView)saj_read_gapi_address(env, DataReaderView);
     result = fillReaderContext(env,
@@ -645,6 +662,8 @@ SAJ_FUNCTION(jniTakeNextInstance)(
     saj_readerContext ctx;
     gapi_fooDataReaderView dataReaderView;
 
+    OS_UNUSED_ARG(object);
+
     dataReaderView = (gapi_fooDataReaderView)saj_read_gapi_address(env, DataReaderView);
     result = fillReaderContext(env,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -703,6 +722,8 @@ SAJ_FUNCTION(jniReadNextInstanceWCondition)(
     saj_readerContext ctx;
     gapi_fooDataReaderView dataReaderView;
 
+    OS_UNUSED_ARG(object);
+
     dataReaderView = (gapi_fooDataReaderView)saj_read_gapi_address(env, DataReaderView);
     result = fillReaderContext(env,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -759,6 +780,8 @@ SAJ_FUNCTION(jniTakeNextInstanceWCondition)(
     saj_readerContext ctx;
     gapi_fooDataReaderView dataReaderView;
 
+    OS_UNUSED_ARG(object);
+
     dataReaderView = (gapi_fooDataReaderView)saj_read_gapi_address(env, DataReaderView);
     result = fillReaderContext(env,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -809,9 +832,10 @@ SAJ_FUNCTION(jniGetKeyValue)(
     C_STRUCT(saj_dstInfo) dstInfo;
     gapi_foo *dst = NULL;
     jint result;
-    jobject element;
+    jobject element = NULL;
     sajReaderCopyCache *rc = saj_copyCacheReaderCache((saj_copyCache)(PA_ADDRCAST)copyCache);
 
+    OS_UNUSED_ARG(object);
     assert (DataReaderView);
 
     if (key_holder != NULL) {
@@ -857,6 +881,7 @@ SAJ_FUNCTION(jniLookupInstance)(
     gapi_foo *src = NULL;
     jlong result;
 
+    OS_UNUSED_ARG(object);
     assert (DataReaderView);
 
     if (instance != NULL) {

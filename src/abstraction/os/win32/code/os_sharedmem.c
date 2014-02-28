@@ -464,7 +464,7 @@ os_findKeyFile(
 char *
 os_findKeyFileByNameAndId(
     const char *name,
-    int id)
+    const os_int32 id)
 {
     HANDLE fileHandle;
     WIN32_FIND_DATA fileData;
@@ -593,7 +593,6 @@ os_sharedMemoryListUserProcesses(
     os_char line[512];
     os_int32 pidcount = 0;
     os_int32 pidtemp;
-    os_int32 *ppid;
     FILETIME timetmp;
     FILETIME creationTime;
     FILETIME exitTime;
@@ -816,19 +815,27 @@ os_int32
 os_destroyKeyFile(
     const char *name)
 {
-    /*char *key_file_name;*/
-    char *dbf_file_name;
+    os_char dbf_file_name [MAX_PATH];
     os_char *ptr;
+    HANDLE fileHandle;
+    WIN32_FIND_DATA fileData;
 
-    /*key_file_name = os_findKeyFile(name);*/
-    if (name ==  NULL) {
+    if (name ==  NULL)
+    {
         return 1;
     }
-    if (DeleteFile(name) == 0)
+
+    fileHandle = FindFirstFile(name, &fileData);
+
+    if (fileHandle != INVALID_HANDLE_VALUE)
     {
-        OS_REPORT_1(OS_ERROR, "os_destroyKeyFile", 0, "Can not Delete the key file %d", (int)GetLastError());
-        /*os_free(key_file_name);*/
-        return 1;
+        /* file exists so delete */
+        CloseHandle(fileHandle);
+
+        if (DeleteFile(name) == 0)
+        {
+            OS_REPORT_1(OS_ERROR, "os_destroyKeyFile", 0, "Can not Delete the key file %d", (int)GetLastError());
+        }
     }
 
     os_strcpy(dbf_file_name, name);
@@ -839,15 +846,26 @@ os_destroyKeyFile(
         dbf_file_name[ptr - dbf_file_name + 2] = 'B';
         dbf_file_name[ptr - dbf_file_name + 3] = 'F';
 
-        if (DeleteFile(dbf_file_name) == 0)
+        fileHandle = FindFirstFile(dbf_file_name, &fileData);
+
+        if (fileHandle != INVALID_HANDLE_VALUE)
         {
-            OS_REPORT_1(OS_ERROR, "os_destroyKeyFile", 0, "Can not Delete the DBF file %d", (int)GetLastError());
-            os_free(dbf_file_name);
-            return 1;
+            CloseHandle(fileHandle);
+            if (DeleteFile(dbf_file_name) == 0)
+            {
+                OS_REPORT_1(OS_ERROR, "os_destroyKeyFile", 0, "Can not Delete the DBF file %d", (int)GetLastError());
+                return 1;
+            }
         }
     }
-    /*os_free(key_file_name);*/
-    os_free(dbf_file_name);
+
+    return 0;
+}
+
+int
+os_sharedMemorySegmentFree(
+    const char * name)
+{
     return 0;
 }
 
@@ -855,7 +873,7 @@ os_destroyKeyFile(
  *  following any spliced termination other than through ospl tool
  */
 void
-os_cleanKeyFiles(
+os_cleanSharedMemAndOrKeyFiles(
     void)
 {
     HANDLE hFile;

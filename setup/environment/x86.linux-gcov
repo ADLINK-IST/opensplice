@@ -1,0 +1,39 @@
+. "$OSPL_HOME/bin/checkconf"
+
+SPLICE_HOST=x86.linux-gcov
+SPLICE_TARGET=x86.linux-gcov
+export SPLICE_HOST SPLICE_TARGET
+echo
+
+ERRS=0
+gcc_check || ERRS=1
+glibc_check || ERRS=1
+valgrind_check || ERRS=1
+make_check || ERRS=1
+gawk_check || ERRS=1
+bison_check || ERRS=1
+flex_check || ERRS=1
+javac_check || ERRS=1
+gmcs_check || ERRS=1
+tao_check || ERRS=1
+jacorb_check || ERRS=1
+gsoap_check || ERRS=1
+doxygen_check || ERRS=1
+
+SPLICE_HOST_FULL=x86.linux-gcc${GCC_FULLVERSION}-glibc${GLIBC_VERSION}-gcov
+SPLICE_TARGET_FULL=$SPLICE_HOST_FULL
+export SPLICE_HOST_FULL SPLICE_TARGET_FULL
+
+if [ -z $REPORT ]
+then
+    if [ "$ERRS" = "0" ]
+    then
+        echo Configuration OK
+        CONFIGURATION=OK
+    else
+        echo Configuration Invalid
+        CONFIGURATION=INVALID
+    fi
+    export CONFIGURATION
+    cleanup_checks
+fi

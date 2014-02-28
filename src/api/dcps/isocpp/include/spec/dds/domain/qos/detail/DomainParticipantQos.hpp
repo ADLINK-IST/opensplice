@@ -24,15 +24,19 @@
 #include <foo/bar/domain/qos/DomainParticipantQos.hpp>
 
 
-namespace dds {
-  namespace domain {
-    namespace qos {
-      namespace detail {
-      typedef ::dds::core::TEntityQos< foo::bar::domain::qos::DomainParticipantQos >
-      DomainParticipantQos;
-      }
-    }
-  }
+namespace dds
+{
+namespace domain
+{
+namespace qos
+{
+namespace detail
+{
+typedef ::dds::core::TEntityQos< foo::bar::domain::qos::DomainParticipantQos >
+DomainParticipantQos;
+}
+}
+}
 }
 
 #endif /* OMG_DDS_DOMAIN_QOS_DETAIL_DOMAINPARTICIPANTQOS_HPP_ */

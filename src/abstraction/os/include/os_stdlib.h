@@ -32,7 +32,7 @@
 extern "C" {
 #endif
 
-#ifdef OSPL_BUILD_OS
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -338,8 +338,17 @@ os_strncpy(
  */
 OS_API size_t
 os_strnlen(
-   char *ptr,
+   const char *ptr,
    size_t maxlen);
+
+/** \brief os_strsep wrapper
+ *
+ * See strsep()
+ */
+OS_API char *
+os_strsep(
+   char **stringp,
+   const char *delim);
 
 /** \brief sprintf wrapper
  *
@@ -411,6 +420,28 @@ os_strtoll(
     char **endptr,
     os_int32 base);
 
+/** \brief strtoull wrapper
+ *
+ * Translate string str to unsigned long long value considering
+ * base. If base is 0, base is determined from
+ * str ([1-9]+ base = 10, 0x[0-9]+ base = 16,
+ * 0X[0-9]+ base = 16, 0[0-9] base = 8).
+ *
+ * Precondition:
+ *   errno is set to 0
+ *
+ * Possible results:
+ * - return 0 and errno == EINVAL in case of conversion error
+ * - return OS_ULLONG_MIN and errno == ERANGE
+ * - return OS_ULLONG_MAX and errno == ERANGE
+ * - return value(str)
+ */
+OS_API unsigned long long
+os_strtoull(
+    const char *str,
+    char **endptr,
+    os_int32 base);
+
 /** \brief atoll wrapper
  *
  * Translate string to long long value considering base 10.
@@ -423,6 +454,20 @@ os_strtoll(
  */
 OS_API long long
 os_atoll(
+    const char *str);
+
+/** \brief atoull wrapper
+ *
+ * Translate string to unsigned long long value considering base 10.
+ *
+ * Precondition:
+ *   errno is set to 0
+ *
+ * Possible results:
+ * - return os_strtoll(str, 10)
+ */
+OS_API unsigned long long
+os_atoull(
     const char *str);
 
 /** \brief lltostr wrapper

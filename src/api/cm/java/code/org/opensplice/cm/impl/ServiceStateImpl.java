@@ -14,6 +14,7 @@ package org.opensplice.cm.impl;
 import org.opensplice.cm.CMException;
 import org.opensplice.cm.ServiceState;
 import org.opensplice.cm.ServiceStateKind;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.status.Status;
 
 /**
@@ -40,8 +41,9 @@ public class ServiceStateImpl extends EntityImpl implements ServiceState {
      * @param _stateName The name of the state.
      * @param _kind The state kind of the state.
      */
-    public ServiceStateImpl(long _index, long _serial, String _pointer, String _name, String _stateName, ServiceStateKind _kind) {
-        super(_index, _serial, _pointer, _name);
+    public ServiceStateImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name,
+                            String _stateName, ServiceStateKind _kind) {
+        super(communicator, _index, _serial, _pointer, _name);
         stateName = _stateName;
         kind = _kind;
     }

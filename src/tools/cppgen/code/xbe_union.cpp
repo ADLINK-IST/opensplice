@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl.h"
@@ -73,7 +73,7 @@ be_union::be_union( AST_ConcreteType *dt,
    localName = local_name()->get_string();
    enclosingScope = be_Type::EnclosingScopeString(this);
 
-   
+
    m_tc_ctor_val = (DDS_StdString) barScopedName + "_ctor";
    m_tc_dtor_val = (DDS_StdString) barScopedName + "_dtor";
    m_tc_put_val = (DDS_StdString) barScopedName + "_put";
@@ -91,8 +91,8 @@ be_union::be_union( AST_ConcreteType *dt,
    m_typecode->has_default = defaultIndex;
 
    InitializeTypeMap(this);
-
-   be_CppFwdDecl::Add(be_CppFwdDecl::UNION, this, m_cppScope);
+   if (!imported())
+      be_CppFwdDecl::Add(be_CppFwdDecl::UNION, this, m_cppScope);
 }
 
 void
@@ -197,6 +197,10 @@ be_union::GenerateTypedefs(const DDS_StdString &scope,
 
    os << tab << "typedef " << relTypeName << " "
    << alias.LocalName() << ";" << nl;
+
+   if (BE_Globals::isocpp_new_types)
+     return;
+
    os << tab << "typedef " << relTypeName
    << DDSVarExtension << " "
    << alias.LocalName() << DDSVarExtension
@@ -224,7 +228,7 @@ be_union::add_union_branch(AST_UnionBranch *ub)
          m_interface_dependant |= branch->Type()->IsInterfaceDependant ();
 
          long branchValue = branch->ast_Value();
-         DDS_StdString valStr = "(" + // use full scoping for NT and HP -- gks 
+         DDS_StdString valStr = "(" + // use full scoping for NT and HP -- gks
             DiscTypeName() + ")";
 
          // INITIALIZE DEFAULT BRANCH LABEL
@@ -422,20 +426,116 @@ be_union::GenerateMembers(be_ClientHeader& source)
 
          if (!be_array::_narrow(branch->field_type()) && branch->IsFixedLength())
          {
-            if (done_branches.find(branch->PrivateName()) == done_branches.end())
+            DDS_StdString privatename = (DDS_StdString)"m_" + branch->LocalName();
+            if (done_branches.find(privatename) == done_branches.end())
             {
                os << tab << BE_Globals::RelativeScope(enclosingScope,
                                                       branch->BranchType())
-               << " " << branch->PrivateName() << ";" << nl;
+               << " " << privatename << ";" << nl;
 
-               done_branches[branch->PrivateName()] = branch->PrivateName();
+               done_branches[privatename] = privatename;
             }
          }
       }
 
       tab.outdent();
-      os << tab << "};" << nl;
+      os << tab << "} _union;" << nl;
    }
+}
+
+void
+be_union::GenerateEquality(be_ClientHeader& source)
+{
+   ostream & os = source.Stream();
+   pbbool first = pbtrue;
+   be_Tab tab(source);
+   be_union_branch * branch;
+   TList<be_union_branch *>::iterator bit;
+   os << tab << "bool operator==(const " << LocalName() << "& that) const" <<
+   nl << tab << "{" << nl;
+
+   os << tab << "if (this != &that)" << nl;
+   os << tab << "{" << nl;
+   source.Indent();
+
+   for (bit = branches.begin(); bit != branches.end(); bit++)
+   {
+      branch = *bit;
+
+      if (first)
+         os << tab;
+      else
+         os << tab << "else ";
+
+      first = pbfalse;
+      os << "if (that._d() == " << branch->Label() << ")" << nl << tab << tab << "return " << branch->LocalName() << "() == "
+         << "that." << branch->LocalName() << "();" << nl;
+   }
+   source.Outdent();
+   os << nl << tab << "return false;" << nl;
+   os << tab << "}" << nl << tab << "else" << nl << tab << "{" << nl << tab << tab << "return true;" << nl << tab << "}" << nl;
+   source.Outdent();
+   os << tab << "}" << nl;
+
+   os << tab << "bool operator!=(const " << LocalName() << "& that) const" <<
+         nl << tab << "{" << nl << tab << tab << "return !(*this == that);"
+         << nl << tab << "}" << nl;
+
+}
+
+void
+be_union::GenerateTestMethod(be_ClientHeader& source)
+{
+    //Get base filename and append _testmethod.h
+    DDS_StdString BaseFilename;
+    BaseFilename = StripExtension(source.Filename());
+    BaseFilename += "_testmethod.h";
+
+    //Open or append to file
+    be_Source testStream;
+    if(!testStream.Open(BaseFilename))
+        cerr << "Cannot open: " << BaseFilename << endl;
+
+    be_Tab tab(testStream);
+    ostream & ts = testStream.Stream();
+    be_union_branch * branch;
+    TList<be_union_branch *>::iterator bit;
+    String_map done_branches(idlc_hash_str);
+
+    ts << "namespace {" << nl;
+    ts <<  "template <>" << nl <<  "::std::vector< ::"
+                      << ScopedName() <<  " > generate_test_values< ::"
+                      << ScopedName() << " >()"  << nl
+                      << "{" << nl;
+    testStream.Indent();
+    ts << tab << "::std::vector< " << "::" << ScopedName() << " > values;" << nl;
+    ts << tab << "::" << ScopedName() << " next;" << nl;
+
+    for (bit = branches.begin(); bit != branches.end(); bit++)
+    {
+        branch = *bit;
+        DDS_StdString privatename = (DDS_StdString) branch->LocalName();
+
+        if(done_branches.find(privatename) == done_branches.end())
+        {
+            ts << tab << "::std::vector< " << (branch->Type()->IsStringType() ? "::std::string" : branch->TypeName())
+               << " > branch_values_" << branch->LocalName() << " = generate_test_values< "
+               << (branch->Type()->IsStringType() ? "::std::string" : branch->TypeName())  << " >();" << nl << nl;
+
+            ts << tab << "for(::std::vector< " << (branch->Type()->IsStringType() ? "::std::string" : branch->TypeName())
+               << " >::const_iterator i = branch_values_" << branch->LocalName() << ".begin();" << nl
+               << tab << tab << tab << "i != branch_values_"
+               << branch->LocalName() << ".end(); ++i)" << nl << tab <<"{" << nl;
+
+            ts << tab << tab <<"next." << branch->LocalName() << "(*i);" << nl
+               << tab << tab << "values.push_back(next);" << nl << tab <<"}" << nl << nl;
+
+            done_branches[privatename] = privatename;
+        }
+    }
+    ts << nl << "return values;" << nl << "}" << nl << "}" << nl;
+    testStream.Outdent();
+    testStream.Close();
 }
 
 void
@@ -472,10 +572,10 @@ be_union::GenerateCopyMF(be_ClientHeader& source)
          os << "if (that._d() == " << branch->Label() << ") ";
       }
 
-      if (branch->Type()->IsArrayType())
+      if (branch->Type()->IsArrayType() && !BE_Globals::isocpp_new_types)
       {
          const be_Type *t = branch->Type();
-         os << "( that.m_void ? " << branch->LocalName() << "("
+         os << "( that._union.m_void ? " << branch->LocalName() << "("
          << t->TypeName() << "_dup(that."
          << branch->LocalName() << "())) : deleteMember() );" << nl;
       }
@@ -486,7 +586,7 @@ be_union::GenerateCopyMF(be_ClientHeader& source)
       }
       else
       {
-         os << "( that.m_void ? " << branch->LocalName() << "(that."
+         os << "( that._union.m_void ? " << branch->LocalName() << "(that."
          << branch->LocalName() << "()) : deleteMember() );" << nl;
       }
    }
@@ -516,7 +616,7 @@ be_union::GenerateDefaultConstructor(be_ClientHeader& source)
 
    if (!IsFixedLength())
    {
-      os << ", " << nl << tab << "m_void(0)";
+      os << ", " << nl << tab << "_union()";
    }
 
    os << tab.outdent() << nl;
@@ -540,7 +640,7 @@ be_union::GenerateCopyConstructor(be_ClientHeader& source)
 
    if (!IsFixedLength())
    {
-      os << "," << nl << tab << "m_void(0)";
+      os << "," << nl << tab << "_union()";
    }
 
    os << tab.outdent() << nl;
@@ -653,38 +753,45 @@ be_union::GenerateDeleteMember(be_ClientHeader& source)
       btype = (be_Type *)atype->narrow((long) & be_Type::type_id);
       assert(btype);
 
-      if (btype->IsFixedLength() && !btype->IsArrayType())   
+      if (btype->IsFixedLength() && !btype->IsArrayType())
       {
          os << "{/*do nothing*/ ;} " << nl;
       }
+      else if (BE_Globals::isocpp_new_types && btype->IsStringType() )
+      {
+         os << "{ if (_union.m_void) "
+            << btype->Releaser((DDS_StdString) "((" +
+                               branch->UnionMemberTypeName() +
+                               "*)_union.m_void)") << "}";
+      }
       else if (btype->IsStringType())
       {
-         os << "{ if (m_void) "
+         os << "{ if (_union.m_void) "
             << btype->Releaser((DDS_StdString) "(" +
                                branch->UnionMemberTypeName() +
-                               ")m_void") << "}";
+                               ")_union.m_void") << "}";
       }
-      else if (btype->IsArrayType() ||
+      else if ((btype->IsArrayType() && !BE_Globals::isocpp_new_types) ||
                btype->IsOpaqueType() ||
                btype->IsTypeCodeType() ||
                btype->IsObjectType() ||
                btype->IsLocalObjectType())
       {
-         os << "{ if (m_void) "
+         os << "{ if (_union.m_void) "
             << btype->Releaser((DDS_StdString) "(" +
                                BE_Globals::RelativeScope(
                                   be_Type::EnclosingScopeString(branch),
                                   branch->UnionMemberTypeName()) +
-                               ")m_void") << "}";
+                               ")_union.m_void") << "}";
       }
       else
       {
-         os << "{ if (m_void) "
+         os << "{ if (_union.m_void) "
             << btype->Releaser((DDS_StdString) "((" +
                                BE_Globals::RelativeScope(
                                   be_Type::EnclosingScopeString(branch),
                                   branch->UnionMemberTypeName()) +
-                               "*)m_void)") << "}";
+                               "*)_union.m_void)") << "}";
       }
 
       os << nl;
@@ -697,7 +804,7 @@ be_union::GenerateDeleteMember(be_ClientHeader& source)
 
    if (!IsFixedLength())
    {
-      os << tab << "m_void = 0;";
+      os << tab << "_union.m_void = 0;";
       os << nl;
    }
 
@@ -746,11 +853,11 @@ be_union::GenerateAccessors(be_ClientHeader& source)
    TList<be_union_branch *>::iterator bit;
    unsigned int i;
 
-   os << tab << "void _d (" 
+   os << tab << "void _d ("
       << BE_Globals::RelativeScope(enclosingScope, DiscTypeName())
       << " val)" << nl
       << tab << "{" << nl << tab.indent()
-      << tab << DDSDiscMember << " = val;" << nl 
+      << tab << DDSDiscMember << " = val;" << nl
       << tab << DDSMemberSet << " = TRUE;"  << tab.outdent()
       << tab << "}" << nl;
    os << tab << BE_Globals::RelativeScope(enclosingScope,
@@ -871,9 +978,9 @@ be_union::GenerateAccessors(be_ClientHeader& source)
       // then generate a _default() function
       //
 
-      DDS_StdString valStr = "(" + // use full scoping for NT and HP -- gks 
-         DiscTypeName() + 
-         ")";  
+      DDS_StdString valStr = "(" + // use full scoping for NT and HP -- gks
+         DiscTypeName() +
+         ")";
 
 
       if (lowestUnusedValue <= maxPossibleValue)
@@ -961,7 +1068,7 @@ be_union::GenerateUnion(be_ClientHeader& source)
    //
    // open class definition
    //
-   os << tab << "class " << DLLMACRO << LocalName() << nl;
+   os << tab << "class " << DLLMACRO << LocalName() <<  (BE_Globals::isocpp_new_types ? " OSPL_DDS_FINAL" : "") << nl;
    os << tab << "{" << nl;
    os << tab << "public:" << nl;
    tab.indent();
@@ -989,8 +1096,81 @@ be_union::GenerateUnion(be_ClientHeader& source)
       GenerateCopyConstructor(source);
       GenerateDestructor(source);
       GenerateDeleteMember(source);
+      if (BE_Globals::isocpp_new_types)
+      {
+        // C++ 11 move constructor, copy consructor, and assignement ops
+        source.Outdent();
+        os << "#ifdef OSPL_DDS_CXX11" << nl;
+        source.Indent();
+        os << tab << LocalName() << "(" << LocalName() << "&& _other) :" << nl;
+        os << tab << tab << "m__d(::std::move(_other.m__d))," << nl;
+        os << tab << tab << "m__d_set(::std::move(_other.m__d_set))" << nl;
+        os << tab << "{" << nl;
+        os << tab << tab << "::std::memcpy(&_union, &_other._union, sizeof(_union));" << nl;
+        os << tab << tab << "::std::memset(&_other._union, 0, sizeof(_other._union));" << nl;
+        os << tab << "}" << nl;
+        os << tab <<  LocalName() << "& operator=(" << LocalName() << "&& _other)" << nl;
+        os << tab << "{" << nl;
+        os << tab << tab << "deleteMember();" << nl;
+        os << tab << tab << "m__d = ::std::move(_other.m__d);" << nl;
+        os << tab << tab << "m__d_set = ::std::move(_other.m__d_set);" << nl;
+        os << tab << tab << "::std::memcpy(&_union, &_other._union, sizeof(_union));" << nl;
+        os << tab << tab << "::std::memset(&_other._union, 0, sizeof(_other._union));" << nl;
+        os << tab << tab << "return *this;" << nl;
+        os << tab << "}" << nl;
+        source.Outdent();
+        os << "#endif" << nl;
+        source.Indent();
+      }
       GenerateAssignmentOperator(source);
    }
+   else
+   {
+     if (BE_Globals::isocpp_new_types)
+     {
+        // C++ 11 move constructor, copy consructor, and assignement ops
+        source.Outdent();
+        os << "#ifdef OSPL_DDS_CXX11" << nl;
+        os << "#  ifdef OSPL_CXX11_NO_FUNCTION_DEFAULTS" << nl;
+        source.Indent();
+        GenerateCopyMF(source);
+        GenerateDefaultConstructor(source);
+        GenerateCopyConstructor(source);
+        os << tab << LocalName() << "(" << LocalName() << "&& _other) :" << nl;
+        os << tab << tab << "m__d(::std::move(_other.m__d))," << nl;
+        os << tab << tab << "m__d_set(::std::move(_other.m__d_set))" << nl;
+        os << tab << "{" << nl;
+        os << tab << tab << "::std::memcpy(&_union, &_other._union, sizeof(_union));" << nl;
+        os << tab << tab << "::std::memset(&_other._union, 0, sizeof(_other._union));" << nl;
+        os << tab << "}" << nl;
+        os << tab <<  LocalName() << "& operator=(" << LocalName() << "&& _other)" << nl;
+        os << tab << "{" << nl;
+        os << tab << tab << "m__d = ::std::move(_other.m__d);" << nl;
+        os << tab << tab << "m__d_set = ::std::move(_other.m__d_set);" << nl;
+        os << tab << tab << "::std::memcpy(&_union, &_other._union, sizeof(_union));" << nl;
+        os << tab << tab << "::std::memset(&_other._union, 0, sizeof(_other._union));" << nl;
+        os << tab << tab << "return *this;" << nl;
+        os << tab << "}" << nl;
+        source.Outdent();
+        os << "#  else" << nl;
+        source.Indent();
+        os << tab << LocalName() << "() = default;" << nl;
+        os << tab << LocalName() << "(const " << LocalName() << "& _other) = default;" << nl;
+        os << tab << LocalName() << "(" << LocalName() << "&& _other) = default;" << nl;
+        os << tab <<  LocalName() << "& operator=(" << LocalName() << "&& _other) = default;" << nl;
+        os << tab <<  LocalName() << "& operator=(const "  << LocalName() << "& _other) = default;" << nl;
+        source.Outdent();
+        os << "#  endif" << nl;
+        os << "#endif" << nl;
+        source.Indent();
+     }
+   }
+
+   if(BE_Globals::gen_equality)
+      GenerateEquality(source);
+
+   if(BE_Globals::isocpp_test_methods)
+       GenerateTestMethod(source);
 
    //
    // accessors and mutators
@@ -1014,6 +1194,8 @@ be_union::GenerateUnion(be_ClientHeader& source)
 
 void be_union::GenerateAuxTypes (be_ClientHeader& source)
 {
+   if (BE_Globals::isocpp_new_types)
+     return;
    DDS_StdString varName = LocalName() + "_var";
    DDS_StdString outName = LocalName() + "_out";
    ostream & os = source.Stream ();
@@ -1023,7 +1205,7 @@ void be_union::GenerateAuxTypes (be_ClientHeader& source)
    {
       os << tab << "typedef DDS_DCPSStruct_var < "
       << LocalName() << "> " << varName << ";" << nl;
-      os << tab << "typedef " << LocalName () 
+      os << tab << "typedef " << LocalName ()
          << "&" << outName << ";" << nl;
    }
    else
@@ -1405,7 +1587,7 @@ be_union::put_for_struct(
    unsigned long uid)
 {
    tab.indent();
-   os << tab << m_tc_put_val << "(os, (void*)&" << sptr << "->" << fld 
+   os << tab << m_tc_put_val << "(os, (void*)&" << sptr << "->" << fld
       << ", DDS::PARAM_IN" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
    tab.outdent();
 
@@ -1427,7 +1609,7 @@ be_union::get_for_struct(
    << sptr << "->" << fld << ");" << nl;
 
    tab.indent();
-   os << tab << m_tc_get_val << "(is, (void*&)___" << fld 
+   os << tab << m_tc_get_val << "(is, (void*&)___" << fld
       << ", DDS::PARAM_OUT" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
    tab.outdent();
 
@@ -1443,7 +1625,7 @@ be_union::put_for_union(
    unsigned long uid)
 {
    tab.indent();
-   os << tab << m_tc_put_val << "(os, (void*)&" << sptr << "->" << fld 
+   os << tab << m_tc_put_val << "(os, (void*)&" << sptr << "->" << fld
       << ", DDS::PARAM_IN" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
    tab.outdent();
 
@@ -1465,7 +1647,7 @@ be_union::get_for_union(
    << sptr << "->" << fld << ");" << nl;
 
    tab.indent ();
-   os << tab << m_tc_get_val << "(is, (void*&)___" << fld 
+   os << tab << m_tc_get_val << "(is, (void*&)___" << fld
       << ", DDS::PARAM_OUT" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
    tab.outdent ();
 
@@ -1490,7 +1672,7 @@ ostream & be_union::put_for_sequence
 
    tab.indent ();
 
-   os << tab << m_tc_put_val << "(os, " << sptr 
+   os << tab << m_tc_put_val << "(os, " << sptr
       << ", DDS::PARAM_IN" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
    tab.outdent ();
 
@@ -1541,7 +1723,7 @@ be_union::put_for_array(
 
    tab.indent();
 
-   os << tab << m_tc_put_val << "(os, " << sptr 
+   os << tab << m_tc_put_val << "(os, " << sptr
       << ", DDS::PARAM_IN" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
 
    tab.outdent();
@@ -1681,7 +1863,7 @@ void be_union::putter
 
       // and finally, let's put 'em
 
-      os << tab << "os.put (" << _in_ << ", 2" 
+      os << tab << "os.put (" << _in_ << ", 2"
           << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
 
       tab.outdent ();
@@ -1702,7 +1884,7 @@ void be_union::putter
       discBType->make_put_param_for_struct(os, tab, sptr, DDSDiscMember, uid);
       os << ";" << nl;
       tab.outdent();
-      os << tab << "os.put (&putArg, 1" << XBE_Ev::arg (XBE_ENV_VARN) 
+      os << tab << "os.put (&putArg, 1" << XBE_Ev::arg (XBE_ENV_VARN)
          << ");" << nl;
       tab.outdent();
       os << tab << "}" << nl;
@@ -1841,8 +2023,8 @@ void be_union::generate_tc_put_val (be_Source & source)
    os << tab << "if (!p->m__d_set)" << nl;
    os << tab << "{" << nl;
    tab.indent ();
-   os << tab 
-      << "DDS::BAD_PARAM ex (DDS_BAD_PARAM_M18, DDS::COMPLETED_NO);" 
+   os << tab
+      << "DDS::BAD_PARAM ex (DDS_BAD_PARAM_M18, DDS::COMPLETED_NO);"
       << nl;
    os << tab;
    XBE_Ev::throwex (os, "ex");
@@ -2039,11 +2221,11 @@ be_union_branch::IsDefault()
 DDS_StdString
 be_union_branch::PrivateName()
 {
-   DDS_StdString privatename = "m_void";
+   DDS_StdString privatename = " _union.m_void";
 
    if (!be_array::_narrow(field_type()) && IsFixedLength())
    {
-      privatename = (DDS_StdString)"m_" + LocalName();
+      privatename = (DDS_StdString)" _union.m_" + LocalName();
    }
 
    return privatename;
@@ -2084,7 +2266,7 @@ void be_union_branch::GenerateASetAccessor
    {
       strRelativeScope = BE_Globals::RelativeScope
       (
-         be_Type::EnclosingScopeString(this), 
+         be_Type::EnclosingScopeString(this),
          UnionMemberTypeName()
       );
 
@@ -2097,7 +2279,7 @@ void be_union_branch::GenerateASetAccessor
          be_Type::EnclosingScopeString (this),
          argType
       );
-                                                                                
+
       os << strRelativeScope << " _val_)";
    }
 
@@ -2115,7 +2297,7 @@ void be_union_branch::GenerateASetAccessor
    }
    else
    {
-      deleteMember = " m_void = 0; ";
+      deleteMember = " _union.m_void = 0; ";
    }
 
    // IF IT's AN ANY
@@ -2124,7 +2306,7 @@ void be_union_branch::GenerateASetAccessor
 
    if ((tmp != 0) && (tmp->pt() == AST_PredefinedType::PT_any) )
    {
-      os << tab << "{ " << deleteMember << "m_void = new " << argType << "(_val_);";
+      os << tab << "{ " << deleteMember << "_union.m_void = new " << argType << "(_val_);";
    }
    else if (!btype->IsArrayType() && IsFixedLength())
    {
@@ -2132,8 +2314,8 @@ void be_union_branch::GenerateASetAccessor
    }
    else
    {
-      os << tab << "{ " << deleteMember 
-         << btype->Duplicater ("m_void", "_val_", be_Type::EnclosingScopeString(this), isConst);
+      os << tab << "{ " << deleteMember
+         << btype->Duplicater ("_union.m_void", "_val_", be_Type::EnclosingScopeString(this), isConst);
    }
 
    // AND SET DISCRIMINANT
@@ -2160,10 +2342,10 @@ void be_union_branch::GenerateSetAccessor (be_ClientHeader& source)
 
    // Then set parameter type
 
-   if 
+   if
    (
-      be_predefined_type::_narrow (atype) || 
-      be_enum::_narrow (atype) || 
+      be_predefined_type::_narrow (atype) ||
+      be_enum::_narrow (atype) ||
       be_array::_narrow (atype)
    )
    {
@@ -2173,7 +2355,7 @@ void be_union_branch::GenerateSetAccessor (be_ClientHeader& source)
    {
       bi = be_interface::_narrow (atype);
       setParam = BE_Globals::RelativeScope
-         (be_Type::EnclosingScopeString(this), bi->BaseClassname()) 
+         (be_Type::EnclosingScopeString(this), bi->BaseClassname())
          + DDSPtrExtension;
    }
    else if (be_Type::_narrow (atype)->IsOpaqueType ())
@@ -2191,7 +2373,12 @@ void be_union_branch::GenerateSetAccessor (be_ClientHeader& source)
       {
          be_string* sbt = be_string::_narrow(atype);
 
-         if (sbt->IsWide())
+         if (BE_Globals::isocpp_new_types)
+         {
+            setParam = (DDS_StdString)"const ::std::string&";
+            isConst = 1;
+         }
+         else if (sbt->IsWide())
          {
             GenerateASetAccessor (source, "DDS::WChar*", 0);
             GenerateASetAccessor (source, "const DDS::WChar*", 1);
@@ -2248,21 +2435,21 @@ void be_union_branch::GenerateAGetAccessor
    }
    else
    {
-      if (btype->IsStringType() || btype->IsArrayType())
+      if ((btype->IsStringType() || btype->IsArrayType()) && !BE_Globals::isocpp_new_types)
       {
-         os << "(" << BE_Globals::RelativeScope(be_Type::EnclosingScopeString(this), UnionMemberTypeName()) << ")m_void; }" << nl;
+         os << "(" << BE_Globals::RelativeScope(be_Type::EnclosingScopeString(this), UnionMemberTypeName()) << ")_union.m_void; }" << nl;
       }
       else if (btype->IsObjectType())
       {
-         os << "(" << BE_Globals::RelativeScope(be_Type::EnclosingScopeString(this), UnionMemberTypeName()) << ")m_void; }" << nl;
+         os << "(" << BE_Globals::RelativeScope(be_Type::EnclosingScopeString(this), UnionMemberTypeName()) << ")_union.m_void; }" << nl;
       }
       else if (btype->IsLocalObjectType())
       {
-         os << "(" << BE_Globals::RelativeScope(be_Type::EnclosingScopeString(this), UnionMemberTypeName()) << ")m_void; }" << nl;
+         os << "(" << BE_Globals::RelativeScope(be_Type::EnclosingScopeString(this), UnionMemberTypeName()) << ")_union.m_void; }" << nl;
       }
       else if (btype->IsInterfaceType())
       {
-         os << "(" << BE_Globals::RelativeScope(be_Type::EnclosingScopeString(this), UnionMemberTypeName()) << "*)m_void; }" << nl;
+         os << "(" << BE_Globals::RelativeScope(be_Type::EnclosingScopeString(this), UnionMemberTypeName()) << "*)_union.m_void; }" << nl;
       }
       else if (btype->IsOpaqueType())
       {
@@ -2274,18 +2461,18 @@ void be_union_branch::GenerateAGetAccessor
          os << "*((" << const_stuff
          << BE_Globals::RelativeScope(
             be_Type::EnclosingScopeString(this), UnionMemberTypeName())
-         << "*)&m_void); }" << nl;
+         << "*)&_union.m_void); }" << nl;
       }
       else if (btype->IsTypeCodeType())
       {
          os << "("
             << BE_Globals::RelativeScope (be_Type::EnclosingScopeString (this),
                                           UnionMemberTypeName ())
-            << ") m_void; }" << nl;
+            << ") _union.m_void; }" << nl;
       }
       else
       {
-         os << "*(" << BE_Globals::RelativeScope(be_Type::EnclosingScopeString(this), UnionMemberTypeName()) << "*)m_void; }" << nl;
+         os << "*(" << BE_Globals::RelativeScope(be_Type::EnclosingScopeString(this), UnionMemberTypeName()) << "*)_union.m_void; }" << nl;
       }
    }
 }
@@ -2311,7 +2498,7 @@ void be_union_branch::GenerateGetAccessor (be_ClientHeader& source)
    {
       getReturn = BE_Globals::RelativeScope(be_Type::EnclosingScopeString(this), BranchType());
    }
-   else if (be_string::_narrow(atype))
+   else if (be_string::_narrow(atype) && !BE_Globals::isocpp_new_types)
    {
       be_string* sbt = be_string::_narrow(atype);
 
@@ -2320,13 +2507,13 @@ void be_union_branch::GenerateGetAccessor (be_ClientHeader& source)
       else
          getReturn = "const char*";
    }
-   else if ((ba = be_array::_narrow(atype)))
+   else if ((ba = be_array::_narrow(atype)) && !BE_Globals::isocpp_new_types)
    {
-      getReturn = BE_Globals::RelativeScope     
+      getReturn = BE_Globals::RelativeScope
       (
-         be_Type::EnclosingScopeString(this), 
+         be_Type::EnclosingScopeString(this),
          UnionMemberTypeName()
-      ); 
+      );
    }
    else if ((bi = be_interface::_narrow (atype)))
    {
@@ -2378,7 +2565,7 @@ be_union_branch::InitializeTypeMap(be_Type*)
 pbbool
 be_union_branch::IsFixedLength() const
 {
-   pbbool ret = (type) ? type->IsFixedLength() : pbfalse;
+   pbbool ret = (type) ? type->IsFixedLength() && !(type->IsStructuredType() && BE_Globals::isocpp_new_types) : pbfalse;
 
    return ret;
 }
@@ -2411,7 +2598,7 @@ be_union_label::be_union_label(AST_UnionLabel::UnionLabel ul, AST_Expression *v)
 DDS_StdString
 be_union::UnionStreamOut(const DDS_StdString& arg, const DDS_StdString& out) const
 {
-   if (arg != "m_void")
+   if (arg != "_union.m_void")
       return out + " << " + arg + ";";
    else
       return out + " << (const " + ScopedName() + "*)" + arg + ";";
@@ -2420,7 +2607,7 @@ be_union::UnionStreamOut(const DDS_StdString& arg, const DDS_StdString& out) con
 DDS_StdString
 be_union::UnionStreamIn(const DDS_StdString& arg, const DDS_StdString& in) const
 {
-   if (arg != "m_void")
+   if (arg != "_union.m_void")
       return in + " >> " + arg + ";";
 
    return in + " >> (" + ScopedName() + "*&)" + arg + ";";

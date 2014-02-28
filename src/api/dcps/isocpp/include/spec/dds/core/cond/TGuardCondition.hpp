@@ -22,50 +22,65 @@
 #include <dds/core/cond/TCondition.hpp>
 
 
-namespace dds {
-  namespace core {
-    namespace cond {
-      template <typename DELEGATE>
-      class TGuardCondition;
-    }
-  }
+namespace dds
+{
+namespace core
+{
+namespace cond
+{
+template <typename DELEGATE>
+class TGuardCondition;
+}
+}
 }
 
 /**
  * A GuardCondition object is a specific Condition whose trigger_value is
  * completely under the control of the application.
- *  When first created the trigger_value is set to FALSE.
+ * When first created the trigger_value is set to FALSE.
  * The purpose of the GuardCondition is to provide the means for the
  * application to manually wake up a WaitSet. This is accomplished by
  * attaching the GuardCondition to the WaitSet and then setting the
  * trigger_value by means of the set trigger_value operation.
  */
 template <typename DELEGATE>
-class dds::core::cond::TGuardCondition : public TCondition<DELEGATE> {
+class dds::core::cond::TGuardCondition : public TCondition<DELEGATE>
+{
 public:
-  OMG_DDS_REF_TYPE_NODC(TGuardCondition, TCondition, DELEGATE)
-
-public:
-  TGuardCondition();
-
-  ~TGuardCondition();
+    OMG_DDS_REF_TYPE_NODC(TGuardCondition, TCondition, DELEGATE)
 
 public:
+    TGuardCondition();
 
-  /**
-   * Registers a custom handler with this condition.
-   */
-  template <typename Functor>
-  void handler(const Functor& func);
-
-  /**
-   * Resets the handler for this condition. After the invocation of this
-   * method no handler will be registered with this condition.
-   */
-  void reset_handler();
+    virtual ~TGuardCondition();
 
 public:
-  void trigger_value(bool value);
+
+    /**
+     * Registers a custom handler with this Condition.
+     */
+    template <typename Functor>
+    void handler(const Functor& func);
+
+    /**
+     * Resets the handler for this Condition. After the invocation of this
+     * function no handler will be registered with this Condition.
+     */
+    void reset_handler();
+
+    /**
+     * This operation retrieves the trigger_value of the Condition.
+     *
+     * @return True if the Condition has been triggered.
+     */
+    void trigger_value(bool value);
+
+    /**
+     * This operation retrieves the trigger_value of the Condition.
+     *
+     * @return True if the Condition has been triggered.
+     */
+    virtual bool trigger_value() const;
 
 };
 

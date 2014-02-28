@@ -372,3 +372,49 @@ os_sharedMemoryListUserProcessesFree(
      }
      return result;
 }
+
+os_int32
+os_sharedMemorySegmentFree(
+    const char * fname)
+{
+     os_int32 result;
+     os_sharedAttr shmAttr;
+     os_sharedAttrInit(&shmAttr);
+     result = 0;
+
+     switch (shmAttr.sharedImpl) {
+     case OS_MAP_ON_FILE:
+         result = os_posix_sharedMemorySegmentFree(fname);
+     break;
+     case OS_MAP_ON_SEG:
+         result = os_svr4_sharedMemorySegmentFree(fname);
+     break;
+     case OS_MAP_ON_HEAP:
+         result = 0;
+     break;
+     }
+     return result;
+}
+
+void
+os_cleanSharedMemAndOrKeyFiles(
+    void)
+{
+     os_int32 result;
+     os_sharedAttr shmAttr;
+     os_sharedAttrInit(&shmAttr);
+     result = 0;
+
+     switch (shmAttr.sharedImpl) {
+     case OS_MAP_ON_FILE:
+         os_posix_cleanSharedMemAndOrKeyFiles();
+     break;
+     case OS_MAP_ON_SEG:
+         os_svr4_cleanSharedMemAndOrKeyFiles();
+     break;
+     case OS_MAP_ON_HEAP:
+         result = 0;
+     break;
+     }
+     /*return result;*/
+}

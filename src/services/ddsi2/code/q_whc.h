@@ -1,14 +1,18 @@
 #ifndef Q_WHC_H
 #define Q_WHC_H
 
-#include "q_avl.h"
+#include "ut_avl.h"
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 #define MAX_SEQ_NUMBER 0x7fffffffffffffffll
 
 struct serdata;
 
 struct whc_node {
-  STRUCT_AVLNODE (whc_node_avlnode_tlidx, struct whc_node *) avlnode_tlidx;
+  ut_avlNode_t avlnode_tlidx;
   struct whc_node *next_seq; /* next in this interval */
   struct whc_node *prev_seq; /* prev in this interval */
   struct whc_node *next_hash; /* next in hash chain */
@@ -20,7 +24,7 @@ struct whc_node {
 };
 
 struct whc_intvnode {
-  STRUCT_AVLNODE (whc_intvnode_avlnode, struct whc_intvnode *) avlnode;
+  ut_avlNode_t avlnode;
   os_int64 min;
   os_int64 maxp1;
   struct whc_node *first; /* linked list of seqs with contiguous sequence numbers [min,maxp1) */
@@ -39,8 +43,8 @@ struct whc {
   int seqhash_size;
   struct whc_node **seqhash;
   struct whc_node *freelist; /* linked via whc_node::next_seq */
-  STRUCT_AVLTREE (whc_avltree_seq, struct whc_intvnode *) seq; /* reliable|transient_local */
-  STRUCT_AVLTREE (whc_avltree_tlidx, struct whc_node *) tlidx; /* transient_local */
+  ut_avlTree_t seq; /* reliable|transient_local */
+  ut_avlTree_t tlidx; /* transient_local */
 };
 
 struct whc *whc_new (int transient_local, int keep_last1);
@@ -61,6 +65,10 @@ struct whc_node *whc_findkey (const struct whc *whc, const struct serdata *serda
 int whc_insert (struct whc *whc, os_int64 max_drop_seq, os_int64 seq, struct serdata *serdata);
 void whc_downgrade_to_volatile (struct whc *whc);
 int whc_remove_acked_messages (struct whc *whc, os_int64 max_drop_seq);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* Q_WHC_H */
 

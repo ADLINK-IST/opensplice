@@ -15,7 +15,7 @@
 /** @{*/
 /** @dir */
 /** @file */
-
+namespace demo { namespace ishapes {
 class iShapes : public QApplication {
     public:
         iShapes(int& argc, char ** argv) :
@@ -39,11 +39,11 @@ class iShapes : public QApplication {
             return false;
         }
 };
-
+}}
 int main(int argc, char *argv[])
 {
     srand(clock());
-    iShapes app(argc, argv);
+    demo::ishapes::iShapes app(argc, argv);
     #ifdef TESTBUILD
     /** @todo Simon - sort this out */
     Q_INIT_RESOURCE(ishape_qrc);
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     int retval;
     try
     {
-        ShapesDialog shapes;
+        demo::ishapes::ShapesDialog shapes;
         #ifndef TESTBUILD
         if(argc > 1)
         {

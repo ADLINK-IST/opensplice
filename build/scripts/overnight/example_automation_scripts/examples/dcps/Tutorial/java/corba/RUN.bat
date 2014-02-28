@@ -3,8 +3,6 @@ SETLOCAL
 
 call %FUNCTIONS% :stopOSPL
 
-call %FUNCTIONS% :deleteDBFFiles
-
 call %FUNCTIONS% :startOSPL
 
 %SLEEP4% >NUL

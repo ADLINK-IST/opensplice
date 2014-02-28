@@ -244,11 +244,14 @@ idl_structureMemberOpenClose (
     SACSTypeUserData* csUserData = (SACSTypeUserData *) userData;
     c_bool isPredefined = FALSE;
     char *tpName = idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM);
+    char *str_no_idx = NULL;
+    char *str_idx = NULL;
 
     /* Dereference possible typedefs first. */
     while (idl_typeSpecType(typeSpec) == idl_ttypedef && !isPredefined) {
         if (!idl_isPredefined(tpName)) {
             typeSpec = idl_typeDefRefered(idl_typeDef(typeSpec));
+            os_free (tpName);
             tpName = idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM);
         } else {
             isPredefined = TRUE;
@@ -264,14 +267,14 @@ idl_structureMemberOpenClose (
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "public %s %s = string.Empty;\n",
-                idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM),
+                tpName,
                 idl_CsharpId(name, csUserData->customPSM, FALSE));
         } else {
             /* generate code for a standard primitive type. */
             idl_fileOutPrintf(
                 idl_fileCur(),
                 "public %s %s;\n",
-                idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM),
+                tpName,
                 idl_CsharpId(name, csUserData->customPSM, FALSE));
         }
         break;
@@ -281,7 +284,7 @@ idl_structureMemberOpenClose (
         idl_fileOutPrintf(
             idl_fileCur(),
             "public %s %s;\n",
-            idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM),
+            tpName,
             idl_CsharpId(name, csUserData->customPSM, FALSE));
         break;
 
@@ -289,52 +292,53 @@ idl_structureMemberOpenClose (
     case idl_tunion:
     {
         /* generate code for a standard mapping of a struct or union user-type mapping */
-        char *tpName = idl_CsharpTypeFromTypeSpec(typeSpec, csUserData->customPSM);
         idl_fileOutPrintf(
             idl_fileCur(),
             "public %s %s = new %s();\n",
             tpName,
             idl_CsharpId(name, csUserData->customPSM, FALSE),
             tpName);
-        os_free(tpName);
         break;
     }
     case idl_tarray:
     {
         /* Initialize to 2 ('[]') so that every other dimension just has to add 1 ','. */
-        int emptyStrLen = 2;
-        int indexStrLen = 2;
-        char *tpName = idl_CsharpTypeFromTypeSpec (typeSpec, csUserData->customPSM);
+        str_no_idx = idl_arrayCsharpIndexString (
+            typeSpec, SACS_EXCLUDE_INDEXES);
+        str_idx = idl_arrayCsharpIndexString (
+            typeSpec, SACS_INCLUDE_INDEXES);
+        assert (str_no_idx && str_idx);
 
         /* generate code for an array mapping */
         idl_fileOutPrintf(
             idl_fileCur(),
             "public %s%s %s = new %s%s;\n",
             tpName,
-            idl_arrayCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, &emptyStrLen),
+            str_no_idx,
             idl_CsharpId(name, csUserData->customPSM, FALSE),
             tpName,
-            idl_arrayCsharpIndexString(typeSpec, SACS_INCLUDE_INDEXES, &indexStrLen));
-        os_free(tpName);
+            str_idx);
         break;
     }
 
     case idl_tseq:
     {
         /* Initialize to 2 ('[]') so that every other dimension just has to add 2 '[]'. */
-        int emptyStrLen = 2;
-        int indexStrLen = 2;
+        str_no_idx = idl_sequenceCsharpIndexString (
+            typeSpec, SACS_EXCLUDE_INDEXES, NULL);
+        str_idx = idl_sequenceCsharpIndexString (
+            typeSpec, SACS_INCLUDE_INDEXES, NULL);
+        assert (str_no_idx && str_idx);
 
         /* generate code for a sequence mapping */
         idl_fileOutPrintf(
             idl_fileCur(),
             "public %s%s %s = new %s%s;\n",
             tpName,
-            idl_sequenceCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, NULL, &emptyStrLen),
+            str_no_idx,
             idl_CsharpId(name, csUserData->customPSM, FALSE),
             tpName,
-            idl_sequenceCsharpIndexString(typeSpec, SACS_INCLUDE_INDEXES, NULL, &indexStrLen));
-        os_free(tpName);
+            str_idx);
         break;
     }
 
@@ -344,7 +348,7 @@ idl_structureMemberOpenClose (
         idl_fileOutPrintf(
                 idl_fileCur(),
                 "public %s %s;\n",
-                idl_CsharpTypeFromTypeSpec(typeSpec, FALSE),
+                tpName,
                 idl_CsharpId(name, csUserData->customPSM, FALSE));
         break;
 
@@ -352,6 +356,14 @@ idl_structureMemberOpenClose (
         printf("idl_structureMemberOpenClose: Unsupported structure member type (member name = %s, type name = %s)\n",
             name, idl_scopedTypeName(typeSpec));
         break;
+    }
+
+    os_free(tpName);
+    if (str_idx) {
+        os_free(str_idx);
+    }
+    if (str_no_idx) {
+        os_free(str_no_idx);
     }
 }
 

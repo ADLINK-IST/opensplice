@@ -13,22 +13,6 @@
 
 #include "q_misc.h"
 
-char *ddsi2_strsep (char **str, const char *sep)
-{
-  char *ret;
-  if (**str == '\0')
-    return 0;
-  ret = *str;
-  while (**str && strchr (sep, **str) == 0)
-    (*str)++;
-  if (**str != '\0')
-  {
-    **str = '\0';
-    (*str)++;
-  }
-  return ret;
-}
-
 int vendor_is_rti (nn_vendorid_t vendor)
 {
   const nn_vendorid_t rti = NN_VENDORID_RTI;
@@ -41,10 +25,17 @@ int vendor_is_twinoaks (nn_vendorid_t vendor)
   return vendor.id[0] == twinoaks.id[0] && vendor.id[1] == twinoaks.id[1];
 }
 
-int vendor_is_prismtech (nn_vendorid_t vendor)
+int vendor_is_prismtech (nn_vendorid_t vid)
 {
-  const nn_vendorid_t prismtech = NN_VENDORID_PRISMTECH;
-  return vendor.id[0] == prismtech.id[0] && vendor.id[1] == prismtech.id[1];
+  const nn_vendorid_t pt1 = NN_VENDORID_PRISMTECH_OSPL;
+  const nn_vendorid_t pt2 = NN_VENDORID_PRISMTECH_LITE;
+  const nn_vendorid_t pt3 = NN_VENDORID_PRISMTECH_GATEWAY;
+  const nn_vendorid_t pt4 = NN_VENDORID_PRISMTECH_JAVA;
+
+  return
+    (vid.id[0] == pt1.id[0]) &&
+    ((vid.id[1] == pt1.id[1]) || (vid.id[1] == pt2.id[1])
+     || (vid.id[1] == pt3.id[1]) || (vid.id[1] == pt4.id[1]));
 }
 
 int is_own_vendor (nn_vendorid_t vendor)

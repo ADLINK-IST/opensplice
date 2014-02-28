@@ -25,9 +25,9 @@
  */
 #if defined _MSC_VER && (_MSC_VER <= 1500)
 // VS 2005 & 2008 confirmed to have no stdint.h; predecessors presumed likewise
-    #include <dds/core/detail/old_win_stdint.h>
+#include <dds/core/detail/old_win_stdint.h>
 #else
-    #include <stdint.h>
+#include <stdint.h>
 #endif
 
 // End of implementation

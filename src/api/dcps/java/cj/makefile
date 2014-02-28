@@ -6,8 +6,13 @@ CJ_CODE_DIR     = code
 IDL_CODE_DIR    = bld/code/$(SPLICE_TARGET)
 JPACKAGES       = DDS org/opensplice/dds/dcps
 
-TOPICIDL        = $(OSPL_HOME)/etc/idl/dds_builtinTopics.idl
-TOPIC_DCPSIDL   = $(IDL_CODE_DIR)/$(subst .idl,Dcps.idl,$(notdir $(TOPICIDL)))
+# Input IDL files.
+IDL_DIR		:= $(OSPL_HOME)/etc/idl
+TOPICIDL	:= $(IDL_DIR)/dds_builtinTopics.idl
+QOSIDL		:= $(IDL_DIR)/dds_namedQosTypes.idl
+
+TOPIC_DCPSIDL	= $(IDL_CODE_DIR)/$(subst .idl,Dcps.idl,$(notdir $(TOPICIDL)))
+QOS_DCPSIDL		= $(IDL_CODE_DIR)/$(subst .idl,Dcps.idl,$(notdir $(QOSIDL)))
 ifneq (,$(or $(findstring win32, $(SPLICE_TARGET)), $(findstring win64, $(SPLICE_TARGET))))
 EXTRA_SOURCE    = $(IDL_CODE_DIR)/DDS/\*.java
 else
@@ -29,7 +34,9 @@ $(JTIMESTAMP): $(TOPICIDL)
 	@rm -rf $(IDL_CODE_DIR) $(CLASS_DIR)
 	@mkdir -p $(IDL_CODE_DIR) $(CLASS_DIR)
 	$(IDLPP) -l java -C -d $(IDL_CODE_DIR) `ospl_normalizePath $(TOPICIDL)`
+	$(IDLPP) -l java -C -d $(IDL_CODE_DIR) `ospl_normalizePath $(QOSIDL)`
 	$(JAVA) $(CP_JACORB_IDL) org.jacorb.idl.parser -I"$(OSPL_HOME_NORMALIZED)/etc/idl" -all -d $(IDL_CODE_DIR) $(TOPIC_DCPSIDL)
+	$(JAVA) $(CP_JACORB_IDL) org.jacorb.idl.parser -I"$(OSPL_HOME_NORMALIZED)/etc/idl" -all -d $(IDL_CODE_DIR) $(QOS_DCPSIDL)
 	$(JCC) $(JCC_ARGS) $(EXTRA_SOURCE)
 	@touch $(JTIMESTAMP)
 
@@ -42,5 +49,5 @@ analyse:
 	@$(ANALYSE) bld/$(SPLICE_TARGET) code
 
 clean:
-	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) $(IDL_CODE_DIR)
+	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) $(IDL_CODE_DIR) manifest/$(SPLICE_TARGET)
 

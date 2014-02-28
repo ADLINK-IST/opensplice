@@ -25,10 +25,6 @@ namespace DDS.OpenSplice.CustomMarshalers
     {
         private static readonly Type seqType = typeof(Gapi.gapi_Seq);
         public static readonly int seqSize = Marshal.SizeOf(seqType);
-        private static readonly int offset_seq_maximum = (int)Marshal.OffsetOf(seqType, "_maximum");
-        private static readonly int offset_seq_length = (int)Marshal.OffsetOf(seqType, "_length");
-        private static readonly int offset_seq_buffer = (int)Marshal.OffsetOf(seqType, "_buffer");
-        private static readonly int offset_seq_release = (int)Marshal.OffsetOf(seqType, "_release");
 
         private static readonly Type dataType = typeof(Gapi.gapi_offeredRequestedIncompatibleQosStatus);
         public static readonly int dataSize = Marshal.SizeOf(dataType);
@@ -99,7 +95,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             {
                 to = new DDS.OfferedIncompatibleQosStatus();
             }
-            
+
             to.TotalCount = ReadInt32(from, offset + offset_total_count);
             to.TotalCountChange = ReadInt32(from, offset + offset_total_count_change);
             to.LastPolicyId = (QosPolicyId) ReadInt32(from, offset + offset_last_policy_id);
@@ -108,18 +104,14 @@ namespace DDS.OpenSplice.CustomMarshalers
             if (policies != to.Policies)
             {
                 to.Policies = policies;
-            } 
+            }
         }
     }
-    
+
     internal class RequestedIncompatibleQosStatusMarshaler : GapiMarshaler
     {
         private static readonly Type seqType = typeof(Gapi.gapi_Seq);
         public static readonly int seqSize = Marshal.SizeOf(seqType);
-        private static readonly int offset_seq_maximum = (int)Marshal.OffsetOf(seqType, "_maximum");
-        private static readonly int offset_seq_length = (int)Marshal.OffsetOf(seqType, "_length");
-        private static readonly int offset_seq_buffer = (int)Marshal.OffsetOf(seqType, "_buffer");
-        private static readonly int offset_seq_release = (int)Marshal.OffsetOf(seqType, "_release");
 
         private static readonly Type dataType = typeof(Gapi.gapi_offeredRequestedIncompatibleQosStatus);
         public static readonly int dataSize = Marshal.SizeOf(dataType);
@@ -190,7 +182,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             {
                 to = new DDS.RequestedIncompatibleQosStatus();
             }
-            
+
             to.TotalCount = ReadInt32(from, offset + offset_total_count);
             to.TotalCountChange = ReadInt32(from, offset + offset_total_count_change);
             to.LastPolicyId = (QosPolicyId) ReadInt32(from, offset + offset_last_policy_id);
@@ -199,7 +191,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             if (policies != to.Policies)
             {
                 to.Policies = policies;
-            } 
+            }
         }
     }
 }

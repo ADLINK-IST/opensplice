@@ -366,6 +366,30 @@ d_fellowGetGroup(
 }
 
 c_bool
+d_fellowHasGroup(
+    d_fellow fellow,
+    const c_char* partition,
+    const c_char* topic,
+    d_durabilityKind kind)
+{
+    c_bool hasGroup = FALSE;
+    d_group found;
+
+    assert(d_objectIsValid(d_object(fellow), D_FELLOW) == TRUE);
+
+    if(fellow){
+        found = d_fellowGetGroup(fellow, partition, topic, kind);
+
+        if(found){
+            hasGroup = TRUE;
+            d_groupFree(found);
+        }
+    }
+    return hasGroup;
+}
+
+
+c_bool
 d_fellowGroupWalk(
     d_fellow fellow,
     c_bool ( * action ) (d_group group, c_voidp userData),

@@ -79,7 +79,7 @@ int OSPL_MAIN (int argc, char *argv[])
    registerStockType(g_StockTypeSupport);
    // Create Stock Topic in the DDS Domain.
    g_StockTypeName = OwnershipData_StockTypeSupport_get_type_name(g_StockTypeSupport);
-   g_StockTopic = createTopic("StockTrackerExclusive", g_StockTypeName);
+   g_StockTopic = createTopic("OwnershipStockTracker", g_StockTypeName);
    DDS_free(g_StockTypeName);
    DDS_free(g_StockTypeSupport);
 

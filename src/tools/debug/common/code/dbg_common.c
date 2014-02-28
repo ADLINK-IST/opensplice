@@ -61,7 +61,7 @@ static c_type v_partition_t = NULL;
 static void
 printCollectionAction(
     c_metaObject mo,
-    c_voidp arg)
+    c_scopeWalkActionArg arg)
 {
     c_type type;
     c_object o = c_metaObject (mo);

@@ -23,6 +23,7 @@
 #include "v_networkChannelStatistics.h"
 #include "v_networkQueueStatistics.h"
 #include "v_entity.h"    /* for v_entity() */
+#include "v_observer.h"
 #include "v_group.h"     /* for v_group()  */
 #include "v__reader.h"    /* for v_reader() */
 #include "v_readerQos.h" /* for v_readerQosNew() */
@@ -480,13 +481,11 @@ v_networkReaderWaitDelayed(
     c_ulong queueId,
     v_networkQueue *queue)
 {
-    c_time sleep = {0,1000000};
+    c_time sleep;
     /* Simply sleeping here for resolution time, is not correct.
     We should wakeup on, or just after the next wakeuptime.*/
-    sleep = c_timeAdd(sleep,v_networkQueue(reader->queues[queueId-1])->nextWakeup);
     sleep = c_timeSub(v_networkQueue(reader->queues[queueId-1])->nextWakeup, v_timeGet());
     c_timeNanoSleep(sleep);
-
 
     return V_WAITRESULT_TIMEOUT | v_networkReaderWait(reader, queueId, queue);
 }

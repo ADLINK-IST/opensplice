@@ -3,8 +3,6 @@ SETLOCAL
 
 call %FUNCTIONS% :stopOSPL
 
-call %FUNCTIONS% :deleteDBFFiles
-
 @echo off
 
 call %FUNCTIONS% :startOSPL
@@ -19,6 +17,6 @@ call HelloWorldDataPublisher.exe > pubResult.txt
 
 %SLEEP5% >NUL
 
-call %FUNCTIONS% :helloworldCheckResult
+call %FUNCTIONS% :helloworldCheckResult >> run.log
 
 call %FUNCTIONS% :stopOSPL

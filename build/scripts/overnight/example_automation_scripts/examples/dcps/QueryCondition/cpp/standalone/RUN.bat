@@ -7,4 +7,4 @@ set EXAMPLE_LANG=sacpp
 
 call %FUNCTIONS% :runQueryCondition
 
-call %FUNCTIONS% :queryconditionCheckResults
+call %FUNCTIONS% :queryconditionCheckResults >> run.log

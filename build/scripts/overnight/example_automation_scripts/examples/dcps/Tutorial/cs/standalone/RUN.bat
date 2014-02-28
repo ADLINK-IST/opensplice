@@ -2,8 +2,6 @@
 
 call %FUNCTIONS% :stopOSPL
 
-call %FUNCTIONS% :deleteDBFFiles
-
 call %FUNCTIONS% :startOSPL
 
 ECHO Starting MessageBoard
@@ -31,8 +29,24 @@ ECHO Starting Chatter with terminate message
 SET LEVEL=Starting Chatter with -1
 sacs_tutorial_chatter.exe -1 >> %LOGFILE%
 if %ERRORLEVEL% NEQ 0 GOTO error
-%SLEEP10% > NUL
-GOTO end
+ECHO Waiting for UserLoad to terminate naturally
+GOTO while1
+
+:while1
+REM Check to see if the user load exe is still running and wait for it to stop
+REM the tasklist command returns an abridged imagename and so we need to check
+REM for that and not the full name - this is not working with the overnight runs
+REM so lets display what's is returned by tasklist to see why it's not working
+tasklist | sort 
+tasklist /FI "IMAGENAME eq sacs_tutorial_user_load.exe" 2>NUL | findstr "sacs_tutorial_user_load.e">NUL
+if "%ERRORLEVEL%"=="0" (
+   ECHO .
+   %SLEEP5%>NUL
+   GOTO while1
+) else (
+   ECHO UserLoad not running
+   GOTO end
+)
 
 :error
 ECHO An error occurred %LEVEL%, exiting example ... >> %LOGFILE%

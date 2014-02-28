@@ -35,7 +35,7 @@ Topic<T> AnyTopic::get()
 {
     OMG_DDS_STATIC_ASSERT(::dds::topic::is_topic_type<T>::value == 1);
     detail::THolder<T>* h = dynamic_cast<detail::THolder<T>* >(holder_.get());
-    if (h == 0)
+    if(h == 0)
     {
         throw dds::core::InvalidDowncastError("invalid type");
     }
@@ -47,6 +47,7 @@ inline const detail::THolderBase* AnyTopic::operator->() const
 {
     return holder_.get();
 }
+
 }
 }
 // End of implementation

@@ -47,8 +47,8 @@ int OSPL_MAIN (int argc, char *argv[])
    char* partition_name = "ContentFilteredTopic example";
    DDS_Subscriber contentFilteredTopicDataSubscriber;
    DDS_DataReader contentFilteredTopicDataDataReader;
-   ContentFilteredTopicData_Stock* contentFilteredTopicDataSample;
-   DDS_sequence_ContentFilteredTopicData_Stock* msgList = DDS_sequence_ContentFilteredTopicData_Stock__alloc();
+   StockMarket_Stock* contentFilteredTopicDataSample;
+   DDS_sequence_StockMarket_Stock* msgList = DDS_sequence_StockMarket_Stock__alloc();
    DDS_SampleInfoSeq* infoSeq = DDS_SampleInfoSeq__alloc();
    c_bool isClosed = FALSE;
    unsigned long j;
@@ -76,11 +76,11 @@ int OSPL_MAIN (int argc, char *argv[])
    createParticipant( partition_name );
 
    // Register Stock Topic's type in the DDS Domain.
-   g_StockTypeSupport = (DDS_TypeSupport) ContentFilteredTopicData_StockTypeSupport__alloc();
-   checkHandle(g_StockTypeSupport, "ContentFilteredTopicData_StockTypeSupport__alloc");
+   g_StockTypeSupport = (DDS_TypeSupport) StockMarket_StockTypeSupport__alloc();
+   checkHandle(g_StockTypeSupport, "StockMarket_StockTypeSupport__alloc");
    registerStockType(g_StockTypeSupport);
    // Create Stock Topic in the DDS Domain.
-   g_StockTypeName = ContentFilteredTopicData_StockTypeSupport_get_type_name(g_StockTypeSupport);
+   g_StockTypeName = StockMarket_StockTypeSupport_get_type_name(g_StockTypeSupport);
    g_StockTopic = createTopic("StockTrackerExclusive", g_StockTypeName);
    DDS_free(g_StockTypeName);
    DDS_free(g_StockTypeSupport);
@@ -109,8 +109,8 @@ int OSPL_MAIN (int argc, char *argv[])
 
    do
    {
-      g_status = ContentFilteredTopicData_StockDataReader_take(contentFilteredTopicDataDataReader, msgList, infoSeq, DDS_LENGTH_UNLIMITED, DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
-      checkStatus(g_status, "ContentFilteredTopicData_StockDataReaderView_take");
+      g_status = StockMarket_StockDataReader_take(contentFilteredTopicDataDataReader, msgList, infoSeq, DDS_LENGTH_UNLIMITED, DDS_ANY_SAMPLE_STATE, DDS_ANY_VIEW_STATE, DDS_ANY_INSTANCE_STATE);
+      checkStatus(g_status, "StockMarket_StockDataReaderView_take");
       if( msgList->_length > 0 )
       {
          j = 0;
@@ -132,8 +132,8 @@ int OSPL_MAIN (int argc, char *argv[])
          }
          while( ++j < msgList->_length );
 
-         g_status = ContentFilteredTopicData_StockDataReader_return_loan(contentFilteredTopicDataDataReader, msgList, infoSeq);
-         checkStatus(g_status, "ContentFilteredTopicData_StockDataReader_return_loan");
+         g_status = StockMarket_StockDataReader_return_loan(contentFilteredTopicDataDataReader, msgList, infoSeq);
+         checkStatus(g_status, "StockMarket_StockDataReader_return_loan");
 
          if(isClosed == FALSE)
          {

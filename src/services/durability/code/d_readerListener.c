@@ -125,7 +125,12 @@ d_readerListenerAction(
     u_result result;
     d_readerListener listener;
     c_bool proceed;
+    d_admin admin;
+    d_durability durability;
+
     listener = d_readerListener(usrData);
+    admin = d_listenerGetAdmin(d_listener(listener));
+    durability = d_adminGetDurability(admin);
 
     d_listenerLock(d_listener(listener));
 
@@ -134,6 +139,17 @@ d_readerListenerAction(
         listener->message = NULL;
         listener->processMessage = FALSE;
         result = u_dataReaderTake(u_dataReader(o), d_readerListenerCopy, usrData);
+
+        {
+            d_admin admin;
+            d_durability durability;
+            admin = d_listenerGetAdmin((d_listener)listener);
+            durability = d_adminGetDurability(admin);
+            d_printTimedEvent(durability, D_LEVEL_FINEST,
+                                  D_THREAD_UNSPECIFIED,
+                                  "DEBUG: dispatcher %p: dataReaderTake (result=%d, processMessage=%d)\n",
+                                  o,result, listener->processMessage);
+        }
 
         if(result != U_RESULT_OK){
             OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
@@ -146,11 +162,9 @@ d_readerListenerAction(
             listener->value = NULL;
             proceed = TRUE;
         }
-
-    } while((result == U_RESULT_OK) && (proceed == TRUE));
+    } while((result == U_RESULT_OK) && (proceed == TRUE) && (d_durabilityMustTerminate(durability) == FALSE));
 
     d_listenerUnlock(d_listener(listener));
-
     return (event->events & V_EVENT_DATA_AVAILABLE);
 }
 
@@ -164,7 +178,30 @@ d_readerListenerCopy(
     v_message        readerMessage;
     v_actionResult result = 0;
 
+    {
+        d_admin admin;
+        d_durability durability;
+        listener  = d_readerListener(copyArg);
+        admin = d_listenerGetAdmin((d_listener)listener);
+        durability = d_adminGetDurability(admin);
+        d_printTimedEvent(durability, D_LEVEL_FINEST,
+                              D_THREAD_UNSPECIFIED,
+                              "DEBUG: readerListenerCopy: object=%p\n",
+                              object);
+    }
+
     if(object != NULL) {
+        {
+            d_admin admin;
+            d_durability durability;
+            listener  = d_readerListener(copyArg);
+            admin = d_listenerGetAdmin((d_listener)listener);
+            durability = d_adminGetDurability(admin);
+            d_printTimedEvent(durability, D_LEVEL_FINEST,
+                                  D_THREAD_UNSPECIFIED,
+                                  "DEBUG: readerListenerCopy: state=%p\n",
+                                  v_stateTest(v_readerSampleState(object), L_VALIDDATA));
+        }
         if (v_stateTest(v_readerSampleState(object), L_VALIDDATA)) {
             listener  = d_readerListener(copyArg);
             readerMessage = v_message(v_dataReaderSampleTemplate(object)->message);

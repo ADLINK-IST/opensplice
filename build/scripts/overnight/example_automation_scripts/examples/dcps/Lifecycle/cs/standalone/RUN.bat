@@ -8,4 +8,4 @@ set EXAMPLE_LANG=sacs
 
 call %FUNCTIONS% :runLifecycle
 
-call %FUNCTIONS% :lifecycleCheckResults
+call %FUNCTIONS% :lifecycleCheckResults >> run.log

@@ -14,7 +14,9 @@
 
 #include "q_protocol.h"
 
-char *ddsi2_strsep (char **str, const char *sep);
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 int vendor_is_rti (nn_vendorid_t vendor);
 int vendor_is_twinoaks (nn_vendorid_t vendor);
@@ -25,6 +27,11 @@ unsigned char normalize_data_datafrag_flags (const SubmessageHeader_t *smhdr, in
 os_int64 fromSN (const nn_sequence_number_t sn);
 nn_sequence_number_t toSN (os_int64);
 
+
+  
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* NN_MISC_H */
 

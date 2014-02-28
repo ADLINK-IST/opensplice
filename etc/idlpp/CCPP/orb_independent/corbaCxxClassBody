@@ -1,7 +1,7 @@
 extern c_bool
 __$(uniquetypename)__copyIn(
     c_base base,
-    struct $(scopedtypename) *from,
+    $(class_or_struct) $(scopedtypename) *from,
     struct _$(uniquetypename) *to);
 
 extern void
@@ -196,7 +196,7 @@ $(scopedtypename)DataReader_impl::~$(typename)DataReader_impl(void)
 $(scopedtypename)DataReader_impl::read(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
     ::DDS::InstanceStateMask instance_states) THROW_ORB_EXCEPTIONS
@@ -214,7 +214,7 @@ $(scopedtypename)DataReader_impl::read(
 $(scopedtypename)DataReader_impl::take(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
     ::DDS::InstanceStateMask instance_states) THROW_ORB_EXCEPTIONS
@@ -232,7 +232,7 @@ $(scopedtypename)DataReader_impl::take(
 $(scopedtypename)DataReader_impl::read_w_condition(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS
 {
     ::DDS::ReturnCode_t status;
@@ -248,7 +248,7 @@ $(scopedtypename)DataReader_impl::read_w_condition(
 $(scopedtypename)DataReader_impl::take_w_condition(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS
 {
     ::DDS::ReturnCode_t status;
@@ -283,7 +283,7 @@ $(scopedtypename)DataReader_impl::take_next_sample(
 $(scopedtypename)DataReader_impl::read_instance(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
@@ -302,7 +302,7 @@ $(scopedtypename)DataReader_impl::read_instance(
 $(scopedtypename)DataReader_impl::take_instance(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
@@ -321,7 +321,7 @@ $(scopedtypename)DataReader_impl::take_instance(
 $(scopedtypename)DataReader_impl::read_next_instance(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
@@ -340,7 +340,7 @@ $(scopedtypename)DataReader_impl::read_next_instance(
 $(scopedtypename)DataReader_impl::take_next_instance(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
@@ -360,7 +360,7 @@ $(scopedtypename)DataReader_impl::take_next_instance(
 $(scopedtypename)DataReader_impl::read_next_instance_w_condition(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS
 {
@@ -378,7 +378,7 @@ $(scopedtypename)DataReader_impl::read_next_instance_w_condition(
 $(scopedtypename)DataReader_impl::take_next_instance_w_condition(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS
 {
@@ -448,7 +448,7 @@ $(scopedtypename)DataReader_impl::lookup_instance(
 $(scopedtypename)DataReader_impl::check_preconditions(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples)
+    ::DDS::Long max_samples)
 {
     ::DDS::ReturnCode_t status = ::DDS::RETCODE_PRECONDITION_NOT_MET;
 
@@ -457,7 +457,7 @@ $(scopedtypename)DataReader_impl::check_preconditions(
          received_data.release() == info_seq.release() ) {
         if ( received_data.maximum() == 0 || received_data.release() ) {
             if (received_data.maximum() == 0 ||
-                max_samples <= static_cast<CORBA::Long>(received_data.maximum()) ||
+                max_samples <= static_cast<DDS::Long>(received_data.maximum()) ||
                 max_samples == ::DDS::LENGTH_UNLIMITED ) {
                 status = ::DDS::RETCODE_OK;
             }
@@ -486,7 +486,7 @@ $(scopedtypename)DataReaderView_impl::~$(typename)DataReaderView_impl(void)
 $(scopedtypename)DataReaderView_impl::read(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
     ::DDS::InstanceStateMask instance_states) THROW_ORB_EXCEPTIONS
@@ -504,7 +504,7 @@ $(scopedtypename)DataReaderView_impl::read(
 $(scopedtypename)DataReaderView_impl::take(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
     ::DDS::InstanceStateMask instance_states) THROW_ORB_EXCEPTIONS
@@ -522,7 +522,7 @@ $(scopedtypename)DataReaderView_impl::take(
 $(scopedtypename)DataReaderView_impl::read_w_condition(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS
 {
     ::DDS::ReturnCode_t status;
@@ -538,7 +538,7 @@ $(scopedtypename)DataReaderView_impl::read_w_condition(
 $(scopedtypename)DataReaderView_impl::take_w_condition(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS
 {
     ::DDS::ReturnCode_t status;
@@ -573,7 +573,7 @@ $(scopedtypename)DataReaderView_impl::take_next_sample(
 $(scopedtypename)DataReaderView_impl::read_instance(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
@@ -592,7 +592,7 @@ $(scopedtypename)DataReaderView_impl::read_instance(
 $(scopedtypename)DataReaderView_impl::take_instance(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
@@ -611,7 +611,7 @@ $(scopedtypename)DataReaderView_impl::take_instance(
 $(scopedtypename)DataReaderView_impl::read_next_instance(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
@@ -630,7 +630,7 @@ $(scopedtypename)DataReaderView_impl::read_next_instance(
 $(scopedtypename)DataReaderView_impl::take_next_instance(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::SampleStateMask sample_states,
     ::DDS::ViewStateMask view_states,
@@ -650,7 +650,7 @@ $(scopedtypename)DataReaderView_impl::take_next_instance(
 $(scopedtypename)DataReaderView_impl::read_next_instance_w_condition(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS
 {
@@ -668,7 +668,7 @@ $(scopedtypename)DataReaderView_impl::read_next_instance_w_condition(
 $(scopedtypename)DataReaderView_impl::take_next_instance_w_condition(
     $(scopedtypename)Seq & received_data,
     ::DDS::SampleInfoSeq & info_seq,
-    CORBA::Long max_samples,
+    ::DDS::Long max_samples,
     ::DDS::InstanceHandle_t a_handle,
     ::DDS::ReadCondition_ptr a_condition) THROW_ORB_EXCEPTIONS
 {

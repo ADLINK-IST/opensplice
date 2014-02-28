@@ -27,29 +27,25 @@ using namespace org::opensplice::core::policy;
 
 // Implementation
 
-namespace dds { namespace pub {
+namespace dds
+{
+namespace pub
+{
 
-  void ignore(const dds::domain::DomainParticipant& dp,
-      const dds::core::InstanceHandle& handle)
-  {
-    DDS::ReturnCode_t result = ((dds::domain::DomainParticipant)dp)->dp_->ignore_subscription(handle->handle());
-    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::ignore_subscription"));
-  }
-
-  template <typename FwdIterator>
-  void ignore(const dds::domain::DomainParticipant& dp, FwdIterator begin, FwdIterator end)
-  {
+template <typename FwdIterator>
+void ignore(const dds::domain::DomainParticipant& dp, FwdIterator begin, FwdIterator end)
+{
     for(FwdIterator i = begin; i < end; i++)
     {
-      DDS::ReturnCode_t result = ((dds::domain::DomainParticipant)dp)->dp_->ignore_subscription(i->handle());
-      org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::ignore_subscription"));
+        DDS::ReturnCode_t result = ((dds::domain::DomainParticipant)dp)->dp_->ignore_subscription(i->handle());
+        org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::ignore_subscription"));
     }
-  }
+}
 
-  template <typename T>
-  ::dds::core::InstanceHandleSeq
-  matched_subscriptions(const dds::pub::DataWriter<T>& dw)
-  {
+template <typename T>
+::dds::core::InstanceHandleSeq
+matched_subscriptions(const dds::pub::DataWriter<T>& dw)
+{
     dds::core::InstanceHandleSeq isocppSeq;
     DDS::InstanceHandleSeq ddsSeq;
     DDS::ReturnCode_t result = ((dds::pub::DataWriter<T>)dw)->get_raw_writer()->get_matched_subscriptions(ddsSeq);
@@ -59,13 +55,13 @@ namespace dds { namespace pub {
         isocppSeq.push_back(ddsSeq[i]);
     }
     return isocppSeq;
-  }
+}
 
-  template <typename T, typename FwdIterator>
-  uint32_t
-   matched_subscriptions(const dds::pub::DataWriter<T>& dw,
-       FwdIterator begin, uint32_t max_size)
-  {
+template <typename T, typename FwdIterator>
+uint32_t
+matched_subscriptions(const dds::pub::DataWriter<T>& dw,
+                      FwdIterator begin, uint32_t max_size)
+{
     DDS::InstanceHandleSeq ddsSeq;
     DDS::ReturnCode_t result = ((dds::pub::DataWriter<T>)dw)->get_raw_writer()->get_matched_subscriptions(ddsSeq);
     org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_matched_subscriptions"));
@@ -79,13 +75,13 @@ namespace dds { namespace pub {
     }
 
     return max_size;
-  }
+}
 
-  template <typename T>
-  const dds::topic::SubscriptionBuiltinTopicData
-  matched_subscription_data(const dds::pub::DataWriter<T>& dw,
-      const ::dds::core::InstanceHandle& h)
-  {
+template <typename T>
+const dds::topic::SubscriptionBuiltinTopicData
+matched_subscription_data(const dds::pub::DataWriter<T>& dw,
+                          const ::dds::core::InstanceHandle& h)
+{
     dds::topic::SubscriptionBuiltinTopicData isocppData;
     DDS::SubscriptionBuiltinTopicData ddsData;
 
@@ -113,9 +109,10 @@ namespace dds { namespace pub {
     isocppData->group_data_ = convertPolicy(ddsData.group_data);
 
     return isocppData;
-  }
+}
 
-} }
+}
+}
 
 // End of implementation
 

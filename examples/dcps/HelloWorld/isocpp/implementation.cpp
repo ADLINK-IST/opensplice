@@ -27,8 +27,8 @@ namespace dcps { namespace HelloWorld {
 /**
  * @addtogroup examplesdcpsHelloWorldisocpp The ISO C++ DCPS API HelloWorld example
  *
- * This is a reasonably simple case publisher and subscriber
- * example. One sample is published, the sample is then read.
+ * This is a simple publisher and subscriber example. One sample is
+ * published, the sample is then read.
  * Some non-default QoS are used to guarantee delivery and to allow
  * the publisher to be optionally run before the subscriber.
  * @ingroup examplesdcpsisocpp
@@ -82,15 +82,13 @@ int publisher(int argc, char *argv[])
         /** A dds::pub::DataWriter is created on the Publisher & Topic with the modififed Qos. */
         dds::pub::DataWriter<HelloWorldData::Msg> dw(pub, topic, dwqos);
 
-        /** A sample is created on the stack and then written. */
-        HelloWorldData::Msg msgInstance;
-        msgInstance.userID = 1;
-        msgInstance.message = "Hello World";
+        /** A sample is created and then written. */
+        HelloWorldData::Msg msgInstance(1, "Hello World");
         dw << msgInstance;
 
         std::cout << "=== [Publisher] written a message containing :" << std::endl;
-        std::cout << "    userID  : " << msgInstance.userID << std::endl;
-        std::cout << "    Message : \"" << msgInstance.message.in() << "\"" << std::endl;
+        std::cout << "    userID  : " << msgInstance.userID() << std::endl;
+        std::cout << "    Message : \"" << msgInstance.message() << "\"" << std::endl;
 
         /* A short sleep ensures time is allowed for the sample to be written to the network.
         If the example is running in *Single Process Mode* exiting immediately might
@@ -146,11 +144,11 @@ int subscriber(int argc, char *argv[])
                  sample < samples.end();
                  ++sample)
             {
-                if ((*sample).info().valid())
+                if (sample->info().valid())
                 {
                     std::cout << "=== [Subscriber] message received :" << std::endl;
-                    std::cout << "    userID  : " << (*sample).data().userID << std::endl;
-                    std::cout << "    Message : \"" << (*sample).data().message.in() << "\"" << std::endl;
+                    std::cout << "    userID  : " << sample->data().userID() << std::endl;
+                    std::cout << "    Message : \"" << sample->data().message() << "\"" << std::endl;
                     sampleReceived = true;
                 }
             }
@@ -177,3 +175,6 @@ int subscriber(int argc, char *argv[])
 }
 }
 }
+
+EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_HelloWorld_publisher, examples::dcps::HelloWorld::isocpp::publisher)
+EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_HelloWorld_subscriber, examples::dcps::HelloWorld::isocpp::subscriber)

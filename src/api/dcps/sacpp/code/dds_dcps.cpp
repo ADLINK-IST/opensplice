@@ -738,6 +738,43 @@ DDS::Entity_ptr DDS::Entity::_unchecked_narrow (DDS::Object_ptr p)
    return result;
 }
 
+const char * DDS::QosProviderInterface::_local_id = "IDL:DDS/QosProviderInterface:1.0";
+
+DDS::QosProviderInterface_ptr DDS::QosProviderInterface::_duplicate (DDS::QosProviderInterface_ptr p)
+{
+   if (p) p->m_count++;
+   return p;
+}
+
+DDS::Boolean DDS::QosProviderInterface::_local_is_a (const char * _id)
+{
+   if (strcmp (_id, DDS::QosProviderInterface::_local_id) == 0)
+   {
+      return TRUE;
+   }
+
+   return FALSE;
+}
+
+DDS::QosProviderInterface_ptr DDS::QosProviderInterface::_narrow (DDS::Object_ptr p)
+{
+   DDS::QosProviderInterface_ptr result = NULL;
+   if (p && p->_is_a (DDS::QosProviderInterface::_local_id))
+   {
+      result = dynamic_cast<DDS::QosProviderInterface_ptr> (p);
+      if (result) result->m_count++;
+   }
+   return result;
+}
+
+DDS::QosProviderInterface_ptr DDS::QosProviderInterface::_unchecked_narrow (DDS::Object_ptr p)
+{
+   DDS::QosProviderInterface_ptr result;
+   result = dynamic_cast<DDS::QosProviderInterface_ptr> (p);
+   if (result) result->m_count++;
+   return result;
+}
+
 const char * DDS::Domain::_local_id = "IDL:DDS/Domain:1.0";
 
 DDS::Domain_ptr DDS::Domain::_duplicate (DDS::Domain_ptr p)

@@ -9,16 +9,6 @@ goto:EOF
    echo "OSPL_URI is %OSPL_URI%"
    goto:EOF
 
-:deleteDBFFiles
-   echo "=== checking for DBF Files in %TMP%"
-   if exist "%TMP%\osp*.DBF" (
-      dir "%TMP%"
-      echo "*** .DBF files exist ***
-      echo "=== deleting %TMP%\osp*"
-      del /F /Q "%TMP%\osp*"
-   )
-   goto:EOF
-
 :startOSPL
    IF "%EXRUNTYPE%"=="shm" (
       echo "Starting OSPL"
@@ -39,13 +29,45 @@ goto:EOF
 :runZero
    echo "===== calling %NAME% for %EXAMPLE_LANG% ====="
    call :stopOSPL
-   call :deleteDBFFiles
    call :startOSPL
    echo "=== Launching %NAME% %EXAMPLE_LANG% "
    start CMD /C RUNSUB.bat
    %SLEEP2% >NUL
    call publisher.exe %PUB_PARAMS% > pubResult.txt 2>&1
    set PUB_RESULT=%errorlevel%
+   %SLEEP10% >NUL
+   set /p SUB_RESULT=<subReturn.txt
+   del subReturn.txt
+   %SLEEP5% >NUL
+   goto:EOF
+
+:runZeroThroughput
+   echo "===== calling Throughput for %EXAMPLE_LANG% ====="
+   call :stopOSPL
+   call :startOSPL
+   echo "=== Launching Throughput %EXAMPLE_LANG% "
+   start CMD /C RUNPUB.bat
+   %SLEEP5% >NUL
+   call subscriber.exe 10 > subResult.txt 2>&1
+   set SUB_RESULT=%errorlevel%
+   %SLEEP10% >NUL
+   set /p PUB_RESULT=<pubReturn.txt
+   del pubReturn.txt
+   %SLEEP5% >NUL
+   goto:EOF
+
+:runZeroRoundTrip
+   echo "===== calling RoundTrip for %EXAMPLE_LANG% ====="
+   call :stopOSPL
+   call :startOSPL
+   echo "=== Launching RoundTrip %EXAMPLE_LANG% "
+   start CMD /C RUNSUB.bat
+   %SLEEP10% >NUL
+   call ping.exe 100 0 10 > pingResult.txt 2>&1
+   set PUB_RESULT=%errorlevel%
+   %SLEEP5% >NUL
+   call ping.exe quit >NUL
+   %SLEEP10% >NUL
    set /p SUB_RESULT=<subReturn.txt
    del subReturn.txt
    %SLEEP5% >NUL
@@ -59,8 +81,7 @@ goto:EOF
    if %SUCCESS% == 1 (
       echo NOK
       echo "*** ERROR : example %NAME% failed "
-   )
-   else echo OK
+   ) else echo OK
    %SLEEP2% > NUL
    call :stopOSPL
    %SLEEP2% >NUL
@@ -68,12 +89,20 @@ goto:EOF
 
 :runBuiltInTopics
    call :stopOSPL
-   call :deleteDBFFiles
    set EXPECTED_RESULT=..\..\expected_results
    set WIN_BATCH="..\..\..\..\win_batch"
    call :startOSPL
    echo "=== Starting Subscriber %EXAMPLE_LANG% "
    start CMD /C %EXAMPLE_LANG%_builtintopics_sub.exe ^> subResult.txt
+   goto:EOF
+
+:runBuiltInTopicsISOCPP
+   call :stopOSPL
+   set EXPECTED_RESULT=..\expected_results
+   set WIN_BATCH="..\..\..\win_batch"
+   call :startOSPL
+   echo "=== Starting Subscriber %EXAMPLE_LANG% "
+   start CMD /C subscriber.exe ^> subResult.txt
    goto:EOF
 
 :builtintopicsCheckResult
@@ -91,7 +120,6 @@ goto:EOF
 
 :runContentFilteredTopic
    call :stopOSPL
-   call :deleteDBFFiles
    call :startOSPL
    echo "=== Launching ContentFilteredTopic %EXAMPLE_LANG%"
    start CMD /C %EXAMPLE_LANG%_contentfilteredtopic_sub.exe GE ^> subResult.txt
@@ -121,7 +149,6 @@ goto:EOF
 
 :runHelloWorld
    call :stopOSPL
-   call :deleteDBFFiles
    call :startOSPL
    echo "=== Launching HelloWorld %EXAMPLE_LANG% "
    start CMD /C %EXAMPLE_LANG%_helloworld_sub.exe ^> subResult.txt
@@ -144,7 +171,6 @@ goto:EOF
 
 :runLifecycle
    call :stopOSPL
-   call :deleteDBFFiles
    call :startOSPL
    echo "=== Launching Lifecycle "
    echo "=== (step 1)"
@@ -166,6 +192,32 @@ goto:EOF
    start CMD /C %EXAMPLE_LANG%_lifecycle_sub ^> subResult_3.txt
    %SLEEP2% > NUL
    call %EXAMPLE_LANG%_lifecycle_pub false unregister > pubResult_3.txt
+   %SLEEP5% > NUL
+   goto:EOF
+
+:runLifecycleISOCPP
+   call :stopOSPL
+   call :startOSPL
+   echo "=== Launching Lifecycle "
+   echo "=== (step 1)"
+   start CMD /C subscriber ^> subResult_1.txt
+   %SLEEP2% > NUL
+   call publisher false dispose > pubResult_1.txt
+   %SLEEP5% > NUL
+   call :stopOSPL
+   call :startOSPL
+   echo "=== (step 2)"
+   start CMD /C subscriber.exe ^> subResult_2.txt
+   %SLEEP2% > NUL
+   call publisher.exe false unregister > pubResult_2.txt
+   %SLEEP5% > NUL
+   call :stopOSPL
+   %SLEEP5% > NUL
+   call :startOSPL
+   echo "=== (step 3)"
+   start CMD /C subscriber ^> subResult_3.txt
+   %SLEEP2% > NUL
+   call publisher false unregister > pubResult_3.txt
    %SLEEP5% > NUL
    goto:EOF
 
@@ -232,7 +284,6 @@ goto:EOF
 
 :runListener
    call :stopOSPL
-   call :deleteDBFFiles
    call :startOSPL
    echo "=== Launching Listener %EXAMPLE_LANG%"
    start CMD /C %EXAMPLE_LANG%_listener_sub.exe ^> subResult.txt
@@ -266,7 +317,6 @@ goto:EOF
 
 :runOwnership
    call :stopOSPL
-   call :deleteDBFFiles
    call :startOSPL
    echo "=== Launching Ownership %EXAMPLE_LANG%"
    start CMD /C %EXAMPLE_LANG%_ownership_sub.exe ^> subResult.txt
@@ -277,6 +327,20 @@ goto:EOF
    %SLEEP2% >NUL
    echo "=== starting publisher pub2 with ownership strength 10"
    start CMD /C %EXAMPLE_LANG%_ownership_pub.exe "pub2" 10 5 0 ^> pub2Result.txt
+   goto:EOF
+
+:runOwnershipISOCPP
+   call :stopOSPL
+   call :startOSPL
+   echo "=== Launching Ownership %EXAMPLE_LANG%"
+   start CMD /C subscriber.exe ^> subResult.txt
+   %SLEEP2% >NUL
+   echo "=== starting publisher pub1 with ownership strength 5"
+   start CMD /C publisher.exe "pub1" 5 40 true  ^> pub1Result.txt
+   echo "=== Waiting 2 seconds ..."
+   %SLEEP2% >NUL
+   echo "=== starting publisher pub2 with ownership strength 10"
+   start CMD /C publisher.exe "pub2" 10 5 false ^> pub2Result.txt
    goto:EOF
 
 :ownershipCheckResults
@@ -298,7 +362,6 @@ goto:EOF
 
 :runQueryCondition
    call :stopOSPL
-   call :deleteDBFFiles
    call :startOSPL
    echo "=== Launching QueryCondition %EXAMPLE_LANG%"
    start CMD /C %EXAMPLE_LANG%_querycondition_sub.exe MSFT ^> subResult.txt
@@ -326,7 +389,6 @@ goto:EOF
 
 :runWaitSet
    call :stopOSPL
-   call :deleteDBFFiles
    call :startOSPL
    echo "=== Launching WaitSet %EXAMPLE_LANG%"
    start CMD /C %EXAMPLE_LANG%_waitset_sub.exe ^> subResult.txt
@@ -372,13 +434,12 @@ goto:EOF
 
 :runDurabilityInit
    if "%EXRUNTYPE%"=="shm" (
-      set OSPL_URI="file://%OSPL_HOME%\examples\dcps\Durability\ospl_shm.xml"
+      set OSPL_URI=file://%OSPL_HOME%\examples\dcps\Durability\ospl_shm.xml
    ) else (
-      set OSPL_URI="file://%OSPL_HOME%\examples\dcps\Durability\ospl_sp.xml"
+      set OSPL_URI=file://%OSPL_HOME%\examples\dcps\Durability\ospl_sp.xml
    )
    echo "OSPL_URI is %OSPL_URI%"
    call :stopOSPL
-   call :deleteDBFFiles
    call :startOSPL
    goto:EOF
 
@@ -459,6 +520,83 @@ goto:EOF
    call :stopOSPL
    goto:EOF
 
+:runDurabilityISOCPP
+   echo "=== Launching Durability "
+   echo "=== Scenario 3.1"
+   echo "=== running the Subscriber (%EXAMPLE_LANG%)"
+   start CMD /C "subscriber" transient ^> subResult_3_1.txt
+   %SLEEP5% > NUL
+   echo "=== running the Publisher"
+   start CMD /C "publisher" transient true true ^> pubResult_3_1.txt
+   echo "Wait 30s to allow the publisher to complete and terminate rather than kill it...."
+   %SLEEP30% > NUL
+   call :stopOSPL
+   call :startOSPL
+   %SLEEP5% >NUL
+   echo "=== Scenario 3.2"
+   echo "=== running a first Subscriber subscriber"
+   start CMD /C subscriber transient ^> subResult_3_2_1.txt
+   echo "=== running a second Subscriber"
+   start CMD /C subscriber transient ^> subResult_3_2_2.txt
+   %SLEEP5% >NUL
+   echo "=== running the Publisher"
+   start CMD /C publisher transient false true ^> pubResult_3_2.txt
+   echo "Wait 30s to allow the publisher to complete and terminate rather than kill it"
+   %SLEEP30% > NUL
+   call :stopOSPL
+   echo "=== Scenario 3.3"
+   echo "=== Stop OpenSplice"
+   call :startOSPL
+   echo "=== running a first Subscriber"
+   start CMD /C subscriber persistent ^> subResult_3_3_1.txt
+   %SLEEP5% >NUL
+   echo "=== running the Publisher"
+   start CMD /C publisher persistent false true ^> pubResult_3_3.txt
+   echo "Wait 30s to allow the publisher to complete and terminate rather than kill it"
+   %SLEEP30% > NUL
+   call :stopOSPL
+   call :startOSPL
+   echo "=== running a second Subscriber after stop/start of OpenSplice"
+   start CMD /C subscriber persistent ^> subResult_3_3_2.txt
+   %SLEEP5% >NUL
+   goto:EOF
+
+:durabilityCheckResultsISOCPP
+   echo "================== Scenario 3.1 ========================"
+   echo "=== Checking Durability Subscriber results Scenario 3.1"
+   tail --lines=10 subResult_3_1.txt > tail_subResult.txt
+   diff -B --strip-trailing-cr tail_subResult.txt ..\..\expected_result > NUL
+   if "%errorlevel%"=="0" (
+     echo "Scenario 3.1 - OK "
+   ) else (
+     echo "Scenario 3.1 - FAILED"
+   )
+   %SLEEP5% > NUL
+   echo "================== Scenario 3.2 ========================"
+   echo "=== Checking Durability second Subscriber results Scenario 3.2"
+   echo "Checking only result of second subscriber ..\..\expected_result"
+   tail --lines=10 subResult_3_2_2.txt > tail_subResult.txt
+   diff -B --strip-trailing-cr tail_subResult.txt ..\..\expected_result > NUL
+   if "%errorlevel%"=="0" (
+     echo "Scenario 3.2 - OK "
+   ) else (
+     echo "Scenario 3.2 - FAILED"
+   )
+   %SLEEP5% > NUL
+   echo "================== Scenario 3.3 ========================"
+   echo "=== Checking Durability second Subscriber results Scenario 3.3"
+   echo "    (not empty after restarting OpenSplice)"
+   echo "checking only that result of second subscriber is not empty"
+   tail --lines=10 subResult_3_3_2.txt > tail_subResult.txt
+   diff -B --strip-trailing-cr tail_subResult.txt ..\..\expected_result > NUL
+   if "%errorlevel%"=="0" (
+     echo "Scenario 3.3 - OK "
+   ) else (
+     echo "Scenario 3.3 - FAILED"
+   )
+   call :stopOSPL
+   goto:EOF
+
 :runPingPong
    if not exist "pong.exe" (
    echo "Error: The pong executable does not exist - aborting example" >> %LOGFILE%
@@ -473,7 +611,6 @@ goto:EOF
    set BLOKSIZE=100
    set BLOKCOUNT=100
    call :check_osplhome
-   call :deleteDBFFiles
    call :startOSPL
    ECHO "Starting Pong"
    set LEVEL=Starting pong
@@ -523,7 +660,6 @@ goto:EOF
    goto:EOF
    )
    call :stopOSPL
-   call :deleteDBFFiles
    call :startOSPL
    ECHO "Starting MessageBoard"
    SET LEVEL=Starting MessageBoard

@@ -22,78 +22,81 @@
 
 // Implementation
 
-namespace dds {
-namespace sub {
-namespace status {
+namespace dds
+{
+namespace sub
+{
+namespace status
+{
 
 SampleState::SampleState() : MaskType() { }
 SampleState::SampleState(uint32_t i) : MaskType(
-/** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
- * @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
+    /** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
+     * @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
 #if (defined OSPL_USE_CXX11 && _MSC_VER == 1600)
-    static_cast<int>
+        static_cast<int>
 #endif
-    (i)) { }
+        (i)) { }
 SampleState::SampleState(const SampleState& src) : MaskType(
-/** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
- * @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
+    /** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
+     * @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
 #if (defined OSPL_USE_CXX11 && _MSC_VER == 1600)
-    static_cast<int>
+        static_cast<int>
 #endif
-    (src.to_ulong())) { }
+        (src.to_ulong())) { }
 SampleState::SampleState(const MaskType& src) : MaskType(
-/** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
-* @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
+    /** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
+    * @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
 #if (defined OSPL_USE_CXX11 && _MSC_VER == 1600)
-    static_cast<int>
+        static_cast<int>
 #endif
-    (src.to_ulong())) { }
+        (src.to_ulong())) { }
 
 ViewState::ViewState() : MaskType() { }
 ViewState::ViewState(uint32_t m) : MaskType(
-/** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
-* @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
+    /** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
+    * @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
 #if (defined OSPL_USE_CXX11 && _MSC_VER == 1600)
-    static_cast<int>
+        static_cast<int>
 #endif
-    (m)) { }
+        (m)) { }
 ViewState::ViewState(const ViewState& src) : MaskType(
-/** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
-* @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
+    /** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
+    * @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
 #if (defined OSPL_USE_CXX11 && _MSC_VER == 1600)
-    static_cast<int>
+        static_cast<int>
 #endif
-    (src.to_ulong())) { }
+        (src.to_ulong())) { }
 ViewState::ViewState(const MaskType& src) : MaskType(
-/** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
-* @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
+    /** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
+    * @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
 #if (defined OSPL_USE_CXX11 && _MSC_VER == 1600)
-    static_cast<int>
+        static_cast<int>
 #endif
-    (src.to_ulong())) { }
+        (src.to_ulong())) { }
 
 InstanceState::InstanceState(uint32_t m) : MaskType(
-/** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
-* @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
+    /** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
+    * @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
 #if (defined OSPL_USE_CXX11 && _MSC_VER == 1600)
-    static_cast<int>
+        static_cast<int>
 #endif
-    (m)) { }
+        (m)) { }
 InstanceState::InstanceState() : MaskType() { }
 InstanceState::InstanceState(const InstanceState& src) : MaskType(
-/** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
-* @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
+    /** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
+    * @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
 #if (defined OSPL_USE_CXX11 && _MSC_VER == 1600)
-    static_cast<int>
+        static_cast<int>
 #endif
-    (src.to_ulong())) { }
+        (src.to_ulong())) { }
 InstanceState::InstanceState(const MaskType& src) : MaskType(
-/** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
-* @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
+    /** @internal @note MSVC bug: Problems constructing a bitset from an unsigned long in the VC RC
+    * @see http://connect.microsoft.com/VisualStudio/feedback/details/532897 */
 #if (defined OSPL_USE_CXX11 && _MSC_VER == 1600)
-    static_cast<int>
+        static_cast<int>
 #endif
-    (src.to_ulong())) { }
+        (src.to_ulong())) { }
 
 } /* namespace status */
 } /* namespace sub */

@@ -44,6 +44,7 @@ then
         rm -f $MODEL_DB_FILE
     fi
     echo "++++++++COVERITY generating $MODEL_DB_FILE from $MODEL_FILE"
+    echo "++++++++COMMAND [cov-make-library -of $MODEL_DB_FILE $MODEL_FILE]"
     cov-make-library -of $MODEL_DB_FILE $MODEL_FILE 
     if [ $? != 0 ] 
     then
@@ -54,10 +55,12 @@ then
     for i in $COMPILER_CONFIG
     do
         echo "++++++++COVERITY configuring $i"
+        echo "++++++++COMMAND [cov-configure $i]"
         cov-configure $i
     done
     BUILD_CMD="cov-build --dir $CACHE_DIR sh -c"   
     echo "++++++++COVERITY building CACHE_DIR - $CACHE_DIR"
+    echo "++++++++COMMAND [$BUILD_CMD make VERBOSE=yes]"
     #Clean the cache dir as the unique directory path makes coverity
     #count all the source as new again
     if [ -d "$CACHE_DIR" ]
@@ -81,6 +84,7 @@ then
         echo "++++++++COVERITY stream setup is $STREAM"
         if [ "$i" = "CandC++" ]
         then
+            echo "++++++++COMMAND [cov-analyze --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE $COV_C_CPP_ANALYSIS_OPTIONS $COV_C_CPP_ANALYSIS_EXTRA_OPTIONS]"
             cov-analyze --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE \
                 $COV_C_CPP_ANALYSIS_OPTIONS $COV_C_CPP_ANALYSIS_EXTRA_OPTIONS
             if [ $? != 0 ] 
@@ -90,6 +94,7 @@ then
         fi
         if [ "$i" = "JAVA" ]
         then
+            echo "++++++++COMMAND [cov-analyze-java --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE $COV_JAVA_ANALYSIS_OPTIONS $COV_JAVA_ANALYSIS_EXTRA_OPTIONS]"
             cov-analyze-java --dir $CACHE_DIR --user-model-file $MODEL_DB_FILE \
                 $COV_JAVA_ANALYSIS_OPTIONS $COV_JAVA_ANALYSIS_EXTRA_OPTIONS
             if [ $? != 0 ] 
@@ -98,6 +103,7 @@ then
             fi
         fi
         echo "++++++++COVERITY commiting defects to $STREAM"
+        echo "++++++++COMMAND [cov-commit-defects --dir $CACHE_DIR --host $COV_SERVER --port $COV_PORT --user $COV_USER --password $COV_PASSWORD --stream $STREAM]"
         cov-commit-defects --dir $CACHE_DIR --host $COV_SERVER --port $COV_PORT \
             --user $COV_USER --password $COV_PASSWORD --stream $STREAM
         if [ $? != 0 ] 

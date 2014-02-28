@@ -377,7 +377,7 @@ u__userExitRequestCallbackWrapper(
         exit(0);
 #else
         _exit(0);
-#endif    
+#endif
     }
     return os_signalHandlerFinishExitRequest(arg);
 }
@@ -806,7 +806,7 @@ u_userServerId(
     c_long i, id = 0;
     u_user u;
 
-    u = u__userLock();
+    u = user;// u__userLock();
     if ( u ) {
         kernel = v_objectKernel(o);
         for (i=1; i<=u->domainCount; i++) {
@@ -814,7 +814,7 @@ u_userServerId(
                 id = i << 24;
             }
         }
-        u__userUnlock();
+        //u__userUnlock();
     }
     return id;
 }
@@ -831,13 +831,13 @@ u_userServer(
     domain = NULL;
     server = 0;
 
-    u = u__userLock();
+    u = user;//u__userLock();
     if ( u ) {
         idx = id >> 24;
         if ((idx > 0) && (idx <= u->domainCount)) {
             domain = u->domainList[idx].domain;
         }
-        u__userUnlock();
+        //u__userUnlock();
         if (domain) {
             server = u_domainHandleServer(domain);
         }

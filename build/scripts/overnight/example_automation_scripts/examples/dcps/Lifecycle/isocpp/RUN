@@ -1,0 +1,41 @@
+. $OSPL_HOME/examples/functions
+
+check_osplhome
+
+stopOSPL
+
+startOSPL
+
+echo "=== Launching Lifecycle "
+
+echo "=== (step 1)"
+
+./subscriber > subResult_1.txt &
+
+./publisher  false dispose > pubResult_1.txt
+
+stopOSPL
+
+startOSPL
+
+echo "=== (step 2)"
+
+./subscriber > subResult_2.txt &
+
+./publisher false unregister > pubResult_2.txt
+
+stopOSPL
+
+startOSPL
+
+echo "=== (step 3)"
+
+./subscriber > subResult_3.txt &
+
+./publisher false stoppub > pubResult_3.txt
+
+sleep 2
+
+lifecycleCheckResult
+
+stopOSPL

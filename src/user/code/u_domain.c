@@ -69,6 +69,7 @@ C_STRUCT(u_domainConfig) {
     c_bool        prioInherEnabled;
     os_int32      id;
     c_bool        idReadFromConfig;
+    c_bool        maintainObjectCount;
 };
 
 C_STRUCT(attributeCopyArg) {
@@ -113,6 +114,7 @@ GetDomainConfig(
     cf_element address;
     cf_element singleProcess;
     cf_element locked;
+    cf_element maintainObjectCount;
     c_value value;
     cf_attribute attr;
     os_boolean doAppend;
@@ -203,6 +205,23 @@ GetDomainConfig(
                         }
                     } /* else: keep the platform dependent default OS_LOCK_DEFAULT */
                     shm_attr->lockPolicy = domainConfig->lockPolicy;
+                    maintainObjectCount = cf_element(cf_elementChild(child, CFG_MAINTAINOBJECTCOUNT));
+                    domainConfig->maintainObjectCount = 1;
+                    if (maintainObjectCount != NULL) {
+                        elementData = cf_data(cf_elementChild(maintainObjectCount, "#text"));
+                        if (elementData != NULL) {
+                            value = cf_dataValue(elementData);
+                            if (os_strncasecmp(value.is.String, "TRUE", 4) == 0) {
+                                domainConfig->maintainObjectCount = 1;
+                            } else if (os_strncasecmp(value.is.String, "FALSE", 5) == 0) {
+                                domainConfig->maintainObjectCount = 0;
+                            } else {
+                                OS_REPORT_1(OS_WARNING, OSRPT_CNTXT_USER, 0,
+                                    "Incorrect <Database/MaintainObjectValue> parameter for Domain: \"%s\","
+                                    " using default",value.is.String);
+                            }
+                        }
+                    } /* else: leave enabled */
                 }
                 singleProcess = cf_element(cf_elementChild(dc, CFG_SINGLEPROCESS));
                 if (singleProcess != NULL) {
@@ -572,6 +591,7 @@ u_domainNew(
     domainCfg.id = DEF_DOMAIN_ID;
     domainCfg.address = NULL;
     domainCfg.idReadFromConfig = FALSE;
+    domainCfg.maintainObjectCount = 1;
 
     if (uri == NULL) {
         base = c_create(DATABASE_NAME,NULL,0, 0);
@@ -688,6 +708,7 @@ u_domainNew(
         }
     }
     if (base) {
+        c_baseSetMaintainObjectCount (base, domainCfg.maintainObjectCount);
         kernelQos.builtin.enabled = domainCfg.builtinTopicEnabled;
         kernel = v_kernelNew(base, KERNEL_NAME, &kernelQos);
         if (kernel == NULL) {
@@ -874,7 +895,6 @@ u_domainOpen(
         s = cfg_parse_ospl(uri, &processConfig);
         if (s == CFGPRS_OK) {
             GetDomainConfig(processConfig, &domainCfg, &shm_attr);
-
 #ifdef INCLUDE_PLUGGABLE_REPORTING
             /** @todo - Fix properly. See: OSPL-1222 */
             if (!domainCfg.heap || singleProcessLoggerRegDoneHack == OS_FALSE)
@@ -1035,6 +1055,20 @@ u_domainOpen(
                         if (domainCfg.prioInherEnabled) {
                             os_mutexSetPriorityInheritanceMode(OS_TRUE);
                         }
+#ifdef INCLUDE_PLUGGABLE_REPORTING
+            /** @todo - Fix properly. See: OSPL-1222 */
+            if (singleProcessLoggerRegDoneHack == OS_FALSE)
+            {
+                r = u_usrReportPluginReadAndRegister (processConfig);
+
+                if (r != U_RESULT_OK)
+                {
+                    OS_REPORT_2(OS_ERROR, "user::u_domain::u_domainOpen",0,
+                                "Domain '%s' has not been started - ReportPlugin registration failed - return code %d\n", domainCfg.name, r);
+                    return r;
+                }
+            }
+#endif
                     }
                 }
             }
@@ -1163,6 +1197,8 @@ u_domainFree (
                  * memory segment can be detached.
                  */
                 c_destroy(c_getBase(_this->kernel));
+            } else {
+                c_detach(c_getBase(_this->kernel));
             }
             if(!os_serviceGetSingleProcess())
             {

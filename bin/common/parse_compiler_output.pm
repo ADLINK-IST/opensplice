@@ -376,6 +376,13 @@ sub handle_compiler_output_line($) {
     return;
   }
 
+  # Shooting for
+  # javac: file not found: Foo.java
+  if ($s =~ m/javac: file not found:/) {
+    $self->Output_Error ($s);
+    return;
+  }
+
   if ($s =~ m/undefined reference to/
       || $s =~ m/: cannot open/
       || $s =~ m/: cannot find/

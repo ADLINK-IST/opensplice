@@ -22,38 +22,73 @@
 #include <dds/core/Value.hpp>
 #include <dds/sub/SampleInfo.hpp>
 
-namespace dds {
-  namespace sub {
-    template <typename T, template <typename Q> class DELEGATE>
-    class Sample;
-  }
+namespace dds
+{
+namespace sub
+{
+template <typename T, template <typename Q> class DELEGATE>
+class Sample;
+}
 }
 
 /**
- * This class encapsulates the data and meta-data associated with
+ * This class encapsulates the data and info meta-data associated with
  * DDS samples.
  */
 template <typename T, template <typename Q> class DELEGATE>
 class dds::sub::Sample : public dds::core::Value< DELEGATE<T> >
 {
 public:
-  typedef T DataType;
+    typedef T DataType;
 
 public:
-  /**
-   * Create a sample with invalid data.
-   */
-  Sample();
+    /**
+     * Create a sample with invalid data.
+     */
+    Sample();
 
-  Sample(const T& data, const SampleInfo& info);
+    /**
+     * Creates a Sample instance.
+     *
+     * @param data the data
+     * @param info the sample info
+     */
+    Sample(const T& data, const SampleInfo& info);
 
-  Sample(const Sample& other);
+    /**
+     * Copies a sample instance.
+     *
+     * @param other the sample instance to copy
+     */
+    Sample(const Sample& other);
 
-  const DataType& data() const;
-  void data(const DataType& d);
+    /**
+     * Gets the data.
+     *
+     * @return the data
+     */
+    const DataType& data() const;
 
-  const SampleInfo& info() const;
-  void info(const SampleInfo& i);
+    /**
+     * Sets the data.
+     *
+     * @param data the data
+     */
+    void data(const DataType& data);
+
+    /**
+     * Gets the info.
+     *
+     * @return the info
+     */
+    const SampleInfo& info() const;
+
+    /**
+     * Sets the info.
+     *
+     * @param info the info
+     */
+    void info(const SampleInfo& info);
 };
 
 #endif /* OMG_DDS_SUB_TSAMPLE_HPP_ */

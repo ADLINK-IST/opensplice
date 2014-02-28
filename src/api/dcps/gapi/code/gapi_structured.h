@@ -15,7 +15,7 @@
 #include "gapi.h"
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_DCPSGAPI
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -128,37 +128,37 @@ viewKeyQosPolicyEqual (
 /*
  * Qos Copy functions
  */
-gapi_domainParticipantQos *
+OS_API gapi_domainParticipantQos *
 gapi_domainParticipantQosCopy (
     const gapi_domainParticipantQos *src,
     gapi_domainParticipantQos *dst);
 
-gapi_topicQos *
+OS_API gapi_topicQos *
 gapi_topicQosCopy (
     const gapi_topicQos *src,
     gapi_topicQos *dst);
 
-gapi_dataWriterQos *
+OS_API gapi_dataWriterQos *
 gapi_dataWriterQosCopy (
     const gapi_dataWriterQos *src,
     gapi_dataWriterQos *dst);
 
-gapi_publisherQos *
+OS_API gapi_publisherQos *
 gapi_publisherQosCopy (
     const gapi_publisherQos *src,
     gapi_publisherQos *dst);
 
-gapi_dataReaderQos *
+OS_API gapi_dataReaderQos *
 gapi_dataReaderQosCopy (
     const gapi_dataReaderQos *src,
     gapi_dataReaderQos *dst);
 
-gapi_dataReaderViewQos *
+OS_API gapi_dataReaderViewQos *
 gapi_dataReaderViewQosCopy (
     const gapi_dataReaderViewQos *src,
     gapi_dataReaderViewQos *dst);
 
-gapi_subscriberQos *
+OS_API gapi_subscriberQos *
 gapi_subscriberQosCopy (
     const gapi_subscriberQos *src,
     gapi_subscriberQos *dst);
@@ -166,12 +166,12 @@ gapi_subscriberQosCopy (
 /*
  * Qos Merge functions
  */
-gapi_dataWriterQos *
+OS_API gapi_dataWriterQos *
 gapi_mergeTopicQosWithDataWriterQos (
     const gapi_topicQos      *srcTopicQos,
     gapi_dataWriterQos       *dstWriterQos);
 
-gapi_dataReaderQos  *
+OS_API gapi_dataReaderQos  *
 gapi_mergeTopicQosWithDataReaderQos (
     const gapi_topicQos      *srcTopicQos,
     gapi_dataReaderQos       *dstReaderQos);

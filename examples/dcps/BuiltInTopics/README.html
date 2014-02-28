@@ -24,6 +24,8 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li><a href ="../Ownership/README.html">Ownership</a></li>
   <li>BuiltInTopics</li>
   <li><a href ="../NetworkPartitions/README.html">NetworkPartitions</a></li>
+  <li><a href ="../RoundTrip/README.html">RoundTrip</a></li>
+  <li><a href ="../Throughput/README.html">Throughput</a></li>
 </ul>
 <h2> BuiltInTopics</h2>
 
@@ -36,12 +38,12 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <h3>2) Design</h3>
 <p>It consists of 3 units :</p>
 <ul><li>CheckStatus : provides return status checking</li>
-	<li>DDSEntityManager : implements a class providing operations to setup DCPS entities
+        <li>DDSEntityManager : implements a class providing operations to set up DCPS entities
 (creation, deletion) </li>
-	<li>BuiltInTopicsSubscriber : implements the subscriber's main (uses DDSEntityManager)
+        <li>BuiltInTopicsSubscriber : implements the subscriber's main (uses DDSEntityManager)
 </li></ul>
 <h3>3) Scenario</h3>
-<p>When it receives the built-in sample, the subscriber displays the number of nodes running and the hostname of each node .</p>
+<p>When it receives the built-in sample, the subscriber displays the number of nodes running and the host name of each node .</p>
 
 <h2><balise id="STANDALONE">Running of examples in Standalone Mode</balise></h2>
 <ul>
@@ -65,33 +67,33 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
 <p>Building the examples is described on the <a href ="../README.html">Summary page></a></p>
 <p>One executable is generated in the <b>standalone</b> directory when the example is built:</p>
 <p>For C++</p>
-		<ul><li>sacpp_builtintopics_sub </li>
-		</ul>
+                <ul><li>sacpp_builtintopics_sub </li>
+                </ul>
 
 <p>For C</p>
-		<ul><li>sac_builtintopics_sub </li>
-		</ul>
+                <ul><li>sac_builtintopics_sub </li>
+                </ul>
 
 <h4><balise id = "Java">Java executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a>
 <p>One jar is generated in the <b>standalone</b> directory when the example is built:</p>
 
-		<ul><li>saj_builtintopics.jar </li>
-		</ul>
+                <ul><li>saj_builtintopics.jar </li>
+                </ul>
 
 <h4>Running the example</h4>
- <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new terminal used.  If running the C or C++ examples ensure that
+ <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new terminal used.  If running the C or C++ examples ensure that
     . is added to the LD_LIBRARY_PATH.</p>
    <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
    <ul>
      <li>OpenSpliceDDS is deployed in this mode by default.</li>
      <li>The OpenSplice daemon should not be started manually.  Instead the OpenSpliceDDS middleware and optional services are implicitly started by the single process applications as required</li>
-     <li>Open a terminal. Setup the environment and go to directory <b>standalone</b> as described above</li>
+     <li>Open a terminal. Set up the environment and go to directory <b>standalone</b> as described above</li>
    </ul>
 
    <p><b>Running in multiple process shared memory configuration</b></p>
-   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>  
-    <ul>	
+   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>/etc/config</b> directory. </p>
+    <ul>
           <li>Open a terminal</li>
           <li>Setup the environment and go to directory <b>standalone</b> as described above</li>
           <li>Set the required configuraton file e.g. <i>OSPL_URI=file://$OSPL_HOME/etc/config/ospl_shmem_ddsi.xml</i></li>
@@ -115,7 +117,7 @@ To do this, open a terminal and source the  "<i>OpenSplice_install_dir/release.c
 <h4>Environment Setup</h4>
 <p>Let's call <b><i>OpenSplice_install_dir</i></b> the OpenSplice installation directory.</p>
 <p>The OpenSpliceDDS environment variables must be set in order for the examples to run correctly.
-To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the enviroment variables for OpenSpliceDDS automatically.  The <i>OpenSpliceDDS Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
+To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the environment variables for OpenSpliceDDS automatically.  The <i>OpenSpliceDDS Command Prompt</i> can be selected from the start menu.  Alternatively, open a windows Command Prompt and execute the "<i>OpenSplice_install_dir\release.bat</i>" batch script supplied with the distribution.</p>
 
 <ul>
   <li><a href ="#C_C++_CS_Win">C/C++/C# Examples </a></li>
@@ -124,25 +126,25 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
 
 <h4><balise id="C_C++_CS_Win">C/C++/C# Executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
-<p>One executable is generated in the <b>standalone</b> directory when the example is built: 
+<p>One executable is generated in the <b>standalone</b> directory when the example is built:
 <p>For C</p>
-		<ul><li>sac_builtintopics_sub.exe </li>
-		</ul>
+                <ul><li>sac_builtintopics_sub.exe </li>
+                </ul>
 
 <p>For C++</p>
-		<ul><li>sacpp_builtintopics_sub.exe </li>
-		</ul>
-	
+                <ul><li>sacpp_builtintopics_sub.exe </li>
+                </ul>
+
 
 <h4><balise id="Java_Win">Java Executables</balise></h4>
 <p>Building the examples is described on the <a href ="../README.html">Summary page</a></p>
 <p>The subscriber class is generated in the <b>standalone</b> directory when the example is built:</p>
 
-		<ul><li>BuildInTopicsDataSubscriber.class</li>
-		</ul>
-		
+                <ul><li>BuildInTopicsDataSubscriber.class</li>
+                </ul>
+
 <h4><balise id="C_C++_CS_Java_Win">Running the C/C++/C#/Java Examples</balise></h4>
-   <p>Ensure that the environment for OpenSpliceDDS is setup correctly as described above for each new command prompt used.</p>
+   <p>Ensure that the environment for OpenSpliceDDS is set up correctly as described above for each new command prompt used.</p>
    <p>The following steps describe how to run the examples:</p>
 
    <p><b>Running in single process (heap memory) configuration : the application starts OpenSpliceDDS middleware</b></p>
@@ -153,11 +155,11 @@ To do this open an <i>OpenSpliceDDS Command Prompt</i> which will set up the env
    </ul>
 
    <p><b>Running in multiple process shared memory configuration</b></p>
-   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>  
-    <ul>	
+   <p>To enable deployment in this mode, an OpenSpliceDDS configuration file must be selected that has shared memory support e.g. one of the ospl_shmem xml configuration files found in the <b><i>OpenSplice_install_dir</i>\etc\config</b> directory. </p>
+    <ul>
           <li>Open an OpenSpliceDDS Command Prompt</li>
           <li>Go to the <b>standalone</b> directory as described above</li>
-          <li>Set the required configuraton file e.g. <i>set OSPL_URI="file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml"</i></li>
+          <li>Set the required configuration file e.g. <i>set OSPL_URI="file://%OSPL_HOME%\etc\config\ospl_shmem_ddsi.xml"</i></li>
           <li>Start the OpenSplice daemon. You can do this by typing <i>ospl start</i></li>
     </ul>
 

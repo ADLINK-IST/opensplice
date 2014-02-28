@@ -43,19 +43,19 @@ int OSPL_MAIN (int argc, char *argv[])
 
    DDS_Publisher ContentFilteredTopicDataPublisher;
    DDS_DataWriter ContentFilteredTopicDataDataWriter;
-   ContentFilteredTopicData_Stock* geStockSample;
-   ContentFilteredTopicData_Stock* msftStockSample;
+   StockMarket_Stock* geStockSample;
+   StockMarket_Stock* msftStockSample;
    DDS_InstanceHandle_t geInstanceHandle;
    DDS_InstanceHandle_t msftInstanceHandle;
 
    createParticipant( partition_name );
 
    // Register Stock Topic's type in the DDS Domain.
-   g_StockTypeSupport = (DDS_TypeSupport) ContentFilteredTopicData_StockTypeSupport__alloc();
-   checkHandle(g_StockTypeSupport, "ContentFilteredTopicData_StockTypeSupport__alloc");
+   g_StockTypeSupport = (DDS_TypeSupport) StockMarket_StockTypeSupport__alloc();
+   checkHandle(g_StockTypeSupport, "StockMarket_StockTypeSupport__alloc");
    registerStockType(g_StockTypeSupport);
    // Create Stock Topic in the DDS Domain.
-   g_StockTypeName = ContentFilteredTopicData_StockTypeSupport_get_type_name(g_StockTypeSupport);
+   g_StockTypeName = StockMarket_StockTypeSupport_get_type_name(g_StockTypeSupport);
    g_StockTopic = createTopic("StockTrackerExclusive", g_StockTypeName);
    DDS_free(g_StockTypeName);
    DDS_free(g_StockTypeSupport);
@@ -67,8 +67,8 @@ int OSPL_MAIN (int argc, char *argv[])
    ContentFilteredTopicDataDataWriter = createDataWriter(ContentFilteredTopicDataPublisher, g_StockTopic, FALSE);
 
    // Publish a Stock Sample reflecting the state of the Msg DataWriter.
-   geStockSample = ContentFilteredTopicData_Stock__alloc();
-   msftStockSample = ContentFilteredTopicData_Stock__alloc();
+   geStockSample = StockMarket_Stock__alloc();
+   msftStockSample = StockMarket_Stock__alloc();
 
    msftStockSample->ticker = DDS_string_alloc(msftTickerLength);
    snprintf(msftStockSample->ticker, msftTickerLength + 1, "%s", msftTicker);
@@ -78,8 +78,8 @@ int OSPL_MAIN (int argc, char *argv[])
    snprintf(geStockSample->ticker, geTickerLength + 1, "%s", geTicker);
    geStockSample->price = 12.00f;
 
-   geInstanceHandle = ContentFilteredTopicData_StockDataWriter_register_instance(ContentFilteredTopicDataDataWriter, geStockSample);
-   msftInstanceHandle = ContentFilteredTopicData_StockDataWriter_register_instance(ContentFilteredTopicDataDataWriter, msftStockSample);
+   geInstanceHandle = StockMarket_StockDataWriter_register_instance(ContentFilteredTopicDataDataWriter, geStockSample);
+   msftInstanceHandle = StockMarket_StockDataWriter_register_instance(ContentFilteredTopicDataDataWriter, msftStockSample);
 
    nb_iteration = 20;
 
@@ -110,8 +110,8 @@ int OSPL_MAIN (int argc, char *argv[])
 
    printf("\nMarket Closed\n");
 
-   ContentFilteredTopicData_StockDataWriter_unregister_instance(ContentFilteredTopicDataDataWriter, geStockSample, geInstanceHandle);
-   ContentFilteredTopicData_StockDataWriter_unregister_instance(ContentFilteredTopicDataDataWriter, msftStockSample, msftInstanceHandle);
+   StockMarket_StockDataWriter_unregister_instance(ContentFilteredTopicDataDataWriter, geStockSample, geInstanceHandle);
+   StockMarket_StockDataWriter_unregister_instance(ContentFilteredTopicDataDataWriter, msftStockSample, msftInstanceHandle);
 
 
 

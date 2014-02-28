@@ -23,14 +23,14 @@ saj_UserDataQosPolicyCopyIn(
 
     assert(dst != NULL);
 
-    if (src != NULL)
-    {
+    if (src != NULL) {
         javaUserDataQosPolicy_value = (*env)->GetObjectField(env, src,
                                     GET_CACHED(userDataQosPolicy_value_fid));
         saj_exceptionCheck(env);
-        rc = saj_octetSequenceCopyIn(env, javaUserDataQosPolicy_value,
-                                    &(dst->value));
-    (*env)->DeleteLocalRef (env, javaUserDataQosPolicy_value);
+        rc = saj_octetSequenceCopyIn(env, javaUserDataQosPolicy_value, &(dst->value));
+        (*env)->DeleteLocalRef (env, javaUserDataQosPolicy_value);
+    } else {
+        rc = SAJ_RETCODE_ERROR;
     }
 
     return rc;
@@ -438,7 +438,7 @@ saj_LatencyBudgetQosPolicyCopyOut(
     jobject *dst)
 {
     jobject javaDuration = NULL;
-    saj_returnCode rc;
+    saj_returnCode rc = SAJ_RETCODE_OK;
 
     assert(dst != NULL);
 
@@ -998,14 +998,9 @@ saj_ShareQosPolicyCopyIn(
 
     rc = SAJ_RETCODE_OK;
 
-
-
-    if(src != NULL)
-    {
-        dst->enable = (*env)->GetBooleanField(env, src,
-                 GET_CACHED(shareQosPolicy_enable_fid));
+    if(src != NULL) {
+        dst->enable = (*env)->GetBooleanField(env, src, GET_CACHED(shareQosPolicy_enable_fid));
         saj_exceptionCheck(env);
-
 
         share_name = (jstring)((*env)->GetObjectField(env, src, GET_CACHED(shareQosPolicy_name_fid)));
         saj_exceptionCheck(env);
@@ -1016,9 +1011,10 @@ saj_ShareQosPolicyCopyIn(
             dst->name = gapi_string_dup(string_data);
             (*env)->ReleaseStringUTFChars(env, share_name, string_data);
             saj_exceptionCheck(env);
+
+            (*env)->DeleteLocalRef (env, share_name);
         }
     }
-    (*env)->DeleteLocalRef (env, share_name);
     return rc;
 }
 
@@ -1029,7 +1025,7 @@ saj_ShareQosPolicyCopyOut(
     jobject *dst)
 {
     jboolean value;
-    saj_returnCode rc;
+    saj_returnCode rc = SAJ_RETCODE_OK;
 
     assert(dst != NULL);
 
@@ -1038,8 +1034,7 @@ saj_ShareQosPolicyCopyOut(
         rc = saj_create_new_java_object(env, "DDS/ShareQosPolicy", dst);
     }
 
-    if (rc == SAJ_RETCODE_OK)
-    {
+    if (rc == SAJ_RETCODE_OK) {
         if (src->enable == 0) {
             value = JNI_FALSE;
         } else {
@@ -1056,8 +1051,11 @@ saj_ShareQosPolicyCopyOut(
 
     if (rc == SAJ_RETCODE_OK)
     {
-        jobject javaString = (*env)->NewStringUTF(env, src->name);
-        saj_exceptionCheck(env);
+        jobject javaString = NULL;
+        if (src != NULL && src->name != NULL) {
+            javaString = (*env)->NewStringUTF(env, src->name);
+            saj_exceptionCheck(env);
+        }
 
         if(javaString == NULL){ /* src->name was also NULL */
             javaString = (*env)->NewStringUTF(env, "");
@@ -1172,7 +1170,6 @@ saj_WriterDataLifecycleQosPolicyCopyIn(
     jobject src,
     gapi_writerDataLifecycleQosPolicy *dst)
 {
-    saj_returnCode rc;
     jobject assdDuration;
     jobject aidDuration;
 
@@ -1195,12 +1192,12 @@ saj_WriterDataLifecycleQosPolicyCopyIn(
         assdDuration = (*env)->GetObjectField(env, src,
             GET_CACHED(writerDataLifecycleQosPolicy_autopurgeSuspendedSamplesDelay_fid));
         saj_exceptionCheck(env);
-        rc = saj_durationCopyIn(env, assdDuration, &(dst->autopurge_suspended_samples_delay));
+        saj_durationCopyIn(env, assdDuration, &(dst->autopurge_suspended_samples_delay));
 
         aidDuration = (*env)->GetObjectField(env, src,
            GET_CACHED(writerDataLifecycleQosPolicy_autounregisterInstanceDelay_fid));
         saj_exceptionCheck(env);
-        rc = saj_durationCopyIn(env, aidDuration, &(dst->autounregister_instance_delay));
+        saj_durationCopyIn(env, aidDuration, &(dst->autounregister_instance_delay));
 
         (*env)->DeleteLocalRef (env, assdDuration);
         (*env)->DeleteLocalRef (env, aidDuration);
@@ -1368,12 +1365,6 @@ saj_DomainParticipantFactoryQosCopyOut(
     }
     return rc;
 }
-
-
-
-
-
-
 
 saj_returnCode
 saj_DomainParticipantQosCopyIn(
@@ -2308,9 +2299,9 @@ saj_SubscriptionKeyQosPolicyCopyOut(
     jobjectArray jStringArray;
     saj_returnCode rc;
     jboolean value;
-    
+
     assert(dst != NULL);
-    
+
     jStringArray = NULL;
     rc = SAJ_RETCODE_OK;
 
@@ -2366,9 +2357,9 @@ saj_ViewKeyQosPolicyCopyOut(
     jobjectArray jStringArray;
     saj_returnCode rc;
     jboolean value;
-    
+
     assert(dst != NULL);
-    
+
     jStringArray = NULL;
     rc = SAJ_RETCODE_OK;
 
@@ -2602,8 +2593,7 @@ saj_TopicDataQosPolicyCopyOut(
     {
         rc = (saj_octetSequenceCopyOut(env, &src->value, &value));
 
-        if (rc == SAJ_RETCODE_OK)
-        {
+        if (rc == SAJ_RETCODE_OK) {
             (*env)->SetObjectField(
                 env,
                 *dst,
@@ -2611,11 +2601,11 @@ saj_TopicDataQosPolicyCopyOut(
                 value
             );
             saj_exceptionCheck(env);
+
+            (*env)->DeleteLocalRef(env, value);
+            saj_exceptionCheck(env);
         }
     }
-
-    (*env)->DeleteLocalRef(env, value);
-    saj_exceptionCheck(env);
 
     return rc;
 

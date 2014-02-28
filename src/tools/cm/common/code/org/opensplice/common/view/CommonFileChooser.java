@@ -32,43 +32,52 @@ public class CommonFileChooser extends JFileChooser {
     
     public CommonFileChooser(String path){
         super(path);
-        
-        JFrame f = null;
-        dialog = new JDialog(f, "", true);
-        Container contentPane = dialog.getContentPane();
-        contentPane.setLayout(new BorderLayout());
-        contentPane.add(this, BorderLayout.CENTER);
-        
-        dialog.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                returnCode = CANCEL_OPTION;
-                dialog.setVisible(false);
-            }
-        });
-        dialog.pack();
+    }
+
+    private synchronized JDialog getDialog(){
+        if(this.dialog == null){
+            JFrame f = null;
+            this.dialog = new JDialog(f, "", true);
+            Container contentPane = this.dialog.getContentPane();
+            contentPane.setLayout(new BorderLayout());
+            contentPane.add(this, BorderLayout.CENTER);
+
+            this.dialog.addWindowListener(new WindowAdapter() {
+                public void windowClosing(WindowEvent e) {
+                    returnCode = CANCEL_OPTION;
+                    dialog.setVisible(false);
+                }
+            });
+            this.dialog.pack();
+        }
+        return this.dialog;
     }
     
     protected void fireActionPerformed(String command) {
         super.fireActionPerformed(command);
         
+        JDialog myDialog = this.getDialog();
+
         if(APPROVE_SELECTION.equals(command)){
             returnCode = APPROVE_OPTION;
-            dialog.setVisible(false);
+            myDialog.setVisible(false);
         } else if(CANCEL_SELECTION.equals(command)){
             returnCode = CANCEL_OPTION;
-            dialog.setVisible(false);
+            myDialog.setVisible(false);
         }
     }
     
     public int showDialog(Component parent, String title){
+        JDialog myDialog = this.getDialog();
+
         if(parent != null){
-            dialog.setLocationRelativeTo(parent);
+            myDialog.setLocationRelativeTo(parent);
         }
         if(title != null){
-            dialog.setTitle(title);
+            myDialog.setTitle(title);
         }
-        dialog.setVisible(true);
-        dialog.toFront();
+        myDialog.setVisible(true);
+        myDialog.toFront();
         
         return returnCode;
     }

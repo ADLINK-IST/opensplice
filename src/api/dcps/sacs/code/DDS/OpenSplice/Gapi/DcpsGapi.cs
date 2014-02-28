@@ -25,99 +25,99 @@ namespace DDS.OpenSplice.Gapi
     static internal class GenericAllocRelease
     {
         /* Generic allocation/release functions */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_free")]
+        [DllImport("ddskernel", EntryPoint = "gapi_free")]
         public static extern void Free(IntPtr buffer);
 
         // it is actually a uint not an int...but all are
         // lengths are ints, so this saves a cast.
-        [DllImport("dcpsgapi", EntryPoint = "gapi_alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_alloc")]
         public static extern IntPtr Alloc(int length);
 
 
-        [DllImport("dcpsgapi", EntryPoint = "gapi_sequence_malloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_sequence_malloc")]
         public static extern IntPtr sequence_alloc();
 
-        [DllImport("dcpsgapi", EntryPoint = "gapi_string_alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_string_alloc")]
         public static extern IntPtr string_alloc(int length);
 
-        [DllImport("dcpsgapi", EntryPoint = "gapi_string_dup")]
+        [DllImport("ddskernel", EntryPoint = "gapi_string_dup")]
         public static extern IntPtr string_dup(string stringPtr);
 
         // QOS alloc's
-        [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactoryQos__alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_domainParticipantFactoryQos__alloc")]
         public static extern IntPtr domainParticipantFactoryQos_alloc();
 
-        [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantQos__alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_domainParticipantQos__alloc")]
         public static extern IntPtr domainParticipantQos_alloc();
 
-        [DllImport("dcpsgapi", EntryPoint = "gapi_topicQos__alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_topicQos__alloc")]
         public static extern IntPtr topicQos_alloc();
 
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataWriterQos__alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataWriterQos__alloc")]
         public static extern IntPtr dataWriterQos_alloc();
 
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisherQos__alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisherQos__alloc")]
         public static extern IntPtr publisherQos_alloc();
 
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReaderQos__alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReaderQos__alloc")]
         public static extern IntPtr dataReaderQos_alloc();
 
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriberQos__alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriberQos__alloc")]
         public static extern IntPtr subscriberQos_alloc();
 
         //// sequence alloc's
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_stringSeq__alloc")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_stringSeq__alloc")]
         //public static extern IntPtr stringSeq_alloc();
 
         // TODO: More seqs
 
         // sequence buffer alloc's
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_instanceHandleSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_instanceHandleSeq_allocbuf")]
         //public static extern IntPtr instanceHandleSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_stringSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_stringSeq_allocbuf")]
         //public static extern IntPtr stringSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_qosPolicyCountSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_qosPolicyCountSeq_allocbuf")]
         //public static extern IntPtr qosPolicyCountSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_topicSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_topicSeq_allocbuf")]
         //public static extern IntPtr topicSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_dataReaderSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_dataReaderSeq_allocbuf")]
         //public static extern IntPtr dataReaderSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_dataReaderViewSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_dataReaderViewSeq_allocbuf")]
         //public static extern IntPtr dataReaderViewSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_conditionSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_conditionSeq_allocbuf")]
         //public static extern IntPtr conditionSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_sampleStateSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_sampleStateSeq_allocbuf")]
         //public static extern IntPtr sampleStateSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_viewStateSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_viewStateSeq_allocbuf")]
         //public static extern IntPtr viewStateSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_instanceStateSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_instanceStateSeq_allocbuf")]
         //public static extern IntPtr instanceStateSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_octetSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_octetSeq_allocbuf")]
         //public static extern IntPtr octetSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_participantBuiltinTopicDataSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_participantBuiltinTopicDataSeq_allocbuf")]
         //public static extern IntPtr participantBuiltinTopicDataSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_topicBuiltinTopicDataSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_topicBuiltinTopicDataSeq_allocbuf")]
         //public static extern IntPtr topicBuiltinTopicDataSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_publicationBuiltinTopicDataSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_publicationBuiltinTopicDataSeq_allocbuf")]
         //public static extern IntPtr publicationBuiltinTopicDataSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_subscriptionBuiltinTopicDataSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_subscriptionBuiltinTopicDataSeq_allocbuf")]
         //public static extern IntPtr subscriptionBuiltinTopicDataSeq_allocbuf(uint length);
 
-        //[DllImport("dcpsgapi", EntryPoint = "gapi_sampleInfoSeq_allocbuf")]
+        //[DllImport("ddskernel", EntryPoint = "gapi_sampleInfoSeq_allocbuf")]
         //public static extern IntPtr sampleInfoSeq_allocbuf(uint length);
     }
 
@@ -316,7 +316,7 @@ namespace DDS.OpenSplice.Gapi
      * // Qos
      * // ----------------------------------------------------------------------
      */
-
+#pragma warning disable 169
     [StructLayoutAttribute(LayoutKind.Sequential)]
     public class gapi_Seq
     {
@@ -1072,3 +1072,4 @@ namespace DDS.OpenSplice.Gapi
         public Time arrival_timestamp;
     }
 }
+#pragma warning restore 169

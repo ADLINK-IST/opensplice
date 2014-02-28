@@ -38,6 +38,8 @@
               ((state) == L_DISPOSED) ||                            \
               ((state) == L_STATECHANGED) ||                        \
               ((state) == L_TRIGGER) ||                             \
+              ((state) == L_REMOVED) ||                             \
+              ((state) == L_REPLACED) ||                            \
               ((state) == L_NOWRITERS) ) );                         \
     v_stateSet(v_dataReaderInstanceState(instance), (state))
 
@@ -48,6 +50,7 @@
                            L_DISPOSED |                             \
                            L_STATECHANGED |                         \
                            L_TRIGGER |                              \
+                           L_REPLACED |                             \
                            L_NOWRITERS)) == 0 ) );                  \
     v_stateSet(v_dataReaderInstanceState(instance), (state))
 
@@ -58,6 +61,7 @@
               ((state) == L_DISPOSED) ||                            \
               ((state) == L_STATECHANGED) ||                        \
               ((state) == L_TRIGGER) ||                             \
+              ((state) == L_REPLACED) ||                            \
               ((state) == L_NOWRITERS) ||                           \
               ((state) == L_REMOVED) ) );                           \
     v_stateClear(v_dataReaderInstanceState(instance), (state))
@@ -171,5 +175,3 @@ v_dataReaderInstanceUnregister (
     c_time timestamp);
 
 #endif
-
-

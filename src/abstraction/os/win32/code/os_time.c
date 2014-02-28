@@ -32,6 +32,21 @@
 #include "os_heap.h"
 #include "../common/code/os_time.c"
 
+/* #define OSPL_OS_TIME_SETCLOCKRES */
+#ifdef OSPL_OS_TIME_SETCLOCKRES
+/* In order to increase the timer resolution past 1ms, below NT-functions are
+ * resolved dynamically (in the single-threaded os_timeModuleInit. */
+#ifdef STATUS_SUCCESS
+#define OS_NT_API_STATUS_SUCCESS  STATUS_SUCCESS
+#else
+#define OS_NT_API_STATUS_SUCCESS  (0x00000000L)
+#endif
+static FARPROC NtQueryTimerResolutionFunc = NULL;
+static FARPROC NtSetTimerResolutionFunc = NULL;
+static HANDLE NTDLLModuleHandle = NULL;
+static ULONG timerRes100ns = 10000; /* 1ms, expressed in 100ns */
+#endif /* OSPL_OS_TIME_SETCLOCKRES */
+
 static os_time (*_ospl_clockGet)(void) = NULL;
 static os_time _ospl_time = {0, 0};
 static LONGLONG _ospl_freq = 0; /* frequency of high performance counter */
@@ -182,11 +197,87 @@ os_timeModuleInit(void)
                 "switching to millisecond resolution.", GetLastError());
     }
 
+#ifdef OSPL_OS_TIME_SETCLOCKRES
+    /* The default Windows scheduling resolution is 15.6ms. This isn't sufficient
+     * for networking configurations, so increase the resolution to the maximally
+     * supported resolution.
+     * TODO: Optimally this should be set based on knowledge regarding the
+     * actually required resolution. A machine may not perform optimally on its
+     * maximum resolution. */
+
+    if((NTDLLModuleHandle = LoadLibrary("NTDLL.DLL")) == NULL){
+        OS_REPORT(OS_WARNING, "os_timeModuleInit", 0,
+            "Failed to load NTDLL.DLL for increasing timer resolution; cannot increase timer resolution.");
+        goto err_load_ntdll;
+    }
+
+    /* Retrieve function pointers */
+    NtQueryTimerResolutionFunc = GetProcAddress(NTDLLModuleHandle, "NtQueryTimerResolution");
+    NtSetTimerResolutionFunc = GetProcAddress(NTDLLModuleHandle, "NtSetTimerResolution");
+
+    if((NtQueryTimerResolutionFunc == NULL) || (NtSetTimerResolutionFunc == NULL)) {
+        OS_REPORT(OS_WARNING, "os_timeModuleInit", 0,
+            "Failed to resolve entry point for NtQueryTimerResolution or NtQueryTimerResolution; cannot increase timer resolution");
+        goto err_resolve_funcs;
+    }
+
+    {
+        ULONG minRes, maxRes, actRes;
+
+        if(NtQueryTimerResolutionFunc(&minRes, &maxRes, &actRes) != OS_NT_API_STATUS_SUCCESS){
+            OS_REPORT_1(OS_WARNING, "os_timeModuleInit", 0,
+                "Failed to query timer device for maximum timer resolution. "\
+                 "Will try to set %.1fms resolution.", timerRes100ns / 10000.0f);
+        } else {
+            timerRes100ns = maxRes;
+        }
+
+        /* Set the resolution regardless of whether the current actual value is
+         * already OK. It is a global Windows setting and may change when another
+         * application is closed. */
+        if(NtSetTimerResolutionFunc(timerRes100ns, TRUE, &actRes) != OS_NT_API_STATUS_SUCCESS) {
+            OS_REPORT_2(OS_WARNING, "os_timeModuleInit", 0,
+                "Failed to set timer device resolution to %dms, actual resolution: %.1fms",
+                timerRes100ns / 10000.0f,
+                actRes / 10000.0f);
+        } else {
+            OS_REPORT_1(OS_INFO, "os_timeModuleInit", 0,
+                "Set timer device resolution to %.1fms", timerRes100ns / 10000.0f);
+        }
+    }
+    return;
+
+err_resolve_funcs:
+    NtQueryTimerResolutionFunc = NULL;
+    NtSetTimerResolutionFunc = NULL;
+    FreeLibrary(NTDLLModuleHandle);
+    NTDLLModuleHandle = NULL;
+err_load_ntdll:
+    return;
+#endif /* OSPL_OS_TIME_SETCLOCKRES */
 }
 
 void
 os_timeModuleExit(void)
 {
+#ifdef OSPL_OS_TIME_SETCLOCKRES
+    /* On Windows the init- and exit are single-threaded */
+    if(NtSetTimerResolutionFunc){
+        ULONG actRes;
+        /* Restore the resolution. */
+        if(NtSetTimerResolutionFunc(timerRes100ns, FALSE, &actRes) != OS_NT_API_STATUS_SUCCESS) {
+            OS_REPORT(OS_WARNING, "os_timeModuleExit", 0,
+                "Failed to restore timer device resolution");
+        }
+    }
+
+    if(NTDLLModuleHandle){
+        NtQueryTimerResolutionFunc = NULL;
+        NtSetTimerResolutionFunc = NULL;
+        FreeLibrary(NTDLLModuleHandle);
+        NTDLLModuleHandle = NULL;
+    }
+#endif /* OSPL_OS_TIME_SETCLOCKRES */
 }
 
 /** \brief Suspend the execution of the calling thread for the specified time

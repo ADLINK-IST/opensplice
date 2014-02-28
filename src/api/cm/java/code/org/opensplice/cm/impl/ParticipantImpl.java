@@ -12,7 +12,7 @@
 package org.opensplice.cm.impl;
 
 import org.opensplice.cm.CMException;
-import org.opensplice.cm.CMFactory;
+import org.opensplice.cm.Entity;
 import org.opensplice.cm.Participant;
 import org.opensplice.cm.Partition;
 import org.opensplice.cm.Publisher;
@@ -20,12 +20,14 @@ import org.opensplice.cm.Subscriber;
 import org.opensplice.cm.Topic;
 import org.opensplice.cm.Waitset;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.meta.MetaType;
 import org.opensplice.cm.qos.ParticipantQoS;
 import org.opensplice.cm.qos.PublisherQoS;
 import org.opensplice.cm.qos.QoS;
 import org.opensplice.cm.qos.SubscriberQoS;
 import org.opensplice.cm.qos.TopicQoS;
+import org.opensplice.cm.statistics.Statistics;
 import org.opensplice.cm.status.Status;
 
 /**
@@ -43,12 +45,12 @@ public class ParticipantImpl extends EntityImpl implements Participant{
      * 
      * @throws CMException Thrown when the C&M API has not been initialised.
      */
-    public ParticipantImpl(String uri, int timeout, String name, ParticipantQoS qos) throws CMException{
-        super(0, 0, "", "");
+    public ParticipantImpl(Communicator communicator, String uri, int timeout, String name, ParticipantQoS qos) throws CMException{
+        super(communicator, 0, 0, "", "");
         owner = true;
         ParticipantImpl p;
         try {
-            p = (ParticipantImpl)CMFactory.getCommunicator().participantNew(uri, timeout, name, qos);
+            p = (ParticipantImpl)getCommunicator().participantNew(uri, timeout, name, qos);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -75,8 +77,8 @@ public class ParticipantImpl extends EntityImpl implements Participant{
      * @param _name The name of the kernel entity that is associated with this
      *              entity.
      */
-    public ParticipantImpl(long _index, long _serial, String _pointer, String _name){
-        super(_index, _serial, _pointer, _name);
+    public ParticipantImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name){
+        super(communicator, _index, _serial, _pointer, _name);
     }
  
     /**
@@ -95,7 +97,7 @@ public class ParticipantImpl extends EntityImpl implements Participant{
         }
         Topic[] topics;
         try {
-            topics = CMFactory.getCommunicator().participantAllTopics(this);
+            topics = getCommunicator().participantAllTopics(this);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -118,7 +120,7 @@ public class ParticipantImpl extends EntityImpl implements Participant{
         }
         Participant[] participants;
         try {
-            participants = CMFactory.getCommunicator().participantAllParticipants(this);
+            participants = getCommunicator().participantAllParticipants(this);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -141,7 +143,7 @@ public class ParticipantImpl extends EntityImpl implements Participant{
         }
         Partition[] domains;
         try {
-            domains = CMFactory.getCommunicator().participantAllDomains(this);
+            domains = getCommunicator().participantAllDomains(this);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -157,7 +159,7 @@ public class ParticipantImpl extends EntityImpl implements Participant{
             throw new CMException("Supplied entity is not available (anymore).");
         } else if(qos instanceof ParticipantQoS){
             try {
-                CMFactory.getCommunicator().entitySetQoS(this, qos);
+                getCommunicator().entitySetQoS(this, qos);
             } catch (CommunicationException ce) {
                 throw new CMException(ce.getMessage());
             }
@@ -183,7 +185,7 @@ public class ParticipantImpl extends EntityImpl implements Participant{
      */
     public void registerType(MetaType type) throws CMException {
         try {
-            CMFactory.getCommunicator().participantRegisterType(this, type);
+            getCommunicator().participantRegisterType(this, type);
         } catch (CommunicationException ce) {
             throw new CMException(ce.getMessage());
         }
@@ -207,7 +209,7 @@ public class ParticipantImpl extends EntityImpl implements Participant{
             throw new CMException("Entity already freed.");
         }
         try {
-            topics = CMFactory.getCommunicator().participantFindTopic(this, topicName);
+            topics = getCommunicator().participantFindTopic(this, topicName);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -234,4 +236,14 @@ public class ParticipantImpl extends EntityImpl implements Participant{
     public Waitset createWaitset() throws CMException {
         return new WaitsetImpl(this);
     }
+
+	@Override
+	public Statistics[] getStatistics(Entity[] entities)  throws CMException {
+		
+		try {
+			return getCommunicator().entityGetStatistics(entities);
+		} catch (CommunicationException e) {
+            throw new CMException(e.getMessage());
+        }
+	}
 }

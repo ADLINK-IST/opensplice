@@ -115,10 +115,6 @@ os_mutexInit (
         result = pthread_mutex_init (&mutex->mutex, &mattr);
 #else
         result = pthread_mutex_init (mutex, &mattr);
-        if (result == EBUSY) {
-            os_mutexDestroy (mutex);
-            result = pthread_mutex_init (mutex, &mattr);
-        }
 #endif
     }
     pthread_mutexattr_destroy (&mattr);

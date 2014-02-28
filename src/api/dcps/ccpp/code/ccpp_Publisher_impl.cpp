@@ -54,8 +54,8 @@ DDS::Publisher_impl::create_datawriter (
   DDS::Topic_impl_ptr Topic;
   DDS::DataWriter_ptr DataWriter = NULL;
   gapi_dataWriter writer_handle;
-  CORBA::Boolean allocatedQos = false;
-  CORBA::Boolean proceed = true;
+  DDS::Boolean allocatedQos = false;
+  DDS::Boolean proceed = true;
 
   Topic = dynamic_cast<DDS::Topic_impl_ptr>(a_topic);
   if (!Topic)
@@ -138,7 +138,7 @@ DDS::Publisher_impl::create_datawriter (
 
             if (tsf)
             {
-              CORBA::Object_ptr anObject = static_cast<CORBA::Object_ptr>(tsf);
+              DDS::Object_ptr anObject = static_cast<DDS::Object_ptr>(tsf);
               DDS::TypeSupportFactory_impl_ptr factory = dynamic_cast<DDS::TypeSupportFactory_impl_ptr>(anObject);
               if (factory)
               {
@@ -150,7 +150,7 @@ DDS::Publisher_impl::create_datawriter (
                   if (myUD)
                   {
                     gapi_publisherQos *pqos = gapi_publisherQos__alloc();
-                    gapi_object_set_user_data(writer_handle, (CORBA::Object *)myUD,
+                    gapi_object_set_user_data(writer_handle, (DDS::Object *)myUD,
                                               ccpp_CallBack_DeleteUserData,NULL);
                     if(pqos){
                         if(gapi_publisher_get_qos(_gapi_self, pqos) == GAPI_RETCODE_OK){
@@ -263,7 +263,7 @@ DDS::Publisher_impl::lookup_datawriter (
   {
     if (os_mutexLock(&p_mutex) == os_resultSuccess)
     {
-      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
       if (myUD)
       {
         dataWriter = dynamic_cast<DDS::DataWriter_ptr>(myUD->ccpp_object);
@@ -368,7 +368,7 @@ DDS::Publisher_impl::set_listener (
   DDS::StatusMask mask
 ) THROW_ORB_EXCEPTIONS
 {
-    DDS::ReturnCode_t result;
+    DDS::ReturnCode_t result = DDS::RETCODE_ERROR;
     gapi_publisherListener * gapi_listener = NULL;
     gapi_listener = gapi_publisherListener__alloc();
     if (gapi_listener)
@@ -380,7 +380,7 @@ DDS::Publisher_impl::set_listener (
         if (result == DDS::RETCODE_OK)
         {
           DDS::ccpp_UserData_ptr myUD;
-          myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
+          myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(_gapi_self));
           if (myUD)
           {
             myUD->setListener(a_listener);
@@ -420,7 +420,7 @@ DDS::PublisherListener_ptr
 DDS::Publisher_impl::get_listener (
 ) THROW_ORB_EXCEPTIONS
 {
-  DDS::PublisherListener_ptr result;
+  DDS::PublisherListener_ptr result = NULL;
   gapi_publisherListener gapi_listener;
 
   if (os_mutexLock(&p_mutex) == os_resultSuccess)
@@ -497,7 +497,7 @@ DDS::Publisher_impl::get_participant (
   if (handle)
   {
     DDS::ccpp_UserData_ptr myUD;
-    myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+    myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
 
     if (myUD)
     {

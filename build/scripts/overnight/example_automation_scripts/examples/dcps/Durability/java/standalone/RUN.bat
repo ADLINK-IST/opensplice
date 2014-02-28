@@ -1,7 +1,5 @@
 @echo OFF
 rmdir /S /Q C:\tmp\pstore
-del /F /Q *.log
-del /F /Q *.txt
 
 call %FUNCTIONS% :runDurabilityInit
 
@@ -65,5 +63,5 @@ start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar;classes" DurabilityData
 
 %SLEEP10% >NUL
 
-call %FUNCTIONS% :durabilityCheckResults
+call %FUNCTIONS% :durabilityCheckResults >> run.log
 

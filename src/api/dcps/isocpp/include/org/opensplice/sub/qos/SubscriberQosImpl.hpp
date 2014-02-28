@@ -53,9 +53,9 @@ public:
     bool operator ==(const SubscriberQosImpl& other) const
     {
         return other.presentation_ == presentation_ &&
-        other.partition_ == partition_ &&
-        other.group_data_ == group_data_ &&
-        other.entity_factory_ == entity_factory_;
+               other.partition_ == partition_ &&
+               other.group_data_ == group_data_ &&
+               other.entity_factory_ == entity_factory_;
     }
 private:
     dds::core::policy::Presentation presentation_;
@@ -63,6 +63,34 @@ private:
     dds::core::policy::GroupData group_data_;
     dds::core::policy::EntityFactory entity_factory_;
 };
+
+template<>
+inline const ::dds::core::policy::Presentation&
+org::opensplice::sub::qos::SubscriberQosImpl::policy<dds::core::policy::Presentation>() const
+{
+    return presentation_;
+}
+
+template<>
+inline const ::dds::core::policy::Partition&
+SubscriberQosImpl::policy<dds::core::policy::Partition>() const
+{
+    return partition_;
+}
+
+template<>
+inline const ::dds::core::policy::GroupData&
+SubscriberQosImpl::policy<dds::core::policy::GroupData>() const
+{
+    return group_data_;
+}
+
+template<>
+inline const ::dds::core::policy::EntityFactory&
+SubscriberQosImpl::policy<dds::core::policy::EntityFactory>() const
+{
+    return entity_factory_;
+}
 
 }
 }

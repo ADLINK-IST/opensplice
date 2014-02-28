@@ -17,6 +17,7 @@ import org.opensplice.cm.DataTypeUnsupportedException;
 import org.opensplice.cm.Participant;
 import org.opensplice.cm.Topic;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.meta.MetaType;
 import org.opensplice.cm.qos.QoS;
 import org.opensplice.cm.qos.TopicQoS;
@@ -46,8 +47,8 @@ public class TopicImpl extends EntityImpl implements Topic{
      *              entity.
      * @param _typeName The name of the type of the topic.
      */
-    public TopicImpl(long _index, long _serial, String _pointer, String _name, String _keyList, String _typeName) {
-        super(_index, _serial, _pointer, _name);
+    public TopicImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name, String _keyList, String _typeName) {
+        super(communicator, _index, _serial, _pointer, _name);
         typeName = _typeName;
         keyList = _keyList;
         dataType = null;
@@ -65,12 +66,12 @@ public class TopicImpl extends EntityImpl implements Topic{
      *
      * @throws CMException Thrown when the topic could not be created.
      */
-    public TopicImpl(Participant participant, String name, String typeName, String keyList, TopicQoS qos) throws CMException{
-        super(0, 0, "", "");
+    public TopicImpl(ParticipantImpl participant, String name, String typeName, String keyList, TopicQoS qos) throws CMException{
+        super(participant.getCommunicator(), 0, 0, "", "");
         owner = true;
         TopicImpl t;
         try {
-            t = (TopicImpl)CMFactory.getCommunicator().topicNew(participant, name, typeName, keyList, qos);
+            t = (TopicImpl)getCommunicator().topicNew(participant, name, typeName, keyList, qos);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -119,7 +120,7 @@ public class TopicImpl extends EntityImpl implements Topic{
         }
         if(dataType == null){
             try {
-                dataType = CMFactory.getCommunicator().topicGetDataType(this);
+                dataType = getCommunicator().topicGetDataType(this);
             } catch (CommunicationException e) {
                 throw new CMException("Topic not available (anymore) or data type could not be parsed.");
             }
@@ -132,7 +133,7 @@ public class TopicImpl extends EntityImpl implements Topic{
             throw new CMException("Supplied entity is not available (anymore).");
         } else if(qos instanceof TopicQoS){
             try {
-                CMFactory.getCommunicator().entitySetQoS(this, qos);
+                getCommunicator().entitySetQoS(this, qos);
             } catch (CommunicationException ce) {
                 throw new CMException(ce.getMessage());
             }

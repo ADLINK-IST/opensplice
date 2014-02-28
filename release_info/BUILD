@@ -22,9 +22,9 @@ Important notes:
     For distribution, only targets ending with "-release" may be used.
     Other targets use extra builtin checks which reduce the performance severely.
 
-For x86.linux2.6-release target, which actually is suitable for Linux distributions
-with NPTL support, a TNNL specific build script is available (bin/build.x86.linux2.6).
-Execute bin/build.x86.linux2.6 from within the top level source directory.
+For x86.linux-release target, which actually is suitable for Linux distributions
+with NPTL support, a TNNL specific build script is available (bin/build.x86.linux).
+Execute bin/build.x86.linux from within the top level source directory.
 
 For sparc.solaris8-release target, which is suitable for SPARC Solaris 8 distributions
 a TNNL specific build script is available (bin/build.sparc.solaris8).

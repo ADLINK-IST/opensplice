@@ -44,7 +44,7 @@ public class ElementSerializerXML {
         }
         strWriter.write("</" + element.getTagName() + ">");
         strWriter.flush();
-        return strWriter.toString().replaceAll(">\\s+<", "><");
+        return strWriter.toString();
     }
 
     private void writeNode(StringWriter stringWriter, Node node){

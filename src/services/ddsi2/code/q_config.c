@@ -13,9 +13,13 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <assert.h>
+#include <limits.h>
 
 #include "os_stdlib.h"
 #include "os_socket.h"
+#include "os_heap.h"
+
 #include "ut_crc.h"
 #include "u_participant.h"
 #include "u_cfElement.h"
@@ -23,7 +27,7 @@
 
 #include "q_config.h"
 #include "q_log.h"
-#include "q_avl.h"
+#include "ut_avl.h"
 #include "q_unused.h"
 #include "q_misc.h"
 #include "q_addrset.h"
@@ -31,8 +35,9 @@
 #include "q_error.h"
 #include "sysdeps.h"
 
+
 #define WARN_DEPRECATED_ALIAS 1
-#define WARN_DEPRECATED_UNIT 0
+#define WARN_DEPRECATED_UNIT 1
 #define MAX_PATH_DEPTH 10 /* max nesting level of configuration elements */
 
 struct cfgelem;
@@ -68,7 +73,7 @@ struct cfgst_nodekey {
 };
 
 struct cfgst_node {
-  STRUCT_AVLNODE (cfgst_node_avlnode, struct cfgst_node *) avlnode;
+  ut_avlNode_t avlnode;
   struct cfgst_nodekey key;
   int count;
   int failed;
@@ -76,7 +81,7 @@ struct cfgst_node {
 };
 
 struct cfgst {
-  STRUCT_AVLTREE (cfgst_node_avltree, struct cfgst_node *) found;
+  ut_avlTree_t found;
   struct config *cfg;
 
   /* internal_seen is set by the Internal group's init function and
@@ -94,6 +99,7 @@ struct cfgst {
   int path_depth;
   int isattr[MAX_PATH_DEPTH];
   const struct cfgelem *path[MAX_PATH_DEPTH];
+  void *parent[MAX_PATH_DEPTH];
 };
 
 /* "trace" is special: it enables (nearly) everything */
@@ -107,6 +113,10 @@ static const logcat_t logcat_codes[] = {
 /* We want the tracing/verbosity settings to be fixed while parsing
    the configuration, so we update this variable instead. */
 static unsigned enabled_logcats;
+
+static int cfgst_node_cmp (const void *va, const void *vb);
+static const ut_avlTreedef_t cfgst_found_treedef =
+  UT_AVL_TREEDEF_INITIALIZER (offsetof (struct cfgst_node, avlnode), offsetof (struct cfgst_node, key), cfgst_node_cmp, 0);
 
 static int walk_element (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, u_cfElement base);
 
@@ -125,21 +135,25 @@ DU (uf_int);
 DU (uf_int32);
 DU (uf_natint);
 DU (uf_natint_255);
-DU (uf_domainId);
 DU (uf_participantIndex);
 DU (uf_port);
+DU (uf_dyn_port);
 DU (uf_memsize);
 DU (uf_duration_inf);
 DU (uf_duration_ms_1hr);
 DU (uf_duration_ms_1s);
 DU (uf_duration_us_1s);
 DU (uf_standards_conformance);
-DU (uf_service_name);
+DU (uf_locators);
 DU (uf_besmode);
 DU (uf_retransmit_merging);
+DU (uf_sched_prio_class);
 DU (uf_sched_class);
 DU (uf_maybe_memsize);
+DU (uf_maybe_duration_inf);
 DU (uf_maybe_int32);
+DU (uf_domainId);
+DU (uf_service_name);
 #undef DU
 
 #define DF(fname) static void fname (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem)
@@ -169,10 +183,13 @@ PF (pf_boolean);
 PF (pf_negated_boolean);
 PF (pf_logcat);
 PF (pf_standards_conformance);
+PF (pf_locators);
 PF (pf_besmode);
 PF (pf_retransmit_merging);
+PF (pf_sched_prio_class);
 PF (pf_sched_class);
 PF (pf_maybe_memsize);
+PF (pf_maybe_duration);
 PF (pf_maybe_int32);
 #undef PF
 
@@ -210,7 +227,7 @@ If DDSI2 is in IPv6 mode and the address of the preferred network interface is a
     "<p>This element specifies the network mask of the external network address. This element is relevant only when an external network address (General/ExternalNetworkAddress) is explicitly configured. In this case locators received via the discovery protocol that are within the same external subnet (as defined by this mask) will be translated to an internal address by replacing the network portion of the external address with the corresponding portion of the preferred network interface address. This option is IPv4-only.</p>" },
   { LEAF ("AllowMulticast"), 1, "true", ABSOFF (allowMulticast), 0, uf_boolean, 0, pf_boolean,
     "<p>This element controls whether the DDSI2 service uses multicasts for data traffic.</p>\n\
-<p>When set to \"false\", DDSI2 will never advertise multicast addresses and never accept multicast addresses advertised by remote nodes, but it will still listen for multicast packets and perform multicast-based participant discovery. Listening for multicasts can be controlled by General/MulticastRecvNetworkInterfaceAddresses, and transmitting participant discovery multicasts by Unsupported/SuppressSPDPMulticast.</p>\n\
+<p>When set to \"false\", DDSI2 will never advertise multicast addresses and never accept multicast addresses advertised by remote nodes, but it will still listen for multicast packets and perform multicast-based participant discovery. Listening for multicasts can be controlled by General/MulticastRecvNetworkInterfaceAddresses, and transmitting participant discovery multicasts by Internal/SuppressSPDPMulticast.</p>\n\
 <p>The default, \"true\", enables full use of multicasts.</p>" },
   { LEAF ("MulticastTimeToLive"), 1, "32", ABSOFF (multicast_ttl), 0, uf_natint_255, 0, pf_int,
     "<p>This element specifies the time-to-live setting for outgoing multicast packets.</p>" },
@@ -281,8 +298,8 @@ static const struct cfgelem compatibility_cfgelems[] = {
   { LEAF ("ExplicitlyPublishQosSetToDefault"), 1, "false", ABSOFF (explicitly_publish_qos_set_to_default), 0, uf_boolean, 0, pf_boolean,
     "<p>This element specifies whether QoS settings set to default values are explicitly published in the discovery protocol. Implementations are to use the default value for QoS settings not published, which allows a significant reduction of the amount of data that needs to be exchanged for the discovery protocol, but this requires all implementations to adhere to the default values specified by the specifications.</p>\n\
 <p>When interoperability is required with an implementation that does not follow the specifications in this regard, setting this option to true will help.</p>" },
-  { LEAF ("ManySocketsMode"), 1, "true", ABSOFF (many_sockets_mode), 0, uf_boolean, 0, pf_boolean,
-    "<p>This option specifies whether a network socket will be created for each domain participant on a host. The specification seems to assume that each participant has a unique address, and setting this option will ensure this to be the case. This is the default.</p>\n\
+  { LEAF ("ManySocketsMode"), 1, "false", ABSOFF (many_sockets_mode), 0, uf_boolean, 0, pf_boolean,
+    "<p>This option specifies whether a network socket will be created for each domain participant on a host. The specification seems to assume that each participant has a unique address, and setting this option will ensure this to be the case. This is not the default.</p>\n\
 <p>Disabling it slightly improves performance and reduces network traffic somewhat. It also causes the set of port numbers needed by DDSI2 to become predictable, which may be useful for firewall and NAT configuration.</p>" },
   { LEAF ("ArrivalOfDataAssertsPpAndEpLiveliness"), 1, "true", ABSOFF (arrival_of_data_asserts_pp_and_ep_liveliness), 0, uf_boolean, 0, pf_boolean,
     "<p>This setting is currently ignored (accepted for backwards compatibility).</p>" },
@@ -345,9 +362,9 @@ The default is <i>writers</i>, as this is thought to be compliant and reasonably
 <p>See also General/AllowMulticast.</p>" },
   { LEAF ("UnicastResponseToSPDPMessages"), 1, "true", ABSOFF (unicast_response_to_spdp_messages), 0, uf_boolean, 0, pf_boolean,
     "<p><b>Internal</b> This element controls whether the response to a newly discovered participant is sent as a unicasted SPDP packet, instead of rescheduling the periodic multicasted one. There is no known benefit to setting this to <i>false</i>.</p>" },
-  { LEAF ("SynchronousDeliveryPriorityThreshold"), 1, "2147483647", ABSOFF (synchronous_delivery_priority_threshold), 0, uf_int, 0, pf_int,
+  { LEAF ("SynchronousDeliveryPriorityThreshold"), 1, "0", ABSOFF (synchronous_delivery_priority_threshold), 0, uf_int, 0, pf_int,
     "<p><b>Internal</b> This element controls whether samples sent by a writer with QoS settings latency_budget <= SynchronousDeliveryLatencyBound and transport_priority greater than or equal to this element's value will be delivered synchronously from the \"recv\" thread, all others will be delivered asynchronously through delivery queues. This reduces latency at the expense of aggregate bandwidth.</p>" },
-  { LEAF ("SynchronousDeliveryLatencyBound"), 1, "0 s", ABSOFF (synchronous_delivery_latency_bound), 0, uf_duration_inf, 0, pf_duration,
+  { LEAF ("SynchronousDeliveryLatencyBound"), 1, "inf", ABSOFF (synchronous_delivery_latency_bound), 0, uf_duration_inf, 0, pf_duration,
     "<p><b>Internal</b> This element controls whether samples sent by a writer with QoS settings transport_priority >= SynchronousDeliveryPriorityThreshold and a latency_budget at most this element's value will be delivered synchronously from the \"recv\" thread, all others will be delivered asynchronously through delivery queues. This reduces latency at the expense of aggregate bandwidth.</p>" },
   { LEAF ("MaxParticipants"), 1, "0", ABSOFF (max_participants), 0, uf_natint, 0, pf_int,
     "<p><b>Internal</b> This elements configures the maximum number of DCPS domain participants this DDSI2 service instance is willing to service. 0 is unlimited.</p>" },
@@ -368,6 +385,8 @@ The default is <i>adaptive</i>. See also Internal/RetransmitMergingPeriod.</p>" 
     "<p><b>Internal</b> This setting limits the maximum number of bytes queued for retransmission. The default value of 0 is unlimited unless an AuxiliaryBandwidthLimit has been set, in which case it becomes NackDelay * AuxiliaryBandwidthLimit. It must be large enough to contain the largest sample that may need to be retransmitted.</p>" },
   { LEAF ("MaxQueuedRexmitMessages"), 1, "200", ABSOFF (max_queued_rexmit_msgs), 0, uf_natint, 0, pf_int,
     "<p><b>Internal</b> This settings limits the maximum number of samples queued for retransmission.</p>" },
+  { LEAF ("LeaseDuration"), 1, "100 s", ABSOFF (lease_duration), 0, uf_duration_ms_1hr, 0, pf_duration,
+    "<p><b>Internal</b> This setting controls the default participant lease duration.<p>" },
   { LEAF ("WriterLingerDuration"), 1, "1 s", ABSOFF (writer_linger_duration), 0, uf_duration_ms_1hr, 0, pf_duration,
     "<p><b>Internal</b> This setting controls the maximum duration for which actual deletion of a reliable writer with unacknowledged data in its history will be postponed to provide proper reliable transmission.<p>" },
   { LEAF ("MinimumSocketReceiveBufferSize"), 1, "64 KiB", ABSOFF (socket_min_rcvbuf_size), 0, uf_memsize, 0, pf_memsize,
@@ -391,7 +410,15 @@ The default is <i>adaptive</i>. See also Internal/RetransmitMergingPeriod.</p>" 
   { LEAF ("LateAckMode"), 1, "false", ABSOFF (late_ack_mode), 0, uf_boolean, 0, pf_boolean,
     "<p><b>Internal</b> Ack a sample only when it has been delivered, instead of when committed to delivering it.</p>" },
   { LEAF ("ForwardAllMessages"), 1, "false", ABSOFF (forward_all_messages), 0, uf_boolean, 0, pf_boolean,
-    "<p><b>Internal</b> Forward all messages from a writer, rather than trying to forward each sample only once. The default of trying to forward each sample only once filters out duplicates for writers in multiple partitions under nearly all circumstances, but may still publish the odd duplicate. Note: the current implementation also can lose in contrived test cases, that publish more than 2**32 samples using a single data writer in conjunction with carefully controlled management of the writer history via cooperating local readers.</p>" },
+     "<p><b>Internal</b> Forward all messages from a writer, rather than trying to forward each sample only once. The default of trying to forward each sample only once filters out duplicates for writers in multiple partitions under nearly all circumstances, but may still publish the odd duplicate. Note: the current implementation also can lose in contrived test cases, that publish more than 2**32 samples using a single data writer in conjunction with carefully controlled management of the writer history via cooperating local readers.</p>" },
+  { LEAF ("RetryOnRejectDuration"), 1, "default", ABSOFF (retry_on_reject_duration), 0, uf_maybe_duration_inf, 0, pf_maybe_duration,
+    "<p><b>Internal</b> How long to keep locally retrying pushing a received sample into the reader caches when resource limits are reached. Default is dependent on Internal/LateAckMode: if the latter is false, it is 80% of Internal/ResponsivenessTimeout, otherwise it is 0.</p>" },
+  { LEAF ("RetryOnRejectBestEffort"), 1, "false", ABSOFF (retry_on_reject_besteffort), 0, uf_boolean, 0, pf_boolean,
+    "<p><b>Internal</b> Whether or not to locally retry pusing a received best-effort sample into the reader caches when resource limits are reached.</p>" },
+  { LEAF ("GenerateKeyhash"), 1, "true", ABSOFF (generate_keyhash), 0, uf_boolean, 0, pf_boolean,
+    "<p><b>Internal</b> When true, include keyhashes in outgoing data for topics with keys.</p>" },
+  { LEAF ("MaxSampleSize"), 1, "2147483647 B", ABSOFF (max_sample_size), 0, uf_memsize, 0, pf_memsize,
+    "<p><b>Internal</b> This setting controls the maximum (CDR) serialised size of samples that DDSI2 will forward in either direction. Samples larger than this are discarded with a warning.</p>" },
   { GROUP ("Test", unsupp_test_cfgelems), "<p><b>Internal</b> Testing options.</p>" },
   { GROUP ("Watermarks", unsupp_watermarks_cfgelems), "<p><b>Internal</b> Watermarks for flow-control.</p>" },
   END_MARKER
@@ -429,6 +456,28 @@ static const struct cfgelem discovery_ports_cfgelems[] = {
   END_MARKER
 };
 
+static const struct cfgelem tcp_cfgelems[] = {
+  { LEAF ("Enable"), 1, "false", ABSOFF (tcp_enable), 0, uf_boolean, 0, pf_boolean,
+    "<p>This element enables the optional TCP transport.</p>" },
+  { LEAF ("NoDelay"), 1, "false", ABSOFF (tcp_nodelay), 0, uf_boolean, 0, pf_boolean,
+    "<p>This element enables the TCP_NODELAY socket option, preventing multiple DDSI messages being sent in the same TCP request.</p>" },
+  { LEAF ("Port"), 1, "-1", ABSOFF (tcp_port), 0, uf_dyn_port, 0, pf_int,
+    "<p>This element specifies the port number used for DDSI discovery (the TCP listening port). Dynamically allocated if zero. Disabled if -1 or not configured.</p>" },
+  { LEAF ("Locators"), 1, "local", ABSOFF (tcp_locators), 0, uf_locators, 0, pf_locators,
+    "<p>This element specifies what endpoints should be placed in unicast locators (local or none). If set as none, no unicast locators will be advertised via DDSI discovery so peers will use the discovery connection for communication. The default value is local which means that the listener endpoint is advertised so peers will use this to establish a new connection back to the process.</p>" },
+  END_MARKER
+};
+
+static const struct cfgelem tp_cfgelems[] = {
+  { LEAF ("Enable"), 1, "false", ABSOFF (tp_enable), 0, uf_boolean, 0, pf_boolean,
+    "<p>This element enables the optional thread pool.</p>" },
+  { LEAF ("Threads"), 1, "4", ABSOFF (tp_threads), 0, uf_natint, 0, pf_int,
+    "<p>This elements configures the initial number of threads in the thread pool.</p>" },
+  { LEAF ("ThreadMax"), 1, "8", ABSOFF (tp_max_threads), 0, uf_natint, 0, pf_int,
+    "<p>This elements configures the maximum number of threads in the thread pool.</p>" },
+  END_MARKER
+};
+
 static const struct cfgelem discovery_peer_cfgattrs[] = {
   { ATTR ("Address"), 1, NULL, RELOFF (config_peer_listelem, peer), 0, uf_ipv4, ff_free, pf_string,
     "<p>This element specifies an IP address to which discovery packets must be sent, in addition to the default multicast address (see also General/AllowMulticast and Internal/SuppressSPDPMulticast). Both a hostnames and a numerical IP address is accepted; the hostname or IP address may be suffixed with :PORT to explicitly set the port to which it must be sent. Multiple Peers may be specified.</p>" },
@@ -454,7 +503,7 @@ static const struct cfgelem discovery_cfgelems[] = {
 The default is <i>auto</i>. The participant index is part of the port number calculation and if predictable port numbers are needed and fixing the participant index has no adverse effects, it is recommended that the second be option be used.</p>" },
   { LEAF ("SPDPMulticastAddress"), 1, "239.255.0.1", ABSOFF (spdpMulticastAddressString), 0, uf_ipv4, ff_free, pf_string,
     "<p>This element specifies the multicast address that is used as the destination for the participant discovery packets. In IPv4 mode the default is the (standardised) 239.255.0.1, in IPv6 mode it becomes ff02::ffff:239.255.0.1, which is a non-standardised link-local multicast address.</p>" },
-  { LEAF ("SPDPInterval"), 1, "10 s", ABSOFF (spdp_interval), 0, uf_duration_ms_1hr, 0, pf_duration,
+  { LEAF ("SPDPInterval"), 1, "30 s", ABSOFF (spdp_interval), 0, uf_duration_ms_1hr, 0, pf_duration,
     "<p>This element specifies the interval between spontaneous transmissions of participant discovery packets.</p>" },
   { GROUP ("Ports", discovery_ports_cfgelems),
     "<p>The Ports element allows specifying various parameters related to the port numbers used for discovery. These all have default values specified by the DDSI 2.1 specification and rarely need to be changed.</p>" },
@@ -499,11 +548,23 @@ While <i>none</i>prevents any message from being written to a DDSI2 log file, wa
   END_MARKER
 };
 
-static const struct cfgelem watchdog_cfgelems[] = {
+static const struct cfgelem sched_prio_cfgattrs[] = {
+  { ATTR ("priority_kind"), 1, "relative", ABSOFF (watchdog_sched_priority_class), 0, uf_sched_prio_class, 0, pf_sched_prio_class,
+    "<p>This attribute specifies whether the specified Priority is a relative or absolute priority.</p>" },
+  END_MARKER
+};
+
+static const struct cfgelem sched_cfgelems[] = {
   { LEAF ("Class"), 1, "default", ABSOFF (watchdog_sched_class), 0, uf_sched_class, 0, pf_sched_class,
     "<p>This element specifies the thread scheduling class that will be used by the watchdog thread. The user may need the appropriate privileges from the underlying operating system to be able to assign some of the privileged scheduling classes.</p>" },
-  { LEAF ("Priority"), 1, "0", ABSOFF (watchdog_sched_priority), 0, uf_int32, 0, pf_int32,
+  { LEAF_W_ATTRS ("Priority", sched_prio_cfgattrs), 1, "0", ABSOFF (watchdog_sched_priority), 0, uf_int32, 0, pf_int32,
     "<p>This element specifies the thread priority. Only priorities that are supported by the underlying operating system can be assigned to this element. The user may need special privileges from the underlying operating system to be able to assign some of the privileged priorities.</p>" },
+  END_MARKER
+};
+
+static const struct cfgelem watchdog_cfgelems[] = {
+  { GROUP ("Scheduling", sched_cfgelems),
+    "<p>This element specifies the type of OS scheduling class will be used by the thread that announces its liveliness periodically.</p>" },
   END_MARKER
 };
 
@@ -532,6 +593,10 @@ static const struct cfgelem ddsi2_cfgelems[] = {
   { GROUP ("Unsupported", unsupp_ignore_cfgelems), NULL },
   { GROUP ("Watchdog", watchdog_cfgelems),
     "<p>This element specifies the type of OS scheduling class will be used by the thread that announces its liveliness periodically.</p>" },
+  { GROUP ("TCP", tcp_cfgelems),
+    "<p>The TCP element allows specifying various parameters related to running DDSI over TCP.</p>" },
+  { GROUP ("ThreadPool", tp_cfgelems),
+    "<p>The ThreadPool element allows specifying various parameters related to ing a thread pool for sending DDSI messages</p>" },
   END_MARKER
 };
 
@@ -563,9 +628,11 @@ static const struct cfgelem ddsi2_cfgattrs[] = {
 static const struct cfgelem root_cfgelems[] = {
   { "DDSI2Service", ddsi2_cfgelems, ddsi2_cfgattrs, NODATA,
     "<p>The root element of a DDSI2 networking service configuration.</p>" },
+  { "Lease", lease_cfgelems, NULL, NODATA, NULL },
   { "Domain", domain_cfgelems, NULL, NODATA, NULL },
   END_MARKER
 };
+
 
 /* Legacy "Unsupported" handling.  Aliases are supported by DDSI2
    (such as Internal|Unsupported), but too hard for the configurator
@@ -622,10 +689,12 @@ static const struct cfgelem legacy_ddsi2_cfgelems[] = {
   WILDCARD,
   END_MARKER
 };
+
 static const struct cfgelem legacy_root_cfgelems[] = {
   { "DDSI2Service", legacy_ddsi2_cfgelems, NULL, NODATA, NULL },
   END_MARKER
 };
+
 #undef ATTR
 #undef GROUP
 #undef LEAF_W_ATTRS
@@ -646,6 +715,7 @@ static const struct unit unittab_duration[] = {
   { "s", T_SECOND },
   { "min", 60 * T_SECOND },
   { "hr", 3600 * T_SECOND },
+  { "day", 24 * 3600 * T_SECOND },
   { NULL, 0 }
 };
 
@@ -663,12 +733,13 @@ static const struct unit unittab_memsize[] = {
 };
 
 
-static void cfgst_push (struct cfgst *cfgst, int isattr, const struct cfgelem *elem)
+static void cfgst_push (struct cfgst *cfgst, int isattr, const struct cfgelem *elem, void *parent)
 {
   assert (cfgst->path_depth < MAX_PATH_DEPTH);
   assert (isattr == 0 || isattr == 1);
   cfgst->isattr[cfgst->path_depth] = isattr;
   cfgst->path[cfgst->path_depth] = elem;
+  cfgst->parent[cfgst->path_depth] = parent;
   cfgst->path_depth++;
 }
 
@@ -677,6 +748,7 @@ static void cfgst_pop (struct cfgst *cfgst)
   assert (cfgst->path_depth > 0);
   cfgst->path_depth--;
 }
+
 
 struct cfg_note_buf {
   int bufpos;
@@ -760,7 +832,7 @@ static int cfg_note (struct cfgst *cfgst, logcat_t cat, int bsz, const char *fmt
     else
     {
       const char *p = strchr (cfgst->path[i]->name, '|');
-      int n = p ? (int) (p - cfgst->path[i]->name) : strlen (cfgst->path[i]->name);
+      int n = p ? (int) (p - cfgst->path[i]->name) : (int) strlen (cfgst->path[i]->name);
       cfg_note_snprintf (&bb, "%s%*.*s", (i == 0) ? "" : "/", n, n, cfgst->path[i]->name);
     }
   }
@@ -845,7 +917,7 @@ static int list_index (const char *list[], const char *elem)
 
 static os_int64 lookup_multiplier (struct cfgst *cfgst, const struct unit *unittab, const char *value, int unit_pos, int value_is_zero, os_int64 def_mult, int err_on_unrecognised)
 {
-  assert (0 <= unit_pos && (size_t) unit_pos <= strlen (value));
+  assert (0 <= unit_pos && (os_size_t) unit_pos <= strlen (value));
   while (value[unit_pos] == ' ')
     unit_pos++;
   if (value[unit_pos] == 0)
@@ -959,7 +1031,7 @@ static void ff_free (struct cfgst *cfgst, void *parent, struct cfgelem const * c
 static int uf_boolean (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, UNUSED_ARG (int first), const char *value)
 {
   static const char *vs[] = { "false", "true", NULL };
-  c_bool *elem = cfg_address (cfgst, parent, cfgelem);
+  int *elem = cfg_address (cfgst, parent, cfgelem);
   int idx = list_index (vs, value);
   if (idx < 0)
     return cfg_error (cfgst, "'%s': undefined value", value);
@@ -976,7 +1048,7 @@ static int uf_negated_boolean (struct cfgst *cfgst, void *parent, struct cfgelem
     return 0;
   else
   {
-    c_bool *elem = cfg_address (cfgst, parent, cfgelem);
+    int *elem = cfg_address (cfgst, parent, cfgelem);
     *elem = ! *elem;
     return 1;
   }
@@ -989,7 +1061,7 @@ static int uf_logcat (struct cfgst *cfgst, UNUSED_ARG (void *parent), UNUSED_ARG
   char *copy = os_strdup (value), *cursor = copy, *tok;
   if (copy == NULL)
     return cfg_error (cfgst, "out of memory");
-  while ((tok = ddsi2_strsep (&cursor, ",")) != NULL)
+  while ((tok = os_strsep (&cursor, ",")) != NULL)
   {
     int idx = list_index (vs, tok);
     if (idx < 0)
@@ -1087,7 +1159,7 @@ static void pf_retransmit_merging (struct cfgst *cfgst, void *parent, struct cfg
 
 static int uf_string (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, UNUSED_ARG (int first), const char *value)
 {
-  c_char **elem = cfg_address (cfgst, parent, cfgelem);
+  char **elem = cfg_address (cfgst, parent, cfgelem);
   *elem = os_strdup (value);
   return 1;
 }
@@ -1102,9 +1174,10 @@ static int uf_natint64_unit (struct cfgst *cfgst, os_int64 *elem, const char *va
      floating point + optional unit (round, not truncate, to integer) */
   if (*value == 0)
   {
+    *elem = 0; /* some static analyzers don't "get it" */
     return cfg_error (cfgst, "%s: empty string is not a valid value", value);
   }
-  else if (sscanf (value, "%lld%n", &v_int, &pos) == 1 && (mult = lookup_multiplier (cfgst, unittab, value, pos, v_int == 0, def_mult, 0)) != 0)
+  else if (sscanf (value, "%lld%n", (long long int *) &v_int, &pos) == 1 && (mult = lookup_multiplier (cfgst, unittab, value, pos, v_int == 0, def_mult, 0)) != 0)
   {
     assert (mult > 0);
     if (v_int < 0 || v_int > max / mult)
@@ -1122,6 +1195,7 @@ static int uf_natint64_unit (struct cfgst *cfgst, os_int64 *elem, const char *va
   }
   else
   {
+    *elem = 0; /* some static analyzers don't "get it" */
     return cfg_error (cfgst, "%s: invalid value", value);
   }
 }
@@ -1129,8 +1203,8 @@ static int uf_natint64_unit (struct cfgst *cfgst, os_int64 *elem, const char *va
 
 static int uf_memsize (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, UNUSED_ARG (int first), const char *value)
 {
-  os_int64 size;
-  if (!uf_natint64_unit (cfgst, &size, value, unittab_memsize, 1, INT32_MAX ))
+  os_int64 size = 0;
+  if (!uf_natint64_unit (cfgst, &size, value, unittab_memsize, 1, INT32_MAX))
     return 0;
   else
   {
@@ -1143,7 +1217,7 @@ static int uf_memsize (struct cfgst *cfgst, void *parent, struct cfgelem const *
 
 static int uf_service_name (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, UNUSED_ARG (int first), const char *value)
 {
-  c_char **elem = cfg_address (cfgst, parent, cfgelem);
+  char **elem = cfg_address (cfgst, parent, cfgelem);
   if (*value == 0)
     *elem = os_strdup (cfgst->servicename);
   else
@@ -1154,16 +1228,13 @@ static int uf_service_name (struct cfgst *cfgst, void *parent, struct cfgelem co
 static int uf_tracingOutputFileName (struct cfgst *cfgst, UNUSED_ARG (void *parent), UNUSED_ARG (struct cfgelem const * const cfgelem), UNUSED_ARG (int first), const char *value)
 {
   struct config *cfg = cfgst->cfg;
-  if (os_strcasecmp (value, "stdout") == 0 || os_strcasecmp (value, "stderr") == 0)
-  {
-    cfg->tracingOutputFileName = os_strdup (value);
-    return 1;
-  }
+  if (os_strcasecmp (value, "stdout") != 0 && os_strcasecmp (value, "stderr") != 0)
+    cfg->tracingOutputFileName = os_fileNormalize (value);
   else
   {
-    cfg->tracingOutputFileName = os_fileNormalize (value);
-    return 1;
+    cfg->tracingOutputFileName = os_strdup (value);
   }
+  return 1;
 }
 
 static int uf_ipv4 (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int first, const char *value)
@@ -1178,7 +1249,7 @@ static int uf_networkAddress (struct cfgst *cfgst, void *parent, struct cfgelem 
     return uf_ipv4 (cfgst, parent, cfgelem, first, value);
   else
   {
-    c_char **elem = cfg_address (cfgst, parent, cfgelem);
+    char **elem = cfg_address (cfgst, parent, cfgelem);
     *elem = NULL;
     return 1;
   }
@@ -1195,7 +1266,7 @@ static void ff_networkAddresses (struct cfgst *cfgst, void *parent, struct cfgel
 
 static int uf_networkAddresses_simple (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, UNUSED_ARG (int first), const char *value)
 {
-  c_char ***elem = cfg_address (cfgst, parent, cfgelem);
+  char ***elem = cfg_address (cfgst, parent, cfgelem);
   if ((*elem = os_malloc (2 * sizeof(char *))) == NULL)
     return cfg_error (cfgst, "out of memory");
   if (((*elem)[0] = os_strdup (value)) == NULL)
@@ -1223,7 +1294,7 @@ static int uf_networkAddresses (struct cfgst *cfgst, void *parent, struct cfgele
 
   /* If not keyword, then comma-separated list of addresses */
   {
-    c_char ***elem = cfg_address (cfgst, parent, cfgelem);
+    char ***elem = cfg_address (cfgst, parent, cfgelem);
     char *copy;
     int count;
 
@@ -1251,7 +1322,7 @@ static int uf_networkAddresses (struct cfgst *cfgst, void *parent, struct cfgele
     {
       char *cursor = copy, *tok;
       int idx = 0;
-      while ((tok = ddsi2_strsep (&cursor, ",")) != NULL)
+      while ((tok = os_strsep (&cursor, ",")) != NULL)
       {
         assert (idx < count);
         if (((*elem)[idx] = os_strdup (tok)) == NULL)
@@ -1270,6 +1341,44 @@ static int uf_networkAddresses (struct cfgst *cfgst, void *parent, struct cfgele
     os_free (copy);
   }
   return 1;
+}
+
+static int uf_sched_prio_class (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem,UNUSED_ARG (int first), const char *value)
+{
+  int ret;
+  q__schedPrioClass *prio;
+
+  assert (value != NULL);
+
+  prio = cfg_address (cfgst, parent, cfgelem);
+
+  if (os_strcasecmp (value, "relative") == 0) {
+    *prio = Q__SCHED_PRIO_RELATIVE;
+    ret = 1;
+  } else if (os_strcasecmp (value, "absolute") == 0) {
+    *prio = Q__SCHED_PRIO_ABSOLUTE;
+    ret = 1;
+  } else {
+    ret = cfg_error (cfgst, "'%s': undefined value", value);
+  }
+
+  return ret;
+}
+
+static void pf_sched_prio_class (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int is_default)
+{
+  char *str;
+  q__schedPrioClass *prio = cfg_address (cfgst, parent, cfgelem);
+
+  if (*prio == Q__SCHED_PRIO_RELATIVE) {
+    str = "relative";
+  } else if (*prio == Q__SCHED_PRIO_ABSOLUTE) {
+    str = "absolute";
+  } else {
+    str = "INVALID";
+  }
+
+  cfg_log (cfgst, "%s%s", str, is_default ? " [def]" : "");
 }
 
 static int uf_sched_class (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, UNUSED_ARG (int first), const char *value)
@@ -1317,17 +1426,36 @@ static int uf_maybe_int32 (struct cfgst *cfgst, void *parent, struct cfgelem con
 static int uf_maybe_memsize (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, UNUSED_ARG (int first), const char *value)
 {
   struct config_maybe_uint32 *elem = cfg_address (cfgst, parent, cfgelem);
-  os_int64 size;
+  os_int64 size = 0;
   if (os_strcasecmp (value, "default") == 0) {
     elem->isdefault = 1;
     elem->value = 0;
     return 1;
-  } else if (!uf_natint64_unit (cfgst, &size, value, unittab_memsize, 1, INT32_MAX )) {
+  } else if (!uf_natint64_unit (cfgst, &size, value, unittab_memsize, 1, INT32_MAX)) {
     return 0;
   } else {
     elem->isdefault = 0;
     elem->value = (os_uint32) size;
     return 1;
+  }
+}
+
+static int uf_maybe_duration_inf (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, UNUSED_ARG (int first), const char *value)
+{
+  struct config_maybe_int64 *elem = cfg_address (cfgst, parent, cfgelem);
+  if (os_strcasecmp (value, "default") == 0) {
+    elem->isdefault = 1;
+    elem->value = 0;
+    return 1;
+  } else if (os_strcasecmp (value, "inf") == 0) {
+    elem->isdefault = 0;
+    elem->value = T_NEVER;
+    return 1;
+  } else if (uf_natint64_unit (cfgst, &elem->value, value, unittab_duration, 0, T_NEVER - 1)) {
+    elem->isdefault = 0;
+    return 1;
+  } else {
+    return 0;
   }
 }
 
@@ -1437,9 +1565,14 @@ static int uf_port (struct cfgst *cfgst, void *parent, struct cfgelem const * co
   return uf_int_min_max (cfgst, parent, cfgelem, first, value, 1, 65535);
 }
 
+static int uf_dyn_port (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int first, const char *value)
+{
+  return uf_int_min_max (cfgst, parent, cfgelem, first, value, -1, 65535);
+}
+
 static int uf_natint (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int first, const char *value)
 {
-  return uf_int_min_max (cfgst, parent, cfgelem, first, value, 0, INT_MAX);
+  return uf_int_min_max (cfgst, parent, cfgelem, first, value, 0, INT32_MAX);
 }
 
 static int uf_natint_255 (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int first, const char *value)
@@ -1451,20 +1584,19 @@ static int do_update (struct cfgst *cfgst, update_fun_t upd, void *parent, struc
 {
   struct cfgst_node *n;
   struct cfgst_nodekey key;
-  avlparent_t np;
+  ut_avlIPath_t np;
   int ok;
   key.e = cfgelem;
-  if ((n = avl_lookup (&cfgst->found, &key, &np)) == NULL)
+  if ((n = ut_avlLookupIPath (&cfgst_found_treedef, &cfgst->found, &key, &np)) == NULL)
   {
     if ((n = os_malloc (sizeof (*n))) == NULL)
       return cfg_error (cfgst, "out of memory");
 
-    avl_init_node (&n->avlnode, np);
     n->key = key;
     n->count = 0;
     n->failed = 0;
     n->is_default = is_default;
-    avl_insert (&cfgst->found, n);
+    ut_avlInsertIPath (&cfgst_found_treedef, &cfgst->found, n, &np);
   }
   if (cfgelem->multiplicity == 0 || n->count < cfgelem->multiplicity)
     ok = upd (cfgst, parent, cfgelem, (n->count == n->failed), value);
@@ -1494,34 +1626,34 @@ static int set_defaults (struct cfgst *cfgst, void *parent, int isattr, struct c
     struct cfgst_node *n;
     struct cfgst_nodekey key;
     key.e = ce;
-    cfgst_push (cfgst, isattr, ce);
-    if (ce->multiplicity == 1 )
+    cfgst_push (cfgst, isattr, ce, parent);
+    if (ce->multiplicity == 1)
     {
-      if (avl_lookup (&cfgst->found, &key, NULL) == NULL)
+      if (ut_avlLookup (&cfgst_found_treedef, &cfgst->found, &key) == NULL)
       {
         if (ce->update)
         {
           int ok1;
-          cfgst_push (cfgst, 0, NULL);
+          cfgst_push (cfgst, 0, NULL, NULL);
           ok1 = set_default (cfgst, parent, ce);
           cfgst_pop (cfgst);
           ok = ok && ok1;
         }
       }
-      if ((n = avl_lookup (&cfgst->found, &key, NULL)) != NULL)
+      if ((n = ut_avlLookup (&cfgst_found_treedef, &cfgst->found, &key)) != NULL)
       {
-          if (clear_found )
-          {
-            avl_delete (&cfgst->found, n);
-            os_free (n);
-          }
+        if (clear_found)
+        {
+          ut_avlDelete (&cfgst_found_treedef, &cfgst->found, n);
+          os_free (n);
+        }
       }
-      if (ce->children )
+      if (ce->children)
       {
         int ok1 = set_defaults (cfgst, parent, 0, ce->children, clear_found);
         ok = ok && ok1;
       }
-      if (ce->attributes )
+      if (ce->attributes)
       {
         int ok1 = set_defaults (cfgst, parent, 1, ce->attributes, clear_found);
         ok = ok && ok1;
@@ -1538,7 +1670,7 @@ static void pf_nop (UNUSED_ARG (struct cfgst *cfgst), UNUSED_ARG (void *parent),
 
 static void pf_string (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int is_default)
 {
-  c_char **p = cfg_address (cfgst, parent, cfgelem);
+  char **p = cfg_address (cfgst, parent, cfgelem);
   cfg_log (cfgst, "%s%s", *p ? *p : "(null)", is_default ? " [def]" : "");
 }
 
@@ -1573,7 +1705,7 @@ static void pf_int64_unit (struct cfgst *cfgst, os_int64 value, int is_default, 
 
 static void pf_networkAddress (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int is_default)
 {
-  c_char **p = cfg_address (cfgst, parent, cfgelem);
+  char **p = cfg_address (cfgst, parent, cfgelem);
   cfg_log (cfgst, "%s%s", *p ? *p : "auto", is_default ? " [def]" : "");
 }
 
@@ -1597,8 +1729,8 @@ static void pf_participantIndex (struct cfgst *cfgst, void *parent, struct cfgel
 static void pf_networkAddresses (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int is_default)
 {
   int i;
-  c_char ***p = cfg_address (cfgst, parent, cfgelem);
-  for ( i=0; (*p)[i] != NULL; i++ )
+  char ***p = cfg_address (cfgst, parent, cfgelem);
+  for (i = 0; (*p)[i] != NULL; i++)
     cfg_log (cfgst, "%s%s", (*p)[i], is_default ? " [def]" : "");
 }
 
@@ -1648,6 +1780,17 @@ static void pf_maybe_memsize (struct cfgst *cfgst, void *parent, struct cfgelem 
     pf_int64_unit (cfgst, p->value, is_default, unittab_memsize, "B");
 }
 
+static void pf_maybe_duration (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int is_default)
+{
+  struct config_maybe_int64 *p = cfg_address (cfgst, parent, cfgelem);
+  if (p->isdefault)
+    cfg_log (cfgst, "default%s", is_default ? " [def]" : "");
+  else if (p->value == T_NEVER)
+    cfg_log (cfgst, "inf%s", is_default ? " [def]" : "");
+  else
+    pf_int64_unit (cfgst, p->value, is_default, unittab_duration, "s");
+}
+
 static void pf_float (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int is_default)
 {
   float *p = cfg_address (cfgst, parent, cfgelem);
@@ -1656,13 +1799,13 @@ static void pf_float (struct cfgst *cfgst, void *parent, struct cfgelem const * 
 
 static void pf_boolean (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int is_default)
 {
-  c_bool *p = cfg_address (cfgst, parent, cfgelem);
+  int *p = cfg_address (cfgst, parent, cfgelem);
   cfg_log (cfgst, "%s%s", *p ? "true" : "false", is_default ? " [def]" : "");
 }
 
 static void pf_negated_boolean (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int is_default)
 {
-  c_bool *p = cfg_address (cfgst, parent, cfgelem);
+  int *p = cfg_address (cfgst, parent, cfgelem);
   cfg_log (cfgst, "%s%s", *p ? "false" : "true", is_default ? " [def]" : "");
 }
 
@@ -1686,6 +1829,23 @@ static int uf_standards_conformance (struct cfgst *cfgst, void *parent, struct c
   }
 }
 
+static int uf_locators (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, UNUSED_ARG (int first), const char *value)
+{
+  static const char *vs[] = { "local", "none", NULL };
+  static const logcat_t lc[] = { DDSI_TCP_LOCATORS_LOCAL, DDSI_TCP_LOCATORS_NONE, 0 };
+
+  enum ddsi_tcp_locators *elem = cfg_address (cfgst, parent, cfgelem);
+  int idx = list_index (vs, value);
+  assert (sizeof (vs) / sizeof (*vs) == sizeof (lc) / sizeof (*lc));
+  if (idx < 0)
+    return cfg_error (cfgst, "'%s': undefined value", value);
+  else
+  {
+    *elem = lc[idx];
+    return 1;
+  }
+}
+
 static void pf_standards_conformance (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int is_default)
 {
   enum nn_standards_conformance *p = cfg_address (cfgst, parent, cfgelem);
@@ -1695,6 +1855,18 @@ static void pf_standards_conformance (struct cfgst *cfgst, void *parent, struct 
     case NN_SC_PEDANTIC: str = "pedantic"; break;
     case NN_SC_STRICT: str = "strict"; break;
     case NN_SC_LAX: str = "lax"; break;
+  }
+  cfg_log (cfgst, "%s%s", str, is_default ? " [def]" : "");
+}
+
+static void pf_locators (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, int is_default)
+{
+  enum ddsi_tcp_locators *p = cfg_address (cfgst, parent, cfgelem);
+  const char *str = "INVALID";
+  switch (*p)
+  {
+    case DDSI_TCP_LOCATORS_LOCAL: str = "local"; break;
+    case DDSI_TCP_LOCATORS_NONE: str = "none"; break;
   }
   cfg_log (cfgst, "%s%s", str, is_default ? " [def]" : "");
 }
@@ -1751,18 +1923,20 @@ static void print_configitems (struct cfgst *cfgst, void *parent, int isattr, st
     struct cfgst_nodekey key;
     struct cfgst_node *n;
     key.e = ce;
-    cfgst_push (cfgst, isattr, ce);
-    if ( ce->multiplicity == 1 )
+    cfgst_push (cfgst, isattr, ce, parent);
+    if (ce->multiplicity == 1)
     {
-      if ((n = avl_lookup (&cfgst->found, &key, NULL)) != NULL )
+      if ((n = ut_avlLookup (&cfgst_found_treedef, &cfgst->found, &key)) != NULL)
       {
-        cfgst_push (cfgst, 0, NULL);
+        cfgst_push (cfgst, 0, NULL, NULL);
         ce->print (cfgst, parent, ce, n->is_default);
         cfgst_pop (cfgst);
-      } else {
+      }
+      else
+      {
         if (unchecked && ce->print)
         {
-          cfgst_push (cfgst, 0, NULL);
+          cfgst_push (cfgst, 0, NULL, NULL);
           ce->print (cfgst, parent, ce, 0);
           cfgst_pop (cfgst);
         }
@@ -1776,8 +1950,9 @@ static void print_configitems (struct cfgst *cfgst, void *parent, int isattr, st
     else
     {
       struct config_listelem *p = cfg_deref_address (cfgst, parent, ce);
-      while ( p ) {
-        cfgst_push (cfgst, 0, NULL);
+      while (p)
+      {
+        cfgst_push (cfgst, 0, NULL, NULL);
         if (ce->print)
         {
           ce->print (cfgst, p, ce, 0);
@@ -1804,7 +1979,7 @@ static void free_all_elements (struct cfgst *cfgst, void *parent, struct cfgelem
     if (ce->free)
       ce->free (cfgst, parent, ce);
 
-    if ( ce->multiplicity == 1 )
+    if (ce->multiplicity == 1)
     {
       if (ce->children)
         free_all_elements (cfgst, parent, ce->children);
@@ -1815,7 +1990,7 @@ static void free_all_elements (struct cfgst *cfgst, void *parent, struct cfgelem
     {
       struct config_listelem *p = cfg_deref_address (cfgst, parent, ce);
       struct config_listelem *r ;
-      while ( p ) {
+      while (p) {
         if (ce->attributes)
           free_all_elements (cfgst, p, ce->attributes);
         if (ce->children)
@@ -1836,7 +2011,7 @@ static void free_configured_elements (struct cfgst *cfgst, void *parent, struct 
     struct cfgst_nodekey key;
     struct cfgst_node *n;
     key.e = ce;
-    if ((n = avl_lookup (&cfgst->found, &key, NULL)) != NULL)
+    if ((n = ut_avlLookup (&cfgst_found_treedef, &cfgst->found, &key)) != NULL)
     {
       if (ce->free && n->count > n->failed)
         ce->free (cfgst, parent, ce);
@@ -1867,7 +2042,27 @@ static void free_configured_elements (struct cfgst *cfgst, void *parent, struct 
   }
 }
 
-static int walk_attributes (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, u_cfElement base)
+static int matching_name_index (const char *name_w_aliases, const char *name)
+{
+  const char *ns = name_w_aliases, *p = strchr (ns, '|');
+  int idx = 0;
+  while (p)
+  {
+    if (os_strncasecmp (ns, name, p-ns) == 0 && name[p-ns] == 0)
+    {
+      /* ns upto the pipe symbol is a prefix of name, and name is
+       terminated at that point */
+      return idx;
+    }
+    ns = p + 1;
+    p = strchr (ns, '|');
+    idx++;
+  }
+  return (os_strcasecmp (ns, name) == 0) ? idx : -1;
+}
+
+static int walk_attributes (struct cfgst *cfgst, void *parent, struct cfgelem const *
+                             const cfgelem, u_cfElement base)
 {
   c_iter iter;
   u_cfNode child;
@@ -1898,7 +2093,7 @@ static int walk_attributes (struct cfgst *cfgst, void *parent, struct cfgelem co
         ok1 = cfg_error (cfgst, "failed to extract data");
       else
       {
-        cfgst_push (cfgst, 1, cfg_attr);
+        cfgst_push (cfgst, 1, cfg_attr, parent /* FIXME: parent or NULL? */);
         ok1 = do_update (cfgst, cfg_attr->update, parent, cfg_attr, str, 0);
         os_free (str);
         cfgst_pop (cfgst);
@@ -1911,25 +2106,6 @@ static int walk_attributes (struct cfgst *cfgst, void *parent, struct cfgelem co
   }
   c_iterFree (iter);
   return ok;
-}
-
-static int matching_name_index (const char *name_w_aliases, const char *name)
-{
-  const char *ns = name_w_aliases, *p = strchr (ns, '|');
-  int idx = 0;
-  while (p)
-  {
-    if (os_strncasecmp (ns, name, p-ns) == 0 && name[p-ns] == 0)
-    {
-      /* ns upto the pipe symbol is a prefix of name, and name is
-         terminated at that point */
-      return idx;
-    }
-    ns = p + 1;
-    p = strchr (ns, '|');
-    idx++;
-  }
-  return (os_strcasecmp (ns, name) == 0) ? idx : -1;
 }
 
 static int walk_children (struct cfgst *cfgst, void *parent, struct cfgelem const * const cfgelem, u_cfElement base)
@@ -1948,61 +2124,61 @@ static int walk_children (struct cfgst *cfgst, void *parent, struct cfgelem cons
     switch (u_cfNodeKind (child))
     {
       case V_CFELEMENT:
+      {
+        u_cfElement elem = u_cfElement (child);
+        const struct cfgelem *cfg_subelem;
+        for (cfg_subelem = cfgelem->children;
+             cfg_subelem && cfg_subelem->name && os_strcasecmp (cfg_subelem->name, "*") != 0;
+             cfg_subelem++)
         {
-          u_cfElement elem = u_cfElement (child);
-          const struct cfgelem *cfg_subelem;
-          for (cfg_subelem = cfgelem->children;
-               cfg_subelem && cfg_subelem->name && os_strcasecmp (cfg_subelem->name, "*") != 0;
-               cfg_subelem++)
-          {
-            int idx = matching_name_index (cfg_subelem->name, child_name);
+          int idx = matching_name_index (cfg_subelem->name, child_name);
 #if WARN_DEPRECATED_ALIAS
-            if (idx > 0)
-            {
-              int n = (int) (strchr (cfg_subelem->name, '|') - cfg_subelem->name);
-              cfg_warning (cfgst, "'%s': deprecated alias for '%*.*s'", child_name, n, n, cfg_subelem->name);
-            }
+          if (idx > 0)
+          {
+            int n = (int) (strchr (cfg_subelem->name, '|') - cfg_subelem->name);
+            cfg_warning (cfgst, "'%s': deprecated alias for '%*.*s'", child_name, n, n, cfg_subelem->name);
+          }
 #endif
-            if (idx >= 0)
-            {
-              break;
-            }
-          }
-          if (cfg_subelem == NULL || cfg_subelem->name == NULL)
-            ok1 = cfg_error (cfgst, "%s: unknown element", child_name);
-          else if (os_strcasecmp (cfg_subelem->name, "*") == 0)
-            ok1 = 1;
-          else
+          if (idx >= 0)
           {
-            cfgst_push (cfgst, 0, cfg_subelem);
-            ok1 = walk_element (cfgst, parent, cfg_subelem, elem);
-            cfgst_pop (cfgst);
+            break;
           }
-          break;
         }
-      case V_CFDATA:
+        if (cfg_subelem == NULL || cfg_subelem->name == NULL)
+          ok1 = cfg_error (cfgst, "%s: unknown element", child_name);
+        else if (os_strcasecmp (cfg_subelem->name, "*") == 0)
+          ok1 = 1;
+        else
         {
-          u_cfData data = u_cfData (child);
-          c_char *str;
-          if (!u_cfDataStringValue (data, &str))
-            ok1 = cfg_error (cfgst, "failed to extract data");
-          else if (cfgelem->update == 0)
-          {
-            if (strspn (str, " \t\r\n") != strlen (str))
-              ok1 = cfg_error (cfgst, "%s: no data expected", str);
-            else
-              ok1 = 1;
-            os_free (str);
-          }
-          else
-          {
-            cfgst_push (cfgst, 0, NULL);
-            ok1 = do_update (cfgst, cfgelem->update, parent, cfgelem, str, 0);
-            cfgst_pop (cfgst);
-            os_free (str);
-          }
-          break;
+          cfgst_push (cfgst, 0, cfg_subelem, parent /* FIXME: parent or NULL? */);
+          ok1 = walk_element (cfgst, parent, cfg_subelem, elem);
+          cfgst_pop (cfgst);
         }
+        break;
+      }
+      case V_CFDATA:
+      {
+        u_cfData data = u_cfData (child);
+        c_char *str;
+        if (!u_cfDataStringValue (data, &str))
+          ok1 = cfg_error (cfgst, "failed to extract data");
+        else if (cfgelem->update == 0)
+        {
+          if (strspn (str, " \t\r\n") != strlen (str))
+            ok1 = cfg_error (cfgst, "%s: no data expected", str);
+          else
+            ok1 = 1;
+          os_free (str);
+        }
+        else
+        {
+          cfgst_push (cfgst, 0, NULL, NULL /* FIXME: parent or NULL? */);
+          ok1 = do_update (cfgst, cfgelem->update, parent, cfgelem, str, 0);
+          cfgst_pop (cfgst);
+          os_free (str);
+        }
+        break;
+      }
       default:
         abort ();
     }
@@ -2020,7 +2196,7 @@ static int walk_element (struct cfgst *cfgst, void *parent, struct cfgelem const
   int ok = 1;
   void *dynparent;
 
-  assert (cfgelem->init || cfgelem->multiplicity == 1 ); /*multi-items must have an init-func */
+  assert (cfgelem->init || cfgelem->multiplicity == 1); /*multi-items must have an init-func */
   if (cfgelem->init)
   {
     if (cfgelem->init (cfgst, parent, cfgelem) < 0)
@@ -2033,7 +2209,7 @@ static int walk_element (struct cfgst *cfgst, void *parent, struct cfgelem const
     dynparent = parent;
 
   ok = walk_attributes (cfgst, dynparent, cfgelem, base) &&
-    walk_children (cfgst, dynparent, cfgelem, base);
+  walk_children (cfgst, dynparent, cfgelem, base);
 
   if (ok && cfgelem->multiplicity != 1)
   {
@@ -2053,47 +2229,50 @@ static int cfgst_node_cmp (const void *va, const void *vb)
 }
 
 
-struct cfgst *config_init (/* C_STRUCT (u_participant) const * */u_participant participant, const c_char *servicename)
+struct cfgst *config_init
+(
+  /* C_STRUCT (u_participant) const * */u_participant participant, const char *servicename
+)
 {
-  u_cfElement root, elem;
-  c_iter iter;
   int ok = 1;
   struct cfgst *cfgst;
+  u_cfElement root, elem;
+  c_iter iter;
   int rootidx;
-
-  if ((cfgst = os_malloc (sizeof (*cfgst))) == NULL)
-    return NULL;
-
   assert (participant != NULL);
-  avl_init (&cfgst->found, offsetof (struct cfgst_node, avlnode), offsetof (struct cfgst_node, key), cfgst_node_cmp, 0);
-  cfgst->internal_seen = 0;
-  cfgst->path_depth = 0;
-  cfgst->cfg = &config;
-  cfgst->servicename = servicename;
-
-  config.valid = 0;
-
-  /* Initialize linked lists to NULL */
-  config.peers = NULL;
 
   /* Enable logging of errors &c. to stderr until configuration is read */
   config.enabled_logcats = LC_FATAL | LC_ERROR | LC_WARNING;
   config.tracingOutputFile = stderr;
+  config.valid = 0;
+
+
+
+
+  config.peers = NULL;
+
+  if ((cfgst = os_malloc (sizeof (*cfgst))) == NULL)
+    return NULL;
+  ut_avlInit (&cfgst_found_treedef, &cfgst->found);
+  cfgst->path_depth = 0;
+  cfgst->cfg = &config;
+  cfgst->internal_seen = 0;
+  cfgst->servicename = servicename;
 
   if ((root = u_participantGetConfiguration ((u_participant) participant)) == NULL)
   {
     NN_ERROR0 ("config_init: u_participantGetConfiguration failed");
-    avl_free (&cfgst->found, os_free);
+    ut_avlFree (&cfgst_found_treedef, &cfgst->found, os_free);
     os_free (cfgst);
     return NULL;
   }
 
   /* Only suitable for Domain (without a attributes) and a service
-     with a matching name attribute */
+   with a matching name attribute */
   for (rootidx = 0; root_cfgelems[rootidx].name; rootidx++)
   {
     const struct cfgelem *root_cfgelem = &root_cfgelems[rootidx];
-    cfgst_push (cfgst, 0, root_cfgelem);
+    cfgst_push (cfgst, 0, root_cfgelem, NULL);
     iter = u_cfElementXPath (root, root_cfgelem->name);
     elem = u_cfElement (c_iterTakeFirst (iter));
     while (elem)
@@ -2116,8 +2295,8 @@ struct cfgst *config_init (/* C_STRUCT (u_participant) const * */u_participant p
         else
         {
           ok1 =
-            walk_element (cfgst, cfgst->cfg, root_cfgelem, elem)
-            && walk_children (cfgst, cfgst->cfg, &legacy_root_cfgelems[0], elem);
+          walk_element (cfgst, cfgst->cfg, root_cfgelem, elem)
+          && walk_children (cfgst, cfgst->cfg, &legacy_root_cfgelems[0], elem);
         }
         ok = ok && ok1;
         os_free (str);
@@ -2156,7 +2335,7 @@ struct cfgst *config_init (/* C_STRUCT (u_participant) const * */u_participant p
   }
   else
   {
-    avl_free (&cfgst->found, os_free);
+    ut_avlFree (&cfgst_found_treedef, &cfgst->found, os_free);
     os_free (cfgst);
     return NULL;
   }
@@ -2167,7 +2346,7 @@ void config_print_and_free_cfgst (struct cfgst *cfgst)
   if (cfgst == NULL)
     return;
   print_configitems (cfgst, cfgst->cfg, 0, root_cfgelems, 0);
-  avl_free (&cfgst->found, os_free);
+  ut_avlFree (&cfgst_found_treedef, &cfgst->found, os_free);
   os_free (cfgst);
 }
 

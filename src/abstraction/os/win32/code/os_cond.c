@@ -39,6 +39,7 @@
 
 
 /************ PRIVATE ****************/
+#ifndef NTDDI_WIN8
 static LONG
 #ifdef _WIN64
 InterlockedAndAquire(
@@ -77,6 +78,19 @@ InterlockedOr(
     } while (i != j);
     return j;
 }
+#else
+
+#if !defined(_M_AMD64) && !defined(_M_IA64) && !defined(_M_X64)
+#include <intrin.h>
+
+#pragma intrinsic (_InterlockedAnd)
+#define InterlockedAnd _InterlockedAnd
+
+#pragma intrinsic (_InterlockedOr)
+#define InterlockedOr _InterlockedOr
+#endif
+
+#endif
 
 static os_result
 getSem(

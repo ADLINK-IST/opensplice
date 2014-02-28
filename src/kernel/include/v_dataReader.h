@@ -32,7 +32,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -143,6 +143,16 @@ v_dataReaderTakeNextInstance(
 OS_API c_long
 v_dataReaderNotReadCount(
     v_dataReader _this);
+
+OS_API v_result
+v_dataReaderSetNotReadThreshold(
+    v_dataReader _this,
+    c_long threshold);
+
+OS_API c_bool
+v_dataReaderUpdateSampleLost(
+    v_reader _this,
+    c_ulong missedSamples);
 
 #undef OS_API
 

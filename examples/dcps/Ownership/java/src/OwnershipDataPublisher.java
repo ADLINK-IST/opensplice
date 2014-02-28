@@ -44,7 +44,7 @@ public class OwnershipDataPublisher {
 		StockTypeSupport st = new StockTypeSupport();
 		mgr.registerType(st);
 		// create Topic
-		String topic_name = "StockTrackerExclusive";
+		String topic_name = "OwnershipStockTracker";
 		mgr.createTopic(topic_name);
 		// create Publisher
 		mgr.createPublisher();

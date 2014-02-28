@@ -1,0 +1,3 @@
+export JAVA_HOME=/home/dds/INSTALLED_FOR_DDS/jdk1.6.0_23_64
+export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO211_0-RedHat-EL62-gcc446-inline-64bit-120927-head
+unset QTDIR

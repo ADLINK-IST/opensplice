@@ -22,7 +22,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_USER
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -36,6 +36,7 @@ typedef v_actionResult u_actionResult;
 typedef u_actionResult (*u_dataReaderAction)(c_object o, c_voidp arg);
 
 typedef void (*u_copyIn)(c_type type, void *data, void *to);
+typedef void (*u_copyOut)(void *from, void *to);
 
 typedef c_bool
 (*u_dataReaderInstanceAction)(v_dataReaderInstance instance, c_voidp arg);
@@ -143,15 +144,15 @@ u_dataReaderLookupInstance(
 
 OS_API u_result
 u_dataReaderGetInstanceUserData (
-		u_dataReader _this,
-		u_instanceHandle handle,
-		c_voidp* userData_out);
+                u_dataReader _this,
+                u_instanceHandle handle,
+                c_voidp* userData_out);
 
 OS_API u_result
 u_dataReaderSetInstanceUserData (
-	    u_dataReader _this,
-	    u_instanceHandle handle,
-	    c_voidp userData);
+            u_dataReader _this,
+            u_instanceHandle handle,
+            c_voidp userData);
 
 OS_API u_result
     u_dataReaderTopic(
@@ -162,7 +163,7 @@ OS_API u_result
 u_dataReaderCopyKeysFromInstanceHandle (
     u_dataReader _this,
     u_instanceHandle handle,
-    u_readerAction action,
+    u_copyOut action,
     void *copyArg);
 
 #if 1
@@ -210,6 +211,11 @@ u_dataReaderDeleteContainedEntities (
 OS_API c_bool
 u_dataReaderDataAvailableTest(
     u_dataReader _this);
+
+OS_API u_result
+u_dataReaderSetNotReadThreshold(
+    u_reader _this,
+    c_long threshold);
 
 #undef OS_API
 

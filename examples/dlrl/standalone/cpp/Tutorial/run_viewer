@@ -1,9 +1,0 @@
-#! /bin/sh
-args=
-while [ $# -gt 0 ]
-do
-    args="$args $1 "
-    shift
-done
-
-./WhiteListViewer $args

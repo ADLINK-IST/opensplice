@@ -66,7 +66,7 @@ namespace DDS.OpenSplice.Gapi
 		//    gapi_object handle,
 		//    _ObjectKind kind,
 		//    gapi_returnCode_t *result);
-        [DllImport("dcpsgapi", EntryPoint = "gapi_objectClaim")]
+        [DllImport("ddskernel", EntryPoint = "gapi_objectClaim")]
         public static extern IntPtr Claim (
             IntPtr handle,
             _ObjectKind kind,
@@ -75,7 +75,7 @@ namespace DDS.OpenSplice.Gapi
         //OS_API gapi_object
 		//_ObjectRelease (
 		//    _Object object);
-        [DllImport("dcpsgapi", EntryPoint = "_ObjectRelease")]
+        [DllImport("ddskernel", EntryPoint = "_ObjectRelease")]
         public static extern IntPtr Release (
             IntPtr _object);
     }

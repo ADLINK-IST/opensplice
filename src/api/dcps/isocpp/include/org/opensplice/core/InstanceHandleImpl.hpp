@@ -21,44 +21,53 @@
 #include <dds/core/types.hpp>
 #include <org/opensplice/core/config.hpp>
 
-namespace org {
-  namespace opensplice {
-    namespace core {
-      class InstanceHandleImpl;
-    }
-  }
+namespace org
+{
+namespace opensplice
+{
+namespace core
+{
+class InstanceHandleImpl;
+}
+}
 }
 
-class OSPL_ISOCPP_IMPL_API org::opensplice::core::InstanceHandleImpl {
+class OSPL_ISOCPP_IMPL_API org::opensplice::core::InstanceHandleImpl
+{
 public:
-  InstanceHandleImpl();
-  InstanceHandleImpl(DDS::InstanceHandle_t handle);
-  ~InstanceHandleImpl();
+    InstanceHandleImpl();
+    InstanceHandleImpl(DDS::InstanceHandle_t handle);
+    ~InstanceHandleImpl();
 public:
-  #ifdef _WIN32
-  #pragma warning( disable : 4100 ) //src not used explicitly but still required as parameter
-  #endif
-  InstanceHandleImpl(const dds::core::null_type& src);
-  InstanceHandleImpl(const InstanceHandleImpl& other);
+    InstanceHandleImpl(const dds::core::null_type& src);
+    InstanceHandleImpl(const InstanceHandleImpl& other);
 
 
 public:
-  bool operator == (const InstanceHandleImpl& that) const;
+    bool operator==(const InstanceHandleImpl& that) const;
 
-  InstanceHandleImpl& operator=(const dds::core::null_type& src);
-  bool is_nil() const;
+    bool operator<(const InstanceHandleImpl& that) const;
+
+    bool operator>(const InstanceHandleImpl& that) const;
+
+    InstanceHandleImpl& operator=(const dds::core::null_type& src);
+    bool is_nil() const;
 
 public:
-  DDS::InstanceHandle_t handle() const { return handle_; }
+    DDS::InstanceHandle_t handle() const
+    {
+        return handle_;
+    }
 
 private:
-  DDS::InstanceHandle_t handle_;
+    DDS::InstanceHandle_t handle_;
 };
 
 inline std::ostream&
 operator << (std::ostream& os,
-         const org::opensplice::core::InstanceHandleImpl& h) {
-  os << h.handle();
-  return os;
+             const org::opensplice::core::InstanceHandleImpl& h)
+{
+    os << h.handle();
+    return os;
 }
 #endif /* ORG_OPENSPLICE_CORE_INSTANCE_HANDLE_HPP_ */

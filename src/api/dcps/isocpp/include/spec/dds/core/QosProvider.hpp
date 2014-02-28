@@ -23,10 +23,12 @@
 #include <dds/core/detail/QosProvider.hpp>
 
 
-namespace dds {
-  namespace core {
-    typedef TQosProvider<detail::QosProvider> QosProvider;
-  }
+namespace dds
+{
+namespace core
+{
+typedef TQosProvider<detail::QosProvider> QosProvider;
+}
 }
 
 #endif /* OMG_DDS_CORE_QOS_PROVIDER_HPP_ */

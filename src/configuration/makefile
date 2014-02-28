@@ -1,7 +1,4 @@
-#
-# Set subsystems to be processed
-#
-SUBSYSTEMS	:= config
-SUBSYSTEMS	+= parser
+.PHONY: all compile link gcov qac analyse clean
 
-include $(OSPL_HOME)/setup/makefiles/subsystem.mak
+all compile link gcov qac analyse clean:
+	@$(MAKE) -C $(OSPL_HOME)/src/osplcore $@

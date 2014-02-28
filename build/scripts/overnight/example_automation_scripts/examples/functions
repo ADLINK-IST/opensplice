@@ -60,7 +60,45 @@ runZero()
    wait $cmd_pid &> /dev/null
    SUB_RESULT=$?
 
-   sleep 15
+   sleep 5
+}
+
+runZeroThroughput()
+{
+   echo "=== Launching Throughput "
+
+   ./publisher 1 0 1 15 > pubResult.txt 2>&1 &
+   cmd_pid=$!
+
+   ./subscriber > subResult.txt 10 2>&1
+   SUB_RESULT=$?
+
+   wait $cmd_pid &> /dev/null
+   PUB_RESULT=$?
+
+   sleep 5
+}
+
+runZeroRoundTrip()
+{
+   echo "=== Launching RoundTrip "
+
+   ./pong > pongResult.txt 2>&1 &
+   cmd_pid=$!
+
+   sleep 10
+
+   ./ping > pingResult.txt 100 0 10 2>&1
+   PUB_RESULT=$?
+
+   sleep 5
+
+   ./ping quit >/dev/null
+
+   wait $cmd_pid &> /dev/null
+   SUB_RESULT=$?
+
+   sleep 5
 }
 
 checkResultZero()
@@ -129,6 +167,45 @@ durabilityCheckResult()
    tail -10 subResult_3_2_2.txt > tail_subResult.txt
 
    diff -w tail_subResult.txt ../../expected_result > subdiff.txt
+   if [ -s subdiff.txt ] || [ ! -r subResult_3_2_2.txt ];then
+      echo NOK
+      echo "*** ERROR : example Durability failed ";
+      cat subdiff.txt;
+   else
+      echo OK
+   fi
+
+   echo "=== Checking Durability second Subscriber results Scenario 3.3"
+   echo "    (not empty after restarting OpenSplice)"
+   # Checking only result of second subscriber
+   tail -2 subResult_3_3_2.txt > tail_subResult.txt
+   if [ -s tail_subResult.txt ];then
+      echo OK
+   else
+      echo NOK
+      echo "*** ERROR : example Durability failed ";
+   fi
+}
+
+durabilityCheckResultISOCPP()
+{
+   echo "=== Checking Durability Subscriber results Scenario 3.1"
+   tail -10 subResult_3_1.txt > tail_subResult.txt
+
+   diff -w tail_subResult.txt ../expected_result > subdiff.txt
+   if [ -s subdiff.txt ] || [ ! -r subResult_3_1.txt ];then
+      echo NOK
+      echo "*** ERROR : example Durability failed ";
+      cat subdiff.txt;
+   else
+      echo OK
+   fi
+
+   echo "=== Checking Durability second Subscriber results Scenario 3.2"
+   # Checking only result of second subscriber
+   tail -10 subResult_3_2_2.txt > tail_subResult.txt
+
+   diff -w tail_subResult.txt ../expected_result > subdiff.txt
    if [ -s subdiff.txt ] || [ ! -r subResult_3_2_2.txt ];then
       echo NOK
       echo "*** ERROR : example Durability failed ";

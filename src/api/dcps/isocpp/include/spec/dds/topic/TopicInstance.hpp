@@ -22,33 +22,79 @@
 #include <dds/core/Time.hpp>
 #include <dds/core/InstanceHandle.hpp>
 
-namespace dds { namespace topic {
-  template <typename T>
-  class TopicInstance;
-} }
+namespace dds
+{
+namespace topic
+{
+template <typename T>
+class TopicInstance;
+}
+}
 
 template <typename T>
-class dds::topic::TopicInstance {
+class dds::topic::TopicInstance
+{
 public:
-  TopicInstance();
-  TopicInstance(const ::dds::core::InstanceHandle& h);
-  TopicInstance(const ::dds::core::InstanceHandle& h, const T& the_sample);
+    /**
+     * Construct a TopicInstance.
+     */
+    TopicInstance();
+
+    /**
+     * Construct a TopicInstance with an InstanceHandle.
+     *
+     * @param h the InstanceHandle
+     */
+    TopicInstance(const ::dds::core::InstanceHandle& h);
+
+    /**
+     * Construct a TopicInstance with an InstanceHandle and a sample type.
+     *
+     * @param h the InstanceHandle
+     * @param sample the <Type>
+     */
+    TopicInstance(const ::dds::core::InstanceHandle& h, const T& sample);
 
 public:
-  operator const ::dds::core::InstanceHandle() const;
+    /**
+     * Overload to get the InstanceHandle.
+     *
+     * @return the InstanceHandle for the TopicInstance
+     */
+    operator const ::dds::core::InstanceHandle() const;
 
-  const ::dds::core::InstanceHandle handle() const;
+    /**
+     * Get the InstanceHandle.
+     *
+     * @return the InstanceHandle for the TopicInstance
+     */
+    const ::dds::core::InstanceHandle handle() const;
 
-  void handle(const ::dds::core::InstanceHandle& h);
-  const T& sample() const;
+    /**
+     * Set the InstanceHandle.
+     *
+     * @param h the InstanceHandle to set to the TopicInstance
+     */
+    void handle(const ::dds::core::InstanceHandle& h);
 
-  T& sample();
+    /**
+     * @return the sample for the TopicInstance
+     */
+    const T& sample() const;
 
-  void sample(const T& the_sample);
+    /**
+     * @return the sample for the TopicInstance
+     */
+    T& sample();
+
+    /**
+     * @param sample send a sample for this TopicInstance
+     */
+    void sample(const T& sample);
 
 private:
-  ::dds::core::InstanceHandle h_;
-  T sample_;
+    ::dds::core::InstanceHandle h_;
+    T sample_;
 };
 
 

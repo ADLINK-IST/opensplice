@@ -4,91 +4,31 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
+#include <stddef.h>
+#include "ut_avl.h"
 #include "d_misc.h"
 #include "d_table.h"
-#include "d_avltree.h"
 
 
-#define TABLE_MAGIC     0x54736368      /* "Tsch" */
+C_STRUCT(d_tableNode) {
+    ut_avlNode_t avlnode;
+    void *object;
+};
+C_CLASS(d_tableNode);
 
 C_STRUCT(d_table) {
     C_EXTENDS(d_object);
-    c_ulong    size;            /**< the number of entries                 */
-    int ( *    compare) ();     /**< the user's compare function           */
     void ( *   cleanAction) (); /**< the user's cleanup action             */
-    d_avlNode  tree;
+    ut_avlCTreedef_t td;
+    ut_avlCTree_t tree;
 };
 
-/***********************************************************************
- ***********************************************************************/
 
-static c_voidp
-tableRemove(
-    d_table table,
-    c_voidp arg,
-    int ( * compare )() )
-{
-    c_voidp item;
-
-    assert(d_objectIsValid(d_object(table), D_TABLE) == TRUE);
-    item = NULL;
-    /* QAC EXPECT 3892; */
-    if (table->tree) {
-        item = d_avlTreeRemove(&table->tree, arg, compare);
-        if (item) {
-            --table->size;
-            if (table->size == 0) {
-                table->tree = NULL;
-            }
-        }
-    }
-    return item;
-}
-
-/***********************************************************************
- ***********************************************************************/
-
-static c_voidp
-tableTake(
-    d_table table )
-{
-    c_voidp item;
-
-    assert(d_objectIsValid(d_object(table), D_TABLE) == TRUE);
-    item = NULL;
-    /* QAC EXPECT 3892; */
-    if (table->tree) {
-        item = d_avlTreeTake(&table->tree);
-        if (item) {
-            --table->size;
-            if (table->size == 0) {
-                table->tree = NULL;
-            }
-        }
-    }
-    return item;
-}
-
-/***********************************************************************
- ***********************************************************************/
-/*
-static int
-alwaysEqual(
-    c_voidp one,
-    c_voidp two )
-{
-    if (one) {
-    }
-    if (two) {
-    }
-    return 0;
-}
-*/
 /**************************************************************
  * Public functions
  **************************************************************/
@@ -103,7 +43,7 @@ d_tableSize(
     if (table) {
         /* QAC EXPECT 3892; */
         assert(d_objectIsValid(d_object(table), D_TABLE) == TRUE);
-        size = table->size;
+        size = ut_avlCCount (&table->tree);
     }
     return size;
 }
@@ -121,11 +61,16 @@ d_tableInsert(
 
     existingItem = object;
     if (table) {
+        d_tableNode node;
+        ut_avlIPath_t p;
         /* QAC EXPECT 3892; */
         assert(d_objectIsValid(d_object(table), D_TABLE) == TRUE);
-        existingItem = d_avlTreeInsert(&table->tree, object, table->compare);
-        if (!existingItem) {
-            ++table->size;
+        if ((node = ut_avlCLookupIPath (&table->td, &table->tree, object, &p)) != NULL) {
+            existingItem = node->object;
+        } else if ((node = d_malloc ((os_uint32) sizeof (*node), "d_tableNode")) != NULL) {
+            node->object = object;
+            ut_avlCInsertIPath (&table->td, &table->tree, node, &p);
+            existingItem = NULL;
         }
     }
     return existingItem;
@@ -143,10 +88,11 @@ d_tableFind(
 
     dataFound = NULL;
     if (arg && table) {
+        d_tableNode node;
         /* QAC EXPECT 3892; */
         assert(d_objectIsValid(d_object(table), D_TABLE) == TRUE);
-        if (table->tree) {
-            dataFound = d_avlTreeFind(table->tree, arg, table->compare);
+        if ((node = ut_avlCLookup (&table->td, &table->tree, arg)) != NULL) {
+            dataFound = node->object;
         }
     }
     return dataFound;
@@ -163,10 +109,11 @@ d_tableFirst(
 
     dataFound = NULL;
     if (table) {
+        d_tableNode node;
         /* QAC EXPECT 3892; */
         assert(d_objectIsValid(d_object(table), D_TABLE) == TRUE);
-        if (table->tree) {
-            dataFound = d_avlTreeFirst(table->tree);
+        if ((node = ut_avlCFindMin (&table->td, &table->tree)) != NULL) {
+            dataFound = node->object;
         }
     }
     return dataFound;
@@ -181,16 +128,21 @@ d_tableWalk(
     c_bool ( * action ) (),
     c_voidp    userData )
 {
-    c_bool result = FALSE;
+    c_bool result;
 
     if (table) {
+        ut_avlCIter_t it;
+        d_tableNode n;
         /* QAC EXPECT 3892; */
         assert(d_objectIsValid(d_object(table), D_TABLE) == TRUE);
-        if (table->tree) {
-            result = d_avlTreeWalk(&table->tree, action, userData);
-        } else {
-            result = TRUE;
+        result = TRUE;
+        for (n = ut_avlCIterFirst (&table->td, &table->tree, &it);
+             n && result;
+             n = ut_avlCIterNext (&it)) {
+            result = action (n->object, userData);
         }
+    } else {
+        result = FALSE;
     }
     return result;
 }
@@ -207,7 +159,15 @@ d_tableRemove(
 
     result = NULL;
     if (table) {
-        result = tableRemove(table, arg, table->compare);
+        d_tableNode node;
+        ut_avlDPath_t p;
+        /* QAC EXPECT 3892; */
+        assert(d_objectIsValid(d_object(table), D_TABLE) == TRUE);
+        if ((node = ut_avlCLookupDPath (&table->td, &table->tree, arg, &p)) != NULL) {
+            result = node->object;
+            ut_avlCDeleteDPath (&table->td, &table->tree, node, &p);
+            d_free (node);
+        }
     }
     return result;
 }
@@ -223,13 +183,29 @@ d_tableTake(
 
     result = NULL;
     if (table) {
-        result = tableTake(table);
+        /* Delete an arbitrarily chosen node: the obvious candidates
+           are: root, min and max.  */
+        d_tableNode node;
+        if ((node = ut_avlCRoot (&table->td, &table->tree)) != NULL) {
+            result = node->object;
+            ut_avlCDelete (&table->td, &table->tree, node);
+        }
     }
     return result;
 }
 
 /***********************************************************************
  ***********************************************************************/
+
+static void d_tableFreeHelper (void *vnode, void *varg)
+{
+    d_tableNode node = vnode;
+    d_table table = varg;
+    if (table->cleanAction) {
+        table->cleanAction (node->object);
+    }
+    d_free (node);
+}
 
 void
 d_tableDeinit(
@@ -241,11 +217,7 @@ d_tableDeinit(
 
     if(object){
         table = d_table(object);
-
-        d_avlTreeFree(table->tree, table->cleanAction);
-        table->size = 0;
-        table->compare = NULL;
-        table->tree = NULL;
+        ut_avlCFreeArg (&table->td, &table->tree, d_tableFreeHelper, table);
     }
 }
 
@@ -269,15 +241,17 @@ d_tableNew(
 {
     d_table table;
 
-    assert(compare != (int(*)())NULL);
+    assert(compare != 0);
     table = (d_table)d_malloc((os_uint32)C_SIZEOF(d_table), "Table");
     if (table) {
         /* QAC EXPECT 3892; */
         d_objectInit(d_object(table), D_TABLE, d_tableDeinit);
-        table->size = 0;
-        table->compare = compare;
+        ut_avlCTreedefInit (&table->td,
+                            offsetof (C_STRUCT(d_tableNode), avlnode), offsetof (C_STRUCT(d_tableNode), object),
+                            (int (*) (const void *, const void *)) compare, 0,
+                            UT_AVL_TREEDEF_FLAG_INDKEY);
+        ut_avlCInit (&table->td, &table->tree);
         table->cleanAction = cleanAction;
-        table->tree = NULL;
     }
     return table;
 }

@@ -107,6 +107,11 @@ gapi_statusMask
 _StatusGetCurrentStatus(
     _Status status);
 
+gapi_statusMask
+_StatusGetMaskStatus (
+    _Status status,
+    c_long  eventKindMask);
+
 void
 _StatusNotifyEvent (
     _Status status,

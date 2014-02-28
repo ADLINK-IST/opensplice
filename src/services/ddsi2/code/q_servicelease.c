@@ -7,36 +7,32 @@
 #include "os_cond.h"
 #include "os_thread.h"
 
-#include "u_user.h"
-#include "u_participant.h"
-#include "u_service.h"
-
 #include "q_servicelease.h"
 #include "q_config.h"
 #include "q_log.h"
 #include "q_thread.h"
 #include "q_time.h"
+#include "q_unused.h"
 #include "q_error.h"
+#include "q_globals.h" /* for mattr, cattr */
 
 #include "sysdeps.h" /* for getrusage() */
 
-static void nn_retrieve_lease_settings (v_duration *leaseExpiryTime, os_time *sleepTime)
+static void nn_retrieve_lease_settings (os_time *sleepTime)
 {
-  const c_float leaseSec = config.servicelease_expiry_time;
-  c_float sleepSec = leaseSec * config.servicelease_update_factor;
+  const float leaseSec = config.servicelease_expiry_time;
+  float sleepSec = leaseSec * config.servicelease_update_factor;
 
   /* Run at no less than 1Hz: internal liveliness monitoring is slaved
-     to this interval as well.  1Hz lease renewals and liveliness
-     checks is no large burden, and performing liveliness checks once
-     a second is a lot more useful than doing it once every few
-     seconds.  Besides -- we're now also gathering CPU statistics. */
+   to this interval as well.  1Hz lease renewals and liveliness
+   checks is no large burden, and performing liveliness checks once
+   a second is a lot more useful than doing it once every few
+   seconds.  Besides -- we're now also gathering CPU statistics. */
   if (sleepSec > 1.0f)
     sleepSec = 1.0f;
 
   sleepTime->tv_sec = (os_int32) sleepSec;
   sleepTime->tv_nsec = (os_int32) ((sleepSec - (float) sleepTime->tv_sec) * 1e9f);
-  leaseExpiryTime->seconds = (os_int32) leaseSec;
-  leaseExpiryTime->nanoseconds = (os_int32) ((leaseSec - (float) leaseExpiryTime->seconds) * 1e9f);
 }
 
 struct alive_wd {
@@ -45,11 +41,11 @@ struct alive_wd {
 };
 
 struct nn_servicelease {
-  v_duration leasePeriod;
   os_time sleepTime;
   int keepgoing;
   struct alive_wd *av_ary;
-  u_participant participant;
+  void (*renew_cb) (void *arg);
+  void *renew_arg;
 
   os_mutex lock;
   os_cond cond;
@@ -80,7 +76,7 @@ static void *lease_renewal_thread (struct nn_servicelease *sl)
     TRACE (("servicelease: tnow %lld:", tnow));
 
     /* Check progress only if enough time has passed: there is no
-       guarantee that os_condTimedWait wont ever return early, and we
+       guarantee that os_cond_timedwait wont ever return early, and we
        do want to avoid spurious warnings. */
     if (tnow < tlast + min_progress_check_intv)
     {
@@ -123,7 +119,10 @@ static void *lease_renewal_thread (struct nn_servicelease *sl)
     if (n_alive == thread_states.nthreads)
     {
       TRACE ((": [%d] renewing\n", n_alive));
-      u_serviceRenewLease (u_service (sl->participant), sl->leasePeriod);
+      /* FIXME: perhaps it would be nice to control automatic
+         liveliness updates from here.
+         FIXME: should terminate failure of renew_cb() */
+      sl->renew_cb (sl->renew_arg);
     }
     else
     {
@@ -149,8 +148,7 @@ static void *lease_renewal_thread (struct nn_servicelease *sl)
     }
 #endif
 
-    if (os_condTimedWait (&sl->cond, &sl->lock, &sl->sleepTime) == os_resultFail)
-      NN_FATAL0 ("lease_renewal_thread: os_condTimedWait failed\n");
+    os_condTimedWait (&sl->cond, &sl->lock, &sl->sleepTime);
 
     /* We are never active in a way that matters for the garbage
        collection of old writers, &c. */
@@ -160,31 +158,31 @@ static void *lease_renewal_thread (struct nn_servicelease *sl)
   return NULL;
 }
 
-struct nn_servicelease *nn_servicelease_new (u_participant participant)
+static void dummy_renew_cb (UNUSED_ARG (void *arg))
+{
+}
+
+struct nn_servicelease *nn_servicelease_new (void (*renew_cb) (void *arg), void *renew_arg)
 {
   struct nn_servicelease *sl;
-  os_mutexAttr mattr;
-  os_condAttr cattr;
 
   if ((sl = os_malloc (sizeof (*sl))) == NULL)
     goto fail_0;
-  nn_retrieve_lease_settings (&sl->leasePeriod, &sl->sleepTime);
+
+  nn_retrieve_lease_settings (&sl->sleepTime);
   sl->keepgoing = -1;
-  sl->participant = participant;
+  sl->renew_cb = renew_cb ? renew_cb : dummy_renew_cb;
+  sl->renew_arg = renew_arg;
   sl->ts = NULL;
 
   if ((sl->av_ary = os_malloc (thread_states.nthreads * sizeof (*sl->av_ary))) == NULL)
     goto fail_vtimes;
   /* service lease update thread initializes av_ary */
 
-  os_mutexAttrInit (&mattr);
-  mattr.scopeAttr = OS_SCOPE_PRIVATE;
-  if (os_mutexInit (&sl->lock, &mattr) != os_resultSuccess)
+  if (os_mutexInit (&sl->lock, &gv.mattr) != os_resultSuccess)
     goto fail_lock;
 
-  os_condAttrInit (&cattr);
-  cattr.scopeAttr = OS_SCOPE_PRIVATE;
-  if (os_condInit (&sl->cond, &sl->lock, &cattr) != os_resultSuccess)
+  if (os_condInit (&sl->cond, &sl->lock, &gv.cattr) != os_resultSuccess)
     goto fail_cond;
   return sl;
 

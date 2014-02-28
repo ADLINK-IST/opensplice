@@ -3,11 +3,11 @@
 
 project : splice_targets {
     specific (make, prop:windows) {
-        configurations = Debug Release
+        configurations = Release Debug
         //output_dir = .
     }
     specific (make) {
-        obj_dir = .obj$(CFG)/
+        obj_dir = .obj$(CFG)<%slash%>
     }
 }
 
@@ -20,9 +20,23 @@ feature (ospl_os_linux) {
 feature(!src_co) {
     libout = $(OSPL_HOME)/lib
     exeout = $(OSPL_HOME)/bin
+    // dll's are in ./bin with the ./exe's on windows
+    specific (prop:windows) {
+        dllout = $(OSPL_HOME)/bin
+    }
+    specific (make) {
+        // If we ship re-build makefiles for a distrib switch off dependency section
+        // We can't guarantee the user's make will support include.
+        supports_include =
+    }
 }
 
 feature(src_co) {
     libout = $(OSPL_HOME_NORMALIZED)/lib/$(SPLICE_TARGET)
     exeout = $(OSPL_HOME_NORMALIZED)/exec/$(SPLICE_TARGET)
+    specific (make) {
+        // When we build our stuff in source tree switch on dependency check section
+        // Right now we constrain OpenSplice building to gmake.
+        supports_include = 1
+    }
 }

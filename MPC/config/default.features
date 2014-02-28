@@ -24,10 +24,13 @@ src_co = 0
 cross_compile = 0
 ospl_64_bit = 0
 // Architectures
+ospl_arch_x86 = 0
 ospl_arch_PPC32 = 0
 ospl_arch_PPC604 = 0
+ospl_arch_PPC750 = 0
 ospl_arch_PPCE500 = 0
 ospl_arch_E500v2 = 0
+ospl_arch_E500mc = 0
 ospl_arch_PPC2020 = 0
 ospl_arch_MIPS32R2sf = 0
 ospl_arch_PENTIUM = 0
@@ -46,6 +49,11 @@ ospl_os_win = 0
 ospl_os_wince = 0
 ospl_os_pikeos = 0
 ospl_os_vxworks = 0
+
+// Hosts
+ospl_os_host_win = 0
+ospl_os_host_linux = 0
+ospl_os_host_solaris = 0
 
 // Compilers (and other variations)
 ospl_compiler_studio = 0
@@ -71,20 +79,22 @@ ospl_os_ver_6 = 0
 ospl_os_ver_7 = 0
 
 // Targets
-E500v2_linux2_6 = 0
+E500v2_linux = 0
+E500mc_linux = 0
 mpc8308_glibc_small_WRlinux4_gcc = 0
 common_pc_glibc_small_WRlinux4_gcc = 0
-mpc8313e_linux2_6 = 0
-PPC440_linux2_6 = 0
+mpc8313e_linux = 0
+PPC440_linux = 0
 PPCE600_lynxos5 = 0
 PPC7448_lynxos5 = 0
-x86_64_linux2_6 = 0
-x86_linux2_6 = 0
+x86_64_linux = 0
+x86_linux = 0
 x86_elinos4_2_perc = 0
 x86_elinos4_2 = 0
 x86_elinos5 = 0
+arm_elinos5 = 0
 // Because of the OS headers silliness we need a feature for every set in ospli for src_co builds only
-os_headers_linux2_6 = 0
+os_headers_linux = 0
 os_headers_win32 = 0
 os_headers_solaris9 = 0
 os_headers_solaris10 = 0
@@ -238,3 +248,9 @@ ccm_noevent = 0
 ccm_direct_collocation = 0
 
 valuetype_out_indirection=1
+
+// win_idlpp_no_quotes is used to remove the quotes on the idlpp run command.. needed in some cases.
+win_idlpp_no_quotes = 0
+
+// some older versions of make don't support patsubst, this was a short term workaround for vx 5.5
+win_use_subst = 0

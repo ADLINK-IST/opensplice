@@ -36,8 +36,8 @@ TopicInstance<T>::TopicInstance(const ::dds::core::InstanceHandle& h)
     : h_(h), sample_() {}
 
 template <typename T>
-TopicInstance<T>::TopicInstance(const ::dds::core::InstanceHandle& h, const T& the_sample)
-    : h_(h), sample_(the_sample) { }
+TopicInstance<T>::TopicInstance(const ::dds::core::InstanceHandle& h, const T& sample)
+    : h_(h), sample_(sample) { }
 
 template <typename T>
 TopicInstance<T>::operator const ::dds::core::InstanceHandle() const
@@ -70,9 +70,9 @@ T& TopicInstance<T>::sample()
 }
 
 template <typename T>
-void TopicInstance<T>::sample(const T& the_sample)
+void TopicInstance<T>::sample(const T& sample)
 {
-    sample_ = the_sample;
+    sample_ = sample;
 }
 
 }

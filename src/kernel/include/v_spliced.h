@@ -20,7 +20,7 @@ extern "C" {
 #include "os_if.h"
 #include "v_status.h"
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -51,6 +51,11 @@ OS_API void
 v_splicedBuiltinResendManager(
     v_spliced spliced);
 
+OS_API v_leaseManager
+v_splicedGetHeartbeatManager(
+    v_spliced _this,
+    c_bool create);
+
 OS_API void
 v_splicedPrepareTermination(
     v_spliced spliced);
@@ -59,7 +64,8 @@ OS_API c_bool
 v_splicedStartHeartbeat(
     v_spliced spliced,
     v_duration period,
-    v_duration renewal);
+    v_duration renewal,
+    c_long priority);
 
 OS_API c_bool
 v_splicedStopHeartbeat(

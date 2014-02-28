@@ -438,7 +438,7 @@ d_nameSpaceAddElement(
                 topic = partition + (strlenPartitionTopic-2);
 
                 /* QAC EXPECT 2106,3123; */
-                while ((*topic != '.') && (topic != partitionTopic)) {
+                while ((*topic != '.') && (topic != partition)) {
                     /* QAC EXPECT 0489; */
                     topic--;
                 }
@@ -451,6 +451,10 @@ d_nameSpaceAddElement(
                     if (*topic != 0) {
                         d_nameSpaceAddPartitionTopic(nameSpace, name, partition, topic);
                     }
+                }else {
+                    /* Though <PartitionTopic> was used in the definition of a namespace, only
+                     * a partition is provided. */
+                    d_nameSpaceAddPartitionTopic(nameSpace, name, partition, "*");
                 }
                 d_free(partition);
             }
@@ -927,7 +931,18 @@ d_nameSpaceMasterIsMe(
     if (isANameSpace(nameSpace)) {
         myAddr = d_adminGetMyAddress(admin);
         master = d_nameSpaceGetMaster(nameSpace);
-        result = d_networkAddressEquals(myAddr, master);
+        if (master) {
+            /* A master has been found. */
+            result = d_networkAddressEquals(myAddr, master);
+        } else {
+            /* No master found for the namespace.
+             * This situation can occur when at some point
+             * in time a master has left the network, and
+             * the only remaining nodes use the property
+             * 'aligner="false"' for the namespace.
+             */
+            result = FALSE;
+        }
         d_networkAddressFree(myAddr);
         d_networkAddressFree(master);
     } else {
@@ -1039,7 +1054,7 @@ d_nameSpaceComparePartitionAction(
     struct d_nameSpaceLookupPartitionHelper* data;
     data = args;
 
-    if(!strcmp(data->partition, e->partition)) {
+    if(strcmp(data->partition, e->partition) == 0) {
         data->found = e;
     }
     return data->found == NULL;
@@ -1110,7 +1125,7 @@ d_nameSpaceGetPartitionTopicsAction(
             if(strlen(data->value)){
                 os_strcat(data->value, ",");
             }
-            if(!element->topic || !strcmp("*", element->topic)) {
+            if(!element->topic || (strcmp("*", element->topic) == 0)) {
                 os_strcat(data->value, element->partition);
             } else {
                 os_strcat(data->value, element->partition);
@@ -1194,6 +1209,10 @@ d_nameSpaceGetMergeState(
     if (isANameSpace(nameSpace)) {
         if((!role) || (strcmp(role, nameSpace->mergeState->role) == 0)){
             state = nameSpace->mergeState;
+            /* do not return your own state if you have cleared the state */
+            if (state->value == (c_ulong)-1) {
+                state = NULL;
+            }
         } else {
             dummy = d_mergeStateNew(role, 0);
             state = d_tableFind(nameSpace->mergedRoleStates, dummy);
@@ -1229,6 +1248,7 @@ d_nameSpaceSetMergeState(
     return;
 }
 
+/* Clears the state of the namespace for your own role */
 void
 d_nameSpaceClearMergeState(
     d_nameSpace nameSpace,
@@ -1237,9 +1257,18 @@ d_nameSpaceClearMergeState(
     d_mergeState dummy;
 
     if (isANameSpace(nameSpace)) {
-        dummy = d_mergeStateNew (role, 0);
-        d_tableRemove (nameSpace->mergedRoleStates, dummy);
-        d_mergeStateFree (dummy);
+        /* use -1 to clear the namespace for your own role */
+        if ((!role) || (strcmp(role, nameSpace->mergeState->role) == 0)) {
+            /* clear the mergestate for this namespace */
+            nameSpace->mergeState->value = -1;
+        } else {
+            /* Apparently the namespace has a different role than my own.
+             * Remove the namespace from my mergedRoles tables
+             */
+            dummy = d_mergeStateNew (role, 0);
+            d_tableRemove (nameSpace->mergedRoleStates, dummy);
+            d_mergeStateFree (dummy);
+        }
     }
 }
 
@@ -1267,7 +1296,7 @@ d_nameSpaceFindDiffWalk (
     state = d_mergeState(o);
 
     /* If role is found in diff, return true */
-    if (!strcmp (state->role, helper->role)) {
+    if (strcmp (state->role, helper->role) == 0) {
         helper->found = TRUE;
     }
 }

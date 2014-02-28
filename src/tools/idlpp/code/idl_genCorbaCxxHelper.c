@@ -77,7 +77,7 @@ idl_structureOpen (
     idl_typeStruct structSpec,
     void *userData)
 {
-    c_char *key_list;
+    const c_char *key_list;
 
     idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(idl_fileCur(), "__%s__name(void)\n",
@@ -126,7 +126,7 @@ idl_unionOpen (
     idl_typeUnion unionSpec,
     void *userData)
 {
-    c_char *key_list;
+    const c_char *key_list;
 
     idl_fileOutPrintf(idl_fileCur(), "const char *\n");
     idl_fileOutPrintf(idl_fileCur(), "__%s__name(void)\n",

@@ -16,6 +16,7 @@ import org.opensplice.cm.CMFactory;
 import org.opensplice.cm.DataReader;
 import org.opensplice.cm.Subscriber;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.qos.QoS;
 import org.opensplice.cm.qos.ReaderQoS;
 import org.opensplice.cm.qos.SubscriberQoS;
@@ -39,8 +40,8 @@ public class SubscriberImpl extends EntityImpl implements Subscriber{
      * @param _name The name of the kernel entity that is associated with this
      *              entity.
      */
-    public SubscriberImpl(long _index, long _serial, String _pointer, String _name) {
-        super(_index, _serial, _pointer, _name);
+    public SubscriberImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name) {
+        super(communicator, _index, _serial, _pointer, _name);
     }
     
     /**
@@ -53,11 +54,11 @@ public class SubscriberImpl extends EntityImpl implements Subscriber{
      * @throws CMException Thrown when Subscriber could not be created.
      */
     public SubscriberImpl(ParticipantImpl participant, String name, SubscriberQoS qos) throws CMException{
-        super(0, 0, "", "");
+        super(participant.getCommunicator(), 0, 0, "", "");
         owner = true;
         SubscriberImpl s;
         try {
-            s = (SubscriberImpl)CMFactory.getCommunicator().subscriberNew(participant, name, qos);
+            s = (SubscriberImpl)getCommunicator().subscriberNew(participant, name, qos);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -87,7 +88,7 @@ public class SubscriberImpl extends EntityImpl implements Subscriber{
             throw new CMException("Subscriber already freed.");
         }
         try {
-            CMFactory.getCommunicator().subscriberSubscribe(this, expression);
+            getCommunicator().subscriberSubscribe(this, expression);
         } catch (CommunicationException e) {
             throw new CMException("subscribe failed for: " + expression);
         }
@@ -98,7 +99,7 @@ public class SubscriberImpl extends EntityImpl implements Subscriber{
             throw new CMException("Supplied entity is not available (anymore).");
         } else if(qos instanceof SubscriberQoS){
             try {
-                CMFactory.getCommunicator().entitySetQoS(this, qos);
+                getCommunicator().entitySetQoS(this, qos);
             } catch (CommunicationException ce) {
                 throw new CMException(ce.getMessage());
             }

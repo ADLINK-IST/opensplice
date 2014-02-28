@@ -10,19 +10,20 @@
  *
  */
 #include <assert.h>
+#include <stddef.h>
 
 #include "os.h"
 #include "ut_collection.h"
-#include "ut__avltree.h"
-#include "ut__table.h"
-
-#define ut_tableWalkActionArg(a) ((ut_tableWalkActionArg)(a))
+#include "ut_avl.h"
 
 /* ***************************************************************************
  * DATA TYPES
  * ***************************************************************************/
 OS_CLASS(ut_tableWalkActionArg);
 OS_CLASS(ut_tableNodesCollection);
+OS_CLASS(ut_tableNode);
+
+#define ut_tableNode(a) ((ut_tableNode) (a))
 
 OS_STRUCT(ut_collection) {
     ut_collectionType type;
@@ -30,15 +31,16 @@ OS_STRUCT(ut_collection) {
     void *args;
 };
 
-OS_STRUCT(ut_table) {
-    OS_EXTENDS(ut_collection);
-    ut_avlTree tree; /* Internal collection that stores the table elements */
+OS_STRUCT(ut_tableNode) {
+    ut_avlNode_t avlnode; /* tableNode is a specialized avlNode */
+    void *key; /* identifier for this node */
+    void *value; /* value of this node */
 };
 
-OS_STRUCT(ut_tableWalkActionArg) {
-    ut_actionFunc tableActionFunc;
-    void *actionArg;
-    ut_collection collection;
+OS_STRUCT(ut_table) {
+    OS_EXTENDS(ut_collection);
+    ut_avlCTreedef_t td;
+    ut_avlCTree_t tree; /* Internal collection that stores the table elements */
 };
 
 OS_STRUCT(ut_tableNodesCollection) {
@@ -67,109 +69,46 @@ ut_newTableNode(
     return node;
 }
 
-/**
- * \brief Wrapper function for the comparison of two key values.
- *
- * This operation gets the key values from both objects and passes them to the
- * user provided compare function which is retrieved from the collection object.
- *
- * \param o1 Object to which the second object is compared.
- * \param o2 The second object that is compared.
- * \param c Collection on which this operation takes place.
- *
- * \return C_LT, C_EQ, or a C_GT as the first argument is less than,
- *         equal to, or greater than the second.
- */
-static os_equality
-ut_tableCmpWrapper(
-    void *o1,
-    void *o2,
-    void *c)
-{
-    os_equality result = OS_ER;
-
-    result = ut_collection(c)->cmpFunc(ut_tableNode(o1)->key, ut_tableNode(o2)->key, ut_collection(c)->args);
-    return result;
-}
-
-/**
- * \brief Wrapper function for a table action.
- *
- * This function gets the value from the table node and passes it to the user
- * provided action function.
- *
- * \param node tableNode on which the action will be performed.
- * \param argw User arguments wrapped in a .
- *
- */
-static os_int32
-ut_tableActionWrapper(
-    void *node,
-    void *argw)
-{
-    return ut_tableWalkActionArg(argw)->tableActionFunc(ut_tableNode(node)->value, (void *)(ut_tableWalkActionArg(argw)->actionArg));
-}
-
-/**
- * \brief Callback function used by the ut_FreeTable operation to collect all
- *        ut_tableNodes of the current ut_table in an array.
- *
- * \param node The current node processed by the walk operation.
- * \param allNodes A struct containing the array of
- */
-static os_int32
-ut_tableCollectNodes(
-    ut_tableNode node,
-    ut_tableNodesCollection allNodes)
-{
-    assert(node);
-    assert(allNodes);
-
-    allNodes->tableNodes[allNodes->nodeSeqNumber] = node;
-    allNodes->nodeSeqNumber++;
-
-    return 1;
-}
-
 /* ***************************************************************************
  * FUNCTION IMPLEMENTATION
  * ***************************************************************************/
-#ifndef NDEBUG
-ut_collection
-ut_listNew(
-    const ut_compareElementsFunc cmpFunc,
-    void *arg)
-{
-    fprintf(stderr, "ut_listNew: this function has not been implemented yet\n");
-    assert(0);
-    return NULL;
-}
 
-ut_collection
-ut_setNew(
-    const ut_compareElementsFunc cmpFunc,
-    void *arg)
-{
-    fprintf(stderr, "ut_setNew: this function has not been implemented yet\n");
-    assert(0);
-    return NULL;
-}
+#if 1
+/* The original interface has type (os_equality (*) (void *, void *,
+   void *)), but the compare functions all do treat the first two
+   parameters as const.
 
-ut_collection
-ut_bagNew (
-    const ut_compareElementsFunc cmpFunc,
-    void *arg)
+   Currently os_equality is defined s.t. OS_LT < 0, OS_EQ = 0 and
+   OS_GT > 0, which matches the requirements and usually allows using
+   a ut_compareElementsFunc as if it were a "C standard" compare
+   function returning an int.
+
+   To avoid nasty surprises, we check two things at compile time: that
+   the enum constants indeed satisfy this requirement, and that the
+   sizeof of the return type matches.
+
+   The wrapper is sitting pretty here in case we run into a platform
+   on which the constraints don't hold. */
+struct tableCmp_constraints {
+    char require_LT_lt_0[-1+2*((int) OS_LT < 0)];
+    char require_EQ_eq_0[-1+2*((int) OS_EQ == 0)];
+    char require_GT_gt_0[-1+2*((int) OS_GT > 0)];
+    char require_sizeof_os_equality_eq_int[-1+2*(sizeof(os_equality) == sizeof (int))];
+    char non_empty_dummy_last_member[1];
+};
+#else
+static int tableCmp (const void *a, const void *b, void *arg)
 {
-    fprintf(stderr, "ut_bagNew: this function has not been implemented yet\n");
-    assert(0);
-    return NULL;
+    const OS_STRUCT (ut_collection) *c = ut_collection(arg);
+    os_equality r = c->cmpFunc ((void *) a, (void *) b, c->args);
+    return (r == OS_EQ) ? 0 : (r == OS_LT) ? -1 : 1;
 }
 #endif
 
 ut_collection
 ut_tableNew(
-    const ut_compareElementsFunc cmpFunc,
-    void *arg)
+        const ut_compareElementsFunc cmpFunc,
+        void *arg)
 {
     ut_table table;
 
@@ -179,17 +118,23 @@ ut_tableNew(
         ut_collection(table)->type = UT_TABLE;
         ut_collection(table)->cmpFunc = cmpFunc;
         ut_collection(table)->args = arg;
-
-        if((table->tree = ut_avlTreeNew(0)) == NULL) {
-            goto err_avlTreeNew;
-        }
+#if 1
+        ut_avlCTreedefInit_r (&table->td,
+                              offsetof (struct ut_tableNode_s, avlnode),
+                              offsetof (struct ut_tableNode_s, key),
+                              (int (*) (const void *, const void *, void *)) cmpFunc, arg, 0,
+                              UT_AVL_TREEDEF_FLAG_INDKEY);
+#else
+        ut_avlCTreedefInit_r (&table->td,
+                              offsetof (struct ut_tableNode_s, avlnode),
+                              offsetof (struct ut_tableNode_s, key),
+                              tableCmp, ut_collection(table), 0,
+                              UT_AVL_TREEDEF_FLAG_INDKEY);
+#endif
+        ut_avlCInit (&table->td, &table->tree);
     }
 
     return ut_collection(table);
-
-err_avlTreeNew:
-    os_free(table);
-    return NULL;
 }
 
 void
@@ -200,6 +145,7 @@ ut_collectionFree(
 {
     assert(c);
     assert(action);
+    (void) arg;
 
     switch (c->type) {
     case UT_TABLE :
@@ -228,17 +174,8 @@ ut_get(
     switch (c->type) {
     case UT_TABLE :
         {
-            OS_STRUCT(ut_tableNode) node;
-            ut_tableNode foundNode;
-
-            node.key = o;
-            node.value = NULL;
-
-            foundNode = ut_avlTreeFind(ut_table(c)->tree,
-                                       &node,
-                                       ut_tableCmpWrapper,
-                                       (void *)c);
-
+            ut_table table = ut_table(c);
+            ut_tableNode foundNode = ut_avlCLookup (&table->td, &table->tree, o);
             if (foundNode != NULL) {
                 result = foundNode->value;
             }
@@ -268,21 +205,13 @@ ut_remove(
     switch (c->type) {
     case UT_TABLE :
         {
-            OS_STRUCT(ut_tableNode) node;
-            ut_tableNode foundNode = NULL;
-
-            node.key = o;
-            node.value = NULL;
-
-            foundNode = ut_avlTreeRemove (ut_table(c)->tree,
-                                          &node,
-                                          ut_tableCmpWrapper,
-                                          (void *)c,
-                                          NULL, /* removal is allowed */
-                                          NULL);
-
+            ut_avlDPath_t p;
+            ut_table table = ut_table(c);
+            ut_tableNode foundNode = ut_avlCLookupDPath (&table->td, &table->tree, o, &p);
             if (foundNode) {
                 result = foundNode->value;
+                ut_avlCDeleteDPath (&table->td, &table->tree, foundNode, &p);
+                os_free (foundNode);
             }
         }
     break;
@@ -310,21 +239,10 @@ ut_contains(
     switch (c->type) {
     case UT_TABLE :
         {
-            OS_STRUCT(ut_tableNode) node;
-            ut_tableNode foundNode = NULL;
-
-            node.key = o;
-            node.value = NULL;
-
-            foundNode = ut_avlTreeFind(ut_table(c)->tree,
-                                       &node,
-                                       ut_tableCmpWrapper,
-                                       (void *)c);
-
-            if (foundNode != NULL) {
-                if (OS_EQ == ut_tableCmpWrapper(foundNode, &node, c)) {
-                    contains = 1;
-                }
+            ut_table table = ut_table(c);
+            ut_tableNode foundNode = ut_avlCLookup (&table->td, &table->tree, o);
+            if (foundNode) {
+                contains = 1;
             }
         }
     break;
@@ -349,7 +267,7 @@ ut_count(
 
     switch (c->type) {
     case UT_TABLE :
-        count = ut_avlTreeCount(ut_table(c)->tree);
+        count = (os_int32) ut_avlCCount(&ut_table(c)->tree);
     break;
     default :
         fprintf(stderr, "ut_count: This collection type is not yet supported\n");
@@ -366,25 +284,26 @@ ut_walk(
     const ut_actionFunc action,
     void *arg)
 {
-    os_int32 succes;
+    os_int32 success;
 
     assert(c);
     assert(action);
 
-    succes = 0;
+    success = 0;
 
     switch (c->type) {
     case UT_TABLE :
         {
-        OS_STRUCT(ut_tableWalkActionArg) args;
+            ut_table table = ut_table (c);
+            ut_avlCIter_t it;
+            ut_tableNode node;
 
-        args.tableActionFunc = action;
-        args.actionArg = arg;
-        args.collection = c;
-        succes = ut_avlTreeWalk(ut_table(c)->tree,
-                                ut_tableActionWrapper,
-                                &args,
-                                UT_INFIX);
+            success = 1;
+            for (node = ut_avlCIterFirst (&table->td, &table->tree, &it);
+                 node != NULL && success;
+                 node = ut_avlCIterNext (&it)) {
+                success = action (node->value, arg);
+            }
         }
     break;
     default :
@@ -393,7 +312,7 @@ ut_walk(
         break;
     }
 
-    return succes;
+    return success;
 }
 
 os_int32
@@ -403,24 +322,17 @@ ut_tableInsert(
     void *value)
 {
     os_int32 returnValue;
-    void *treeValue;
     ut_tableNode node;
+    ut_avlIPath_t p;
 
     returnValue = 0;
 
     assert(ut_collection(t)->type == UT_TABLE);
 
-    node = ut_newTableNode(key, value);
-
-    treeValue = ut_avlTreeInsert(ut_table(t)->tree,
-                                 node,
-                                 ut_tableCmpWrapper,
-                                 (void *)t);
-
-    if (treeValue == node) {
+    if (ut_avlCLookupIPath (&t->td, &t->tree, key, &p) == NULL) {
+        node = ut_newTableNode(key, value);
+        ut_avlCInsertIPath (&t->td, &t->tree, node, &p);
         returnValue = 1;
-    } else {
-        os_free(node);
     }
 
     return returnValue;
@@ -431,21 +343,33 @@ ut_tableNext(
     ut_table table,
     void *o)
 {
-    OS_STRUCT(ut_tableNode) node;
-    ut_tableNode nextNode = NULL;
+    ut_tableNode nextNode;
+    nextNode = ut_avlCLookupSucc (&table->td, &table->tree, o);
+    if (nextNode) {
+        return nextNode->value;
+    } else {
+        return NULL;
+    }
+}
 
-    assert(table);
+struct ut_tableFreeHelper_arg {
+    ut_freeElementFunc freeKey;
+    void *freeKeyArg;
+    ut_freeElementFunc freeValue;
+    void *freeValueArg;
+};
 
-    node.key = o;
-    node.value = NULL;
-
-    nextNode = ut_avlTreeNearest(ut_table(table)->tree,
-                                 &node,
-                                 ut_tableCmpWrapper,
-                                 (void *)table,
-                                 OS_GT);
-
-    return nextNode->value;
+static void ut_tableFreeHelper (void *vnode, void *varg)
+{
+    ut_tableNode node = vnode;
+    struct ut_tableFreeHelper_arg *arg = varg;
+    if (arg->freeKey) {
+        arg->freeKey(node->key, arg->freeKeyArg);
+    }
+    if (arg->freeValue) {
+        arg->freeValue(node->value, arg->freeValueArg);
+    }
+    os_free (node);
 }
 
 void
@@ -456,35 +380,11 @@ ut_tableFree(
     const ut_freeElementFunc freeValue,
     void *freeValueArg)
 {
-    os_int32 succes = 0;
-    OS_STRUCT(ut_tableNodesCollection) allNodes;
-    ut_tableNode currentNode = NULL;
-    os_uint32 i = 0;
-
-    /* collect all tableNodes in a array */
-    allNodes.numberOfNodes = ut_avlTreeCount(table->tree);
-    allNodes.tableNodes = os_malloc(((os_uint32)sizeof(ut_tableNode)) * allNodes.numberOfNodes);
-    allNodes.nodeSeqNumber = 0;
-
-    succes = ut_avlTreeWalk(table->tree,
-                            ut_tableCollectNodes,
-                            &allNodes,
-                            UT_PREFIX);
-    assert(succes);
-
-    /* call ut_tableFreeNode for all elements in the array */
-    for (i = 0; i < allNodes.numberOfNodes; i++) {
-        currentNode = allNodes.tableNodes[i];
-        if (freeKey) {
-            freeKey(currentNode->key, freeKeyArg);
-        }
-
-        if (freeValue) {
-            freeValue(currentNode->value, freeValueArg);
-        }
-    }
-
-    os_free(allNodes.tableNodes);
-    ut_avlTreeFree(table->tree);
+    struct ut_tableFreeHelper_arg arg;
+    arg.freeKey = freeKey;
+    arg.freeKeyArg = freeKeyArg;
+    arg.freeValue = freeValue;
+    arg.freeValueArg = freeValueArg;
+    ut_avlCFreeArg (&table->td, &table->tree, ut_tableFreeHelper, &arg);
     os_free(table);
 }

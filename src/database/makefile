@@ -1,9 +1,4 @@
-#
-# Set subsystems to build
-#
-SUBSYSTEMS	 = database
-SUBSYSTEMS	+= odlpp
-SUBSYSTEMS	+= serialization
+.PHONY: all compile link gcov qac analyse clean
 
-include $(OSPL_HOME)/setup/makefiles/subsystem.mak
-
+all compile link gcov qac analyse clean:
+	@$(MAKE) -C $(OSPL_HOME)/src/osplcore $@

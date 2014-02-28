@@ -827,7 +827,8 @@ static int convtype (struct convtype_context *ctx, struct ser_type **rt, const s
               }
               else
               {
-                convtype (ctx, &subtype, ctype->subType);
+                if ((rc = convtype (ctx, &subtype, ctype->subType)) < 0)
+                  return rc;
                 if (ctype->kind != C_ARRAY || ctype->maxSize == 0)
                   rc = mk_sequence (ctx, rt, label, ctype->maxSize, subtype, ctype->subType);
                 else
@@ -1421,7 +1422,9 @@ static int lowertype1 (struct lowertype_context *ctx, const struct ser_type *typ
 
 static struct insnstream *is_new (void)
 {
-  struct insnstream *st = os_malloc (sizeof (*st));
+  struct insnstream *st;
+  if ((st = os_malloc (sizeof (*st))) == NULL)
+    return NULL;
   st->pos = 0;
   st->size = 1024;
   st->srcpos_tos = 0;
@@ -1967,7 +1970,7 @@ static int lowertype1 (struct lowertype_context *ctx, const struct ser_type *typ
       {
         struct insnstream_marker mtab, *ms, m;
         size_t discsz = 0;
-        if ((ms = malloc ((type->u.union_list.n+1) * sizeof (*ms))) == NULL)
+        if ((ms = os_malloc ((type->u.union_list.n+1) * sizeof (*ms))) == NULL)
           return SD_CDR_OUT_OF_MEMORY;
         is_push_srcpos (st);
         if (convunion_isdense (type->u.union_list.n, type->u.union_list.ms))
@@ -2153,24 +2156,30 @@ static int lowertype1 (struct lowertype_context *ctx, const struct ser_type *typ
   return 0;
 }
 
+#ifdef CDR_ENCAPSULATION
+static int add_endianness_marker (struct lowertype_context *ctx)
+{
+#if defined BIG_ENDIAN_CDR || !defined PA_LITTLE_ENDIAN
+  unsigned little_endian = 0;
+#else
+  unsigned little_endian = 1;
+#endif
+  return is_append_count (ctx->st, 0, INSN_PRIM1_CONST, little_endian);
+}
+#endif /* defined CDR_ENCAPSULATION */
+
 static int lowertype (struct serprog **prog, const struct ser_type *type, c_type ospl_type)
 {
   struct lowertype_context ctx;
   int rc = 0;
-#ifdef CDR_ENCAPSULATION
-  {
-#if defined BIG_ENDIAN_CDR || !defined PA_LITTLE_ENDIAN
-    unsigned little_endian = 0;
-#else
-    unsigned little_endian = 1;
-#endif
-    if ((rc = is_append_count (st, 0, INSN_PRIM1_CONST, little_endian)) < 0)
-      goto err;
-  }
-#endif
-  ctx.st = is_new ();
+  if ((ctx.st = is_new ()) == NULL)
+    return SD_CDR_OUT_OF_MEMORY;
   ctx.depth = 0;
   ctx.typestack_depth = 0;
+#ifdef CDR_ENCAPSULATION
+  if ((rc = add_endianness_marker (&ctx)) < 0)
+    goto err;
+#endif
   if ((rc = lowertype1 (&ctx, type)) < 0)
     goto err;
   assert (ctx.typestack_depth == 0);
@@ -2873,7 +2882,7 @@ static int serprog_exec (struct sd_cdrSerdata *sd, const struct serprog *prog, c
         break;
       case INSN_ARRAY_TO_STRING:
         {
-          const unsigned n = os_strnlen (src, insn.count) + 1;
+          const unsigned n = os_strnlen ((char *)src, insn.count) + 1;
           SERPROG_WRITE_COUNT (n);
           DST_RESERVE_ALIGN (n, 1);
           memcpy (dst, src, n - 1);
@@ -3232,7 +3241,7 @@ static int deserprog_exec (char *dst, const struct serprog *prog, os_uint32 sz, 
           char *str;
           unsigned n;
           SRC_CHECK_ALIGN (insn.count, 1);
-          n = os_strnlen (src, insn.count);
+          n = os_strnlen ((char *)src, insn.count);
           if ((str = c_stringMalloc (prog->base, n + 1)) == NULL)
             return SD_CDR_OUT_OF_MEMORY;
           memcpy (str, src, n);

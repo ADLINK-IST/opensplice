@@ -204,13 +204,12 @@ d_objectKeep(
     d_object object)
 {
     d_object result = NULL;
-    os_int32 refCount;
 
     assert(object);
     assert(object->confidence == D_CONFIDENCE);
 
     if(object){
-        refCount = pa_increment(&(object->refCount));
+        pa_increment(&(object->refCount));
         result = object;
 
 #if CHECK_REF

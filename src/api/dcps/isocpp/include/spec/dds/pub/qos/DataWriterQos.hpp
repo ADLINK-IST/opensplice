@@ -21,8 +21,15 @@
 
 #include <dds/pub/qos/detail/DataWriterQos.hpp>
 
-namespace dds { namespace pub { namespace qos {
-    typedef dds::pub::qos::detail:: DataWriterQos DataWriterQos;
-} } }
+namespace dds
+{
+namespace pub
+{
+namespace qos
+{
+typedef dds::pub::qos::detail:: DataWriterQos DataWriterQos;
+}
+}
+}
 
 #endif /* OMG_DDS_QOS_DATA_WRITER_QOS_HPP_ */

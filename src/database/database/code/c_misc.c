@@ -15,6 +15,7 @@
 #include "os_report.h"
 #include "c__metabase.h"
 
+#define c_array(c) ((c_array)(c))
 
 c_object
 c_checkType (

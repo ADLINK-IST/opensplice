@@ -20,17 +20,19 @@
 
 #include <dds/sub/AnyDataReaderListener.hpp>
 
-namespace dds {
+namespace dds
+{
 
-namespace sub {
+namespace sub
+{
 
 AnyDataReaderListener::~AnyDataReaderListener() {}
 
 NoOpAnyDataReaderListener::~NoOpAnyDataReaderListener() { }
 
 void NoOpAnyDataReaderListener::on_requested_deadline_missed(
-        AnyDataReader&,
-        const dds::core::status::RequestedDeadlineMissedStatus&) {}
+    AnyDataReader&,
+    const dds::core::status::RequestedDeadlineMissedStatus&) {}
 
 void NoOpAnyDataReaderListener::on_requested_incompatible_qos(
     AnyDataReader&,

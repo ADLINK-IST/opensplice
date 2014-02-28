@@ -403,7 +403,7 @@ signalHandlerThread(
 {
     ssize_t r;
     size_t nread;
-    int sig;
+    int sig, pid;
     struct sig_context info;
     int cont = 1;
     os_signalHandler _this = (os_signalHandler)arg;
@@ -468,16 +468,19 @@ signalHandlerThread(
                         xo = &old_signalHandler[info.info.si_signo];
                         os_sigactionSet(info.info.si_signo, xo, NULL);
 
-                        /* Ensure that at least one (this) thread has the signal unblocked. */
-                        os_sigsetEmpty(&ss);
-                        os_sigsetAdd(&ss, info.info.si_signo);
-                        pthread_sigmask(SIG_UNBLOCK, &ss, NULL);
-
                         /* Since the exception was actually asynchronous (issued by an external
                          * source), the original signal-handler will not be called by running
                          * out of the handler. We chain by re-raising, since SIG_DFL or SIG_IGN
                          * cannot be called directly. */
-                        raise(info.info.si_signo);
+                        /* OSPL-2762: Instead of re-raising we use kill to
+                           make sure the signal isn't delivered to this thread
+                           as that would cause a dead lock. */
+                        pid = getpid();
+                        /* Don't think it's possible to not send the signal */
+                        OS_REPORT_2 (OS_DEBUG, "os_signalHandlerThread", 0,
+                            "Invoking kill (signal %d) on PID %d (self)",
+                            info.info.si_signo, pid);
+                        (void)kill (pid, info.info.si_signo);
                     } else {
                         /* Notify waiting signal handler to unblock. */
                         r = write(_this->pipeOut[1], &info, sizeof(info));

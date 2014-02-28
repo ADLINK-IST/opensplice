@@ -16,8 +16,14 @@ CINCS    += $(DDS_CMX_STORAGE_TMPL_INC)
 
 LDFLAGS  += $(SHLDFLAGS)
 LDLIBS   += $(SHLDLIBS)
-LDLIBS   += -l$(DDS_OS) -l$(DDS_DATABASE) -l$(DDS_KERNEL) -l$(DDS_USER) 
-LDLIBS   += -l$(DDS_SERIALIZATION)
 LDLIBS   += $(DDS_RRSTORAGE_LIBS)
+
+#if we are building for the host then use ddshts lib
+#as there is no ddskernel
+ifneq ($(SPLICE_TARGET),$(SPLICE_REAL_TARGET))
+LDLIBS += -l$(DDS_HTS)
+else
+LDLIBS += -l$(DDS_CORE)
+endif
 
 -include $(DEPENDENCIES)

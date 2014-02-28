@@ -22,14 +22,18 @@
 #include <dds/core/cond/TWaitSet.hpp>
 #include <foo/bar/core/cond/WaitSet.hpp>
 
-namespace dds {
-  namespace core {
-    namespace cond {
-      namespace detail {
-        typedef dds::core::cond::TWaitSet<foo::bar::core::cond::WaitSet> WaitSet;
-      }
-    }
-  }
+namespace dds
+{
+namespace core
+{
+namespace cond
+{
+namespace detail
+{
+typedef dds::core::cond::TWaitSet<foo::bar::core::cond::WaitSet> WaitSet;
+}
+}
+}
 }
 
 #endif /* OMG_DDS_CORE_DETAIL_WAITSET_HPP_ */

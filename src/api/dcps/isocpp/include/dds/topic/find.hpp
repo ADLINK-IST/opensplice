@@ -20,8 +20,24 @@
  * OMG PSM class declaration
  */
 #include <spec/dds/topic/find.hpp>
+#include <dds/topic/detail/find.hpp>
 
 // Implementation
+
+namespace dds
+{
+namespace topic
+{
+
+template <typename TOPIC>
+TOPIC find(const dds::domain::DomainParticipant& dp, const std::string& topic_name)
+{
+    return ::dds::topic::detail::find<TOPIC>(dp, topic_name);
+}
+
+}
+}
+
 // End of implementation
 
 #endif /* OSPL_DDS_TOPIC_FIND_HPP_ */

@@ -26,7 +26,12 @@ ifdef JAVA_INC
 # $(notdir) doesn't cope with spaces in pathnames. NB this workaround doesn't
 # cope with ? in pathnames.
 JAVA_INC2 = $(subst $(empty) ,?,$(JAVA_INC))
-MANIFEST_CLASSPATH=Class-Path: $(subst ?, ,$(notdir $(subst :, ,$(JAVA_INC2))))
+
+ifeq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
+MANIFEST_CLASSPATH=Class-Path: $(filter %.jar,$(subst ?, ,$(notdir $(subst :, ,$(JAVA_INC2)))))
+else
+MANIFEST_CLASSPATH=Class-Path: $(filter %.jar,$(subst ?, ,$(notdir $(subst \,/,$(subst ;, ,$(subst :, ,$(JAVA_INC2)))))))
+endif
 endif
 
 ifdef JACORB_HOME
@@ -64,7 +69,19 @@ ifdef OSPL_OUTER_REV
    endif
 endif
 
-CPPFLAGS+=-DOSPL_VERSION=$(PACKAGE_VERSION) $(OSPL_REV_FLAGS)
+ifdef SPLICE_HOST_FULL
+   ifneq (,$(SPLICE_HOST_FULL))
+      OSPL_HOSTTARGET_FLAGS += -DOSPL_HOST=\"$(SPLICE_HOST_FULL)\"
+   endif
+endif
+
+ifdef SPLICE_TARGET_FULL
+   ifneq (,$(SPLICE_TARGET_FULL))
+      OSPL_HOSTTARGET_FLAGS += -DOSPL_TARGET=\"$(SPLICE_TARGET_FULL)\"
+   endif
+endif
+
+CPPFLAGS+=-DOSPL_VERSION=$(PACKAGE_VERSION) $(OSPL_REV_FLAGS) $(OSPL_HOSTTARGET_FLAGS)
 
 .PRECIOUS: %.c %.h
 
@@ -103,6 +120,18 @@ else
 	$(AT_SIGN)$(GCPP) $(MAKEDEPFLAGS) $(CPPFLAGS) $(CXXINCS) $< | grep "^#line.*\\\\ospl[io]\\\\" | cut -d '"' -f 2 | sort -u | sed -e 's@\([A-Za-z]\)\:@ /cygdrive/\1@' -e 's@\\\\@/@g' -e '$$!s@$$@ \\@' -e '1s@^@$*$(OBJ_POSTFIX): @' >$@
 endif
 
+# $(abspath x) is extremely useful as debuggers and profilers
+# typically can't find the sources using the relative path, but
+# potentially can using the absolute path. In combination with the
+# path prefix mapping supported by gdb and lldb, using an absolute
+# path should make life easier.
+#
+# Unfortunately $(abspath x) was introduced in version 3.81 while we
+# still use make 3.80 in various places. If $(abspath /) expands to
+# an empty string, obviously something is wrong with $(abspath x), and
+# by far the most likely is that it is not supported. We then fall
+# back to using the relative paths we have been using until now.
+ifeq "$(abspath /)"""
 %$(OBJ_POSTFIX): %.c
 	@echo $(CC) $<
 	$(AT_SIGN)$(FILTER) $(CC) $(CPPFLAGS) $(CFLAGS) $(CINCS) -c $<
@@ -114,6 +143,19 @@ endif
 %$(OBJ_POSTFIX): %.cc
 	@echo $(CXX) $<
 	$(AT_SIGN)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXINCS) -c $<
+else
+%$(OBJ_POSTFIX): %.c
+	@echo $(CC) $<
+	$(AT_SIGN)$(FILTER) $(CC) $(CPPFLAGS) $(CFLAGS) $(CINCS) -c $(abspath $<)
+
+%$(OBJ_POSTFIX): %.cpp
+	@echo $(CXX) $<
+	$(AT_SIGN)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXINCS) -c $(abspath $<)
+
+%$(OBJ_POSTFIX): %.cc
+	@echo $(CXX) $<
+	$(AT_SIGN)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(CXXINCS) -c $(abspath $<)
+endif
 
 %.c: %.y
 	$(YACC) $< -o $@
@@ -144,14 +186,16 @@ CINCS		+= -I../../include
 CINCS		+= -I$(CODE_DIR)
 
 ifndef OSPL_OUTER_HOME
-CINCS		+= -I$(OSPL_HOME)/src/kernel/bld/$(SPLICE_TARGET)
+CINCS		+= -I$(OSPL_HOME)/src/osplcore/bld/$(SPLICE_TARGET)
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/os/include
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC_CORE)
+#Added to allow inclusion of source from one abstraction layer into another
+CINCS		+= -I$(OSPL_HOME)/src/abstraction
 else
-CINCS		+= -I$(OSPL_HOME)/src/kernel/bld/$(SPLICE_TARGET)
+CINCS		+= -I$(OSPL_HOME)/src/osplcore/bld/$(SPLICE_TARGET)
 CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/include
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/os-net/include
 CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os-net/$(OS)$(OS_REV)
@@ -162,6 +206,10 @@ CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction/pa/$(PROC_CORE)
 CINCS		+= -I$(OSPL_HOME)/src/abstraction/pa/$(PROC_CORE)
+#Added to allow inclusion of source from one abstraction layer into another
+#like vxworks6.6 into some of the source files of vxworks6.9 etc
+CINCS		+= -I$(OSPL_HOME)/src/abstraction
+CINCS		+= -I$(OSPL_OUTER_HOME)/src/abstraction
 endif
 
 CXXINCS	 = -I.
@@ -169,11 +217,11 @@ CXXINCS	+= -I../../include
 CXXINCS	+= -I$(CODE_DIR)
 
 ifndef OSPL_OUTER_HOME
-CXXINCS	+= -I$(OSPL_HOME)/src/kernel/bld/$(SPLICE_TARGET)
+CXXINCS	+= -I$(OSPL_HOME)/src/osplcore/bld/$(SPLICE_TARGET)
 CXXINCS += -I$(OSPL_HOME)/src/abstraction/os/include
 CXXINCS	+= -I$(OSPL_HOME)/src/abstraction/os/$(OS)$(OS_REV)
 else
-CXXINCS	+= -I$(OSPL_HOME)/src/kernel/bld/$(SPLICE_TARGET)
+CXXINCS	+= -I$(OSPL_HOME)/src/osplcore/bld/$(SPLICE_TARGET)
 CXXINCS += -I$(OSPL_OUTER_HOME)/src/abstraction/os/include
 CXXINCS += -I$(OSPL_HOME)/src/abstraction/os/include
 CXXINCS	+= -I$(OSPL_OUTER_HOME)/src/abstraction/os/$(OS)$(OS_REV)

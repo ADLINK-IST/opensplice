@@ -22,90 +22,55 @@
 #include <dds/core/Value.hpp>
 
 
-namespace dds {
-  namespace sub {
-    template <typename DELEGATE>
-    class TCoherentAccess;
-  }
+namespace dds
+{
+namespace sub
+{
+template <typename DELEGATE>
+class TCoherentAccess;
+}
 }
 
 template <typename DELEGATE>
-class dds::sub::TCoherentAccess : public dds::core::Value<DELEGATE> {
+class dds::sub::TCoherentAccess : public dds::core::Value<DELEGATE>
+{
 public:
-  /**
-   * This operation indicates that the application is about to access
-   * the data samples in any of the DataReader objects attached to the
-   * Subscriber.  The application is required to use this operation
-   * only if PRESENTATION QosPolicy of the Subscriber to which the
-   * DataReader belongs has the access_scope set to "GROUP." In the
-   * aforementioned case, the operation begin_access must be called
-   * prior to calling any of the sample-accessing operations, namely:
-   * data_readers on the Subscriber and read, take,
-   * read_w_condition, take_w_condition on any DataReader. Otherwise
-   * the sample-accessing operations will return the error
-   * PRECONDITION_NOT_MET. Once the application has finished accessing
-   * the data samples it must call end_access.  It is not required for
-   * the application to call begin_access/end_access if the
-   * PRESENTATION QosPolicy has the access_scope set to something
-   * other than GROUP. Calling begin_access/end_access in this case
-   * is not considered an error and has no effect.  The calls to
-   * begin_access/end_access may be nested. In that case, the
-   * application must call end_access as many times as it called
-   * begin_access.
-   */
-  explicit TCoherentAccess(const dds::sub::Subscriber& sub);
+    /**
+     * This operation indicates that the application is about to access
+     * the data samples in any of the DataReader objects attached to the
+     * Subscriber. The application is required to use this operation
+     * only if Presentation QosPolicy of the Subscriber to which the
+     * DataReader belongs has the access_scope set to "GROUP". In the
+     * aforementioned case, the operation must be called
+     * prior to calling any of the sample-accessing operations, i.e.
+     * read and take on DataReader. Otherwise the sample-accessing
+     * operations will throw a PreconditionNotMetError exception.
+     * Once the application has finished accessing the data samples
+     * it must call end. It is not required for the application to
+     * begin or end access if the Presentation QosPolicy has the
+     * access_scope set to something other than GROUP. Beginning or
+     * ending access in this case is not considered an error and has
+     * no effect. Beginning and ending access may be nested. In that
+     * case, the application end access as many times as it began
+     * access.
+     */
+    explicit TCoherentAccess(const dds::sub::Subscriber& sub);
 
 public:
-  /**
-   * This operation indicates that the application is about to access
-   * the data samples in any of the DataReader objects attached to the
-   * Subscriber.  The application is required to use this operation
-   * only if PRESENTATION QosPolicy of the Subscriber to which the
-   * DataReader belongs has the access_scope set to GROUP. In the
-   * aforementioned case, the operation begin_access must be called
-   * prior to calling any of the sample-accessing operations, namely:
-   * data_readers on the Subscriber and read, take,
-   * read_w_condition, take_w_condition on any DataReader. Otherwise
-   * the sample-accessing operations will return the error
-   * PRECONDITION_NOT_MET. Once the application has finished accessing
-   * the data samples it must call end_access.  It is not required for
-   * the application to call begin_access/end_access if the
-   * PRESENTATION QosPolicy has the access_scope set to something
-   * other than ‘GROUP.’ Calling begin_access/end_access in this case
-   * is not considered an error and has no effect.  The calls to
-   * begin_access/end_access may be nested. In that case, the
-   * application must call end_access as many times as it called
-   * begin_access.
-   */
-  void end();         // ends access explicitly
+    /**
+     * This operation ends access explicitly.
+     */
+    void end();
 
 public:
-  /**
-   * This operation indicates that the application is about to access
-   * the data samples in any of the DataReader objects attached to the
-   * Subscriber.  The application is required to use this operation
-   * only if PRESENTATION QosPolicy of the Subscriber to which the
-   * DataReader belongs has the access_scope set to GROUP. In the
-   * aforementioned case, the operation begin_access must be called
-   * prior to calling any of the sample-accessing operations, namely:
-   * data_readers on the Subscriber and read, take,
-   * read_w_condition, take_w_condition on any DataReader. Otherwise
-   * the sample-accessing operations will return the error
-   * PRECONDITION_NOT_MET. Once the application has finished accessing
-   * the data samples it must call end_access.  It is not required for
-   * the application to call begin_access/end_access if the
-   * PRESENTATION QosPolicy has the access_scope set to something
-   * other than GROUP. Calling begin_access/end_access in this case
-   * is not considered an error and has no effect.  The calls to
-   * begin_access/end_access may be nested. In that case, the
-   * application must call end_access as many times as it called
-   * begin_access.
-   */
-  ~TCoherentAccess();  // ends access implicitly
+    /**
+     * This operation ends access implicitly.
+     */
+    ~TCoherentAccess();
 
 private:
-  TCoherentAccess(const TCoherentAccess&);
-  TCoherentAccess& operator=(const TCoherentAccess&);
+    TCoherentAccess(const TCoherentAccess&);
+    TCoherentAccess& operator=(const TCoherentAccess&);
 };
 
 

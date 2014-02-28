@@ -49,7 +49,7 @@ namespace ListenerDataPublisher
             status = listenerWriter.Write(msgInstance, InstanceHandle.Nil);
             ErrorHandler.checkStatus(status, "DataWriter.Write");
 
-            Thread.Sleep(2);
+            Thread.Sleep(2000);
 
             // clean up
             mgr.getPublisher().DeleteDataWriter(listenerWriter);

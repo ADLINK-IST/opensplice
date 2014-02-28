@@ -22,7 +22,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_CONFFW
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -48,6 +48,7 @@ extern "C" {
 #define CFG_TERMPERIOD    "ServiceTerminatePeriod"
 #define CFG_ID            "Id"
 #define CFG_REPORT        "Report"
+#define CFG_MAINTAINOBJECTCOUNT "MaintainObjectCount"
 
 #undef OS_API
 

@@ -12,7 +12,7 @@ IDL_FILES   := $(TOPIC_IDL) $(TOPIC_IDL2) $(INT_IDL) $(DCPS_IDL) $(DCPS_API_IDL)
 
 #Only valid for Unix/Linux type systems.
 OBJ_POSTFIX := .o
-INLINESRC_POSTFIX := .i
+INLINESRC_POSTFIX := .inl
 
 .PRECIOUS: %C.cpp %SplDcps.cpp %Dcps_impl.cpp
 
@@ -61,7 +61,7 @@ CPPFLAGS = $(ORB_SELECT_FLAGS) $(INCLUDE) $(ORB_CPP_FLAGS)
 LD_SO := $(CXX)
 SPLICE_LIBRARY_PATH := $(OSPL_HOME)/lib
 LD_FLAGS := -shared -m32 -fPIC -static-libgcc
-LD_LIBS  := -lc -lm -lpthread -lnsl -ldcpsgapi -lddsdatabase -lddsos -lstdc++ $(ORB_LDLIBS)
+LD_LIBS  := -lc -lm -lpthread -lnsl -l$(DDS_CORE) -lstdc++ $(ORB_LDLIBS)
 
 # SPLICE IDL preprocessor and preprocessor flags
 IDLPP := idlpp
@@ -98,7 +98,7 @@ $(TARGET): $(OBJS)
 	$(LD_SO) -L$(SPLICE_LIBRARY_PATH) $(LD_FLAGS) $(OBJS) $(LD_LIBS) -o $(TARGET)
 	-mkdir -p $(SPLICE_ORB)/include
 	-mkdir -p $(SPLICE_ORB)/lib
-	cp *.h *.i $(SPLICE_ORB)/include
+	cp *.h *.inl $(SPLICE_ORB)/include
 	cp $(TARGET) $(SPLICE_ORB)/lib
 
 

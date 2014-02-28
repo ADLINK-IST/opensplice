@@ -18,6 +18,7 @@ import org.opensplice.cm.Query;
 import org.opensplice.cm.Reader;
 import org.opensplice.cm.ReaderSnapshot;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.data.GID;
 import org.opensplice.cm.data.Sample;
 import org.opensplice.cm.meta.MetaType;
@@ -42,8 +43,8 @@ public abstract class ReaderImpl extends EntityImpl implements Reader{
      * @param _name The name of the kernel entity that is associated with this
      *              entity.
      */
-    public ReaderImpl(long _index, long _serial, String _pointer, String _name) {
-        super(_index, _serial, _pointer, _name);
+    public ReaderImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name) {
+        super(communicator, _index, _serial, _pointer, _name);
     }
     
     /**
@@ -59,7 +60,7 @@ public abstract class ReaderImpl extends EntityImpl implements Reader{
         }
         ReaderSnapshot snapshot;
         try {
-            snapshot = CMFactory.getCommunicator().readerSnapshotNew(this);
+            snapshot = getCommunicator().readerSnapshotNew(this);
         } catch (CommunicationException e) {
             throw new CMException("Snapshot of '" + this.toString() + 
                                         "' could not be created.");
@@ -84,7 +85,7 @@ public abstract class ReaderImpl extends EntityImpl implements Reader{
         }
         if(dataType == null){
             try {
-                dataType = CMFactory.getCommunicator().readerGetDataType(this);
+                dataType = getCommunicator().readerGetDataType(this);
             }
             catch (CommunicationException e) {
                 throw new CMException("Reader not available.");
@@ -108,7 +109,7 @@ public abstract class ReaderImpl extends EntityImpl implements Reader{
         
         if(!(this.isFreed())){
             try {
-                result = CMFactory.getCommunicator().readerRead(this);
+                result = getCommunicator().readerRead(this);
             } catch (CommunicationException e) {
                 throw new CMException(e.getMessage());
             }
@@ -133,7 +134,7 @@ public abstract class ReaderImpl extends EntityImpl implements Reader{
         
         if(!(this.isFreed())){
             try {
-                result = CMFactory.getCommunicator().readerTake(this);
+                result = getCommunicator().readerTake(this);
             } catch (CommunicationException e) {
                 throw new CMException(e.getMessage());
             }
@@ -158,7 +159,7 @@ public abstract class ReaderImpl extends EntityImpl implements Reader{
         
         if(!(this.isFreed())){
             try {
-                result = CMFactory.getCommunicator().readerReadNext(this, instanceHandle);
+                result = getCommunicator().readerReadNext(this, instanceHandle);
             } catch (CommunicationException e) {
                 throw new CMException(e.getMessage());
             }

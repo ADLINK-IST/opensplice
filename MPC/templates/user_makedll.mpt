@@ -19,6 +19,21 @@ powerpc-none-linux-gnuspe-gcc {
   covopt    = -fprofile-arcs -ftest-coverage
 }
 
+powerpc-fsl-linux-gcc {
+  cc        = powerpc-fsl-linux-gcc
+  cxx       = powerpc-fsl-linux-g++
+  compilerflags = -m32 -mcpu=e500mc -mtune=e500mc
+  pic       = -fpic
+  shflags   = -shared
+  platforms = e500mc_linux
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+  covopt    = -fprofile-arcs -ftest-coverage
+}
+
 powerpc-linux-gnu-gcc {
   cc        = powerpc-linux-gnu-gcc
   cxx       = powerpc-linux-gnu-g++
@@ -137,11 +152,25 @@ i486-pc-linux-gnu-gcc {
   covopt    = -fprofile-arcs -ftest-coverage
 }
 
+armel-unknown-linux-gnueabi-gcc {
+  cc        = armel-unknown-linux-gnueabi-gcc
+  cxx       = armel-unknown-linux-gnueabi-g++
+  pic       = -fPIC
+  shflags   = -shared
+  platforms = arm_elinos5
+  pchcreate = "-o "
+  pchnobj   = 1
+  checkopt  = -Wall -Wextra -pedantic -fsyntax-only
+  visopt    = -fvisibility=hidden -fvisibility-inlines-hidden
+  profopt   = -pg
+  covopt    = -fprofile-arcs -ftest-coverage
+}
+
 x86_586-pikeos-gcc {
   cc        = x86_i586-gcc
   cxx       = x86_i586-g++
   ld        = x86_i586-ld
-  pic       = 
+  pic       =
   shflags   =
   platforms = x86_pikeos
   pchcreate = "-o "
@@ -155,8 +184,8 @@ x86_586-pikeos-gcc {
 ppc_oea-pikeos-gcc {
   cc        = ppc_oea-gcc
   cxx       = ppc_oea-g++
-  ld        = ppc_oea-ld
-  pic       = 
+  ld        = ppc_oea-ld $(LWIP_LD_FLAG)
+  pic       =
   shflags   =
   platforms = ppc_pikeos
   pchcreate = "-o "
@@ -184,6 +213,18 @@ clang {
 // ***********************************************************************
 // Platform Section
 // ***********************************************************************
+
+x86-vxworks55-c-only {
+  cputype      = pentium
+  dll_ext      = .out
+  exe_ext      = .out
+  testdirstart = "IF NOT EXIST"
+  testdirend   = "CALL"
+  makedir      = "MKDIR"
+  touch        =
+
+  compile_flags = -nostdlib -D_WRS_KERNEL -DSGM_ELF -DCPU_PENTIUM -DCPU=PENTIUM -mcpu=pentium -fvolatile -fsigned-char
+}
 
 PPC604-vxworks55-c-only {
   cputype	   = ppc
@@ -269,7 +310,7 @@ ppc_pikeos {
     gnumake       = 1
     ldlibs        = -lstdcxx -llwip4 -lm -lc -lp4 -lvm -lstand -lgcc
     includes      += $(PIKEOS_HOME)/target/ppc/oea/bposix/include $(PIKEOS_HOME)/target/ppc/oea/include $(PIKEOS_HOME)/target/ppc/oea/bposix/lwip/include $(PIKEOS_HOME)/target/ppc/oea/bposix/lwip/include/opts $(PIKEOS_HOME)/target/ppc/oea/bposix/include/c++
-    extracppflags = -DPIKEOS_POSIX
+    extracppflags = -DPIKEOS_POSIX $(LWIP_INC_FLAG)
     libpaths      = $(PIKEOS_HOME)/target/ppc/oea/lib $(PIKEOS_HOME)/target/ppc/oea/bposix/lwip/lib $(PIKEOS_HOME)/target/ppc/oea/bposix/lib $(PIKEOS_HOME)/cdk/ppc/oea/lib/gcc/powerpc-unknown-elf/3.4.4
     linkflags       = -e _start -T$(PIKEOS_HOME)/target/ppc/oea/scripts/app-ld-script -static $(PIKEOS_HOME)/target/ppc/oea/bposix/lib/crt0.o $(PIKEOS_HOME)/target/ppc/oea/bposix/lib/cxx_init.o
 }

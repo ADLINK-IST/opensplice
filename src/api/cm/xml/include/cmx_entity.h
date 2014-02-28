@@ -182,6 +182,17 @@ OS_API c_char*         cmx_entityStatus                (const c_char* entity);
 OS_API c_char*         cmx_entityStatistics            (const c_char* entity);
 
 /**
+ * @brief Resolves the current statistics of the supplied entities.
+ *
+ * The layout of the statistics depends on the type of the entities.
+ *
+ * @param entities The entities, which statistics must be resolved.
+ * @return The statistics of the supplied entities or NULL if the entities have no
+ *         statistics.
+ */
+OS_API c_char*         cmx_entitiesStatistics            (const c_char* entities);
+
+/**
  * @brief Resets (a part of) the statistics of the supplied entity.
  * 
  * If a fieldName is provided, it is looked up and only that field of the 

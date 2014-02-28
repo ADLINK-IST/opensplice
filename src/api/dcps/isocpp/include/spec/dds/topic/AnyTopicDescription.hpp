@@ -24,44 +24,89 @@
 #include <dds/topic/detail/AnyTopicDescription.hpp>
 #include <dds/topic/Topic.hpp>
 
-namespace dds { namespace topic {
+namespace dds
+{
+namespace topic
+{
 
-  class AnyTopicDescription {
-  public:
+class AnyTopicDescription
+{
+public:
+    /**
+     * Construct AnyTopicDescription from a TopicDescription.
+     */
     template <typename T>
     inline AnyTopicDescription(const dds::topic::TopicDescription<T>& t);
 
-  public:
+public:
+
+    /**
+     * Get the DomainParticipant for the AnyTopicDescription.
+     *
+     * @return the DomainParticipant for the AnyTopicDescription
+     */
     const dds::domain::DomainParticipant& domain_participant() const;
 
+    /**
+     * Get the Topic name for the AnyTopicDescription.
+     *
+     * @return the Topic name
+     */
     const std::string& name() const;
 
+    /**
+     * Get the type name for the AnyTopicDescription.
+     *
+     * @return the type name
+     */
     const std::string& type_name() const;
 
-  protected:
+protected:
     inline AnyTopicDescription(detail::TDHolderBase* holder);
 
-  public:
+public:
+    /**
+     * Swap two AnyTopicDescription.
+     */
     inline AnyTopicDescription& swap(AnyTopicDescription& rhs);
 
+    /**
+     * Assign a typed Topic to a AnyTopicDescription.
+     */
     template <typename T>
     AnyTopicDescription& operator =(const dds::topic::Topic<T>& rhs);
 
+    /**
+     * Assign AnyTopicDescription to another AnyTopicDescription.
+     */
     inline AnyTopicDescription& operator =(AnyTopicDescription rhs);
 
-  public:
+public:
+    /**
+     * Get a typed TopicDescription from an
+     * AnyTopicDescription.
+     *
+     * @return the typed DataReader
+     */
     template <typename T>
     const dds::topic::TopicDescription<T>& get();
 
-  public:
+public:
+    /**
+     * Operator overload to get.
+     */
     const detail::TDHolderBase* operator->() const;
 
+    /**
+     * Operator overload to get.
+     */
     detail::TDHolderBase* operator->();
 
-  protected:
+protected:
     dds::core::smart_ptr_traits<detail::TDHolderBase>::ref_type holder_;
-  };
+};
 
-}}
+}
+}
 
 #endif /* OMG_DDS_TOPIC_ANY_TOPIC_DESCRIPTION_HPP_ */

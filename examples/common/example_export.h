@@ -8,43 +8,15 @@
  * int main(int, char**) function.
  */
 
-#ifndef C_EXAMPLE_ENTRYPOINT
-/**
- * On some embedded platforms it is useful to be able to export an entrypoint with
- * parameters as a single string with each individual argument separated
- * by a space. That is in contrast to the argc/argv style of parameter
- * passing. This macro generates such function defintions for c examples.
- * @param name Name of the function that is to be created, for a value of name == foo
- * a function fooEntrypoint musta already exist.
- */
-#define C_EXAMPLE_ENTRYPOINT(name) \
-int n (char * args) \
-{ \
-   int argc=1; \
-   char *argv[256]; \
-   char *str1; \
-   argv[0] = strdup (#name);\
-   str1 = strtok(args, " "); \
-   while (str1) \
-   { \
-      argv[argc] = strdup (str1); \
-      argc++; \
-      str1 = strtok(NULL, " "); \
-   } \
-   argv[argc] = NULL; \
-   return name##Entrypoint (argc, argv); \
-}
-#endif
-
-#ifndef ISOCPP_EXAMPLE_ENTRYPOINT
+#ifndef EXAMPLE_ENTRYPOINT
 /**
  * Generate a C-ish entrypoint function taking program arguments as a single string
- * for use in the ISO C++ API examples
+ * for use in the C++ API examples
  * @see C_EXAMPLE_ENTRYPOINT
  * @param tocreate The name of the C function to be created
  * @param tocall The argc/argv C++ function that is to be called onto.
  */
-#define ISOCPP_EXAMPLE_ENTRYPOINT(tocreate,tocall) \
+#define EXAMPLE_ENTRYPOINT(tocreate,tocall) \
 extern "C" { \
     int tocreate (char * args) \
     { \
@@ -63,6 +35,36 @@ extern "C" { \
     return tocall (argc, argv); \
     } \
 }
+#endif
+
+#ifndef C_EXAMPLE_ENTRYPOINT
+/**
+ * Generate a C-ish entrypoint function taking program arguments as a single string
+ * for use in the C API examples
+ * On some embedded platforms it is useful to be able to export an entrypoint with
+ * parameters as a single string with each individual argument separated
+ * by a space. That is in contrast to the argc/argv style of parameter
+ * passing. This macro generates such function defintions.
+ * @param tocreate The name of the C function to be created
+ * @param tocall The argc/argv C function that is to be called onto.
+ */
+#define C_EXAMPLE_ENTRYPOINT(tocreate,tocall) \
+    int tocreate (char * args) \
+    { \
+    int argc=1; \
+    char *argv[256]; \
+    char *str1; \
+    argv[0] = strdup (#tocreate);\
+    str1 = strtok(args, " "); \
+    while (str1) \
+    { \
+        argv[argc] = strdup (str1); \
+        argc++; \
+        str1 = strtok(NULL, " "); \
+    } \
+    argv[argc] = NULL; \
+    return tocall (argc, argv); \
+    }
 #endif
 
 /* Symbol visibility */

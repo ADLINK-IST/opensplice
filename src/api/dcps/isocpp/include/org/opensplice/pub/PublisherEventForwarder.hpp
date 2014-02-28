@@ -20,7 +20,11 @@
 
 #include <org/opensplice/core/config.hpp>
 
-namespace org { namespace opensplice { namespace pub
+namespace org
+{
+namespace opensplice
+{
+namespace pub
 {
 
 template<typename PUBT>
@@ -38,13 +42,15 @@ public:
 
 
     //DWL
-    virtual void on_offered_deadline_missed (DDS::DataWriter_ptr writer, const DDS::OfferedDeadlineMissedStatus& status) {};
-    virtual void on_offered_incompatible_qos (DDS::DataWriter_ptr writer, const DDS::OfferedIncompatibleQosStatus& status) {};
-    virtual void on_liveliness_lost (DDS::DataWriter_ptr writer, const DDS::LivelinessLostStatus& status) {};
-    virtual void on_publication_matched (DDS::DataWriter_ptr writer, const DDS::PublicationMatchedStatus& status) {};
+    virtual void on_offered_deadline_missed(DDS::DataWriter_ptr writer, const DDS::OfferedDeadlineMissedStatus& status) {};
+    virtual void on_offered_incompatible_qos(DDS::DataWriter_ptr writer, const DDS::OfferedIncompatibleQosStatus& status) {};
+    virtual void on_liveliness_lost(DDS::DataWriter_ptr writer, const DDS::LivelinessLostStatus& status) {};
+    virtual void on_publication_matched(DDS::DataWriter_ptr writer, const DDS::PublicationMatchedStatus& status) {};
 
     PUBT pub_;
     dds::pub::PublisherListener* listener_;
 };
-}}}
+}
+}
+}
 #endif /* ORG_OPENSPLICE_PUB_PUBLISHER_EVENT_HANDLER_HPP_ */

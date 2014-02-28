@@ -174,6 +174,7 @@ void
 v_groupInstancecleanup(
     v_groupInstance _this,
     v_registration registration,
-    c_time timestamp);
+    c_time timestamp,
+    c_bool isImplicit);
 
 #endif

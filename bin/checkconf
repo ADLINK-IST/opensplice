@@ -210,13 +210,7 @@ msvs_check ()
     PATH="$OSPL_OUTER_HOME/testsuite/lib/$SPLICE_HOST:$PATH"
     set_var PATH "$PATH"
 
-    COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$8; }'`
-    case ${SPLICE_HOST} in
-    x86_64.*)
-        COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | awk '{ printf v$7; }'`
-        ;;
-    esac
-
+    COMPILER_VER=`cl -help 2>&1 | tr -d '\r' | head -1 | sed 's@\(.*Version \)\([0-9][0-9\.]*\)\(.*\)$@\2@'`
     if [ -z $COMPILER_VER ]
     then
         echo "ERROR - Compiler version cannot be determined"
@@ -258,7 +252,7 @@ msvs_check ()
 
     fi
 
-    if [ "$CL_MAJOR" = "15" -o "$CL_MAJOR" = "16" ]
+    if [ "$CL_MAJOR" = "15" -o "$CL_MAJOR" = "16" -o "$CL_MAJOR" = "17" -o "$CL_MAJOR" = "18" ]
     then
         if [ "$CL_MAJOR" = "15" ]
         then
@@ -266,9 +260,32 @@ msvs_check ()
             VS_YEAR=2008
             SDK_VERSION="v6.0A"
         else
-            COMPILER_VER="VS .NET 2010 (Visual Studio 10)"
-            VS_YEAR=2010
-            SDK_VERSION="v7.0A"
+            if [ "$CL_MAJOR" = "16" ]
+            then
+                COMPILER_VER="VS .NET 2010 (Visual Studio 10)"
+                VS_YEAR=2010
+                SDK_VERSION="v7.0A"
+            else
+                # rc.exe is in bin/x86 dir in latest 32-bit version
+                case ${SPLICE_HOST} in
+                    x86.*)
+                        SDK_PATH_ADDON="x86"
+                    ;;
+                esac
+                if [ "$CL_MAJOR" = "17" ]
+                then
+                    COMPILER_VER="VS .NET 2012 (Visual Studio 11)"
+                    VS_YEAR=2012
+                    SDK_VERSION="v7.0A"
+                else
+                    if [ "$CL_MAJOR" = "18" ]
+                    then
+                        COMPILER_VER="VS .NET 2013 (Visual Studio 12)"
+                        VS_YEAR=2013
+                        SDK_VERSION="8.1"
+                    fi
+                fi
+            fi
         fi
 
         LIB="$DOS_CONV_PATH\VC\LIB\${PATH_ADDON};"
@@ -277,7 +294,12 @@ msvs_check ()
             convert_windows_path "$WINDOWSSDKDIR"
             SDK_DIR="$UNIX_CONV_PATH"
         else
-            SDK_DIR="$UNIX_CONV_PATH/../../Program Files/Microsoft SDKs/Windows/$SDK_VERSION"
+            if [ $CL_MAJOR -ge 18 ]
+            then
+               SDK_DIR="$UNIX_CONV_PATH/../Windows Kits/$SDK_VERSION"
+            else
+               SDK_DIR="$UNIX_CONV_PATH/../../Program Files/Microsoft SDKs/Windows/$SDK_VERSION"
+            fi
             WINDOWSSDKDIR=$SDK_DIR
         fi
         convert_windows_path "$SDK_DIR"
@@ -303,10 +325,16 @@ msvs_check ()
             which VCExpress.exe > /dev/null 2>&1
             if [ $? != 0 ]
             then
-                printf "ERROR: devenv.com or VCExpress.exe not available on the path when Visual Studio compilation configured.\n"
-                printf "PATH is $PATH\n"
-                printf "VS_HOME is $VS_HOME\n"
-                return 1
+               which WDExpress.exe > /dev/null 2>&1
+               if [ $? != 0 ]
+               then
+                    printf "ERROR: devenv.com or VCExpress.exe not available on the path when Visual Studio compilation configured.\n"
+                    printf "PATH is $PATH\n"
+                    printf "VS_HOME is $VS_HOME\n"
+                    return 1
+                else
+                    set_var OSPL_DEVENV WDExpress.exe
+                fi
             else
                 set_var OSPL_DEVENV VCExpress.exe
             fi
@@ -344,10 +372,21 @@ gcc_check ()
         echo "ERROR - Only gcc 3.2 and above is supported"
         return 1
     fi
-
-    GLIBC_VERSION=`getconf GNU_LIBC_VERSION | cut -f 2 -d ' '`
-
+    # -Werror=switch supported by gcc >= 4.2
+    GCC_WERROR_IS_SWITCH_SUPPORT=`echo $GCC_FULLVERSION | gawk '{ print $1>="4.2"?"1":"0"}'`
+    set_var GCC_WERROR_IS_SWITCH_SUPPORT "$GCC_WERROR_IS_SWITCH_SUPPORT"
+    export GCC_WERROR_IS_SWITCH_SUPPORT
     echo "OK - using version $GCC_FULLVERSION"
+
+    # -flto works well in gcc >= 4.7
+    if echo $GCC_FULLVERSION | gawk '{ if($1>="4.7"){exit 0}else{exit 1} }' ; then
+        set_var CFLAGS_LTO=-flto
+        export CFLAGS_LTO
+        echo "NOTE: enabling link-time optimizations in release build"
+    # Also at 4.7+ we disable maybe-uninitialized errors for some 3rd party code
+        set_var GCC_HAS_NO_MAYBE_UNINITIALIZED=yes
+        export GCC_HAS_NO_MAYBE_UNINITIALIZED
+    fi
     return 0
 }
 
@@ -403,13 +442,6 @@ sun_cc_studio12_check ()
         echo "ERROR - Not found"
         return 1
     fi
-    cc_VER=`cc -V 2>&1 | grep '^cc:' | sed 's/\(.*Sun C \)\([0-9.]*\)\( .*\)/\2/'`
-    if [ ${cc_VER} != "5.9" -a ${cc_VER} != "5.10" -a ${cc_VER} != "5.11" ]
-    then
-        echo "ERROR - Only SunCC 5.9--5.11 (Studio 12) is supported"
-        return 1
-    fi
-
     echo "OK - using version" `cc -V 2>&1 |  grep '^cc:'`
     return 0
 }
@@ -472,13 +504,34 @@ qt_check ()
                 convert_windows_path "$QTDIR"
                 PATH="$UNIX_CONV_PATH/bin:$PATH"
                 set_var PATH "$PATH"
+                QTLIBDIR="$UNIX_CONV_PATH/lib"
+                set_var QTLIBDIR "$QTLIBDIR"
                 ;;
             *)
+                PATH="$QTDIR/bin:$PATH"
+                set_var PATH "$PATH"
+                set_var QTLIBDIR $QTDIR/lib
+                ;;
             esac
         else
             return 1
         fi
     else
+        if [ -z $QTLIBDIR ]
+        then
+            linkpath=`ld --verbose | grep SEARCH_DIR | tr ' '  '\n' | sed -e 's/SEARCH_DIR("\=\?\(.*\)");/\1/g'`
+            for i in $linkpath
+            do
+                if [ -f $i/libQtCore.so ]
+                then
+                    set_var QTLIBDIR $i
+                fi
+            done
+        fi
+        if [ -z $QTLIBDIR ]
+        then
+            echo "Cannot find Qt libraries. Standalone demo package will not be built. Please specifiy QTLIBDIR."
+        fi
         case `uname` in
         CYGWIN_NT*)
             # Protect against 'cygwin' Qt. It can include uic-qt4.
@@ -564,7 +617,7 @@ make_check ()
         return 1
     fi
 
-    MAKE_MAJOR=`make -v 2>/dev/null | head -1 | cut -f 2 -d . | cut -f 3 -d ' '`
+    MAKE_MAJOR=`make -v 2>/dev/null | head -1 | cut -f 1 -d . | cut -f 3 -d ' '`
     if [ $MAKE_MAJOR -lt 3 ]
     then
         echo "ERROR - Only make 3.80 and above is supported"
@@ -581,6 +634,60 @@ make_check ()
     echo "OK - using `make -v 2>/dev/null | head -1`"
     global_checks
     return $?
+}
+
+gsoap_check ()
+{
+    echo -n "GSOAP: "
+    # Check GSOAPHOME directory first
+    if [ -n "$GSOAPHOME" ]
+    then
+        if [ ! -d "$GSOAPHOME" ]
+        then
+            echo "Error - $GSOAPHOME is invalid"
+            return 1
+        fi
+        if [ ! -f "$GSOAPHOME/bin/soapcpp2" ]
+        then
+            echo "Error - Invalid Setup"
+            return 1
+        fi
+        PATH="$GSOAPHOME/bin:$PATH"
+    else
+        # If not check the path for soapcpp2
+        pathcheck soapcpp2
+        if [ $? != 0 ]
+        then
+            echo "Error - Not found"
+            return 1
+        fi
+        SOAPCPP2_EXE="$PATHCHECK_FOUND"
+        GSOAPHOME1=`dirname "$SOAPCPP2_EXE"`
+        GSOAPHOME=`dirname "$GSOAPHOME1"`
+    fi
+    LD_LIBRARY_PATH="$GSOAPHOME/lib:$LD_LIBRARY_PATH"
+
+    soapcpp2 -v 2> soapcpp2.ver
+    GSOAP_VERSION=`cat soapcpp2.ver | grep "The gSOAP Stub and Skeleton Compiler" | awk '{ print $12 }'`
+    rm -f soapcpp2.ver
+    #if [ "$GSOAP_VERSION" != "2.7.8c" ]
+    #then
+    #    echo "Error - Only gsoap version 2.7.8c is supported"
+    #    return 1
+    #fi
+
+    set_var PATH "$PATH"
+    set_var LD_LIBRARY_PATH "$LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
+    set_var GSOAPHOME "$GSOAPHOME"
+
+    ESCAPED_GSOAPHOME=`echo "$GSOAPHOME" | sed 's/ /\\\\ /g'`
+    export ESCAPED_GSOAPHOME
+    set_var ESCAPED_GSOAPHOME "$ESCAPED_GSOAPHOME"
+
+    echo "OK - using GSOAP version $GSOAP_VERSION"
+    echo "  setting GSOAPHOME to $GSOAPHOME"
+    return 0
 }
 
 # required Bison
@@ -662,6 +769,32 @@ binutils_native_check ()
     return 0
 }
 
+javac_check_darwin ()
+{
+    pathcheck $JAVAC_COMMAND
+    if [ $? != 0 ]
+    then
+        no_javac
+        return $?
+    fi
+    JAVA_HOME=`/usr/libexec/java_home`
+    set_var JAVA_HOME "$JAVA_HOME"
+
+    JAVAC_EXE=javac
+    "$JAVAC_EXE" -version 2> javac.ver
+    JAVAC_REAL_VERSION=`cat javac.ver | grep "javac" | head -1 | awk '{ print $2 }'`
+    JAVAC_VERSION=`echo $JAVAC_REAL_VERSION | awk -F'.' '{ print $1"."$2 }' | sed -e 's;\.;0;g'`
+    rm -f javac.ver
+    if [ -z "$JAVAC_VERSION" -o "$JAVAC_VERSION" -lt "$REQUIRED_VERSION" ] ; then
+        echo "ERROR - Only Oracle JAVA 1.6 and above is supported ($JAVAC_VERSION < $REQUIRED_VERSION)"
+        return 1
+    elif [ "$JAVAC_VERSION" -gt "$REQUIRED_VERSION" ] ; then
+        echo "Warning - using compatibility mode for Java 1.6"
+    fi
+    echo "OK - using JAVAC version $JAVAC_REAL_VERSION"
+    echo "  JAVA_HOME is $JAVA_HOME"
+}
+
 # require javac and check JAVA_HOME
 javac_check ()
 {
@@ -674,13 +807,12 @@ javac_check ()
     fi
 
     # Darwin hack
-    if [ -z "$JAVA_HOME" ] ; then
-        case $host in
-            Darwin*)
-          JAVA_HOME=`/usr/libexec/java_home`
-          ;;
-        esac
-    fi
+    case $host in
+        Darwin*)
+            javac_check_darwin
+            return
+            ;;
+    esac
 
     # Check JAVA_HOME directory first
     if [ -n "$JAVA_HOME" ]
@@ -788,8 +920,6 @@ javac_check ()
             PATH="$PATH:$UNIX_CONV_PATH/jre/lib/$JAVA_PATH_EXT/native_threads"
             set_var PATH "$PATH"
             T_LD_PATH=no
-            ;;
-        Darwin)
             ;;
         *)
             echo "ERROR - Not yet supported Java setup"
@@ -978,9 +1108,15 @@ tao_check_fn ()
                 then
                     SPLICE_ORB=DDS_OpenFusion_1_6_1
                 else
-                    echo "$1 - Unsupported version of PrismTech TAO"
-                    tao_idl -V
-                    return 1
+                    T_VAR="`echo $TAO_VERSION | grep \"PrismTech Version No: TAO 2.\"`"
+                    if [ $? = 0 ]
+                    then
+                        SPLICE_ORB=DDS_OpenFusion_2
+                    else
+                        echo "$1 - Unsupported version of PrismTech TAO"
+                        tao_idl -V
+                        return 1
+                    fi
                 fi
             fi
         fi
@@ -1075,14 +1211,14 @@ jacorb_check_fn ()
     return 0
 }
 
+# Only needed for platforms that don't have zlib.h / libz on the builtin path anyway. ie Windows.
 zlib_check ()
 {
     echo -n "zlib: "
     if [ -z "$ZLIB_HOME" ]
     then
-        echo "zlib environment not set, disabling related features."
-        . "$OSPL_HOME/setup/environment/exclude_zlib"
-        return 0
+        echo "ERROR - ZLIB_HOME not set."
+        return 1
     fi
     if [ ! -f "$ZLIB_HOME/zlib.h" ]
     then
@@ -1105,7 +1241,7 @@ doxygen_check ()
         GIT_INSTALLED=$?
         if [ $GIT_INSTALLED -ne 0 ]
         then
-            if [ "IS_SCOREBOARD_BUILD" = "yes" ]
+            if [ "$IS_SCOREBOARD_BUILD" = "yes" ]
             then
                 echo "ERROR: no doxygen or git installed, no way to get generated docs."
                 return 1
@@ -1120,7 +1256,7 @@ doxygen_check ()
         REPO_CHECK=$?
         if [ $REPO_CHECK -ne 0 ]
         then
-            if [ "IS_SCOREBOARD_BUILD" = "yes" ]
+            if [ "$IS_SCOREBOARD_BUILD" = "yes" ]
             then
                 echo "ERROR: doc repo cannot be reached and doxygen not installed"
                 return 1
@@ -1139,12 +1275,6 @@ doxygen_check ()
     return 0
 }
 
-# OpenORB - OPENORB_HOME should be set
-openorb_check ()
-{
-   return 0
-}
-
 cleanup_checks ()
 {
     unset msvs_check
@@ -1161,7 +1291,7 @@ cleanup_checks ()
     unset jacorb_check
     unset valgrind_check
     unset zlib_check
-    unset openorb_check
+    unset gsoap_check
     unset doxygen_check
     unset PATHCHECK_FOUND
     unset GCC_FULLVERSION GCC_MAJOR GCC_MINOR BISON_VERSION FLEX_VERSION JAVAC_REAL_VERSION

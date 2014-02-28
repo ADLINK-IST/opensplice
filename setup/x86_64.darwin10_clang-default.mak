@@ -2,7 +2,7 @@
 
 # LTO doesn't work with static libraries (apparently), but everything works
 # fine with nothing but dynamic libraries.
-DYNAMIC_LIB_ONLY := true
+#DYNAMIC_LIB_ONLY := true
 
 # Set name context of used tooling
 #CC		 = gcc -std=gnu99 -m64 #-v
@@ -58,16 +58,18 @@ JAVAH_FLAGS      = -force
 
 	#Java
 JAVA		 = java
-JAVA_LDFLAGS	 = -L"$(JAVA_HOME)/lib"
-JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/ext"
-JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/im"
-JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/security"
-JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/bundle/Libraries"
-JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/bundle/Classes"
+JAVA_LDFLAGS	 = -L"$(JAVA_HOME)/jre/lib"
+JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/jre/lib/server"
+#JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/ext"
+#JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/im"
+#JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/security"
+#JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/bundle/Libraries"
+#JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/bundle/Classes"
 JAVA_INCLUDE	 = -I"$(JAVA_HOME)/include"
-JAVA_INCLUDE	 += -I"$(JAVA_HOME)/bundle/Headers"
-JAVA_INCLUDE     += -I"/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers"
-JAVA_INCLUDE     += -I"/Developer/SDKs/MacOSX10.6.sdk/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers"
+JAVA_INCLUDE	 += -I"$(JAVA_HOME)/include/darwin"
+#JAVA_INCLUDE	 += -I"$(JAVA_HOME)/bundle/Headers"
+#JAVA_INCLUDE     += -I"/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers"
+#JAVA_INCLUDE     += -I"/Developer/SDKs/MacOSX10.6.sdk/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers"
 
 	#soapcpp
 SOAPCPP		= soapcpp2
@@ -83,7 +85,7 @@ CFLAGS_STRICT	 = -Wall -W #-pedantic
 
 # Set compiler options for single threaded process
 CFLAGS		 = $(CFLAGS_OPT) $(CFLAGS_DEBUG) $(CFLAGS_STRICT)
-CXXFLAGS	 = $(CFLAGS_OPT) $(CFLAGS_DEBUG)
+CXXFLAGS	 = -DOSPL_DEFAULT_TO_CXX11 $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 CSFLAGS	     = -noconfig -nowarn:1701,1702 -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # For Linux, this test release version supports symbolic names in stead of IP addresses
@@ -101,10 +103,10 @@ endif
 MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
-LDFLAGS		 = -L$(SPLICE_LIBRARY_PATH) -Wl,-flat_namespace $(CFLAGS)
+LDFLAGS		 = -L$(SPLICE_LIBRARY_PATH) $(CFLAGS) # -Wl,-flat_namespace
 
 # Identify linker options for building shared libraries
-SHLDFLAGS	 = -dynamiclib
+SHLDFLAGS	 = -dynamiclib -undefined error
 
 # Set library context
 #RP: -lrt cannot be found
@@ -119,7 +121,7 @@ LDLIBS_CXX = -lstdc++
 LDLIBS_NW =
 LDLIBS_OS = -lpthread -ldl #-lrt
 LDLIBS_CMS =
-LDLIBS_JAVA = -ljvm -lverify -lhpi
+LDLIBS_JAVA = -ljvm #-lverify -lhpi
 LDLIBS_ODBC= -lodbc
 
 #set platform specific pre- and postfixes for the names of libraries and executables
@@ -131,7 +133,7 @@ DLIB_POSTFIX = .dylib
 EXEC_PREFIX =
 EXEC_POSTFIX =
 EXEC_LD_POSTFIX =
-INLINESRC_POSTFIX = .i
+INLINESRC_POSTFIX = .inl
 
 # Identify linker options for building shared C# libraries and or executables.
 CSLIB_PREFIX =

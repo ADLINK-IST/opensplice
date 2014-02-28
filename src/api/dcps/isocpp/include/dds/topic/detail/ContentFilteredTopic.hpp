@@ -50,26 +50,27 @@ public:
           topic_(topic),
           filter_(filter)
     {
-        DDS::StringSeq idl_filter_params(this->filter_.parameters_length());
+        DDS::StringSeq idl_filter_params;
+        idl_filter_params.length(this->filter_.parameters_length());
         DDS::ULong i = 0;
-        for (dds::topic::Filter::iterator params = this->filter_.begin();
-            params != this->filter_.end();
-            ++params)
+        for(dds::topic::Filter::iterator params = this->filter_.begin();
+                params != this->filter_.end();
+                ++params)
         {
-            idl_filter_params[i] = (*params).c_str();
+            idl_filter_params[i++] = (*params).c_str();
         }
         idl_cftopic_ = this->dp_->dp_->create_contentfilteredtopic(this->name_.c_str(),
-                                                                  this->topic_->t_,
-                                                                  this->filter_.expression().c_str(),
-                                                                  idl_filter_params);
+                       this->topic_->t_,
+                       this->filter_.expression().c_str(),
+                       idl_filter_params);
 
-        if (DDS::is_nil(this->idl_cftopic_.in()))
+        if(DDS::is_nil(this->idl_cftopic_.in()))
         {
             throw dds::core::NullReferenceError(
-                    org::opensplice::core::exception_helper(
-                        OSPL_CONTEXT_LITERAL(
-                            "dds::core::NullReferenceError : Unable to create ContentFilteredTopic. "
-                            "Nil return from ::create_contentfilteredtopic")));
+                org::opensplice::core::exception_helper(
+                    OSPL_CONTEXT_LITERAL(
+                        "dds::core::NullReferenceError : Unable to create ContentFilteredTopic. "
+                        "Nil return from ::create_contentfilteredtopic")));
         }
     }
 
@@ -81,7 +82,7 @@ public:
 
 public:
     /**
-    * Accessor to return the topic filter.
+    *  @internal Accessor to return the topic filter.
     * @return The dds::topic::Filter in effect on this topic.
     */
     const dds::topic::Filter& filter() const
@@ -90,7 +91,7 @@ public:
     }
 
     /**
-     * Updates by replacing the filter parameters for this content filtered topic.
+     *  @internal Sets the filter parameters for this content filtered topic.
      * @param begin The iterator holding the first string param
      * @param end The last item in the string iteration
      */
@@ -98,13 +99,14 @@ public:
     void filter_parameters(const FWIterator& begin, const FWIterator& end)
     {
         filter_.parameters(begin, end);
-        DDS::StringSeq idl_filter_params(this->filter_.parameters_length());
+        DDS::StringSeq idl_filter_params;
+        idl_filter_params.length(this->filter_.parameters_length());
         DDS::ULong i = 0;
-        for (dds::topic::Filter::iterator params = begin;
-            params != end;
-            ++params)
+        for(dds::topic::Filter::iterator params = begin;
+                params != end;
+                ++params)
         {
-            idl_filter_params[i] = (*params).c_str();
+            idl_filter_params[i++] = (*params).c_str();
         }
         DDS::ReturnCode_t result = idl_cftopic_.in()->set_expression_parameters(idl_filter_params);
         org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_expression_parameters"));
@@ -116,7 +118,7 @@ public:
     }
 
     /**
-    * The underlying contentfiltered topic. Public so we can access it in the DataReader delegate.
+    *  @internal The underlying contentfiltered topic. Public so we can access it in the DataReader delegate.
     */
     DDS::ContentFilteredTopic_var idl_cftopic_;
 

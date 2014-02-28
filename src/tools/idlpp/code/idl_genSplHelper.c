@@ -13,6 +13,7 @@
 #include "idl_tmplExp.h"
 
 #include "os_stdlib.h"
+#include "os_heap.h"
 
 /* Print a BOUNDSCHECK out of range error message to the default output file
 */

@@ -23,17 +23,20 @@
  */
 #include <foo/bar/sub/Sample.hpp>
 
-namespace dds {
-  namespace sub {
-    namespace detail {
-      /** @todo RTF Issue - This isn't right. There is no class TSample and if there was
-       * it would presumably be templated on the data type. Pretty sure this needs to be
-       * template <typename T> class Sample : foo::bar::sub::Sample<T> { };
-       * ... or something like that?
-       */
-      typedef dds::sub::TSample<foo::bar::sub::Sample> Sample;
-    }
-  }
+namespace dds
+{
+namespace sub
+{
+namespace detail
+{
+/** @todo RTF Issue - This isn't right. There is no class TSample and if there was
+ * it would presumably be templated on the data type. Pretty sure this needs to be
+ * template <typename T> class Sample : foo::bar::sub::Sample<T> { };
+ * ... or something like that?
+ */
+typedef dds::sub::TSample<foo::bar::sub::Sample> Sample;
+}
+}
 }
 
 #endif /* OMG_DDS_PUB_DETAIL_SAMPLE_HPP_ */

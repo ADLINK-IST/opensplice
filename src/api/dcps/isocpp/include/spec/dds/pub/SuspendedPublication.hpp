@@ -21,8 +21,12 @@
 
 #include <dds/pub/detail/SuspendedPublication.hpp>
 
-namespace dds { namespace pub {
-  typedef dds::pub::detail::SuspendedPublication SuspendedPublication;
-} }
+namespace dds
+{
+namespace pub
+{
+typedef dds::pub::detail::SuspendedPublication SuspendedPublication;
+}
+}
 
 #endif /* OMG_DDS_PUB_SUSPENDED_PUBLICATION_HPP_ */

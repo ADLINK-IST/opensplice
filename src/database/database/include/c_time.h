@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifndef C_TIME_H
@@ -15,7 +15,7 @@
 #include "c_base.h"
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_DB
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -56,12 +56,13 @@ OS_API c_double    c_timeToReal  (c_time t1);
 OS_API c_time      c_timeFromReal(c_double d);
 
 #define c_timeIsZero(t) \
-        ((t.seconds == 0) && \
-         (t.nanoseconds == 0) ? TRUE : FALSE)
+    (((t).seconds == 0) && ((t).nanoseconds == 0))
 
 #define c_timeIsInfinite(t) \
-        ((t.seconds == 0x7fffffff) && \
-         (t.nanoseconds == 0x7fffffffU) ? TRUE : FALSE)
+    (((t).seconds == C_TIME_INFINITE.seconds) && ((t).nanoseconds == C_TIME_INFINITE.nanoseconds))
+
+#define c_timeIsInvalid(t) \
+    (((t).seconds == C_TIME_INVALID.seconds) && ((t).nanoseconds == C_TIME_INVALID.nanoseconds))
 
 #undef OS_API
 

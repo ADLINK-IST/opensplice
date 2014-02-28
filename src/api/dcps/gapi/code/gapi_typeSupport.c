@@ -339,25 +339,43 @@ gapi_typeSupport_register_type (
         oldTypeSupport = (_TypeSupport)_DomainParticipantFindType(participant, regName);
         if ( oldTypeSupport ) {
             /* registry type name is used before */
-            if ( strcmp (typeSupport->type_name, oldTypeSupport->type_name) == 0 ) {
-                /* check if the definition matches */
-                if ( typeSupport->type_def ) {
-                    result = registerTypeUsingDescriptor(typeSupport, participant);
-                } else if ( typeSupport->type_load ) {
-                    result = registerTypeUsingLoadFunction(typeSupport, participant);
+            /* OSPL-103: PRECONDITION_NOT_MET must be returned if type_keys
+               does not match. _TypeSupportEquals uses a simple strcmp to
+               verify, I'm assuming that's enough and the order of keys is out
+               of our scope. */
+            if (strcmp (typeSupport->type_name, oldTypeSupport->type_name) == 0) {
+                if (strcmp (typeSupport->type_keys, oldTypeSupport->type_keys) == 0) {
+                    /* check if the definition matches */
+                    if ( typeSupport->type_def ) {
+                        result = registerTypeUsingDescriptor(typeSupport, participant);
+                    } else if ( typeSupport->type_load ) {
+                        result = registerTypeUsingLoadFunction(typeSupport, participant);
+                    } else {
+                        /* nothing to do */
+                    }
+                    if (result == GAPI_RETCODE_OK ) {
+                        typeExists = TRUE;
+                    } else {
+                        /* different type definition for the same registry name, this is not allowed */
+                        result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+                    }
                 } else {
-                    /* nothing to do */
-                }
-                if (result == GAPI_RETCODE_OK ) {
-                    typeExists = TRUE;
-                } else {
-                    /* different type definition for the same registry name, this is not allowed */
+                    /* different type supports will be registered with the same
+                       registry name, this is not allowed */
                     result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+                    OS_REPORT_3 (OS_API_INFO,
+                        "gapi_typeSupport_register_type", 0,
+                        "keyList '%s' in newly registered type with typeName '%s' does not match existing keyList '%s'.",
+                        typeSupport->type_keys, typeSupport->type_name, oldTypeSupport->type_keys);
                 }
             } else {
                 /* different type supports will be registered with the same
                    registry name, this is not allowed */
                 result = GAPI_RETCODE_PRECONDITION_NOT_MET;
+                OS_REPORT_2 (OS_API_INFO,
+                    "gapi_typeSupport_register_type", 0,
+                    "newly registered type uses typeName '%s' which is different from existing typeName '%s'. ",
+                    typeSupport->type_name, oldTypeSupport->type_name);
             }
         }
     }
@@ -704,16 +722,22 @@ _TypeSupportGenericCopyInit (
     typeSupport->copy_out = gapi_copyOutStruct;
 
     meta_data = _DomainParticipant_get_type_metadescription(participant, typeSupport->type_name);
-    typeSupport->copy_cache = gapi_copyCacheNew(meta_data) ;
-    c_free(meta_data);
-    if ( typeSupport->copy_cache != NULL ) {
-        if ( typeSupport->alloc_size == 0 ) {
-            typeSupport->alloc_size = gapi_copyCacheGetUserSize(typeSupport->copy_cache);
-        } else {
-            assert(typeSupport->alloc_size == gapi_copyCacheGetUserSize(typeSupport->copy_cache));
-        }
+    if (meta_data == NULL) {
+        OS_REPORT_1(OS_ERROR, "_TypeSupportGenericCopyInit", 0,
+                              "Unsupported type %s", typeSupport->type_name);
+        result = GAPI_RETCODE_BAD_PARAMETER;
     } else {
-        result = GAPI_RETCODE_OUT_OF_RESOURCES;
+        typeSupport->copy_cache = gapi_copyCacheNew(meta_data) ;
+        c_free(meta_data);
+        if ( typeSupport->copy_cache != NULL ) {
+            if ( typeSupport->alloc_size == 0 ) {
+                typeSupport->alloc_size = gapi_copyCacheGetUserSize(typeSupport->copy_cache);
+            } else {
+                assert(typeSupport->alloc_size == gapi_copyCacheGetUserSize(typeSupport->copy_cache));
+            }
+        } else {
+            result = GAPI_RETCODE_OUT_OF_RESOURCES;
+        }
     }
     return result;
 }

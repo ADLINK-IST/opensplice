@@ -20,7 +20,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -58,6 +58,7 @@ extern "C" {
 #define L_TRANSACTION      (0x0001U << 16) /* 65536 */
 #define L_TRIGGER          (0x0001U << 17) /* 131072 */
 #define L_REMOVED          (0x0001U << 18) /* 262144 */
+#define L_REPLACED         (0x0001U << 19) /* 524288 used for the REPLACE merge policy */
 
 /*
  * Sets all bits in state that are set in mask.

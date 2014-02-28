@@ -19,7 +19,7 @@ static DDS::DataReader_ptr DataReader_Lookup(gapi_dataReader handle)
   DDS::DataReader_ptr dataReader = NULL;
   DDS::ccpp_UserData_ptr myUD;
 
-  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
   if (myUD)
   {
     dataReader = dynamic_cast<DDS::DataReader_ptr>(myUD->ccpp_object);
@@ -37,7 +37,7 @@ static DDS::DataWriter_ptr DataWriter_Lookup(gapi_dataWriter handle)
   DDS::DataWriter_ptr dataWriter = NULL;
   DDS::ccpp_UserData_ptr myUD;
 
-  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
   if (myUD)
   {
     dataWriter = dynamic_cast<DDS::DataWriter_ptr>(myUD->ccpp_object);
@@ -55,7 +55,7 @@ static DDS::Subscriber_ptr Subscriber_Lookup(gapi_subscriber handle)
   DDS::Subscriber_ptr subscriber = NULL;
   DDS::ccpp_UserData_ptr myUD;
 
-  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
   if (myUD)
   {
     subscriber = dynamic_cast<DDS::Subscriber_ptr>(myUD->ccpp_object);
@@ -73,7 +73,7 @@ static DDS::Topic_ptr Topic_Lookup(gapi_topic handle)
   DDS::Topic_ptr topic = NULL;
   DDS::ccpp_UserData_ptr myUD;
 
-  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
   if (myUD)
   {
     topic = dynamic_cast<DDS::Topic_ptr>(myUD->ccpp_object);
@@ -111,7 +111,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -136,7 +136,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -162,7 +162,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -191,7 +191,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -218,7 +218,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -245,7 +245,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -271,7 +271,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -297,7 +297,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -319,7 +319,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -345,7 +345,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -371,7 +371,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -399,7 +399,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -424,7 +424,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -450,7 +450,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -477,7 +477,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -503,7 +503,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -530,7 +530,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -556,7 +556,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -582,7 +582,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -604,7 +604,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -630,7 +630,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -657,7 +657,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -680,7 +680,7 @@ extern "C" {
     }
     if (Subscriber)
     {
-      CORBA::release(Subscriber);
+      DDS::release(Subscriber);
     }
   }
 
@@ -707,7 +707,7 @@ extern "C" {
     }
     if (a_topic)
     {
-      CORBA::release(a_topic);
+      DDS::release(a_topic);
     }
   }
 
@@ -733,7 +733,7 @@ extern "C" {
     }
     if (a_topic)
     {
-       CORBA::release(a_topic);
+       DDS::release(a_topic);
     }
   }
 
@@ -760,7 +760,7 @@ extern "C" {
     }
     if (a_topic)
     {
-      CORBA::release(a_topic);
+      DDS::release(a_topic);
     }
   }
 
@@ -785,7 +785,7 @@ extern "C" {
     }
     if (a_topic)
     {
-       CORBA::release(a_topic);
+       DDS::release(a_topic);
     }
   }
 
@@ -811,7 +811,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -837,7 +837,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -863,7 +863,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -889,7 +889,7 @@ extern "C" {
     }
     if (dataWriter)
     {
-      CORBA::release(dataWriter);
+      DDS::release(dataWriter);
     }
   }
 
@@ -916,7 +916,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -943,7 +943,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -969,7 +969,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -995,7 +995,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -1017,7 +1017,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -1043,7 +1043,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -1069,7 +1069,7 @@ extern "C" {
     }
     if (dataReader)
     {
-      CORBA::release(dataReader);
+      DDS::release(dataReader);
     }
   }
 
@@ -1091,7 +1091,7 @@ extern "C" {
     }
     if (a_subscriber)
     {
-      CORBA::release(a_subscriber);
+      DDS::release(a_subscriber);
     }
   }
 } /* extern C */

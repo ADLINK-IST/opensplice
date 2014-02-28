@@ -127,7 +127,7 @@ DLIB_POSTFIX = .dylib
 EXEC_PREFIX =
 EXEC_POSTFIX =
 EXEC_LD_POSTFIX =
-INLINESRC_POSTFIX = .i
+INLINESRC_POSTFIX = .inl
 
 # Identify linker options for building shared C# libraries and or executables.
 CSLIB_PREFIX =

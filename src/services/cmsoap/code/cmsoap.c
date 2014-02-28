@@ -1439,3 +1439,23 @@ cms__getVersion(
     }
     return code;
 }
+
+int
+cms__entitiesStatistics(
+    struct soap* soap,
+    char* entities,
+    char** result)
+{
+    cms_thread it;
+    int code;
+
+    code = SOAP_FAULT;
+
+    if(validateInitialization(soap) == TRUE){
+        it = cms_thread(soap->user);
+        *result = cmx_entitiesStatistics(entities);
+        storeResultInThread(it, *result);
+        code = SOAP_OK;
+    }
+    return code;
+}

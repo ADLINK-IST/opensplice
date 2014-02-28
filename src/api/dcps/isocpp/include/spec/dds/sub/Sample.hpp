@@ -21,11 +21,13 @@
 
 #include <dds/sub/detail/Sample.hpp>
 
-namespace dds {
-  namespace sub {
-    template <typename T, template <typename Q> class DELEGATE = dds::sub::detail::Sample >
-    class Sample;
-  }
+namespace dds
+{
+namespace sub
+{
+template <typename T, template <typename Q> class DELEGATE = dds::sub::detail::Sample >
+class Sample;
+}
 }
 
 /**

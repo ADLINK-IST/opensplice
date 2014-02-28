@@ -147,6 +147,12 @@ v_serviceStateChangeState(
           serviceState->stateKind = stateKind;
       }
       break;
+    case STATE_INCOMPATIBLE_CONFIGURATION:
+      if ((serviceState->stateKind == STATE_OPERATIONAL) ||
+          (serviceState->stateKind == STATE_INITIALISING)) {
+          serviceState->stateKind = stateKind;
+      }
+      break;
     case STATE_TERMINATING:
       if ((serviceState->stateKind == STATE_INITIALISING) ||
           (serviceState->stateKind == STATE_OPERATIONAL)) {

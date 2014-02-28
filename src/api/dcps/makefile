@@ -1,7 +1,5 @@
 SUBSYSTEMS	:=
 
-ifeq ($(INCLUDE_API_DCPS_GAPI),yes)
-SUBSYSTEMS	+= gapi
 ifeq ($(INCLUDE_API_DCPS_SAC),yes)
 SUBSYSTEMS	+= sac
 endif # INCLUDE_API_DCPS_SAC
@@ -21,7 +19,6 @@ ifeq ($(INCLUDE_API_DCPS_SACS),yes)
 SUBSYSTEMS      += sacs
 endif # INCLUDE_API_DCPS_SACS
 endif # INCLUDE_CS
-endif # INCLUDE_API_DCPS_GAPI
 
 ifeq ($(INCLUDE_JAVA),yes)
     ifeq ($(INCLUDE_API_DCPS_JNI),yes)
@@ -38,7 +35,15 @@ clean: clean_isocpp
 link: build_isocpp
 
 build_isocpp:
+ifeq "$(findstring darwin10_clang, $(SPLICE_TARGET))" ""
 	magic_make.pl --make --type $(MPC_CISH_TYPE_TO_GEN) --src-co $(MPC_ARGS) isocpp/
+else
+ifeq "$(wildcard isocpp/Makefile)" ""
+	-magic_make.pl --make --type $(MPC_CISH_TYPE_TO_GEN) --src-co $(MPC_ARGS) isocpp/
+	make -C isocpp clean
+endif
+	make -C isocpp CXX='clang++ -DOSPL_DEFAULT_TO_CXX11'
+endif
 
 clean_isocpp:
 	magic_make.pl --squeaky --clean --type $(MPC_CISH_TYPE_TO_GEN) --src-co $(MPC_ARGS) isocpp/

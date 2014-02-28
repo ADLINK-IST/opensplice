@@ -312,15 +312,11 @@ d_statisticsUpdateConfiguration(
     c_long i;
     c_ulong master, slave;
     d_nameSpace ns;
-    d_durability durability;
-    d_configuration config;
     d_admin admin;
     c_iter nameSpaces;
     c_long nameSpaceCount;
     
     admin      = d_admin(args);
-    durability = d_adminGetDurability(admin);
-    config     = d_durabilityGetConfiguration(durability);
     master     = 0;
     slave      = 0;
     

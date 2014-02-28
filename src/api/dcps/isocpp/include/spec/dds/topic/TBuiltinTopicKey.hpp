@@ -22,16 +22,35 @@
 
 #include <dds/core/Value.hpp>
 
-namespace dds { namespace topic {
-  template <typename D>
-  class TBuiltinTopicKey;
-} }
-
+namespace dds
+{
+namespace topic
+{
 template <typename D>
-class dds::topic::TBuiltinTopicKey : public ::dds::core::Value<D> {
+class TBuiltinTopicKey;
+}
+}
+
+/**
+ * This class represents the BuiltinTopicKey.
+ */
+template <typename D>
+class dds::topic::TBuiltinTopicKey : public ::dds::core::Value<D>
+{
 public:
-  const int32_t* value() const;
-  void value(int32_t v[]);
+    /**
+     * Gets the BuiltinTopicKey.
+     *
+     * @return the BuiltinTopicKey
+     */
+    const int32_t* value() const;
+
+    /**
+     * Sets the BuiltinTopicKey.
+     *
+     * @param v the value to set
+     */
+    void value(int32_t v[]);
 };
 
 #endif /* OMG_DDS_TOPIC_TBUILTIN_TOPIC_KEY_HPP_ */

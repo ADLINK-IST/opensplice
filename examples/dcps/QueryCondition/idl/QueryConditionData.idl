@@ -1,9 +1,9 @@
 
-module QueryConditionData
+module StockMarket
 {
    struct Stock
    {
-      string ticker; 
+      string ticker;
       float price;
    };
    #pragma keylist Stock ticker

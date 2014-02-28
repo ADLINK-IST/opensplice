@@ -447,7 +447,7 @@ idl_stacDefConvertAll(
     c_member newMember;
     os_uint32* replacedIndex;
     idl_stacDefReplaceInfo replaceData;
-    c_iter replaceInfo;
+    c_iter replaceInfo = NULL;
     c_base base;
     c_iter boundedStringToBeConverted;
     os_boolean stacCanBeApplied = OS_TRUE;

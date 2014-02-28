@@ -18,14 +18,19 @@
 #include <dds/sub/SubscriberListener.hpp>
 #include <org/opensplice/sub/SubscriberEventForwarder.hpp>
 
-namespace org { namespace opensplice { namespace sub {
+namespace org
+{
+namespace opensplice
+{
+namespace sub
+{
 
 template<>
 SubscriberEventForwarder<dds::sub::Subscriber>::SubscriberEventForwarder(
-        const dds::sub::Subscriber& sub,
-        dds::sub::SubscriberListener* listener) :
-        sub_(sub),
-        listener_(listener)
+    const dds::sub::Subscriber& sub,
+    dds::sub::SubscriberListener* listener) :
+    sub_(sub),
+    listener_(listener)
 
 {
 }
@@ -58,4 +63,6 @@ void SubscriberEventForwarder<dds::sub::Subscriber>::on_requested_deadline_misse
     listener_->on_requested_deadline_missed(dds::sub::AnyDataReader, dds:cond::RequestedDeadlineMissedStatus)
 }
 */
-}}}
+}
+}
+}

@@ -12,6 +12,7 @@
  */
 /** @{*/
 
+namespace demo { namespace ishapes {
 class WriterQosDialog : public QDialog
 {
     Q_OBJECT;
@@ -29,6 +30,8 @@ private:
     Ui::WriterQoS qosForm_;
     dds::pub::qos::DataWriterQos qos_;
 };
+}
+}
 
 /** @}*/
 

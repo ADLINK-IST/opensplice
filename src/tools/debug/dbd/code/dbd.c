@@ -386,7 +386,7 @@ OPENSPLICE_MAIN (ospl_dbd)
                     } else if (strcmp(buf1, "?") == 0) {
                         len = sscanf(buf2,"0x"PA_ADDRFMT"",(os_address *)&addr);
                         if (len == 1) {
-                            u_entityAction (u_entity (participant), print_object_history, addr);
+                            ur = u_entityAction (u_entity (participant), print_object_history, addr);
                         } else {
                             printf("usage: e <address>\n");
                         }

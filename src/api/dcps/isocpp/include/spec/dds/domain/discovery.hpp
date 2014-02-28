@@ -23,39 +23,43 @@
 #include <dds/sub/Subscriber.hpp>
 
 
-namespace dds { namespace domain {
+namespace dds
+{
+namespace domain
+{
 
-  /**
-   * This function allows one to express the will to ignore the entity
-   * represented by the given <code>InstanceHandle</code> for the specific
-   * <code>DomainParticipant</code>.
-   *
-   * @param dp      the <code>DomainParticipant</code> for which the remote
-   *                entity will be ignored
-   *
-   * @param handle  the <code>InstanceHandle</code> of the remote entity that
-   *                has to be ignored
-   *
-   */
-  void ignore(const dds::domain::DomainParticipant& dp, const dds::core::InstanceHandle& handle);
+/**
+ * This function enables you to ignore the entity
+ * represented by the given InstanceHandle for the specific
+ * DomainParticipant.
+ *
+ * @param dp      the DomainParticipant for which the remote
+ *                entity will be ignored
+ *
+ * @param handle  the InstanceHandle of the remote entity that
+ *                has to be ignored
+ *
+ */
+void OMG_DDS_API ignore(const dds::domain::DomainParticipant& dp, const dds::core::InstanceHandle& handle);
 
-  /**
-   * This function allows one to express the will to ignore a series of entities
-   * whose instance handles are made available via the provided iterators.
-   *
-   * @param dp      the <code>DomainParticipant</code> for which the remote
-   *                entity will be ignored
-   *
-   * @param begin   the begin iterator for the <code>InstanceHandle</code>
-   *                to ignore
-   *
-   * @param end     the end iterator for the <code>InstanceHandle</code>
-   *                to ignore
-   *
-   */
-  template <typename FwdIterator>
-  void ignore(const dds::domain::DomainParticipant& dp, FwdIterator begin, FwdIterator end);
+/**
+ * This function enables you to ignore a series of entities
+ * whose instance handles are made available via the provided iterators.
+ *
+ * @param dp      the DomainParticipant for which the remote
+ *                entity will be ignored
+ *
+ * @param begin   the begin iterator for the InstanceHandle
+ *                to ignore
+ *
+ * @param end     the end iterator for the InstanceHandle
+ *                to ignore
+ *
+ */
+template <typename FwdIterator>
+void ignore(const dds::domain::DomainParticipant& dp, FwdIterator begin, FwdIterator end);
 
 
-} }
+}
+}
 #endif /* OMG_DDS_DOMAIN_DISCOVERY_HPP_ */

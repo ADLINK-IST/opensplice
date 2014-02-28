@@ -41,12 +41,34 @@
   <li>Optional interaction-patterns, implemented on top of DDS: Remote Method invocation (RMI) and transparent batching (STREAMS)</li>
   </ul>
 
-  <h3>What's new in V6.3:</h3>
+  <h3>What's new in V6.4:</h3>
   <ul>
-    <li><b>OpenSplice DDSI2E:</b> Extended DDSI-based interoperability with realtime
-    information-scheduling over multiple priority-lanes and partitioned networks</li>
-    <li><b>OpenSplice RnR:</b> Distributed real-time  Recording & Replay of any DDS data in your system</li>
-    <li><b>ISO C++ API:</b> beta-implementation of the new ISO-C++ API for increased productivity and code-quality</li>
+      <li>The ISO C++ API has been taken out of beta status and is now the 
+      primary C++ API for OpenSplice DDS. Additionally, the new DDS-PSM-CXX 
+      specification IDL type mapping is now implemented.
+      This allows simplified usage of IDL generated types through full compatibility with the STL.
+      The older CORBA compatible types are also supported.
+      <li>A performance boost has been made to OpenSplice. The libraries are now 
+      consolidated to a single dcps library ddskernel, but the other libraries are still
+      available as stubs to avoid user build system changes. Additionally, other 
+      optimisations have been introduced to increase performance and reduce CPU.
+      </li>
+      <li>TCP support for DDSI has been implemented. Configuration options are available
+      to run DDSI over a single connection.
+      </li>
+      <li>The CORBA cohabitation libraries have been upgraded to use TAO 2.1.
+      Where customer demand exists for TAO 1.6 support, these have been left at TAO 1.6.
+      </li>
+      <li>The DCPS API's for Java, C, C++ and C# have been extended with a
+      A QoS provider API that allows users to define QoS settings for DCPS
+      entities in an XML file as standardized in the DDS For Lightweight CCM
+      OMG (DDS4CCM) standard. Please see the Reference manuals for more information.</li> 
+      <li>Support for Visual Studio 2012 and 2013 on both 32-bit and 64-bit Windows
+      platforms.</li>
+      <li>Support for Raspberry Pi.</li>
+      <li><a href="pdf/EvaluatingOSPLEnterprise.pdf">New benchmarking guide</a>
+      and examples. Please see the RoundTrip and Throughput examples.</li>
+    </ul>
   </ul>
   </p>
 

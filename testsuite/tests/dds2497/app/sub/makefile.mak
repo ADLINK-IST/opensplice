@@ -13,9 +13,9 @@ CINCS += -I$(OSPL_HOME)/src/user/include
 CINCS += -I$(OSPL_HOME)/src/kernel/include
 CINCS += -I$(OSPL_OUTER_HOME)/testsuite/rbt/sac/common/include
 
-LDLIBS += -l$(DDS_DCPSGAPI) -l$(DDS_DCPSSAC) -l$(DDS_OS) -l$(DDS_CMXML)
-LDLIBS += -l$(DDS_UTIL) -l$(DDS_SERIALIZATION) -l$(DDS_KERNEL) -l$(DDS_USER)
-LDLIBS += -l$(DDS_DATABASE) -l$(DDS_CONF) -l$(DDS_CONFPARSER) -ldds2497
+LDLIBS +=  -l$(DDS_DCPSSAC)  -l$(DDS_CMXML)
+LDLIBS += -l$(DDS_CORE)   
+LDLIBS +=    -ldds2497
 
 ifeq ($(SPECIAL),purify)
 CFLAGS += -D_PURIFY

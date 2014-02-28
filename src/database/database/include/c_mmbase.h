@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#ifdef OSPL_BUILD_DB
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -31,6 +31,12 @@ extern "C" {
 /* this will make mmState return the exact amount of memory used
  * only use this in tests as this is lock intrusive*/
 #define C_MM_STATS 2
+
+typedef enum c_mm_mode {
+    MM_SHARED,  /* really using shared memory */
+    MM_PRIVATE, /* this allocator in process-private memory */
+    MM_HEAP     /* forward to os_malloc/os_free */
+} c_mm_mode;
 
 typedef struct c_mm_s       *c_mm;
 typedef struct c_mmStatus_s c_mmStatus;
@@ -53,6 +59,9 @@ struct c_mmStatus_s {
      * in caches):
      *      totalFree = size - totalInUse */
     c_size preallocated;
+    /* The mmMode field indicates if the memory map is in shared memory, private
+     * memory or heap memory. */
+    c_mm_mode mmMode;
 };
 
 OS_API c_mm c_mmCreate (void *address, c_size size, c_size threshold);

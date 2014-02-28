@@ -21,7 +21,6 @@
  *
  ***/
 #include <string>
-#include <sstream>
 #include <iostream>
 #include "DDSEntityManager.h"
 #include "ccpp_WaitSetData.h"

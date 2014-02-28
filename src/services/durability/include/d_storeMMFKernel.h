@@ -23,7 +23,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_DURABILITY
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT

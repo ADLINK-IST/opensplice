@@ -241,7 +241,8 @@ v_statusNotifyDataAvailable(
 
 c_bool
 v_statusNotifySampleLost(
-    v_status s)
+    v_status s,
+    c_ulong nrSamplesLost)
 {
     c_bool changed;
 
@@ -255,9 +256,8 @@ v_statusNotifySampleLost(
         changed = TRUE;
     }
 
-    v_readerStatus(s)->sampleLost.totalCount++;
-    v_readerStatus(s)->sampleLost.totalChanged++;
-
+    v_readerStatus(s)->sampleLost.totalCount += nrSamplesLost;
+    v_readerStatus(s)->sampleLost.totalChanged += nrSamplesLost;
     return changed;
 }
 

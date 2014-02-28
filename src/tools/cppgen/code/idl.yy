@@ -51,8 +51,8 @@ Technical Data and Computer Software clause at DFARS 252.227-7013 and FAR
 Sun, Sun Microsystems and the Sun logo are trademarks or registered
 trademarks of Sun Microsystems, Inc.
 
-SunSoft, Inc.  
-2550 Garcia Avenue 
+SunSoft, Inc.
+2550 Garcia Avenue
 Mountain View, California  94043
 
 NOTE:
@@ -118,7 +118,7 @@ void yyunput(int c);
   double                dval;           /* Double value         */
   float                 fval;           /* Float value          */
   char                  cval;           /* Char value           */
-  
+
   UTL_String            *sval;          /* String value         */
   char                  *strval;        /* char * value         */
   Identifier            *idval;         /* Identifier           */
@@ -258,8 +258,8 @@ void yyunput(int c);
 /*
  * Production starts here
  */
-start : 
-        definitions 
+start :
+        definitions
         ;
 
 definitions
@@ -317,10 +317,10 @@ definition
         {
                 idl_global->set_parse_state(IDL_GlobalData::PS_OpaqueDeclSeen);
                 UTL_Scope *s = idl_global->scopes()->top_non_null();
-                UTL_ScopedName *n = new UTL_ScopedName(new 
+                UTL_ScopedName *n = new UTL_ScopedName(new
                                                 Identifier($2,1,0,I_FALSE),NULL);
                 AST_Opaque *o = NULL;
-        
+
                 if(s != NULL)
                 {
                         o = idl_global->gen()->create_opaque(n,s->get_pragmas());
@@ -351,7 +351,7 @@ pragma :
                 if(d)
                 {
                         if((AST_Interface *)d->narrow((long)&AST_Interface::type_id) ||
-                                (AST_Operation *)d->narrow((long)&AST_Operation::type_id)) 
+                                (AST_Operation *)d->narrow((long)&AST_Operation::type_id))
                         {
                                 d->get_decl_pragmas().set_pragma_client_synchronicity(I_TRUE);
                         }
@@ -372,7 +372,7 @@ pragma :
                 if(d)
                 {
                         if((AST_Interface *)d->narrow((long)&AST_Interface::type_id) ||
-                                (AST_Operation *)d->narrow((long)&AST_Operation::type_id)) 
+                                (AST_Operation *)d->narrow((long)&AST_Operation::type_id))
                         {
                                 d->get_decl_pragmas().set_pragma_server_synchronicity(I_TRUE);
                         }
@@ -1046,7 +1046,7 @@ state_member
                     Identifier * id = d->name ()->head ();
                     const char *postfix =
                        (tp->node_type () == AST_Decl::NT_array)
-                       ? "_array" : "_seq";
+                       ? "" : "_seq";
                     // first underscore removed by Identifier constructor
                     CPPGENString anon_type_name =
                        CPPGENString ("__") + CPPGENString (id->get_string ())
@@ -1057,7 +1057,7 @@ state_member
                        new Identifier (anon_type_name),
                        NULL
                     );
-   
+
                     (void) s->fe_add_typedef
                     (
                        idl_global->gen()->create_typedef
@@ -1149,7 +1149,7 @@ init_param_dcl
               (void) s->fe_add_argument(a);
             }
           }
-        }           
+        }
         ;
 
 exports
@@ -1329,13 +1329,13 @@ const_dcl :
            * it in the enclosing scope
            */
 
-          if ($9 != NULL && s != NULL) 
+          if ($9 != NULL && s != NULL)
           {
             if ($9->coerce ($3) == NULL)
             {
               idl_global->err()->coercion_error ($9, $3);
             }
-            else 
+            else
             {
               c = idl_global->gen()->create_constant
                  ($3, $9, n, s->get_pragmas ());
@@ -1593,10 +1593,10 @@ type_declarator :
             l = new UTL_DecllistActiveIterator($3);
             for (;!(l->is_done()); l->next()) {
               d = l->item();
-              if (d == NULL) 
+              if (d == NULL)
                 continue;
               AST_Type * tp = d->compose($1);
-              if (tp == NULL) 
+              if (tp == NULL)
                 continue;
               t = idl_global->gen()->create_typedef(tp, d->name(), s->get_pragmas());
               (void) s->fe_add_typedef(t);
@@ -1765,14 +1765,14 @@ char_type
 
 octet_type
         : OCTET
-        { 
+        {
           $$ = AST_Expression::EV_octet;
         }
         ;
 
 boolean_type
         : BOOLEAN
-        { 
+        {
           $$ = AST_Expression::EV_bool;
         }
         ;
@@ -1881,10 +1881,10 @@ member  :
             l = new UTL_DecllistActiveIterator($3);
             for (;!(l->is_done()); l->next()) {
               d = l->item();
-              if (d == NULL) 
+              if (d == NULL)
                 continue;
               AST_Type *tp = d->compose($1);
-              if (tp == NULL) 
+              if (tp == NULL)
                 continue;
 
               // Check for anonymous type
@@ -1894,7 +1894,7 @@ member  :
                  Identifier * id = d->name ()->head ();
                  const char *postfix =
                     (tp->node_type () == AST_Decl::NT_array)
-                    ? "_array" : "_seq";
+                    ? "" : "_seq";
                  // first underscore removed by Identifier constructor
                  CPPGENString anon_type_name =
                     CPPGENString ("__") + CPPGENString (id->get_string ())
@@ -2237,7 +2237,7 @@ element_spec :
                  Identifier * id = $3->name ()->head ();
                  const char *postfix =
                     (tp->node_type () == AST_Decl::NT_array)
-                    ? "_array" : "_seq";
+                    ? "" : "_seq";
                  // first underscore removed by Identifier constructor
                  CPPGENString anon_type_name =
                     CPPGENString ("__") + CPPGENString (id->get_string ())
@@ -2348,7 +2348,7 @@ enumerator :
              */
             if (s != NULL && s->scope_node_type() == AST_Decl::NT_enum) {
               c = AST_Enum::narrow_from_scope(s);
-              if (c != NULL) 
+              if (c != NULL)
                 e = idl_global->gen()->create_enum_val(c->next_enum_val(), n, s->get_pragmas());
               (void) s->fe_add_enum_val(e);
             }
@@ -2383,8 +2383,8 @@ sequence_type_spec
           } else if ($1 == NULL) {
             $$ = NULL;
           } else {
-            AST_Type *tp = AST_Type::narrow_from_decl($1); 
-            if (tp == NULL) 
+            AST_Type *tp = AST_Type::narrow_from_decl($1);
+            if (tp == NULL)
               $$ = NULL;
             else {
               $$ = idl_global->gen()->create_sequence($4, tp);
@@ -2657,7 +2657,7 @@ attribute:
             }
             delete l;
           }
-        }           
+        }
         ;
 
 opt_readonly
@@ -2881,7 +2881,7 @@ parameter :
               (void) s->fe_add_argument(a);
             }
           }
-        }           
+        }
         ;
 
 direction

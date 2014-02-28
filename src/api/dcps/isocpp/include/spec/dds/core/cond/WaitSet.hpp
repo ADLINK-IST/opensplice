@@ -21,8 +21,15 @@
 
 #include <dds/core/cond/detail/WaitSet.hpp>
 
-namespace dds { namespace core { namespace cond {
-  typedef dds::core::cond::detail::WaitSet WaitSet;
-} } }
+namespace dds
+{
+namespace core
+{
+namespace cond
+{
+typedef dds::core::cond::detail::WaitSet WaitSet;
+}
+}
+}
 
 #endif /* OMG_DDS_CORE_DETAIL_WAITSET_HPP_ */

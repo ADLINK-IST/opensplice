@@ -272,8 +272,8 @@ generate_cf_file(
    const cf_element root)
 {
    int i = 0;
-   c_iter services;
-   c_iter apps;
+   c_iter services = NULL;
+   c_iter apps = NULL;
    struct serviceInfo *si;
    struct applicationInfo *ai;
    FILE *file;

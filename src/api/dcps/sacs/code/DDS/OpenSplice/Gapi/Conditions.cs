@@ -28,7 +28,7 @@ namespace DDS.OpenSplice.Gapi
          *     boolean
          *     get_trigger_value();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_condition_get_trigger_value")]
+        [DllImport("ddskernel", EntryPoint = "gapi_condition_get_trigger_value")]
         public static extern byte get_trigger_value(
             IntPtr _this);
     }
@@ -39,7 +39,7 @@ namespace DDS.OpenSplice.Gapi
          *     GuardCondition__alloc (
          *         void);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_guardCondition__alloc")]
+        [DllImport("ddskernel", EntryPoint = "gapi_guardCondition__alloc")]
         public static extern IntPtr alloc();
 
         /*     ReturnCode_t
@@ -47,7 +47,7 @@ namespace DDS.OpenSplice.Gapi
          *         in boolean value);
          * };
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_guardCondition_set_trigger_value")]
+        [DllImport("ddskernel", EntryPoint = "gapi_guardCondition_set_trigger_value")]
         public static extern ReturnCode set_trigger_value(
             IntPtr _this,
             byte value);
@@ -58,7 +58,7 @@ namespace DDS.OpenSplice.Gapi
         /*     StatusKindMask
          *     get_enabled_statuses();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_statusCondition_get_enabled_statuses")]
+        [DllImport("ddskernel", EntryPoint = "gapi_statusCondition_get_enabled_statuses")]
         public static extern StatusKind get_enabled_statuses(
             IntPtr _this);
 
@@ -66,7 +66,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_enabled_statuses(
          *         in StatusKindMask mask);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_statusCondition_set_enabled_statuses")]
+        [DllImport("ddskernel", EntryPoint = "gapi_statusCondition_set_enabled_statuses")]
         public static extern ReturnCode set_enabled_statuses(
             IntPtr _this,
             StatusKind mask);
@@ -74,7 +74,7 @@ namespace DDS.OpenSplice.Gapi
         /*     Entity
          *     get_entity();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_statusCondition_get_entity")]
+        [DllImport("ddskernel", EntryPoint = "gapi_statusCondition_get_entity")]
         public static extern IntPtr get_entity(
             IntPtr _this);
     }
@@ -84,35 +84,35 @@ namespace DDS.OpenSplice.Gapi
         /*     SampleStateMask
          *     get_sample_state_mask();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_readCondition_get_sample_state_mask")]
+        [DllImport("ddskernel", EntryPoint = "gapi_readCondition_get_sample_state_mask")]
         public static extern SampleStateKind get_sample_state_mask(
             IntPtr _this);
 
         /*     ViewStateMask
          *     get_view_state_mask();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_readCondition_get_view_state_mask")]
+        [DllImport("ddskernel", EntryPoint = "gapi_readCondition_get_view_state_mask")]
         public static extern ViewStateKind get_view_state_mask(
             IntPtr _this);
 
         /*     InstanceStateMask
          *     get_instance_state_mask();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_readCondition_get_instance_state_mask")]
+        [DllImport("ddskernel", EntryPoint = "gapi_readCondition_get_instance_state_mask")]
         public static extern InstanceStateKind get_instance_state_mask(
             IntPtr _this);
 
         /*     DataReader
          *     get_datareader();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_readCondition_get_datareader")]
+        [DllImport("ddskernel", EntryPoint = "gapi_readCondition_get_datareader")]
         public static extern IntPtr get_datareader(
             IntPtr _this);
 
         /*     DataReader
          *     get_datareaderview();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_readCondition_get_datareaderview")]
+        [DllImport("ddskernel", EntryPoint = "gapi_readCondition_get_datareaderview")]
         public static extern IntPtr get_datareaderview(
             IntPtr _this);
 
@@ -123,7 +123,7 @@ namespace DDS.OpenSplice.Gapi
         /*     string
          *     get_query_expression();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_queryCondition_get_query_expression")]
+        [DllImport("ddskernel", EntryPoint = "gapi_queryCondition_get_query_expression")]
         public static extern IntPtr get_query_expression(
             IntPtr _this);
 
@@ -131,7 +131,7 @@ namespace DDS.OpenSplice.Gapi
          *       get_query_parameters(
          *             inout StringSeq query_parameters);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_queryCondition_get_query_parameters")]
+        [DllImport("ddskernel", EntryPoint = "gapi_queryCondition_get_query_parameters")]
         public static extern ReturnCode get_query_parameters(
             IntPtr _this,
             IntPtr query_parameters
@@ -141,7 +141,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_query_parameters(
          *         in StringSeq query_parameters);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_queryCondition_set_query_parameters")]
+        [DllImport("ddskernel", EntryPoint = "gapi_queryCondition_set_query_parameters")]
         public static extern ReturnCode set_query_parameters(
             IntPtr _this,
             IntPtr query_parameters

@@ -16,7 +16,7 @@
 #include "os_if.h"
 #include "c_querybase.h"
 
-#ifdef OSPL_BUILD_DB
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT

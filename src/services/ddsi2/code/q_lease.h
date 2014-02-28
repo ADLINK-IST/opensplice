@@ -1,6 +1,10 @@
 #ifndef Q_LEASE_H
 #define Q_LEASE_H
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 struct receiver_state;
 struct participant;
 struct lease;
@@ -16,6 +20,10 @@ void lease_renew (struct lease *l, os_int64 tnow);
 void check_and_handle_lease_expiration (struct thread_state1 *self, os_int64 tnow);
 
 void handle_PMD (const struct receiver_state *rst, unsigned statusinfo, const void *vdata, int len);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* Q_LEASE_H */
 

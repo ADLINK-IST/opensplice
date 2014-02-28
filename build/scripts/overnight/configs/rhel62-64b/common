@@ -1,0 +1,5 @@
+export JAVA_HOME=/home/dds/INSTALLED_FOR_DDS/jdk1.6.0_23_64
+export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
+export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/GSOAP
+export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO211_0-RedHat-EL62-gcc446-inline-64bit-120927-head
+unset QTDIR

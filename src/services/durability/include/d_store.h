@@ -67,6 +67,10 @@ d_storeResult       d_storeActionStop           (const d_store store);
 d_storeResult       d_storeGroupStore           (const d_store store,
                                                  const d_group group);
 
+d_storeResult       d_storeGroupListFree        (const d_store store,
+                                                 d_groupList list);
+
+
 d_storeResult       d_storeMessageStore         (const d_store store,
                                                  const v_groupAction message);
 
@@ -127,7 +131,6 @@ c_char*      d_storeDirNew(d_store store, const c_char *name);
 
 void         d_storeGetBase(v_entity entity, c_voidp args);
 
-d_storeResult           d_storeGroupListFree            (const d_store store, d_groupList list);
 
 
 #if defined (__cplusplus)

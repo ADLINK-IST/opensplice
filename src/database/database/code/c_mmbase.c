@@ -50,6 +50,7 @@ c_mmState (
     s.fails = 0;
     s.cached = 0;
     s.preallocated = 0;
+    s.mmMode = MM_HEAP;
 
     return s;
 }
@@ -169,5 +170,6 @@ void c_mmPrintObjectHistory(FILE *fp, c_mm mm, void *ptr)
 {
     fprintf (fp, "no object history tracing available\n");
 }
-
+#else
+typedef int EhWasHere; /* Avoid compiler warning for empty file. */
 #endif /* !defined USE_ADV_MEM_MNG */

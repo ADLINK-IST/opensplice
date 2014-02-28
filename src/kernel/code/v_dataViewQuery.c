@@ -131,22 +131,6 @@ resolveFields (
     return TRUE;
 }
 
-static c_iter
-deOr(
-    q_expr e,
-    c_iter list)
-{
-    c_iter results;
-
-    if (q_getTag(e) == Q_EXPR_OR) {
-        results = deOr(q_takePar(e,0),deOr(q_takePar(e,0),list));
-        q_dispose(e);
-    } else {
-        results = c_iterInsert(list,e);
-    }
-    return results;
-}
-
 #define PRINT_QUERY (0)
 
 v_dataViewQuery

@@ -192,7 +192,7 @@ namespace DDS
         ::DDS::InstanceHandle_t topic_handle
       ) THROW_ORB_EXCEPTIONS;
 
-      virtual CORBA::Boolean contains_entity (
+      virtual DDS::Boolean contains_entity (
         ::DDS::InstanceHandle_t a_handle
       ) THROW_ORB_EXCEPTIONS;
 

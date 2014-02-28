@@ -258,7 +258,7 @@ typedef struct jni_cache_t {
     jfieldID subscriberQos_entityFactory_fid;
     jfieldID subscriberQos_share_fid;
 
-    /* caching the field id's for the SubscriptionBuiltinTopicData */
+     /* caching the field id's for the SubscriptionBuiltinTopicData */
     jfieldID subscriptionBuiltinTopicData_key_fid;
     jfieldID subscriptionBuiltinTopicData_participantKey_fid;
     jfieldID subscriptionBuiltinTopicData_topicName_fid;
@@ -301,16 +301,22 @@ typedef struct jni_cache_t {
     jfieldID domainParticipantFactoryQosHolder_value_fid;
     jfieldID conditionSeqHolder_value_fid;
     jfieldID dataReaderQosHolder_value_fid;
+    jfieldID namedDataReaderQosHolder_value_fid;
     jfieldID dataReaderViewQosHolder_value_fid;
     jfieldID dataReaderSeqHolder_value_fid;
     jfieldID dataWriterQosHolder_value_fid;
+    jfieldID namedDataWriterQosHolder_value_fid;
     jfieldID domainParticipantQosHolder_value_fid;
+    jfieldID namedDomainParticipantQosHolder_value_fid;
     jfieldID instanceHandleSeqHolder_value_fid;
     jfieldID publicationBuiltinTopicDataHolder_value_fid;
     jfieldID publisherQosHolder_value_fid;
+    jfieldID namedPublisherQosHolder_value_fid;
     jfieldID subscriberQosHolder_value_fid;
+    jfieldID namedSubscriberQosHolder_value_fid;
     jfieldID subscriptionBuiltinTopicDataHolder_value_fid;
     jfieldID topicQosHolder_value_fid;
+    jfieldID namedTopicQosHolder_value_fid;
     jfieldID sampleInfoHolder_value_fid;
     jfieldID sampleInfoSeqHolder_value_fid;
     jfieldID time_tHolder_value_fid;

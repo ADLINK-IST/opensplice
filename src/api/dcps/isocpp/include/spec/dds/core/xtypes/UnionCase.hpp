@@ -29,25 +29,29 @@
 #include <dds/core/xtypes/MemberType.hpp>
 #include <dds/core/xtypes/detail/UnionCase.hpp>
 
-namespace dds {
-  namespace core {
-    namespace xtypes {
-      template <typename T, template <typename Q> class DELEGATE = detail::UnionCase>
-      class UnionCase;
-    }
-  }
+namespace dds
+{
+namespace core
+{
+namespace xtypes
+{
+template <typename T, template <typename Q> class DELEGATE = detail::UnionCase>
+class UnionCase;
+}
+}
 }
 
 template <typename T, template <typename Q> class DELEGATE>
-class UnionCase : public dds::core::Reference<DELEGATE<T> > {
+class UnionCase : public dds::core::Reference<DELEGATE<T> >
+{
 public:
-  // Nil case
-  UnionCase();
+    // Nil case
+    UnionCase();
 public:
-  UnionCase(T discriminator, const MemberType& member);
+    UnionCase(T discriminator, const MemberType& member);
 public:
-  T discriminator();
-  const MemberType& member();
+    T discriminator();
+    const MemberType& member();
 };
 
 #endif /* OMG_DDS_CORE_XTYPES_T_UNION_CASE_HPP_ */

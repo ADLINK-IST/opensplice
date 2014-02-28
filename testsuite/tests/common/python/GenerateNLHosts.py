@@ -6,10 +6,10 @@ from TestHost import TestHost
 def hostList():
     """Modify this list to reflect the STAF hosts available in your local network"""
     list = []
-    list.append(TestHost('patrick.office.ptnl',     ['x86_64.linux2.6-release'], ['RTS']))
-    list.append(TestHost('x64-ub10-01.office.ptnl', ['x86_64.linux2.6-release'], ['RTS']))
-    list.append(TestHost('x64-ub10-02.office.ptnl', ['x86_64.linux2.6-release'], ['RTS']))
-    list.append(TestHost('perf4.perfnet.ptnl',      ['x86_64.linux2.6-release'], ['RTS']))
+    list.append(TestHost('patrick.office.ptnl',     ['x86_64.linux-release'], ['RTS']))
+    list.append(TestHost('x64-ub10-01.office.ptnl', ['x86_64.linux-release'], ['RTS']))
+    list.append(TestHost('x64-ub10-02.office.ptnl', ['x86_64.linux-release'], ['RTS']))
+    list.append(TestHost('perf4.perfnet.ptnl',      ['x86_64.linux-release'], ['RTS']))
     return list
 
 if __name__ == '__main__':

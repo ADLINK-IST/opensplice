@@ -16,7 +16,6 @@
 #include "c__scope.h"
 #include "c_misc.h"
 #include "c_sync.h"
-#include "c_avltree.h"
 #include "c_iterator.h"
 #include "c_stringSupport.h"
 #include "c__collection.h"
@@ -116,13 +115,15 @@ metaScopeLookup(
 static void
 metaScopeWalk(
     c_metaObject scope,
-    void (*action)(),
-    void *actionArg)
+    c_scopeWalkAction action,
+    c_scopeWalkActionArg actionArg)
 {
     c_scope s;
 
     s = metaClaim(scope);
-    c_scopeWalk(s,action,actionArg);
+    if(s != NULL){
+        c_scopeWalk(s, action, actionArg);
+    }
     metaRelease(scope);
 }
 
@@ -131,10 +132,12 @@ metaScopeCount(
     c_metaObject scope)
 {
     c_scope s;
-    c_long n;
+    c_long n = 0;
 
     s = metaClaim(scope);
-    n = c_scopeCount(s);
+    if(s != NULL){
+        n = c_scopeCount(s);
+    }
     metaRelease(scope);
     return n;
 }
@@ -360,7 +363,7 @@ c_metaDefine(
         if (o) {
             o->kind = kind;
             c_module(o)->scope = c_scopeNew(base);
-            c_mutexInit(&c_module(o)->mtx, SHARED_MUTEX);
+            c_mutexInit(&c_module(o)->mtx, c_baseGetMutexAttr(base));
         }
     break;
     case M_ANNOTATION:
@@ -450,18 +453,26 @@ getProperties(
     c_metaObject o,
     c_iter iter)
 {
+    assert(iter);
     switch(c_baseObjectKind(o)) {
     case M_ATTRIBUTE:
     case M_RELATION:
     case M_MEMBER:
     case M_UNIONCASE:
-        c_iterInsert(iter,o);
+        (void)c_iterInsert(iter,o);
     break;
     default:
     break;
     }
 }
 
+static void
+getPropertiesScopeWalkAction(
+    c_metaObject o,
+    c_scopeWalkActionArg arg /* c_iter */)
+{
+    getProperties(o, (c_iter)arg);
+}
 #if 0
 static c_long
 c_compareMembers(
@@ -885,7 +896,7 @@ _c_metaCompare (
             return E_UNEQUAL;
         }
         iter = c_iterNew(NULL);
-        metaScopeWalk(c_metaObject(o),getProperties,iter);
+        metaScopeWalk(c_metaObject(o), getPropertiesScopeWalkAction, iter);
 
         length = c_iterLength(iter);
         if (length > 0) {
@@ -1250,7 +1261,7 @@ c__metaFinalize(
         }
 
         iter = c_iterNew(NULL);
-        metaScopeWalk(c_metaObject(o),getProperties,iter);
+        metaScopeWalk(c_metaObject(o), getPropertiesScopeWalkAction, iter);
         if (c_interface(o)->inherits != NULL) {
             length = c_arraySize(c_interface(o)->inherits);
             for (i=0; i<length; i++) {
@@ -1945,6 +1956,14 @@ copyScopeObject(
     c_free(found);
 }
 
+static void
+copyScopeObjectScopeWalkAction(
+    c_metaObject o,
+    c_scopeWalkActionArg arg /* c_metaObject */)
+{
+    copyScopeObject(o, arg);
+}
+
 void
 c_metaCopy(
     c_metaObject s,
@@ -1962,7 +1981,7 @@ c_metaCopy(
         c_interface(d)->abstract = c_interface(s)->abstract;
         c_interface(d)->inherits = c_keep(c_interface(s)->inherits);
         c_interface(d)->references = c_keep(c_interface(s)->references);
-        metaScopeWalk(s,copyScopeObject,d);
+        metaScopeWalk(s, copyScopeObjectScopeWalkAction, d);
         c_typeCopy(c_type(s),c_type(d));
     break;
     case M_COLLECTION:
@@ -1983,10 +2002,10 @@ c_metaCopy(
     case M_STRUCTURE:
         c_structure(d)->members = c_keep(c_structure(s)->members);
         c_structure(d)->references = c_keep(c_structure(s)->references);
-        metaScopeWalk(s,copyScopeObject,d);
+        metaScopeWalk(s, copyScopeObjectScopeWalkAction, d);
     break;
     case M_MODULE:
-        metaScopeWalk(s,copyScopeObject,d);
+        metaScopeWalk(s, copyScopeObjectScopeWalkAction, d);
     break;
     case M_PRIMITIVE:
         c_primitive(d)->kind = c_primitive(s)->kind;
@@ -2020,9 +2039,12 @@ c_metaCopy(
 
 void
 c_metaPrint(
-    c_metaObject o)
+    c_metaObject o,
+    c_scopeWalkActionArg unused)
 {
     c_string name,extends;
+
+    OS_UNUSED_ARG(unused);
 
     name = c_metaName(o);
     if (name == NULL) {
@@ -2035,12 +2057,12 @@ c_metaPrint(
             if (extends == NULL) {
                 extends = "<anonomous>";
             }
-            c_metaPrint(c_metaObject(c_class(o)->extends));
+            c_metaPrint(c_metaObject(c_class(o)->extends), NULL);
             printf("class %s extends %s {\n",name,extends);
         } else {
             printf("class %s {\n",name);
         }
-        c_scopeWalk(c_interface(o)->scope,c_metaPrint,NULL);
+        c_scopeWalk(c_interface(o)->scope, c_metaPrint, NULL);
         printf("};\n\n");
     break;
     case M_ANNOTATION:

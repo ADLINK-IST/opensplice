@@ -46,8 +46,8 @@ typedef v_timedValue v_minValue;
 typedef v_timedValue v_maxValue;
 
 typedef struct v_avgValue_s {
-    c_float value;
     c_ulong count;
+    c_float value;
 } v_avgValue;
 
 typedef struct v_fullCounter_s {
@@ -108,6 +108,7 @@ class v_readerStatistics extends v_statistics {
     attribute c_ulong            numberOfSamplesDiscarded;
     attribute c_ulong            numberOfSamplesRead;
     attribute c_ulong            numberOfSamplesTaken;
+    attribute c_ulong            numberOfSamplesLost;
     attribute c_ulong            numberOfSamplesRejectedBySamplesLimit;
     attribute c_ulong            numberOfSamplesRejectedByInstancesLimit;
 
@@ -164,14 +165,43 @@ class v_networkChannelStatistics { /* Reachable via v_networkingStatistics only 
     attribute c_ulong            numberOfBytesReceived;
     attribute c_ulong            numberOfPacketsReceived;
     attribute c_ulong            numberOfPacketsLost;
+    attribute c_ulong            numberOfPacketsOutOfOrder;
     attribute c_ulong            numberOfAcksSent;
 
     attribute c_ulong            numberOfMessagesDelivered;
     attribute c_ulong            numberOfBytesDelivered;
     attribute c_ulong            numberOfMessagesNotInterested;
     attribute c_ulong            numberOfBytesNotInterested;
+    attribute c_ulong            numberOfPacketsNotConnectedPartition;
+    attribute c_ulong            numberOfPacketsUnknownAddress;
+    attribute c_ulong            numberOfPacketsInvalid;
+    attribute c_ulong            numberOfPacketsOutOfOrderDropped;
     attribute c_ulong            nofFreePacketBuffers;
     attribute c_ulong            nofUsedPacketBuffers;
+
+    attribute c_ulong            reorderAdminPacketsQueued;
+    attribute v_avgValue         reorderAdminPacketsQueuedAvg;
+    attribute v_maxValue         reorderAdminPacketsQueuedMax;
+    attribute v_minValue         reorderAdminPacketsQueuedMin;
+    attribute c_ulong            reorderAdminBytesQueued;
+    attribute v_avgValue         reorderAdminBytesQueuedAvg;
+    attribute v_maxValue         reorderAdminBytesQueuedMax;
+    attribute v_minValue         reorderAdminBytesQueuedMin;
+
+    attribute c_ulong            ringBufferMessagesQueued;
+    attribute v_avgValue         ringBufferMessagesQueuedAvg;
+    attribute v_maxValue         ringBufferMessagesQueuedMax;
+    attribute v_minValue         ringBufferMessagesQueuedMin;
+
+    attribute c_ulong            resendAdminPacketsQueued;
+    attribute v_avgValue         resendAdminPacketsQueuedAvg;
+    attribute v_maxValue         resendAdminPacketsQueuedMax;
+    attribute v_minValue         resendAdminPacketsQueuedMin;
+    attribute c_ulong            resendAdminBytesQueued;
+    attribute v_avgValue         resendAdminBytesQueuedAvg;
+    attribute v_maxValue         resendAdminBytesQueuedMax;
+    attribute v_minValue         resendAdminBytesQueuedMin;
+
     attribute v_fullCounter      adminQueueAcks;
     attribute v_fullCounter      adminQueueData;
 
@@ -193,6 +223,13 @@ class v_cmsoapStatistics  extends v_statistics {
     attribute c_ulong            connectedClients;
     attribute c_ulong            clientThreads;
     attribute c_ulong            requestsHandled;
+};
+
+class v_groupQueueStatistics extends v_statistics {
+    attribute c_ulong            numberOfWrites;
+    attribute c_ulong            numberOfReads;
+    attribute c_ulong            numberOfTakes;
+    attribute v_fullCounter      numberOfSamples;
 };
 
 class v_durabilityStatistics extends v_statistics  {
@@ -294,11 +331,17 @@ class v_rnrStatistics extends v_statistics {
    implementation of macro C_CAST */
 
 typedef struct v_handleInfo_s {
-    c_object object;      /* object that is managed associated to the handle described by this info */
-    c_long   serial;      /* handle generation for this specific handle. */
-    c_ulong  count;       /* the number of actual claims. */
-    c_bool   freed;       /* a flag indicating that the handle is freed. */
-    c_long   nextFree;    /* only used if this handle is ready for reuse, implements a free list. */
+    /* object that is managed associated to the handle described by
+       this info, or next handle in free list, depending on
+       status_count & STATUS_ON_FREELIST. */
+    c_address object_nextFree;
+
+    /* handle generation for this specific handle. */
+    c_ulong  serial;
+
+    /* status in the top bits, the number of actual claims in the
+       lower bits. */
+    c_ulong  status_count;
 } v_handleInfo;
 
 typedef ARRAY<v_handleInfo> v_handleInfoList;
@@ -316,8 +359,8 @@ class v_handleServer {
 
 typedef struct v_handle_s {
     c_address server;       /* reference to the handle server. */
-    c_long    index;        /* the index to the handle info record within the handle server. */
-    c_long    serial;       /* the handle generation to which this handle belongs. */
+    c_ulong   index;        /* the index to the handle info record within the handle server. */
+    c_ulong   serial;       /* the handle generation to which this handle belongs. */
 } v_handle;
 
 /* -------------------------------------------------------------------------- */
@@ -519,6 +562,7 @@ class v_lease extends v_object {
     attribute c_mutex                        mutex;
     attribute c_time                         expiryTime;
     attribute v_duration                     duration;
+    attribute c_bool                         lastRenewInternal;
     attribute SET<v_leaseManager>            observers;
 };
 
@@ -1068,7 +1112,7 @@ class v_filter {
 };
 
 /* -------------------------------------------------------------------------- */
-/* Partition implementation
+/* Partition implementation                                                   */
 /* -------------------------------------------------------------------------- */
 
 class v_partition extends v_entity {
@@ -1076,7 +1120,7 @@ class v_partition extends v_entity {
 };
 
 /* -------------------------------------------------------------------------- */
-/* Instance List Item implementation
+/* Instance List Item implementation                                          */
 /* -------------------------------------------------------------------------- */
 
 class v_instance extends v_public {
@@ -1288,6 +1332,7 @@ struct v_owner {
 struct v_historyBookmark {
     c_time sourceTimestamp;
     v_gid gid;
+    c_ulong sequenceNumber;
 };
 
 class v_dataReaderInstance extends v_instance {
@@ -1420,6 +1465,11 @@ enum v_groupAttachState {
     V_GROUP_ATTACH_STATE_NO_INTEREST
 };
 
+class v_groupwriterAdministration {
+    attribute v_gid                          gid;
+    attribute c_ulong                        seqNumber;
+};
+
 /** Class v_group:
     The attributes topic and partition specifies the data space of
     the group. The attribute writers is a set of all the writers
@@ -1471,6 +1521,7 @@ class v_group extends v_entity {
     attribute v_groupInstance                cachedInstance;
     attribute c_type                         instanceType;
     attribute c_type                         sampleType;
+    attribute SET<v_groupwriterAdministration>    writerAdministration; /* c_table writerAdministration<v_groupwriterAdministration> */
 };
 
 /* -------------------------------------------------------------------------- */
@@ -1611,6 +1662,11 @@ class v_publisher extends v_observer {
     attribute c_time                         suspendTime; /* inf means not suspended */
     attribute c_ulong                        transactionId;
 };
+
+
+
+
+
 const string V_BUILT_IN_PARTICIPANT_NAME = "Built-in participant";
 class v_participant extends v_observer {
     attribute SET<v_entity>                  entities;
@@ -1639,6 +1695,7 @@ enum v_serviceStateKind {
     STATE_NONE,
     STATE_INITIALISING,
     STATE_OPERATIONAL,
+    STATE_INCOMPATIBLE_CONFIGURATION,
     STATE_TERMINATING,
     STATE_TERMINATED,
     STATE_DIED
@@ -1920,7 +1977,8 @@ class v_transaction {
 class v_dataReaderEntry extends v_entry {
     attribute v_topic                        topic;
     attribute v_index                        index;
-    attribute v_filter                       filter;
+    attribute ARRAY<v_filter>                filterInstance;
+    attribute ARRAY<v_filter>                filterData;
     /* timed list of samples with a limited lifespan. */
     attribute v_lifespanAdmin                lifespanAdmin;
     /* Lists for garbagecollection/autopurging
@@ -1964,6 +2022,8 @@ class v_dataReader extends v_reader {
 #endif
     attribute c_long                         sampleCount;
     attribute c_long                         notReadCount;
+    attribute c_long                         notReadTriggerThreshold;
+    attribute c_long                         notReadTriggerCount;
     attribute c_bool                         maxInstances;
     /* Attributes maintaining the current state wrt the policies */
     attribute c_long                         depth;
@@ -2049,12 +2109,12 @@ class v_groupQueueSample {
 };
 
 class v_groupQueue extends v_groupStream {
-    attribute c_ulong            size;
-    attribute c_ulong            maxSize;
-    attribute v_groupQueueSample head;
-    attribute v_groupQueueSample tail;
-    attribute v_groupQueueSample marker;
-    attribute c_bool			 markerReached;
+    attribute c_ulong                size;
+    attribute c_ulong                maxSize;
+    attribute v_groupQueueSample     head;
+    attribute v_groupQueueSample     tail;
+    attribute v_groupQueueSample     marker;
+    attribute c_bool			     markerReached;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -2251,6 +2311,7 @@ class v_spliced extends v_service {
     attribute v_heartbeatInfo hb;       /* the heartbeat data */
     attribute v_lease         hbUpdate; /* lease for periodically writing heartbeat */
     attribute v_lease         hbCheck;  /* lease for next check on heartbeats */
+    attribute v_leaseManager  hbManager;
     attribute v_waitset       ws;
     attribute c_bool          quit;
     attribute c_bool          cAndMCommandDispatcherQuit;

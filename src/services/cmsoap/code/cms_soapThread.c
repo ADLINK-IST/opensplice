@@ -105,7 +105,7 @@ cms_soapThreadFree(
     }
     os_condDestroy(&thread->condition);
     os_mutexDestroy(&thread->soapMutex);
-
+    os_free(cms_thread(thread)->uri);
     os_free(thread);
 }
 

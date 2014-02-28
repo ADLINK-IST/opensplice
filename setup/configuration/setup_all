@@ -1,9 +1,12 @@
+set_var DDS_CORE ddskernel
 set_var DDS_CMJNI cmjni
 set_var DDS_CMXML cmxml
 set_var DDS_CMCOMMON cmcommon
 set_var DDS_COMMONSERV commonserv
 set_var DDS_CONFPARSER ddsconfparser
 set_var DDS_CONF ddsconf
+set_var DDS_QOSPROVIDER ddsqosprovider
+set_var DDS_QOSPROVIDER_STATIC s_ddsqosprovider
 set_var DDS_DATABASE ddsdatabase
 set_var DDS_DCPSCCPP dcpsccpp
 set_var DDS_DCPSSACPP dcpssacpp
@@ -12,13 +15,6 @@ set_var DDS_DCPSJNI dcpsjni
 set_var DDS_DCPSSAC dcpssac
 set_var DDS_DCPSSAJ dcpssaj
 set_var DDS_DCPSSACS dcpssacs
-set_var DDS_DLRLSAJ dlrlsaj
-set_var DDS_DLRLCCPP dlrlccpp
-set_var DDS_DLRLSACPP dlrlsacpp
-set_var DDS_LOCUTIL ddslocutil
-set_var DDS_LOCKERNEL ddslockernel
-set_var DDS_LOCMETAMODEL ddslocmetamodel
-set_var DDS_LOCCOLLECTIONS ddsloccollections
 set_var DDS_KERNEL ddskernel
 set_var DDS_SERIALIZATION ddsserialization
 set_var DDS_OS ddsos
@@ -26,6 +22,7 @@ set_var DDS_OS_NET ddsosnet
 set_var DDS_USER ddsuser
 set_var DDS_UTIL ddsutil
 set_var DDS_CPP ddscpp
+set_var DDS_HTS ddshts
 set_var DDS_SPLICED spliced
 set_var DDS_DURABILITY durability
 set_var DDS_NETWORKING networking
@@ -72,26 +69,21 @@ set_var INCLUDE_API_DCPS_SAJ yes
 set_var INCLUDE_API_DCPS_CJ yes
 set_var INCLUDE_API_DCPS_JAVA yes
 set_var INCLUDE_API_DCPS_SACS yes
-unset_var INCLUDE_DLRL
-unset_var INCLUDE_API_DLRL
-unset_var INCLUDE_API_DLRL_SAJ
-unset_var INCLUDE_API_DLRL_CCPP
-unset_var INCLUDE_API_DLRL_SACPP
 set_var INCLUDE_TOOLS yes
 set_var INCLUDE_TOOLS_IDLPP yes
-unset_var INCLUDE_TOOLS_SHMDUMP
+set_var INCLUDE_TOOLS_SHMDUMP yes
 set_var INCLUDE_TOOLS_TUNER yes
 set_var INCLUDE_TOOLS_TESTER yes
-unset_var INCLUDE_TOOLS_MMSTAT
+set_var INCLUDE_TOOLS_MMSTAT yes
 set_var INCLUDE_TOOLS_DEBUG yes
-unset_var INCLUDE_TOOLS_DEBUG_DBD
+set_var INCLUDE_TOOLS_DEBUG_DBD yes
 set_var INCLUDE_TOOLS_DEBUG_MMFD no
-unset_var INCLUDE_TOOLS_DCG
 set_var INCLUDE_SERVICES yes
 set_var INCLUDE_SERVICES_DURABILITY yes
 set_var INCLUDE_SERVICES_NETWORKING yes
 set_var INCLUDE_SERVICES_DDSI yes
 set_var INCLUDE_SERVICES_SPLICED yes
+set_var INCLUDE_SERVICES_CMSOAP yes
 set_var INCLUDE_SERVICES_COMMON yes
 set_var INCLUDE_SINGLE_PROCESS yes
 set_var INCLUDE_UTILITIES yes

@@ -11,7 +11,7 @@ include $(OSPL_HOME)/setup/x86_64.darwin10_clang-default.mak
 endif
 
 # Compiler flags
-CFLAGS_OPT       = -O2 -fno-strict-aliasing
+CFLAGS_OPT       = -O4 -fno-strict-aliasing
 CFLAGS_DEBUG     = -g -DNDEBUG #-D_TYPECHECK_ -DE_DEBUG
 JCFLAGS          = -g:none -nowarn
 

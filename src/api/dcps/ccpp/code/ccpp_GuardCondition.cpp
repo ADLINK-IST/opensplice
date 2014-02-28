@@ -25,7 +25,7 @@ DDS::GuardCondition::GuardCondition( ) : DDS::Condition_impl(NULL)
     myUD = new DDS::ccpp_UserData(this, NULL, NULL, true);
     if (myUD)
     {
-        CORBA::Object_ptr parent = dynamic_cast<CORBA::Object_ptr>(myUD);
+        DDS::Object_ptr parent = dynamic_cast<DDS::Object_ptr>(myUD);
         gapi_object_set_user_data(_gapi_self, static_cast<void *>(parent),
                               ccpp_CallBack_DeleteUserData,NULL);
     }
@@ -39,7 +39,7 @@ DDS::GuardCondition::GuardCondition( ) : DDS::Condition_impl(NULL)
 DDS::GuardCondition::~GuardCondition( )
 {
   DDS::ccpp_UserData_ptr myUD;
-  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
+  myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(_gapi_self));
   if (myUD)
   {
   /* avoid another last release of the reference to this WaitSet */
@@ -53,7 +53,7 @@ DDS::GuardCondition::~GuardCondition( )
 }
 
 DDS::ReturnCode_t DDS::GuardCondition::set_trigger_value (
-  ::CORBA::Boolean value
+  ::DDS::Boolean value
 ) THROW_ORB_EXCEPTIONS
 {
     return gapi_guardCondition_set_trigger_value( _gapi_self, value);

@@ -53,7 +53,7 @@ public class Config {
 
     private CommonFileChooser chooser = null;
 
-    private static Config instance = null;
+    private static volatile Config instance       = null;
 
     private static Color warningColor = null;
     private static Color errorColor = null;
@@ -63,9 +63,7 @@ public class Config {
     private static Color inputColor = null;
     private static Color incorrectColor = null;
 
-    private Config(){
-        chooser = new CommonFileChooser(".");
-    }
+    private Config(){}
 
     public static Config getInstance(){
         if(instance == null){
@@ -213,7 +211,7 @@ public class Config {
             try {
                 fis = new FileInputStream(configFile);
                 config.load(fis);
-
+                Properties newConfig = new Properties(config);
                 if(validator != null){
                     Iterator<Object> iter = config.keySet().iterator();
 
@@ -223,12 +221,13 @@ public class Config {
                         value = validator.getValidatedValue(key, value);
 
                         if(value == null){
-                            config.remove(key);
+                            newConfig.remove(key);
                         } else {
-                            config.setProperty(key, value);
+                            newConfig.setProperty(key, value);
                         }
                     }
                 }
+                config = newConfig;
             } catch (FileNotFoundException e) {
                 result = false;
             } catch (IOException e) {
@@ -252,7 +251,7 @@ public class Config {
 
 
 
-        /**
+    /**
      * Loads the configuration from the supplied URI.
      * 
      * @param uri
@@ -272,30 +271,31 @@ public class Config {
             config = new Properties();
             fis = new FileInputStream(configFile);
             config.load(fis);
-
+            Properties newConfig = new Properties();
             if(validator != null){
 
                 for (Object key : config.keySet()) {
                     value = config.getProperty((String) key);
                     value = validator.getValidatedValue((String) key, value);
                     if (value != null) {
-                        config.setProperty((String) key, value);
+                        newConfig.setProperty((String) key, value);
                     }
                 }
             }
+            config.putAll(newConfig);
             result = true;
         } catch (FileNotFoundException e1) {
-             Report.getInstance().writeErrorLog("Configuration file could not be found.");
+            Report.getInstance().writeErrorLog("Configuration file could not be found.");
         } catch (IOException e1) {
-             Report.getInstance().writeErrorLog("Configuration file could not be read.");
+            Report.getInstance().writeErrorLog("Configuration file could not be read.");
         } catch (URISyntaxException e) {
-             Report.getInstance().writeErrorLog("Supplied URI not valid.");
+            Report.getInstance().writeErrorLog("Supplied URI not valid.");
         } finally {
             if (fis != null) {
                 try {
                     fis.close();
                 } catch (IOException ie) {
-                     Report.getInstance().writeErrorLog("Configuration file could not be read.");
+                    Report.getInstance().writeErrorLog("Configuration file could not be read.");
                 }
             }
         }
@@ -408,13 +408,13 @@ public class Config {
                 config.store(fos, null);
                 result = true;
             } catch (IOException e) {
-                 Report.getInstance().writeErrorLog("Configuration could not be saved.");
+                Report.getInstance().writeErrorLog("Configuration could not be saved.");
             } finally {
                 if (fos != null) {
                     try {
                         fos.close();
                     } catch (IOException ie) {
-                         Report.getInstance().writeErrorLog("Configuration could not be saved.");
+                        Report.getInstance().writeErrorLog("Configuration could not be saved.");
                     }
                 }
             }
@@ -433,7 +433,7 @@ public class Config {
 
         if(config != null){
             try {
-                 Report.getInstance().writeInfoLog("Storing configuration to URI: " +
+                Report.getInstance().writeInfoLog("Storing configuration to URI: " +
                         configFile.toURI().getScheme() +
                         configFile.toURI().getPath() + ".");
                 uri = uri.replaceAll(" ", "%20");
@@ -448,19 +448,19 @@ public class Config {
                     fos = new FileOutputStream(outFile);
                     config.store(fos, null);
                 } else {
-                     Report.getInstance().writeErrorLog("Configuration could not be saved. file could not be created");
+                    Report.getInstance().writeErrorLog("Configuration could not be saved. file could not be created");
                     result = false;
                 }
             } catch (IOException e) {
-                 Report.getInstance().writeErrorLog("Configuration could not be saved.");
+                Report.getInstance().writeErrorLog("Configuration could not be saved.");
             } catch (URISyntaxException e) {
-                 Report.getInstance().writeErrorLog("Configuration could not be saved.");
+                Report.getInstance().writeErrorLog("Configuration could not be saved.");
             } finally {
                 if (fos != null) {
                     try {
                         fos.close();
                     } catch (IOException ie) {
-                         Report.getInstance().writeErrorLog("Configuration could not be saved.");
+                        Report.getInstance().writeErrorLog("Configuration could not be saved.");
                     }
                 }
             }
@@ -468,8 +468,11 @@ public class Config {
         return result;
     }
 
-    public CommonFileChooser getFileChooser(){
-        return chooser;
+    public synchronized CommonFileChooser getFileChooser(){
+        if(this.chooser == null){
+            this.chooser = new CommonFileChooser(".");
+        }
+        return this.chooser;
     }
 
     public static Color getErrorColor(){

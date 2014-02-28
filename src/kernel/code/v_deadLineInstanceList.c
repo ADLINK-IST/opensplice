@@ -116,7 +116,8 @@ v_deadLineInstanceListSetDuration(
 void
 v_deadLineInstanceListInsertInstance(
     v_deadLineInstanceList list,
-    v_instance instance)
+    v_instance instance,
+    c_time timestamp)
 {
     v_instance head = v_instance(list);
     v_kernel k;
@@ -131,7 +132,7 @@ v_deadLineInstanceListInsertInstance(
     /* As the instance is put at the end of the list no need to update the
        lease!
      */
-    v_instanceUpdate(instance); /* Updates instance checkTime */
+    v_instanceUpdate(instance, timestamp); /* Updates instance checkTime */
     v_instanceAppend(head,instance);
     if (list->deadlineLease == NULL) {
         if (c_timeCompare(list->leaseDuration, C_TIME_INFINITE) != C_EQ) {
@@ -187,7 +188,8 @@ v_deadLineInstanceListRemoveInstance(
 void
 v_deadLineInstanceListUpdate(
     v_deadLineInstanceList list,
-    v_instance instance)
+    v_instance instance,
+    c_time timestamp)
 {
     assert(C_TYPECHECK(instance,v_instance));
     assert(C_TYPECHECK(list,v_deadLineInstanceList));
@@ -199,10 +201,10 @@ v_deadLineInstanceListUpdate(
        as soon as the next deadlinecheck is performed.
     */
     if (v_instanceAlone(instance)) {
-        v_deadLineInstanceListInsertInstance(list,instance);
+        v_deadLineInstanceListInsertInstance(list,instance,timestamp);
     } else {
         v_instanceRemove(instance);
-        v_instanceUpdate(instance); /* Updates instance checkTime */
+        v_instanceUpdate(instance, timestamp); /* Updates instance checkTime */
         v_instanceAppend(v_instance(list), instance);
     }
 }

@@ -24,6 +24,7 @@ TESTCASES="
     SACSTesterWriter
     SACSGetDiscoveredXxx
     SACSTesterSampleInfo
+    SACSTesterQosProvider
     "
 
 run_testcases    

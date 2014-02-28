@@ -31,19 +31,13 @@
 
 <p> These notes document the current state of release of the OpenSplice DDSI2 Service. The DDSI2 service is the new implementation of the OMG DDSI 2.1 specification for OpenSplice DDS. Much of the material that used to be in the DDSI2 release notes can now be found in the DDSI2 section of the Deployment Guide, which provides a wealth of information on the behaviour and configuration of DDSI2.</p>
 
-<p>The major change in our DDSI support is the official release of the DDSI2E Service. The DDSI2E service introduces features such as mapping topics to different multicast addresses and network bandwidth allocation, while remaining compliant with the DDSI specification. The core of DDSI2E is shared with DDSI2 and therefore any limitations documented below apply to both. For details, please see the Deployment Guide.</p>
-
-<p> There is a growing body of evidence that there is real interoperability between OpenSplice DDS and other vendors' implementations, and in particular with RTI DDS. Nevertheless, there are still some areas that have seen minimal interoperability testing at best. We kindly invite anyone running into interoperability issues to contact us, either via the <a href="http://forums.opensplice.org/">OpenSplice forum</a>, or, for our commercial customers, via our support channels. </p>
+<p> There is a solid body of evidence that there is real interoperability between OpenSplice DDS and other vendors' implementations, and in particular with RTI DDS. Nevertheless, there are still some areas that have seen minimal interoperability testing at best. We kindly invite anyone running into interoperability issues to contact us, either via the <a href="http://forums.opensplice.org/">OpenSplice forum</a>, or, for our commercial customers, via our support channels. </p>
 
 <p> Those interested in testing interoperability by running the same applications used at the &quot;OMG Interoperability Demonstrations&quot; can download the full package <a href="http://code.google.com/p/simd-cxx/downloads/list">here</a>. </p>
 
 <h2> <a name="Changes">Changes</a> </h2>
 
-<p> The <em>Unsupported</em> category has been renamed to <em>Internal</em> after noting that the old name was oft misinterpreted. It was meant to be read as that the details of these options could change at any time, and that, therefore, the options themselves were not supported interfaces; but unfortunately, it was generally read as meaning that the underlying features were unsupported as well. </p>
-
-<p> The configuration files will have to be updated; the configurator tool only recognises the <em>Internal</em> category. DDSI2 does provide a transitional mode where it considers both <em>Internal</em> and <em>Unsupported</em>, giving preference to the former, warning about the latter when both exist, and stopping with an error when both exist and there is a conflict between the two. </p>
-
-<p> For any other changes to DDSI2, please see the <a href="changedV6.html">regular release notes section on changes.</a> </p>
+<p> As DDSI2 and DDSI2E have no longer have beta status, please see the <a href="changedV6.html">regular release notes section on changes.</a> </p>
 
 <h2> <a name="Limitations">Limitations</a> </h2>
 
@@ -147,7 +141,6 @@
 
   <li> <p> Verification of incoming messages is quite strict, but enum values embedded in the data are not checked against the set of valid values. </p> </li>
   <li> <p> The deserialisation code accepts a bounded sequence longer than the maximum allowed sequence length. </p> </li>
-  <li> <p> On Windows platforms, DDSI2 can report a socket error 10035 in the error log, indicating that the network stack was not ready to accept a packet for transmission because of a lack of buffer space. While this means the packet will be dropped, retransmits will occur for its contents if it reliable readers request so. </p> </li>
 </ul>
 
 </body> </html>

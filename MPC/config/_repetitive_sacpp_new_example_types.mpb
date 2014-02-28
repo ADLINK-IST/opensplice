@@ -1,0 +1,17 @@
+// -*- MPC -*-
+// $Id:$
+
+project : sacpp_typesupport, _example_dcps_type_lib, c_or_cplusplus_example {
+    requires += dcps_sacpp_example
+    lit_libs += dcpssacpp
+    TypeSupport_Files {
+        ../idl
+    }
+
+    Source_Files {
+    }
+
+     Documentation_Files {
+        ../.
+    }
+}

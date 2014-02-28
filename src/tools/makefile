@@ -7,9 +7,6 @@ ifeq ($(INCLUDE_JAVA),yes)
 ifeq ($(INCLUDE_TOOLS_TUNER),yes)
 SUBSYSTEMS	+= cm
 endif
-ifeq ($(INCLUDE_TOOLS_DCG),yes)
-SUBSYSTEMS	+= dcg
-endif
 endif
 
 ifeq ($(INCLUDE_TOOLS_IDLPP),yes)

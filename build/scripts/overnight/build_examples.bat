@@ -1,6 +1,6 @@
 @ECHO OFF
 ECHO "Setting environment ...."
-cd examples
+
 call setenv.bat
 
 ECHO Set Microsoft Visual Studio Environment using VS supplied batch file
@@ -13,6 +13,18 @@ cd "%OSPL_HOME%"
 
 ECHO Set OSPL runtime environment
 call release.bat
+
+REM The Studio solution files for the ISO C++
+REM examples reference $(BOOST_ROOT) in case users
+REM wish to (re)build using Boost. If this value is not
+REM set however (& this is the usual case) VS will emit the message:
+REM Project : warning PRJ0018 : The following environment variables were not found:
+REM $(BOOST_ROOT)
+REM This is benign but cannot be suppressed. We can't easily
+REM filter it out as it occurs across two lines & we don't want to ignore
+REM the forst line always in case a different "wrong" environment variable is referenced.
+REM So: we set BOOST_ROOT to some harmless nonsense value if it's not already set.
+IF "%BOOST_ROOT%"=="" SET BOOST_ROOT=bibble
 
 ECHO Change to the examples directory
 
@@ -47,9 +59,6 @@ FOR %%f IN (BUILD*.bat) DO (
 )
 
 ECHO -----------------------------------------------------------------------
-REM The java dlrl example is still using BUILD.bat for now
-cd "%OSPL_HOME%\examples\dlrl\standalone\java\Tutorial
-call BUILD.bat
 
 ECHO ON
 

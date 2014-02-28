@@ -12,6 +12,7 @@
 #include <DDSShapeDynamics.hpp>
 #include <sstream>
 
+namespace demo { namespace ishapes {
 static const float PI = 3.1415926535F;
 
 /* Ugly hack -- fixme */
@@ -115,12 +116,13 @@ ShapesDialog::onPublishButtonClicked()
 {
     dds::topic::qos::TopicQos topicQos = dp_.default_topic_qos()
                                          << dds::core::policy::Durability::Persistent()
-                                         << dds::core::policy::DurabilityService(dds::core::Duration(3600,0),
-                                                    dds::core::policy::HistoryKind::KEEP_LAST,
-                                                    100,
-                                                    8192,
-                                                    4196,
-                                                    8192);
+                                         << dds::core::policy::DurabilityService()
+                                            .service_cleanup_delay(dds::core::Duration(3600,0))
+                                            .history_kind(dds::core::policy::HistoryKind::KEEP_LAST)
+                                            .history_depth(DS_HISTORY)
+                                            .max_samples(DS_MAX_SAMPLES)
+                                            .max_instances(DS_MAX_INSTANCES)
+                                            .max_samples_per_instance(DS_MAX_SAMPLES_X_INSTANCE);
 
     dds::pub::qos::PublisherQos PQos = dp_.default_publisher_qos()
                                         << gQos_;
@@ -144,10 +146,10 @@ ShapesDialog::onPublishButtonClicked()
     QPen pen(QColor(0xff, 0xff, 0xff), 1, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
     ShapeType shape;
-    shape.color = DDS::string_dup(colorString_[cIdx]);
-    shape.shapesize = rect.width();
-    shape.x = x;
-    shape.y = y;
+    shape.color() = DDS::string_dup(colorString_[cIdx]);
+    shape.shapesize() = rect.width();
+    shape.x() = x;
+    shape.y() = y;
 
     switch (sIdx)
     {
@@ -200,13 +202,13 @@ ShapesDialog::onSubscribeButtonClicked()
 {
     dds::topic::qos::TopicQos topicQos = dp_.default_topic_qos()
                                          << dds::core::policy::Durability::Persistent()
-                                         << dds::core::policy::DurabilityService(
-                                                    dds::core::Duration(3600,0),
-                                                    dds::core::policy::HistoryKind::KEEP_LAST,
-                                                    100,
-                                                    8192,
-                                                    4196,
-                                                    8192);
+                                         << dds::core::policy::DurabilityService()
+                                            .service_cleanup_delay(dds::core::Duration(3600,0))
+                                            .history_kind(dds::core::policy::HistoryKind::KEEP_LAST)
+                                            .history_depth(DS_HISTORY)
+                                            .max_samples(DS_MAX_SAMPLES)
+                                            .max_instances(DS_MAX_INSTANCES)
+                                            .max_samples_per_instance(DS_MAX_SAMPLES_X_INSTANCE);
 
     dds::sub::qos::SubscriberQos SQos = dp_.default_subscriber_qos() << gQos_;
     dds::sub::Subscriber sub(dp_, SQos);
@@ -381,3 +383,4 @@ ShapesDialog::onFilterButtonClicked()
 {
     filterDialog_->setVisible(true);
 }
+}}

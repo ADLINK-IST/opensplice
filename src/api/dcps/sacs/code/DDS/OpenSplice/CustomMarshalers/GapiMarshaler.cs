@@ -15,7 +15,7 @@ namespace DDS.OpenSplice.CustomMarshalers
         {
             gapiPtr = nativePtr;
         }
-        
+
         public IntPtr GapiPtr
         {
             get { return gapiPtr; }

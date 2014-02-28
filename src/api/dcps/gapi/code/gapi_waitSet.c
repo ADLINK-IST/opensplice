@@ -12,14 +12,17 @@
 #include "gapi_waitSet.h"
 #include "gapi_waitSetDomainEntry.h"
 #include "gapi_condition.h"
+#include "gapi_status.h"
 #include "gapi_domainParticipantFactory.h"
 #include "gapi_domainParticipant.h"
+#include "gapi_fooDataReader.h"
 #include "gapi_entity.h"
 
 #include "u_waitset.h"
 #include "v_event.h"
 #include "v_handle.h"
 #include "v_entity.h"
+#include "v_query.h"
 #include "os_heap.h"
 #include "os_report.h"
 
@@ -198,6 +201,7 @@ struct TestAndListArg {
     _WaitSet waitset;
 };
 
+
 static void
 TestAndList(
     v_waitsetEvent _this,
@@ -268,7 +272,9 @@ TestAndList(
                                  * case number of elements, i.e. the case where all
                                  * conditions attached to the waitset have triggered.
                                  */
-                                a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
+                                if (a->conditions->_length < a->conditions->_maximum) {
+                                    a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
+                                }
                             }
                         }
                     }
@@ -282,23 +288,29 @@ TestAndList(
                     /* Should'nt the following operations make sure that the objects
                      * are locked?
                      */
+
                     if (u_entityKind(ue) == U_QUERY) {
                         cd = (_Condition) go;
+                        if (_ObjectIsValid(_Object(cd))) {
+                            if (v_queryTest(v_query(e), gapi_matchesReaderMask, &((_ReadCondition)cd)->readerMask)) {
+                                if (a->conditions->_length < a->conditions->_maximum) {
+                                    a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
+                                }
+                            }
+                        }
                     } else {
                         _Entity entity;
+                        gapi_statusMask currentStatus;
+
                         entity = _Entity(gapi_objectPeekUnchecked((gapi_object)go));
                         cd = _Condition(_EntityStatusCondition(entity));
-                    }
-                    getTriggerValue = cd->getTriggerValue;
 
-                    if (_ObjectIsValid(_Object(cd))) {
-                        if (getTriggerValue(cd)) {
-                            /* gapi_waitSet_wait always initializes the conditions
-                             * sequence with enough buffer space to store the worst-
-                             * case number of elements, i.e. the case where all
-                             * conditions attached to the waitset have triggered.
-                             */
-                            a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
+                        currentStatus = _StatusGetMaskStatus(cd->entity->status,v_statusGetMask(e->status));
+
+                        if (currentStatus & ((_StatusCondition)cd)->enabledStatusMask) {
+                            if (a->conditions->_length < a->conditions->_maximum) {
+                                a->conditions->_buffer[a->conditions->_length++] = _EntityHandle(cd);
+                            }
                         }
                     }
                 }
@@ -307,6 +319,7 @@ TestAndList(
         }
     }
 }
+
 
 gapi_returnCode_t
 gapi_waitSet_wait(
@@ -357,15 +370,15 @@ gapi_waitSet_wait(
      * for the timeout.
      */
     if(!((timeout->sec == GAPI_DURATION_INFINITE_SEC) &&
-    	(timeout->nanosec == GAPI_DURATION_INFINITE_NSEC)))
+        (timeout->nanosec == GAPI_DURATION_INFINITE_NSEC)))
     {
-    	os_time osTimeOut;
+        os_time osTimeOut;
 
-    	osTimeMax = os_timeGet();
-		osTimeOut.tv_sec  = (os_timeSec)timeout->sec;
-		osTimeOut.tv_nsec = (os_int32)timeout->nanosec;
+        osTimeMax = os_timeGet();
+        osTimeOut.tv_sec  = (os_timeSec)timeout->sec;
+        osTimeOut.tv_nsec = (os_int32)timeout->nanosec;
 
-		osTimeMax = os_timeAdd(osTimeMax, osTimeOut);
+        osTimeMax = os_timeAdd(osTimeMax, osTimeOut);
     }
 
 
@@ -377,19 +390,19 @@ gapi_waitSet_wait(
         gapi_sequence_replacebuf(conditions,
                              (_bufferAllocatorType)gapi_conditionSeq_allocbuf,
                              waitset->length);
-        entry = waitset->conditions;
 
+        entry = waitset->conditions;
         while (entry != NULL) {
             _EntityClaim(entry->condition);
             if (entry->condition->getTriggerValue(entry->condition)) {
-                conditions->_buffer[conditions->_length++] =
-                            _EntityHandle(entry->condition);
+                conditions->_buffer[conditions->_length++] = _EntityHandle(entry->condition);
                 ready = TRUE;
             }
             _EntityRelease(entry->condition);
             entry = entry->next;
         }
-        if ((timeout->sec     == GAPI_DURATION_ZERO_SEC) &&
+
+        if ((timeout->sec    == GAPI_DURATION_ZERO_SEC) &&
             (timeout->nanosec == GAPI_DURATION_ZERO_NSEC)) {
             ready = TRUE;
             if (conditions->_length > 0) {
@@ -398,6 +411,7 @@ gapi_waitSet_wait(
                 result = GAPI_RETCODE_TIMEOUT;
             }
         }
+
         if (!ready) {
             /* None of the conditions is TRUE so calculate the wait time and
              * wait for the next event or timeout.
@@ -434,6 +448,20 @@ gapi_waitSet_wait(
                          * therefore reevaluate all conditions here until
                          * the problem is fixed.
                          */
+                        gapi_sequence_replacebuf(conditions,
+                                                 (_bufferAllocatorType)gapi_conditionSeq_allocbuf,
+                                                 waitset->length);
+                        entry = waitset->conditions;
+                        while (entry != NULL) {
+                            _EntityClaim(entry->condition);
+                            if (entry->condition->getTriggerValue(entry->condition)) {
+                                conditions->_buffer[conditions->_length++] =
+                                _EntityHandle(entry->condition);
+                                ready = TRUE;
+                            }
+                            _EntityRelease(entry->condition);
+                            entry = entry->next;
+                        }
                     break;
                     case os_resultTimeout:
                         result = GAPI_RETCODE_TIMEOUT;
@@ -461,7 +489,7 @@ gapi_waitSet_wait(
                                                       TestAndList,
                                                       &args);
                     } else {
-            	        osTime = os_timeGet();
+                        osTime = os_timeGet();
                         if (os_timeCompare(osTime, osTimeMax) == OS_LESS) {
                             osTimeWait = os_timeSub(osTimeMax, osTime);
                             waitTime.seconds = osTimeWait.tv_sec;
@@ -511,6 +539,7 @@ gapi_waitSet_wait(
                         result = GAPI_RETCODE_ALREADY_DELETED;
                         ready = TRUE;
                     }
+
                 } else {
                     assert(waitset->multidomain == TRUE);
                 }
@@ -521,8 +550,10 @@ gapi_waitSet_wait(
     waitset->busy = FALSE;
     _EntityRelease(waitset);
     gapi_objectClearBusy(_this);
+
     return result;
 }
+
 
 static void
 set_multi_node (

@@ -305,6 +305,7 @@ d_configurationInit(
         d_configurationSetTime(&(config->livelinessUpdateInterval), D_DEFAULT_LIVELINESS_UPDATE_FACTOR*D_DEFAULT_LIVELINESS_EXPIRY_TIME);
         config->livelinessExpiry            = D_DEFAULT_LIVELINESS_EXPIRY_TIME;
         d_configurationSetDuration(&(config->livelinessExpiryTime), D_DEFAULT_LIVELINESS_EXPIRY_TIME);
+        d_configurationSetTime(&(config->timeToWaitForAligner), D_DEFAULT_TIME_TO_WAIT_FOR_ALIGNER);
 
         os_threadAttrInit(&config->livelinessScheduling);
         os_threadAttrInit(&config->heartbeatScheduling);
@@ -388,6 +389,7 @@ d_configurationInit(
 
             d_configurationValueFloat  (config, element, "Network/InitialDiscoveryPeriod/#text", d_configurationSetTimingInitialWaitPeriod);
             d_configurationValueBoolean(config, element, "Network/Alignment/TimeAlignment/#text", d_configurationSetTimeAlignment);
+            d_configurationValueFloat  (config, element, "Network/Alignment/TimeToWaitForAligner/#text", d_configurationSetTimeToWaitForAligner);
             d_configurationValueFloat  (config, element, "Network/Alignment/RequestCombinePeriod/Initial/#text", d_configurationSetInitialRequestCombinePeriod);
             d_configurationValueFloat  (config, element, "Network/Alignment/RequestCombinePeriod/Operational/#text", d_configurationSetOperationalRequestCombinePeriod);
             d_configurationValueString (config, element, "Network/Alignment/AlignerScheduling/Class/#text", d_configurationSetAlignerSchedulingClass);
@@ -666,7 +668,7 @@ d_configurationNameSpacesCombine(
 
     return;
 }
-
+/*
 static c_bool
 isBuiltinGroup(
     d_partition partition,
@@ -688,7 +690,7 @@ isBuiltinGroup(
     }
     return result;
 }
-
+*/
 static c_bool
 d_configurationServiceNamesCombine(
     c_char* serviceName,
@@ -977,10 +979,6 @@ d_configurationReport(
             "- Network.Alignment.RequestCombine.Operational: %d.%9.9d\n" \
             "- Network.Alignment.LatencyBudget             : %d.%9.9d\n" \
             "- Network.Alignment.TransportPriority         : %d\n"  \
-            "- Network.Alignment.AlignerScheduling.Class   : %s\n"  \
-            "- Network.Alignment.AlignerScheduling.Priority: %d\n"  \
-            "- Network.Alignment.AligneeScheduling.Class   : %s\n"  \
-            "- Network.Alignment.AligneeScheduling.Priority: %d\n"  \
             , timeAlignment
             , config->initialRequestCombinePeriod.tv_sec
             , config->initialRequestCombinePeriod.tv_nsec
@@ -988,11 +986,21 @@ d_configurationReport(
             , config->operationalRequestCombinePeriod.tv_nsec
             , config->alignerLatencyBudget.seconds
             , config->alignerLatencyBudget.nanoseconds
-            , config->alignerTransportPriority
+            , config->alignerTransportPriority);
+
+    d_printEvent(durability, D_LEVEL_CONFIG,
+            "- Network.Alignment.AlignerScheduling.Class   : %s\n"  \
+            "- Network.Alignment.AlignerScheduling.Priority: %d\n"  \
+            "- Network.Alignment.AligneeScheduling.Class   : %s\n"  \
+            "- Network.Alignment.AligneeScheduling.Priority: %d\n"  \
+            "- Network.Alignment.TimeToWaitForAligner      : %d.%9.9d\n"
             , class
             , config->alignerScheduling.schedPriority
             , class2
-            , config->aligneeScheduling.schedPriority);
+            , config->aligneeScheduling.schedPriority
+            , config->timeToWaitForAligner.tv_sec
+            , config->timeToWaitForAligner.tv_nsec);
+
 
     d_printEvent(durability, D_LEVEL_CONFIG,
             "- Network.ResendTimeRange                     : %d.%9.9d\n" \
@@ -1646,6 +1654,42 @@ d_configurationSetTimeAlignment(
 }
 
 void
+d_configurationSetTimeToWaitForAligner(
+    d_configuration  config,
+    c_float seconds)
+{
+    c_float sec;
+
+    sec = seconds;
+
+    if (sec < D_MINIMUM_TIME_TO_WAIT_FOR_ALIGNER) {
+        sec = D_MINIMUM_TIME_TO_WAIT_FOR_ALIGNER;
+    }
+    if (sec > D_MAXIMUM_TIME_TO_WAIT_FOR_ALIGNER) {
+        sec = D_MAXIMUM_TIME_TO_WAIT_FOR_ALIGNER;
+    }
+    /* The only allowed supported values at the moment are
+     * D_MINIMUM_TIME_TO_WAIT_FOR_ALIGNER (0), or the default
+     * D_MAXIMUM_TIME_TO_WAIT_FOR_ALIGNER (maxfloat). 
+     * Any specified value > D_MINIMUM_TIME_TO_WAIT_FOR_ALIGNER
+     * will for the moment be mapped to D_MAXIMUM_TIME_TO_WAIT_FOR_ALIGNER
+     * and a warning is generated.
+     *
+     * The support for more values is identified as a future extension.
+     */
+    if (sec > D_MINIMUM_TIME_TO_WAIT_FOR_ALIGNER) {
+        sec = D_MAXIMUM_TIME_TO_WAIT_FOR_ALIGNER;
+    }
+    /* generate a warning if necessary */
+    if ( (seconds != D_MINIMUM_TIME_TO_WAIT_FOR_ALIGNER) &&
+         (seconds != D_MAXIMUM_TIME_TO_WAIT_FOR_ALIGNER) ) {
+        OS_REPORT(OS_WARNING, D_CONTEXT, 0,
+                  "TimeToWaitForAligner currently only supports 0.0 and 1.0 (infinite), using 1.0 for now");
+    }
+    d_configurationSetTime(&(config->timeToWaitForAligner), sec);
+}
+
+void
 d_configurationSetTracingRelativeTimestamps(
     d_configuration config,
     u_cfElement element,
@@ -1732,7 +1776,7 @@ d_configurationSetPersistentStoreMode(
         }
     }
 }
-
+/*
 static c_char *
 d_configurationGetOptionStringValue (
     u_cfElement element)
@@ -1755,7 +1799,7 @@ d_configurationGetOptionStringValue (
 
     return value;
 }
-
+*/
 
 void
 d_configurationSetPersistentKVStorageParameters (
@@ -2403,12 +2447,8 @@ d_configurationResolveMergePolicies(
                 mergeType = D_MERGE_MERGE;
             }else if (os_strcasecmp (mergeType_str, "DELETE") == 0){
                 mergeType = D_MERGE_DELETE;
-                OS_REPORT(OS_ERROR, D_CONTEXT, 0,
-                    "Replace and Delete mergepolicies are not yet supported.");
             }else if (os_strcasecmp (mergeType_str, "REPLACE") == 0){
                 mergeType = D_MERGE_REPLACE;
-                OS_REPORT(OS_ERROR, D_CONTEXT, 0,
-                    "Replace and Delete mergepolicies are not yet supported.");
             }
             os_free (mergeType_str);
         }

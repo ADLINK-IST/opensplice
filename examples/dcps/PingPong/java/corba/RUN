@@ -33,4 +33,8 @@ LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -Djava.endorsed.dirs="$JACORB_HOME/lib/endors
 
 sleep 2
 
+LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -Djava.endorsed.dirs="$JACORB_HOME/lib/endorsed" -classpath "classes:$CLASSPATH:$OSPL_HOME/jar/dcpscj.jar:$SPLICE_EXTRA_CP" ping $BLOKCOUNT $BLOKSIZE a PongRead PongWrite
+
+sleep 2
+
 LD_PRELOAD=$OSPL_JSIG $SPLICE_JAVA -Djava.endorsed.dirs="$JACORB_HOME/lib/endorsed" -classpath "classes:$CLASSPATH:$OSPL_HOME/jar/dcpscj.jar:$SPLICE_EXTRA_CP" ping 1 10 t PongRead PongWrite

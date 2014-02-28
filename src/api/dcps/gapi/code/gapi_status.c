@@ -504,7 +504,7 @@ _StatusSetListener(
 }
 
 /* Translates Event mask into Status mask */
-static gapi_statusMask
+gapi_statusMask
 _StatusGetMaskStatus (
     _Status status,
     c_long  eventKindMask)

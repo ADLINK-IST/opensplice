@@ -129,6 +129,16 @@ c_bool      cmx_entityWalkAction            (v_entity e,
 u_entity    cmx_entityUserEntity            (const c_char* xmlEntity);
 
 /**
+ * Resolves the user entities that match the supplied XML entities. This is done
+ * by casting the contents of the pointer tags in the XML entity to user
+ * entities.
+ *
+ * @param xmlEntities The XML representation of the user entities to resolve.
+ * @return The user entities that match the supplied XML entities.
+ */
+c_iter   cmx_entityUserEntities            (const c_char* xmlEntities);
+
+/**
  * Frees the supplied user entity. It checks whether the entity is owned. If
  * not, the u_entityFree is called. If so, the entity specific destructor is
  * called. The entity is NOT deregistered from the cmx_factory.

@@ -29,6 +29,7 @@ extern "C" {
 #define OS_NO_GETIFADDRS
 #define OS_NO_NETLINK
 #define OS_IFNAMESIZE        	IF_NAMESIZE
+#define OS_LIFNAMESIZE        	LIFNAMSIZ
 #define OS_SOCKET_HAS_SA_LEN 	0
 #define OS_SOCKET_HAS_IPV6      1
 

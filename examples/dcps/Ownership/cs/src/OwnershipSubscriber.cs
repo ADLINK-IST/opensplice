@@ -25,7 +25,7 @@ namespace OwnershipSubscriber
             mgr.registerType(msgTS);
 
             // create Topic
-            mgr.createTopic("StockTrackerExclusive");
+            mgr.createTopic("OwnershipStockTracker");
             
             // create Subscriber
             mgr.createSubscriber();

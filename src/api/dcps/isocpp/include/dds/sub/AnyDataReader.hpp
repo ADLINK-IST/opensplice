@@ -34,7 +34,7 @@ inline AnyDataReader::AnyDataReader(const dds::core::null_type&)
 
 template <typename T>
 AnyDataReader::AnyDataReader(const dds::sub::DataReader<T>& dr)
-    : holder_ (new detail::DRHolder<T>(dr)) { }
+    : holder_(new detail::DRHolder<T>(dr)) { }
 
 inline const detail::DRHolderBase* AnyDataReader::operator->() const
 {
@@ -70,7 +70,7 @@ dds::sub::DataReader<T> AnyDataReader::get()
 {
     OMG_DDS_STATIC_ASSERT(::dds::topic::is_topic_type<T>::value == 1);
     detail::DRHolder<T>* h = dynamic_cast<detail::DRHolder<T>* >(holder_.get());
-    if (h == 0)
+    if(h == 0)
     {
         throw dds::core::InvalidDowncastError("invalid type");
     }

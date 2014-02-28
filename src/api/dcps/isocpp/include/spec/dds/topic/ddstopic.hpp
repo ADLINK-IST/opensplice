@@ -23,11 +23,7 @@
 #include <dds/topic/Topic.hpp>
 #include <dds/topic/AnyTopic.hpp>
 #include <dds/topic/ContentFilteredTopic.hpp>
-
-/** @todo This file is missing #include's for:
- * dds/topic/discovery.hpp
- * dds/topic/find.hpp
- * Is that right ? sm */
-
+#include <dds/topic/discovery.hpp>
+#include <dds/topic/find.hpp>
 
 #endif /* OMG_DDS_TOPIC_PACKAGE_INCLUDE_HPP_ */

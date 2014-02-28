@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl.h"
@@ -216,7 +216,7 @@ void be_root::GenerateGlobalTypes (be_ClientHeader& source)
 
          if (! d->imported ())
          {
-            cg = (be_CodeGenerator*) d->narrow 
+            cg = (be_CodeGenerator*) d->narrow
                ((long) & be_CodeGenerator::type_id);
             if (cg)
             {
@@ -317,6 +317,25 @@ void be_root::Generate (be_ClientHeader & source)
 
    os << nl;
 
+   if(BE_Globals::isocpp_test_methods)
+   {
+      //Generate file to stop missing file error
+      DDS_StdString BaseFilename;
+      BaseFilename = StripExtension(source.Filename());
+      BaseFilename += "_testmethod.h";
+      be_Source testsource;
+      if(!testsource.Open(BaseFilename))
+        cerr << "Cannot open: " << BaseFilename << endl;
+      testsource.Close();
+
+      //os << nl << "#ifndef " << Ifndefize(BE_Globals::ClientHeaderFilename + "DCPS");
+      os << nl << "#ifndef " << Ifndefize(StripExtension(FindFilename(source.Filename())) + "DCPS.h");
+      os << nl << "#ifndef " << Ifndefize(StripExtension(FindFilename(source.Filename())) + "_testmethod.h");
+      os << nl << "#define " << Ifndefize(StripExtension(FindFilename(source.Filename())) + "_testmethod.h");
+      os << nl << "#include \"" << StripExtension(FindFilename(source.Filename())) + "_testmethod.h" << "\"";
+      os << nl << "#endif " << nl << "#endif";
+
+    }
    os << nl << "#endif " << nl;
    source.Close();
 }
@@ -326,6 +345,7 @@ void be_root::Generate (be_ServerHeader& source)
    ostream & os = source.Stream();
 
    be_CodeGenerator::Generate (source);
+
 
    os << nl << "#endif" << nl;
 
@@ -406,7 +426,7 @@ void be_root::FinishAllProtoTypeCodes ()
 {
    TList<be_Type*>::iterator iter;
 
-   for 
+   for
    (
       iter = typesThatNeedProtoTypeCodesFinished.begin ();
       iter != typesThatNeedProtoTypeCodesFinished.end ();

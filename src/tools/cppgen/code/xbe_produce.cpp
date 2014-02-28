@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #ifdef SCCSID
@@ -32,7 +32,7 @@ void BE_produce ()
    assert(idl_global);
    assert(idl_global->main_filename());
    assert(idl_global->root());
-   
+
    if (idl_global && idl_global->root() &&
          (beRoot = (be_root*)idl_global->root()->narrow((long) & be_root::type_id)))
    {
@@ -53,7 +53,7 @@ void BE_produce ()
          // On linux the commented out line resolved ../hello.idl
          // to hello.  On Win32 it resolved it to ../hello
          // The replacement line fixes the Win32 problem.
-         
+
          //BaseFilename = FilterFilename(BaseFilename);
          BaseFilename = BaseName(BaseFilename);
 
@@ -69,12 +69,18 @@ void BE_produce ()
             {
                output_dir = BE_Globals::OutputDirectory;
             }
-#endif
+            else
+            {
+               output_dir = BE_Globals::OutputDirectory + "\\";
+            }
+#else
             else
             {
                output_dir = BE_Globals::OutputDirectory + "/";
             }
-         }
+#endif
+
+        }
 
          // these if's make sure that we don't override filenames
          // specified on the idlc command line
@@ -177,12 +183,12 @@ void BE_produce ()
                   if (serverHeader.Open(output_dir + BE_Globals::ServerHeaderFilename))
                   {
                      beRoot->Generate(serverHeader);
-                     
+
                      if (BE_Globals::gen_gui_info)
                      {
                         cerr << "generated:" << (const char*)BE_Globals::ServerHeaderFilename << nl;
                      }
-                     
+
                      // SERVER IMPLEMENTATION
                      be_ServerImplementation serverImplementation;
 

@@ -11,10 +11,4 @@ ifeq ($(INCLUDE_API_DCPS),yes)
 SUBSYSTEMS	 += dcps
 endif
 
-ifeq ($(INCLUDE_DLRL),yes)
-ifeq ($(INCLUDE_API_DLRL),yes)
-SUBSYSTEMS	 += dlrl
-endif
-endif
-
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak

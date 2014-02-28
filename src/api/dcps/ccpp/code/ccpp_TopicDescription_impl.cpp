@@ -24,7 +24,7 @@ char * DDS::TopicDescription_impl::get_type_name (
 ) THROW_ORB_EXCEPTIONS
 {
   char * gapi_result = gapi_topicDescription_get_type_name(__gapi_self);
-  char * result = CORBA::string_dup(gapi_result);
+  char * result = DDS::string_dup(gapi_result);
   gapi_free(gapi_result);
   return result;
 }
@@ -33,7 +33,7 @@ char * DDS::TopicDescription_impl::get_name (
 ) THROW_ORB_EXCEPTIONS
 {
   char * gapi_result = gapi_topicDescription_get_name(__gapi_self);
-  char * result = CORBA::string_dup(gapi_result);
+  char * result = DDS::string_dup(gapi_result);
   gapi_free(gapi_result);
   return result;
 }
@@ -48,7 +48,7 @@ DDS::DomainParticipant_ptr DDS::TopicDescription_impl::get_participant (
 
   DDS::ccpp_UserData_ptr myUD;
 
-  myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+  myUD = dynamic_cast<ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
   if (myUD)
   {
     Participant = dynamic_cast<DDS::DomainParticipant_ptr>(myUD->ccpp_object);

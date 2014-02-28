@@ -30,4 +30,12 @@ public interface EntitySerializer {
      * @return The serialized entity.
      */
     public String serializeEntity(Entity e) throws TransformationException;
+    
+    /**
+     * Serializes the supplied Entities into a serialized representation.
+     * 
+     * @param e The entities that needs to be serialized
+     * @return The serialized entities.
+     */
+    public String serializeEntities(Entity[] e) throws TransformationException;
 }

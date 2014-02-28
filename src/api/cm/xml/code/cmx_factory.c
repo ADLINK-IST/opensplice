@@ -23,6 +23,7 @@
 #include "u_entity.h"
 #include "v_entity.h"
 #include "os.h"
+#include "os_version.h"
 #include <string.h>
 #include "os_version.h"
 #include "os_gitrev.h"

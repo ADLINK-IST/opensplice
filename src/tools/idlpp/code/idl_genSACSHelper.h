@@ -73,13 +73,11 @@ c_char *idl_genCsharpConstantGetter(void);
 c_char *idl_sequenceCsharpIndexString(
         idl_typeSpec typeSpec,
         SACS_INDEX_POLICY policy,
-        const char *seqLengthName,
-        int *indexStrLen);
+        const char *seqLengthName);
 
 c_char * idl_arrayCsharpIndexString (
         idl_typeSpec typeSpec,
-        SACS_INDEX_POLICY policy,
-        int *indexStrLen);
+        SACS_INDEX_POLICY policy);
 
 const c_char *
 idl_translateIfPredefined(

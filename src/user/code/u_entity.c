@@ -10,7 +10,6 @@
  *
  */
 #include "u__entity.h"
-#include "u__handle.h"
 #include "u__types.h"
 #include "u__qos.h"
 #include "u_partition.h"
@@ -188,7 +187,7 @@ u_entityInit(
     e->gid = v_publicGid(v_public(ke));
     e->handle = u_handleNew(v_public(ke));
 
-    if (e->handle) {
+    if (!u_handleIsNil (e->handle)) {
         if (owner) {
             e->flags |= U_ECREATE_OWNED;
             v_entitySetUserData(ke,e); /* only set user data when owned! */
@@ -503,7 +502,7 @@ u_entityClaimCommon(
                                     "user::u_entity::u_entityClaimCommon", 0,
                                     "Invalid handle detected: result = %s, "
                                     "Handle = %d, Entity = 0x%x (kind = %s)",
-                                    u_resultImage(r), (int)_this->handle,
+                                    u_resultImage(r), 0,
                                     _this, u_kindImage(_this->kind));
                         u_domainUnprotect(domain);
                     }

@@ -93,17 +93,16 @@
                     <!--  Use envvar 'RESPOOLSERVER' as ResourcePool STAF machine
                           (defaults to local) -->
                     <script>
-                        try:
-                            respoolsrv = os.getenv('RESPOOLSERVER')
-                        except KeyError:
+                        respoolsrv = os.getenv('RESPOOLSERVER')
+
+                        if respoolsrv == None:
                             respoolsrv = STAXCurrentXMLMachine
                     </script>
                     <call function="'CreateResourcePools'">0, respoolsrv</call>
 
                     <script>
-                        try:
-                            hostsfile = os.getenv('HOSTDEFS')
-                        except KeyError:
+                        hostsfile = os.getenv('HOSTDEFS')
+                        if hostsfile == None:
                             hostsfile = os.path.dirname(STAXCurrentXMLFile) + file_sep + 'hosts.pkl'
                     </script>
 

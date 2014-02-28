@@ -3,8 +3,6 @@ SETLOCAL
 
 call %FUNCTIONS% :stopOSPL
 
-call %FUNCTIONS% :deleteDBFFiles
-
 call %FUNCTIONS% :startOSPL
 
 echo "== Launching Listener "
@@ -13,4 +11,4 @@ start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes ListenerDataSu
 
 java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes ListenerDataPublisher > pubResult.txt
 
-call %FUNCTIONS% :listenerCheckResults
+call %FUNCTIONS% :listenerCheckResults >> run.log

@@ -103,6 +103,7 @@ collectLocalGroups(
 struct sendGroupsHelper{
     d_publisher publisher;
     d_networkAddress addressee;
+    d_durability durability;
     c_ulong groupCount;
 };
 
@@ -116,6 +117,16 @@ sendLocalGroups(
     helper = (struct sendGroupsHelper*)args;
 
     d_newGroupSetAlignerCount(group, helper->groupCount);
+
+    if(group->partition && group->topic){
+        d_printTimedEvent(helper->durability, D_LEVEL_FINEST,
+                    D_THREAD_GROUPS_REQUEST_LISTENER,
+                    "-Group %s.%s with completeness=%d and quality=%d.%d\n",
+                    group->partition, group->topic, group->completeness,
+                    group->quality.seconds, group->quality.nanoseconds);
+    }
+
+
     d_publisherNewGroupWrite(helper->publisher, group, helper->addressee);
 
     return TRUE;
@@ -219,7 +230,7 @@ d_groupsRequestListenerAction(
 
     d_printTimedEvent(durability, D_LEVEL_FINE,
                 D_THREAD_GROUPS_REQUEST_LISTENER,
-                "Received groupsRequest from fellow %d; sending all groups\n",
+                "Received groupsRequest from fellow %u; sending all groups\n",
                 message->senderAddress.systemId);
 
     d_adminGroupWalk(helper.admin, collectLocalGroups, &helper);
@@ -228,10 +239,12 @@ d_groupsRequestListenerAction(
 
     d_printTimedEvent(durability, D_LEVEL_FINE,
                 D_THREAD_GROUPS_REQUEST_LISTENER,
-                "Sending %u groups\n",
-                sendHelper.groupCount);
+                "Sending %u groups to fellow %u.\n",
+                sendHelper.groupCount,
+                message->senderAddress.systemId);
     sendHelper.publisher  = d_adminGetPublisher(helper.admin);
     sendHelper.addressee  = helper.addressee;
+    sendHelper.durability = durability;
 
     d_tableWalk(helper.groups, sendLocalGroups, &sendHelper);
 

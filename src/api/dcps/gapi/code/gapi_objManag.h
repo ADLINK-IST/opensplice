@@ -13,36 +13,47 @@
 #define GAPI_OBJMANAG_H
 
 #include "gapi.h"
+#include "os_if.h"
 
-void *
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
+#ifdef OSPL_BUILD_DCPSGAPI
+#define OS_API OS_API_EXPORT
+#else
+#define OS_API OS_API_IMPORT
+#endif
+
+OS_API void *
 gapi__header (
     void *object);
 
-void
+OS_API gapi_boolean
 gapi_domainParticipantQos_free (
     void *object);
 
-void
+OS_API gapi_boolean
 gapi_topicQos_free (
     void *object);
 
-void
+OS_API gapi_boolean
 gapi_dataWriterQos_free (
     void *object);
 
-void
+OS_API gapi_boolean
 gapi_publisherQos_free (
     void *object);
 
-void
+OS_API gapi_boolean
 gapi_dataReaderQos_free (
     void *object);
 
-void
+OS_API gapi_boolean
 gapi_dataReaderViewQos_free (
     void *object);
 
-void
+OS_API gapi_boolean
 gapi_subscriberQos_free (
     void *object);
 
@@ -53,5 +64,11 @@ gapi_dataSampleSeq__alloc (
 gapi_dataSample *
 gapi_dataSampleSeq_allocbuf (
     gapi_unsigned_long len);
+
+#undef OS_API
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif

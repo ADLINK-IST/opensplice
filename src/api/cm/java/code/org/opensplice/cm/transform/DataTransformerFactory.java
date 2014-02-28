@@ -21,6 +21,7 @@ import java.util.logging.Logger;
 
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.opensplice.cm.com.Communicator;
 import org.xml.sax.SAXException;
 
 import org.opensplice.cm.meta.*;
@@ -191,12 +192,12 @@ public class DataTransformerFactory {
      *             is supported. 
      * @return A deserializer that is capable of deserializing Entity objects.
      */
-    public static EntityDeserializer getEntityDeserializer(int kind){
+    public static EntityDeserializer getEntityDeserializer(Communicator communicator, int kind){
         EntityDeserializer eds = null;
         
         if(kind == XML){
             try {
-                eds = new EntityDeserializerXML();
+                eds = new EntityDeserializerXML(communicator);
             }
             catch (ParserConfigurationException e) {
                 logger.logp(Level.SEVERE, "DataHandlerFactory", "getEntityDeserializer", "ParserConfigurationException: " + e.getMessage());
@@ -252,12 +253,12 @@ public class DataTransformerFactory {
      *             is supported.
      * @return A deserializer that is capable of deserializing Snapshot objects.
      */
-    public static SnapshotDeserializer getSnapshotDeserializer(int kind){
+    public static SnapshotDeserializer getSnapshotDeserializer(Communicator communicator, int kind){
         SnapshotDeserializer sd = null;
         
         if(kind == XML){
             try {
-                sd = new SnapshotDeserializerXML();
+                sd = new SnapshotDeserializerXML(communicator);
             } catch (ParserConfigurationException e) {
                 logger.logp(Level.SEVERE, "DataHandlerFactory", "getSnapshotDeserializer", "ParserConfigurationException: " + e.getMessage());
                 System.err.println("Parser could not be intialized.\nUnrecoverable exception. Bailing out...");

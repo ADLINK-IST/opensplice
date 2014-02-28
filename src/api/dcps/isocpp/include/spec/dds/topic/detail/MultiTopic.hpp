@@ -27,7 +27,12 @@
 #include <dds/topic/detail/TopicDescription.hpp>
 #include <dds/core/Query.hpp>
 
-namespace dds { namespace topic { namespace detail {
+namespace dds
+{
+namespace topic
+{
+namespace detail
+{
 
 #ifdef OMG_DDS_MULTI_TOPIC_SUPPORT
 
@@ -35,5 +40,7 @@ template <typename T>
 class MultiTopic;
 // Vendors should provide implementation.
 
-} } }
+}
+}
+}
 #endif /* OMG_DDS_TOPIC_DETAIL_MULTI_TOPIC_HPP_ */

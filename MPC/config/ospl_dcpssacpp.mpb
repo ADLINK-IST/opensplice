@@ -11,6 +11,7 @@ feature(!src_co) {
 }
 
 feature(src_co) {
+  includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/common/include
   includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/ccpp/include
   includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sacpp/include
   includes += $(OSPL_HOME_NORMALIZED)/src/api/dcps/sacpp/bld/$(SPLICE_TARGET)

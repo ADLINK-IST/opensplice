@@ -223,9 +223,11 @@ cms_clientRemove(
     client->initCount--;
 
     if(client->initCount == 0){
-        client->internalFree = TRUE;
-        cms_thread(client)->terminate = TRUE;
-        cms_serviceRemoveClient(client->service, client);
+        if (cms_thread(client)->terminate == FALSE) {
+            client->internalFree = TRUE;
+            cms_thread(client)->terminate = TRUE;
+            cms_serviceRemoveClient(client->service, client);
+        }
     }
     os_mutexUnlock(&client->threadMutex);
 

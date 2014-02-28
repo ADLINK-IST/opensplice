@@ -23,6 +23,7 @@ SUBSYSTEMS	 += typeSupport
 SUBSYSTEMS	 += waitset
 SUBSYSTEMS	 += writer
 SUBSYSTEMS	 += SampleInfo
+SUBSYSTEMS	 += qosProvider
 
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak
 

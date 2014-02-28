@@ -4,6 +4,8 @@
 #include "Shape.hpp"
 #include <iostream>
 
+namespace demo { namespace ishapes {
+
 Shape::Shape(const QRect& bounds, const QPen& pen, const QBrush& brush, bool targeted)
     :   bounds_(bounds),
         pen_(pen),
@@ -38,3 +40,4 @@ Shape::set_targeted(bool b)
 {
     targeted_ = b;
 }
+}}

@@ -1,2 +1,2 @@
 const char * $(scopedtypename)TypeSupport::metaDescriptor[] = {"$(meta-descriptor)"};
-const CORBA::ULong ($(scopedtypename)TypeSupport::metaDescriptorArrLength) = $(meta-descriptorArrLength);
+const ::DDS::ULong ($(scopedtypename)TypeSupport::metaDescriptorArrLength) = $(meta-descriptorArrLength);

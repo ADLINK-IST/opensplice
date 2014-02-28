@@ -25,10 +25,16 @@ project (Build*Lib) : ospl_build_lib, dcps_typesupport_base, ospl_dcpsgapi, ospl
     TypeSupport_Files {
         $(OSPL_HOME)/etc/idl/dds_builtinTopics.idl
         $(OSPL_HOME)/etc/idl/dds_dcps_builtintopics.idl
+        $(OSPL_HOME)/etc/idl/dds_namedQosTypes.idl
     }
 
     // Put the headers and inline code into the include dir
     postbuild = <%cp%>  .<%slash%>sacpp<%slash%>generated<%slash%>*.h <%quote%>$(OSPL_HOME)<%slash%>include<%slash%>dcps<%slash%>C++<%slash%>SACPP<%quote%>
+
+    Documentation_Files {
+        recurse = 1
+        sacpp
+    }
 
     Source_Files {
         sacpp/*.cpp

@@ -35,13 +35,15 @@ TWaitSet<DELEGATE>::~TWaitSet() { }
 template <typename DELEGATE>
 const typename TWaitSet<DELEGATE>::ConditionSeq TWaitSet<DELEGATE>::wait(const dds::core::Duration& timeout)
 {
-    return this->delegate()->wait(timeout);
+    ConditionSeq triggered;
+    return this->wait(triggered, timeout);
 }
 
 template <typename DELEGATE>
 const typename TWaitSet<DELEGATE>::ConditionSeq TWaitSet<DELEGATE>::wait()
 {
-    return this->delegate()->wait();
+    ConditionSeq triggered;
+    return this->wait(triggered, dds::core::Duration::infinite());
 }
 
 template <typename DELEGATE>
@@ -53,13 +55,13 @@ typename TWaitSet<DELEGATE>::ConditionSeq& TWaitSet<DELEGATE>::wait(ConditionSeq
 template <typename DELEGATE>
 typename TWaitSet<DELEGATE>::ConditionSeq& TWaitSet<DELEGATE>::wait(ConditionSeq& triggered)
 {
-    return this->delegate()->wait(triggered);
+    return this->wait(triggered, dds::core::Duration::infinite());
 }
 
 template <typename DELEGATE>
 void TWaitSet<DELEGATE>::dispatch()
 {
-    this->delegate()->dispatch();
+    this->dispatch(dds::core::Duration::infinite());
 }
 
 template <typename DELEGATE>
@@ -71,14 +73,14 @@ void TWaitSet<DELEGATE>::dispatch(const dds::core::Duration& timeout)
 template <typename DELEGATE>
 TWaitSet<DELEGATE>& TWaitSet<DELEGATE>::operator +=(const dds::core::cond::Condition& cond)
 {
-    this->delegate()->attach_condition(cond);
+    this->attach_condition(cond);
     return *this;
 }
 
 template <typename DELEGATE>
 TWaitSet<DELEGATE>& TWaitSet<DELEGATE>::operator -=(const dds::core::cond::Condition& cond)
 {
-    this->delegate()->detach_condition(cond);
+    this->detach_condition(cond);
     return *this;
 }
 
@@ -96,9 +98,10 @@ bool TWaitSet<DELEGATE>::detach_condition(const dds::core::cond::Condition& cond
 }
 
 template <typename DELEGATE>
-const typename TWaitSet<DELEGATE>::ConditionSeq& TWaitSet<DELEGATE>::conditions() const
+const typename TWaitSet<DELEGATE>::ConditionSeq TWaitSet<DELEGATE>::conditions() const
 {
-    return this->delegate()->conditions();
+    ConditionSeq conds;
+    return this->conditions(conds);
 }
 
 template <typename DELEGATE>

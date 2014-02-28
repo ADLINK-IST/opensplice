@@ -37,7 +37,6 @@ cmx_participantNew(
     const c_char* qos)
 {
     u_participant p;
-    cmx_entityArg arg;
     c_char* result;
     u_result ur;
     v_participantQos pqos;
@@ -68,32 +67,36 @@ cmx_participantNew(
 
     if(p != NULL){
         kernelArg = cmx_entityKernelArg(os_malloc(C_SIZEOF(cmx_entityKernelArg)));
-        u_entityAction(u_entity(p), cmx_entityKernelAction, (c_voidp)kernelArg);
-        ur = U_RESULT_OK;
+        if (kernelArg) {
+            u_entityAction(u_entity(p), cmx_entityKernelAction, (c_voidp)kernelArg);
+            ur = U_RESULT_OK;
 
-        if(qos != NULL){
-            pqos = v_participantQos(cmx_qosKernelQosFromKind(qos, K_PARTICIPANT, c_getBase(c_object(kernelArg->kernel))));
-            ur = u_entitySetQoS(u_entity(p), (v_qos)pqos);
-            c_free(pqos);
-            os_free(kernelArg);
-        }
-
-        if(ur == U_RESULT_OK){
-            cmx_registerEntity(u_entity(p));
-            arg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-            arg->entity = u_entity(p);
-            arg->participant = NULL;
-            arg->create = FALSE;
-            arg->result = NULL;
-
-            ur = u_entityAction(u_entity(p), cmx_entityNewFromAction, (c_voidp)arg);
+            if(qos != NULL){
+                pqos = v_participantQos(cmx_qosKernelQosFromKind(qos, K_PARTICIPANT, c_getBase(c_object(kernelArg->kernel))));
+                ur = u_entitySetQoS(u_entity(p), (v_qos)pqos);
+                c_free(pqos);
+                os_free(kernelArg);
+            }
 
             if(ur == U_RESULT_OK){
-                result = arg->result;
-                os_free(arg);
+                C_STRUCT(cmx_entityArg) arg;
+
+                cmx_registerEntity(u_entity(p));
+                arg.entity = u_entity(p);
+                arg.participant = NULL;
+                arg.create = FALSE;
+                arg.result = NULL;
+
+                ur = u_entityAction(u_entity(p), cmx_entityNewFromAction, &arg);
+
+                if(ur == U_RESULT_OK){
+                    result = arg.result; /* Transfer string content to return result. */
+                }
+            } else {
+                OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0, "Could not set supplied qos to newly created participant (reason: %u).", ur);
+                u_participantFree(p);
             }
         } else {
-            OS_REPORT_1(OS_ERROR, CM_XML_CONTEXT, 0, "Could not set supplied qos to newly created participant (reason: %u).", ur);
             u_participantFree(p);
         }
     }
@@ -451,24 +454,44 @@ cmx_participantAutoDetach(
 {
     c_ulong mask;
     u_participant up;
-    const c_char* r;
+    u_result result;
 
-    r = CMX_RESULT_FAILED;
     up = u_participant(cmx_entityUserEntity(participant));
 
-    if (up != NULL) {
-        u_dispatcherGetEventMask(u_dispatcher(up), &mask);
-
-        if (enable == FALSE) {
-            mask &= ~V_EVENT_SERVICESTATE_CHANGED;
-            u_dispatcherRemoveListener(u_dispatcher(up), cmx_participantDetach);
-        } else {
-            mask |= V_EVENT_SERVICESTATE_CHANGED;
-            u_entityAction(u_entity(up), cmx_participantInitDetach, NULL);
-            u_dispatcherInsertListener(u_dispatcher(up), cmx_participantDetach, u_serviceManagerNew(up));
-        }
-        u_dispatcherSetEventMask(u_dispatcher(up), mask);
-        r = CMX_RESULT_OK;
+    if (up == NULL) {
+        goto errorGetEntity;
     }
-    return r;
+
+    result = u_dispatcherGetEventMask(u_dispatcher(up), &mask);
+    if (result != U_RESULT_OK) {
+        goto errorGetMask;
+    }
+
+    if (enable == FALSE) {
+        mask &= ~V_EVENT_SERVICESTATE_CHANGED;
+        result = u_dispatcherRemoveListener(u_dispatcher(up), cmx_participantDetach);
+        if (result != U_RESULT_OK) {
+            goto errorRemoveListener;
+        }
+    } else {
+        mask |= V_EVENT_SERVICESTATE_CHANGED;
+        result = u_entityAction(u_entity(up), cmx_participantInitDetach, NULL);
+        if (result != U_RESULT_OK) {
+            goto errorEntityAction;
+        }
+
+        result = u_dispatcherInsertListener(u_dispatcher(up), cmx_participantDetach, u_serviceManagerNew(up));
+        if (result != U_RESULT_OK) {
+            goto errorInsertListener;
+        }
+    }
+    u_dispatcherSetEventMask(u_dispatcher(up), mask);
+    return CMX_RESULT_OK;
+
+errorInsertListener:
+errorEntityAction:
+errorRemoveListener:
+errorGetMask:
+errorGetEntity:
+    return CMX_RESULT_FAILED;
 }

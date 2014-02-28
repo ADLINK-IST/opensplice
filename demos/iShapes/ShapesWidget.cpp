@@ -4,6 +4,10 @@
 #include <iostream>
 #include <QtGui/QtGui>
 #include "ShapesWidget.hpp"
+#include "config.hpp"
+
+namespace demo { namespace ishapes {
+
 
 ShapesWidget::ShapesWidget(QWidget *parent)
     : QWidget(parent),
@@ -43,8 +47,8 @@ ShapesWidget::paintEvent(QPaintEvent*)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.drawPixmap(120, 295, logo_);
-    painter.drawPixmap(125, 10, ptpcm_);
+    painter.drawPixmap(ISOCPP_LOGO_X, ISOCPP_LOGO_Y, logo_);
+    painter.drawPixmap(BRAND_LOGO_X, BRAND_LOGO_Y, ptpcm_);
     if (showCurrentFilter_)
     {
         QBrush brush(QColor(0x99,0x99,0x99,0x99), Qt::SolidPattern);
@@ -72,3 +76,4 @@ void ShapesWidget::displayFilter(const QRect& currentFilter)
     showCurrentFilter_ = true;
     this->update();
 }
+}}

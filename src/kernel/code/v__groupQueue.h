@@ -32,6 +32,7 @@ v_groupQueueInit (
     const c_char *name,
     c_ulong size,
     v_readerQos qos,
+    v_statistics qstat,
     c_iter expr);
 
 void

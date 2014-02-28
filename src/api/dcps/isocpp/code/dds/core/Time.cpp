@@ -46,13 +46,13 @@ void dds::core::Time::sec(int64_t s)
     {
         std::string message(org::opensplice::core::context_to_string(OSPL_CONTEXT_LITERAL("dds::core::InvalidDataError")));
         message += "dds::core::Time::sec out of bounds";
-        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message,false));
+        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message, false));
     }
     else
     {
-        /** @bug OSPL-2308 RTF Time-ish coercion issue
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
         @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
-        sec_ =  static_cast<int32_t> (s);
+        sec_ =  static_cast<int32_t>(s);
     }
 }
 
@@ -67,7 +67,7 @@ void dds::core::Time::nanosec(uint32_t ns)
     {
         std::string message(org::opensplice::core::context_to_string(OSPL_CONTEXT_LITERAL("dds::core::InvalidDataError")));
         message += "dds::core::Time::nanosec out of bounds";
-        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message,false));
+        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message, false));
     }
     else
     {
@@ -77,19 +77,19 @@ void dds::core::Time::nanosec(uint32_t ns)
 
 const dds::core::Time dds::core::Time::from_microsecs(int64_t microseconds)
 {
-    return Time (microseconds / MiS, static_cast<uint32_t> ((microseconds % MiS) * MS));
+    return Time(microseconds / MiS, static_cast<uint32_t>((microseconds % MiS) * MS));
 }
 
 const dds::core::Time dds::core::Time::from_millisecs(int64_t milliseconds)
 {
-    return Time (milliseconds / MS, static_cast<uint32_t> ((milliseconds % MS) * MiS));
+    return Time(milliseconds / MS, static_cast<uint32_t>((milliseconds % MS) * MiS));
 }
 
 const dds::core::Time dds::core::Time::from_secs(double seconds)
 {
-    int64_t int_secs =  static_cast<int64_t> (seconds);
-    uint32_t nanos = static_cast<uint32_t> ((seconds - int_secs) * NS);
-    return Time (int_secs, nanos);
+    int64_t int_secs =  static_cast<int64_t>(seconds);
+    uint32_t nanos = static_cast<uint32_t>((seconds - int_secs) * NS);
+    return Time(int_secs, nanos);
 }
 
 int dds::core::Time::compare(const Time& that) const
@@ -97,11 +97,17 @@ int dds::core::Time::compare(const Time& that) const
     int ret;
 
     if(sec_ >= that.sec_ && (sec_ > that.sec_ || nsec_ > that.nsec_))
+    {
         ret = 1;
+    }
     else if(sec_ <= that.sec_ && (sec_ < that.sec_ || nsec_ < that.nsec_))
+    {
         ret = -1;
+    }
     else
+    {
         ret = 0;
+    }
 
     return ret;
 }
@@ -138,9 +144,9 @@ dds::core::Time& dds::core::Time::operator+=(const Duration& a_ti)
 {
     org::opensplice::core::validate<dds::core::Time>(*this, OSPL_CONTEXT_LITERAL(""));
     org::opensplice::core::validate<dds::core::Duration>(a_ti, OSPL_CONTEXT_LITERAL(""));
-    /** @bug OSPL-2308 RTF Time-ish coercion issue
+    /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
         @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
-    this->sec_ += static_cast<int32_t> (a_ti.sec());
+    this->sec_ += static_cast<int32_t>(a_ti.sec());
     uint32_t dns = this->nsec_ + a_ti.nanosec();
     if(dns > NS)
     {
@@ -183,7 +189,7 @@ dds::core::Time& dds::core::Time::operator-=(const Duration& a_ti)
         message += " Arithmetic operation resulted in a out of bounds";
         message += "\n";
         message += e.what();
-        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message,false));
+        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message, false));
     }
     return *this;
 }
@@ -206,7 +212,7 @@ double dds::core::Time::to_secs() const
     return static_cast<double>(sec_) + (static_cast<double>(nsec_) / NS);
 }
 
-const dds::core::Time operator+(const dds::core::Time& lhs, const dds::core::Duration &rhs)
+const dds::core::Time operator+(const dds::core::Time& lhs, const dds::core::Duration& rhs)
 {
     return dds::core::Time(lhs.sec(), lhs.nanosec()) += rhs;
 }
@@ -216,7 +222,7 @@ const dds::core::Time operator +(const dds::core::Duration& lhs, const dds::core
     return dds::core::Time(rhs.sec(), rhs.nanosec()) += lhs;
 }
 
-const dds::core::Time operator -(const dds::core::Time& lhs, const dds::core::Duration &rhs)
+const dds::core::Time operator -(const dds::core::Time& lhs, const dds::core::Duration& rhs)
 {
     return dds::core::Time(lhs.sec(), lhs.nanosec()) -= rhs;
 }

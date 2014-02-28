@@ -4,6 +4,8 @@
 #include <ReaderQosDialog.hpp>
 #include <iostream>
 
+namespace demo { namespace ishapes {
+
 ReaderQosDialog::ReaderQosDialog()
 {
     qosForm_.setupUi(this);
@@ -71,3 +73,4 @@ ReaderQosDialog::get_qos()
 
     return qos_;
 }
+}}

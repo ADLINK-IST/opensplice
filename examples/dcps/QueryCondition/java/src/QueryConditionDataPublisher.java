@@ -28,10 +28,10 @@
 import java.util.Random;
 
 import DDS.DataWriter;
-import QueryConditionData.Stock;
-import QueryConditionData.StockDataWriter;
-import QueryConditionData.StockDataWriterHelper;
-import QueryConditionData.StockTypeSupport;
+import StockMarket.Stock;
+import StockMarket.StockDataWriter;
+import StockMarket.StockDataWriterHelper;
+import StockMarket.StockTypeSupport;
 
 public class QueryConditionDataPublisher {
 

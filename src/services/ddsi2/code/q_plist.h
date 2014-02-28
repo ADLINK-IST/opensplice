@@ -1,10 +1,14 @@
 #ifndef NN_PLIST_H
 #define NN_PLIST_H
 
+#include "q_xqos.h"
+
 #include "c_base.h"
 #include "kernelModule.h"
 
-#include "q_xqos.h"
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 typedef struct nn_property {
   char *name;
@@ -48,10 +52,15 @@ typedef struct nn_original_writer_info {
 #define PP_ORIGINAL_WRITER_INFO                 (1u << 23)
 #define PP_ENDPOINT_GUID                        (1u << 24)
 #define PP_PRISMTECH_WRITER_INFO                (1u << 25)
+#define PP_PRISMTECH_PARTICIPANT_VERSION_INFO   (1u << 26)
 /* Set for unrecognized parameters that are in the reserved space or
    in our own vendor-specific space that have the
    PID_UNRECOGNIZED_INCOMPATIBLE_FLAG set (see DDSI 2.1 9.6.2.2.1) */
 #define PP_INCOMPATIBLE                         (1u << 31)
+
+#define NN_PRISMTECH_PARTICIPANT_VERSION_INFO_FIXED_CDRSIZE (24)
+
+#define NN_PRISMTECH_FL_KERNEL_SEQUENCE_NUMBER  (1u << 0)
 
 /* For locators one could patch the received message data to create
    singly-linked lists (parameter header -> offset of next entry in
@@ -77,12 +86,28 @@ typedef struct nn_keyhash {
   char value[16];
 } nn_keyhash_t;
 
-typedef struct nn_prismtech_writer_info
+typedef struct nn_prismtech_writer_info_old
 {
-  c_ulong transactionId;
+  os_uint32 transactionId;
   v_gid writerGID;
   v_gid writerInstanceGID;
+} nn_prismtech_writer_info_old_t;
+
+typedef struct nn_prismtech_writer_info
+{
+  os_uint32 transactionId;
+  v_gid writerGID;
+  v_gid writerInstanceGID;
+  os_uint32 sequenceNumber;
 } nn_prismtech_writer_info_t;
+
+typedef struct nn_prismtech_participant_version_info
+{
+  unsigned version;
+  unsigned flags;
+  unsigned unused[3];
+  char *internals;
+} nn_prismtech_participant_version_info_t;
 
 typedef struct nn_plist {
   unsigned present;
@@ -120,6 +145,7 @@ typedef struct nn_plist {
   unsigned statusinfo;
   /* nn_original_writer_info_t original_writer_info; */
   nn_prismtech_writer_info_t prismtech_writer_info;
+  nn_prismtech_participant_version_info_t prismtech_participant_version_info;
 } nn_plist_t;
 
 
@@ -146,6 +172,10 @@ struct nn_rdata;
 
 char *nn_plist_quickscan (struct nn_rsample_info *dest, const struct nn_rmsg *rmsg, const nn_plist_src_t *src);
 void nn_plist_extract_wrinfo (nn_prismtech_writer_info_t *wri, const struct nn_rsample_info *sampleinfo, const struct nn_rdata *rdata);
+  
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* NN_PLIST_H */
 

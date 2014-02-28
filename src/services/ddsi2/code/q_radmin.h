@@ -2,6 +2,12 @@
 #define NN_RADMIN_H
 
 #include "os_thread.h"
+#include "q_rtps.h"
+#include "ddsi_tran.h"
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 struct nn_rbufpool;
 struct nn_rbuf;
@@ -13,13 +19,14 @@ struct nn_rsample_info;
 struct nn_defrag;
 struct nn_reorder;
 struct nn_dqueue;
+struct nn_guid;
 
 struct proxy_writer;
 
 struct nn_fragment_number_set;
 struct nn_sequence_number_set;
 
-typedef int (*nn_dqueue_handler_t) (const struct nn_rsample_info *sampleinfo, const struct nn_rdata *fragchain, void *qarg);
+typedef int (*nn_dqueue_handler_t) (const struct nn_rsample_info *sampleinfo, const struct nn_rdata *fragchain, const struct nn_guid *rdguid, void *qarg);
 
 struct nn_rmsg_chunk {
   struct nn_rbuf *rbuf;
@@ -86,6 +93,7 @@ struct receiver_state {
   struct addrset *reply_locators;         /* 4/8 */
   nn_vendorid_t vendor;                   /* 2 */
   nn_protocol_version_t protocol_version; /* 2 => 40/44 */
+  ddsi_tran_conn_t conn;                  /* Connection for request */
 };
 
 struct nn_rsample_info {
@@ -167,7 +175,7 @@ typedef os_int32 nn_reorder_result_t;
 /* typedef of reorder result serves as a warning that it is to be
    interpreted as follows: */
 /* REORDER_DELIVER > 0 -- number of samples in sample chain */
-#define NN_REORDER_ACCEPT        0 /* accepted/stored */
+#define NN_REORDER_ACCEPT        0 /* accepted/stored (for gap: also adjusted next_expected) */
 #define NN_REORDER_TOO_OLD      -1 /* discarded because it was too old */
 #define NN_REORDER_REJECT       -2 /* caller may reuse memory ("real" reject for data, "fake" for gap) */
 
@@ -200,15 +208,20 @@ struct nn_rsample *nn_reorder_rsample_dup (struct nn_rmsg *rmsg, struct nn_rsamp
 struct nn_rdata *nn_rsample_fragchain (struct nn_rsample *rsample);
 nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_reorder *reorder, struct nn_rsample *rsampleiv, int *refcount_adjust, int delivery_queue_full_p);
 nn_reorder_result_t nn_reorder_gap (struct nn_rsample_chain *sc, struct nn_reorder *reorder, struct nn_rdata *rdata, os_int64 min, os_int64 maxp1, int *refcount_adjust);
+int nn_reorder_wantsample (struct nn_reorder *reorder, os_int64 seq);
 int nn_reorder_nackmap (struct nn_reorder *reorder, os_int64 base, os_int64 maxseq, struct nn_sequence_number_set *map, os_uint32 maxsz, int notail);
 os_int64 nn_reorder_next_seq (const struct nn_reorder *reorder);
 
 struct nn_dqueue *nn_dqueue_new (const char *name, os_uint32 max_samples, nn_dqueue_handler_t handler, void *arg);
 void nn_dqueue_free (struct nn_dqueue *q);
 void nn_dqueue_enqueue (struct nn_dqueue *q, struct nn_rsample_chain *sc, nn_reorder_result_t rres);
+void nn_dqueue_enqueue1 (struct nn_dqueue *q, const nn_guid_t *rdguid, struct nn_rsample_chain *sc, nn_reorder_result_t rres);
 void nn_dqueue_enqueue_callback (struct nn_dqueue *q, nn_dqueue_callback_t cb, void *arg);
 int  nn_dqueue_is_full (struct nn_dqueue *q);
 
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* NN_RADMIN_H */
 

@@ -380,7 +380,7 @@ idl_catsDefConvertAll(
     c_member newMember;
     os_uint32* replacedIndex;
     idl_catsDefReplaceInfo replaceData;
-    c_iter replaceInfo;
+    c_iter replaceInfo = NULL;
     c_base base;
     os_char buffer[64];
     c_metaObject found;

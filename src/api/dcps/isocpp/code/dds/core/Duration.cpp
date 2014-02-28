@@ -51,13 +51,13 @@ void dds::core::Duration::sec(int64_t s)
     {
         std::string message(org::opensplice::core::context_to_string(OSPL_CONTEXT_LITERAL("dds::core::InvalidDataError")));
         message += " dds::core::Duration::sec out of bounds";
-        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message,false));
+        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message, false));
     }
     else
     {
-        /** @bug OSPL-2308 RTF Time-ish coercion issue
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
         @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
-        sec_ = static_cast<int32_t> (s);
+        sec_ = static_cast<int32_t>(s);
     }
 }
 
@@ -67,7 +67,7 @@ void dds::core::Duration::nanosec(uint32_t ns)
     {
         std::string message(org::opensplice::core::context_to_string(OSPL_CONTEXT_LITERAL("dds::core::InvalidDataError")));
         message += " dds::core::Duration::nanosec out of bounds";
-        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message,false));
+        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message, false));
     }
     else
     {
@@ -77,19 +77,19 @@ void dds::core::Duration::nanosec(uint32_t ns)
 
 const dds::core::Duration dds::core::Duration::from_microsecs(int64_t microseconds)
 {
-    return Duration (microseconds / MiS, static_cast<uint32_t> ((microseconds % MiS) * MS) );
+    return Duration(microseconds / MiS, static_cast<uint32_t>((microseconds % MiS) * MS));
 }
 
 const dds::core::Duration dds::core::Duration::from_millisecs(int64_t milliseconds)
 {
-    return Duration (milliseconds / MS, static_cast<uint32_t> ((milliseconds % MS) * MiS) );
+    return Duration(milliseconds / MS, static_cast<uint32_t>((milliseconds % MS) * MiS));
 }
 
 const dds::core::Duration dds::core::Duration::from_secs(double seconds)
 {
-    int64_t int_secs =  static_cast<int64_t> (seconds);
-    uint32_t nanos = static_cast<uint32_t> ((seconds - int_secs) * NS);
-    return Duration (int_secs, nanos);
+    int64_t int_secs =  static_cast<int64_t>(seconds);
+    uint32_t nanos = static_cast<uint32_t>((seconds - int_secs) * NS);
+    return Duration(int_secs, nanos);
 }
 
 uint32_t dds::core::Duration::nanosec() const
@@ -102,11 +102,17 @@ int dds::core::Duration::compare(const Duration& that) const
     int ret;
 
     if(sec_ >= that.sec_ && (sec_ > that.sec_ || nsec_ > that.nsec_))
+    {
         ret = 1;
+    }
     else if(sec_ <= that.sec_ && (sec_ < that.sec_ || nsec_ < that.nsec_))
+    {
         ret = -1;
+    }
     else
+    {
         ret = 0;
+    }
 
     return ret;
 }
@@ -122,6 +128,7 @@ int64_t dds::core::Duration::to_microsecs() const
     org::opensplice::core::validate<dds::core::Duration>(*this, OSPL_CONTEXT_LITERAL(""));
     return (static_cast<int64_t>(sec_) * MiS) + (nsec_ / MS);
 }
+
 
 double dds::core::Duration::to_secs() const
 {
@@ -160,13 +167,13 @@ dds::core::Duration::operator <(const Duration& that) const
 }
 
 dds::core::Duration&
-dds::core::Duration::operator +=(const Duration &a_ti)
+dds::core::Duration::operator +=(const Duration& a_ti)
 {
     org::opensplice::core::validate<dds::core::Duration>(*this, OSPL_CONTEXT_LITERAL(""));
     org::opensplice::core::validate<dds::core::Duration>(a_ti, OSPL_CONTEXT_LITERAL(""));
-    /** @bug OSPL-2308 RTF Time-ish coercion issue
+    /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
         @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
-    sec_ += static_cast<int32_t> (a_ti.sec());
+    sec_ += static_cast<int32_t>(a_ti.sec());
     uint32_t dns = nsec_ + a_ti.nanosec();
     if(dns > NS)
     {
@@ -181,7 +188,7 @@ dds::core::Duration::operator +=(const Duration &a_ti)
 }
 
 dds::core::Duration&
-dds::core::Duration::operator -=(const Duration &a_ti)
+dds::core::Duration::operator -=(const Duration& a_ti)
 {
     org::opensplice::core::validate<dds::core::Duration>(*this, OSPL_CONTEXT_LITERAL(""));
     org::opensplice::core::validate<dds::core::Duration>(a_ti, OSPL_CONTEXT_LITERAL(""));
@@ -210,7 +217,7 @@ dds::core::Duration::operator -=(const Duration &a_ti)
         message += " Arithmetic operation resulted in a out of bounds";
         message += "\n";
         message += e.what();
-        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message,false));
+        throw dds::core::InvalidDataError(org::opensplice::core::exception_helper(message, false));
     }
 
     return *this;
@@ -236,12 +243,12 @@ dds::core::Duration::operator *=(uint64_t factor)
     {
         this->sec(this->sec_ + ns / NS);
         /* cast below is safe because ns % NS is always < NS which is 32 bit */
-        this->nanosec(static_cast<uint32_t> (ns % NS));
+        this->nanosec(static_cast<uint32_t>(ns % NS));
     }
     else
     {
         /* cast below is safe necause ns < NS in this clause */
-        this->nanosec(static_cast<uint32_t> (ns));
+        this->nanosec(static_cast<uint32_t>(ns));
     }
     return *this;
 }
@@ -261,7 +268,7 @@ const dds::core::Duration operator /(const dds::core::Duration& rhs, uint64_t lh
     org::opensplice::core::validate<dds::core::Duration>(rhs);
     /* cast below is safe because rhs.nanosec() < NS which is 32 bit.
     Any truncation of an lhs > 32 bit will still > NS and result correctly in 0 */
-    return dds::core::Duration((rhs.sec() / lhs), (rhs.nanosec() / static_cast<uint32_t> (lhs)));
+    return dds::core::Duration((rhs.sec() / lhs), (rhs.nanosec() / static_cast<uint32_t>(lhs)));
 }
 
 const dds::core::Duration
@@ -274,6 +281,6 @@ dds::core::Duration::infinite()
 const dds::core::Duration
 dds::core::Duration::zero()
 {
-    static Duration d(0,0);
+    static Duration d(0, 0);
     return d;
 }

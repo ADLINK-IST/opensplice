@@ -7,6 +7,6 @@ project : ospl_ddsserialization, ospl_base {
 
 feature(src_co) {
   includes += $(OSPL_HOME_NORMALIZED)/src/kernel/include
-  includes += $(OSPL_HOME_NORMALIZED)/src/kernel/bld/$(SPLICE_TARGET)
+  includes += $(OSPL_HOME_NORMALIZED)/src/osplcore/bld/$(SPLICE_TARGET)
   includes += $(OSPL_HOME_NORMALIZED)/src/kernel/code
 }

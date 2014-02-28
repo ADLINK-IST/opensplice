@@ -27,7 +27,7 @@ typedef c_longlong u_instanceHandle;
 
 #include "u_user.h"
 
-#ifdef OSPL_BUILD_USER
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -70,8 +70,6 @@ OS_API u_instanceHandle
 u_instanceHandleFix(
     u_instanceHandle _this,
     v_collection reader);
-
-/* Depricated : only for DLRL legacy. */
 
 OS_API c_long
 u_instanceHandleServerId(

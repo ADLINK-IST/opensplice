@@ -15,6 +15,7 @@ import org.opensplice.cm.CMException;
 import org.opensplice.cm.DataTypeUnsupportedException;
 import org.opensplice.cm.Reader;
 import org.opensplice.cm.ReaderSnapshot;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.meta.MetaType;
 
 /**
@@ -35,8 +36,8 @@ public class ReaderSnapshotImpl extends SnapshotImpl implements ReaderSnapshot{
      * @param _id The heap address of the snapshot.
      * @param _reader The Reader, which contents are in the snapshot.
      */
-    public ReaderSnapshotImpl(String _id, Reader _reader){
-        super(_id);
+    public ReaderSnapshotImpl(Communicator communicator, String _id, Reader _reader){
+        super(communicator, _id);
         reader = _reader;
     }
 

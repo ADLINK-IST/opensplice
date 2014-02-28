@@ -44,6 +44,8 @@ public:
     virtual const dds::topic::qos::TopicQos& qos() const = 0;
 
     virtual void qos(const dds::topic::qos::TopicQos& qos) = 0;
+
+    virtual DDS::Topic_ptr get_dds_topic() = 0;
 };
 
 template <typename T>
@@ -51,7 +53,11 @@ class THolder : public THolderBase
 {
 public:
     THolder(const dds::topic::Topic<T>& t)
-        : topic_(t) { }
+        : topic_(t)
+    {
+        topic_var_ = DDS::Topic::_narrow(((dds::topic::Topic<T>)t)->t_);
+
+    }
     virtual ~THolder() { }
 public:
 
@@ -90,8 +96,14 @@ public:
         return topic_;
     }
 
+    DDS::Topic_ptr get_dds_topic()
+    {
+        return topic_var_.in();
+    }
+
 private:
     dds::topic::Topic<T> topic_;
+    DDS::Topic_var topic_var_;
 };
 }
 }

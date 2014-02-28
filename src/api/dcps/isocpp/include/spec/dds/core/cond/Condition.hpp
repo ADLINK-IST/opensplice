@@ -21,8 +21,15 @@
 
 #include <dds/core/cond/detail/Condition.hpp>
 
-namespace dds { namespace core { namespace cond {
-  typedef dds::core::cond::detail::Condition Condition;
-} } }
+namespace dds
+{
+namespace core
+{
+namespace cond
+{
+typedef dds::core::cond::detail::Condition Condition;
+}
+}
+}
 
 #endif  /* OMG_DDS_CORE_COND_CONDITION_HPP_ */

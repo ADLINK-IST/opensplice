@@ -15,6 +15,7 @@ import org.opensplice.cm.CMException;
 import org.opensplice.cm.CMFactory;
 import org.opensplice.cm.Storage;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.data.UserData;
 
 /**
@@ -28,11 +29,17 @@ public class StorageImpl implements Storage {
      */
     private Object opaqueStorage;
 
+    private final Communicator communicator;
+
     /**
      * Creates a new Storage in un-opened state.
      */
-    public StorageImpl(){
+    public StorageImpl(Communicator communicator){
+        if(communicator == null) {
+        	throw new IllegalArgumentException("The communicator parameter can not be null.");
+        }
         this.opaqueStorage = null;
+        this.communicator = communicator;
     }
 
     /* (non-Javadoc)
@@ -44,7 +51,7 @@ public class StorageImpl implements Storage {
         if(this.opaqueStorage == null){
             /* Storage not yet opened */
             try {
-                this.opaqueStorage = CMFactory.getCommunicator().storageOpen(attrs);
+                this.opaqueStorage = getCommunicator().storageOpen(attrs);
             } catch (CommunicationException e) {
                 throw new CMException(e.getMessage());
             }
@@ -63,7 +70,7 @@ public class StorageImpl implements Storage {
     public Result close() throws CMException {
         Result result = Result.ERROR;
         try {
-            result = CMFactory.getCommunicator().storageClose(this.opaqueStorage);
+            result = getCommunicator().storageClose(this.opaqueStorage);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -78,7 +85,7 @@ public class StorageImpl implements Storage {
         Result result = Result.ERROR;
 
         try {
-            result = CMFactory.getCommunicator().storageAppend(this.opaqueStorage, data);
+            result = getCommunicator().storageAppend(this.opaqueStorage, data);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -93,11 +100,15 @@ public class StorageImpl implements Storage {
         UserData data = null;
 
         try {
-            data = CMFactory.getCommunicator().storageRead(this.opaqueStorage);
+            data = getCommunicator().storageRead(this.opaqueStorage);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
 
         return data;
+    }
+
+    protected Communicator getCommunicator() throws CMException {
+      return communicator;
     }
 }

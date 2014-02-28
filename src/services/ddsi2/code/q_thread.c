@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "os_heap.h"
 #include "os_stdlib.h"
 #include "os_thread.h"
@@ -13,6 +15,9 @@
 static char main_thread_name[] = "main";
 
 struct thread_states thread_states;
+#if OS_HAS_TSD_USING_THREAD_KEYWORD
+__thread struct thread_state1 *tsd_thread_state;
+#endif
 
 static void *os_malloc_aligned_cacheline (os_size_t size)
 {
@@ -41,12 +46,9 @@ static void os_free_aligned (void *ptr)
 
 int thread_states_init (int maxthreads)
 {
-  os_mutexAttr mattr;
   int i;
 
-  os_mutexAttrInit (&mattr);
-  mattr.scopeAttr = OS_SCOPE_PRIVATE;
-  if (os_mutexInit (&thread_states.lock, &mattr) != os_resultSuccess)
+  if (os_mutexInit (&thread_states.lock, &gv.mattr) != os_resultSuccess)
     goto err_lock;
   thread_states.nthreads = maxthreads;
   if ((thread_states.ts =
@@ -85,7 +87,7 @@ void thread_states_fini (void)
   thread_states.ts = NULL;
 }
 
-struct thread_state1 *lookup_thread_state (void)
+struct thread_state1 *lookup_thread_state_real (void)
 {
   if (thread_states.ts)
   {
@@ -181,7 +183,6 @@ struct thread_state1 *create_thread (const char *name, void * (*f) (void *arg), 
   ctxt->self = ts1;
   ctxt->f = f;
   ctxt->arg = arg;
-
   os_threadAttrInit (&tattr);
   if (tprops != NULL)
   {
@@ -191,9 +192,7 @@ struct thread_state1 *create_thread (const char *name, void * (*f) (void *arg), 
     if (!tprops->stack_size.isdefault)
       tattr.stackSize = (os_uint32) tprops->stack_size.value;
   }
-#if 0
   TRACE (("create_thread: %s: class %d priority %d stack %u\n", name, (int) tattr.schedClass, tattr.schedPriority, tattr.stackSize));
-#endif
 
   if (os_threadCreate (&tid, name, &tattr, (void * (*) (void *)) create_thread_wrapper, ctxt) != os_resultSuccess)
   {
@@ -201,7 +200,7 @@ struct thread_state1 *create_thread (const char *name, void * (*f) (void *arg), 
     NN_FATAL1 ("create_thread: %s: os_threadCreate failed\n", name);
     goto fatal;
   }
-  nn_log (LC_INFO, "started new thread 0x"PA_ADDRFMT" : %s\n", os_threadIdToInteger (tid), name);
+  nn_log (LC_INFO, "started new thread 0x%llx : %s\n", (unsigned long long) os_threadIdToInteger (tid), name);
   ts1->extTid = tid; /* overwrite the temporary value with the correct external one */
   os_mutexUnlock (&thread_states.lock);
   return ts1;
@@ -227,7 +226,7 @@ int join_thread (struct thread_state1 *ts1, void **retval)
 {
   int ret;
   assert (ts1->state == THREAD_STATE_ALIVE);
-  if (os_threadWaitExit (ts1->extTid, retval) == os_resultSuccess)
+  if (os_threadWaitExit (ts1->extTid, retval) == 0)
     ret = 0;
   else
     ret = ERR_UNSPECIFIED;
@@ -244,9 +243,5 @@ void downgrade_main_thread (void)
   /* no need to sync with service lease: already stopped */
   reap_thread_state (ts1, 0);
 }
-
-#if ! NN_HAVE_C99_INLINE
-#include "q_thread.template"
-#endif
 
 /* SHA1 not available (unoffical build.) */

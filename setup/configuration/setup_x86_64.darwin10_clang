@@ -1,16 +1,9 @@
 # "Standard" features we don't build for this platform.
-#set_var INCLUDE_API_DLRL_SACPP no
 #set_var INCLUDE_CS no
 #set_var INCLUDE_DBT_API_DCPS_SACS no
 #set_var INCLUDE_API_DCPS_SACS no
-#set_var INCLUDE_SOAP no
 #set_var INCLUDE_SERVICES_CMSOAP no
 #set_var INCLUDE_ORB no
-#set_var INCLUDE_TOOLS_DCG no
-#set_var INCLUDE_DBT_API_DLRL_SAJ no
-#set_var INCLUDE_DBT_API_DLRL_SACPP no
-# set_var INCLUDE_DBT_API_DLRL no
 
 # "Standard" features we don't build for this platform.
-unset   INCLUDE_API_DLRL_SACPP
 set_undefined_var     INCLUDE_API_DCPS_ISOCPP yes

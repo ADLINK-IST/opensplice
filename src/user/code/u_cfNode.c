@@ -18,7 +18,6 @@
 #include "u__cfElement.h"
 #include "u__cfAttribute.h"
 #include "u__cfData.h"
-#include "u__handle.h"
 #include "u__participant.h"
 #include "u__entity.h"
 #include "v_public.h"

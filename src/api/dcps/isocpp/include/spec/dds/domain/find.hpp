@@ -21,19 +21,23 @@
 
 #include <dds/domain/DomainParticipant.hpp>
 
-namespace dds { namespace domain {
+namespace dds
+{
+namespace domain
+{
 
 
-  /**
-   * This operation retrieves a previously created <code>DomainParticipant</code>
-   * belonging to specified domain_id. If no such DomainParticipant
-   * exists, the operation will return a @a nil value.
-   *
-   * @param id the domain id
-   */
-  OMG_DDS_API
-  DomainParticipant find(uint32_t id);
+/**
+ * This operation retrieves a previously-created DomainParticipant
+ * belonging to the specified domain_id. If no such DomainParticipant
+ * exists, the operation will return a null DomainParticipant.
+ *
+ * @param id the domain id
+ */
+OMG_DDS_API
+DomainParticipant find(uint32_t id);
 
-} }
+}
+}
 
 #endif /* OMG_DDS_DOMAIN_FIND_HPP_ */

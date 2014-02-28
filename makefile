@@ -10,6 +10,10 @@ ifneq (,$(OSPL_OUTER_HOME))
 SUBSYSTEMS	+= $(OSPL_OUTER_HOME)/extract
 endif
 
+ifeq (,$(TAO_ROOT))
+MPC_CISH_ARGS += --features no_tao=1
+endif
+
 include $(OSPL_HOME)/setup/makefiles/subsystem.mak
 
 clean: clean_demos

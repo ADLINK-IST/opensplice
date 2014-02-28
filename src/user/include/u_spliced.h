@@ -19,7 +19,7 @@ extern "C" {
 #include "u_types.h"
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_USER
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -60,11 +60,17 @@ OS_API u_result
 u_splicedPrepareTermination(
     u_spliced spliced);
 
+OS_API v_leaseManager
+u_splicedGetHeartbeatManager(
+    u_spliced spliced,
+    c_bool create);
+
 OS_API u_result
 u_splicedStartHeartbeat(
     u_spliced spliced,
     v_duration period,
-    v_duration renewal);
+    v_duration renewal,
+    c_long priority);
     
 OS_API u_result
 u_splicedStopHeartbeat(

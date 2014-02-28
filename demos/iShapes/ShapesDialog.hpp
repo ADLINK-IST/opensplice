@@ -6,7 +6,12 @@
 #include <dds/dds.hpp>
 #include <QtGui/QtGui>
 
-#include <ui_iShapesForm.h>
+#if  (ISHAPES_WIDE_FORMAT == 1)
+#   include <ui_iShapesForm.h>
+#else
+#   include <ui_iShapesForm-small.h>
+#endif
+
 #include <WriterQosDialog.hpp>
 #include <ReaderQosDialog.hpp>
 #include <FilterDialog.hpp>
@@ -26,6 +31,7 @@
  */
 /** @{*/
 
+namespace demo { namespace ishapes {
 class ShapesDialog : public QDialog
 {
     Q_OBJECT
@@ -88,6 +94,8 @@ private:
     dds::core::policy::Partition gQos_;
     std::vector<std::string>   filterParams_;
 };
+}
+}
 
 /** @}*/
 

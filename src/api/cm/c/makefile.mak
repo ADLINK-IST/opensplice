@@ -12,7 +12,7 @@ CINCS	  += -I$(OSPL_HOME)/src/api/cm/common/include
 
 LDFLAGS += $(SHLDFLAGS)
 LDLIBS  += $(SHLDLIBS)
-LDLIBS  += -l$(DDS_DATABASE) -l$(DDS_KERNEL) -l$(DDS_USER) -l$(DDS_CMCOMMON)
+LDLIBS  += -l$(DDS_CORE) -l$(DDS_CMCOMMON)
 
 $(TARGET):	$(OBJECTS)
 

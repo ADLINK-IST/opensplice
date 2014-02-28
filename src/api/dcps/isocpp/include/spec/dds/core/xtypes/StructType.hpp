@@ -21,12 +21,15 @@
 #include <dds/core/xtypes/TStructType.hpp>
 #include <dds/core/xtypes/detail/StructType.hpp>
 
-namespace dds {
-  namespace core {
-    namespace xtypes {
-      typedef TStructType<detail::StructType> StructType;
-    }
-  }
+namespace dds
+{
+namespace core
+{
+namespace xtypes
+{
+typedef TStructType<detail::StructType> StructType;
+}
+}
 }
 
 

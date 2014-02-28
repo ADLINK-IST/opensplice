@@ -13,6 +13,9 @@
  * Implements PA abstraction for x86
  */
 
+#undef pa_increment
+#undef pa_decrement
+
 os_uint32
 pa_increment(
     os_uint32 *count)

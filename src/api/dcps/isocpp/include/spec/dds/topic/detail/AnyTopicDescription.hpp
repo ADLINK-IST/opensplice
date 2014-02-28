@@ -24,14 +24,21 @@
 #include <dds/domain/DomainParticipant.hpp>
 
 
-namespace dds { namespace topic { namespace detail {
-  class TDHolderBase;
+namespace dds
+{
+namespace topic
+{
+namespace detail
+{
+class TDHolderBase;
 
-  template <typename T>
-  class TDHolder;
+template <typename T>
+class TDHolder;
 
-  // Vendors should provide implementation.
+// Vendors should provide implementation.
 
-} } }
+}
+}
+}
 
 #endif /* OMG_DDS_TOPIC_DETAIL_ANY_TOPIC_DESCRIPTION_HPP_ */

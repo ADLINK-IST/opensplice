@@ -47,6 +47,7 @@ template <typename POLICY>
 TEntityQos<DELEGATE>& TEntityQos<DELEGATE>::policy(const POLICY& p)
 {
     this->dds::core::Value<DELEGATE>::delegate().policy(p);
+    return *this;
 }
 
 template <typename DELEGATE>
@@ -67,7 +68,7 @@ template <typename DELEGATE>
 template <typename POLICY>
 TEntityQos<DELEGATE>& TEntityQos<DELEGATE>::operator << (const POLICY& p)
 {
-    this->delegate().policy(p);
+    this->policy(p);
     return *this;
 }
 
@@ -75,7 +76,7 @@ template <typename DELEGATE>
 template <typename POLICY>
 const TEntityQos<DELEGATE>& TEntityQos<DELEGATE>::operator >> (POLICY& p) const
 {
-    p = this->delegate().template policy<POLICY>();
+    p = this->policy<POLICY>();
     return *this;
 }
 
@@ -83,7 +84,7 @@ template <typename DELEGATE>
 template <typename T>
 TEntityQos<DELEGATE>& TEntityQos<DELEGATE>::operator = (const TEntityQos<T>& other)
 {
-    if (this != (TEntityQos<DELEGATE>*)&other)
+    if(this != (TEntityQos<DELEGATE>*)&other)
     {
         this->d_ = other.delegate();
     }

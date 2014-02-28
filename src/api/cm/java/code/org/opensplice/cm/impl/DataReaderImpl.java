@@ -16,6 +16,7 @@ import org.opensplice.cm.CMFactory;
 import org.opensplice.cm.DataReader;
 import org.opensplice.cm.Time;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.qos.QoS;
 import org.opensplice.cm.qos.ReaderQoS;
 
@@ -37,8 +38,8 @@ public class DataReaderImpl extends ReaderImpl implements DataReader{
      * @param _name The name of the kernel entity that is associated with this
      *              entity.
      */
-    public DataReaderImpl(long _index, long _serial, String _pointer, String _name) {
-        super(_index, _serial, _pointer, _name);
+    public DataReaderImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name) {
+        super(communicator, _index, _serial, _pointer, _name);
     }
     
     /**
@@ -51,11 +52,11 @@ public class DataReaderImpl extends ReaderImpl implements DataReader{
      * @throws CMException Thrown when the DataReader could not be created.
      */
     public DataReaderImpl(SubscriberImpl subscriber, String name, String view, ReaderQoS qos) throws CMException{
-        super(0, 0, "", "");
+        super(subscriber.getCommunicator(), 0, 0, "", "");
         owner = true;
         DataReaderImpl d;
         try {
-            d = (DataReaderImpl)CMFactory.getCommunicator().dataReaderNew(subscriber, name, view, qos);
+            d = (DataReaderImpl)getCommunicator().dataReaderNew(subscriber, name, view, qos);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -76,7 +77,7 @@ public class DataReaderImpl extends ReaderImpl implements DataReader{
             throw new CMException("DataReader has already been freed.");
         }
         try{
-            CMFactory.getCommunicator().dataReaderWaitForHistoricalData(this, maxWaitTime);
+            getCommunicator().dataReaderWaitForHistoricalData(this, maxWaitTime);
         } catch (CommunicationException e) {
             throw new CMException("WaitForHistoricalData on '" + this.toString() + 
             "' failed.");
@@ -88,7 +89,7 @@ public class DataReaderImpl extends ReaderImpl implements DataReader{
             throw new CMException("Supplied entity is not available (anymore).");
         } else if(qos instanceof ReaderQoS){
             try {
-                CMFactory.getCommunicator().entitySetQoS(this, qos);
+                getCommunicator().entitySetQoS(this, qos);
             } catch (CommunicationException ce) {
                 throw new CMException(ce.getMessage());
             }

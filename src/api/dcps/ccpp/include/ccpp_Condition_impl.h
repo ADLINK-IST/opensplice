@@ -32,7 +32,7 @@ namespace DDS
       );
 
     public:
-      CORBA::Boolean get_trigger_value () THROW_ORB_EXCEPTIONS;
+      DDS::Boolean get_trigger_value () THROW_ORB_EXCEPTIONS;
   };
 }
 

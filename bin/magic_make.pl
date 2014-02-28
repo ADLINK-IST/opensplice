@@ -1,4 +1,4 @@
-#! /usr/bin/perl
+#!/usr/bin/env perl
 eval '(exit $?0)' && eval 'exec perl -w -S $0 ${1+"$@"}'
     & eval 'exec perl -w -S $0 $argv:q'
     if 0;
@@ -32,6 +32,7 @@ my $left_over_args;
 my $ret;
 my $type = "make";
 my $ospl_home = '';
+my $is_gcov = 0;
 ($ret, $left_over_args) = GetOptions('clean!' => \$clean,
                                      'check-mpc!' => \$check_mpc,
                                      'carryon!' => \$carryon,
@@ -46,16 +47,18 @@ my $ospl_home = '';
 
 my $config = 'Release';
 
+my $splice_target = $ENV{SPLICE_TARGET};
 if ($debug_override == '')
 {
   $config = 'Release';
-  my $splice_target = $ENV{SPLICE_TARGET};
   $config = 'Debug' if ($splice_target =~ 'dev' || $splice_target =~ 'debug');
 }
 else
 {
   $config = ($debug_override ? 'Debug' : 'Release');
 }
+
+$is_gcov = 1 if $splice_target =~ 'gcov';
 
 pod2usage(1) if $help;
 pod2usage(-exitstatus => 0, -verbose => 2) if $man;
@@ -80,6 +83,43 @@ if ($^O eq 'VMS') {
 # we need to regenerate build files using MPC
 my $oldest_build_file;
 my $newest_mpc_file;
+
+# Used on windows only.
+my $wincmd_shell = $ENV{COMSPEC};
+my $visual_studio;
+if ($type =~ /^vc/)
+{
+  my @ext = split /;/, $ENV{PATHEXT} || '.exe;.com;.bat';
+  # I *would* put MSBuild first but we're pathing the wrong one in
+  # in configure
+  my @exes = ( 'devenv', 'VCExpress', 'MSBuild' );
+  studio:
+  {
+    foreach my $exe (@exes)
+    {
+      foreach my $p (File::Spec->path)
+      {
+        if (grep { -f and -x } map File::Spec->catfile($p, "$exe$_"), '', @ext)
+        {
+          $visual_studio = $exe;
+          last studio;
+        }
+      }
+    }
+  }
+  if (! defined $wincmd_shell)
+  {
+    $wincmd_shell = 'cmd.exe';
+  }
+  if (! defined $visual_studio)
+  {
+    $visual_studio = $ENV{OSPL_DEVENV};
+  }
+  if (! defined $visual_studio)
+  {
+    $visual_studio = 'devenv.com';
+  }
+}
 
 # Match a top-level build file on $_. e.g. a solution or
 # a Makefile. These are what you would normally invoke to build
@@ -214,22 +254,14 @@ sub call_build_file
   my $ret = 0;
   if ($type =~ /^vc/)
   {
-    my $modeflag = '/build';
-    my $wincmd_shell = $ENV{COMSPEC};
-    my $visual_studio = $ENV{OSPL_DEVENV};
-    if (! defined $wincmd_shell)
-    {
-        $wincmd_shell = 'cmd.exe';
-    }
-    if (! defined $visual_studio)
-    {
-        $visual_studio = 'devenv.com';
-    }
+    my $is_msbuild = (lc($visual_studio) =~ m/msbuild/);
+    my $modeflag = $is_msbuild ? '/t:Build' : '/build';
     if (lc $mode eq 'clean')
     {
-        $modeflag = '/clean';
+        $modeflag = $is_msbuild ? '/t:Clean' : '/clean';
     }
-    $command = "\"$wincmd_shell\" /c $visual_studio $file $modeflag $config";
+    my $conf_pre = $is_msbuild ? '/p:Configuration=' : '';
+    $command = "\"$wincmd_shell\" /c $visual_studio $file $modeflag $conf_pre$config";
     if ($^O eq 'cygwin')
     {
         $command =~ s/\\/\//g;
@@ -281,6 +313,10 @@ sub clean_dir
 
 sub if_build_file_make
 {
+  if (-d && $_ ne ".")
+  {
+    $File::Find::prune = 1;
+  }
   if (is_workspace_file ||
       ($exhaustive && is_project_file))
   {
@@ -291,6 +327,7 @@ sub if_build_file_make
 sub make_dir
 {
   my $dir = shift(@_);
+
   find(\&if_build_file_make, "$dir");
 }
 
@@ -311,24 +348,9 @@ sub squeaky_dir
   find(\&if_build_file_delete, "$dir");
 }
 
-sub mpc_dir
-{
-  my $dir = shift(@_);
-  my @mpc_args = @_;
-  my $ret = 0;
-
-  unshift(@mpc_args, '--type', "$type");
-  if ($ospl_home ne '')
-  {
-    unshift(@mpc_args, '--ospl-home', "$ospl_home");
-  }
-  my $command = "mwc.pl @mpc_args";
-  print STDERR "$scriptname: Regenerating MPC files: $command\n";
-  $ret = system($command);
-  die "$scriptname: ERROR: Trying to run: $command !!!\n" if $ret;
-}
-
-sub mpc_file
+# Run mwc.pl on either a file or a directory
+# The difference don't mean nothing on a big ship
+sub do_mpc
 {
   my $file = shift(@_);
   my @mpc_args = @_;
@@ -339,12 +361,18 @@ sub mpc_file
   {
     unshift(@mpc_args, '--value_template', "configurations=$config");
   }
+  # @todo See OSPL-2875 Covergae compilation disabled.
+  # Uncomment to re-enable
+  #if ($is_gcov)
+  #{
+  #  unshift(@mpc_args, '--value_template', 'coverage=1');
+  #}
   if ($ospl_home ne '')
   {
     unshift(@mpc_args, '--ospl-home', "$ospl_home");
   }
   my $command = "mwc.pl @mpc_args";
-  print STDERR "$scriptname: Generating MPC file: $command\n";
+  print STDERR "$scriptname: Generating MPC build file(s): $command\n";
   $ret = system($command);
   die "$scriptname: ERROR: Trying to run: $command !!!\n" if $ret;
 }
@@ -371,7 +399,7 @@ foreach my $file (@ARGV) {
     if ($check_mpc && check_mpc_up_todate($file))
     {
         clean_dir($file) if ! $is_clean;
-        mpc_dir($file, @ARGV);
+        do_mpc($file, @ARGV);
     }
     if ($make)
     {
@@ -384,7 +412,7 @@ foreach my $file (@ARGV) {
     $done_something = 1;
     if ($check_mpc && !$make && !$clean)
     {
-      mpc_file($file, @ARGV);
+      do_mpc($file, @ARGV);
     }
     else
     {

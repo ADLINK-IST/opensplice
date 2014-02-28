@@ -224,6 +224,68 @@
             </i>
           </td>
         </tr>
+        <tr>
+          <td>
+            OSPL-2542
+          </td>
+          <td>
+            <b>64 bit stack space issues with the JVM</b><br/>
+            <i>
+              Newer versions of JDK (at least 1.6u43 and 1.6u45) run out of stack space on 64 bit
+              platforms. Using a larger default StackSize would impact all non-Java applications
+              too, and is therefore undesirable. Try increasing StackSize to 128000 bytes if you're
+              experiencing problems with using listeners from Java on 64 bit platforms.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-2967
+          </td>
+          <td>
+            <b>Deadlock in Java listeners</b><br/>
+            <i>
+              To terminate from within a listener callback, spawn a new Thread from within the
+              callback and call System.exit() in that thread.
+            </i>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            OSPL-2696
+          </td>
+          <td>
+            <b>Merge policy behaviour</b><br/>
+            <i>Merging of different data-sets after a re-connect only works when the disconnect
+               takes less than the service_cleanup_delay value of the Topic(s). Otherwise it is
+               not possible for the middleware to determine whether instances that are available
+               on one side and not on the other have been disposed or created during the disconnect.
+               If a re-connect takes place after a period larger than the configured service_cleanup_delay,
+               data-sets on both sides may be different after the merge-policy has been applied.
+
+               One should carefully consider the merge-policy configuration for all federations in the
+               system as a whole as not all combinations make sense. Consider the example of a two-node
+               system. The following configurations semantically make no sense:
+               <ul>
+                 <li>
+                   Configuring REPLACE as policy on both sides.
+                 </li>
+                 <li>
+                   Combining REPLACE as policy on one side and MERGE on the other side.
+                 </li>
+                 <li>
+                   Combining REPLACE as policy on one side and DELETE on the other side.
+                 </li>
+                 <li>
+                   Combining DELETE as policy on one side and MERGE on the other side.
+                 </li>
+               </ul>
+               The wait_for_historical_data() call does not block while performing a merge due to
+               the configured merge-policy. This means it is currently not possible to block an application
+               until the merge has completed.
+            </i>
+          </td>
+        </tr>
       </table>
       <br/>
       <hr>

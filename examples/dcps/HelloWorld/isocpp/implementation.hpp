@@ -23,6 +23,3 @@ namespace isocpp  {
 }
 }
 }
-
-ISOCPP_EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_HelloWorld_publisher, examples::dcps::HelloWorld::isocpp::publisher)
-ISOCPP_EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_HelloWorld_subscriber, examples::dcps::HelloWorld::isocpp::subscriber)

@@ -16,7 +16,7 @@ javac_check || ERRS=1
 tao_check || ERRS=1
 jacorb_check || ERRS=1
 zlib_check || ERRS=1
-openorb_check || ERRS=1
+gsoap_check || ERRS=1
 doxygen_check || ERRS=1
 
 export SPLICE_HOST_FULL=x86.win-vs${VS_YEAR}-dev

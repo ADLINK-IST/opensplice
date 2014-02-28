@@ -3,17 +3,24 @@
 
 #include "os_defs.h"
 #include "os_mutex.h"
+#include "os_cond.h"
 #include "os_socket.h"
 
 #include "kernelModule.h"
 
-#include "q_avl.h"
+#include "ut_avl.h"
 #include "q_rtps.h"
 #include "q_xqos.h"
 #include "q_protocol.h"
 #include "q_lat_estim.h"
 #include "q_ephash.h"
 #include "q_hbcontrol.h"
+
+#include "ddsi_tran.h"
+
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
 struct xevent;
 struct nn_reorder;
@@ -27,18 +34,23 @@ struct lease;
 
 struct proxy_endpoint_common;
 
+/* FIXME: eventually will need a return value so reaer can reject data
+   on hitting a resource limit, which then of course needs to be
+   handled by the receiver state machine as well */
+typedef void (*deliver_cb_t) (const nn_guid_t *rdguid, void *arg);
+
 struct prd_wr_match {
-  STRUCT_AVLNODE (prd_wr_match_avlnode, struct prd_wr_match *) avlnode;
+  ut_avlNode_t avlnode;
   nn_guid_t wr_guid;
 };
 
 struct rd_pwr_match {
-  STRUCT_AVLNODE (rd_pwr_match_avlnode, struct rd_pwr_match *) avlnode;
+  ut_avlNode_t avlnode;
   nn_guid_t pwr_guid;
 };
 
 struct wr_prd_match {
-  STRUCT_AVLNODE (wr_prd_match_avlnode, struct wr_prd_match *) avlnode;
+  ut_avlNode_t avlnode;
   nn_guid_t prd_guid; /* guid of the proxy reader */
   unsigned assumed_in_sync: 1; /* set to 1 upon receipt of ack not nack'ing msgs */
   unsigned has_replied_to_hb: 1; /* we must keep sending HBs until all readers have this set */
@@ -57,7 +69,7 @@ struct wr_prd_match {
 };
 
 struct pwr_rd_match {
-  STRUCT_AVLNODE (pwr_rd_match_avlnode, struct pwr_rd_match *) avlnode;
+  ut_avlNode_t avlnode;
   nn_guid_t rd_guid;
   os_int64 tcreate;
   nn_count_t count; /* most recent acknack sequence number */
@@ -86,7 +98,6 @@ enum entity_kind {
 
 struct nn_rsample_info;
 struct nn_rdata;
-typedef void (*ddsi2direct_directread_cb_t) (const struct nn_rsample_info *sampleinfo, const struct nn_rdata *fragchain, void *arg);
 
 struct entity_common {
   struct ephash_chain_entry guid_hash_chain;
@@ -95,14 +106,15 @@ struct entity_common {
   os_mutex lock;
 };
 
-struct participant {
+struct participant 
+{
   struct entity_common e;
   long long lease_duration;
   unsigned bes;
   struct xevent *spdp_xevent;
   struct xevent *pmd_update_xevent;
-  nn_locator_t sockloc;
-  os_socket sock;
+  nn_locator_t m_locator;
+  ddsi_tran_conn_t m_conn;
   unsigned next_entityid;
   os_int32 user_refc;
   os_int32 builtin_refc;
@@ -111,9 +123,9 @@ struct participant {
 };
 
 struct endpoint_common {
+  struct participant *pp;
   struct ephash_chain_entry gid_hash_chain;
   v_gid gid;
-  struct participant *pp;
 };
 
 struct generic_endpoint {
@@ -144,7 +156,7 @@ struct writer {
   unsigned handle_as_transient_local: 1;
   unsigned aggressive_keep_last1: 1;
   unsigned startup_mode: 1; /* causes data to be treated as T-L for a while */
-  unsigned with_key: 1;
+  unsigned include_keyhash: 1;
   const struct topic *topic;
   struct addrset *as;
   struct xevent *heartbeat_xevent;
@@ -152,7 +164,7 @@ struct writer {
   long long min_lease_duration;
   struct whc *whc;
   int num_reliable_readers;
-  STRUCT_AVLTREE (wr_prd_match_avltree, struct wr_prd_match *) readers;
+  ut_avlTree_t readers;
   struct xeventq *evq;
 };
 
@@ -165,12 +177,11 @@ struct reader {
   nn_count_t init_acknack_count;
   const struct topic *topic;
   struct nn_groupset *matching_groups;
-  STRUCT_AVLTREE (rd_pwr_match_avltree, struct rd_pwr_match *) writers;
-  ddsi2direct_directread_cb_t ddsi2direct_cb;
-  void *ddsi2direct_cbarg;
+  ut_avlTree_t writers;
 };
 
-struct proxy_participant {
+struct proxy_participant
+{
   struct entity_common e;
   os_uint32 refc;
   nn_vendorid_t vendor;
@@ -180,6 +191,7 @@ struct proxy_participant {
   struct addrset *as_default;
   struct addrset *as_meta;
   struct proxy_endpoint_common *endpoints;
+  unsigned kernel_sequence_numbers : 1;
 };
 
 struct proxy_endpoint_common {
@@ -194,10 +206,8 @@ struct proxy_endpoint_common {
 struct proxy_writer {
   struct entity_common e;
   struct proxy_endpoint_common c;
-  STRUCT_AVLTREE (pwr_rd_match_avltree, struct pwr_rd_match *) readers;
+  ut_avlTree_t readers;
   struct nn_groupset *groups;
-  ddsi2direct_directread_cb_t ddsi2direct_cb;
-  void *ddsi2direct_cbarg;
   c_array v_message_qos;
   int n_reliable_readers;
   long long last_seq; /* last known seq, not last delivered */
@@ -216,28 +226,32 @@ struct proxy_reader {
   struct entity_common e;
   struct proxy_endpoint_common c;
   unsigned deleting: 1; /* set when being deleted */
-  STRUCT_AVLTREE (prd_wr_match_avltree, struct prd_wr_match *) writers;
+  ut_avlTree_t writers;
 };
+
+extern const ut_avlTreedef_t wr_readers_treedef;
+extern const ut_avlTreedef_t rd_writers_treedef;
+extern const ut_avlTreedef_t pwr_readers_treedef;
+extern const ut_avlTreedef_t prd_writers_treedef;
+extern const ut_avlTreedef_t deleted_participants_treedef;
 
 int deleted_participants_admin_init (void);
 void deleted_participants_admin_fini (void);
-int is_deleted_participant_guid (const nn_guid_t *guid);
+int is_deleted_participant_guid (const struct nn_guid *guid);
 
 nn_entityid_t to_entityid (unsigned u);
 int is_builtin_entityid (nn_entityid_t id);
 int is_writer_entityid (nn_entityid_t id);
 int is_reader_entityid (nn_entityid_t id);
-void ppguid_from_ppgid (nn_guid_t *ppguid, const struct v_gid_s *ppgid);
 
 /* Interface for glue code between the OpenSplice kernel and the DDSI
    entities. These all return 0 iff successful. All GIDs supplied
    __MUST_BE_UNIQUE__. All hell may break loose if they aren't.
 
    All delete operations synchronously remove the entity being deleted
-   from the various global hash tables on GIDs and GUIDs. This ensures
-   no new operations can be invoked by the glue code, discovery,
-   protocol messages, &c.  The entity is then scheduled for garbage
-   collection.
+   from the various global hash tables on GUIDs. This ensures no new
+   operations can be invoked by the glue code, discovery, protocol
+   messages, &c.  The entity is then scheduled for garbage collection.
 
      There is one exception: a participant without built-in
      endpoints: that one synchronously reaches reference count zero
@@ -279,12 +293,10 @@ void ppguid_from_ppgid (nn_guid_t *ppguid, const struct v_gid_s *ppgid);
    participant MUST have all builtin readers and writers. */
 #define RTPS_PF_PRIVILEGED_PP 4
 
-/* To create a DDSI participant. No provision is made to allow the
-   creation of DDSI participants for which no DCPS participant exists,
-   in the sense the a valid GID must be supplied.
+/* To create a DDSI participant given a GUID. May return ERR_OUT_OF_IDS
+   (a.o.) */
+int new_participant_guid (const nn_guid_t *ppguid, unsigned flags);
 
-   May return ERR_ENTITY_EXISTS (a.o.) */
-int new_participant (const struct v_gid_s *ppgid, unsigned flags);
 
 /* To delete a DDSI participant: this only removes the participant
    from the hash tables and schedules the actual delete operation,
@@ -293,8 +305,7 @@ int new_participant (const struct v_gid_s *ppgid, unsigned flags);
    before all its readers and writers have been deleted (which also
    fits nicely with model where the glue calls merely schedules
    garbage-collection). */
-int delete_participant_guid (const nn_guid_t *ppguid);
-int delete_participant (const struct v_gid_s *ppgid);
+int delete_participant (const struct nn_guid *ppguid);
 
 /* To obtain the builtin writer to be used for publishing SPDP, SEDP,
    PMD stuff for PP and its endpoints, given the entityid.  If PP has
@@ -302,28 +313,21 @@ int delete_participant (const struct v_gid_s *ppgid);
 struct writer *get_builtin_writer (const struct participant *pp, unsigned entityid);
 
 /* To create a new DDSI writer or reader belonging to participant with
-   GID "ppgid". Note: GID may be NULL if it is DDSI entity created by
-   the glue code but for which no counterpart in DCPS exists. The only
-   currently existing case is for fictitious transient data
-   readers. Those with GID = NULL are not considered as DDSI built-in
-   endpoints and must be deleted explicitly by the glue code.
-
-   May return ERR_UNKNOWN_ENTITY (participant unknown) and
-   ERR_ENTITY_EXISTS (writer/reader already known). */
-int new_writer (const struct v_gid_s *ppgid, const struct v_gid_s *gid, C_STRUCT (v_topic) const * const topic, const struct nn_xqos *xqos);
-int new_reader (const struct v_gid_s *ppgid, const struct v_gid_s *gid, C_STRUCT (v_topic) const * const topic, const struct nn_xqos *xqos);
+   GUID "ppguid". May return ERR_UNKNOWN_ENTITY (participant unknown)
+   and ERR_ENTITY_EXISTS (writer/reader already known). */
+int new_writer (struct nn_guid *wrguid, const struct nn_guid *ppguid, const struct topic *topic, const struct nn_xqos *xqos);
+int new_reader (struct nn_guid *rdguid, const struct nn_guid *ppguid, const struct topic *topic, const struct nn_xqos *xqos, deliver_cb_t deliver_cb, void *deliver_cbarg);
 
 int remove_acked_messages (struct writer *wr);
 os_int64 writer_max_drop_seq (const struct writer *wr);
 int writer_number_of_unacked_samples (const struct writer *wr);
 int writer_must_have_hb_scheduled (const struct writer *wr);
 
-int delete_writer (const struct v_gid_s *gid);
-int delete_writer_guid_nolinger (const nn_guid_t *guid);
+int delete_writer (const struct nn_guid *guid);
+int delete_writer_nolinger (const struct nn_guid *guid);
 int delete_writer_nolinger_locked (struct writer *wr);
 
-int delete_reader (const struct v_gid_s *gid);
-int delete_reader_guid (const nn_guid_t *guid);
+int delete_reader (const struct nn_guid *guid);
 
 /* To create or delete a new proxy participant: "guid" MUST have the
    pre-defined participant entity id. Unlike delete_participant(),
@@ -334,23 +338,34 @@ int delete_reader_guid (const nn_guid_t *guid);
       -- XX what about proxy participants without built-in endpoints?
       XX --
 */
-int new_proxy_participant (const nn_guid_t *guid, unsigned bes, const nn_guid_t *privileged_pp_guid, struct addrset *as_default, struct addrset *as_meta, os_int64 tlease_dur, nn_vendorid_t vendor);
-int delete_proxy_participant (const nn_guid_t *guid);
+
+/* Set this custom flag when using nn_prismtech_writer_info_t iso nn_prismtech_writer_info_old_t */
+#define CF_INC_KERNEL_SEQUENCE_NUMBERS         (1 << 0)
+
+void new_proxy_participant (const struct nn_guid *guid, unsigned bes, const struct nn_guid *privileged_pp_guid, struct addrset *as_default, struct addrset *as_meta, os_int64 tlease_dur, nn_vendorid_t vendor, unsigned custom_flags);
+void delete_proxy_participant (struct proxy_participant * ppt);
+int delete_proxy_participant_by_guid (const struct nn_guid * guid);
+
+void purge_proxy_participants (os_sockaddr_storage * addr, os_uint32 port);
 
 /* To create a new proxy writer or reader; the proxy participant is
    determined from the GUID and must exist. */
-int new_proxy_writer (const nn_guid_t *guid, struct addrset *as, nn_xqos_t *xqos, struct nn_dqueue *dqueue, struct xeventq *evq);
-int new_proxy_reader (const nn_guid_t *guid, struct addrset *as, nn_xqos_t *xqos);
+int new_proxy_writer (const struct nn_guid *guid, struct addrset *as, nn_xqos_t *xqos, struct nn_dqueue *dqueue, struct xeventq *evq);
+int new_proxy_reader (const struct nn_guid *guid, struct addrset *as, nn_xqos_t *xqos);
 
 /* To delete a proxy writer or reader; these synchronously hide it
    from the outside world, preventing it from being matched to a
    reader or writer. Actual deletion is scheduled in the future, when
    no outstanding references may still exist (determined by checking
    thread progress, &c.). */
-int delete_proxy_writer (const nn_guid_t *guid);
-int delete_proxy_reader (const nn_guid_t *guid);
+int delete_proxy_writer (const struct nn_guid *guid);
+int delete_proxy_reader (const struct nn_guid *guid);
 
 void writer_exit_startup_mode (struct writer *wr);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* Q_ENTITY_H */
 

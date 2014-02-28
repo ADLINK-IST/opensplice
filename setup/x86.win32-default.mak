@@ -74,21 +74,36 @@ CFLAGS_OPT       = -O2 -DNDEBUG
 CFLAGS_DEBUG     = -Z7 -Od -D_TYPECHECK_
 CFLAGS_STRICT	 = -W3
 
-ifeq ("$(VS_VER)","14")
-   VS_INCLUDE =  -I"$(VS_HOME)/VC/INCLUDE"
-   VS_INCLUDE += -I"$(VS_HOME)/VC/PlatformSDK/include"
-   VS_INCLUDE += -I"$(VS_HOME)/VC/atlmfc/include"
-
-   VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib"
-   VS_LIB_FLAGS += -L"$(VS_HOME)/VC/PlatformSDK/lib"
-endif
-
-ifneq (,$(or $(findstring 15,$(VS_VER)),$(findstring 16,$(VS_VER))))
+ifeq ("$(VS_VER)","13")
+# VS2003
+else
+ ifeq ("$(VS_VER)","14")
+# VS2005
+    VS_INCLUDE =  -I"$(VS_HOME)/VC/INCLUDE"
+    VS_INCLUDE += -I"$(VS_HOME)/VC/PlatformSDK/include"
+    VS_INCLUDE += -I"$(VS_HOME)/VC/atlmfc/include"
+ 
+    VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib"
+    VS_LIB_FLAGS += -L"$(VS_HOME)/VC/PlatformSDK/lib"
+else
+ ifneq (,$(or $(findstring 15,$(VS_VER)),$(findstring 16,$(VS_VER))))
+# VS2008 & VS 2010
+    VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
+    VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include"
+ 
+    VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib"
+    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib"
+else
+# VS2012 onwards
    VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
-   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include"
+   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/shared" -I"$(WINDOWSSDKDIR)/Include/um"
 
    VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib"
-   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib"
+   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib/win8/um/x86"
+
+   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/winv6.3/um/x86"
+endif
+endif
 endif
 
 # Set compiler options for single threaded process
@@ -130,14 +145,9 @@ LDLIBS_CMS = -lws2_32
 LDLIBS_JAVA = -ljvm
 LDLIBS_ODBC= -lodbc32
 
-ifndef OSPL_NO_ZLIB
 LDLIBS_ZLIB = -lzlib
 LDFLAGS_ZLIB = "-L$(ZLIB_HOME)"
 CINCS_ZLIB = "-I$(ZLIB_HOME)"
-else
-CFLAGS += -DOSPL_NO_ZLIB
-CPPFLAGS += -DOSPL_NO_ZLIB
-endif
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .obj
@@ -149,7 +159,7 @@ JLIB_PREFIX =
 JLIB_POSTFIX = .dll
 EXEC_PREFIX =
 EXEC_POSTFIX = .exe
-INLINESRC_POSTFIX = .i
+INLINESRC_POSTFIX = .inl
 CSLIB_PREFIX =
 CSLIB_POSTFIX = .dll
 CSMOD_PREFIX =

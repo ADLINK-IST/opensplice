@@ -154,16 +154,33 @@ d_durabilityUpdateLease(
     c_voidp args)
 {
     d_durability durability;
-    os_time sleepTime;
+    os_time sleepTime, lag, before, after, accepted;
     v_duration expiryTime;
     durability = d_durability(args);
 
     if(d_objectIsValid(d_object(durability), D_DURABILITY) == TRUE){
         sleepTime = durability->configuration->livelinessUpdateInterval;
+
+        accepted.tv_sec = durability->configuration->livelinessExpiryTime.seconds;
+        accepted.tv_nsec = durability->configuration->livelinessExpiryTime.nanoseconds;
+
         while(durability->splicedRunning){
+            before = os_timeGet();
             u_serviceRenewLease(durability->service,
                             durability->configuration->livelinessExpiryTime);
             os_nanoSleep(sleepTime);
+            after = os_timeGet();
+
+            lag = os_timeSub(after, before);
+
+            if(os_timeCompare(lag, accepted) == OS_MORE){
+                OS_REPORT_4(OS_ERROR, D_CONTEXT_DURABILITY, 0,
+                    "Durability failed to renew its lease within "
+                    "the configured lease expiry-time (%d.%09d). "
+                    "The lease renewal took %d.%09d s.",
+                    accepted.tv_sec, accepted.tv_nsec,
+                    lag.tv_sec, lag.tv_nsec);
+            }
         }
         expiryTime.seconds = 20;
         expiryTime.nanoseconds = 0;
@@ -222,11 +239,9 @@ static void
 d_durabilityRegisterNameSpaces(
         d_durability durability)
 {
-    d_admin admin;
     d_configuration config;
     c_iter nameSpaces;
 
-    admin = durability->admin;
     config = durability->configuration;
     nameSpaces = config->nameSpaces;
 
@@ -335,6 +350,8 @@ d_durabilityInit(
         d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_MAIN, "Failed to start lease updater\n");
         OS_REPORT(OS_ERROR, D_CONTEXT, 0, "Failed to start lease update thread.");
     }
+
+
     if(durability->splicedRunning == TRUE){
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing nameSpacesListener...\n");
         d_subscriberInitNameSpacesListener(subscriber);
@@ -343,7 +360,7 @@ d_durabilityInit(
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing nameSpacesRequestListener...\n");
         d_subscriberInitNameSpacesRequestListener(subscriber);
     }
-   if(durability->splicedRunning == TRUE){
+    if(durability->splicedRunning == TRUE){
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing statusListener...\n");
         d_subscriberInitStatusListener(subscriber);
     }
@@ -359,7 +376,25 @@ d_durabilityInit(
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing deleteDataListener...\n");
         d_subscriberInitDeleteDataListener(subscriber);
     }
-   if(durability->splicedRunning == TRUE){
+    if(durability->splicedRunning == TRUE){
+        d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing groupRemoteListener...\n");
+        d_subscriberInitGroupRemoteListener(subscriber);
+    }
+    if(durability->splicedRunning == TRUE){
+        d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing sampleRequestListener...\n");
+        d_subscriberInitSampleRequestListener(subscriber);
+    }
+    if(durability->splicedRunning == TRUE){
+        d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing sampleChainListener...\n");
+        d_subscriberInitSampleChainListener(subscriber);
+    }
+    if(durability->splicedRunning == TRUE){
+        d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing groupLocalListener...\n");
+        d_subscriberInitGroupLocalListener(subscriber);
+    }
+
+
+    if(durability->splicedRunning == TRUE){
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Starting groupsRequestListener...\n");
         result = d_subscriberSetGroupsRequestListenerEnabled(subscriber, TRUE);
         assert(result == TRUE);
@@ -380,18 +415,6 @@ d_durabilityInit(
         assert(result == TRUE);
     }
     if(durability->splicedRunning == TRUE){
-        d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing groupRemoteListener...\n");
-        d_subscriberInitGroupRemoteListener(subscriber);
-    }
-    if(durability->splicedRunning == TRUE){
-        d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing sampleRequestListener...\n");
-        d_subscriberInitSampleRequestListener(subscriber);
-    }
-    if(durability->splicedRunning == TRUE){
-        d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing sampleChainListener...\n");
-        d_subscriberInitSampleChainListener(subscriber);
-    }
-    if(durability->splicedRunning == TRUE){
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Starting persistentDataListener...\n");
         result = d_subscriberSetPersistentDataListenerEnabled(subscriber, TRUE);
     }
@@ -399,10 +422,6 @@ d_durabilityInit(
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Starting groupRemoteListener...\n");
         result = d_subscriberSetGroupRemoteListenerEnabled(subscriber, TRUE);
         assert(result == TRUE);
-    }
-    if(durability->splicedRunning == TRUE){
-        d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Initializing groupLocalListener...\n");
-        d_subscriberInitGroupLocalListener(subscriber);
     }
     if(durability->splicedRunning == TRUE){
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Starting sampleChainListener...\n");
@@ -419,6 +438,8 @@ d_durabilityInit(
         result = d_subscriberSetDeleteDataListenerEnabled(subscriber, TRUE);
         assert(result == TRUE);
     }
+
+
     if(durability->splicedRunning == TRUE){
         d_printTimedEvent(durability, D_LEVEL_FINER, D_THREAD_MAIN, "Starting notification of own state...\n");
 
@@ -528,11 +549,9 @@ nameSpaceConfirmedWalk (
     d_nameSpace nameSpace,
     c_voidp userData)
 {
-    d_durability durability;
     d_durabilityKind durabilityKind;
 
     durabilityKind = d_nameSpaceGetDurabilityKind(nameSpace);
-    durability = ((struct nsCompleteWalkData*)userData)->durability;
 
     /* If namespace is not persistent, continue */
     if( (durabilityKind == D_DURABILITY_PERSISTENT) ||
@@ -669,10 +688,12 @@ doInitialMerge(
 
     fellow = d_fellow(c_iterTakeFirst(fellows));
 
-    while(fellow){
-        fellowRole = d_fellowGetRole(fellow);
+    while(fellow) {
         if(d_fellowGetCommunicationState(fellow) == D_COMMUNICATION_STATE_APPROVED) {
-            if(strcmp(durability->configuration->role, fellowRole) != 0){
+            /* If communication state is approved all fellow namespaces are received and fellowRole must be
+             * available. */
+            fellowRole = d_fellowGetRole(fellow);
+            if(strcmp(durability->configuration->role, fellowRole) != 0) {
                 fellowAddress = d_fellowGetAddress(fellow);
 
                 nameSpaces = c_iterNew(NULL);
@@ -699,6 +720,20 @@ doInitialMerge(
 
                 d_networkAddressFree(fellowAddress);
             }
+            d_fellowFree(fellow);
+            fellow = d_fellow(c_iterTakeFirst(fellows));
+
+        /* If state is unknown, wait until communication is either approved or rejected */
+        }else if(d_fellowGetCommunicationState(fellow) == D_COMMUNICATION_STATE_UNKNOWN) {
+            os_time waitTime;
+
+            /* Wait a little while so loop doesn't take too much resources */
+            waitTime.tv_sec = 0;
+            waitTime.tv_nsec = 100000000; /* 100msec */
+            os_nanoSleep(waitTime);
+
+        /* Communication with fellow is not approved. Move to next fellow. */
+        }else {
             d_fellowFree(fellow);
             fellow = d_fellow(c_iterTakeFirst(fellows));
         }
@@ -851,12 +886,11 @@ d_durabilityLoadModule(
     c_voidp args)
 {
     c_base       base;
-    c_bool       loaded;
 
     OS_UNUSED_ARG(args);
     assert(!args);
     base = c_getBase((c_object)entity);
-    loaded = loaddurabilityModule2(base);
+    loaddurabilityModule2(base);
 }
 
 d_configuration
@@ -1003,13 +1037,29 @@ d_durabilityMustTerminate(
 
 void
 d_durabilityTerminate(
-    d_durability durability)
+    d_durability durability,
+    c_bool died)
 {
+
     assert(d_objectIsValid(d_object(durability), D_DURABILITY) == TRUE);
 
-    d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
-            "Unrecoverable error occurred; terminating and reporting as died.");
-    u_serviceChangeState(durability->service, STATE_DIED);
+    if (! died) {
+        /* The durability service is in a state that is incompatible with
+         * its configuration, e.g., because the time to wait for an aligner
+         * is exceeded and no aligner is found. Terminate and report the service
+         * state of durability as STATE_INCOMPATIBLE_CONFIGURATION.
+         */
+        d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
+                "An incompatibility with the configuration was detected; terminating and reporting as incompatible configuration.\n");
+        u_serviceChangeState(durability->service, STATE_INCOMPATIBLE_CONFIGURATION);
+    } else {
+        /* In all other cases something bad happened. Terminate the durability
+         * service and report as died
+         */
+        d_printTimedEvent(durability, D_LEVEL_SEVERE, D_THREAD_UNSPECIFIED,
+                "Unrecoverable error occurred; terminating and reporting as died.\n");
+        u_serviceChangeState(durability->service, STATE_DIED);
+    }
     durability->splicedRunning = FALSE;
 }
 
@@ -1041,7 +1091,7 @@ d_durabilityWaitForAttachToGroup(
 {
     v_serviceStateKind serviceStateKind;
     c_iter services;
-    c_char* name;
+    c_char *name, *partition;
     c_bool result;
     os_time endTime, waitTime;
     v_groupAttachState attachState;
@@ -1103,6 +1153,7 @@ d_durabilityWaitForAttachToGroup(
                     break;
                 }
                 break;
+            case STATE_INCOMPATIBLE_CONFIGURATION:
             case STATE_TERMINATING:
             case STATE_TERMINATED:
             case STATE_DIED:
@@ -1124,6 +1175,37 @@ d_durabilityWaitForAttachToGroup(
         result = TRUE;
     }
 
+    if(result == TRUE) {
+        partition = v_entity(group->partition)->name;
+
+        /* If partition string is formatted '__NODE<ID>BUILT-IN PARTITION__'
+         * it should be considered a local partition.
+         */
+        /* Verify whether partition has length to potentially have the format
+         * we're looking for.
+         */
+        if(strlen(partition) > (strlen(D_OSPL_NODE) + strlen(D_OSPL_BUILTIN_PARTITION))){
+            /* Check if starts with __NODE */
+            if(strncmp(D_OSPL_NODE, partition, strlen(D_OSPL_NODE)) == 0){
+                /* Set pointer to the end of the string minus the length of the
+                 * partition postfix 'BUILT-IN PARTITION__'
+                 */
+                partition = partition + strlen(partition) - strlen(D_OSPL_BUILTIN_PARTITION);
+                /* Verify whether it ends with 'BUILT-IN PARTITION__' */
+                if(strncmp(D_OSPL_BUILTIN_PARTITION, partition, strlen(D_OSPL_BUILTIN_PARTITION)) == 0){
+                    /* If so consider it local */
+                    result = FALSE;
+
+                    d_printTimedEvent(durability,
+                          D_LEVEL_FINEST,
+                          D_THREAD_GROUP_LOCAL_LISTENER,
+                          "Found group %s.%s which is a built-in local group.\n",
+                          v_entity(group->partition)->name,
+                          v_entity(group->topic)->name);
+                }
+            }
+        }
+    }
     return result;
 
 }

@@ -4,7 +4,7 @@
 ##
 # \defgroup dds2361 - inter-language communication
 # \b Test \b ID: dds2361
-# 
+#
 # \b Test \b Objectives: \n
 # Verify the communication between different languages through the network.
 # The test application for every language on different hosts binding that sends
@@ -26,7 +26,7 @@
 <stax>
     <defaultcall function="dds2361_main">
     </defaultcall>
-    
+
     <function name="dds2361_main" scope="local" >
         <function-list-args>
             <function-required-arg name="host1_name">
@@ -36,12 +36,12 @@
                 The name for the second host you wish test on in double quotes, use the following format: "name"
             </function-required-arg>
             <function-required-arg name="host3_name">
-                The name for the furd host you wish test on in double quotes, use the following format: "name"
+                The name for the third host you wish test on in double quotes, use the following format: "name"
             </function-required-arg>
             <function-required-arg name="host4_name">
-                The name for the fifth host you wish test on in double quotes, use the following format: "name"
+                The name for the fourth host you wish test on in double quotes, use the following format: "name"
             </function-required-arg>
-            
+
             <function-required-arg name="host1_lang">
                 Language on the host1 ('c', 'cpp', 'cs', 'java')
             </function-required-arg>
@@ -54,7 +54,7 @@
             <function-required-arg name="host4_lang">
                 Language on the host4 ('c', 'cpp', 'cs', 'java')
             </function-required-arg>
-            
+
             <function-required-arg name="host1_ospl_home">
                 OSPL_HOME of an installed OpenSplice on the host1
             </function-required-arg>
@@ -67,7 +67,7 @@
             <function-required-arg name="host4_ospl_home">
                 OSPL_HOME of an installed OpenSplice on the host4
             </function-required-arg>
-            
+
             <function-required-arg name="host1_ospl_src_home">
                 The path where osplo and ospli could be found on the host1.
             </function-required-arg>
@@ -80,7 +80,7 @@
             <function-required-arg name="host4_ospl_src_home">
                 The path where osplo and ospli could be found on the host4.
             </function-required-arg>
-            
+
             <function-optional-arg name="test_framework_root" default="'../common'">
                 Absolute path of stax framework root on the local host in double quotes and double backslash.
                 By default it is this_xml_folder/../common.
@@ -88,18 +88,18 @@
             </function-optional-arg>
             <function-optional-arg name="log_dir" default="'.'">
                 Location of log dir on local host
-            </function-optional-arg>            
+            </function-optional-arg>
         </function-list-args>
-        
+
         <sequence>
             <script>
                 import os
-                
+
                 for lang in [host1_lang, host2_lang, host3_lang, host4_lang]:
                     if lang.lower() not in ['c', 'cpp', 'cs', 'java']:
                         print "Lang parameter is invalid. Host lang must be one of the 'c', 'cpp', 'cs', 'java'"
                         raise Exception('Host lang parameter is invalid')
-                
+
                 if test_framework_root == '../common':
                     host_manager_file = os.path.join(os.path.dirname(STAXCurrentXMLFile), test_framework_root, "HostManager.xml")
                 else:
@@ -116,27 +116,27 @@
                     log_dir = os.path.join(os.path.dirname(STAXCurrentXMLFile), "dds2361_log", time_stamp)
                 else:
                     log_dir = os.path.join(log_dir, "dds2361_log", time_stamp)
-                    
+
                 if not os.path.exists(log_dir): os.makedirs(log_dir)
-                main_test_scenario = DDS2361TestScenario("dds2361", 
-                                                 "Multilanguage", 
-                                                 log_dir, 
+                main_test_scenario = DDS2361TestScenario("dds2361",
+                                                 "Multilanguage",
+                                                 log_dir,
                                                  os.path.join(log_dir, "result.txt"))
 
                 host_params_list = [[host1_name, host1_ospl_home, host1_lang, host1_ospl_src_home],
-                                    [host2_name, host2_ospl_home, host2_lang, host2_ospl_src_home], 
+                                    [host2_name, host2_ospl_home, host2_lang, host2_ospl_src_home],
                                     [host3_name, host3_ospl_home, host3_lang, host3_ospl_src_home],
                                     [host4_name, host4_ospl_home, host4_lang, host4_ospl_src_home]]
                 host_params_dict = [{'name': x[0], 'ospl_home': x[1], 'lang': x[2].lower(), 'ospl_src': x[3]} for x in host_params_list]
             </script>
-            
+
             <sequence>
-                <try>    
+                <try>
                     <sequence>
                         <!-- Create the local host instance-->
                         <call function="'CreateLocalhost'"/>
                         <script>localhost = STAXResult</script>
-                        
+
                         <iterate in="host_params_dict" var="host_param">
                             <sequence>
                                 <!-- Request all needed machines by hostname -->
@@ -146,10 +146,10 @@
                                     main_test_scenario.add_host(host)
                                     main_test_scenario.set_role_for_host(host, host_param.get('lang'))
                                     host.set_ospl_home(host_param.get('ospl_home'))
-                                    host.set_env('OSPL_OUTER_HOME', 
+                                    host.set_env('OSPL_OUTER_HOME',
                                                  host.pathjoin(host_param['ospl_src'], 'osplo'))
                                 </script>
-                            </sequence>    
+                            </sequence>
                         </iterate>
                         <iterate in="main_test_scenario.get_all_hosts()" var="host">
                             <sequence>
@@ -166,7 +166,7 @@
                                 </script>
                             </sequence>
                         </iterate>
-                        
+
                         <script>
                             for host in main_test_scenario.get_all_hosts():
                                 test_dir = host.pathjoin(host.get_env('OSPL_OUTER_HOME'), 'testsuite', 'dbt', 'api', 'shared')
@@ -175,9 +175,9 @@
                                 host.set_logdir(host.pathjoin(test_dir, "log"))
                                 host.set_scenario("dds2361")
                         </script>
-                        
+
                         <!-- Run four scenarious: c_as_active, cpp_as_active, cs_as_active, java_as_active  -->
-                        <iterate in="['c', 'cpp', 'cs', 'java']" var="active_lang"> 
+                        <iterate in="['c', 'cpp', 'cs', 'java']" var="active_lang">
                             <testcase name="'dds2631 ' + active_lang + ' as active'">
                                 <sequence>
                                     <script>
@@ -195,7 +195,7 @@
                                             <script>time.sleep(3)</script>
                                         </sequence>
                                     </paralleliterate>
-                                    
+
                                     <!-- Parallel start of test applications on all hosts, active app should be started a little bit later-->
                                     <paralleliterate in="test_scenario.get_all_hosts()" var="host">
                                         <sequence>
@@ -204,10 +204,10 @@
                                                 test_dir = host.pathjoin(host.get_env('OSPL_OUTER_HOME'), 'testsuite', 'dbt', 'api', 'shared')
                                                 log_file_name = lang + ".log"
                                                 arg = lang == active_lang and 'a' or 's'
-                                                
+
                                                 if lang == 'java':
                                                     working_dir = host.pathjoin(test_dir, 'java', 'bld', host.get_target() + '-release')
-                                                    if host.isWindows(): 
+                                                    if host.isWindows():
                                                         prearg = '.;' + host.get_ospl_home()
                                                     else:
                                                         prearg = '.:' + host.get_ospl_home()
@@ -222,8 +222,8 @@
                                                 else:
                                                     working_dir = '.'
                                                     command = host.pathjoin(test_dir, lang, 'exec', host.get_target() + '-release', 'shared_' + lang)
-                                                    
-                                                process = Process(command = command, 
+
+                                                process = Process(command = command,
                                                                   log_file = host.pathjoin(host.get_logdir(), log_file_name),
                                                                   args = arg,
                                                                   working_dir = working_dir)
@@ -250,7 +250,7 @@
                                                  'overwrite': 1,
                                                  'remove': 1}
                                             </call>
-                                        </sequence>    
+                                        </sequence>
                                     </paralleliterate>
                                     <script>
                                         test_scenario.check_results()
@@ -259,9 +259,9 @@
                                     <message>"Test is completed        " </message>
                                     <message>"Job log is saved to %s" % log_dir </message>
                                 </sequence>
-                            </testcase>    
+                            </testcase>
                         </iterate>
-                    </sequence>  
+                    </sequence>
                     <catch exception="'Resource'" var="msg">
                         <log message="1">'An exception occurred related to a resource needed to run this test. The test cannot start.\nException: %s' % msg</log>
                     </catch>
@@ -270,11 +270,11 @@
                             <sequence>
                                 <!-- Release host resources -->
                                 <call function="'ReleaseHost'">host</call>
-                            </sequence>    
-                        </iterate>    
+                            </sequence>
+                        </iterate>
                     </finally>
-                </try>    
+                </try>
             </sequence>
         </sequence>
-    </function>    
+    </function>
 </stax>

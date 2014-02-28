@@ -56,4 +56,6 @@ HOWTO Launch manually:
 
     2) For all subscribers the last sample of an instance must be written by the same publisher (so always publisher #1 or always publisher #2).
 
-    3)  Both log should show the SAME publisher as the last publisher for each sample with a specific ID.
+    3) Both log of the last samples of each instance should show the SAME publisher for each sample with a specific ID.
+
+    4) The number of received samples plus the number of lost samples should be equal to the total number of published samples.

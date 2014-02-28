@@ -78,7 +78,7 @@ DDS::ReturnCode_t DDS::DataWriter_impl::set_listener(
   DDS::DataWriterListener_ptr a_listener,
   DDS::StatusMask mask) THROW_ORB_EXCEPTIONS
 {
-  DDS::ReturnCode_t result;
+  DDS::ReturnCode_t result = DDS::RETCODE_ERROR;
   gapi_dataWriterListener gapi_listener;
 
   ccpp_DataWriterListener_copyIn(a_listener, gapi_listener);
@@ -86,7 +86,7 @@ DDS::ReturnCode_t DDS::DataWriter_impl::set_listener(
     result = gapi_dataWriter_set_listener(_gapi_self, &gapi_listener, mask);
     if (result == DDS::RETCODE_OK) {
       DDS::ccpp_UserData_ptr myUD;
-      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(_gapi_self));
       if (myUD) {
         myUD->setListener(a_listener);
       } else {
@@ -104,7 +104,7 @@ DDS::ReturnCode_t DDS::DataWriter_impl::set_listener(
 
 DDS::DataWriterListener_ptr DDS::DataWriter_impl::get_listener() THROW_ORB_EXCEPTIONS
 {
-  DDS::DataWriterListener_ptr result;
+  DDS::DataWriterListener_ptr result = NULL;
   gapi_dataWriterListener gapi_listener;
 
   if (os_mutexLock(&dw_mutex) == os_resultSuccess) {
@@ -131,7 +131,7 @@ DDS::Topic_ptr DDS::DataWriter_impl::get_topic() THROW_ORB_EXCEPTIONS
   if (handle){
     ccpp_UserData_ptr drUD = NULL;
     if (os_mutexLock(&dw_mutex) == os_resultSuccess) {
-      drUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+      drUD = dynamic_cast<ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
       if (drUD) {
         topic = dynamic_cast<DDS::Topic_ptr>(drUD->ccpp_object);
         if (topic) {
@@ -161,7 +161,7 @@ DDS::Publisher_ptr DDS::DataWriter_impl::get_publisher() THROW_ORB_EXCEPTIONS
   if (handle) {
     ccpp_UserData_ptr drUD = NULL;
     if (os_mutexLock(&dw_mutex) == os_resultSuccess) {
-      drUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+      drUD = dynamic_cast<ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
       if (drUD) {
         publisher = dynamic_cast<DDS::Publisher_ptr>(drUD->ccpp_object);
         if (publisher) {

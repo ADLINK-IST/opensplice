@@ -357,7 +357,7 @@
                         "calling ospl status RC [%s] with STAXResult [%s]."%\
                         (RC, STAXResult[0][1])
                     </log>
-            <return>(RC == 1 and STAXResult[0][1] != "")</return>
+            <return>(RC == 0 and STAXResult[0][1] != "")</return>
         </sequence>
     
 </function>
@@ -447,7 +447,7 @@
             <tcstatus result="'pass'"/>
             <else>
                 <tcstatus result="'fail'">
-                    "Value=%s. Expected 0."% value
+                    "Value=%d. Expected 0."% value
                 </tcstatus>
             </else>
         </if>
@@ -1144,7 +1144,7 @@
                 if process.get_log_file() != "":
                     request += " STDOUT %s STDERRTOSTDOUT"% process.get_log_file()
 
-                #request += " NOTIFY ONEND KEY %s"% process.get_id()
+                #request += " NOTIFY ONEND KEY %d"% process.get_id()
             </script>
 
             <log level="'info'" message="1">
@@ -1660,7 +1660,7 @@
             <if expr="RC != 0">
                 <sequence>
                     <script>
-                        err_msg = "Can't create directory [%s] on host [%s] cause (%s, %s)"%\
+                        err_msg = "Can't create directory [%s] on host [%s] cause (%d, %s)"%\
                                   (dest_folder, dest_host.get_host_name(), RC, result)
                     </script>
                     <call function="'ShowErrorMsgAndThrowException'">[err_msg, STAXResult, "FileCopyFailed"]</call>
@@ -1684,7 +1684,7 @@
                 <sequence>
                 <sequence>
                     <script>
-                        err_msg = "Can't copy file [%s] to host [%s] cause (%s, %s)"%\
+                        err_msg = "Can't copy file [%s] to host [%s] cause (%d, %s)"%\
                                   (file_name, dest_host.get_host_name(), RC, result)
                     </script>
                     <call function="'ShowErrorMsgAndThrowException'">[err_msg, STAXResult, "FileCopyFailed"]</call>

@@ -1,8 +1,8 @@
 # target context is set in platform specific config.mak
 
 # Set name context of used tooling
-CC		 = gcc -std=gnu99 -m64 #-v
-CXX		 = g++ -m64 #-v
+CC		 = gcc-mp-4.8 -std=gnu99 -m64 #-v
+CXX		 = g++-mp-4.8 -m64 #-v
 CSC      = gmcs
 
     # Binary used for filtering
@@ -52,17 +52,18 @@ JAVAH_FLAGS      = -force
 
 	#Java
 JAVA		 = java
-JAVA_LDFLAGS	 = -L"$(JAVA_HOME)/lib"
-JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/ext"
-JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/im"
-JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/security"
-JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/bundle/Libraries"
-JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/bundle/Classes"
+JAVA_LDFLAGS	 = -L"$(JAVA_HOME)/jre/lib"
+JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/jre/lib/server"
+#JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/ext"
+#JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/im"
+#JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/lib/security"
+#JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/bundle/Libraries"
+#JAVA_LDFLAGS	 += -L"$(JAVA_HOME)/bundle/Classes"
 JAVA_INCLUDE	 = -I"$(JAVA_HOME)/include"
-JAVA_INCLUDE	 += -I"$(JAVA_HOME)/bundle/Headers"
-JAVA_INCLUDE     += -I"/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers"
-JAVA_INCLUDE     += -I"/System/Library/Frameworks/JavaVM.framework/Headers"
-JAVA_INCLUDE     += -I"/Developer/SDKs/MacOSX10.6.sdk/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers"
+JAVA_INCLUDE	 += -I"$(JAVA_HOME)/include/darwin"
+#JAVA_INCLUDE	 += -I"$(JAVA_HOME)/bundle/Headers"
+#JAVA_INCLUDE     += -I"/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers"
+#JAVA_INCLUDE     += -I"/Developer/SDKs/MacOSX10.6.sdk/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers"
 
 	#soapcpp
 SOAPCPP		= soapcpp2
@@ -71,7 +72,7 @@ SOAPCPP		= soapcpp2
 SHCFLAGS         = -dynamiclib #-fno-common
 
 # Values of compiler flags can be overruled
-CFLAGS_OPT       = -O4 -DNDEBUG
+CFLAGS_OPT       = -O4 -flto -g -DNDEBUG
 CFLAGS_DEBUG     = -g -D_TYPECHECK_
 #CFLAGS_STRICT	 = -Wall
 CFLAGS_STRICT	 = -Wall -W -pedantic
@@ -96,7 +97,7 @@ endif
 MTCFLAGS	+= -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT
 
 # Set linker options
-LDFLAGS		 = -static-libgcc -L$(SPLICE_LIBRARY_PATH) -Wl,-flat_namespace
+LDFLAGS		 = -L$(SPLICE_LIBRARY_PATH) -Wl,-flat_namespace
 
 # Identify linker options for building shared libraries
 SHLDFLAGS	 = -dynamiclib
@@ -114,7 +115,7 @@ LDLIBS_CXX = -lstdc++
 LDLIBS_NW =
 LDLIBS_OS = -lpthread -ldl #-lrt
 LDLIBS_CMS =
-LDLIBS_JAVA = -ljvm -lverify -lhpi
+LDLIBS_JAVA = -ljvm #-lverify -lhpi
 LDLIBS_ODBC= -lodbc
 
 #set platform specific pre- and postfixes for the names of libraries and executables
@@ -126,7 +127,7 @@ DLIB_POSTFIX = .dylib
 EXEC_PREFIX =
 EXEC_POSTFIX =
 EXEC_LD_POSTFIX =
-INLINESRC_POSTFIX = .i
+INLINESRC_POSTFIX = .inl
 
 # Identify linker options for building shared C# libraries and or executables.
 CSLIB_PREFIX =

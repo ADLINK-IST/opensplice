@@ -130,120 +130,7 @@ resolveFields (
     return TRUE;
 }
 
-static c_iter
-deOr(
-    q_expr e,
-    c_iter list)
-{
-    c_iter results;
-
-    if (q_getTag(e) == Q_EXPR_OR) {
-        results = deOr(q_takePar(e,0),deOr(q_takePar(e,0),list));
-        q_dispose(e);
-    } else {
-        results = c_iterInsert(list,e);
-    }
-    return results;
-}
-
 #define PRINT_QUERY (0)
-
-/*
- * Using the sourceKeyList and the indexKeyList, this method replaces all
- * key fields in expr. The sourceKeyList contains the keys as given by the
- * application (eg. sample.message.userData.key).
- * The indexKeyList contains the keys as used internally (e.g. key.field0).
- */
-static void
-translate(
-    q_expr expr,
-    c_array sourceKeyList, /* c_array<c_field> */
-    c_array indexKeyList)  /* c_array<c_field> */
-{
-    assert(expr);
-    assert(sourceKeyList);
-    assert(indexKeyList);
-
-    if(q_getKind(expr) == T_FNC){
-        if(q_isFnc(expr, Q_EXPR_PROPERTY))
-        {
-            /* first get the string representation of the id's in this expr */
-            c_field f;
-            c_long i, index = -1, size = 0;
-            c_char *name;
-
-            name = q_propertyName(expr);
-            if(name)
-            {
-                /* Now find the matching key in the sourceKeyList */
-                size = c_arraySize(sourceKeyList);
-
-                assert(size == c_arraySize(indexKeyList));
-
-                if(size == c_arraySize(indexKeyList)){
-
-                    for(i=0; i<size && index < 0; i++)
-                    {
-                        f = (c_field)(sourceKeyList[i]);
-                        if(strcmp(c_fieldName(f), name) == 0)
-                        {
-                            index = i;
-                        }
-                    }
-
-                    assert(index >= 0);
-
-                    if(index >= 0)
-                    {
-                        /* now replace the Q_EXPR_PROPERTY id's by the indexKeyList ones */
-                        q_expr e;
-                        c_char *fieldNameStr;
-                        c_char *str;
-                        c_iter ids;
-
-                        f = (c_field)(indexKeyList[index]);
-                        fieldNameStr = c_fieldName(f);
-
-
-                        /* clear current list */
-                        e = q_takePar(expr, 0);
-                        while(e){
-                            q_dispose(e);
-                            e = q_takePar(expr, 0);
-                        }
-
-                        ids = c_splitString(fieldNameStr, ".");
-                        if(ids){
-                            str = (c_char*)c_iterTakeFirst(ids);
-                            while(str){
-                                e = q_newId(str);
-                                q_addPar(expr, e);
-                                os_free(str);
-                                str = (c_char*)c_iterTakeFirst(ids);
-                            }
-                            c_iterFree(ids);
-                        }
-                    } else {
-                        OS_REPORT_1(OS_WARNING,"v_dataReaderQuery_translate failed", 0,
-                                        "Cannot find key '%s' in key list.", name);
-                    }
-                } else {
-                    OS_REPORT_2(OS_ERROR,"v_dataReaderQuery_translate failed", 0,
-                                       "sizes of indexKeyList (size %d) and sourceKeyList (size %d) do not match.", c_arraySize(indexKeyList), size);
-                }
-                os_free(name);
-            }
-        } else if (!q_isFnc(expr, Q_EXPR_CALLBACK))
-        {
-            q_list l = q_getLst(expr, 0);
-            while(l)
-            {
-                translate(q_element(l), sourceKeyList, indexKeyList);
-                l = q_next(l);
-            }
-        }
-    }
-}
 
 v_dataReaderQuery
 v_dataReaderQueryNew (
@@ -828,7 +715,7 @@ v_dataReaderQueryRead (
 
             v_dataReaderLock(r);
             r->readCnt++;
-            v_dataReaderUpdatePurgeLists(r);
+            v_dataReaderUpdatePurgeListsLocked(r);
             if (_this->walkRequired == FALSE) {
                 if (_this->triggerValue != NULL) {
                     instanceSet = r->index->notEmptyList;
@@ -971,7 +858,7 @@ v_dataReaderQueryReadInstance(
             r = v_dataReader(src);
             v_dataReaderLock(r);
             r->readCnt++;
-            v_dataReaderUpdatePurgeLists(r);
+            v_dataReaderUpdatePurgeListsLocked(r);
             if (v_dataReaderInstanceEmpty(instance)) {
                 action(NULL,arg); /* This triggers the action routine that
                                    * the last sample is read. */
@@ -1060,7 +947,7 @@ v_dataReaderQueryReadNextInstance(
             r = v_dataReader(src);
             v_dataReaderLock(r);
             r->readCnt++;
-            v_dataReaderUpdatePurgeLists(r);
+            v_dataReaderUpdatePurgeListsLocked(r);
             len = c_arraySize(_this->instanceQ);
             nextInstance = v_dataReaderNextInstance(r,instance);
 
@@ -1208,7 +1095,7 @@ v_dataReaderQueryTake(
 
             v_dataReaderLock(r);
             r->readCnt++;
-            v_dataReaderUpdatePurgeLists(r);
+            v_dataReaderUpdatePurgeListsLocked(r);
             if (_this->walkRequired == FALSE) {
                 if (_this->triggerValue != NULL) {
                     instanceSet = r->index->notEmptyList;
@@ -1349,7 +1236,7 @@ v_dataReaderQueryTakeInstance(
                 r = v_dataReader(src);
                 v_dataReaderLock(r);
                 r->readCnt++;
-                v_dataReaderUpdatePurgeLists(r);
+                v_dataReaderUpdatePurgeListsLocked(r);
                 len = c_arraySize(_this->instanceQ);
                 i=0;
                 while ((i<len) && proceed) {
@@ -1435,7 +1322,7 @@ v_dataReaderQueryTakeNextInstance(
             r = v_dataReader(src);
             v_dataReaderLock(r);
             r->readCnt++;
-            v_dataReaderUpdatePurgeLists(r);
+            v_dataReaderUpdatePurgeListsLocked(r);
             len = c_arraySize(_this->instanceQ);
             nextInstance = v_dataReaderNextInstance(r,instance);
             a.action = action;

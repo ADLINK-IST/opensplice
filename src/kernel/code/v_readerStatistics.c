@@ -62,6 +62,7 @@ void v_readerStatisticsInit(v_readerStatistics rs)
     rs->numberOfSamplesDiscarded = 0;
     rs->numberOfSamplesRead = 0;
     rs->numberOfSamplesTaken = 0;
+    rs->numberOfSamplesLost = 0;
 
     rs->numberOfSamplesRejectedBySamplesLimit = 0;
     rs->numberOfSamplesRejectedByInstancesLimit = 0;
@@ -100,7 +101,7 @@ c_bool v_readerStatisticsReset(v_readerStatistics rs, const c_char* fieldName)
 
         v_fullCounterReset(&rs->readLatency);
         v_fullCounterReset(&rs->transportLatency);
-        
+
         v_statisticsULongResetInternal(v_reader, numberOfSamples, rs);
         v_statisticsULongResetInternal(v_reader, numberOfInstances, rs);
         v_statisticsULongResetInternal(v_reader, numberOfInstancesWithStatusNew, rs);
@@ -118,6 +119,7 @@ c_bool v_readerStatisticsReset(v_readerStatistics rs, const c_char* fieldName)
         v_statisticsULongResetInternal(v_reader, numberOfSamplesTaken, rs);
         v_statisticsULongResetInternal(v_reader, numberOfSamplesRejectedBySamplesLimit, rs);
         v_statisticsULongResetInternal(v_reader, numberOfSamplesRejectedByInstancesLimit, rs);
+        v_statisticsULongResetInternal(v_reader, numberOfSamplesLost, rs);
         v_statisticsULongResetInternal(v_reader, numberOfReads, rs);
         v_statisticsULongResetInternal(v_reader, numberOfInstanceReads, rs);
         v_statisticsULongResetInternal(v_reader, numberOfNextInstanceReads, rs);

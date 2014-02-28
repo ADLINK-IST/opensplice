@@ -28,6 +28,7 @@ namespace DDS
     {
     private:
         gapi_waitSet _gapi_self;
+        gapi_conditionSeq *_gapi_conditions;
 
     public:
 

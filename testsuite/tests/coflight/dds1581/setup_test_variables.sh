@@ -15,7 +15,7 @@ test_root1=~/log
 #Location of OSPL root on machine 1 , root for ospli and osplo
 ospl_root1=
 #name of ospl release for host1
-ospl_release_name1=x86.linux2.6-release
+ospl_release_name1=x86.linux-release
 export host_name1 test_root1 ospl_root1 ospl_release_name1
 #-----------------------------------------------------------------------------------------------------------------------------------
 #The host name of the machine 2
@@ -25,7 +25,7 @@ test_root2=~/log
 #Location of OSPL root on machine 2 , root for ospli and osplo
 ospl_root2=
 #name of ospl release for host2
-ospl_release_name2=x86_64.linux2.6-release
+ospl_release_name2=x86_64.linux-release
 export host_name2 test_root2 ospl_root2 ospl_release_name2
 #-----------------------------------------------------------------------------------------------------------------------------------
 #The host name of the machine 3
@@ -35,7 +35,7 @@ test_root3=~/log
 #Location of OSPL root on machine 13, root for ospli and osplo
 ospl_root3=
 #name of ospl release for host3
-ospl_release_name3=x86.linux2.6-release
+ospl_release_name3=x86.linux-release
 export host_name3 test_root3 ospl_root3 ospl_release_name3
 #-----------------------------------------------------------------------------------------------------------------------------------
 #The host name of the machine 4

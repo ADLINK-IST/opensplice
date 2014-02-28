@@ -265,7 +265,7 @@ saj_returnCode saj_InitializeDomainParticipantFactoryQos(JNIEnv *env);
 saj_returnCode saj_InitializeDomainParticipantQos(JNIEnv *env);
 
 /**
- * @brief Initializes the DomainReaderQos by caching the field id's
+ * @brief Initializes the DataReaderQos by caching the field id's
  * of its attributes.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
@@ -321,6 +321,14 @@ saj_returnCode saj_InitializeSubscriberQos(JNIEnv *env);
 saj_returnCode saj_InitializeDataReaderQosHolder(JNIEnv *env);
 
 /**
+ * @brief Initializes the NamedDataReaderQosHolder by caching the
+ * field id of the attribute value.
+ * @param env The JNI environment.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode saj_InitializeNamedDataReaderQosHolder(JNIEnv *env);
+
+/**
  * @brief Initializes the DataReaderViewQosHolder by caching the
  * field id of the attribute value.
  * @param env The JNI environment.
@@ -358,6 +366,14 @@ saj_returnCode saj_InitializeStatusHolders(JNIEnv *env);
 saj_returnCode saj_InitializeDataWriterQosHolder(JNIEnv *env);
 
 /**
+ * @brief Initializes the NamedDataWriterQosHolder by caching the
+ * field id of the attribute value.
+ * @param env The JNI environment.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode saj_InitializeNamedDataWriterQosHolder(JNIEnv *env);
+
+/**
  * @brief Initializes the SubscriptionBuiltinTopicDataHolder by caching the
  * field id of the attribute value.
  * @param env The JNI environment.
@@ -378,12 +394,28 @@ saj_returnCode saj_InitializeDomainParticipantFactoryQosHolder(JNIEnv *env);
 saj_returnCode saj_InitializeDomainParticipantQosHolder(JNIEnv *env);
 
 /**
+ * @brief Initializes the NamedDomainParticipantQosHolder by caching the
+ * field id of the attribute value.
+ * @param env The JNI environment.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode saj_InitializeNamedDomainParticipantQosHolder(JNIEnv *env);
+
+/**
  * @brief Initializes the PublisherQosHolder by caching the
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
  */
 saj_returnCode saj_InitializePublisherQosHolder(JNIEnv *env);
+
+/**
+ * @brief Initializes the NamedPublisherQosHolder by caching the
+ * field id of the attribute value.
+ * @param env The JNI environment.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode saj_InitializeNamedPublisherQosHolder(JNIEnv *env);
 
 /**
  * @brief Initializes the SubscriberQosHolder by caching the
@@ -394,12 +426,28 @@ saj_returnCode saj_InitializePublisherQosHolder(JNIEnv *env);
 saj_returnCode saj_InitializeSubscriberQosHolder(JNIEnv *env);
 
 /**
+ * @brief Initializes the NamedSubscriberQosHolder by caching the
+ * field id of the attribute value.
+ * @param env The JNI environment.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode saj_InitializeNamedSubscriberQosHolder(JNIEnv *env);
+
+/**
  * @brief Initializes the TopicQosHolder by caching the
  * field id of the attribute value.
  * @param env The JNI environment.
  * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
  */
 saj_returnCode saj_InitializeTopicQosHolder(JNIEnv *env);
+
+/**
+ * @brief Initializes the NamedTopicQosHolder by caching the
+ * field id of the attribute value.
+ * @param env The JNI environment.
+ * @return SAJ_RETCODE_ERROR in case the VM has thrown a error.
+ */
+saj_returnCode saj_InitializeNamedTopicQosHolder(JNIEnv *env);
 
 /**
  * @brief Initializes the DataReaderSeqHolder by caching the
@@ -833,6 +881,10 @@ saj_returnCode saj_InitializeSAJ(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
+    if (saj_InitializeNamedDataReaderQosHolder(env) != SAJ_RETCODE_OK)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
     if (saj_InitializeDataReaderViewQosHolder(env) != SAJ_RETCODE_OK)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
@@ -853,6 +905,10 @@ saj_returnCode saj_InitializeSAJ(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
+    if (saj_InitializeNamedDataWriterQosHolder(env) != SAJ_RETCODE_OK)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
     if (saj_InitializeSubscriptionBuiltinTopicDataHolder(env) != SAJ_RETCODE_OK)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
@@ -869,7 +925,15 @@ saj_returnCode saj_InitializeSAJ(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
+    if (saj_InitializeNamedDomainParticipantQosHolder(env) != SAJ_RETCODE_OK)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
     if (saj_InitializePublisherQosHolder(env) != SAJ_RETCODE_OK)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+    if (saj_InitializeNamedPublisherQosHolder(env) != SAJ_RETCODE_OK)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
@@ -877,7 +941,15 @@ saj_returnCode saj_InitializeSAJ(JNIEnv *env)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
+    if (saj_InitializeNamedSubscriberQosHolder(env) != SAJ_RETCODE_OK)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
     if (saj_InitializeTopicQosHolder(env) != SAJ_RETCODE_OK)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+    if (saj_InitializeNamedTopicQosHolder(env) != SAJ_RETCODE_OK)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
@@ -2019,7 +2091,9 @@ saj_returnCode saj_InitializeDomainParticipantQos(JNIEnv *env)
     );
 
     if (GET_CACHED(domainParticipantQos_userData_fid) == NULL ||
-        GET_CACHED(domainParticipantQos_entityFactory_fid) == NULL)
+        GET_CACHED(domainParticipantQos_entityFactory_fid) == NULL ||
+        GET_CACHED(domainParticipantQos_watchdogScheduling_fid) == NULL ||
+        GET_CACHED(domainParticipantQos_listenerScheduling_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
@@ -2641,6 +2715,27 @@ saj_returnCode saj_InitializeDataReaderQosHolder(JNIEnv *env)
     return SAJ_RETCODE_OK;
 }
 
+saj_returnCode saj_InitializeNamedDataReaderQosHolder(JNIEnv *env)
+{
+    jclass tempClass = (*env)->FindClass(env, "DDS/NamedDataReaderQosHolder");
+    SET_CACHED(namedDataReaderQosHolder_value_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "value",
+            "LDDS/NamedDataReaderQos;"
+        )
+    );
+
+    if (GET_CACHED(namedDataReaderQosHolder_value_fid) == NULL)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+
+    (*env)->DeleteLocalRef(env, tempClass);
+    return SAJ_RETCODE_OK;
+}
+
 saj_returnCode saj_InitializeDataReaderViewQosHolder(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/DataReaderViewQosHolder");
@@ -2901,6 +2996,27 @@ saj_returnCode saj_InitializeDataWriterQosHolder(JNIEnv *env)
     return SAJ_RETCODE_OK;
 }
 
+saj_returnCode saj_InitializeNamedDataWriterQosHolder(JNIEnv *env)
+{
+    jclass tempClass = (*env)->FindClass(env, "DDS/NamedDataWriterQosHolder");
+    SET_CACHED(namedDataWriterQosHolder_value_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "value",
+            "LDDS/NamedDataWriterQos;"
+        )
+    );
+
+    if (GET_CACHED(namedDataWriterQosHolder_value_fid) == NULL)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+
+    (*env)->DeleteLocalRef(env, tempClass);
+    return SAJ_RETCODE_OK;
+}
+
 saj_returnCode saj_InitializeSubscriptionBuiltinTopicDataHolder(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/SubscriptionBuiltinTopicDataHolder");
@@ -3131,6 +3247,27 @@ saj_returnCode saj_InitializeDomainParticipantQosHolder(JNIEnv *env)
     return SAJ_RETCODE_OK;
 }
 
+saj_returnCode saj_InitializeNamedDomainParticipantQosHolder(JNIEnv *env)
+{
+    jclass tempClass = (*env)->FindClass(env, "DDS/NamedDomainParticipantQosHolder");
+    SET_CACHED(namedDomainParticipantQosHolder_value_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "value",
+            "LDDS/NamedDomainParticipantQos;"
+        )
+    );
+
+    if (GET_CACHED(namedDomainParticipantQosHolder_value_fid) == NULL)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+
+    (*env)->DeleteLocalRef(env, tempClass);
+    return SAJ_RETCODE_OK;
+}
+
 saj_returnCode saj_InitializePublisherQosHolder(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/PublisherQosHolder");
@@ -3144,6 +3281,27 @@ saj_returnCode saj_InitializePublisherQosHolder(JNIEnv *env)
     );
 
     if (GET_CACHED(publisherQosHolder_value_fid) == NULL)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+
+    (*env)->DeleteLocalRef(env, tempClass);
+    return SAJ_RETCODE_OK;
+}
+
+saj_returnCode saj_InitializeNamedPublisherQosHolder(JNIEnv *env)
+{
+    jclass tempClass = (*env)->FindClass(env, "DDS/NamedPublisherQosHolder");
+    SET_CACHED(namedPublisherQosHolder_value_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "value",
+            "LDDS/NamedPublisherQos;"
+        )
+    );
+
+    if (GET_CACHED(namedPublisherQosHolder_value_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }
@@ -3383,6 +3541,27 @@ saj_returnCode saj_InitializeSubscriberQosHolder(JNIEnv *env)
     return SAJ_RETCODE_OK;
 }
 
+saj_returnCode saj_InitializeNamedSubscriberQosHolder(JNIEnv *env)
+{
+    jclass tempClass = (*env)->FindClass(env, "DDS/NamedSubscriberQosHolder");
+    SET_CACHED(namedSubscriberQosHolder_value_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "value",
+            "LDDS/NamedSubscriberQos;"
+        )
+    );
+
+    if (GET_CACHED(namedSubscriberQosHolder_value_fid) == NULL)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+
+    (*env)->DeleteLocalRef(env, tempClass);
+    return SAJ_RETCODE_OK;
+}
+
 saj_returnCode saj_InitializeTopicQosHolder(JNIEnv *env)
 {
     jclass tempClass = (*env)->FindClass(env, "DDS/TopicQosHolder");
@@ -3396,6 +3575,27 @@ saj_returnCode saj_InitializeTopicQosHolder(JNIEnv *env)
     );
 
     if (GET_CACHED(topicQosHolder_value_fid) == NULL)
+    {
+        return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
+    }
+
+    (*env)->DeleteLocalRef(env, tempClass);
+    return SAJ_RETCODE_OK;
+}
+
+saj_returnCode saj_InitializeNamedTopicQosHolder(JNIEnv *env)
+{
+    jclass tempClass = (*env)->FindClass(env, "DDS/NamedTopicQosHolder");
+    SET_CACHED(namedTopicQosHolder_value_fid,
+        (*env)->GetFieldID(
+            env,
+            tempClass,
+            "value",
+            "LDDS/NamedTopicQos;"
+        )
+    );
+
+    if (GET_CACHED(namedTopicQosHolder_value_fid) == NULL)
     {
         return SAJ_RETCODE_ERROR; /* VM has thrown an exception */
     }

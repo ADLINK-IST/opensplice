@@ -28,6 +28,9 @@ namespace core
 {
 
 template <typename T>
+WeakReference<T>::WeakReference() { }
+
+template <typename T>
 WeakReference<T>::WeakReference(const T& t) : impl_(t.delegate()) { }
 
 template <typename T>

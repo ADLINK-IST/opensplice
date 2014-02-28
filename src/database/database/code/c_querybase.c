@@ -1059,22 +1059,25 @@ optimizeExpr(
     c_bool *fixed)
 {
     c_qExpr p1,p2;
-    c_type type;
+    c_type type, t1, t2;
 
     OS_UNUSED_ARG(fixed);
 
     p1 = c_qFunc(e)->params[0];
     p2 = c_qFunc(e)->params[1];
     if ((p1->kind == CQ_FIELD) && (p2->kind == CQ_FIELD)) {
-        if (c_fieldType(c_qField(p1)->field) !=
-            c_fieldType(c_qField(p2)->field)) {
+        t1 = c_fieldType(c_qField(p1)->field);
+        t2 = c_fieldType(c_qField(p2)->field);
+        if (t1 != t2) {
             OS_REPORT_2(OS_WARNING,
-                        "c_querybase::optimizeExpr",0,
-                        "Detected inclompatible types between "
-                        "field <%s> and field <%s>",
-                         c_fieldName(c_qField(p1)->field),
-                         c_fieldName(c_qField(p2)->field));
+                "c_querybase::optimizeExpr", 0,
+                "Detected inclompatible types between "
+                "field <%s> and field <%s>",
+                c_fieldName(c_qField(p1)->field),
+                c_fieldName(c_qField(p2)->field));
         }
+        c_free(t1);
+        c_free(t2);
     }
     if (p1->kind == CQ_FIELD) {
         type = c_fieldType(c_qField(p1)->field);

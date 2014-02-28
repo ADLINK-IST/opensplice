@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl.h"
@@ -299,7 +299,18 @@ void be_predefined_type::InitializeTypeMap (be_Type * t)
          assert(t_predef);
 
          pt = t_predef->pt();
-         t->TypeName(NameToString(t_ast->name()));
+         /**
+          * @internal
+          * @bug Hacked in a fix
+          */
+         if (CorbaTypesMap::TypeName(pt))
+         {
+            t->TypeName(CorbaTypesMap::TypeName(pt));
+         }
+         else
+         {
+            t->TypeName(NameToString(t_ast->name()));
+         }
          t->TypeCodeTypeName(BE_Globals::TCPrefix + t->LocalName());
          t->MetaTypeTypeName(BE_Globals::MTPrefix + NameToString(t_ast->name(), "_"));
       }
@@ -426,7 +437,7 @@ void be_predefined_type::InitializeTypeMap (be_Type * t)
                           VT_Pointer,
                           VT_NonReference);
       }
-      else if (pt == AST_PredefinedType::PT_object || 
+      else if (pt == AST_PredefinedType::PT_object ||
                pt == AST_PredefinedType::PT_local_object)
       {
          DDS_StdString ptrName = t->TypeName() + DDSPtrExtension;
@@ -526,7 +537,7 @@ be_predefined_type::IsFixedLength() const
 
    if ( (my->pt() == AST_PredefinedType::PT_any) ||
         (my->pt() == AST_PredefinedType::PT_object) ||
-        (my->pt() == AST_PredefinedType::PT_typecode) || 
+        (my->pt() == AST_PredefinedType::PT_typecode) ||
         (my->pt() == AST_PredefinedType::PT_local_object) )
    {
       ret = FALSE;
@@ -536,7 +547,7 @@ be_predefined_type::IsFixedLength() const
 }
 
 /* This function is added to counter the problem found with Union when changing the
-   switches in IsFixedLength to include wchar boolean and long double. 
+   switches in IsFixedLength to include wchar boolean and long double.
    Problem not known but prevents code compilation!
 */
 
@@ -548,7 +559,7 @@ be_predefined_type::IsFixedLengthPrimitiveType() const
 
    if ( (my->pt() == AST_PredefinedType::PT_boolean) ||
          (my->pt() == AST_PredefinedType::PT_longdouble) ||
-         (my->pt() == AST_PredefinedType::PT_wchar)) 
+         (my->pt() == AST_PredefinedType::PT_wchar))
    {
       ret = FALSE;
    }
@@ -590,7 +601,7 @@ be_predefined_type::GenerateTypedefs(
       }
 
       case AST_PredefinedType::PT_local_object:
-         
+
       case AST_PredefinedType::PT_typecode:
       {
          os << tab << "typedef " << typeName
@@ -604,9 +615,9 @@ be_predefined_type::GenerateTypedefs(
          os << tab << "typedef " << typeName << DDSMgrExtension
             << " " << alias.LocalName() << DDSMgrExtension << ";" << nl;
       }
-      
+
       break;
-      
+
       case AST_PredefinedType::PT_any:
       {
          os << tab << "typedef " << typeName
@@ -616,15 +627,15 @@ be_predefined_type::GenerateTypedefs(
          os << tab << "typedef " << typeName << DDSOutExtension
             << " " << alias.LocalName() << DDSOutExtension << ";" << nl;
       }
-      
+
       break;
-      
+
       default:
       {
          os << tab << "typedef " << typeName
             << " " << alias.LocalName() << ";" << nl;
       }
-      
+
       break;
    }
 }
@@ -644,7 +655,7 @@ DDS_StdString be_predefined_type::Initializer
 
    AST_PredefinedType::PredefinedType pdt = ((be_predefined_type*)this)->pt();
 
-   if 
+   if
    (
       (pdt == AST_PredefinedType::PT_pseudo) ||
       (pdt == AST_PredefinedType::PT_object) ||
@@ -654,7 +665,7 @@ DDS_StdString be_predefined_type::Initializer
          (pdt == AST_PredefinedType::PT_any) &&
          (vt != VT_InOutParam) &&
          (vt != VT_Attribute)
-      ) 
+      )
    )
    {
       ret = arg + " = 0;";
@@ -710,7 +721,7 @@ DDS_StdString be_predefined_type::Releaser (const DDS_StdString & arg) const
    AST_PredefinedType::PredefinedType pdt = ((be_predefined_type*)this)->pt();
    DDS_StdString ret;  // primitives, voids any don't get heap allocated
 
-   if 
+   if
    (
       pdt == AST_PredefinedType::PT_pseudo ||
       pdt == AST_PredefinedType::PT_typecode ||
@@ -1033,7 +1044,7 @@ DDS::Boolean be_predefined_type::declare_for_stub
 
             case VT_Return:
             {
-               os << tab << "DDS_var <DDS::Any> _ret_ (new DDS::Any);" 
+               os << tab << "DDS_var <DDS::Any> _ret_ (new DDS::Any);"
                   << nl;
                break;
             }
@@ -1107,7 +1118,7 @@ be_predefined_type::declare_for_struct_get(
 
             os << tab << "IOP::IOR::release (((DDS::Object*)(" << sptr << "->"
             << fld << "))->get_ior());" << nl;
-            
+
             ret = TRUE;
          }
          break;
@@ -1116,7 +1127,7 @@ be_predefined_type::declare_for_struct_get(
          {
             os << tab << "DDS::release ((DDS::TypeCode*)("
                << sptr << "->" << fld << "));" << nl;
-            
+
             ret = TRUE;
          }
          break;
@@ -1155,7 +1166,7 @@ be_predefined_type::declare_for_union_get(
 
             os << tab << "IOP::IOR::release (((DDS::Object*)(" << sptr << "->"
             << fld << "))->get_ior());" << nl;
-            
+
             ret = TRUE;
          }
 
@@ -1165,7 +1176,7 @@ be_predefined_type::declare_for_union_get(
          {
             os << tab << "DDS::release ((DDS::TypeCode*)("
                << sptr << "->" << fld << "));" << nl;
-            
+
             ret = TRUE;
          }
          break;
@@ -1235,7 +1246,7 @@ DDS::Boolean be_predefined_type::make_get_param_for_stub
                case VT_Return:
                os << "_ret_, " << dir << " ";
                break;
-           
+
                default: assert (0);
             }
 
@@ -1300,7 +1311,7 @@ DDS::Boolean be_predefined_type::make_put_param_for_stub
                os << tab;
                os << "{ " << Scope(TypeCodeTypeName()) << ", ";
                os << "(" << arg << ") ? " << arg << "->get_ior() : 0, ";
-               os << "DDS::PARAM_IN ";  
+               os << "DDS::PARAM_IN ";
                os << "}";
                ret = TRUE;
             }
@@ -1407,7 +1418,7 @@ DDS::Boolean be_predefined_type::make_put_param_for_struct
             << "))->get_ior(), DDS::PARAM_IN ";
       }
       break;
-      
+
       case AST_PredefinedType::PT_any:
       {
          os << "(void*)&" << sptr << "->" << fld << ", DDS::PARAM_IN ";
@@ -1482,7 +1493,7 @@ DDS::Boolean be_predefined_type::make_put_param_for_union
             << "))->get_ior(), DDS::PARAM_IN ";
       }
       break;
-      
+
       case AST_PredefinedType::PT_any:
       {
          os << sptr << "->" << fld << ", DDS::PARAM_IN ";
@@ -1551,21 +1562,21 @@ ostream & be_predefined_type::put_for_struct
 
    switch (pt ())
    {
-      
+
       case AST_PredefinedType::PT_object:
       {
          os << tab << "os.cdr_put(" << sptr << "->" << fld
             << "->get_ior ()" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
       }
-      
+
       break;
-      
+
       case AST_PredefinedType::PT_any:
       {
          os << tab << sptr << "->" << fld << ".put (os"
             << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
       }
-      
+
       break;
 
       default:
@@ -1601,21 +1612,21 @@ ostream & be_predefined_type::get_for_struct
          os << tab << "is.cdr_get(" << sptr << "->" << fld
             << "->get_ior ()" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
       }
-      
+
       break;
-      
+
       case AST_PredefinedType::PT_any:
       {
          os << tab << sptr << "->" << fld << ".get (is"
             << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
       }
-      
+
       break;
-      
-      
+
+
       default:
       {
-         os << tab << "is.cdr_get (" << sptr << "->" 
+         os << tab << "is.cdr_get (" << sptr << "->"
             << fld << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
       }
    }
@@ -1645,7 +1656,7 @@ ostream & be_predefined_type::put_for_union
 
       case AST_PredefinedType::PT_any:
       {
-         os << tab << "((DDS::Any*)" << sptr << "->" << fld 
+         os << tab << "((DDS::Any*)" << sptr << "->" << fld
             << ")->put (os" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
          break;
       }
@@ -1683,7 +1694,7 @@ ostream & be_predefined_type::get_for_union
 
       case AST_PredefinedType::PT_any:
       {
-         os << tab << "((DDS::Any*)" << sptr << "->" << fld 
+         os << tab << "((DDS::Any*)" << sptr << "->" << fld
             << ")->get (os" << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
          break;
       }
@@ -1715,18 +1726,18 @@ ostream & be_predefined_type::put_for_sequence
             << "{ " << Scope(TypeCodeTypeName()) << ", "
             << arg << "[" << index << "]->get_ior (), DDS::PARAM_IN };"
             << nl;
-         os << tab << "os.put (&putArg, 1" << XBE_Ev::arg (XBE_ENV_VARN) 
+         os << tab << "os.put (&putArg, 1" << XBE_Ev::arg (XBE_ENV_VARN)
             << ");" << nl;
       }
 
       break;
-      
+
       case AST_PredefinedType::PT_any:
       {
          os << tab << arg << "[" << index << "].put (os"
             << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
       }
-      
+
       break;
 
       case AST_PredefinedType::PT_typecode:
@@ -1742,9 +1753,9 @@ ostream & be_predefined_type::put_for_sequence
 
       default:
       {
-         os << tab << "DDS::Codec::Param putArg = { " 
+         os << tab << "DDS::Codec::Param putArg = { "
             << Scope(TypeCodeTypeName())
-            << ", &" << arg << "[" << index << "]" 
+            << ", &" << arg << "[" << index << "]"
             << ", DDS::PARAM_IN };" << nl;
          os << tab << "os.put (&putArg, 1"
             << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
@@ -1779,21 +1790,21 @@ ostream & be_predefined_type::get_for_sequence
             << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
       }
       break;
-      
+
       case AST_PredefinedType::PT_any:
       {
          os << tab << arg << "[" << index << "].get (is"
             << XBE_Ev::arg (XBE_ENV_VARN) << ");" << nl;
       }
       break;
-      
+
       default:
       {
          if (pt () ==  AST_PredefinedType::PT_typecode)
          {
             os << tab << "DDS::release (" << arg << "[" << index << "]);" << nl;
          }
-         
+
          os << tab << "DDS::Codec::Param getArg = {" << Scope (TypeCodeTypeName ())
             << ", &" << arg << "[" << index << "]" << ", DDS::PARAM_OUT };" << nl;
          os << tab << "is.get (&getArg, 1"

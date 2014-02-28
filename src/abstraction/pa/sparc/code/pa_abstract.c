@@ -13,6 +13,13 @@
  * Implements PA abstraction for sparc
  */
 
+#ifdef pa_increment
+#undef pa_increment
+#endif
+
+#ifdef pa_decrement
+#undef pa_decrement
+#endif
 
 static os_uint32 os_atomic_add(os_uint32 *count, os_int32 difference )
 {

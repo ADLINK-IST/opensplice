@@ -31,26 +31,14 @@
 #include <dds/core/status/Status.hpp>
 #include <org/opensplice/core/exception_helper.hpp>
 #include <org/opensplice/core/StatusConverter.hpp>
+#include <org/opensplice/core/EntityRegistry.hpp>
 
-namespace org
+namespace dds
 {
-namespace opensplice
+namespace sub
 {
-namespace topic
-{
-template<> struct topic_data_seq<dds::sub::SampleInfo>
-{
-    typedef DDS::SampleInfoSeq type;
-    typedef DDS::SampleInfoSeq_uniq_ utype;
-};
+template <typename FOO> class TQuery;
 }
-}
-}
-
-namespace dds {
-  namespace sub {
-    template <typename FOO> class TQuery;
-  }
 }
 
 namespace dds
@@ -65,9 +53,13 @@ typedef dds::sub::TQuery<dds::sub::detail::FooQuery> Query;
 }
 }
 
-namespace dds { namespace sub {
-  typedef dds::sub::detail::Query Query;
-} }
+namespace dds
+{
+namespace sub
+{
+typedef dds::sub::detail::Query Query;
+}
+}
 
 namespace dds
 {
@@ -108,10 +100,13 @@ public:
     template<typename S>
     void operator()(S& s)
     {
-        s.filter_content(query_);
+        s.content(query_);
     }
 private:
-    ContentFilterManipulatorFunctor& operator=(const ContentFilterManipulatorFunctor& rhs) { return *this; }
+    ContentFilterManipulatorFunctor& operator=(const ContentFilterManipulatorFunctor& rhs)
+    {
+        return *this;
+    }
     const dds::sub::Query& query_;
 };
 
@@ -312,58 +307,72 @@ class EventHandler : public dds::sub::detail::DataReaderEventHandler<T>
 {
 public:
     EventHandler(const DR& dr,
-                    dds::sub::DataReaderListener<T>* l)
+                 dds::sub::DataReaderListener<T>* l)
         : dr_(dr),
-            listener_(l)
+          listener_(l)
     { }
 public:
     virtual void
     on_requested_deadline_missed(const dds::core::status::RequestedDeadlineMissedStatus& status)
     {
-        if (listener_ != 0)
+        if(listener_ != 0)
+        {
             listener_->on_requested_deadline_missed(dr_, status);
+        }
     }
 
     virtual void
     on_requested_incompatible_qos(const dds::core::status::RequestedIncompatibleQosStatus& status)
     {
-        if (listener_ != 0)
+        if(listener_ != 0)
+        {
             listener_->on_requested_incompatible_qos(dr_, status);
+        }
     }
 
     virtual void
     on_sample_rejected(const dds::core::status::SampleRejectedStatus& status)
     {
-        if (listener_ != 0)
+        if(listener_ != 0)
+        {
             listener_->on_sample_rejected(dr_, status);
+        }
     }
 
     virtual void
     on_liveliness_changed(const dds::core::status::LivelinessChangedStatus& status)
     {
-        if (listener_ != 0)
+        if(listener_ != 0)
+        {
             listener_->on_liveliness_changed(dr_, status);
+        }
     }
 
     virtual void
     on_data_available()
     {
-        if (listener_ != 0)
+        if(listener_ != 0)
+        {
             listener_->on_data_available(dr_);
+        }
     }
 
     virtual void
     on_subscription_matched(const dds::core::status::SubscriptionMatchedStatus& status)
     {
-        if (listener_ != 0)
+        if(listener_ != 0)
+        {
             listener_->on_subscription_matched(dr_, status);
+        }
     }
 
     virtual void
     on_sample_lost(const dds::core::status::SampleLostStatus& status)
     {
-        if (listener_ != 0)
+        if(listener_ != 0)
+        {
             listener_->on_sample_lost(dr_, status);
+        }
     }
 
     dds::sub::DataReaderListener<T>*
@@ -400,7 +409,7 @@ public:
 
     DataReader(const dds::sub::Subscriber& sub,
                const ::dds::topic::Topic<T>& topic) :
-        sub_(sub), topic_(topic), cf_topic_(dds::core::null), event_forwarder_(0)
+        sub_(sub), topic_(topic), topic_description_(topic_), cf_topic_(dds::core::null), event_forwarder_(0)
     {
         DDS::DataReaderQos drqos =
             *(DDS::DomainParticipantFactory::datareader_qos_default());
@@ -409,7 +418,7 @@ public:
                                 0,
                                 DDS::STATUS_MASK_NONE);
 
-        if (r.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+        if(r.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
                         OSPL_CONTEXT_LITERAL(
                             "dds::core::NullReferenceError : Unable to create DataReader. "
                             "Nil return from ::create_datareader")));
@@ -425,21 +434,47 @@ public:
     DataReader(const dds::sub::Subscriber& sub,
                const ::dds::topic::Topic<T>& topic,
                const dds::sub::qos::DataReaderQos& qos) :
-        sub_(sub), topic_(topic), cf_topic_(dds::core::null), raw_reader_(0), qos_(qos), event_forwarder_(0)
+        sub_(sub), topic_(topic), topic_description_(topic_), cf_topic_(dds::core::null), raw_reader_(0), qos_(qos), event_forwarder_(0)
     {
-        DDS::DataReaderQos drqos = convertQos(qos);
-        DDS::DataReader_var r = sub_->sub_->create_datareader(topic_->t_, drqos,
-                                event_forwarder_, DDS::STATUS_MASK_NONE);
+        if(topic != dds::core::null)
+        {
+            DDS::DataReaderQos drqos = convertQos(qos);
+            DDS::DataReader_var r = sub_->sub_->create_datareader(topic_->t_, drqos,
+                                    event_forwarder_, DDS::STATUS_MASK_NONE);
 
-        if (r == 0)
+            if(r == 0)
+            {
+                throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                                                        OSPL_CONTEXT_LITERAL(
+                                                                "dds::core::NullReferenceError : Unable to create DataReader. "
+                                                                "Nil return from ::create_datareader")));
+            }
+
+            raw_reader_ = DR::_narrow(r);
+            org::opensplice::core::DDS_DR_REF tmp = org::opensplice::core::DDS_DR_REF(raw_reader_,
+                                                    org::opensplice::core::DRDeleter(sub_->sub_));
+
+            entity_ = DDS::Entity::_narrow(raw_reader_);
+
+            reader_ = tmp;
+        }
+    }
+
+    void init_builtin(DDS::DataReader_ptr ddsdr, DDS::TopicDescription_ptr td)
+    {
+        if(ddsdr == 0)
         {
             throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                        OSPL_CONTEXT_LITERAL(
-                            "dds::core::NullReferenceError : Unable to create DataReader. "
-                            "Nil return from ::create_datareader")));
+                                                    OSPL_CONTEXT_LITERAL(
+                                                            "dds::core::NullReferenceError : Unable to create DataReader. "
+                                                            "Nil return from ::create_datareader")));
         }
 
-        raw_reader_ = DR::_narrow(r);
+        dds::domain::DomainParticipant dp =
+            org::opensplice::core::EntityRegistry<DDS::DomainParticipant_ptr, dds::domain::DomainParticipant>::get(td->get_participant());
+        topic_description_ = dds::topic::TopicDescription<T>(dp, td->get_name(), td->get_type_name());
+
+        raw_reader_ = DR::_narrow(ddsdr);
         org::opensplice::core::DDS_DR_REF tmp = org::opensplice::core::DDS_DR_REF(raw_reader_,
                                                 org::opensplice::core::DRDeleter(sub_->sub_));
 
@@ -447,6 +482,11 @@ public:
 
         reader_ = tmp;
 
+        org::opensplice::core::DRDeleter* d = OSPL_CXX11_STD_MODULE::get_deleter<org::opensplice::core::DRDeleter>(reader_);
+        if(d)
+        {
+            d->set_builtin();
+        }
     }
 
 #ifdef OMG_DDS_CONTENT_SUBSCRIPTION_SUPPORT
@@ -455,23 +495,33 @@ public:
                const ::dds::topic::ContentFilteredTopic<T>& cftopic)
         : sub_(sub),
           topic_(cftopic.topic()),
+          topic_description_(topic_),
           cf_topic_(cftopic),
           raw_reader_(0),
           event_forwarder_(0)
     {
         DDS::DataReaderQos drqos = *(DDS::DomainParticipantFactory::datareader_qos_default());
-        DDS::DataReader_var r = sub_->sub_->create_datareader(topic_->t_, drqos,
+        DDS::DataReader_var r = sub_->sub_->create_datareader(cftopic->idl_cftopic_.in(), drqos,
                                 event_forwarder_, DDS::STATUS_MASK_NONE);
-
-        if (r == 0)
+        if(DDS::is_nil(r.in()))
         {
-            throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                        OSPL_CONTEXT_LITERAL(
-                            "dds::core::NullReferenceError : Unable to create DataReader. "
-                            "Nil return from ::create_datareader")));
+            throw dds::core::NullReferenceError(
+                org::opensplice::core::exception_helper(
+                    OSPL_CONTEXT_LITERAL(
+                        "dds::core::NullReferenceError : Unable to create DataReader for ContentFilteredTopic. "
+                        "Nil return from ::create_datareader")));
         }
 
         raw_reader_ = DR::_narrow(r);
+
+        if(DDS::is_nil(raw_reader_))
+        {
+            throw dds::core::NullReferenceError(
+                org::opensplice::core::exception_helper(
+                    OSPL_CONTEXT_LITERAL(
+                        "dds::core::NullReferenceError : Failure narrowing ContentFilteredTopic DataReader to typed interface")));
+        }
+
         org::opensplice::core::DDS_DR_REF tmp = org::opensplice::core::DDS_DR_REF(raw_reader_,
                                                 org::opensplice::core::DRDeleter(sub_->sub_));
         reader_ = tmp;
@@ -485,32 +535,33 @@ public:
                const dds::sub::qos::DataReaderQos& qos)
         : sub_(sub),
           topic_(cftopic.topic()),
+          topic_description_(topic_),
           cf_topic_(cftopic),
           raw_reader_(0),
           event_forwarder_(0)
     {
         DDS::DataReaderQos drqos = convertQos(qos);
         DDS::DataReader_var r = sub_->sub_->create_datareader(cftopic->idl_cftopic_.in(),
-                                                              drqos,
-                                                              event_forwarder_,
-                                                              DDS::STATUS_MASK_NONE);
-        if (DDS::is_nil(r.in()))
+                                drqos,
+                                event_forwarder_,
+                                DDS::STATUS_MASK_NONE);
+        if(DDS::is_nil(r.in()))
         {
             throw dds::core::NullReferenceError(
-                    org::opensplice::core::exception_helper(
-                        OSPL_CONTEXT_LITERAL(
-                            "dds::core::NullReferenceError : Unable to create DataReader for ContentFilteredTopic. "
-                            "Nil return from ::create_datareader")));
+                org::opensplice::core::exception_helper(
+                    OSPL_CONTEXT_LITERAL(
+                        "dds::core::NullReferenceError : Unable to create DataReader for ContentFilteredTopic. "
+                        "Nil return from ::create_datareader")));
         }
 
         raw_reader_ = DR::_narrow(r);
 
-        if (DDS::is_nil(raw_reader_))
+        if(DDS::is_nil(raw_reader_))
         {
             throw dds::core::NullReferenceError(
-                    org::opensplice::core::exception_helper(
-                        OSPL_CONTEXT_LITERAL(
-                            "dds::core::NullReferenceError : Failure narrowing ContentFilteredTopic DataReader to typed interface")));
+                org::opensplice::core::exception_helper(
+                    OSPL_CONTEXT_LITERAL(
+                        "dds::core::NullReferenceError : Failure narrowing ContentFilteredTopic DataReader to typed interface")));
         }
 
         org::opensplice::core::DDS_DR_REF tmp = org::opensplice::core::DDS_DR_REF(raw_reader_,
@@ -525,22 +576,31 @@ public:
 
     DataReader(const dds::sub::Subscriber& sub,
                const ::dds::topic::MultiTopic<T>& topic)
-                : sub_(sub),
-                  //topic_(cftopic.topic()),
-                  //cf_topic_(cftopic),
-                  raw_reader_(0),
-                  event_forwarder_(0)
+        : sub_(sub),
+          //topic_(cftopic.topic()),
+          //cf_topic_(cftopic),
+          raw_reader_(0),
+          event_forwarder_(0)
     {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+        throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                              OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
         DDS::DataReaderQos drqos = *(DDS::DomainParticipantFactory::datareader_qos_default());
         DDS::DataReader_var r = sub_->sub_->create_datareader(topic->t_, drqos,
                                 event_forwarder_, DDS::STATUS_MASK_NONE);
 
-        if (r == 0)
+        if(r == 0)
         {
             throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                        OSPL_CONTEXT_LITERAL(
-                            "dds::core::NullReferenceError : Unable to create DataReader. "
-                            "Nil return from ::create_datareader")));
+                                                    OSPL_CONTEXT_LITERAL(
+                                                            "dds::core::NullReferenceError : Unable to create DataReader. "
+                                                            "Nil return from ::create_datareader")));
         }
 
         raw_reader_ = DR::_narrow(r);
@@ -555,16 +615,25 @@ public:
                const ::dds::topic::MultiTopic<T>& topic,
                const dds::sub::qos::DataReaderQos& qos)
     {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+        throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                              OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
         DDS::DataReaderQos drqos = convertQos(qos);
         DDS::DataReader_var r = sub_->sub_->create_datareader(topic->t_, drqos,
                                 event_forwarder_, mask.to_ulong());
 
-        if (r == 0)
+        if(r == 0)
         {
             throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                        OSPL_CONTEXT_LITERAL(
-                            "dds::core::NullReferenceError : Unable to create DataReader. "
-                            "Nil return from ::create_datareader")));
+                                                    OSPL_CONTEXT_LITERAL(
+                                                            "dds::core::NullReferenceError : Unable to create DataReader. "
+                                                            "Nil return from ::create_datareader")));
         }
 
         raw_reader_ = DR::_narrow(r);
@@ -580,7 +649,7 @@ public:
     // -- Dtor
     ~DataReader()
     {
-        if (event_forwarder_ != 0)
+        if(event_forwarder_ != 0)
         {
             DDS::ReturnCode_t result = raw_reader_->set_listener(0, DDS::STATUS_MASK_NONE);
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_listener"));
@@ -594,7 +663,7 @@ public:
         Selector(DataReader<T>* dr) :
             dr_(dr), status_(dr_->default_status_filter()), next_instance_(
                 false), handle_(dds::core::null), has_query_(false), query_(
-                    "")
+                    ""), max_samples_(DDS::LENGTH_UNLIMITED)
         {
         }
 
@@ -615,6 +684,12 @@ public:
         Selector& filter_state(const dds::sub::status::DataState& s)
         {
             status_ = s;
+            return *this;
+        }
+
+        Selector& max_samples(uint32_t n)
+        {
+            max_samples_ = n;
             return *this;
         }
 
@@ -675,6 +750,7 @@ public:
         bool has_query_;
         std::string query_;
         std::vector<std::string> query_params_;
+        uint32_t max_samples_;
     };
 
     // -- MANIPULATORS SELECTORS --
@@ -701,8 +777,14 @@ public:
         ManipulatorSelector&
         operator >>(dds::sub::LoanedSamples<T>& samples)
         {
-            if (read_mode_) samples = this->Selector::read();
-            else samples = this->Selector::take();
+            if(read_mode_)
+            {
+                samples = this->Selector::read();
+            }
+            else
+            {
+                samples = this->Selector::take();
+            }
             return *this;
         }
     private:
@@ -717,15 +799,15 @@ public:
                        const dds::core::status::StatusMask& mask)
     {
 
-        if (handler == 0)
+        if(handler == 0)
         {
-            if (event_forwarder_)
+            if(event_forwarder_)
             {
                 DDS::release(event_forwarder_);
                 event_forwarder_ = 0;
             }
         }
-        else if (event_forwarder_ == 0)
+        else if(event_forwarder_ == 0)
         {
             event_forwarder_ =
                 new DataReaderEventForwarder<T>(handler);
@@ -754,31 +836,26 @@ public:
 
 public:
     // -- Read/Take API
+
     dds::sub::LoanedSamples<T> take()
     {
         dds::sub::LoanedSamples<T> ls;
-        typename org::opensplice::topic::topic_data_seq<T>::type data;
-        typename org::opensplice::topic::topic_data_seq<dds::sub::SampleInfo>::type info;
-        DDS::ReturnCode_t result = raw_reader_->take(data,
-                                                     info,
-                                                     DDS::LENGTH_UNLIMITED,
-                                                     status_filter_.sample_state().to_ulong(),
-                                                     status_filter_.view_state().to_ulong(),
-                                                     status_filter_.instance_state().to_ulong());
+        ls.delegate()->reader_ = reader_;
+        DDS::ReturnCode_t result = raw_reader_->take(ls.delegate()->data_,
+                                   ls.delegate()->info_,
+                                   DDS::LENGTH_UNLIMITED,
+                                   status_filter_.sample_state().to_ulong(),
+                                   status_filter_.view_state().to_ulong(),
+                                   status_filter_.instance_state().to_ulong());
         org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take"));
 
-        ls.delegate()->resize(data.length());
+        ls.delegate()->resize(ls.delegate()->data_.length());
         typename dds::sub::LoanedSamples<T>::iterator it = ls.delegate()->mbegin();
-        for (unsigned int i = 0; i < data.length(); ++i)
+        for(unsigned int i = 0; i < ls.delegate()->data_.length(); ++i)
         {
-            it->data(data[i]);
-            it->info(*reinterpret_cast<dds::sub::SampleInfo*>(&info[0]));
+            it->delegate().data(dynamic_cast<T*>(&ls.delegate()->data_.get_buffer()[i]));
+            it->delegate().info(reinterpret_cast<dds::sub::SampleInfo*>(&ls.delegate()->info_.get_buffer()[i]));
             ++it;
-        }
-        if (data.length() != 0)
-        {
-            DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
         }
         return ls;
     }
@@ -786,30 +863,23 @@ public:
     dds::sub::LoanedSamples<T> read()
     {
         dds::sub::LoanedSamples<T> ls;
-        typename org::opensplice::topic::topic_data_seq<T>::type data;
-        typename org::opensplice::topic::topic_data_seq<dds::sub::SampleInfo>::type info;
-        DDS::ReturnCode_t result = raw_reader_->read(data,
-                                                     info,
-                                                     DDS::LENGTH_UNLIMITED,
-                                                     status_filter_.sample_state().to_ulong(),
-                                                     status_filter_.view_state().to_ulong(),
-                                                     status_filter_.instance_state().to_ulong());
+        ls.delegate()->reader_ = reader_;
+        DDS::ReturnCode_t result = raw_reader_->read(ls.delegate()->data_,
+                                   ls.delegate()->info_,
+                                   DDS::LENGTH_UNLIMITED,
+                                   status_filter_.sample_state().to_ulong(),
+                                   status_filter_.view_state().to_ulong(),
+                                   status_filter_.instance_state().to_ulong());
         org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read"));
 
-        ls.delegate()->resize(data.length());
+        ls.delegate()->resize(ls.delegate()->data_.length());
         typename dds::sub::LoanedSamples<T>::iterator it = ls.delegate()->mbegin();
-        for (unsigned int i = 0; i < data.length(); ++i)
+        for(unsigned int i = 0; i < ls.delegate()->data_.length(); ++i)
         {
-            it->data(data[i]);
-            it->info(*reinterpret_cast<dds::sub::SampleInfo*>(&info[0]));
+            it->delegate().data(dynamic_cast<T*>(&ls.delegate()->data_.get_buffer()[i]));
+            it->delegate().info(reinterpret_cast<dds::sub::SampleInfo*>(&ls.delegate()->info_.get_buffer()[i]));
             ++it;
         }
-        if (data.length() != 0)
-        {
-            DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
-        }
-
         return ls;
     }
 
@@ -821,21 +891,21 @@ public:
         TSeq data;
         DDS::SampleInfoSeq info;
         DDS::ReturnCode_t result = raw_reader_->read(data,
-                                                     info,
-                                                     max_samples,
-                                                     status_filter_.sample_state().to_ulong(),
-                                                     status_filter_.view_state().to_ulong(),
-                                                     status_filter_.instance_state().to_ulong());
+                                   info,
+                                   max_samples,
+                                   status_filter_.sample_state().to_ulong(),
+                                   status_filter_.view_state().to_ulong(),
+                                   status_filter_.instance_state().to_ulong());
         org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read"));
 
         uint32_t size = data.length();
-        for (uint32_t i = 0; i < size; ++i)
+        for(uint32_t i = 0; i < size; ++i)
         {
             samples->data(data[i]);
             samples->info(*(reinterpret_cast<dds::sub::SampleInfo*>(&info[i])));
             ++samples;
         }
-        if (size != 0)
+        if(size != 0)
         {
             DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
@@ -849,21 +919,21 @@ public:
         TSeq data;
         DDS::SampleInfoSeq info;
         DDS::ReturnCode_t result = raw_reader_->take(data,
-                                                     info,
-                                                     max_samples,
-                                                     status_filter_.sample_state().to_ulong(),
-                                                     status_filter_.view_state().to_ulong(),
-                                                     status_filter_.instance_state().to_ulong());
+                                   info,
+                                   max_samples,
+                                   status_filter_.sample_state().to_ulong(),
+                                   status_filter_.view_state().to_ulong(),
+                                   status_filter_.instance_state().to_ulong());
         org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take"));
 
         uint32_t size = data.length();
-        for (uint32_t i = 0; i < size; ++i)
+        for(uint32_t i = 0; i < size; ++i)
         {
             samples->data(data[i]);
             samples->info(*(reinterpret_cast<dds::sub::SampleInfo*>(&info[i])));
             ++samples;
         }
-        if (size != 0)
+        if(size != 0)
         {
             DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
@@ -878,23 +948,23 @@ public:
         TSeq data;
         DDS::SampleInfoSeq info;
         DDS::ReturnCode_t result = raw_reader_->read(data,
-                                                     info,
-                                                     DDS::LENGTH_UNLIMITED,
-                                                     status_filter_.sample_state().to_ulong(),
-                                                     status_filter_.view_state().to_ulong(),
-                                                     status_filter_.instance_state().to_ulong());
+                                   info,
+                                   DDS::LENGTH_UNLIMITED,
+                                   status_filter_.sample_state().to_ulong(),
+                                   status_filter_.view_state().to_ulong(),
+                                   status_filter_.instance_state().to_ulong());
         org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read"));
 
         dds::sub::Sample<T> sample;
         uint32_t size = data.length();
-        for (uint32_t i = 0; i < size; ++i)
+        for(uint32_t i = 0; i < size; ++i)
         {
             sample.data(data[i]);
             sample.info(*(reinterpret_cast<dds::sub::SampleInfo*>(&info[i])));
             *samples = sample;
             ++samples;
         }
-        if (size != 0)
+        if(size != 0)
         {
             DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
@@ -908,23 +978,23 @@ public:
         TSeq data;
         DDS::SampleInfoSeq info;
         DDS::ReturnCode_t result = raw_reader_->take(data,
-                                                     info,
-                                                     DDS::LENGTH_UNLIMITED,
-                                                     status_filter_.sample_state().to_ulong(),
-                                                     status_filter_.view_state().to_ulong(),
-                                                     status_filter_.instance_state().to_ulong());
+                                   info,
+                                   DDS::LENGTH_UNLIMITED,
+                                   status_filter_.sample_state().to_ulong(),
+                                   status_filter_.view_state().to_ulong(),
+                                   status_filter_.instance_state().to_ulong());
         org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take"));
 
         dds::sub::Sample<T> sample;
         uint32_t size = data.length();
-        for (uint32_t i = 0; i < size; ++i)
+        for(uint32_t i = 0; i < size; ++i)
         {
             sample.data(data[i]);
             sample.info(*(reinterpret_cast<dds::sub::SampleInfo*>(&info[i])));
             *samples = sample;
             ++samples;
         }
-        if (size != 0)
+        if(size != 0)
         {
             DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
@@ -951,7 +1021,10 @@ public:
     const dds::core::InstanceHandle lookup_instance(const T& key) const
     {
         DDS::InstanceHandle_t h = raw_reader_->lookup_instance(key);
-        if (h == DDS::HANDLE_NIL) return dds::core::InstanceHandle::nil();
+        if(h == DDS::HANDLE_NIL)
+        {
+            return dds::core::InstanceHandle::nil();
+        }
         return dds::core::InstanceHandle(h);
     }
 
@@ -1034,7 +1107,7 @@ public:
     // -- Entity Navigation
     dds::topic::TopicDescription<T> topic_description() const
     {
-        return this->topic_;
+        return this->topic_description_;
     }
     const dds::sub::Subscriber& subscriber() const
     {
@@ -1058,14 +1131,18 @@ public:
 
     // ==============================================================
     // == Resource Management
-    /** @todo Properly implement close by pre-emptively releasing the DR resources.
+    /** @internal @todo Properly implement close by pre-emptively releasing the DR resources.
         * as well as keeping track of its status.
         * Notice that a trivial implementation  close () (like this) is
         * also compliant with the spec since resources will be collected
         * once the DR reference count drops to zero. */
     void close()
     {
-
+        org::opensplice::core::DRDeleter* d = OSPL_CXX11_STD_MODULE::get_deleter<org::opensplice::core::DRDeleter>(reader_);
+        if(d)
+        {
+            d->close(raw_reader_);
+        }
     }
 
     // ==============================================================
@@ -1090,9 +1167,9 @@ public:
     void wait_for_historical_data(const dds::core::Duration& timeout)
     {
         DDS::Duration_t ddstimeout;
-        /** @bug OSPL-2308 RTF Time-ish coercion issue
+        /** @internal @bug OSPL-2308 RTF Time-ish coercion issue
             @see http://jira.prismtech.com:8080/browse/OSPL-2308 */
-        ddstimeout.sec = static_cast<DDS::Long> (timeout.sec());
+        ddstimeout.sec = static_cast<DDS::Long>(timeout.sec());
         ddstimeout.nanosec = timeout.nanosec();
         raw_reader_->wait_for_historical_data(ddstimeout);
     }
@@ -1104,23 +1181,22 @@ private:
     dds::sub::LoanedSamples<T> take(const Selector& cmd)
     {
         dds::sub::LoanedSamples<T> ls;
-        typename org::opensplice::topic::topic_data_seq<T>::type data;
-        typename org::opensplice::topic::topic_data_seq<dds::sub::SampleInfo>::type info;
-        if (cmd.has_query_ == false && cmd.handle_.is_nil())
+        ls.delegate()->reader_ = reader_;
+        if(cmd.has_query_ == false && cmd.handle_.is_nil())
         {
-            DDS::ReturnCode_t result = raw_reader_->take(data, info,
-                              DDS::LENGTH_UNLIMITED,
-                              cmd.status_.sample_state().to_ulong(),
-                              cmd.status_.view_state().to_ulong(),
-                              cmd.status_.instance_state().to_ulong());
+            DDS::ReturnCode_t result = raw_reader_->take(ls.delegate()->data_, ls.delegate()->info_,
+                                       cmd.max_samples_,
+                                       cmd.status_.sample_state().to_ulong(),
+                                       cmd.status_.view_state().to_ulong(),
+                                       cmd.status_.instance_state().to_ulong());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take"));
         }
-        else if (cmd.has_query_ == false && cmd.handle_ != dds::core::null)
+        else if(cmd.has_query_ == false && cmd.handle_ != dds::core::null)
         {
-            if (cmd.next_instance_ == false)
+            if(cmd.next_instance_ == false)
             {
-                DDS::ReturnCode_t result = raw_reader_->take_instance(data, info,
-                                           DDS::LENGTH_UNLIMITED,
+                DDS::ReturnCode_t result = raw_reader_->take_instance(ls.delegate()->data_, ls.delegate()->info_,
+                                           cmd.max_samples_,
                                            cmd.handle_.delegate().handle(),
                                            cmd.status_.sample_state().to_ulong(),
                                            cmd.status_.view_state().to_ulong(),
@@ -1129,12 +1205,12 @@ private:
             }
             else
             {
-                DDS::ReturnCode_t result = raw_reader_->take_next_instance(data, info,
-                                                DDS::LENGTH_UNLIMITED,
-                                                cmd.handle_.delegate().handle(),
-                                                cmd.status_.sample_state().to_ulong(),
-                                                cmd.status_.view_state().to_ulong(),
-                                                cmd.status_.instance_state().to_ulong());
+                DDS::ReturnCode_t result = raw_reader_->take_next_instance(ls.delegate()->data_, ls.delegate()->info_,
+                                           cmd.max_samples_,
+                                           cmd.handle_.delegate().handle(),
+                                           cmd.status_.sample_state().to_ulong(),
+                                           cmd.status_.view_state().to_ulong(),
+                                           cmd.status_.instance_state().to_ulong());
                 org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_next_instance"));
             }
         }
@@ -1147,30 +1223,36 @@ private:
                 params[i] = (cmd.query_params_.begin() + i)->c_str();
             }
             DDS::QueryCondition_var condition = raw_reader_->create_querycondition(cmd.status_.sample_state().to_ulong(),
-            cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
-            if (condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
-                                        "Nil return from ::create_querycondition")));
+                                                cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
+            if(condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
+                                                 "Nil return from ::create_querycondition")));
 
-            DDS::ReturnCode_t result = raw_reader_->take_w_condition(data, info, DDS::LENGTH_UNLIMITED,
-              condition.in());
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_w_condition"));
+            if(cmd.handle_.is_nil())
+            {
+                DDS::ReturnCode_t result = raw_reader_->take_w_condition(ls.delegate()->data_, ls.delegate()->info_, cmd.max_samples_,
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_w_condition"));
+            }
+            else
+            {
+                DDS::ReturnCode_t result = raw_reader_->take_next_instance_w_condition(ls.delegate()->data_, ls.delegate()->info_,
+                                           cmd.max_samples_,
+                                           cmd.handle_.delegate().handle(),
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_next_instance_w_condition"));
+            }
 
-            result = raw_reader_->delete_readcondition(condition.in());
+            DDS::ReturnCode_t result = raw_reader_->delete_readcondition(condition.in());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::delete_readcondition"));
         }
-        ls.delegate()->resize(data.length());
+        ls.delegate()->resize(ls.delegate()->data_.length());
         typename dds::sub::LoanedSamples<T>::iterator it = ls.delegate()->mbegin();
-        for (unsigned int i = 0; i < data.length(); ++i)
+        for(unsigned int i = 0; i < ls.delegate()->data_.length(); ++i)
         {
-            it->data(data[i]);
-            it->info(*reinterpret_cast<dds::sub::SampleInfo*>(&info[0]));
+            it->delegate().data(dynamic_cast<T*>(&ls.delegate()->data_.get_buffer()[i]));
+            it->delegate().info(reinterpret_cast<dds::sub::SampleInfo*>(&ls.delegate()->info_.get_buffer()[i]));
             ++it;
-        }
-        if (data.length() != 0)
-        {
-            DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
         }
         return ls;
     }
@@ -1178,24 +1260,23 @@ private:
     dds::sub::LoanedSamples<T> read(const Selector& cmd)
     {
         dds::sub::LoanedSamples<T> ls;
-        typename org::opensplice::topic::topic_data_seq<T>::type data;
-        typename org::opensplice::topic::topic_data_seq<dds::sub::SampleInfo>::type info;
+        ls.delegate()->reader_ = reader_;
 
-        if (cmd.has_query_ == false && cmd.handle_.is_nil())
+        if(cmd.has_query_ == false && cmd.handle_.is_nil())
         {
-            DDS::ReturnCode_t result = raw_reader_->read(data, info,
-                              DDS::LENGTH_UNLIMITED,
-                              cmd.status_.sample_state().to_ulong(),
-                              cmd.status_.view_state().to_ulong(),
-                              cmd.status_.instance_state().to_ulong());
+            DDS::ReturnCode_t result = raw_reader_->read(ls.delegate()->data_, ls.delegate()->info_,
+                                       cmd.max_samples_,
+                                       cmd.status_.sample_state().to_ulong(),
+                                       cmd.status_.view_state().to_ulong(),
+                                       cmd.status_.instance_state().to_ulong());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read"));
         }
-        else if (cmd.has_query_ == false && cmd.handle_ != dds::core::null)
+        else if(cmd.has_query_ == false && cmd.handle_ != dds::core::null)
         {
-            if (cmd.next_instance_ == false)
+            if(cmd.next_instance_ == false)
             {
-                DDS::ReturnCode_t result = raw_reader_->read_instance(data, info,
-                                           DDS::LENGTH_UNLIMITED,
+                DDS::ReturnCode_t result = raw_reader_->read_instance(ls.delegate()->data_, ls.delegate()->info_,
+                                           cmd.max_samples_,
                                            cmd.handle_.delegate().handle(),
                                            cmd.status_.sample_state().to_ulong(),
                                            cmd.status_.view_state().to_ulong(),
@@ -1204,12 +1285,12 @@ private:
             }
             else
             {
-                DDS::ReturnCode_t result = raw_reader_->read_next_instance(data, info,
-                                                DDS::LENGTH_UNLIMITED,
-                                                cmd.handle_.delegate().handle(),
-                                                cmd.status_.sample_state().to_ulong(),
-                                                cmd.status_.view_state().to_ulong(),
-                                                cmd.status_.instance_state().to_ulong());
+                DDS::ReturnCode_t result = raw_reader_->read_next_instance(ls.delegate()->data_, ls.delegate()->info_,
+                                           cmd.max_samples_,
+                                           cmd.handle_.delegate().handle(),
+                                           cmd.status_.sample_state().to_ulong(),
+                                           cmd.status_.view_state().to_ulong(),
+                                           cmd.status_.instance_state().to_ulong());
                 org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read_next_instance"));
             }
         }
@@ -1222,31 +1303,36 @@ private:
                 params[i] = (cmd.query_params_.begin() + i)->c_str();
             }
             DDS::QueryCondition_var condition = raw_reader_->create_querycondition(cmd.status_.sample_state().to_ulong(),
-            cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
-            if (condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
-                                        "Nil return from ::create_querycondition")));
+                                                cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
+            if(condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
+                                                 "Nil return from ::create_querycondition")));
 
-            DDS::ReturnCode_t result = raw_reader_->take_w_condition(data, info, DDS::LENGTH_UNLIMITED,
-              condition.in());
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_w_condition"));
+            if(cmd.handle_.is_nil())
+            {
+                DDS::ReturnCode_t result = raw_reader_->read_w_condition(ls.delegate()->data_, ls.delegate()->info_, cmd.max_samples_,
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read_w_condition"));
+            }
+            else
+            {
+                DDS::ReturnCode_t result = raw_reader_->read_next_instance_w_condition(ls.delegate()->data_, ls.delegate()->info_,
+                                           cmd.max_samples_,
+                                           cmd.handle_.delegate().handle(),
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read_next_instance_w_condition"));
+            }
 
-            result = raw_reader_->delete_readcondition(condition.in());
+            DDS::ReturnCode_t result = raw_reader_->delete_readcondition(condition.in());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::delete_readcondition"));
         }
-        uint32_t size = data.length();
-        ls.delegate()->resize(size);
+        ls.delegate()->resize(ls.delegate()->data_.length());
         typename dds::sub::LoanedSamples<T>::iterator it = ls.delegate()->mbegin();
-        for (unsigned int i = 0; i < size; ++i)
+        for(unsigned int i = 0; i < ls.delegate()->data_.length(); ++i)
         {
-            it->data(data[i]);
-            it->info(*reinterpret_cast<dds::sub::SampleInfo*>(&info[0]));
+            it->delegate().data(dynamic_cast<T*>(&ls.delegate()->data_.get_buffer()[i]));
+            it->delegate().info(reinterpret_cast<dds::sub::SampleInfo*>(&ls.delegate()->info_.get_buffer()[i]));
             ++it;
-        }
-        if (size != 0)
-        {
-            DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
         }
         return ls;
     }
@@ -1260,17 +1346,17 @@ private:
         TSeq data;
         DDS::SampleInfoSeq info;
 
-        if (cmd.has_query_ == false && cmd.handle_.is_nil())
+        if(cmd.has_query_ == false && cmd.handle_.is_nil())
         {
             DDS::ReturnCode_t result = raw_reader_->read(data, info, max_samples,
-                              cmd.status_.sample_state().to_ulong(),
-                              cmd.status_.view_state().to_ulong(),
-                              cmd.status_.instance_state().to_ulong());
+                                       cmd.status_.sample_state().to_ulong(),
+                                       cmd.status_.view_state().to_ulong(),
+                                       cmd.status_.instance_state().to_ulong());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read"));
         }
-        else if (cmd.has_query_ == false && cmd.handle_ != dds::core::null)
+        else if(cmd.has_query_ == false && cmd.handle_ != dds::core::null)
         {
-            if (cmd.next_instance_ == false)
+            if(cmd.next_instance_ == false)
             {
                 DDS::ReturnCode_t result = raw_reader_->read_instance(data, info, max_samples,
                                            cmd.handle_.delegate().handle(),
@@ -1281,11 +1367,11 @@ private:
             }
             else
             {
-                DDS::ReturnCode_t result = raw_reader_->read_next_instance(data, info, DDS::LENGTH_UNLIMITED,
-                                                cmd.handle_.delegate().handle(),
-                                                cmd.status_.sample_state().to_ulong(),
-                                                cmd.status_.view_state().to_ulong(),
-                                                cmd.status_.instance_state().to_ulong());
+                DDS::ReturnCode_t result = raw_reader_->read_next_instance(data, info, max_samples,
+                                           cmd.handle_.delegate().handle(),
+                                           cmd.status_.sample_state().to_ulong(),
+                                           cmd.status_.view_state().to_ulong(),
+                                           cmd.status_.instance_state().to_ulong());
                 org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read_next_instance"));
             }
         }
@@ -1298,26 +1384,37 @@ private:
                 params[i] = (cmd.query_params_.begin() + i)->c_str();
             }
             DDS::QueryCondition_var condition = raw_reader_->create_querycondition(cmd.status_.sample_state().to_ulong(),
-            cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
-            if (condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
-                                        "Nil return from ::create_querycondition")));
+                                                cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
+            if(condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
+                                                 "Nil return from ::create_querycondition")));
 
-            DDS::ReturnCode_t result = raw_reader_->take_w_condition(data, info, DDS::LENGTH_UNLIMITED,
-              condition.in());
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_w_condition"));
+            if(cmd.handle_.is_nil())
+            {
+                DDS::ReturnCode_t result = raw_reader_->read_w_condition(data, info, max_samples,
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read_w_condition"));
+            }
+            else
+            {
+                DDS::ReturnCode_t result = raw_reader_->read_next_instance_w_condition(data, info,
+                                           max_samples,
+                                           cmd.handle_.delegate().handle(),
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read_next_instance_w_condition"));
+            }
 
-            result = raw_reader_->delete_readcondition(condition.in());
+            DDS::ReturnCode_t result = raw_reader_->delete_readcondition(condition.in());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::delete_readcondition"));
         }
         uint32_t size = data.length();
-        for (uint32_t i = 0; i < size; ++i)
+        for(uint32_t i = 0; i < size; ++i)
         {
             samples->data(data[i]);
             samples->info(*(reinterpret_cast<dds::sub::SampleInfo*>(&info[i])));
             ++samples;
         }
-        if (size != 0)
+        if(size != 0)
         {
             DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
@@ -1332,17 +1429,17 @@ private:
         TSeq data;
         DDS::SampleInfoSeq info;
 
-        if (cmd.has_query_ == false && cmd.handle_.is_nil())
+        if(cmd.has_query_ == false && cmd.handle_.is_nil())
         {
             DDS::ReturnCode_t result = raw_reader_->take(data, info, max_samples,
-                              cmd.status_.sample_state().to_ulong(),
-                              cmd.status_.view_state().to_ulong(),
-                              cmd.status_.instance_state().to_ulong());
+                                       cmd.status_.sample_state().to_ulong(),
+                                       cmd.status_.view_state().to_ulong(),
+                                       cmd.status_.instance_state().to_ulong());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take"));
         }
-        else if (cmd.has_query_ == false && cmd.handle_ != dds::core::null)
+        else if(cmd.has_query_ == false && cmd.handle_ != dds::core::null)
         {
-            if (cmd.next_instance_ == false)
+            if(cmd.next_instance_ == false)
             {
                 DDS::ReturnCode_t result = raw_reader_->take_instance(data, info, max_samples,
                                            cmd.handle_.delegate().handle(),
@@ -1353,11 +1450,11 @@ private:
             }
             else
             {
-                DDS::ReturnCode_t result = raw_reader_->take_next_instance(data, info, DDS::LENGTH_UNLIMITED,
-                                                cmd.handle_.delegate().handle(),
-                                                cmd.status_.sample_state().to_ulong(),
-                                                cmd.status_.view_state().to_ulong(),
-                                                cmd.status_.instance_state().to_ulong());
+                DDS::ReturnCode_t result = raw_reader_->take_next_instance(data, info, max_samples,
+                                           cmd.handle_.delegate().handle(),
+                                           cmd.status_.sample_state().to_ulong(),
+                                           cmd.status_.view_state().to_ulong(),
+                                           cmd.status_.instance_state().to_ulong());
                 org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_next_instance"));
             }
         }
@@ -1370,26 +1467,37 @@ private:
                 params[i] = (cmd.query_params_.begin() + i)->c_str();
             }
             DDS::QueryCondition_var condition = raw_reader_->create_querycondition(cmd.status_.sample_state().to_ulong(),
-            cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
-            if (condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
-                                        "Nil return from ::create_querycondition")));
+                                                cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
+            if(condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
+                                                 "Nil return from ::create_querycondition")));
 
-            DDS::ReturnCode_t result = raw_reader_->take_w_condition(data, info, DDS::LENGTH_UNLIMITED,
-              condition.in());
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_w_condition"));
+            if(cmd.handle_.is_nil())
+            {
+                DDS::ReturnCode_t result = raw_reader_->take_w_condition(data, info, max_samples,
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_w_condition"));
+            }
+            else
+            {
+                DDS::ReturnCode_t result = raw_reader_->take_next_instance_w_condition(data, info,
+                                           max_samples,
+                                           cmd.handle_.delegate().handle(),
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_next_instance_w_condition"));
+            }
 
-            result = raw_reader_->delete_readcondition(condition.in());
+            DDS::ReturnCode_t result = raw_reader_->delete_readcondition(condition.in());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::delete_readcondition"));
         }
         uint32_t size = data.length();
-        for (uint32_t i = 0; i < size; ++i)
+        for(uint32_t i = 0; i < size; ++i)
         {
             samples->data(data[i]);
             samples->info(*(reinterpret_cast<dds::sub::SampleInfo*>(&info[i])));
             ++samples;
         }
-        if (size != 0)
+        if(size != 0)
         {
             DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
@@ -1407,19 +1515,19 @@ private:
         TSeq data;
         DDS::SampleInfoSeq info;
 
-        if (cmd.has_query_ == false && cmd.handle_.is_nil())
+        if(cmd.has_query_ == false && cmd.handle_.is_nil())
         {
-            DDS::ReturnCode_t result = raw_reader_->read(data, info, DDS::LENGTH_UNLIMITED,
-                              cmd.status_.sample_state().to_ulong(),
-                              cmd.status_.view_state().to_ulong(),
-                              cmd.status_.instance_state().to_ulong());
+            DDS::ReturnCode_t result = raw_reader_->read(data, info, cmd.max_samples_,
+                                       cmd.status_.sample_state().to_ulong(),
+                                       cmd.status_.view_state().to_ulong(),
+                                       cmd.status_.instance_state().to_ulong());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read"));
         }
-        else if (cmd.has_query_ == false && cmd.handle_ != dds::core::null)
+        else if(cmd.has_query_ == false && cmd.handle_ != dds::core::null)
         {
-            if (cmd.next_instance_ == false)
+            if(cmd.next_instance_ == false)
             {
-                DDS::ReturnCode_t result = raw_reader_->read_instance(data, info, DDS::LENGTH_UNLIMITED,
+                DDS::ReturnCode_t result = raw_reader_->read_instance(data, info, cmd.max_samples_,
                                            cmd.handle_.delegate().handle(),
                                            cmd.status_.sample_state().to_ulong(),
                                            cmd.status_.view_state().to_ulong(),
@@ -1428,11 +1536,11 @@ private:
             }
             else
             {
-                DDS::ReturnCode_t result = raw_reader_->read_next_instance(data, info, DDS::LENGTH_UNLIMITED,
-                                                cmd.handle_.delegate().handle(),
-                                                cmd.status_.sample_state().to_ulong(),
-                                                cmd.status_.view_state().to_ulong(),
-                                                cmd.status_.instance_state().to_ulong());
+                DDS::ReturnCode_t result = raw_reader_->read_next_instance(data, info, cmd.max_samples_,
+                                           cmd.handle_.delegate().handle(),
+                                           cmd.status_.sample_state().to_ulong(),
+                                           cmd.status_.view_state().to_ulong(),
+                                           cmd.status_.instance_state().to_ulong());
                 org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read_next_instance"));
             }
         }
@@ -1445,29 +1553,40 @@ private:
                 params[i] = (cmd.query_params_.begin() + i)->c_str();
             }
             DDS::QueryCondition_var condition = raw_reader_->create_querycondition(cmd.status_.sample_state().to_ulong(),
-            cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
-            if (condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
-                                        "Nil return from ::create_querycondition")));
+                                                cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
+            if(condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
+                                                 "Nil return from ::create_querycondition")));
 
-            DDS::ReturnCode_t result = raw_reader_->take_w_condition(data, info, DDS::LENGTH_UNLIMITED,
-              condition.in());
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_w_condition"));
+            if(cmd.handle_.is_nil())
+            {
+                DDS::ReturnCode_t result = raw_reader_->read_w_condition(data, info, cmd.max_samples_,
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read_w_condition"));
+            }
+            else
+            {
+                DDS::ReturnCode_t result = raw_reader_->read_next_instance_w_condition(data, info,
+                                           cmd.max_samples_,
+                                           cmd.handle_.delegate().handle(),
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::read_next_instance_w_condition"));
+            }
 
-            result = raw_reader_->delete_readcondition(condition.in());
+            DDS::ReturnCode_t result = raw_reader_->delete_readcondition(condition.in());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::delete_readcondition"));
         }
 
         dds::sub::Sample<T> sample;
         uint32_t size = data.length();
-        for (uint32_t i = 0; i < size; ++i)
+        for(uint32_t i = 0; i < size; ++i)
         {
             sample.data(data[i]);
             sample.info(*(reinterpret_cast<dds::sub::SampleInfo*>(&info[i])));
             *samples = sample;
             ++samples;
         }
-        if (size != 0)
+        if(size != 0)
         {
             DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
@@ -1482,19 +1601,19 @@ private:
     {
         TSeq data;
         DDS::SampleInfoSeq info;
-        if (cmd.has_query_ == false && cmd.handle_.is_nil())
+        if(cmd.has_query_ == false && cmd.handle_.is_nil())
         {
-            DDS::ReturnCode_t result = raw_reader_->take(data, info, DDS::LENGTH_UNLIMITED,
-                              cmd.status_.sample_state().to_ulong(),
-                              cmd.status_.view_state().to_ulong(),
-                              cmd.status_.instance_state().to_ulong());
+            DDS::ReturnCode_t result = raw_reader_->take(data, info, cmd.max_samples_,
+                                       cmd.status_.sample_state().to_ulong(),
+                                       cmd.status_.view_state().to_ulong(),
+                                       cmd.status_.instance_state().to_ulong());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take"));
         }
-        else if (cmd.has_query_ == false && cmd.handle_ != dds::core::null)
+        else if(cmd.has_query_ == false && cmd.handle_ != dds::core::null)
         {
-            if (cmd.next_instance_ == false)
+            if(cmd.next_instance_ == false)
             {
-                DDS::ReturnCode_t result = raw_reader_->take_instance(data, info, DDS::LENGTH_UNLIMITED,
+                DDS::ReturnCode_t result = raw_reader_->take_instance(data, info, cmd.max_samples_,
                                            cmd.handle_.delegate().handle(),
                                            cmd.status_.sample_state().to_ulong(),
                                            cmd.status_.view_state().to_ulong(),
@@ -1503,11 +1622,11 @@ private:
             }
             else
             {
-                DDS::ReturnCode_t result = raw_reader_->take_next_instance(data, info, DDS::LENGTH_UNLIMITED,
-                                                cmd.handle_.delegate().handle(),
-                                                cmd.status_.sample_state().to_ulong(),
-                                                cmd.status_.view_state().to_ulong(),
-                                                cmd.status_.instance_state().to_ulong());
+                DDS::ReturnCode_t result = raw_reader_->take_next_instance(data, info, cmd.max_samples_,
+                                           cmd.handle_.delegate().handle(),
+                                           cmd.status_.sample_state().to_ulong(),
+                                           cmd.status_.view_state().to_ulong(),
+                                           cmd.status_.instance_state().to_ulong());
                 org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_next_instance"));
             }
         }
@@ -1520,29 +1639,40 @@ private:
                 params[i] = (cmd.query_params_.begin() + i)->c_str();
             }
             DDS::QueryCondition_var condition = raw_reader_->create_querycondition(cmd.status_.sample_state().to_ulong(),
-            cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
-            if (condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
-                                        "Nil return from ::create_querycondition")));
+                                                cmd.status_.view_state().to_ulong(), cmd.status_.instance_state().to_ulong(), cmd.query_.c_str(), params);
+            if(condition.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
+                                                 "Nil return from ::create_querycondition")));
 
-            DDS::ReturnCode_t result = raw_reader_->take_w_condition(data, info, DDS::LENGTH_UNLIMITED,
-              condition.in());
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_w_condition"));
+            if(cmd.handle_.is_nil())
+            {
+                DDS::ReturnCode_t result = raw_reader_->take_w_condition(data, info, cmd.max_samples_,
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_w_condition"));
+            }
+            else
+            {
+                DDS::ReturnCode_t result = raw_reader_->take_next_instance_w_condition(data, info,
+                                           cmd.max_samples_,
+                                           cmd.handle_.delegate().handle(),
+                                           condition.in());
+                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::take_next_instance_w_condition"));
+            }
 
-            result = raw_reader_->delete_readcondition(condition.in());
+            DDS::ReturnCode_t result = raw_reader_->delete_readcondition(condition.in());
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::delete_readcondition"));
         }
 
         dds::sub::Sample<T> sample;
         uint32_t size = data.length();
-        for (uint32_t i = 0; i < size; ++i)
+        for(uint32_t i = 0; i < size; ++i)
         {
             sample.data(data[i]);
             sample.info(*(reinterpret_cast<dds::sub::SampleInfo*>(&info[i])));
             *samples = sample;
             ++samples;
         }
-        if (size != 0)
+        if(size != 0)
         {
             DDS::ReturnCode_t result = raw_reader_->return_loan(data, info);
             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::return_loan"));
@@ -1554,6 +1684,7 @@ private:
 private:
     dds::sub::Subscriber sub_;
     dds::topic::Topic<T> topic_;
+    dds::topic::TopicDescription<T> topic_description_;
     dds::topic::ContentFilteredTopic<T> cf_topic_;
     org::opensplice::core::DDS_DR_REF reader_;
     DR* raw_reader_;

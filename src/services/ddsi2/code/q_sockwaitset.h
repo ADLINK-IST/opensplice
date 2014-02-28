@@ -2,31 +2,35 @@
 #define Q_SOCKWAITSET_H
 
 #include "os_defs.h"
-#include "os_socket.h"
-
 #include "sysdeps.h"
 
-typedef struct os_sockWaitset *os_sockWaitset;
+#if defined (__cplusplus)
+extern "C" {
+#endif
 
-/* Allocates a new socket waitset.  Iff interruptible != 0, the
-   os_sockWaitsetTrigger call may be used to trigger an
-   os_sockWaitsetWait call without an event on any of the sockets.
+#define OS_EVENT_READ 0x01
+#define OS_EVENT_WRITE 0x02
+#define OS_EVENT_ACCEPT OS_EVENT_READ
+
+typedef struct os_sockWaitset_s *os_sockWaitset;
+struct ddsi_tran_base;
+
+/* Allocates a new socket waitset.
    The waitset is NOT thread-safe, but os_sockWaitsetTrigger may be
    called at any time between os_sockWaitsetNew and
    os_sockWaitsetFree.  Returns NULL on failure, a freshly
    initialised, empty waitset on success. */
-os_sockWaitset os_sockWaitsetNew (int interruptible);
+os_sockWaitset os_sockWaitsetNew (void);
 
 /* Frees the socket waitset WS.  Any sockets associated with it will
    be dissociated from it. */
 void os_sockWaitsetFree (os_sockWaitset ws);
 
-/* Triggers an interruptible waitset, from any thread.  It is level
+/* Triggers the waitset, from any thread.  It is level
    triggered, when called while no thread is waiting in
    os_sockWaitsetWait the trigger will cause an (early) wakeup on the
    next call to os_sockWaitsetWait.  Returns os_resultSuccess if
-   successfully triggered, os_resultInvalid if the waitset is not
-   interruptible, or os_resultFail if any other error occurs.
+   successfully triggered, os_resultInvalid if an error occurs.
 
    Triggering a waitset may require resources and they may be counted.
    Do not trigger a waitset arbitrarily often without ensuring
@@ -40,12 +44,9 @@ os_result os_sockWaitsetTrigger (os_sockWaitset ws);
 /* Adds socket SOCK to socket waitset WS, with EVENTS specifying the
    events of interest as a bit-wise or of some of the following flags:
 
-     OS_SOCKEVENT_READ     Triggers when data is available for reading
-     OS_SOCKEVENT_WRITE    Triggers when the socket can accept more data
-                           for transmission
-
-   These are macros expanding to integer constants.  The mapping of
-   these to integer values is platform dependent.
+     OS_EVENT_READ   Triggers when data is available for reading
+     OS_EVENT_WRITE  Triggers when can accept more data for transmission
+     OS_EVENT_ACCEPT Triggers when listener can accept connection 
 
    A socket may be associated with only one waitset at any time, and
    may be added to the waitset only once.  Failure to comply with this
@@ -62,20 +63,14 @@ os_result os_sockWaitsetTrigger (os_sockWaitset ws);
 
    Closing socket associated with a waitset is handled gracefully: no
    operations will signal errors because of it. */
-os_result os_sockWaitsetAddSocket (os_sockWaitset ws, os_socket sock, unsigned events);
+os_result os_sockWaitsetAdd (os_sockWaitset ws, struct ddsi_tran_base * base, unsigned events);
 
-/* Drops all sockets from the waitset from index INDEX onwards.  Index
+/* Drops all sockets from the waitset from index onwards. Index
    0 corresponds to the first socket added to the waitset, index 1 to
-   the second, &c.
-
-   Returns os_resultSuccess if the specified sockets were successfully
-   dissociated, os_resultInvalid if index is < 0 or > the number of
-   sockets currently in the waitset, os_resultFail for all other
-   errors.
-
-   Behaviour is undefined when called after a successful wait but
-   before all events had been enumerated. */
-os_result os_sockWaitsetRemoveSockets (os_sockWaitset ws, int index);
+   the second, etc. Behaviour is undefined when called after a successful wait
+   but before all events had been enumerated.
+*/
+void os_sockWaitsetPurge (os_sockWaitset ws, unsigned index);
 
 /* Waits until some of the sockets in WS have been triggered or the
    timeout has elapsed.  If timeout_ms is:
@@ -93,7 +88,7 @@ os_result os_sockWaitsetRemoveSockets (os_sockWaitset ws, int index);
    the return value is therefore only indicative of the cause.
 
    If the return value is os_resultSuccess, the available events MUST
-   be enumerated before os_sockWaitsetAddSocket may be called again.
+   be enumerated before os_sockWaitsetAdd may be called again.
 
    If timeout_ms is invalid, the waitset is empty, or one has failed
    to enumerate the events following a preceding call to
@@ -115,10 +110,17 @@ os_result os_sockWaitsetWait (os_sockWaitset ws, int timeout_ms);
 
    If the return value is >= 0, *sock contains the socket and *events
    the available events on that socket.  For the defined events, see
-   os_sockWaitsetAddSocket.  The value of any bits in the returned
-   events other than those specified in os_sockWaitsetAddSocket is
+   os_sockWaitsetAdd. The value of any bits in the returned
+   events other than those specified in os_sockWaitsetAdd is
    undefined. */
-int os_sockWaitsetNextEvent (os_sockWaitset ws, os_socket *sock, unsigned *events);
+int os_sockWaitsetNextEvent (os_sockWaitset ws, struct ddsi_tran_base ** base, unsigned *events);
+
+/* Remove connection */
+void os_sockWaitsetRemove (os_sockWaitset ws, struct ddsi_tran_base * base);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* Q_SOCKWAITSET_H */
 

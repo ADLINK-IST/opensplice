@@ -89,7 +89,7 @@
 #include "sd_misc.h"
 #include "sd_stringsXML.h"
 #include "sd_deepwalk.h"
-#include "sd_deepwalkMeta.h"
+#include "sd__deepwalkMeta.h"
 #include "sd__confidence.h"
 #include "sd__resultCodesXML.h"
 
@@ -156,7 +156,12 @@ sd_primValue(
         case P_CHAR:
         {
             unsigned char c = *((c_char*)object);
-            if (c < 32 || c >= 127 || c == '&' || c == '>' || c == '<') {
+            /* Some characters cannot be serialized to XML using their character representation, octal representation is used instead.
+             * - Characters with a value < 32 or >= 127: These fall outside the ASCII printable set, and may be non-printable depending on locale / platform.
+             * - Characters that may not appear in XML element content: '&', '>' and '<'
+             * - To allow deserializer to recognize characters in octal representation: a literal '\'
+             */
+            if (c < 32 || c >= 127 || c == '&' || c == '>' || c == '<' || c == '\\') {
                 snprintf(buf, sizeof(buf), "\\%03o", c);
             } else {
                 *(buf) = c;
@@ -253,7 +258,7 @@ sd_printPrim(
     int spRes;
 
     valueImage = sd_primValue(primKind, object);
-    spRes = os_sprintf(dataPtr, valueImage);
+    spRes = os_sprintf(dataPtr, "%s", valueImage);
     if (spRes >= 0) {
         result = (c_ulong)spRes;
     } else {
@@ -727,7 +732,6 @@ sd_XMLSerCallbackPost(
 {
     c_char **dataPtrPtr = (c_char **)actionArg;
     c_long len;
-    c_char *tagName;
 
     OS_UNUSED_ARG(objectPtr);
     OS_UNUSED_ARG(errorInfo);
@@ -874,7 +878,9 @@ void sd_XMLDeserType(c_type type, c_object *objectPtr,
 
 #define SD_CHARS_CHAR    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #define SD_CHARS_DIGIT   "1234567890"
-#define SD_CHARS_SPECIAL "~!@$^&*()_+`-={}|:;'?,.\\"
+/* Note: Some characters are serialized using octal representation. These are omitted from the following set,
+ * except for '\', required to recognize the octal representations (i.e. '\001') */
+#define SD_CHARS_SPECIAL "!\"#$%'()*+,-./:;=?@[\\]^_`{|}~"
 #define SD_CHARS_SPACES  " \t\n"
 
 #define SD_SKIP_SPACES   SD_CHARS_SPACES
@@ -1043,8 +1049,8 @@ sd_scanCharNoSkip(
     *resultPtr = 0;
     resultValue = 0;
     helperPtr = dataPtr;
-    sd_strSkipChars(&helperPtr, SD_SKIP_SPACES);
     result = (*helperPtr != 0), helperValue = *helperPtr;
+
     if (result == 1) {
         if ((int)helperValue == (int)'\\') {
             /* Going into escape mode, read octal digit characters */

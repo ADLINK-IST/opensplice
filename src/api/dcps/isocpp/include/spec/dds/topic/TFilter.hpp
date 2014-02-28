@@ -22,62 +22,105 @@
 #include <dds/core/types.hpp>
 #include <dds/core/Value.hpp>
 
-namespace dds {
-  namespace topic {
-    template<typename D>
-    class TFilter;
-  }
+namespace dds
+{
+namespace topic
+{
+template<typename D>
+class TFilter;
+}
 }
 
 /**
- * This clas defines a filter that can be used to create a
- * <code>ContentFilteredTopic</code>.
+ * This class defines a filter that can be used to create a
+ * ContentFilteredTopic.
  */
 template<typename D>
-class dds::topic::TFilter: public dds::core::Value<D> {
+class dds::topic::TFilter: public dds::core::Value<D>
+{
 public:
-  // Random access iterators
-  typedef typename D::iterator iterator;
-  typedef typename D::const_iterator const_iterator;
+    // Random access iterators
+    typedef typename D::iterator iterator;
+    typedef typename D::const_iterator const_iterator;
 
 public:
-  TFilter(const std::string& query_expression);
+    /**
+     * Create a Filter based on a query expression.
+     *
+     * @param query_expression the query string on which to base the Filter
+     */
+    TFilter(const std::string& query_expression);
 
-  template<typename FWIterator>
-  TFilter(const std::string& query_expression, const FWIterator& params_begin,
-      const FWIterator& params_end);
+    /**
+     * Create a Filter based on a query expression and an
+     * iterable parameter container.
+     *
+     * @param query_expression the query string on which to base the Filter
+     * @param params_begin the begining forward iterator to the user's parameters
+     * @param params_end the end iterator for the user's parameters
+     */
+    template<typename FWIterator>
+    TFilter(const std::string& query_expression, const FWIterator& params_begin,
+            const FWIterator& params_end);
 
-  TFilter(const std::string& query_expression,
-      const std::vector<std::string>& params);
+    /**
+     * Create a Filter based on a query expression and parameter vector.
+     *
+     * @param query_expression the query string on which to base the Filter
+     * @param params the user-supplied vector of strings parameters
+     */
+    TFilter(const std::string& query_expression,
+            const std::vector<std::string>& params);
 
-  const std::string& expression() const;
+    /**
+     * Get the query expression.
+     *
+     * @return the query expression
+     */
+    const std::string& expression() const;
 
-  /**
-   * Provides the begin iterator to the parameter list.
-   */
-  const_iterator begin() const;
+    /**
+     * Provides the begin iterator to the parameter list.
+     */
+    const_iterator begin() const;
 
-  /**
-   * The end iterator to the parameter list.
-   */
-  const_iterator end() const;
+    /**
+     * The end iterator to the parameter list.
+     */
+    const_iterator end() const;
 
-  /**
-   * Provides the begin iterator to the parameter list.
-   */
-  iterator begin();
+    /**
+     * Provides the begin iterator to the parameter list.
+     */
+    iterator begin();
 
-  /**
-   * The end iterator to the parameter list.
-   */
-  iterator end();
+    /**
+     * The end iterator to the parameter list.
+     */
+    iterator end();
 
-  template<typename FWIterator>
-  void parameters(const FWIterator& begin, const FWIterator end);
+    /**
+     * Set the parameters using a iterable parameter container.
+     *
+     * @param params_begin the begining forward iterator to the user's parameters
+     * @param end the end iterator for the user's parameters
+     */
+    template<typename FWIterator>
+    void parameters(const FWIterator& begin, const FWIterator end);
 
-  void add_parameter(const std::string& param);
+    /**
+     * Add a sigular parameter.
+     *
+     * @param param a sigular parameter
+     */
+    void add_parameter(const std::string& param);
 
-  uint32_t parameters_length() const;
+    /**
+     * Get the number of parameters associated with a Filter.
+     *
+     * @return the number of parameters
+     */
+    uint32_t parameters_length() const;
 };
 
 #endif /* DDS_TOPIC_TFILTER__HPP_ */

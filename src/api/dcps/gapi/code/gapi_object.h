@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#ifdef OSPL_BUILD_DCPSGAPI
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -62,7 +62,8 @@ typedef enum {
     OBJECT_KIND_FOODATAVIEW               = 0x30000001,
     OBJECT_KIND_DOMAINPARTICIPANTFACTORY  = 0x40000001,
     OBJECT_KIND_DOMAIN                    = 0x50000001,
-    OBJECT_KIND_ERRORINFO                 = 0x60000000
+    OBJECT_KIND_ERRORINFO                 = 0x60000000,
+    OBJECT_KIND_QOSPROVIDER               = 0x70000000
 } _ObjectKind;
 
 
@@ -116,11 +117,11 @@ gapi_object
 _ObjectToHandle (
     _Object object);
 
-_Object
+OS_API _Object
 gapi_objectPeekUnchecked (
     gapi_object handle);
 
-gapi_object
+OS_API gapi_object
 gapi_objectRelease (
     gapi_object handle);
 
@@ -151,7 +152,7 @@ _ObjectRegistryRegister (
     _ObjectRegistry registry,
     _Object         object);
 
-_Object
+OS_API _Object
 _ObjectAlloc (
     _ObjectKind     kind,
     long            size,

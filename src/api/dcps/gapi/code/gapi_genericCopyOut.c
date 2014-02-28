@@ -352,7 +352,7 @@ STATIC copyInFromArray coFromArray[] = {
 STATIC  gapiCopyType
 to_copyType(c_type t)
 {
-    gapiCopyType ct;
+    gapiCopyType ct = gapiBlackBox;
     switch(c_baseObject(t)->kind ) {
     case M_ENUMERATION:
         ct = gapiEnum;

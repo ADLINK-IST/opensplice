@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "os_stdlib.h"
@@ -68,6 +68,7 @@ StripExtension(const DDS_StdString& fname)
 const char *
 FindFilename(const DDS_StdString& fullname)
 {
+
    const char * t = (const char*)strrchr((const char *)fullname, pathSep);
 
 #if defined(_WIN32)
@@ -802,20 +803,20 @@ const char * XBE_Ev::arg (XBE_Env ev, bool space)
    {
       switch (ev)
       {
-         case XBE_ENV_VAR1: return "DDS_ENV_VAR1";  
-         case XBE_ENV_VARN: return space ? " DDS_ENV_VARN" : "DDS_ENV_VARN";  
+         case XBE_ENV_VAR1: return "DDS_ENV_VAR1";
+         case XBE_ENV_VARN: return space ? " DDS_ENV_VARN" : "DDS_ENV_VARN";
          case XBE_ENV_ARG1: return "DDS_ENV_ARG1";
-         case XBE_ENV_ARGN: return space ? " DDS_ENV_ARGN" : "DDS_ENV_ARGN";  
+         case XBE_ENV_ARGN: return space ? " DDS_ENV_ARGN" : "DDS_ENV_ARGN";
       }
    }
    else if (_mode == XBE_ENV_NO_EXCEPTION)
    {
       switch (ev)
       {
-         case XBE_ENV_VAR1: return "_env_";  
-         case XBE_ENV_VARN: return ", _env_";  
-         case XBE_ENV_ARG1: return "DDS::Environment & _env_";  
-         case XBE_ENV_ARGN: return ", DDS::Environment & _env_";  
+         case XBE_ENV_VAR1: return "_env_";
+         case XBE_ENV_VARN: return ", _env_";
+         case XBE_ENV_ARG1: return "DDS::Environment & _env_";
+         case XBE_ENV_ARGN: return ", DDS::Environment & _env_";
       }
    }
    return "";

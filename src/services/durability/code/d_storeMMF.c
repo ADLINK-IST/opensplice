@@ -298,6 +298,7 @@ d_storeNewMMF(u_participant participant)
     d_storeMMF storeMMF;
     d_store store;
 
+    OS_UNUSED_ARG(participant);
     storeMMF = d_storeMMF(os_malloc(C_SIZEOF(d_storeMMF)));
     store = d_store(storeMMF);
     d_storeInit(store, d_storeDeinitMMF);
@@ -311,6 +312,7 @@ d_storeNewMMF(u_participant participant)
     store->openFunc                     = d_storeOpenMMF;
     store->closeFunc                    = d_storeCloseMMF;
     store->groupsReadFunc               = d_storeGroupsReadMMF;
+    store->groupListFreeFunc            = NULL;
     store->groupInjectFunc              = d_storeGroupInjectMMF;
     store->groupStoreFunc               = d_storeGroupStoreMMF;
     store->getQualityFunc               = d_storeGetQualityMMF;

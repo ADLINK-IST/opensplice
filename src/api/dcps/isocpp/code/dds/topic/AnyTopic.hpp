@@ -23,27 +23,36 @@
 #include <spec/dds/topic/AnyTopic.hpp>
 
 // Implementation
-namespace dds { namespace topic {
+namespace dds
+{
+namespace topic
+{
 
-    const dds::domain::DomainParticipant& AnyTopic::domain_participant() const {
-        return holder_->domain_participant();
-        }
+const dds::domain::DomainParticipant& AnyTopic::domain_participant() const
+{
+    return holder_->domain_participant();
+}
 
-    const dds::core::status::InconsistentTopicStatus& AnyTopic::inconsistent_topic_status() {
-        return holder_->inconsistent_topic_status();
-        }
+const dds::core::status::InconsistentTopicStatus& AnyTopic::inconsistent_topic_status()
+{
+    return holder_->inconsistent_topic_status();
+}
 
-    const dds::topic::qos::TopicQos& AnyTopic::qos() const {
-        return holder_->qos();
-        }
+const dds::topic::qos::TopicQos& AnyTopic::qos() const
+{
+    return holder_->qos();
+}
 
-    void AnyTopic::qos(const dds::topic::qos::TopicQos& q) {
-        holder_->qos(q);
-        }
-    detail::THolderBase* AnyTopic::operator->() {
-        return holder_.get();
-        }
-}}
+void AnyTopic::qos(const dds::topic::qos::TopicQos& q)
+{
+    holder_->qos(q);
+}
+detail::THolderBase* AnyTopic::operator->()
+{
+    return holder_.get();
+}
+}
+}
 // End of implementation
 
 #endif /* OSPL_DDS_TOPIC_ANYTOPIC_CPP_ */

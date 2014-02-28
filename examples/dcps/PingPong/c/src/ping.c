@@ -20,7 +20,15 @@
 #ifdef _WIN32
 #include <Windows.h>
 #else
+#ifndef _WRS_KERNEL
 #include <sys/time.h>
+#else
+#include <version.h>
+/* VxWorks versions 6 and newer define _WRS_VXWORKS_MAJOR */
+#ifndef _WRS_VXWORKS_MAJOR
+#include <sys/times.h>
+#endif
+#endif
 #include <unistd.h>
 #endif
 #include <stdio.h>
@@ -659,7 +667,6 @@ int OSPL_MAIN (int argc, char ** argv)
     pQos->partition.name._maximum = 1;
     pQos->partition.name._buffer = DDS_StringSeq_allocbuf (1);
     pQos->partition.name._buffer[0] = DDS_string_dup (write_partition);
-    strncpy (pQos->partition.name._buffer[0], write_partition, sizeof(pQos->partition.name._buffer[0]));
     p = DDS_DomainParticipant_create_publisher (dp, pQos, NULL, DDS_STATUS_MASK_NONE);
     DDS_free (pQos);
 
@@ -870,8 +877,7 @@ int OSPL_MAIN (int argc, char ** argv)
                         active_handler = &PP_string_handler;
                         PPdata->count = 0;
                         PPdata->block = block;
-                        PPdata->a_string = DDS_string_alloc (8);
-                        strncpy (PPdata->a_string, "a_string", sizeof(PPdata->a_string));
+                        PPdata->a_string = DDS_string_dup ("a_string");
                         preWriteTime = timeGet ();
                         pingpong_PP_string_msgDataWriter_write (PP_string_writer, PPdata, DDS_HANDLE_NIL);
                         postWriteTime = timeGet ();
@@ -886,8 +892,7 @@ int OSPL_MAIN (int argc, char ** argv)
                         active_handler = &PP_fixed_handler;
                         PPdata->count = 0;
                         PPdata->block = block;
-                        PPdata->a_bstring = DDS_string_alloc (9);
-                        strncpy (PPdata->a_bstring, "a_bstring", sizeof(PPdata->a_bstring));
+                        PPdata->a_bstring = DDS_string_dup ("a_bstring");
                         preWriteTime = timeGet ();
                         pingpong_PP_fixed_msgDataWriter_write (PP_fixed_writer, PPdata, DDS_HANDLE_NIL);
                         postWriteTime = timeGet ();

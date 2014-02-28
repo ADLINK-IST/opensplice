@@ -57,7 +57,7 @@ unshift(@INC, $basePath . '/modules');
 $ENV{OSPLI_BASE_PATH} = $basePath;
 
 my $ospl_home_norm = $ENV{OSPL_HOME_NORMALIZED};
-my $os_header_dir = 'linux2.6';
+my $os_header_dir = 'linux';
 my $os_arch = 'x86';
 my $os_compiler;
 my $just_os;

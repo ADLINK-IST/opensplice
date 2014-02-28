@@ -25,7 +25,7 @@ SAJ_FUNCTION(jniGetTypeName)(
     jobject jdescription)
 {
     gapi_topicDescription description;
-    jstring jtypeName;
+    jstring jtypeName = NULL;
     gapi_string typeName;
     
     description = (gapi_topicDescription) saj_read_gapi_address(env, jdescription);
@@ -49,7 +49,7 @@ SAJ_FUNCTION(jniGetName)(
     jobject jdescription)
 {
     gapi_topicDescription description;
-    jstring jname;
+    jstring jname = NULL;
     gapi_string name;
     
     description = (gapi_topicDescription) saj_read_gapi_address(env, jdescription);

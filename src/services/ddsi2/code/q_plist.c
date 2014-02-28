@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "os_heap.h"
 #include "os_stdlib.h"
@@ -19,7 +20,7 @@
 #include "q_protocol.h" /* for NN_STATUSINFO_... */
 #include "q_radmin.h" /* for nn_plist_quickscan */
 
-#include "q_avl.h"
+#include "ut_avl.h"
 #include "q_misc.h" /* for vendor_is_... */
 
 /* These are internal to the parameter list processing. We never
@@ -114,7 +115,7 @@ static int unalias_string (char **str, int bswap)
   }
   else
   {
-    len = strlen (alias) + 1;
+    len = (int) strlen (alias) + 1;
   }
   if ((*str = os_malloc (len)) == NULL)
   {
@@ -200,7 +201,7 @@ static int validate_stringseq (const struct dd *dd)
     {
       int len1;
       dd1.buf = seq;
-      dd1.bufsz = seqend - seq;
+      dd1.bufsz = (unsigned) (seqend - seq);
       if ((len1 = validate_string (&dd1)) < 0)
       {
         TRACE (("plist/validate_stringseq: invalid string\n"));
@@ -258,7 +259,7 @@ static int alias_stringseq (nn_stringseq_t *strseq, const struct dd *dd)
     {
       int len1;
       dd1.buf = seq;
-      dd1.bufsz = seqend - seq;
+      dd1.bufsz = (unsigned) (seqend - seq);
       /* (const char **) to silence the compiler, unfortunately strseq
          can't have a const char **strs, that would require a const
          and a non-const version of it. */
@@ -402,7 +403,7 @@ static int unalias_locators (nn_locators_t *locs, UNUSED_ARG (int bswap))
 
 void nn_plist_fini (nn_plist_t *ps)
 {
-  struct t { unsigned fl; size_t off; };
+  struct t { unsigned fl; os_size_t off; };
   static const struct t simple[] = {
     { PP_ENTITY_NAME, offsetof (nn_plist_t, entity_name) },
   };
@@ -429,6 +430,12 @@ void nn_plist_fini (nn_plist_t *ps)
     if ((ps->present & locs[i].fl) && !(ps->aliased & locs[i].fl))
       free_locators ((nn_locators_t *) ((char *) ps + locs[i].off));
   }
+  if ((ps->present & PP_PRISMTECH_PARTICIPANT_VERSION_INFO) &&
+     !(ps->aliased & PP_PRISMTECH_PARTICIPANT_VERSION_INFO)) {
+    os_free(ps->prismtech_participant_version_info.internals);
+  }
+
+
   ps->present = 0;
 }
 
@@ -453,6 +460,13 @@ int nn_plist_unalias (nn_plist_t *ps)
   P (METATRAFFIC_UNICAST_LOCATOR, locators, metatraffic_unicast_locators);
   P (METATRAFFIC_MULTICAST_LOCATOR, locators, metatraffic_multicast_locators);
 #undef P
+  if ((ps->present & PP_PRISMTECH_PARTICIPANT_VERSION_INFO) &&
+      (ps->aliased & PP_PRISMTECH_PARTICIPANT_VERSION_INFO)) {
+    if ((res = unalias_string(&ps->prismtech_participant_version_info.internals, bswap)) < 0)
+      goto fail;
+    ps->aliased &= ~PP_PRISMTECH_PARTICIPANT_VERSION_INFO;
+  }
+
   assert (ps->aliased == 0);
   return 0;
  fail:
@@ -939,9 +953,17 @@ static int locator_address_zero (const nn_locator_t *loc)
   return (u[0] == 0 && u[1] == 0 && u[2] == 0 && u[3] == 0);
 }
 
-static int do_locator (nn_locators_t *ls, unsigned *present, unsigned wanted, unsigned fl, const struct dd *dd)
+static int do_locator
+(
+  nn_locators_t *ls,
+  unsigned *present,
+  unsigned wanted,
+  unsigned fl,
+  const struct dd *dd
+)
 {
   nn_locator_t loc;
+
   if (dd->bufsz < sizeof (loc))
   {
     TRACE (("plist/do_locator: buffer too small\n"));
@@ -956,21 +978,23 @@ static int do_locator (nn_locators_t *ls, unsigned *present, unsigned wanted, un
   switch (loc.kind)
   {
     case NN_LOCATOR_KIND_UDPv4:
+    case NN_LOCATOR_KIND_TCPv4:
       if (loc.port <= 0 || loc.port > 65535)
       {
-        TRACE (("plist/do_locator[kind=UDPv4]: invalid port (%d)\n", (int) loc.port));
+        TRACE (("plist/do_locator[kind=IPv4]: invalid port (%d)\n", (int) loc.port));
         return ERR_INVALID;
       }
       if (!locator_address_prefix12_zero (&loc))
       {
-        TRACE (("plist/do_locator[kind=UDPv4]: junk in address prefix\n"));
+        TRACE (("plist/do_locator[kind=IPv4]: junk in address prefix\n"));
         return ERR_INVALID;
       }
       break;
     case NN_LOCATOR_KIND_UDPv6:
+    case NN_LOCATOR_KIND_TCPv6:
       if (loc.port <= 0 || loc.port > 65535)
       {
-        TRACE (("plist/do_locator[kind=UDPv6]: invalid port (%d)\n", (int) loc.port));
+        TRACE (("plist/do_locator[kind=IPv6]: invalid port (%d)\n", (int) loc.port));
         return ERR_INVALID;
       }
       break;
@@ -999,7 +1023,7 @@ static int do_locator (nn_locators_t *ls, unsigned *present, unsigned wanted, un
 
 static void locator_from_ipv4address_port (nn_locator_t *loc, const nn_ipv4address_t *a, const nn_port_t *p)
 {
-  loc->kind = NN_LOCATOR_KIND_UDPv4;
+  loc->kind = gv.m_factory->m_connless ? NN_LOCATOR_KIND_UDPv4 : NN_LOCATOR_KIND_TCPv4;
   loc->port = *p;
   memset (loc->address, 0, 12);
   memcpy (loc->address + 12, a, 4);
@@ -1051,15 +1075,18 @@ static int do_ipv4address (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest_tmp
   }
   memcpy (a, dd->buf, sizeof (*a));
   dest_tmp->present |= fl;
+
   /* PPTMP_MULTICAST_IPADDRESS must fail because we don't have a port.
      (There are of course other ways of failing ...)  Option 1: set
      fl1 to a value to bit that's never set; option 2: explicit check.
      Since this code hardly ever gets executed, use option 2. */
+
   if (fl1 && ((dest_tmp->present & (fl | fl1)) == (fl | fl1)))
   {
     /* If port already known, add corresponding locator and discard
        both address & port from the set of present plist: this
        allows adding another pair. */
+
     nn_locator_t loc;
     locator_from_ipv4address_port (&loc, a, p);
     dest_tmp->present &= ~(fl | fl1);
@@ -1264,16 +1291,66 @@ static int do_guid (nn_guid_t *dst, unsigned *present, unsigned fl, int (*valid)
 
 static void bswap_prismtech_writer_info (nn_prismtech_writer_info_t *wri)
 {
-  wri->transactionId = bswap4 (wri->transactionId);
-  wri->writerGID.systemId = bswap4 (wri->writerGID.systemId);
-  wri->writerGID.localId = bswap4 (wri->writerGID.localId);
-  wri->writerGID.serial = bswap4 (wri->writerGID.serial);
-  wri->writerInstanceGID.systemId = bswap4 (wri->writerInstanceGID.systemId);
-  wri->writerInstanceGID.systemId = bswap4 (wri->writerInstanceGID.localId);
-  wri->writerInstanceGID.systemId = bswap4 (wri->writerInstanceGID.serial);
+  wri->transactionId = bswap4u (wri->transactionId);
+  wri->writerGID.systemId = bswap4u (wri->writerGID.systemId);
+  wri->writerGID.localId = bswap4u (wri->writerGID.localId);
+  wri->writerGID.serial = bswap4u (wri->writerGID.serial);
+  wri->writerInstanceGID.systemId = bswap4u (wri->writerInstanceGID.systemId);
+  wri->writerInstanceGID.localId = bswap4u (wri->writerInstanceGID.localId);
+  wri->writerInstanceGID.serial = bswap4u (wri->writerInstanceGID.serial);
+  wri->sequenceNumber = bswap4u (wri->sequenceNumber);
 }
 
-static int init_one_parameter (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest_tmp, unsigned pwanted, unsigned qwanted, unsigned short pid, const struct dd *dd)
+static void bswap_prismtech_participant_version_info (nn_prismtech_participant_version_info_t *pvi)
+{
+  int i;
+  pvi->version = bswap4u (pvi->version);
+  pvi->flags = bswap4u (pvi->flags);
+  for (i = 0; i < 3; i++)
+      pvi->unused[i] = bswap4u (pvi->unused[i]);
+}
+
+static int do_prismtech_participant_version_info (nn_prismtech_participant_version_info_t *pvi, unsigned *present, unsigned *aliased, const struct dd *dd)
+{
+  if (!vendor_is_prismtech (dd->vendorid))
+    return 0;
+  else if (dd->bufsz < sizeof (pvi))
+  {
+    TRACE (("plist/do_prismtech_participant_version_info[pid=PRISMTECH_PARTICIPANT_VERSION_INFO]: buffer too small\n"));
+    return ERR_INVALID;
+  }
+  else
+  {
+    int res;
+    unsigned sz = NN_PRISMTECH_PARTICIPANT_VERSION_INFO_FIXED_CDRSIZE - sizeof(unsigned);
+    unsigned *pu = (unsigned *)dd->buf;
+    struct dd dd1 = *dd;
+
+    memcpy (pvi, dd->buf, sz);
+    if (dd->bswap)
+      bswap_prismtech_participant_version_info(pvi);
+
+    dd1.buf = (char *)&pu[5];
+    dd1.bufsz = dd->bufsz - sz;
+    if ((res = alias_string ((const char **)&pvi->internals, &dd1)) >= 0) {
+      *present |= PP_PRISMTECH_PARTICIPANT_VERSION_INFO;
+      *aliased |= PP_PRISMTECH_PARTICIPANT_VERSION_INFO;
+      res = 0;
+    }
+
+    return res;
+  }
+}
+
+static int init_one_parameter
+(
+  nn_plist_t *dest,
+  nn_ipaddress_params_tmp_t *dest_tmp,
+  unsigned pwanted,
+  unsigned qwanted,
+  unsigned short pid,
+  const struct dd *dd
+)
 {
   int res;
   switch (pid)
@@ -1653,7 +1730,7 @@ static int init_one_parameter (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest
     case PID_PRISMTECH_WRITER_INFO: /* PrismTech specific */
       if (!vendor_is_prismtech (dd->vendorid))
         return 0;
-      else if (dd->bufsz < sizeof (dest->prismtech_writer_info))
+      else if (dd->bufsz < sizeof (nn_prismtech_writer_info_old_t))
       {
         TRACE (("plist/init_one_parameter[pid=PRISMTECH_WRITER_INFO]: buffer too small\n"));
         return ERR_INVALID;
@@ -1667,6 +1744,8 @@ static int init_one_parameter (nn_plist_t *dest, nn_ipaddress_params_tmp_t *dest
         dest->present |= PP_PRISMTECH_WRITER_INFO;
         return 0;
       }
+    case PID_PRISMTECH_PARTICIPANT_VERSION_INFO:
+      return do_prismtech_participant_version_info(&dest->prismtech_participant_version_info, &dest->present, &dest->aliased, dd);
 
       /* Deprecated ones (used by RTI, but not relevant to DDSI) */
     case PID_PERSISTENCE:
@@ -1755,7 +1834,14 @@ static int final_validation (nn_plist_t *dest)
   return 0;
 }
 
-int nn_plist_init_frommsg (nn_plist_t *dest, char **nextafterplist, unsigned pwanted, unsigned qwanted, const nn_plist_src_t *src)
+int nn_plist_init_frommsg
+(
+  nn_plist_t *dest,
+  char **nextafterplist,
+  unsigned pwanted,
+  unsigned qwanted,
+  const nn_plist_src_t *src
+)
 {
   const char *pl;
   struct dd dd;
@@ -1947,13 +2033,13 @@ char *nn_plist_quickscan (struct nn_rsample_info *dest, const struct nn_rmsg *rm
         }
         break;
       case PID_PRISMTECH_WRITER_INFO:
-        if (length < sizeof (nn_prismtech_writer_info_t))
+        if (length < sizeof (nn_prismtech_writer_info_old_t))
         {
           TRACE (("plist(vendor %d.%d): quickscan(PRISMTECH_WRITER_INFO): buffer too small\n",
                   src->vendorid.id[0], src->vendorid.id[1]));
           return NULL;
         }
-        dest->pt_wr_info_zoff = NN_OFF_TO_ZOFF (pl - NN_RMSG_PAYLOAD (rmsg));
+        dest->pt_wr_info_zoff = NN_OFF_TO_ZOFF ((int) (pl - NN_RMSG_PAYLOAD (rmsg)));
         break;
       default:
         dest->complex_qos = 1;
@@ -2183,7 +2269,7 @@ int nn_xqos_unalias (nn_xqos_t *xqos)
 
 void nn_xqos_fini (nn_xqos_t *xqos)
 {
-  struct t { unsigned fl; size_t off; };
+  struct t { unsigned fl; os_size_t off; };
   static const struct t qos_simple[] = {
     { QP_GROUP_DATA, offsetof (nn_xqos_t, group_data.value) },
     { QP_TOPIC_DATA, offsetof (nn_xqos_t, topic_data.value) },
@@ -2465,21 +2551,30 @@ int nn_xqos_addtomsg (struct nn_xmsg *m, const nn_xqos_t *xqos, unsigned wanted)
   unsigned w = xqos->present & wanted;
   char *tmp;
   int res;
-#define SIMPLE(name_, field_) do {                                      \
-    if (w & QP_##name_) {                                               \
+#define SIMPLE(name_, field_) \
+  do { \
+    if (w & QP_##name_) { \
       if ((tmp = nn_xmsg_addpar (m, PID_##name_, sizeof (xqos->field_))) == NULL) \
-        return ERR_OUT_OF_MEMORY;                                       \
-      *((nn_##field_##_qospolicy_t *) tmp) = xqos->field_;              \
-    }                                                                   \
+        return ERR_OUT_OF_MEMORY; \
+      *((nn_##field_##_qospolicy_t *) tmp) = xqos->field_; \
+    } \
   } while (0)
-#define FUNC_GENERIC(name_, field_, func_, ref_) do {                   \
-    if (w & QP_##name_) {                                               \
-      if ((res = nn_xmsg_addpar_##func_ (m, PID_##name_, ref_ xqos->field_)) < 0) \
-        return res;                                                     \
-    }                                                                   \
+#define FUNC_BY_REF(name_, field_, func_) \
+  do { \
+    if (w & QP_##name_) { \
+      if ((res = nn_xmsg_addpar_##func_ (m, PID_##name_, &xqos->field_)) < 0) \
+        return res; \
+    } \
   } while (0)
-#define FUNC_BY_VAL(name_, field_, func_) FUNC_GENERIC (name_, field_, func_,)
-#define FUNC_BY_REF(name_, field_, func_) FUNC_GENERIC (name_, field_, func_, &)
+
+#define FUNC_BY_VAL(name_, field_, func_) \
+  do { \
+    if (w & QP_##name_) { \
+      if ((res = nn_xmsg_addpar_##func_ (m, PID_##name_, xqos->field_)) < 0) \
+        return res; \
+    } \
+  } while (0)
+
   FUNC_BY_VAL (TOPIC_NAME, topic_name, string);
   FUNC_BY_VAL (TYPE_NAME, type_name, string);
   SIMPLE (PRESENTATION, presentation);
@@ -2506,7 +2601,6 @@ int nn_xqos_addtomsg (struct nn_xmsg *m, const nn_xqos_t *xqos, unsigned wanted)
   SIMPLE (PRISMTECH_RELAXED_QOS_MATCHING, relaxed_qos_matching);
 #undef FUNC_BY_REF
 #undef FUNC_BY_VAL
-#undef FUNC_GENERIC
 #undef SIMPLE
   return 0;
 }
@@ -2514,14 +2608,15 @@ int nn_xqos_addtomsg (struct nn_xmsg *m, const nn_xqos_t *xqos, unsigned wanted)
 static int add_locators (struct nn_xmsg *m, unsigned present, unsigned flag, const nn_locators_t *ls, int pid)
 {
   const struct nn_locators_one *l;
-  if (!(present & flag))
-    return 0;
-  for (l = ls->first; l != NULL; l = l->next)
+  if (present & flag)
   {
-    char *tmp;
-    if ((tmp = nn_xmsg_addpar (m, pid, sizeof (nn_locator_t))) == NULL)
-      return ERR_OUT_OF_MEMORY;
-    memcpy (tmp, &l->loc, sizeof (nn_locator_t));
+    for (l = ls->first; l != NULL; l = l->next)
+    {
+      char *tmp;
+      if ((tmp = nn_xmsg_addpar (m, pid, sizeof (nn_locator_t))) == NULL)
+        return ERR_OUT_OF_MEMORY;
+      memcpy (tmp, &l->loc, sizeof (nn_locator_t));
+    }
   }
   return 0;
 }
@@ -2534,21 +2629,29 @@ int nn_plist_addtomsg (struct nn_xmsg *m, const nn_plist_t *ps, unsigned pwanted
   unsigned w = ps->present & pwanted;
   char *tmp;
   int res;
-#define SIMPLE_TYPE(name_, field_, type_) do {                          \
-    if (w & PP_##name_) {                                               \
+#define SIMPLE_TYPE(name_, field_, type_) \
+  do { \
+    if (w & PP_##name_) { \
       if ((tmp = nn_xmsg_addpar (m, PID_##name_, sizeof (ps->field_))) == NULL) \
-        return ERR_OUT_OF_MEMORY;                                       \
-      *((type_ *) tmp) = ps->field_;                                    \
-    }                                                                   \
+        return ERR_OUT_OF_MEMORY; \
+      *((type_ *) tmp) = ps->field_; \
+    } \
   } while (0)
-#define FUNC_GENERIC(name_, field_, func_, ref_) do {                   \
-    if (w & PP_##name_) {                                               \
-      if ((res = nn_xmsg_addpar_##func_ (m, PID_##name_, ref_ ps->field_)) < 0) \
-        return res;                                                     \
-    }                                                                   \
+#define FUNC_BY_VAL(name_, field_, func_) \
+  do { \
+    if (w & PP_##name_) { \
+      if ((res = nn_xmsg_addpar_##func_ (m, PID_##name_, ps->field_)) < 0) \
+        return res; \
+    } \
   } while (0)
-#define FUNC_BY_VAL(name_, field_, func_) FUNC_GENERIC (name_, field_, func_,)
-#define FUNC_BY_REF(name_, field_, func_) FUNC_GENERIC (name_, field_, func_, &)
+#define FUNC_BY_REF(name_, field_, func_) \
+  do { \
+    if (w & PP_##name_) { \
+      if ((res = nn_xmsg_addpar_##func_ (m, PID_##name_, &ps->field_)) < 0) \
+        return res; \
+    } \
+  } while (0)
+
   if ((res = nn_xqos_addtomsg (m, &ps->qos, qwanted)) < 0)
     return res;
   SIMPLE_TYPE (PROTOCOL_VERSION, protocol_version, nn_protocol_version_t);
@@ -2584,9 +2687,9 @@ int nn_plist_addtomsg (struct nn_xmsg *m, const nn_plist_t *ps, unsigned pwanted
     }
   }
   SIMPLE_TYPE (PRISMTECH_WRITER_INFO, prismtech_writer_info, nn_prismtech_writer_info_t);
+  FUNC_BY_REF (PRISMTECH_PARTICIPANT_VERSION_INFO, prismtech_participant_version_info, parvinfo);
 #undef FUNC_BY_REF
 #undef FUNC_BY_VAL
-#undef FUNC_GENERIC
 #undef SIMPLE
   return 0;
 }

@@ -44,8 +44,8 @@ int OSPL_MAIN (int argc, char *argv[])
 {
    DDS_Subscriber QueryConditionDataSubscriber;
    DDS_DataReader QueryConditionDataDataReader;
-   QueryConditionData_Stock* QueryConditionDataSample;
-   DDS_sequence_QueryConditionData_Stock* msgList = DDS_sequence_QueryConditionData_Stock__alloc();
+   StockMarket_Stock* QueryConditionDataSample;
+   DDS_sequence_StockMarket_Stock* msgList = DDS_sequence_StockMarket_Stock__alloc();
    DDS_SampleInfoSeq* infoSeq = DDS_SampleInfoSeq__alloc();
    c_bool isClosed = FALSE;
    unsigned long j;
@@ -67,11 +67,11 @@ int OSPL_MAIN (int argc, char *argv[])
    createParticipant("QueryCondition example");
 
    // Register Stock Topic's type in the DDS Domain.
-   g_StockTypeSupport = (DDS_TypeSupport) QueryConditionData_StockTypeSupport__alloc();
-   checkHandle(g_StockTypeSupport, "QueryConditionData_StockTypeSupport__alloc");
+   g_StockTypeSupport = (DDS_TypeSupport) StockMarket_StockTypeSupport__alloc();
+   checkHandle(g_StockTypeSupport, "StockMarket_StockTypeSupport__alloc");
    registerStockType(g_StockTypeSupport);
    // Create Stock Topic in the DDS Domain.
-   g_StockTypeName = QueryConditionData_StockTypeSupport_get_type_name(g_StockTypeSupport);
+   g_StockTypeName = StockMarket_StockTypeSupport_get_type_name(g_StockTypeSupport);
    g_StockTopic = createTopic("StockTrackerExclusive", g_StockTypeName);
    DDS_free(g_StockTypeName);
    DDS_free(g_StockTypeSupport);
@@ -92,12 +92,12 @@ int OSPL_MAIN (int argc, char *argv[])
 
    do
    {
-      g_status = QueryConditionData_StockDataReader_take_w_condition(QueryConditionDataDataReader,
+      g_status = StockMarket_StockDataReader_take_w_condition(QueryConditionDataDataReader,
                msgList,
                infoSeq,
                DDS_LENGTH_UNLIMITED,
                queryCondition);
-      checkStatus(g_status, "QueryConditionData_StockDataReaderView_take");
+      checkStatus(g_status, "StockMarket_StockDataReaderView_take");
       if( msgList->_length > 0 )
       {
          j = 0;
@@ -118,8 +118,8 @@ int OSPL_MAIN (int argc, char *argv[])
          }
          while( ++j < msgList->_length );
 
-         g_status = QueryConditionData_StockDataReader_return_loan(QueryConditionDataDataReader, msgList, infoSeq);
-         checkStatus(g_status, "QueryConditionData_StockDataReaderView_return_loan");
+         g_status = StockMarket_StockDataReader_return_loan(QueryConditionDataDataReader, msgList, infoSeq);
+         checkStatus(g_status, "StockMarket_StockDataReaderView_return_loan");
       }
       os_nanoSleep(delay_200ms);
       ++count;

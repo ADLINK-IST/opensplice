@@ -24,33 +24,56 @@
 
 // Implementation
 
-namespace dds { namespace topic {
+namespace dds
+{
+namespace topic
+{
 
 template <typename TOPIC>
 TOPIC discover(const dds::domain::DomainParticipant& dp,
-    const std::string& name,
-    const dds::core::Duration& timeout)
+               const std::string& name,
+               const dds::core::Duration& timeout)
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return dds::core::null;
 }
 
 template <typename TOPICDATA, typename FwdIterator>
 uint32_t discover(const dds::domain::DomainParticipant& dp, FwdIterator begin, uint32_t max_size)
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return 0;
 }
 
 template <typename TOPICDATA, typename BinIterator>
 uint32_t discover(const dds::domain::DomainParticipant& dp, BinIterator begin)
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return 0;
-}
-
-void ignore(const dds::domain::DomainParticipant& dp,
-    const dds::core::InstanceHandle& handle)
-{
-    DDS::ReturnCode_t result = ((dds::domain::DomainParticipant)dp)->dp_->ignore_topic(handle->handle());
-    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::ignore_topic"));
 }
 
 template <typename FwdIterator>
@@ -58,12 +81,13 @@ void ignore(const dds::domain::DomainParticipant& dp, FwdIterator begin, FwdIter
 {
     for(FwdIterator i = begin; i < end; i++)
     {
-      DDS::ReturnCode_t result = ((dds::domain::DomainParticipant)dp)->dp_->ignore_topic(i->handle());
-      org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::ignore_topic"));
+        DDS::ReturnCode_t result = ((dds::domain::DomainParticipant)dp)->dp_->ignore_topic(i->handle());
+        org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::ignore_topic"));
     }
 }
 
-}}
+}
+}
 
 // End of implementation
 

@@ -24,22 +24,28 @@
 #include <dds/sub/cond/detail/Executor.hpp>
 #include <org/opensplice/core/exception_helper.hpp>
 
-namespace org { namespace opensplice { namespace core {
+namespace org
+{
+namespace opensplice
+{
+namespace core
+{
 
 /**
- * With StatusCondition, a handler functor can be passed in at construction time which is then
+ *  @internal With StatusCondition, a handler functor can be passed in at construction time which is then
  * executed by WaitSetImpl which calls it's dispatch member function when the condition is triggered.
  */
-class StatusConditionImpl : public org::opensplice::core::ConditionImpl {
+class StatusConditionImpl : public org::opensplice::core::ConditionImpl
+{
 public:
     StatusConditionImpl() : executor_(0), entity_(dds::core::null) { }
 
     StatusConditionImpl(const dds::core::Entity& entity) : executor_(0), entity_(entity)
     {
         status_condition_ = entity_->get_dds_entity()->get_statuscondition();
-        if (status_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-        OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to get StatusCondition. "
-                                "Nil return from ::get_statuscondition")));
+        if(status_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                        OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to get StatusCondition. "
+                                             "Nil return from ::get_statuscondition")));
         dds::core::status::StatusMask tmp(status_condition_->get_enabled_statuses());
         mask_ = tmp;
         condition_ = status_condition_.in();
@@ -48,14 +54,14 @@ public:
     template<typename FUN>
     StatusConditionImpl(const dds::core::Entity& e, const FUN& functor)
         : executor_(new dds::sub::cond::detail::ParametrizedExecutor<FUN, dds::core::Entity >(
-            functor, e)), entity_(e)
+                        functor, e)), entity_(e)
     {
         status_condition_ = entity_->get_dds_entity()->get_statuscondition();
-        if (status_condition_.in() == 0)
+        if(status_condition_.in() == 0)
         {
             throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to get StatusCondition. "
-                                "Nil return from ::get_statuscondition")));
+                                                    OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to get StatusCondition. "
+                                                            "Nil return from ::get_statuscondition")));
         }
         dds::core::status::StatusMask tmp(status_condition_->get_enabled_statuses());
         mask_ = tmp;
@@ -65,20 +71,25 @@ public:
     ~StatusConditionImpl()
     {
         if(executor_)
+        {
             delete executor_;
+        }
     }
 
-    void enabled_statuses(const dds::core::status::StatusMask& status) {
+    void enabled_statuses(const dds::core::status::StatusMask& status)
+    {
         DDS::ReturnCode_t result = status_condition_->set_enabled_statuses(status.to_ulong());
         org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_enabled_statuses"));
         mask_ = status;
     }
 
-    const dds::core::status::StatusMask enabled_statuses() const {
+    const dds::core::status::StatusMask enabled_statuses() const
+    {
         return mask_;
     }
 
-    dds::core::Entity& entity() {
+    dds::core::Entity& entity()
+    {
         return entity_;
     }
 
@@ -93,6 +104,8 @@ private:
     dds::core::status::StatusMask mask_;
 };
 
-} } }
+}
+}
+}
 
 #endif  /* ORG_OPENSPLICE_CORE_STATUSCONDITIONIMPL_HPP_ */

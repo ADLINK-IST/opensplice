@@ -33,13 +33,22 @@ BUILD_EXAMPLES=examples/build/BuildResults_Totals.html
 BUILD_SRC=build-src.txt
 VALGRIND_SHM=valgrind_shm/vg_summary.html
 VALGRIND_SP=valgrind_sp/vg_summary.html
-GCOV=coverage/index.html
+COVERAGE_GCOV=coverage/index.html
+COVERAGE_JACOCO=jcoverage/index.html
 BUILD_DIST=build-dist.txt_Totals.html
 KEEP_DIST=archive-dist.txt
 EOF
 
+vx_grep=`echo $SETUP_TYPE | grep vxworks`
+
+if [ -n "$vx_grep" ]
+then
+echo "RUN_EXAMPLES_SP=examples/run_sp/vxworks_results.html" >> $LOGDIR/LOGFILES
+echo "RUN_EXAMPLES_SHM=examples/run_shm/vxworks_results.html" >> $LOGDIR/LOGFILES
+else
 echo "RUN_EXAMPLES_SP=examples/run_sp/summary.html" >> $LOGDIR/LOGFILES
 echo "RUN_EXAMPLES_SHM=examples/run_shm/summary.html" >> $LOGDIR/LOGFILES
+fi
 
 
 #Logs to use when pass
@@ -54,14 +63,20 @@ BUILD_EXAMPLES=examples/build/BuildResults_Totals.html
 BUILD_SRC=build-src.txt
 VALGRIND_SHM=valgrind_shm/vg_summary.html
 VALGRIND_SP=valgrind_sp/vg_summary.html
-GCOV=coverage/index.html
+COVERAGE_GCOV=coverage/index.html
+COVERAGE_JACOCO=jcoverage/index.html
 BUILD_DIST=build-dist.txt_Totals.html
 KEEP_DIST=../distro
 EOF
 
+if [ -n "$vx_grep" ]
+then
+echo "RUN_EXAMPLES_SP=examples/run_sp/vxworks_results.html" >> $LOGDIR/LOGFILES_PASSED
+echo "RUN_EXAMPLES_SHM=examples/run_shm/vxworks_results.html" >> $LOGDIR/LOGFILES_PASSED
+else
 echo "RUN_EXAMPLES_SP=examples/run_sp/summary.html" >> $LOGDIR/LOGFILES_PASSED
 echo "RUN_EXAMPLES_SHM=examples/run_shm/summary.html" >> $LOGDIR/LOGFILES_PASSED
-
+fi
 
 cat > $RESFILE <<EOF
 BUILD=TODO
@@ -109,18 +124,18 @@ else
     echo "BUILD/EXAMPLES=SKIP" >> $RESFILE
 fi
 
-if [ "$RUN_EXAMPLES_SHM" = "yes" ]
-then
-    echo "RUN_EXAMPLES/SHM=TODO" >> $RESFILE
-else
-    echo "RUN_EXAMPLES/SHM=SKIP" >> $RESFILE
-fi
-
 if [ "$RUN_EXAMPLES_SP" = "yes" ]
 then
     echo "RUN_EXAMPLES/SP=TODO" >> $RESFILE
 else
     echo "RUN_EXAMPLES/SP=SKIP" >> $RESFILE
+fi
+
+if [ "$RUN_EXAMPLES_SHM" = "yes" ]
+then
+    echo "RUN_EXAMPLES/SHM=TODO" >> $RESFILE
+else
+    echo "RUN_EXAMPLES/SHM=SKIP" >> $RESFILE
 fi
 
 if [ "$RUN_RBT_SP" = "yes" ]
@@ -144,13 +159,6 @@ else
     echo "RUN/DBT=SKIP" >> $RESFILE
 fi
 
-if [ "$VALGRIND" = "yes" -a "$RUN_EXAMPLES_SHM" = "yes" ]
-then
-    echo "VALGRIND/SHM=TODO" >> $RESFILE
-else
-    echo "VALGRIND/SHM=SKIP" >> $RESFILE
-fi
-
 if [ "$VALGRIND" = "yes" -a "$RUN_EXAMPLES_SP" = "yes" ]
 then
     echo "VALGRIND/SP=TODO" >> $RESFILE
@@ -158,11 +166,25 @@ else
     echo "VALGRIND/SP=SKIP" >> $RESFILE
 fi
 
+if [ "$VALGRIND" = "yes" -a "$RUN_EXAMPLES_SHM" = "yes" ]
+then
+    echo "VALGRIND/SHM=TODO" >> $RESFILE
+else
+    echo "VALGRIND/SHM=SKIP" >> $RESFILE
+fi
+
 if [ "$TEST_GCOV" = "yes" ]
 then
-    echo "GCOV=TODO" >> $RESFILE
+    echo "COVERAGE/GCOV=TODO" >> $RESFILE
 else
-    echo "GCOV=SKIP" >> $RESFILE
+    echo "COVERAGE/GCOV=SKIP" >> $RESFILE
+fi
+
+if [ "$TEST_JACOCO" = "yes" ]
+then
+    echo "COVERAGE/JACOCO=TODO" >> $RESFILE
+else
+    echo "COVERAGE/JACOCO=SKIP" >> $RESFILE
 fi
 
 ArchiveLogs
@@ -187,7 +209,11 @@ run_examples()
                 mkdir $LOGDIR/valgrind_${EXRUNTYPE}
             fi
             mkdir $LOGDIR/examples/run_$EXRUNTYPE
-            $IBSDIR/dcps_run_examples $ARGS > $LOGDIR/examples/run_$EXRUNTYPE/run_results.txt 2>&1
+            AUTOMATION_DIR=$WORKDIR/build/testsuite/automation \
+               VXWORKS_KERNEL_MODE=$VXWORKS_KERNEL_MODE \
+               OSPL_EXAMPLE_TEST_KERNEL=$OSPL_EXAMPLE_TEST_KERNEL \
+               OSPL_OUTER_HOME=$WORKDIR/build \
+               $IBSDIR/dcps_run_examples $ARGS > $LOGDIR/examples/run_$EXRUNTYPE/run_results.txt 2>&1
 
             eval $STAGE_WORKED=$?
             eval RES=\$${STAGE_WORKED}
@@ -212,6 +238,7 @@ run_examples()
                 ArchiveLogs
             else
                 echo "VALGRIND/${EXRUNTYPE_UPPER}=SKIPPED" >> $RESFILE
+                eval $VG_STAGE_RES=0
             fi
             # Remove valgrind generated files
             SHORTSETUP=`echo $SETUP_TYPE | sed 's/-release//'`
@@ -222,6 +249,7 @@ run_examples()
         echo "VALGRIND/${EXRUNTYPE_UPPER}=SKIPPED" >> $RESFILE
         echo "RUN_EXAMPLES/${EXRUNTYPE_UPPER}=SKIPPED" >> $RESFILE
         eval $STAGE_WORKED=0
+        eval $VG_STAGE_RES=0
     fi
 }
 
@@ -362,7 +390,7 @@ then
         export TIMED_TESTS
         $IBSDIR/dcps_perform_rbt_tests $ARGS > $LOGDIR/perform-rbt-tests-shm.txt 2>&1
         PERFORM_RBT_SHM_STAGE_WORKED=$?
-        if test_perform_rbt_tests $LOGDIR/RBT-Results-SHM $LOGDIR/perform-rbt-tests-sp.txt $PERFORM_RBT_SHM_STAGE_WORKED
+        if test_perform_rbt_tests $LOGDIR/RBT-Results-SHM $LOGDIR/perform-rbt-tests-shm.txt $PERFORM_RBT_SHM_STAGE_WORKED
         then
             echo "RUN_RBT/SHM=PASS" >> $RESFILE
         else
@@ -408,14 +436,14 @@ then
     fi
     ArchiveLogs
 
-    if [ "$TEST_GCOV" != "yes" ]
+    if [ "$TEST_GCOV" = "yes" -o "$TEST_JACOCO" = "yes" ]
     then
-        echo "GCOV=SKIPPED" >> $RESFILE
+        $IBSDIR/coverage_collect_results $ARGS > $LOGDIR/collect-coverage-statistics.txt 2>&1
     else
-        $IBSDIR/gcov_collect_results $ARGS > $LOGDIR/collect-gcov-statistics.txt 2>&1
-        echo -n "GCOV=" >> $RESFILE
-        $IBSDIR/gcov_process_totals $LOGDIR/coverage/index.html >> $RESFILE
+        echo "COVERAGE/GCOV=SKIPPED" >> $RESFILE
+        echo "COVERAGE/JACOCO=SKIPPED" >> $RESFILE
     fi
+
     ArchiveLogs
 
     #Do examples first as they rarely hang and are quite quick
@@ -428,12 +456,15 @@ then
         # used in directories
         if [ "$CURRENT_PL_CYGWIN" != "" ];
         then
-            EXAMPLE_INSTALL_DIR="test install with spaces"
+            EXAMPLE_INSTALL_DIR="test inst"
         else
             EXAMPLE_INSTALL_DIR=installed
         fi
 
         export EXAMPLE_INSTALL_DIR
+
+        RTS_INSTALL_DIR=rtsinstall
+        export RTS_INSTALL_DIR
 
         mkdir $LOGDIR/examples
         mkdir $LOGDIR/examples/build
@@ -454,8 +485,8 @@ then
     fi
     ArchiveLogs
 
-    run_examples shm
     run_examples sp
+    run_examples shm
 
     if [ "$BUILD_EXAMPLES" = "yes"  ]
     then

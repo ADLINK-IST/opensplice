@@ -13,7 +13,6 @@
 #include "u_user.h"
 #include "c_base.h"
 #include "c__base.h"
-#include "c_avltree.h"
 #include "ut_collection.h"
 #include "os_abstract.h"
 #include "os_stdlib.h"
@@ -150,7 +149,7 @@ orderLeafs (
     )
 {
     monitor_trc trace = (monitor_trc) args;
-    long long n1, n2;
+    long long n1 = 0, n2 = 0;
 
     /* First determine whether to sort deltas or current state. */
     if (trace->delta)
@@ -231,26 +230,26 @@ monitor_trcNew (
       o->objectCountLimit = objectCountLimit;
       if (filterExpression)
       {
-	 o->filterExpression = os_strdup(filterExpression);
+         o->filterExpression = os_strdup(filterExpression);
       }
       else
       {
-	 o->filterExpression = NULL;
+         o->filterExpression = NULL;
       }
       if (o->filterExpression)
       {
-	 if (regcomp (&o->expression, o->filterExpression, REG_EXTENDED) != 0)
-	 {
+         if (regcomp (&o->expression, o->filterExpression, REG_EXTENDED) != 0)
+         {
             regerror (errno,
-		      &o->expression,
-		      expressionError,
-		      sizeof(expressionError));
+                      &o->expression,
+                      expressionError,
+                      sizeof(expressionError));
             printf ("Filter expression error: %s\r\n", expressionError);
             fflush(stdout);
             regfree (&o->expression);
             free (o->filterExpression);
             o->filterExpression = NULL;
-	 }
+         }
       }
       o->extTree = ut_tableNew (compareLeafs, NULL);
       o->delta = delta;

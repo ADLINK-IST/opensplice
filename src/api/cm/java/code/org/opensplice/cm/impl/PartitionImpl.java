@@ -15,6 +15,7 @@ import org.opensplice.cm.CMException;
 import org.opensplice.cm.CMFactory;
 import org.opensplice.cm.Partition;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.qos.QoS;
 
 /**
@@ -39,8 +40,8 @@ public class PartitionImpl extends EntityImpl implements Partition{
      * @param _name The name of the kernel entity that is associated with this
      *              entity.
      */
-    public PartitionImpl(long _index, long _serial, String _pointer, String _name){
-        super(_index, _serial, _pointer, _name);
+    public PartitionImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name){
+        super(communicator, _index, _serial, _pointer, _name);
     }
     
     /**
@@ -52,11 +53,11 @@ public class PartitionImpl extends EntityImpl implements Partition{
      * @throws CMException Thrown when Partition could not be created.
      */
     public PartitionImpl(ParticipantImpl participant, String name) throws CMException{
-        super(0, 0, "", "");
+        super(participant.getCommunicator(), 0, 0, "", "");
         owner = true;
         PartitionImpl d;
         try {
-            d = (PartitionImpl)CMFactory.getCommunicator().partitionNew(participant, name);
+            d = (PartitionImpl)getCommunicator().partitionNew(participant, name);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }

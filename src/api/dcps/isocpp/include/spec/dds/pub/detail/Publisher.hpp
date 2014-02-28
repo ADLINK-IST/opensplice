@@ -22,8 +22,15 @@
 #include <dds/pub/TPublisher.hpp>
 #include <foo/bar/pub/PublisherDelegate.hpp>
 
-namespace dds { namespace pub { namespace detail {
-    typedef dds::pub::TPublisher<foo::bar::pub::PublisherDelegate> Publisher;
-} } }
+namespace dds
+{
+namespace pub
+{
+namespace detail
+{
+typedef dds::pub::TPublisher<foo::bar::pub::PublisherDelegate> Publisher;
+}
+}
+}
 
 #endif /*  OMG_DDS_PUB_DETAIL_PUBLISHER_HPP_ */

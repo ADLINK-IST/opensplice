@@ -60,24 +60,24 @@ delayedEscape(
     return NULL;
 }
 
-#ifdef _VXWORKS
-int UserLoad_main (int argc, char ** argv);
-int UserLoad (char * args)
+#ifdef _WRS_KERNEL
+int userload_main (int argc, char ** argv);
+int userload (char * args)
 {
    int argc=1;
    char *argv[256];
    char *str1;
-   argv[0] = strdup ("UserLoad");
-   str1 = strtok(args, " ");
+   argv[0] = (char*) strdup ("UserLoad");
+   str1 = (char*) strtok(args, " ");
    while (str1)
    {
-      argv[argc] = strdup (str1);
+      argv[argc] = (char*) strdup (str1);
       argc++;
       str1 = strtok(NULL, " ");
    }
-   return UserLoad_main (argc, argv);
+   return userload_main (argc, argv);
 }
-int UserLoad_main (int argc, char ** argv)
+int userload_main (int argc, char ** argv)
 #else
 int OSPL_MAIN (int argc, char ** argv)
 #endif

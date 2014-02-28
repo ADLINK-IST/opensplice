@@ -19,29 +19,34 @@
 #define ORG_OPENSPLICE_TOPIC_TOPICTRAITS_HPP_
 
 
-namespace org { namespace opensplice { namespace topic {
+namespace org
+{
+namespace opensplice
+{
+namespace topic
+{
 
-      template <typename Topic>
-      struct topic_data_writer { };
+template <typename Topic>
+struct topic_data_writer { };
 
-      template <typename Topic>
-      struct topic_data_reader { };
+template <typename Topic>
+struct topic_data_reader { };
 
-      template <typename Topic>
-      struct topic_data_seq { };
+template <typename Topic>
+struct topic_data_seq { };
 
-    }
-  }
+}
+}
 }
 
 /**
- * Maps Topic type struct specializations through to
+ *  @internal Maps Topic type struct specializations through to
  * SACPP generated type support, typed sequence, and
  * typed reader and write classes.
  * @param TOPIC The CCPP topic type.
  */
 #define REGISTER_TOPIC_TRAITS(TOPIC)                    \
-namespace dds { namespace topic {                    \
+    namespace dds { namespace topic {                    \
     template<> struct topic_type_support<TOPIC> {            \
         typedef TOPIC##TypeSupport type;                \
     };                                \
@@ -52,13 +57,13 @@ namespace dds { namespace topic {                    \
             return ts.get_type_name();                    \
         }                                \
     };                                \
-} }                                    \
-                                    \
-namespace org { namespace opensplice { namespace topic {        \
+    } }                                    \
+    \
+    namespace org { namespace opensplice { namespace topic {        \
     template<> struct topic_data_writer<TOPIC> {                \
         typedef TOPIC##DataWriter type; \
     };                                    \
-                                    \
+    \
     template<> struct topic_data_reader<TOPIC> {                \
         typedef TOPIC##DataReader type;                    \
     };                                    \
@@ -66,7 +71,7 @@ namespace org { namespace opensplice { namespace topic {        \
         typedef TOPIC##Seq type;                        \
         typedef TOPIC##Seq_uniq_ utype;                    \
     }; \
-} } }
+    } } }
 
 
 #endif /* ORG_OPENSPLICE_TOPIC_TOPICTRAITS_HPP_ */

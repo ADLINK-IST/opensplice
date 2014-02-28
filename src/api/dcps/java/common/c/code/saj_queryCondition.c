@@ -25,7 +25,7 @@ SAJ_FUNCTION(jniGetQueryExpression)(
     jobject jqueryCondition)
 {
     gapi_queryCondition queryCondition;
-    jstring jexpression;
+    jstring jexpression = NULL;
     gapi_string expression;
     
     queryCondition = (gapi_queryCondition) saj_read_gapi_address(env, 

@@ -339,6 +339,8 @@ private:
 
    void GenerateOpenClassDefinition(be_ClientHeader& source);
    void GenerateMembers(be_ClientHeader& source);
+   void GenerateEquality(be_ClientHeader& source);
+   void GenerateTestMethod(be_ClientHeader& source);
    void GenerateCopyMF(be_ClientHeader& source);
    void GenerateDefaultConstructor(be_ClientHeader& source);
    void GenerateCopyConstructor(be_ClientHeader& source);

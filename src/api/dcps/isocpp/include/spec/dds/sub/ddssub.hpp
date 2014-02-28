@@ -112,6 +112,7 @@
  *   <dds/sub/status/ReaderState.hpp>
  */
 #include <dds/sub/find.hpp>
+#include <dds/sub/discovery.hpp>
 
 //
 // Pretty Print Utilities

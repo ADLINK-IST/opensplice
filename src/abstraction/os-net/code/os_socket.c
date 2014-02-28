@@ -537,7 +537,7 @@ os_sockaddrAddressPortToString(
   char* buffer,
   size_t buflen)
 {
-  int pos;
+  size_t pos;
   switch (sa->sa_family)
   {
     case AF_INET:

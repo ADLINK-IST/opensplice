@@ -12,7 +12,7 @@
 #ifndef CCPP_H
 #define CCPP_H
 
-#include "dds_dcpsC.h"
+#include <dds_dcpsC.h>
 #include "ccpp_dcps_if.h"
 #include "orb_abstraction.h"
 #include "dds_type_aliases.h"

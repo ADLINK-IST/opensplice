@@ -87,7 +87,8 @@ v_dataReaderEntry
 v_dataReaderEntryNew(
     v_dataReader dataReader,
     v_topic topic,
-    v_filter filter)
+    c_array filterInstance,
+    c_array filterData)
 {
     v_kernel kernel;
     v_dataReaderEntry e;
@@ -100,7 +101,8 @@ v_dataReaderEntryNew(
     v_entryInit(v_entry(e), v_reader(dataReader));
     e->topic = c_keep(topic);
 
-    e->filter = c_keep(filter);
+    e->filterInstance = c_keep(filterInstance);
+    e->filterData = c_keep(filterData);
 
     /* Aministration for lifespan of messages */
     e->lifespanAdmin = v_lifespanAdminNew(kernel);
@@ -563,9 +565,7 @@ doWrite(
             result = V_WRITE_SUCCESS;
         break;
         case V_DATAREADER_SAMPLE_LOST:
-            /* Indicate a sample has been lost. */
-            /* TODO: onSampleLost(v_dataReader(reader), v_publicGid(NULL));*/
-            /* Return success to prevent a retransmit of the sample. */
+            v_dataReaderUpdateSampleLost(reader, 1);
             result = V_WRITE_SUCCESS;
         break;
         case V_DATAREADER_OUT_OF_MEMORY:
@@ -602,7 +602,6 @@ doWrite(
     return result;
 }
 
-
 v_writeResult
 v_dataReaderEntryWrite(
     v_dataReaderEntry _this,
@@ -615,8 +614,10 @@ v_dataReaderEntryWrite(
     c_long count;
     c_long maxSamples;
     v_state state;
-    v_dataReaderInstance instance, found;
+    v_dataReaderInstance instance=NULL, found;
     c_table instanceSet;
+    c_bool filter = FALSE;
+    int index = 0;
 
     assert(C_TYPECHECK(_this,v_dataReaderEntry));
     assert(message != NULL);
@@ -629,6 +630,14 @@ v_dataReaderEntryWrite(
 
     /* Purge samples */
     v_dataReaderEntryUpdatePurgeLists(_this);
+
+    /* If the specified readerInstance has just been purged, then drop our
+     * reference to it, and let the Reader implicitly create a new one for us.
+     */
+    if (instancePtr && *instancePtr && v_dataReaderInstanceStateTest(*instancePtr, L_REMOVED)) {
+        c_free(*instancePtr);
+        *instancePtr = NULL;
+    }
 
     qos = reader->qos;
     state = v_nodeState(message);
@@ -666,20 +675,46 @@ v_dataReaderEntryWrite(
         return V_WRITE_SUCCESS;
     }
 
-    /* Execute content based filter (if set).
-     * For now do not filter on register/unregister/dispose messages. The filter must
-     * be split into a key part and a non-key part. For register/unregister
-     * messages only the key part of the filter needs to be evaluated.
-     * Functionally it is not a problem by always allowing instances
-     * regardless of the filter, it will only consume resources (memory),
-     * which was not needed. (see dds#3067)
-     */
-    if (_this->filter != NULL) {
-        if (v_stateTest(state, L_WRITE) && !v_filterEval(_this->filter,message)) {
-            transactionListUpdate(_this,message);
+    if ((instancePtr == NULL) || (*instancePtr == NULL))
+    {
+        instance = v_dataReaderInstanceNew(v_dataReader(reader),message);
+        if (!instance)
+        {
+            OS_REPORT(OS_ERROR,
+                      "v_dataReaderEntry::v_dataReaderEntryWrite",0,
+                      "Failed to allocate v_dataReaderInstance object.");
+            /* failed to create a new instance. */
             v_observerUnlock(v_observer(reader));
-            return V_WRITE_SUCCESS;
+            return V_WRITE_OUT_OF_RESOURCES;
         }
+    }
+
+    for (;index < c_arraySize(_this->filterInstance); index++)
+    {
+        c_bool DataMatch = TRUE;
+        c_bool KeyMatch = TRUE;
+
+        if ((v_stateTest(state, L_WRITE))&&(_this->filterData)&&(_this->filterData[index]))
+        {
+            DataMatch = v_filterEval(_this->filterData[index],message);
+        }
+
+        if ((DataMatch == TRUE) &&(_this->filterInstance[index]))
+        {
+            KeyMatch = v_filterEval(_this->filterInstance[index],instance==NULL?v_dataReaderInstance(*instancePtr):instance);
+        }
+        filter = (DataMatch && KeyMatch);
+        if (filter == TRUE)
+        {
+            break;
+        }
+    }
+    if (filter != TRUE)
+    {
+        transactionListUpdate(_this,message);
+        v_observerUnlock(v_observer(reader));
+        c_free(instance);
+        return V_WRITE_SUCCESS;
     }
 
     /* Check the max samples limit. If no resources then report message rejected. */
@@ -696,83 +731,78 @@ v_dataReaderEntryWrite(
                          S_REJECTED_BY_SAMPLES_LIMIT,
                          v_publicGid(NULL));
         v_observerUnlock(v_observer(reader));
+        c_free(instance);
         return V_WRITE_REJECTED;
     }
 
 
     result = V_WRITE_SUCCESS;
     if ((instancePtr == NULL) || (*instancePtr == NULL)) {
-        instance = v_dataReaderInstanceNew(v_dataReader(reader),message);
-        if (instance) {
-            assert(c_refCount(instance) == 1);
-            if (qos->userKey.enable) {
-                instanceSet = _this->index->notEmptyList;
-            } else {
-                instanceSet = _this->index->objects;
-            }
-            assert(c_refCount(instance) == 1);
-            found = c_tableInsert(instanceSet, instance);
-            if (found == instance) {
-                /* Instance did not yet exist */
-                assert(c_refCount(found) == 2);
-                if (v_dataReader(reader)->maxInstances == TRUE) {
-                    /* The maximum number of instances was already reached.
-                     * Therefore the instance was inserted unnecessarily and must
-                     * be removed. */
-                    found = c_remove(instanceSet, instance,NULL,NULL);
-                    assert(found == instance);
-                    c_free(found);
-                    assert(c_refCount(found) == 1);
-                    found = NULL;
-                    onSampleRejected(v_dataReader(reader),
-                                     S_REJECTED_BY_SAMPLES_LIMIT,
-                                     v_publicGid(NULL));
-                    result = V_WRITE_REJECTED;
-
-                    assert(c_refCount(instance) == 1);
-                } else if (v_messageStateTest(message,L_UNREGISTER)) {
-                    /* There is no use case to support implicit unregister.
-                     * Therefore the instance was inserted unnecessarily and can
-                     * be removed. */
-                    found = c_remove(instanceSet, instance,NULL,NULL);
-                    assert(found == instance);
-                    c_free(found);
-                    assert(c_refCount(found) == 1);
-                    found = NULL;
-                    result = V_WRITE_SUCCESS;
-                    assert(c_refCount(instance) == 1);
-                } else {
-                    v_publicInit(v_public(found));
-                    c_keep(found);
-                    assert(c_refCount(found) == 4);
-                    assert(c_refCount(instance) == 4);
-                    /* The reader statistics are updated for the newly inserted
-                     * instance (with its initial values). The previous state
-                     * was nothing, so 0 is passed as the oldState. Officially,
-                     * state 0 is ALIVE, but instances are created with flag
-                     * L_NOWRITERS set, this change triggers an unwanted de-
-                     * crement of the Alive-counter. This special case has to be
-                     * handled in the statistics updating. */
-                    UPDATE_READER_STATISTICS(_this->index,found,0);
-                }
-            } else {
-                /* c_tableInsert returned an existing instance.
-                 * The instance is not yet kept by c_tableInsert so keep it
-                 * to fullfil the following invariant.
-                 */
-                c_keep(found);
-            }
-            c_free(instance);
+        assert(c_refCount(instance) == 1);
+        if (qos->userKey.enable) {
+            instanceSet = _this->index->notEmptyList;
         } else {
-            /* failed to create a new instance. */
-            found = NULL;
-            result = V_WRITE_REJECTED;
+            instanceSet = _this->index->objects;
         }
+        assert(c_refCount(instance) == 1);
+        found = c_tableInsert(instanceSet, instance);
+        if (found == instance) {
+            /* Instance did not yet exist */
+            assert(c_refCount(found) == 2);
+            if (v_dataReader(reader)->maxInstances == TRUE) {
+                /* The maximum number of instances was already reached.
+                 * Therefore the instance was inserted unnecessarily and must
+                 * be removed. */
+                found = c_remove(instanceSet, instance,NULL,NULL);
+                assert(found == instance);
+                c_free(found);
+                assert(c_refCount(found) == 1);
+                found = NULL;
+                onSampleRejected(v_dataReader(reader),
+                                 S_REJECTED_BY_SAMPLES_LIMIT,
+                                 v_publicGid(NULL));
+                result = V_WRITE_REJECTED;
+
+                assert(c_refCount(instance) == 1);
+            } else if (v_messageStateTest(message,L_UNREGISTER)) {
+                /* There is no use case to support implicit unregister.
+                 * Therefore the instance was inserted unnecessarily and can
+                 * be removed. */
+                found = c_remove(instanceSet, instance,NULL,NULL);
+                assert(found == instance);
+                c_free(found);
+                assert(c_refCount(found) == 1);
+                found = NULL;
+                result = V_WRITE_SUCCESS;
+                assert(c_refCount(instance) == 1);
+            } else {
+                v_publicInit(v_public(found));
+                c_keep(found);
+                assert(c_refCount(found) == 4);
+                assert(c_refCount(instance) == 4);
+                /* The reader statistics are updated for the newly inserted
+                 * instance (with its initial values). The previous state
+                 * was nothing, so 0 is passed as the oldState. Officially,
+                 * state 0 is ALIVE, but instances are created with flag
+                 * L_NOWRITERS set, this change triggers an unwanted de-
+                 * crement of the Alive-counter. This special case has to be
+                 * handled in the statistics updating. */
+                UPDATE_READER_STATISTICS(_this->index,found,0);
+            }
+        } else {
+            /* c_tableInsert returned an existing instance.
+             * The instance is not yet kept by c_tableInsert so keep it
+             * to fullfil the following invariant.
+             */
+            c_keep(found);
+        }
+        c_free(instance);
     } else {
         /* Use the provided instance.
          * The instance need to be kept because it will be freed at the end of
          * this method.
          */
+        c_free(instance);
 #ifndef NDEBUG
         if (qos->userKey.enable) {
             instanceSet = _this->index->notEmptyList;
@@ -852,6 +882,66 @@ v_dataReaderEntryDisposeAll (
     v_observerUnlock(v_observer(reader));
 
     return disposeArg.result;
+}
+
+static c_bool
+markInstance (
+    c_object o,
+    c_voidp arg)
+{
+    v_dataReaderInstance instance = v_dataReaderInstance(o);
+    c_ulong flags = *((c_ulong *)arg);
+
+    v_dataReaderInstanceStateSet(instance, flags);
+
+    return TRUE;
+}
+
+void
+v_dataReaderEntryMarkInstanceStates (
+    v_dataReaderEntry _this,
+    c_ulong flags)
+{
+    v_reader reader;
+
+    assert(C_TYPECHECK(_this,v_dataReaderEntry));
+
+    reader = v_entryReader(_this);
+    v_observerLock(v_observer(reader));
+
+    c_tableWalk(_this->index->objects, markInstance, &flags);
+
+    v_observerUnlock(v_observer(reader));
+}
+
+static c_bool
+unmarkInstance (
+    c_object o,
+    c_voidp arg)
+{
+    v_dataReaderInstance instance = v_dataReaderInstance(o);
+    c_ulong flags = *((c_ulong *)arg);
+
+    v_dataReaderInstanceStateClear(instance, flags);
+
+    return TRUE;
+}
+
+void
+v_dataReaderEntryUnmarkInstanceStates (
+    v_dataReaderEntry _this,
+    c_ulong flags)
+{
+    v_reader reader;
+
+    assert(C_TYPECHECK(_this,v_dataReaderEntry));
+
+    reader = v_entryReader(_this);
+    v_observerLock(v_observer(reader));
+
+    c_tableWalk(_this->index->objects, unmarkInstance, &flags);
+
+    v_observerUnlock(v_observer(reader));
 }
 
 v_dataReaderResult

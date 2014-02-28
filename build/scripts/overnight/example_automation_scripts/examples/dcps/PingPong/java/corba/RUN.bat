@@ -7,9 +7,6 @@ call %FUNCTIONS% :check_osplhome
 echo "====Calling stopOSPL ===="
 call %FUNCTIONS% :stopOSPL
 
-echo "====Calling deleteDBFFiles ===="
-call %FUNCTIONS% :deleteDBFFiles
-
 set BLOKSIZE=100
 set BLOKCOUNT=100
 

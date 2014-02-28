@@ -704,6 +704,63 @@ cmx_entityStatistics(
     return arg.result;
 }
 
+c_char*
+cmx_entitiesStatistics(
+    const c_char* entities)
+{
+    c_iter cmEntityList;
+    c_iter cmStatisticsList = c_iterNew(NULL);
+    u_entity cmEntity;
+    struct cmx_statisticsArg temp, arg;
+    int statisticsSize = 0;
+    c_char* openTag = "<statistics>";
+    c_char* closeTag = "</statistics>";
+    c_char* emptyStat = "<object></object>";
+    c_char* cmStatistics = NULL;
+    u_result result;
+
+    cmEntityList = cmx_entityUserEntities(entities);
+    arg.result = NULL;
+    temp.result = NULL;
+
+    if(cmEntityList != NULL && c_iterLength(cmEntityList) > 0){
+        cmEntity = (u_entity) c_iterTakeFirst(cmEntityList);
+		while(cmEntity){
+		    result = u_entityAction(cmEntity, cmx_entityStatisticsAction, &temp);
+			if(temp.result != NULL && result == U_RESULT_OK){
+				statisticsSize += strlen(temp.result);
+				c_iterAppend(cmStatisticsList, temp.result);
+				temp.result = NULL;
+			}else{
+				statisticsSize += strlen(emptyStat);
+				c_iterAppend(cmStatisticsList, os_strdup(emptyStat));
+			}
+			cmEntity = (u_entity) c_iterTakeFirst(cmEntityList);
+		}
+	}
+    c_iterFree(cmEntityList);
+	arg.result = os_malloc((statisticsSize+strlen(openTag)+strlen(closeTag)+1)*sizeof(c_char));
+	if (arg.result) {
+        *arg.result = '\0';
+        os_strcat(arg.result, openTag);
+        if(c_iterLength(cmStatisticsList) > 0){
+            cmStatistics = (c_char*)c_iterTakeFirst(cmStatisticsList);
+            while(cmStatistics){
+                os_strcat(arg.result, cmStatistics);
+                os_free(cmStatistics);
+                cmStatistics = (c_char*)c_iterTakeFirst(cmStatisticsList);
+            }
+        }
+        os_strcat(arg.result, closeTag);
+	} else {
+	    while ((cmStatistics = c_iterTakeFirst(cmStatisticsList)) != NULL) {
+	        os_free(cmStatistics);
+	    }
+	}
+	c_iterFree(cmStatisticsList);
+    return arg.result;
+}
+
 void
 cmx_entityStatisticsAction(
     v_entity entity,
@@ -870,6 +927,58 @@ cmx_entityUserEntity(
         }
     }
     return e;
+}
+
+c_iter
+cmx_entityUserEntities(
+    const c_char* xmlEntities)
+{
+    int length = 0;
+    int i = 0;
+    int nrOfEntities = 0;
+    c_char * substring;
+    c_char * xmlEntity = NULL;
+    u_entity cmEntity;
+    c_iter cmEntities = NULL;
+
+    c_iter xmlEntityList = c_iterNew(NULL);
+    if (!xmlEntityList) goto err_iterNewEntityList;
+
+    cmEntities = c_iterNew(NULL);
+    if (!cmEntities) goto err_iterNewEntities;
+
+    xmlEntities+=12; 											/*<entityList>*/
+    substring = strstr(xmlEntities, "</entity>");
+    while(substring){
+        length = substring - xmlEntities + 9;					/*</entity>*/
+        xmlEntity = os_malloc((length+1) * sizeof(c_char));
+        if (xmlEntity) {
+            os_strncpy(xmlEntity, xmlEntities, length);
+            xmlEntity[length] = '\0';
+            c_iterAppend(xmlEntityList, xmlEntity);
+            xmlEntities = xmlEntities + length;
+            substring = strstr(xmlEntities, "</entity>");
+        } else {
+            while ((xmlEntity = c_iterTakeFirst(xmlEntityList)) != NULL ) {
+                os_free(xmlEntity);
+            }
+            c_iterFree(cmEntities);
+            cmEntities = NULL;
+            goto err_iterNewEntities;
+        }
+    }
+    nrOfEntities = c_iterLength(xmlEntityList);
+    for(i = 0 ; i<nrOfEntities; i++){
+        xmlEntity = (c_char*)c_iterTakeFirst(xmlEntityList);
+        cmEntity = cmx_entityUserEntity(xmlEntity);
+        c_iterAppend(cmEntities, cmEntity);
+        os_free(xmlEntity);
+    }
+
+err_iterNewEntities:
+    c_iterFree(xmlEntityList);
+err_iterNewEntityList:
+    return cmEntities;
 }
 
 void

@@ -36,18 +36,18 @@ TQuery<DELEGATE>::TQuery(const dds::sub::DataReader<T>& dr, const std::string& q
 template<typename DELEGATE>
 template<typename T, typename FWIterator>
 TQuery<DELEGATE>::TQuery(const dds::sub::DataReader<T>& dr, const std::string& query_expression,
-             const FWIterator& params_begin, const FWIterator& params_end) :
+                         const FWIterator& params_begin, const FWIterator& params_end) :
     dds::core::Reference<DELEGATE>(new DELEGATE(dr, query_expression, params_begin,
-                               params_end))
+                                   params_end))
 {
 }
 
 template<typename DELEGATE>
 template<typename T>
 TQuery<DELEGATE>::TQuery(const dds::sub::DataReader<T>& dr, const std::string& query_expression,
-             const std::vector<std::string>& params) :
+                         const std::vector<std::string>& params) :
     dds::core::Reference<DELEGATE>(new DELEGATE(dr, query_expression, params.begin(),
-                               params.end()))
+                                   params.end()))
 {
 }
 

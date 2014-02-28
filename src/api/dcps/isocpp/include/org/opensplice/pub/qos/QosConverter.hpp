@@ -23,24 +23,28 @@
 #include <dds/pub/qos/PublisherQos.hpp>
 #include <org/opensplice/core/config.hpp>
 
-namespace org {
-   namespace opensplice {
-      namespace pub {
-         namespace qos {
-            dds::pub::qos::DataWriterQos
-            OSPL_ISOCPP_IMPL_API convertQos(const DDS::DataWriterQos& from);
+namespace org
+{
+namespace opensplice
+{
+namespace pub
+{
+namespace qos
+{
+dds::pub::qos::DataWriterQos
+OSPL_ISOCPP_IMPL_API convertQos(const DDS::DataWriterQos& from);
 
-            DDS::DataWriterQos
-            OSPL_ISOCPP_IMPL_API convertQos(const dds::pub::qos::DataWriterQos& from);
+DDS::DataWriterQos
+OSPL_ISOCPP_IMPL_API convertQos(const dds::pub::qos::DataWriterQos& from);
 
-            dds::pub::qos::PublisherQos
-            OSPL_ISOCPP_IMPL_API convertQos(const DDS::PublisherQos& from);
+dds::pub::qos::PublisherQos
+OSPL_ISOCPP_IMPL_API convertQos(const DDS::PublisherQos& from);
 
-            DDS::PublisherQos
-            OSPL_ISOCPP_IMPL_API convertQos(const dds::pub::qos::PublisherQos& from);
-         }
-      }
-   }
+DDS::PublisherQos
+OSPL_ISOCPP_IMPL_API convertQos(const dds::pub::qos::PublisherQos& from);
+}
+}
+}
 }
 
 #endif /* ORG_OPENSPLICE_PUB_QOS_QOSCONVERTER_HPP_ */

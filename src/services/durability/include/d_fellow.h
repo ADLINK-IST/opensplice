@@ -143,6 +143,11 @@ c_bool                  d_fellowIsGroupInNameSpaces     (d_fellow fellow,
                                                          const c_char* topic,
                                                          d_durabilityKind kind);
 
+c_bool                  d_fellowHasGroup                (d_fellow fellow,
+                                                         const c_char* partition,
+                                                         const c_char* topic,
+                                                         d_durabilityKind kind);
+
 void                    d_fellowClearMaster             (d_fellow fellow,
                                                          d_networkAddress master);
 

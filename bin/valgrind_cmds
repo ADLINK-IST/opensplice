@@ -39,7 +39,6 @@ VG_CHATTER_T="valgrind --log-file=$VG_LOG_DIR/vg_chatter_t.txt $VALGRIND_OPTIONS
 VG_OSPL_START="valgrind --log-file=$VG_LOG_DIR/vg_ospl_start.txt $VALGRIND_OPTIONS"
 VG_OSPL_STOP="valgrind --log-file=$VG_LOG_DIR/vg_ospl_stop.txt $VALGRIND_OPTIONS"
 
-# --trace-children=yes only required for DLRL tests which are run as "sh" commands
 VG_WHITELIST_EDITOR="valgrind --log-file=$VG_LOG_DIR/vg_whitelisteditor.txt --trace-children=yes $VALGRIND_OPTIONS"
 VG_WHITELIST_VIEWER="valgrind --log-file=$VG_LOG_DIR/vg_whitelistviewer.txt --trace-children=yes $VALGRIND_OPTIONS"
 VG_WHITELIST_MESSAGEBOARD="valgrind --log-file=$VG_LOG_DIR/vg_whitelistmessageboard.txt --trace-children=yes $VALGRIND_OPTIONS"

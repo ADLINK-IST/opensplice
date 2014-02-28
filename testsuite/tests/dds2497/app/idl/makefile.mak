@@ -23,7 +23,7 @@ CINCS += -I$(OSPL_HOME)/src/user/include
 CINCS += -I$(OSPL_OUTER_HOME)/testsuite/rbt/sac/common/include
 
 LDFLAGS += $(SHLDFLAGS)
-LDLIBS += $(SHLDLIBS) -l$(DDS_DCPSSAC) -l$(DDS_DATABASE)
+LDLIBS += $(SHLDLIBS) -l$(DDS_DCPSSAC) 
 
 ifeq ($(SPECIAL),purify)
 CFLAGS += -D_PURIFY

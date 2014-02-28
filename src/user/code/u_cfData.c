@@ -285,8 +285,9 @@ u_cfDataSizeValueFromString(
                                                 "Configuration parameter value (%s) exceeds maximum size, value changed to " PA_SIZEFMT,
                                                 temp,
                                                 C_MAX_SIZE);
+                                } else {
+                                    *size <<= 10; /* multiply by 1024 */
                                 }
-                                *size <<= 10; /* multiply by 1024 */
                                 break;
                             case 'M':
                             case 'm':
@@ -299,8 +300,9 @@ u_cfDataSizeValueFromString(
                                                 "Configuration parameter value (%s) exceeds maximum size, value changed to " PA_SIZEFMT,
                                                 temp,
                                                 C_MAX_SIZE);
+                                } else {
+                                    *size <<= 20; /* multiply by 1048576 */
                                 }
-                                *size <<= 20; /* multiply by 1048576 */
                                 break;
                             case 'G':
                             case 'g':
@@ -313,8 +315,7 @@ u_cfDataSizeValueFromString(
                                                 "Configuration parameter value (%s) exceeds maximum size, value changed to " PA_SIZEFMT,
                                                 temp,
                                                 C_MAX_SIZE);
-                                }
-                                else{
+                                } else {
                                     *size <<= 30; /* multiply by 1073741824 */
                                 }
                                 break;

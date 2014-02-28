@@ -16,8 +16,8 @@
 extern "C" {
   static void typeSupportFactory_delete_userdata(void *usrData, void *arg)
   {
-      CORBA::Object_ptr tsFactoryObj = static_cast<CORBA::Object_ptr>(usrData);
-      CORBA::release(tsFactoryObj);
+      DDS::Object_ptr tsFactoryObj = static_cast<DDS::Object_ptr>(usrData);
+      DDS::release(tsFactoryObj);
   }
 }
 
@@ -30,11 +30,11 @@ DDS::TypeSupport_impl::TypeSupport_impl(
     gapi_copyOut copy_out,
     gapi_readerCopy reader_copy,
     TypeSupportFactory_impl_ptr factory,
-    const CORBA::ULong type_def_length
+    const DDS::ULong type_def_length
 )
 {
-    CORBA::ULong i;
-    CORBA::ULong strlength =0;
+    DDS::ULong i;
+    os_size_t strlength = 0;
     char * metaDescriptor;
     for (i = 0; i< type_def_length; i++) {
         strlength +=strlen(type_def[i]);
@@ -68,7 +68,7 @@ DDS::TypeSupport_impl::TypeSupport_impl(
         // When successful, store handle in the user-data field of the handle..
         if (_gapi_self)
         {
-            CORBA::Object_ptr anObject = dynamic_cast<CORBA::Object_ptr>(factory);
+            DDS::Object_ptr anObject = dynamic_cast<DDS::Object_ptr>(factory);
             gapi_object_set_user_data(_gapi_self, static_cast<void *>(anObject),
                 typeSupportFactory_delete_userdata,NULL );
         }
@@ -133,12 +133,13 @@ DDS::TypeSupport_impl::register_type(
         // If successful and not yet registered before, increase the RefCounter of the factory.
         if (status == DDS::RETCODE_OK && !alreadyRegistered)
         {
-            DDS::TypeSupportFactory_ptr factory;
-            CORBA::Object_ptr anObject;
-
+            // DDS::TypeSupportFactory_ptr factory;
+            // DDS::Object_ptr anObject;
             // Obtain the TypeSupportFactory object from the user_data field.
-            anObject = static_cast<CORBA::Object_ptr>( gapi_object_get_user_data(_gapi_self) );
-            factory = dynamic_cast<DDS::TypeSupportFactory_ptr>(anObject);
+            OS_UNUSED_ARG(gapi_object_get_user_data(_gapi_self));
+            // Equivalent to (without the warning):
+            // anObject = static_cast<DDS::Object_ptr>( gapi_object_get_user_data(_gapi_self) );
+            // factory = dynamic_cast<DDS::TypeSupportFactory_ptr>(anObject);
         }
     };
 
@@ -150,7 +151,7 @@ DDS::TypeSupport_impl::get_type_name (
 ) THROW_ORB_EXCEPTIONS
 {
     char * gapi_result = gapi_typeSupport_get_type_name(_gapi_self);
-    char * result = CORBA::string_dup(gapi_result);
+    char * result = DDS::string_dup(gapi_result);
     gapi_free(gapi_result);
     return result;
 }

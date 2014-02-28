@@ -49,25 +49,42 @@
 #include <org/opensplice/core/config.hpp>
 
 
-namespace org { namespace opensplice { namespace pub {
-    class PublisherDelegate;
-} } }
+namespace org
+{
+namespace opensplice
+{
+namespace pub
+{
+class PublisherDelegate;
+}
+}
+}
 
-namespace dds { namespace pub {
-    class PublisherListener;
-} }
+namespace dds
+{
+namespace pub
+{
+class PublisherListener;
+}
+}
 
-namespace org { namespace opensplice { namespace pub {
+namespace org
+{
+namespace opensplice
+{
+namespace pub
+{
 
-class OSPL_ISOCPP_IMPL_API PublisherDelegate : public org::opensplice::core::EntityDelegate {
+class OSPL_ISOCPP_IMPL_API PublisherDelegate : public org::opensplice::core::EntityDelegate
+{
 public:
 
     PublisherDelegate(const dds::domain::DomainParticipant& dp,
-                  const dds::pub::qos::PublisherQos& qos,
-                  const dds::core::status::StatusMask& event_mask);
+                      const dds::pub::qos::PublisherQos& qos,
+                      const dds::core::status::StatusMask& event_mask);
 
     virtual ~PublisherDelegate();
-    const dds::pub::qos::PublisherQos qos() const;
+    const dds::pub::qos::PublisherQos& qos() const;
 
     void qos(const dds::pub::qos::PublisherQos& pqos);
 
@@ -86,15 +103,18 @@ public:
 
     void
     end_coherent_changes();
+
     void close();
 
-    void default_writer_qos(const dds::pub::qos::DataWriterQos& dwqos);
+    void retain();
 
-    dds::pub::qos::DataWriterQos default_writer_qos();
+    void default_datawriter_qos(const dds::pub::qos::DataWriterQos& dwqos);
 
-    void event_forwarder (dds::pub::PublisherListener* listener,
-                          const dds::core::smart_ptr_traits<DDS::PublisherListener>::ref_type& forwarder,
-                          const dds::core::status::StatusMask& event_mask);
+    dds::pub::qos::DataWriterQos default_datawriter_qos();
+
+    void event_forwarder(dds::pub::PublisherListener* listener,
+                         const dds::core::smart_ptr_traits<DDS::PublisherListener>::ref_type& forwarder,
+                         const dds::core::status::StatusMask& event_mask);
 
     dds::pub::PublisherListener* listener() const;
 
@@ -109,6 +129,8 @@ public:
     dds::core::smart_ptr_traits<DDS::Publisher>::ref_type pub_;
     dds::core::smart_ptr_traits<DDS::PublisherListener>::ref_type pub_event_forwarder_;
 };
-}}}
+}
+}
+}
 
 #endif /* OMG_IDDS_PUB_PUBLISHER_IMPL_HPP_ */

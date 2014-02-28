@@ -723,6 +723,8 @@ d_subscriberSetPersistentDataListenerEnabled(
             } else {
                 result = d_persistentDataListenerStop(subscriber->persistentDataListener);
             }
+        } else {
+            result = TRUE;
         }
     }
     return result;

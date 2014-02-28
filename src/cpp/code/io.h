@@ -48,6 +48,7 @@ extern "C"
    extern void init_incldir (const char *);
    extern void push_new_file (char *, FILE *);
    extern void Push (char);
+   extern void output_line_and_file (void);
    extern void out_at (int, const char *);
    extern void outputc (char);
    extern void outputs (char *);

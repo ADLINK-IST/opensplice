@@ -37,8 +37,8 @@
 #include "os_log_cfg.h"
 #endif
 
-#define OS_REPORTSERVICES_MAX	(10)
-#define OS_REPORTPLUGINS_MAX	(10)
+#define OS_REPORTSERVICES_MAX   (10)
+#define OS_REPORTPLUGINS_MAX    (10)
 #define OS_MAX_DESCRIPTIONSIZE  (2048)
 
 typedef struct {
@@ -129,6 +129,18 @@ const char *os_reportTypeText [] = {
     "NONE"
 };
 
+static const os_char os_env_logdir[] = "OSPL_LOGPATH";
+static const os_char os_env_infofile[] = "OSPL_INFOFILE";
+static const os_char os_env_errorfile[] = "OSPL_ERRORFILE";
+static const os_char os_env_verbosity[] = "OSPL_VERBOSITY";
+static const os_char os_env_append[] = "OSPL_LOGAPPEND";
+#ifdef VXWORKS_RTP
+static const os_char os_env_procname[] = "SPLICE_PROCNAME";
+static const os_char os_default_logdir[] = "/tgtsvr";
+#else
+static const os_char os_default_logdir[] = ".";
+#endif
+
 static void
 os_reportSetApiInfoRec (
     const char   *reportContext,
@@ -136,7 +148,7 @@ os_reportSetApiInfoRec (
     const char   *callStack,
     os_int32      reportCode,
     const char   *description,
-    va_list	  args);
+    va_list       args);
 
 #if !defined(INTEGRITY)
 /**
@@ -196,26 +208,110 @@ os_open_file (char * file_name)
     FILE *logfile=NULL;
     char host[256];
     unsigned short port;
+    os_char *dir, *file, *fmt, *str;
+    os_int ret;
+    os_size_t len;
+    os_result res = os_resultSuccess;
+#ifdef VXWORKS_RTP
+    os_char serverfile[256];
+    os_char *proc;
+    os_char *ptr;
+#endif
 
-    if (strcmp(file_name, "<stderr>") != 0)
-    {
-        if (strcmp(file_name, "<stdout>") == 0)
-        {
-            logfile = stdout;
-        }
-        else if (sscanf (file_name, "%255[^:]:%hu", host, &port) == 2)
-        {
-            logfile = open_socket (host, port);
-        }
-        else
-        {
-            logfile = fopen(file_name, "a");
-        }
-    }
-    if ( logfile == NULL )
-    {
+    /* OSPL-4002: Only OSPL_INFOFILE and OSPL_ERRORFILE can specify a host:port
+                  combination. Since OSPL_LOGPATH and OSPL_INFOFILE/
+                  OSPL_ERRORFILE are concatenated we need to strip the prefix
+                  from file_name and then check if we should enter tcp mode.
+                  This is considered a temporary workaround and will be removed
+                  once the work specified in ticket OSPL-4091 is done */
+
+    if (strcmp (file_name, "<stdout>") == 0) {
+        logfile = stdout;
+    } else if (strcmp (file_name, "<stderr>") == 0) {
         logfile = stderr;
+    } else {
+        dir = os_getenv (os_env_logdir);
+        if (dir == NULL) {
+            dir = (os_char *)os_default_logdir;
+        }
+
+        len = strlen (dir) + 2; /* '/' + '\0' */
+        str = os_malloc (len);
+        if (str != NULL) {
+            (void)snprintf (str, len, "%s/", dir);
+            dir = os_fileNormalize (str);
+            os_free (str);
+            if (dir == NULL) {
+                res = os_resultFail;
+            }
+        } else {
+            dir = NULL;
+            res = os_resultFail;
+        }
+
+        if (res != os_resultFail) {
+            file = file_name;
+            len = strlen (dir);
+            if (strncmp (dir, file_name, len) == 0) {
+                file = file_name + len;
+            }
+            os_free (dir);
+
+#ifdef VXWORKS_RTP
+            /* FIXME: It isn't pretty, but we must remain bug compatible! */
+            str = NULL;
+            ptr = os_index (file, '%');
+            if (ptr != NULL && *ptr == 's') {
+                proc = os_getenv (os_env_procname);
+                if (proc != NULL) {
+                    len = (strlen (file)-1) + strlen (proc); /* -"%s" +'\0' */
+                    str = os_malloc (len);
+                    if (str != NULL) {
+                        (void)snprintf (str, len, file, proc);
+                        file = str;
+                    } else {
+                        res = os_resultFail;
+                    }
+                }
+            }
+
+            if (res == os_resultSuccess) {
+                fmt = "%255[^:]:%hu:%255[^:]";
+                ret = sscanf (file, fmt, host, &port, serverfile);
+                if (ret != 3) {
+                    fmt = "%255[^:]:%hu";
+                    ret = sscanf (file, fmt, host, &port);
+                }
+
+                if (str != NULL) {
+                    os_free (str);
+                }
+            }
+#else
+            fmt = "%255[^:]:%hu";
+            ret = sscanf (file, fmt, host, &port);
+#endif
+            file = NULL;
+
+            if (res == os_resultSuccess) {
+                if (ret >= 2) {
+                    logfile = open_socket (host, port);
+                    if (logfile == NULL) {
+                        res = os_resultFail;
+                    }
+
+#ifdef VXWORKS_RTP
+                    if (ret == 3) {
+                        fprintf (logfile, "FILENAME:%s\n", serverfile);
+                    }
+#endif
+                } else {
+                    logfile = fopen (file_name, "a");
+                }
+            }
+        }
     }
+
     return logfile;
 }
 
@@ -257,14 +353,14 @@ os_reportInit(os_boolean forceReInit)
         }
 
         doneOnce = OS_TRUE;
-        envValue = os_getenv("OSPL_VERBOSITY");
+        envValue = os_getenv(os_env_verbosity);
         if (envValue != NULL)
         {
             if (os_reportSetVerbosity(envValue) == os_resultFail)
             {
-                OS_REPORT_2(OS_WARNING, "os_reportInit", 0,
-                        "Cannot parse report verbosity OSPL_VERBOSITY value \"%s\","
-                        " reporting verbosity remains %s",envValue, os_reportTypeText[os_reportVerbosity]);
+                OS_REPORT_3(OS_WARNING, "os_reportInit", 0,
+                        "Cannot parse report verbosity %s value \"%s\","
+                        " reporting verbosity remains %s", os_env_verbosity, envValue, os_reportTypeText[os_reportVerbosity]);
             }
         }
 
@@ -274,15 +370,15 @@ os_reportInit(os_boolean forceReInit)
             doAppend = OS_TRUE;
         }
 
-        envValue = os_getenv("OSPL_LOGAPPEND");
+        envValue = os_getenv(os_env_append);
         if (envValue != NULL)
         {
             os_boolean shouldAppend;
             if (os_configIsTrue(envValue, &shouldAppend) == os_resultFail)
             {
-                OS_REPORT_1(OS_WARNING, "os_reportInit", 0,
-                        "Cannot parse report OSPL_LOGAPPEND value \"%s\","
-                        " reporting append mode unchanged", envValue);
+                OS_REPORT_2(OS_WARNING, "os_reportInit", 0,
+                        "Cannot parse report %s value \"%s\","
+                        " reporting append mode unchanged", os_env_append, envValue);
             }
             else
             {
@@ -342,7 +438,7 @@ os_createLogDir (const char *name)
                     os_mkdir(dirName, S_IRWXU | S_IRWXG | S_IRWXO);
                     status = os_stat(dirName, &statBuf);
                 }
-                if (!OS_ISDIR (statBuf.stat_mode))
+                if (status != os_resultSuccess || !OS_ISDIR (statBuf.stat_mode))
                 {
 #ifdef WIN32
                     if((strlen(dirName) == 2) && (dirName[1] == ':'))
@@ -372,7 +468,7 @@ os_createLogDir (const char *name)
                     status = os_stat(dirName, &statBuf);
                 }
 
-                if (!OS_ISDIR (statBuf.stat_mode))
+                if (status != os_resultSuccess || !OS_ISDIR (statBuf.stat_mode))
                 {
 #ifdef WIN32
                     if((strlen(dirName) == 2) && (dirName[1] == ':'))
@@ -455,18 +551,15 @@ os_report_file_path(char * default_file, char * override_variable)
     char *file_dir;
     char file_path[2048];
     char host[256];
+    char server_file[256];
     unsigned short port;
     int len;
     char *file_name = NULL;
 
-    file_dir = os_getenv("OSPL_LOGPATH");
+    file_dir = os_getenv(os_env_logdir);
     if (! os_createLogDir(file_dir))
     {
-#if defined VXWORKS_RTP || defined _VXWORKS
-        file_dir = "/tgtsvr";
-#else
-        file_dir = ".";
-#endif
+        file_dir = (os_char *)os_default_logdir;
     }
     if (override_variable != NULL)
     {
@@ -479,23 +572,30 @@ os_report_file_path(char * default_file, char * override_variable)
 	    if ( file_name != NULL
 		 && ((ptok = os_index( file_name, '%' ) ) != NULL)
 		 && ptok[1] == 's'
-		 && ( splice_procname = getenv( "SPLICE_PROCNAME" ) ) != NULL )
+		 && ( splice_procname = os_getenv( os_env_procname ) ) != NULL )
 	    {
 		char * new_name = os_malloc( strlen( file_name )
 					  + strlen( splice_procname )
 					  -1 );
 		sprintf( new_name, file_name, splice_procname );
-		file_name = new_name;
-		len = snprintf(file_path, sizeof(file_path), "%s/%s", file_dir, file_name);
-		/* Note bug in glibc < 2.0.6 returns -1 for output truncated */
-		if ( len < (int)sizeof(file_path) && len > -1 )
+		if (sscanf (new_name, "%255[^:]:%hu", host, &port) != 2
+		    && sscanf (new_name, "%255[^:]:%hu:%255[^:]", host, &port, server_file) != 3)
 		{
-		    os_free( file_name );
-		    return os_fileNormalize(file_path);
+		   len = snprintf(file_path, sizeof(file_path), "%s/%s", file_dir, new_name);
+		   /* Note bug in glibc < 2.0.6 returns -1 for output truncated */
+		   if ( len < (int)sizeof(file_path) && len > -1 )
+		   {
+		     os_free( new_name );
+		     return os_fileNormalize(file_path);
+		   }
+		   else
+		   {
+		     return( new_name );
+		   }
 		}
 		else
 		{
-		    return( file_name );
+		   return( new_name );
 		}
 	    }
 	}
@@ -507,13 +607,14 @@ os_report_file_path(char * default_file, char * override_variable)
     }
     if (strcmp(file_name, "<stderr>") != 0 && strcmp(file_name, "<stdout>") != 0)
     {
-        if (sscanf (file_name, "%255[^:]:%hu", host, &port) != 2)
+        if (sscanf (file_name, "%255[^:]:%hu", host, &port) != 2
+	    && sscanf (file_name, "%255[^:]:%hu:%255[^:]", host, &port, server_file) != 3)
         {
             len = snprintf(file_path, sizeof(file_path), "%s/%s", file_dir, file_name);
             /* Note bug in glibc < 2.0.6 returns -1 for output truncated */
             if ( len < (int)sizeof(file_path) && len > -1 )
             {
-                return os_fileNormalize(file_path);
+               return os_fileNormalize(file_path);
             }
         }
     }
@@ -538,10 +639,10 @@ os_reportGetInfoFileName()
 
     os_reportInit(OS_FALSE);
 
-    file_name = os_report_file_path ("ospl-info.log",
+    file_name = os_report_file_path ("ospl-info.log", (os_char *)os_env_infofile);
     /* @todo dds2881 - Uncomment below & remove above to enable application default error logging to stderr */
-    /* file_name = os_report_file_path (os_procIsOpenSpliceService() ? "ospl-info.log" : "<stdout>", */
-                                     "OSPL_INFOFILE");
+    /* file_name = os_report_file_path (os_procIsOpenSpliceService() ? "ospl-info.log" : "<stdout>", os_env_infofile);*/
+
     os_procFigureIdentity(procIdentity, sizeof (procIdentity)-1);
     procIdentity[sizeof (procIdentity)-1] = '\0';
     if (!doneOnce)
@@ -570,10 +671,9 @@ os_reportGetErrorFileName()
     char* file_name;
     static os_boolean doneOnce = OS_FALSE;
 
-    file_name = os_report_file_path ("ospl-error.log",
+    file_name = os_report_file_path ("ospl-error.log", (os_char *)os_env_errorfile);
     /* @todo dds2881 - Uncomment below & remove above to enable application default error logging to stderr */
-    /* file_name = os_report_file_path (os_procIsOpenSpliceService() ? "ospl-error.log" : "<stderr>", */
-                                "OSPL_ERRORFILE");
+    /* file_name = os_report_file_path (os_procIsOpenSpliceService() ? "ospl-error.log" : "<stderr>", os_env_errorfile); */
 
     if (!doneOnce)
     {
@@ -655,6 +755,7 @@ os_defaultReport(
     char node[64];
     char date_time[128];
     FILE *log;
+    time_t tt;
 
 
     switch (event->reportType) {
@@ -686,9 +787,11 @@ os_defaultReport(
     }
 
     ostime = os_timeGet();
+    tt = ostime.tv_sec;
+    if (strftime(date_time, sizeof(date_time), "%a %b %d %H:%M:%S %Z %Y", localtime(&tt)) == 0) {
+        date_time[0] = '\0';
+    }
 
-    os_ctime_r(&ostime, date_time);
-    date_time[strlen(date_time) - 1] = '\0'; /* remove \n */
     os_gethostname(node, sizeof(node)-1);
     node[sizeof(node)-1] = '\0';
 

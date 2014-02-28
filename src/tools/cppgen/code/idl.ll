@@ -66,23 +66,23 @@ trademarks or registered trademarks of Sun Microsystems, Inc.
 /*
  * idl.ll - Lexical scanner for IDL 1.1
  */
+%{
+#include "os_stdlib.h"
+#include "os_heap.h"
+#include "idl.h"
+#include "idl_extern.h"
+#include "utl_incl.h"
 
-#include <os_stdlib.h>
-#include <os_heap.h>
-#include <idl.hh>
-#include <idl_extern.hh>
-#include <utl_incl.hh>
-
-#include <fe_private.hh>
+#include "fe_private.h"
 
 #ifdef VERSION
 #undef VERSION
 #endif
 
-#include <y_tab.hh>
+#include "y_tab.h"
 #include <string.h>
 
-#include <preprocess.h>
+#include "preprocess.h"
 
 #undef input
 #define input() ((yytchar=yysptr>yysbuf?U(*--yysptr):preprocess_getc())==10?(yylineno++,yytchar):yytchar)
@@ -98,6 +98,12 @@ static double	idl_atof(char *);
 static long	idl_atoi(char *, long);
 static void	idl_parse_line_and_file(char *);
 
+#ifdef __cplusplus
+extern "C" int fstackdepth;
+#else
+extern int fstackdepth;
+#endif
+
 // HPUX has yytext typed to unsigned char *. We make sure here that
 // we'll always use char *
 #define CPPGEN_YYTEXT ((char *)yytext)
@@ -110,6 +116,14 @@ static void	idl_parse_line_and_file(char *);
 	/* This lets us get exclusive states */
 	static int first_time = 1;
 %}
+
+/* This tells flex to read only one input file */
+%option noyywrap
+/* This removes the need to wrap unistd.h in a preprocessor if block, but the
+   version of flex we use does not support it. Should we upgrade to a newer
+   version, please uncomment this option to remove the need for the
+   lex_yy.cpp.patch file. */
+/* %option nounistd */
 
 %%
 
@@ -385,7 +399,7 @@ idl_parse_line_and_file(char *buf)
   /*
    * If it's an import file store the stripped name for the BE to use
    */
-  if (!(idl_global->in_main_file()) && idl_global->imported()) {
+  if (!(idl_global->in_main_file()) && idl_global->imported() && fstackdepth < 2) {
     nm = new UTL_String(stripped_name(idl_global->filename()));
     idl_global->store_include_file_name(nm);
   }

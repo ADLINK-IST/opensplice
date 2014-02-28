@@ -55,30 +55,51 @@ os_sockGetsockname(
     return result;
 }
 
-os_int32
+os_result
 os_sockSendto(
     os_socket s,
     const void *msg,
-    os_uint32 len,
+    size_t len,
     const struct sockaddr *to,
-    os_uint32 tolen)
+    size_t tolen,
+    size_t *bytesSent)
 {
-    return sendto(s, msg, (os_uint)len, 0, to, (os_uint)tolen);
+    ssize_t res = sendto(s, msg, len, 0, to, tolen);
+    if (res < 0)
+    {
+        *bytesSent = 0;
+        return os_resultFail;
+    }
+    else
+    {
+        *bytesSent = res;
+        return os_resultSuccess;
+    }
 }
 
-os_int32
+os_result
 os_sockRecvfrom(
     os_socket s,
     void *buf,
-    os_uint32 len,
+    size_t len,
     struct sockaddr *from,
-    os_uint32 *fromlen)
+    size_t *fromlen,
+    size_t *bytesRead)
 {
-   int res;
+   ssize_t res;
    socklen_t fl = *fromlen;;
-   res = recvfrom(s, buf, (os_uint)len, 0, from, &fl);
-   *fromlen=fl;
-   return (os_int32)res;
+   res = recvfrom(s, buf, len, 0, from, &fl);
+   if (res < 0)
+   {
+      *bytesRead = 0;
+      return os_resultFail;
+   }
+   else
+   {
+      *fromlen=fl;
+      *bytesRead = (size_t)res;
+      return os_resultSuccess;
+   }
 }
 
 os_result
@@ -118,6 +139,15 @@ os_sockSetsockopt(
     if (setsockopt(s, level, optname, optval, optlen) == -1) {
         result = os_resultFail;
     }
+
+    if (result == os_resultSuccess && level == SOL_SOCKET && optname == SO_REUSEADDR)
+    {
+       if (setsockopt(s, level, SO_REUSEPORT, optval, optlen) == -1)
+       {
+          result = os_resultFail;
+       }
+    }
+
     return result;
 }
 

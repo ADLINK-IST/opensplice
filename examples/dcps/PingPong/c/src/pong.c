@@ -183,6 +183,11 @@ int OSPL_MAIN (int argc, char ** argv)
     p = DDS_DomainParticipant_create_publisher (dp, pQos, NULL, DDS_STATUS_MASK_NONE);
     DDS_free (pQos);
 
+    /* HH: prepare writer-reliability to BEST_EFFORT */
+    DDS_Publisher_get_default_datawriter_qos(p, dwQos);
+    dwQos->reliability.kind = DDS_BEST_EFFORT_RELIABILITY_QOS;
+
+
     /*
      * Create PING subscriber
      */
@@ -194,6 +199,8 @@ int OSPL_MAIN (int argc, char ** argv)
     s = DDS_DomainParticipant_create_subscriber (dp, sQos, NULL, DDS_STATUS_MASK_NONE);
     DDS_free (sQos);
 
+
+ 
     /*
      * PP_min_msg
      */
@@ -204,7 +211,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_min_topic = DDS_DomainParticipant_create_topic (dp, "PP_min_topic", "pingpong::PP_min_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datawriter */
-    PP_min_writer = DDS_Publisher_create_datawriter (p, PP_min_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
+    PP_min_writer = DDS_Publisher_create_datawriter (p, PP_min_topic, dwQos, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
     PP_min_reader = DDS_Subscriber_create_datareader (s, PP_min_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
@@ -224,7 +231,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_seq_topic = DDS_DomainParticipant_create_topic (dp, "PP_seq_topic", "pingpong::PP_seq_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datawriter */
-    PP_seq_writer = DDS_Publisher_create_datawriter (p, PP_seq_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
+    PP_seq_writer = DDS_Publisher_create_datawriter (p, PP_seq_topic, dwQos, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
     PP_seq_reader = DDS_Subscriber_create_datareader (s, PP_seq_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
@@ -244,7 +251,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_string_topic = DDS_DomainParticipant_create_topic (dp, "PP_string_topic", "pingpong::PP_string_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datawriter */
-    PP_string_writer = DDS_Publisher_create_datawriter (p, PP_string_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
+    PP_string_writer = DDS_Publisher_create_datawriter (p, PP_string_topic, dwQos, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
     PP_string_reader = DDS_Subscriber_create_datareader (s, PP_string_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
@@ -264,7 +271,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_fixed_topic = DDS_DomainParticipant_create_topic (dp, "PP_fixed_topic", "pingpong::PP_fixed_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datawriter */
-    PP_fixed_writer = DDS_Publisher_create_datawriter (p, PP_fixed_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
+    PP_fixed_writer = DDS_Publisher_create_datawriter (p, PP_fixed_topic, dwQos, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
     PP_fixed_reader = DDS_Subscriber_create_datareader (s, PP_fixed_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
@@ -284,7 +291,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_array_topic = DDS_DomainParticipant_create_topic (dp, "PP_array_topic", "pingpong::PP_array_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datawriter */
-    PP_array_writer = DDS_Publisher_create_datawriter (p, PP_array_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
+    PP_array_writer = DDS_Publisher_create_datawriter (p, PP_array_topic, dwQos, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
     PP_array_reader = DDS_Subscriber_create_datareader (s, PP_array_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
@@ -305,7 +312,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_bseq_topic = DDS_DomainParticipant_create_topic (dp, "PP_bseq_topic", "pingpong::PP_bseq_msg", DDS_TOPIC_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datawriter */
-    PP_bseq_writer = DDS_Publisher_create_datawriter (p, PP_bseq_topic, DDS_DATAWRITER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);
+    PP_bseq_writer = DDS_Publisher_create_datawriter (p, PP_bseq_topic, dwQos, NULL, DDS_STATUS_MASK_NONE);
 
     /* Create datareader */
     PP_bseq_reader = DDS_Subscriber_create_datareader (s, PP_bseq_topic, DDS_DATAREADER_QOS_DEFAULT, NULL, DDS_STATUS_MASK_NONE);

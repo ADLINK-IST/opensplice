@@ -1,12 +1,11 @@
 #
 # included by bld/$(SPLICE_HOST)/makefile
 
-TARGET_EXEC	:= idlpp
+TARGET_EXEC    := idlpp
 
-include	$(OSPL_HOME)/setup/makefiles/target.mak
+include        $(OSPL_HOME)/setup/makefiles/target.mak
 
-LDLIBS += -l$(DDS_CPP) -l$(DDS_SERIALIZATION)
-LDLIBS += -l$(DDS_DATABASE) -l$(DDS_UTIL) -l$(DDS_OS)
+LDLIBS += -l$(DDS_CPP) -l$(DDS_HTS)
 
 CINCS += -I$(OSPL_HOME)/src/database/database/include
 CINCS += -I$(OSPL_HOME)/src/database/serialization/include
@@ -14,11 +13,11 @@ CINCS += -I$(OSPL_HOME)/src/utilities/include
 CINCS += -I$(OSPL_HOME)/src/cpp/include
 CINCS += -I$(OSPL_HOME)/src/cppgen/include
 
-include	$(OSPL_HOME)/src/tools/idlpp/makefile_templates.mak
-
 ifneq (,$(ALT_CFLAGS_OPT))
    CFLAGS_OPT=$(ALT_CFLAGS_OPT)
 endif
+
+include	$(OSPL_HOME)/src/tools/idlpp/makefile_templates.mak
 
 $(ACE_TAO_1_4_1_TMPLS): $(CCPP_TEMPLATES)
 	cp $(CCPP_TEMPLATES) $(CCPP_TMPL_PATH)/DDS_ACE_TAO_1_4_1
@@ -37,6 +36,9 @@ $(OPENFUSION_1_5_1_TMPLS): $(CCPP_TEMPLATES)
 
 $(OPENFUSION_1_6_1_TMPLS): $(CCPP_TEMPLATES)
 	cp $(CCPP_TEMPLATES) $(CCPP_TMPL_PATH)/DDS_OpenFusion_1_6_1
+
+$(OPENFUSION_2_TMPLS): $(CCPP_TEMPLATES)
+	cp $(CCPP_TEMPLATES) $(CCPP_TMPL_PATH)/DDS_OpenFusion_2
 
 $(DDS_ACE_TAO_5_6_6_TMPLS): $(CCPP_TEMPLATES)
 	cp $(CCPP_TEMPLATES) $(CCPP_TMPL_PATH)/DDS_ACE_TAO_5_6_6

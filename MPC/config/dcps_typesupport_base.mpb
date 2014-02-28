@@ -10,7 +10,7 @@ project {
   }
 }
 
-feature(!src_co) {
+feature(!src_co, !win_idlpp_no_quotes) {
   Modify_Custom(TypeSupport) {
     command               = <%quote%>$(OSPL_HOME)/bin/idlpp<%quote%>
     libpath               = $(OSPL_HOME)/bin<%pathsep%>$(OSPL_HOME)/lib
@@ -18,6 +18,16 @@ feature(!src_co) {
   splice_ts_flags += \
     -I <%quote%>$(OSPL_HOME)<%slash%>etc<%slash%>idl<%quote%>
 }
+
+feature(!src_co, win_idlpp_no_quotes) {
+  Modify_Custom(TypeSupport) {
+    command               = $(OSPL_HOME)/bin/idlpp
+    libpath               = $(OSPL_HOME)/bin<%pathsep%>$(OSPL_HOME)/lib
+  }
+  splice_ts_flags += \
+    -I <%quote%>$(OSPL_HOME)<%slash%>etc<%slash%>idl<%quote%>
+}
+
 
 feature(!src_co, cross_compile) {
   Modify_Custom(TypeSupport) {

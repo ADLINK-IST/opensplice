@@ -21,9 +21,16 @@
 
 #include <dds/topic/qos/detail/TopicQos.hpp>
 
-namespace dds { namespace topic { namespace qos {
-    typedef dds::topic::qos::detail::TopicQos TopicQos;
-} } }
+namespace dds
+{
+namespace topic
+{
+namespace qos
+{
+typedef dds::topic::qos::detail::TopicQos TopicQos;
+}
+}
+}
 
 
 #endif /* OMG_DDS_TOPIC_QOS_TOPIC_QOS_HPP_ */

@@ -2,5 +2,5 @@
 // $Id:$
 
 project : ospl_ddsdatabase, ospl_base {
-  lit_libs += ddsserialization
+//  lit_libs += ddsserialization
 }

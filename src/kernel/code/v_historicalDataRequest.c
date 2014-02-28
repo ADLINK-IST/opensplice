@@ -49,9 +49,18 @@ v_historicalDataRequestNew(
             request->filter       = NULL;
             request->filterParams = NULL;
         }
-        request->minSourceTimestamp  = minSourceTime;
-        request->maxSourceTimestamp  = maxSourceTime;
-
+        if ((minSourceTime.seconds     == C_TIME_INVALID.seconds) &&
+            (minSourceTime.nanoseconds == C_TIME_INVALID.nanoseconds)) {
+            request->minSourceTimestamp = C_TIME_ZERO;
+        } else {
+            request->minSourceTimestamp  = minSourceTime;
+        }
+        if ((maxSourceTime.seconds     == C_TIME_INVALID.seconds) &&
+            (maxSourceTime.nanoseconds == C_TIME_INVALID.nanoseconds)) {
+            request->maxSourceTimestamp = C_TIME_INFINITE;
+        } else {
+            request->maxSourceTimestamp  = maxSourceTime;
+        }
         request->resourceLimits.max_samples              = resourceLimits->max_samples;
         request->resourceLimits.max_instances            = resourceLimits->max_instances;
         request->resourceLimits.max_samples_per_instance = resourceLimits->max_samples_per_instance;

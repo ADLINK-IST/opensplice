@@ -32,6 +32,8 @@ SAJ_FUNCTION(jniGetTypeName)(
     gapi_string typeName;
     jstring jtypeName;
     
+    OS_UNUSED_ARG(this);
+
     jtypeName = NULL;
     typeSupport = (gapi_typeSupport)saj_read_gapi_address (env, jtypeSupport); 
     typeName = gapi_typeSupport_get_type_name (typeSupport);

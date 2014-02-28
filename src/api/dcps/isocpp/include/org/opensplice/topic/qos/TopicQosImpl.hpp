@@ -22,17 +22,22 @@
 #include <dds/core/policy/CorePolicy.hpp>
 #include <org/opensplice/core/config.hpp>
 
-namespace org {
-  namespace opensplice {
-    namespace topic {
-      namespace qos {
-    class OSPL_ISOCPP_IMPL_API TopicQosImpl;
-      }
-    }
-  }
+namespace org
+{
+namespace opensplice
+{
+namespace topic
+{
+namespace qos
+{
+class OSPL_ISOCPP_IMPL_API TopicQosImpl;
+}
+}
+}
 }
 
-class org::opensplice::topic::qos::TopicQosImpl {
+class org::opensplice::topic::qos::TopicQosImpl
+{
 public:
     TopicQosImpl();
 
@@ -79,20 +84,20 @@ public:
     bool operator ==(const TopicQosImpl& other) const
     {
         return other.topic_data_ == topic_data_ &&
-        other.durability_ == durability_ &&
-        #ifdef  OMG_DDS_PERSISTENCE_SUPPORT
-        other.durability_service_ == durability_service_ &&
-        #endif  // OMG_DDS_PERSISTENCE_SUPPORT
-        other.deadline_ == deadline_ &&
-        other.budget_ == budget_ &&
-        other.liveliness_ == liveliness_ &&
-        other.reliability_ == reliability_ &&
-        other.order_ == order_ &&
-        other.history_ == history_ &&
-        other.resources_ == resources_ &&
-        other.priority_ == priority_ &&
-        other.lifespan_ == lifespan_ &&
-        other.ownership_ == ownership_;
+               other.durability_ == durability_ &&
+#ifdef  OMG_DDS_PERSISTENCE_SUPPORT
+               other.durability_service_ == durability_service_ &&
+#endif  // OMG_DDS_PERSISTENCE_SUPPORT
+               other.deadline_ == deadline_ &&
+               other.budget_ == budget_ &&
+               other.liveliness_ == liveliness_ &&
+               other.reliability_ == reliability_ &&
+               other.order_ == order_ &&
+               other.history_ == history_ &&
+               other.resources_ == resources_ &&
+               other.priority_ == priority_ &&
+               other.lifespan_ == lifespan_ &&
+               other.ownership_ == ownership_;
     }
 private:
     dds::core::policy::TopicData               topic_data_;
@@ -113,5 +118,105 @@ private:
     dds::core::policy::Lifespan                lifespan_;
     dds::core::policy::Ownership               ownership_;
 };
+
+namespace org
+{
+namespace opensplice
+{
+namespace topic
+{
+namespace qos
+{
+template<> inline const dds::core::policy::TopicData&
+TopicQosImpl::policy<dds::core::policy::TopicData>() const
+{
+    return topic_data_;
+}
+
+template<> inline const dds::core::policy::Durability&
+TopicQosImpl::policy<dds::core::policy::Durability>() const
+{
+    return durability_;
+}
+
+
+#ifdef  OMG_DDS_PERSISTENCE_SUPPORT
+
+template<> inline const dds::core::policy::DurabilityService&
+TopicQosImpl::policy<dds::core::policy::DurabilityService>() const
+{
+    return durability_service_;
+}
+
+#endif  // OMG_DDS_PERSISTENCE_SUPPORT
+
+
+template<> inline const dds::core::policy::Deadline&
+TopicQosImpl::policy<dds::core::policy::Deadline>() const
+{
+    return deadline_;
+}
+
+template<> inline const dds::core::policy::LatencyBudget&
+TopicQosImpl::policy<dds::core::policy::LatencyBudget>() const
+{
+    return budget_;
+}
+
+template<> inline const dds::core::policy::Liveliness&
+TopicQosImpl::policy<dds::core::policy::Liveliness>() const
+{
+    return liveliness_;
+}
+
+template<> inline const dds::core::policy::Reliability&
+TopicQosImpl::policy<dds::core::policy::Reliability>() const
+{
+    return reliability_;
+}
+
+
+template<> inline const dds::core::policy::DestinationOrder&
+TopicQosImpl::policy<dds::core::policy::DestinationOrder>() const
+{
+    return order_;
+}
+
+template<> inline const dds::core::policy::History&
+TopicQosImpl::policy<dds::core::policy::History>() const
+{
+    return history_;
+}
+
+
+template<> inline const dds::core::policy::ResourceLimits&
+TopicQosImpl::policy<dds::core::policy::ResourceLimits>() const
+{
+    return resources_;
+}
+
+
+template<> inline const dds::core::policy::TransportPriority&
+TopicQosImpl::policy<dds::core::policy::TransportPriority>() const
+{
+    return priority_;
+}
+
+
+template<> inline const dds::core::policy::Lifespan&
+TopicQosImpl::policy<dds::core::policy::Lifespan>() const
+{
+    return lifespan_;
+}
+
+template<> inline const  dds::core::policy::Ownership&
+TopicQosImpl::policy<dds::core::policy::Ownership>() const
+{
+    return ownership_;
+}
+}
+}
+}
+}
 
 #endif /* ORG_OPENSPLICE_TOPIC_QOS_TOPIC_QOS_IMPL_HPP_ */

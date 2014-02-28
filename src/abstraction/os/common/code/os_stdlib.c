@@ -23,6 +23,7 @@
 
 
 #include "os_stdlib_locate.c"
+#include "os_stdlib_strsep.c"
 
 char *
 os_getenv(
@@ -144,6 +145,7 @@ os_strncpy(
 {
    return strncpy(s1, s2, num);
 }
+
 
 int
 os_sprintf(
@@ -280,11 +282,96 @@ os_strtoll(
     return value*sign;
 }
 
+unsigned long long
+os_strtoull(
+    const char *str,
+    char **endptr,
+    os_int32 base)
+{
+    unsigned long long value = 0LL;
+    long long sign = 1LL;
+    unsigned long long radix;
+    long long dvalue;
+
+    errno = 0;
+
+    if (endptr) {
+        *endptr = (char *)str;
+    }
+    while (isspace ((int)*str)) {
+        str++;
+    }
+    if (*str == '-') {
+        sign = -1LL;
+        str++;
+    } else if (*str == '+') {
+        sign = 1LL;
+        str++;
+    }
+    if (base == 0) {
+        /* determine radix from string str */
+        if (*str == '\0') {
+            errno = EINVAL;
+            return value;
+        }
+        if (*str == '0') {
+            str++;
+            /* base = 8, 10 or 16 */
+            if (*str == '\0') {
+                base = 10;
+            } else if (*str == 'x' || *str == 'X') {
+                base = 16;
+                str++;
+            } else if (*str >= '0' || *str <= '7') {
+                base = 8;
+            } else {
+                errno = EINVAL;
+                return value;
+            }
+        } else if (*str >= '1' || *str <= '9') {
+            base = 10;
+        }
+    } else if (base < 2) {
+        /* invalid radix */
+        errno = EINVAL;
+        return value;
+    } else if (base > 36) {
+        /* invalid radix */
+        errno = EINVAL;
+        return value;
+    } else if (base == 16) {
+        /* Check if prefixed by 0x or 0X */
+        if (*str == '0' && (*(str+1) == 'x' || *(str+1) == 'X')) {
+            str++;
+            str++;
+        }
+    }
+    radix = (unsigned long long)base;
+    dvalue = digit_value (*str, base);
+    while (dvalue >= 0) {
+        value = value * radix + dvalue;
+        str++;
+        dvalue = digit_value (*str, base);
+    }
+    if (endptr) {
+        *endptr = (char *)str;
+    }
+
+    return value*sign;
+}
+
 long long
 os_atoll(
     const char *str)
 {
     return os_strtoll (str, NULL, 10);
+}
+
+unsigned long long
+os_atoull(
+    const char *str)
+{
+    return os_strtoull (str, NULL, 10);
 }
 
 char *

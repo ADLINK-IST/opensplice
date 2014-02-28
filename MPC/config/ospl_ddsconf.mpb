@@ -2,7 +2,7 @@
 // $Id:$
 
 project : ospl_ddsdatabase, ospl_base {
-  lit_libs += ddsconf
+//  lit_libs += ddsconf
 }
 
 feature(!src_co) {

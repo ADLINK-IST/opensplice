@@ -49,7 +49,7 @@ isFellowNameSpaceCompatible(
     walkData = (struct compatibilityHelper*)args;
 
     /* If nameSpace name is equal, policy of namespace must be equal too */
-    if (!strcmp (d_nameSpaceGetName(fellowNs), d_nameSpaceGetName(walkData->ns))) {
+    if (strcmp (d_nameSpaceGetName(fellowNs), d_nameSpaceGetName(walkData->ns)) == 0) {
         walkData->fellowNs = fellowNs;
         return (d_nameSpaceCompatibilityCompare(walkData->ns, fellowNs) == 0);
     }
@@ -80,7 +80,7 @@ areFellowNameSpacesCompatible(
         address = d_fellowGetAddress (walkData->fellow);
 
         OS_REPORT_5(OS_ERROR, D_CONTEXT, 0,
-            "NameSpace configuration of remote durability service '%d' for NameSpace "\
+            "NameSpace configuration of remote durability service '%u' for NameSpace "\
             "'%s' is incompatible with local NameSpace '%s'. Partition(-Topic) expressions "\
             "are '%s'(local) and '%s'(remote).",
             address->systemId, d_nameSpaceGetName(walkData->fellowNs),
@@ -252,11 +252,14 @@ checkFellowMasterWalk(
     d_nameSpace nameSpace;
 
     helper = (struct checkFellowMasterHelper*)userData;
-    nameSpace = d_nameSpace(o);
-    master = d_nameSpaceGetMaster (nameSpace);
-    fellow = d_fellowGetAddress(helper->fellow);
+    nameSpace = d_nameSpace(o);                     /* the namespace of the fellow */
+    master = d_nameSpaceGetMaster (nameSpace);      /* the master of the namespace of the fellow */
+    fellow = d_fellowGetAddress(helper->fellow);    
 
-    if (!d_networkAddressCompare (fellow, master)) {
+    /* Only start checking for conflicts if the fellow is a master
+     * for the namespace and the namespace is confirmed
+     */
+    if (!d_networkAddressCompare (fellow, master) && d_nameSpaceIsMasterConfirmed(nameSpace)) {
         d_adminReportMaster (helper->admin, helper->fellow, nameSpace, helper->oldNameSpace);
     }
 
@@ -343,7 +346,7 @@ d_nameSpacesListenerAction(
 
     d_printTimedEvent         (durability, D_LEVEL_FINE,
                                D_THREAD_NAMESPACES_LISTENER,
-                               "Received nameSpace '%s' from fellow %d (his master: %d, confirmed: %d, mergeState: %s, %d, quality: %d.%.9u).\n",
+                               "Received nameSpace '%s' from fellow %u (his master: %u, confirmed: %d, mergeState: %s, %d, quality: %d.%.9u).\n",
                                d_nameSpaces(message)->name,
                                message->senderAddress.systemId,
                                d_nameSpaces(message)->master.systemId,
@@ -362,7 +365,7 @@ d_nameSpacesListenerAction(
     if(!fellow){
         d_printTimedEvent (durability, D_LEVEL_FINE,
                            D_THREAD_NAMESPACES_LISTENER,
-                           "Fellow %d unknown, administrating it.\n",
+                           "Fellow %u unknown, administrating it.\n",
                            message->senderAddress.systemId);
         fellow = d_fellowNew(sender, message->senderState);
         d_fellowUpdateStatus(fellow, message->senderState, v_timeGet());
@@ -463,13 +466,13 @@ d_nameSpacesListenerAction(
                             d_printTimedEvent (durability, D_LEVEL_WARNING,
                                D_THREAD_NAMESPACES_LISTENER,
                                "Estimated time difference including latency with " \
-                               "fellow %d is %f seconds, which is larger then " \
+                               "fellow %u is %f seconds, which is larger then " \
                                "expected.\n",
                                message->senderAddress.systemId,
                                os_timeToReal(difTime));
                             OS_REPORT_2(OS_WARNING, D_CONTEXT, 0,
                                 "Estimated time difference including latency " \
-                                "with fellow '%d' is larger then expected " \
+                                "with fellow '%u' is larger then expected " \
                                 "(%f seconds). Durability alignment might not be " \
                                 "reliable. Please align time between these nodes " \
                                 "and restart.",
@@ -479,7 +482,7 @@ d_nameSpacesListenerAction(
                             d_printTimedEvent (durability, D_LEVEL_FINER,
                                D_THREAD_NAMESPACES_LISTENER,
                                "Estimated time difference including latency with " \
-                               "fellow %d is %f seconds.\n",
+                               "fellow %u is %f seconds.\n",
                                message->senderAddress.systemId,
                                os_timeToReal(difTime));
                         }
@@ -530,7 +533,7 @@ d_nameSpacesListenerAction(
 
                     d_printTimedEvent (durability, D_LEVEL_WARNING,
                                    D_THREAD_NAMESPACES_LISTENER,
-                                   "Communication with fellow %d NOT approved, because data model is not compatible\n",
+                                   "Communication with fellow %u NOT approved, because data model is not compatible\n",
                                    message->senderAddress.systemId);
                     d_fellowSetCommunicationState(fellow, D_COMMUNICATION_STATE_INCOMPATIBLE_DATA_MODEL);
                 }
@@ -538,7 +541,7 @@ d_nameSpacesListenerAction(
                 info->fellowsIncompatibleStateDif += 1;
                 d_printTimedEvent (durability, D_LEVEL_WARNING,
                                    D_THREAD_NAMESPACES_LISTENER,
-                                   "Communication with fellow %d NOT approved, because state is not compatible my state: %d, fellow state: %d\n",
+                                   "Communication with fellow %u NOT approved, because state is not compatible my state: %d, fellow state: %d\n",
                                    message->senderAddress.systemId,
                                    d_durabilityGetState(durability),
                                    message->senderState);

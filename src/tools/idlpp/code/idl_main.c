@@ -83,19 +83,21 @@
 /* include DLL related header file */
 #include "idl_dll.h"
 
+/* TypeSize related header file */
+#include "idl_genTypeSize.h"
+
 #define DDS_DCPS_DEF "dds_dcps.idl"
 #define MAX_FILE_POSTFIX_LENGTH (os_size_t) (20) /* maximum length postfixed to base file name */
 #define MAX_CPP_COMMAND (4192)
 
 #ifdef WIN32
-    const char* DEFAULT_ORB = "DDS_OpenFusion_1_5_1";
+    const char* DEFAULT_ORB = "DDS_OpenFusion_1_6_1";
     const char* QUOTE = "\"";
-    const char* IDLPP_CMD_OPTIONS = "P:d:o:b:m:t:c:hECSD:I:l:j:n:i";
 #else
-    const char* DEFAULT_ORB = "DDS_OpenFusion_1_4_1";
+    const char* DEFAULT_ORB = "DDS_OpenFusion_1_6_1";
     const char* QUOTE = "";
-    const char* IDLPP_CMD_OPTIONS = "d:o:b:m:t:c:hECSD:I:l:j:n:i";
 #endif
+    const char* IDLPP_CMD_OPTIONS = "P:d:o:b:m:t:c:hECSTD:I:l:j:n:iX:";
 
 int runCppGen(
    char* outputDir,
@@ -113,11 +115,7 @@ print_usage(
     printf("Usage: %s [-c preprocessor-path] [-b ORB-template-path]\n"
            "       [-n <include-suffix>] [-I path] [-D macro[=definition]] [-S | -C] \n"
            "       [-l (c | c++ | cpp | isocpp | isoc++ | cs | java)] [-j [old]:<new>] [-d directory] [-i] \n"
-#ifdef WIN32
-           "       [-P dll_macro_name[,<h-file>]] [-o (dds-types | custom-psm)] <filename>\n", name);
-#else
-           "       [-o (dds-types | custom-psm)] <filename>\n", name);
-#endif
+           "       [-P dll_macro_name[,<h-file>]] [-o (dds-types | custom-psm | no-equality)] <filename>\n", name);
 }
 
 static void
@@ -168,7 +166,7 @@ print_help(
         "       Defines standalone mode, which allows application programs to\n"
         "       be build and run without involvement of an ORB. The namespace\n"
         "       for standard types will be DDS instead of CORBA in this case.\n"
-        "       This is the default mode for the C and Java language.\n");
+        "       This is the default mode for all language bindings\n");
     printf(
         "    -C\n"
         "       Defines ORB bound mode, which allows application programs to be\n"
@@ -190,32 +188,41 @@ print_help(
         "       A trailing '.' character is not required, but may be used.\n"
         "       Example usage: -j :org.opensplice (prefixes all java packages).\n"
         "       Example usage: -j com.opensplice.:org.opensplice. (substitutes).\n");
-#ifdef WIN32
     printf(
         "    -P dll_macro_name[,<header-file>]\n"
         "       Only applicable to C and C++. Sets export macro that will be\n"
         "       prefixed to all functions in the generated code. This allows\n"
-        "       creating DLL's from generated code. Optionally a header file\n"
-        "       can be given that will be included in each generated file.\n");
-#endif
+        "       creating DLL's from generated code and controlling symbol visibility.\n"
+        "       Optionally a header file can be given that will be included\n"
+        "       in each generated file.\n");
     printf(
         "    -d directory\n"
         "       Specify the location where to place the generated files.\n");
     printf(
-        "    -o (dds-types | custom-psm)\n"
+        "    -o (dds-types | custom-psm | no-equality)\n"
         "       'dds-types' enables support for standard DDS-DCPS definitions.\n"
         "       The OpenSplice preprocessor provides definitions for constants\n"
         "       and types as defined in the OMG-DDS-DCPS PSM. This implies that\n"
         "       these definitions can be used within application IDL.\n");
+
     printf(
         "       'custom-psm' enables support for alternative IDL language mappings.\n"
         "       Currently C-Sharp offers an alternative language mapping where\n"
         "       IDL names are translated to their PascalCase representation and\n"
         "       where '@' instead of '_' is used to escape reserved C#-keywords.\n");
+
+    printf(
+        "       'no-equality' Disables support for the automatically generated \n"
+        "       equality operator on ISOC++ types.\n");
+
     printf(
         "    -l (c | c++ | cpp | isocpp | isoc++ | cs | java)\n"
         "       Defines the target language. Value 'cs' represents C-sharp\n"
         "       and 'cpp' is an alias for 'c++'.\n"
+        "       The value 'isoc++' (or isocpp) means that the DCPS API for entities\n");
+    printf(
+        "       follows the ISO/IEC C++ 2003 Language DDS PSM instead of the\n"
+        "       IDL-to-C++ platform specific mapping (language 'c++').\n"
         "       Note that the OpenSplice preprocessor does not support every\n"
         "       combination of mode and language. The default setting of the\n"
         "       OpenSplice preprocessor is c++.\n");
@@ -310,6 +317,7 @@ preLoadSpliceDdsDefinitions(
                                                                    OS_FILESEPCHAR,
                                                                    DDS_DCPS_DEF);
     base = idl_parseFile(fname, 0);
+    OS_UNUSED_ARG(base);
 
     /** @todo Free existing file relations                 */
     /* With idl_fileMapDefGet retrieve current relations   */
@@ -333,7 +341,7 @@ addDefine(
     const char *def)
 {
     char *vPtr;
-    char *value;
+    char *value = NULL;
     int result;
 
     result = 0;
@@ -350,7 +358,9 @@ addDefine(
     } else {
         value = os_strdup("1");
     }
-    define(def, -1, (unsigned char *)value, DEF_CMDLINE);
+    if (value) {
+        define(def, -1, (unsigned char *)value, DEF_CMDLINE);
+    }
     return result;
 }
 
@@ -473,7 +483,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
     char *filename;
     char *basename;
     os_char* clientHeader = NULL;
-    char *databaseName;
+    char *databaseName = NULL;
     char *moduleName;
     char *cpp_arg = NULL;
     char *typeName = NULL;
@@ -481,6 +491,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
     char* outputDir = NULL;
     char* tmpArg = NULL;
     char* includeIdlDir = NULL;
+    c_bool makeMetrics = FALSE;
     c_bool outputDirSetSuccess = FALSE;
     c_bool traceWalk = FALSE;
     c_bool traceInput = FALSE;
@@ -499,8 +510,12 @@ OPENSPLICE_MAIN (ospl_idlpp)
     c_bool customPSM = FALSE;
     c_bool attachDatabase = FALSE;
     c_bool cpp_ignoreInterfaces = TRUE;
+    c_bool justCopyIn = FALSE;
+    /* If strlen(suffix) > 0; then static type-caching is disabled for the
+     * copyIn<suffix> functions. */
+    char *suffix = os_strdup("");
     os_sharedAttr sharedAttr;
-    os_sharedHandle sHandle;
+    os_sharedHandle sHandle = NULL;
     os_result result;
     int opt;
     int i;
@@ -516,8 +531,8 @@ OPENSPLICE_MAIN (ospl_idlpp)
     char fnameA[1024];
     char* sub;
     char* tmpPtr;
-    os_char* orgPackage = NULL;
-    os_char* tarPackage = NULL;
+    c_iter orgPackageList = NULL;
+    c_iter tarPackageList = NULL;
  /*    struct stat stFileInfo; */
 /*     int intStat; */
 
@@ -558,6 +573,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
             cpp_ignoreInterfaces = FALSE;
             break;
         case 'l':
+
             if (strcmp(optarg, "c") == 0) {
                 idl_setLanguage(IDL_LANG_C);
                 if (os_getenv("OSPL_ORB_PATH") == NULL) {
@@ -577,6 +593,8 @@ OPENSPLICE_MAIN (ospl_idlpp)
             } else if (strcmp(optarg, "isoc++") == 0) {
                 idl_setLanguage(IDL_LANG_CXX);
                 idl_setIsISOCpp(OS_TRUE);
+                idl_setIsISOCppTypes(OS_TRUE);
+                idl_setIsGenEquality(OS_TRUE);
                 if (os_getenv("OSPL_ORB_PATH") == NULL) {
                     os_putenv(ccppOrbPath);
                     /* os_putenv ("OSPL_ORB_PATH=TAO"); */
@@ -584,6 +602,8 @@ OPENSPLICE_MAIN (ospl_idlpp)
             } else if (strcmp(optarg, "isocpp") == 0) {
                 idl_setLanguage(IDL_LANG_CXX);
                 idl_setIsISOCpp(OS_TRUE);
+                idl_setIsISOCppTypes(OS_TRUE);
+                idl_setIsGenEquality(OS_TRUE);
                 if (os_getenv("OSPL_ORB_PATH") == NULL) {
                     os_putenv(ccppOrbPath);
                 }
@@ -601,14 +621,9 @@ OPENSPLICE_MAIN (ospl_idlpp)
                 print_usage(argv[0]);
                 idl_exit(-1);
             }
+
         break;
         case 'j':
-            if(orgPackage || tarPackage)
-            {
-                printf("Option '-j' can only be used once.\n");
-                print_usage(argv[0]);
-                idl_exit(-1);
-            } else
             {
                 /* <old>:<new> */
                 sub = optarg;
@@ -618,10 +633,12 @@ OPENSPLICE_MAIN (ospl_idlpp)
                     *tmpPtr = '\0';
                     if(strlen(sub) > 0)
                     {
-                        orgPackage = os_strdup(sub);
+                        orgPackageList = c_iterAppend(orgPackageList, os_strdup(sub));
+                    }else {
+                        orgPackageList = c_iterAppend(orgPackageList, os_strdup(""));
                     }
                     tmpPtr++;
-                    tarPackage = os_strdup(tmpPtr);
+                    tarPackageList = c_iterAppend(tarPackageList, os_strdup(tmpPtr));
                 } else
                 {
                     printf("Option '-j' is used incorrectly, argument %s does not match required pattern.\n", sub);
@@ -639,28 +656,39 @@ OPENSPLICE_MAIN (ospl_idlpp)
             outputDir = os_fileNormalize(optarg);
         break;
         case 'C':
-            if (idl_getCorbaMode() != IDL_MODE_UNKNOWN) {
+            if (idl_getCorbaMode() == IDL_MODE_STANDALONE) {
                 printf("ERROR --> Mode already set to: %s\n", idl_getCorbaModeStr());
                 print_usage(argv[0]);
                 idl_exit(-1);
             }
             idl_setCorbaMode(IDL_MODE_ORB_BOUND);
+            idl_setIsISOCppTypes(OS_FALSE); /** @internal @bug OSPL-3369 */
         break;
-#ifdef WIN32
         case 'P':
             if (idl_dllSetOption(optarg)) {
                 print_usage(argv[0]);
                 idl_exit(-1);
             }
         break;
-#endif
         case 'S':
-            if (idl_getCorbaMode() != IDL_MODE_UNKNOWN) {
+            if (idl_getCorbaMode() == IDL_MODE_ORB_BOUND) {
                 printf("ERROR --> Mode already set to: %s\n", idl_getCorbaModeStr());
                 print_usage(argv[0]);
                 idl_exit(-1);
             }
             idl_setCorbaMode(IDL_MODE_STANDALONE);
+        break;
+        case 'T':
+            if(idl_getIsISOCppTypes())
+            {
+                idl_setIsISOCppTestMethods(OS_TRUE);
+            }
+            else
+            {
+                printf("Option '-T' is to be used in conjunction with '-l isocpp' only\n");
+                print_usage(argv[0]);
+                idl_exit(-1);
+            }
         break;
         case 't':
             /* check for trace options */
@@ -796,10 +824,19 @@ OPENSPLICE_MAIN (ospl_idlpp)
                 dcpsTypes = TRUE;
             } else if (strcmp(optarg, "custom-psm") == 0) {
                 customPSM = TRUE;
+            } else if (strcmp(optarg, "metrics") == 0) {
+                makeMetrics = TRUE;
+            } else if (strcmp(optarg, "no-equality") == 0) {
+                idl_setIsGenEquality(OS_FALSE);
             } else {
                 print_usage(argv[0]);
                 idl_exit(-1);
             }
+        break;
+        case 'X': /* Undocumented; emits copyIn functions with a suffix without caching */
+            justCopyIn = TRUE;
+            os_free(suffix);
+            suffix = os_strdup(optarg);
         break;
         case '?':
             print_usage(argv[0]);
@@ -807,29 +844,35 @@ OPENSPLICE_MAIN (ospl_idlpp)
         break;
         }
     }
+    /* Set standalone (-S) mode as default for all bindings */
+    if(idl_getCorbaMode() == IDL_MODE_UNKNOWN)
+        idl_setCorbaMode(IDL_MODE_STANDALONE);
+
     if ((optind >= argc) || ((argc-optind) > 1)) {
         print_usage(argv[0]);
         idl_exit(-1);
     }
 
     /* check if mode has been set */
-    if (idl_getCorbaMode() == IDL_MODE_UNKNOWN) {
-        printf("ERROR --> Corba mode has not been set!\n");
-        print_usage(argv[0]);
-        idl_exit(-1);
-    }
-    /* check if languague has been set */
-    if (idl_getLanguage() == IDL_LANG_UNKNOWN) {
-        printf("ERROR --> Language has not been set!\n");
-        print_usage(argv[0]);
-        idl_exit(-1);
-    }
-    /* check whether language and mode are supported */
-    if (!idl_languageAndModeSupported()) {
-        printf("ERROR --> Combination of language and corba mode not supported: LANG=%s MODE=%s\n",
-            idl_getLanguageStr(), idl_getCorbaModeStr());
-        print_usage(argv[0]);
-        idl_exit(-1);
+    if (!makeMetrics) {
+        if (idl_getCorbaMode() == IDL_MODE_UNKNOWN) {
+            printf("ERROR --> Corba mode has not been set!\n");
+            print_usage(argv[0]);
+            idl_exit(-1);
+        }
+        /* check if languague has been set */
+        if (idl_getLanguage() == IDL_LANG_UNKNOWN) {
+            printf("ERROR --> Language has not been set!\n");
+            print_usage(argv[0]);
+            idl_exit(-1);
+        }
+        /* check whether language and mode are supported */
+        if (!idl_languageAndModeSupported()) {
+            printf("ERROR --> Combination of language and generation mode not supported: LANG=%s MODE=%s\n",
+                idl_getLanguageStr(), idl_getCorbaModeStr());
+            print_usage(argv[0]);
+            idl_exit(-1);
+        }
     }
     if (outputDir) {
         outputDirSetSuccess = idl_dirOutNew(outputDir);
@@ -884,7 +927,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
         len = strlen(ptr);
     }
     basename = os_malloc(len + 1);
-   os_strncpy(basename, (const char *)ptr, len);
+    os_strncpy(basename, (const char *)ptr, len);
     basename[len] = '\0';
 
     /* reset extension, since it used again */
@@ -972,14 +1015,18 @@ OPENSPLICE_MAIN (ospl_idlpp)
         source = idl_fileMapGetObjects(idl_fileMapDefGet(), filename);
 
         /* Allocate space for the output file name */
-        fname = os_malloc(strlen(basename) + MAX_FILE_POSTFIX_LENGTH);
+        fname = os_malloc(strlen(basename) + strlen(suffix) + MAX_FILE_POSTFIX_LENGTH);
 
         /* Initialize class to determine depedencies with other files */
         idl_depDefInit();
         /* Walk through metadata to determine depedencies with other files,
            the dependencies are used to generate include statements
         */
-        idl_walk(base, filename, source, traceWalk, idl_genSpliceDepProgram());
+        {
+            idl_program ip = idl_genSpliceDepProgram();
+            ip->userData = suffix;
+            idl_walk(base, filename, source, traceWalk, ip);
+        }
 
         if (makeAll) {
             /* Do normal generation */
@@ -993,76 +1040,81 @@ OPENSPLICE_MAIN (ospl_idlpp)
                     os_putenv(ccppOrbPath);
                 }
 
-                /* Generate the file that defines all DCPS specialized classes for the
-                   user types
-                */
-                snprintf(fname,
-                    strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                    "%sDcps_impl.h", basename);
+                if(!justCopyIn){
+                    /* Generate the file that defines all DCPS specialized classes for the
+                       user types
+                    */
+                    snprintf(fname,
+                        strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
+                        "%sDcps_impl.h", basename);
 
-                idl_fileSetCur(idl_fileOutNew(fname, "w"));
-                if (idl_fileCur() == NULL) {
-                    idl_reportOpenError(fname);
-                }
-                idl_walk(base, filename, source, traceWalk, idl_genCxxTypedClassDefsProgram());
-                idl_fileOutFree(idl_fileCur());
+                    idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                    if (idl_fileCur() == NULL) {
+                        idl_reportOpenError(fname);
+                    }
 
+                    idl_walk(base, filename, source, traceWalk, idl_genCxxTypedClassDefsProgram());
+                    idl_fileOutFree(idl_fileCur());
 
-                /* Generate the file that implements all DCPS specialized classes for the
-                   user types
-                */
-                snprintf(fname,
-                    strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                    "%sDcps_impl.cpp", basename);
-                idl_fileSetCur(idl_fileOutNew(fname, "w"));
-                if (idl_fileCur() == NULL) {
-                    idl_reportOpenError(fname);
-                }
-                idl_walk(base, filename, source, traceWalk, idl_genCxxTypedClassImplProgram());
-                idl_walk(base, filename, source, traceWalk, idl_genCxxMetaProgram());
-                idl_fileOutFree(idl_fileCur());
+                    /* Generate the file that implements all DCPS specialized classes for the
+                       user types
+                    */
+                    snprintf(fname,
+                        strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
+                        "%sDcps_impl.cpp", basename);
+                    idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                    if (idl_fileCur() == NULL) {
+                        idl_reportOpenError(fname);
+                    }
+                    idl_walk(base, filename, source, traceWalk, idl_genCxxTypedClassImplProgram());
+                    idl_walk(base, filename, source, traceWalk, idl_genCxxMetaProgram());
+                    idl_fileOutFree(idl_fileCur());
 
-                /* Generate the file that specifies all Splice specialized data types for the
-                   user types
-                */
-                snprintf(fname,
-                    strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                    "%sSplDcps.h", basename);
-                idl_fileSetCur(idl_fileOutNew (fname, "w"));
-                if (idl_fileCur() == NULL) {
-                    idl_reportOpenError(fname);
-                }
-                if (dcpsTypes) {
-                    idl_fileOutPrintf(idl_fileCur(), "#include \"ccpp_ddsDcpsSplDcps.h\"\n\n");
-                }
-                if (idl_getIsISOCpp())
-                {
-                    tmp = os_malloc(strlen(basename)+strlen("_DCPS.hpp")+(size_t)1);
-                    snprintf
-                        (tmp,
-                        strlen(basename)+strlen("_DCPS.hpp")+(size_t)1,
-                        "%s_DCPS.hpp", basename);
-                }
-                else
-                {
-                    tmp = os_malloc(strlen(basename)+strlen("ccpp_")+(size_t)1);
-                    snprintf
-                        (tmp,
-                        strlen(basename)+strlen("ccpp_")+(size_t)1,
-                        "ccpp_%s", basename);
+                    /* Generate the file that specifies all Splice specialized data types for the
+                       user types
+                    */
+                    snprintf(fname,
+                        strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
+                        "%sSplDcps.h", basename);
+                    idl_fileSetCur(idl_fileOutNew (fname, "w"));
+                    if (idl_fileCur() == NULL) {
+                        idl_reportOpenError(fname);
+                    }
+                    if (dcpsTypes) {
+                        idl_fileOutPrintf(idl_fileCur(), "#include \"ccpp_ddsDcpsSplDcps.h\"\n\n");
+                    }
+                    if (idl_getIsISOCpp())
+                    {
+                        tmp = os_malloc(strlen(basename)+strlen("_DCPS.hpp")+(size_t)1);
+                        snprintf
+                            (tmp,
+                            strlen(basename)+strlen("_DCPS.hpp")+(size_t)1,
+                            "%s_DCPS.hpp", basename);
+                    }
+                    else
+                    {
+                        tmp = os_malloc(strlen(basename)+strlen("ccpp_")+(size_t)1);
+
+                        snprintf
+                            (tmp,
+                            strlen(basename)+strlen("ccpp_")+(size_t)1,
+                            "ccpp_%s", basename);
+                    }
+
+                    idl_genSpliceTypeSetIncludeFileName(tmp);
+                    os_free(tmp);
+
+                    idl_walk(base, filename, source, traceWalk, idl_genSpliceTypeProgram());
+                    idl_fileOutFree(idl_fileCur());
                 }
 
-                idl_genSpliceTypeSetIncludeFileName(tmp);
-                os_free(tmp);
-                idl_walk(base, filename, source, traceWalk, idl_genSpliceTypeProgram());
-                idl_fileOutFree(idl_fileCur());
 
                 /* Generate the file that implements all metadata load functions, Splice helper
                    functions as well as C++/CORBA copy routines to/from Splice for the user types
                 */
                 snprintf(fname,
-                    strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                    "%sSplDcps.cpp", basename);
+                    strlen(basename) +strlen(suffix) + MAX_FILE_POSTFIX_LENGTH,
+                    "%s%sSplDcps.cpp", basename, suffix);
                 idl_fileSetCur(idl_fileOutNew(fname, "w"));
                 if (idl_fileCur() == NULL) {
                     idl_reportOpenError(fname);
@@ -1075,166 +1127,202 @@ OPENSPLICE_MAIN (ospl_idlpp)
                 else
                 {
                     idl_fileOutPrintf(idl_fileCur(), "#include \"ccpp_%s.h\"\n", basename);
+                    idl_fileOutPrintf(idl_fileCur(), "#include \"dds_type_aliases.h\"\n");
                 }
                 idl_fileOutPrintf(idl_fileCur(), "\n");
-                idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxHelperProgram());
-                idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxCopyinProgram());
-                idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxCopyoutProgram());
+
+                if(!justCopyIn){
+                    idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxHelperProgram());
+                }
+                {
+                    idl_program ci = idl_genCorbaCxxCopyinProgram();
+                    /* If the suffix is empty, static type-caching is enabled.
+                     * Disabled otherwise. */
+                    ci->userData = suffix;
+                    idl_walk(base, filename, source, traceWalk, ci);
+                }
+                if(!justCopyIn){
+                    idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxCopyoutProgram());
+                }
                 idl_fileOutFree(idl_fileCur());
 
-                /* Generate the file that includes ORB specific generated header files
-                */
-                if (idl_getIsISOCpp())
-                {
-                    snprintf(fname,
-                            strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                            "%s_DCPS.hpp", basename);
-                }
-                else
-                {
-                    snprintf(fname,
-                            strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                            "ccpp_%s.h", basename);
-                }
-                idl_fileSetCur(idl_fileOutNew(fname, "w"));
-                if (idl_fileCur() == NULL) {
-                    idl_reportOpenError(fname);
-                }
-
-                if (idl_getIsISOCpp())
-                {
-                    idl_walk(base, filename, source, traceWalk, idl_genISOCxxHeaderProgram());
-                }
-                else
-                {
-                    idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxCcppProgram());
-                }
-
-                idl_fileOutFree(idl_fileCur());
-
-                /* Expand IDL based application TypeSupport, DataReader and DataWriter interfaces
-                 */
-
-                /* Create a list of keys and streams existing only in this idl file */
-                idl_walk(base, filename, source, traceWalk, idl_genIdlHelperProgram());
-
-                snprintf(fname,
-                         strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                         "%sDcps.idl", basename);
-                idl_fileSetCur(idl_fileOutNew(fname, "w"));
-                if (idl_fileCur() == NULL) {
-                   idl_reportOpenError(fname);
-                }
-                idl_walk(base, filename, source, traceWalk, idl_genIdlProgram());
-                idl_fileOutFree(idl_fileCur());
-                if (outputDir) {
-                   dcpsIdlFileName = os_malloc(strlen(idl_dirOutCur()) + strlen(os_fileSep()) + strlen(fname) + 1);
-                   os_sprintf(dcpsIdlFileName, "%s%s%s", idl_dirOutCur(), os_fileSep(), fname);
-                } else {
-                   dcpsIdlFileName = os_strdup(fname);
-                }
-
-                /* Generate the Streams typed API if a #pragma streams is defined in the current file*/
-                if (os_iterLength(idl_idlScopeStreamsList) > 0) {
-                    /* Generate the main include file which includes ORB specific generated header files */
-                    snprintf(fname,
-                        strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                        "%sStreamsApi.h", basename);
-                    idl_fileSetCur(idl_fileOutNew(fname, "w"));
-                    if (idl_fileCur() == NULL) {
-                        idl_reportOpenError(fname);
-                    }
-                    idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxStreamsCcppProgram());
-                    idl_fileOutFree(idl_fileCur());
-
-                    /* Generate the Stream API classes */
-                    snprintf(fname,
-                            strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                            "%sStreams_impl.h", basename);
-                    idl_fileSetCur(idl_fileOutNew(fname, "w"));
-                    if (idl_fileCur() == NULL) {
-                        idl_reportOpenError(fname);
-                    }
-                    idl_walk(base, filename, source, traceWalk, idl_genCxxStreamsDefsProgram());
-                    idl_fileOutFree(idl_fileCur());
-
-                    snprintf(fname,
-                            strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                            "%sStreams_impl.cpp", basename);
-                    idl_fileSetCur(idl_fileOutNew(fname, "w"));
-                    if (idl_fileCur() == NULL) {
-                        idl_reportOpenError(fname);
-                    }
-                    idl_walk(base, filename, source, traceWalk, idl_genCxxStreamsImplProgram());
-                    idl_fileOutFree(idl_fileCur());
-
-                    /* Generate the IDL file containing the wrapper type and Streams API interfaces */
-                    snprintf(fname,
-                            strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                            "%sStreams.idl", basename);
-                    idl_fileSetCur(idl_fileOutNew(fname, "w"));
-                    if (idl_fileCur() == NULL) {
-                        idl_reportOpenError(fname);
-                    }
-                    idl_walk(base, filename, source, traceWalk, idl_genCxxStreamsIdlProgram());
-                    idl_fileOutFree(idl_fileCur());
-                }
-
-                if (idl_getCorbaMode() == IDL_MODE_STANDALONE)
-                {
-                    /* Call cppgen for both the user provided IDL file (filename),
-                     * and the generated IDL file (fname).
-                     */
-                    char cpp_command[MAX_CPP_COMMAND];
-                    cpp_command[0] = '\0';
-
-                    for (i = 0; i < c_iterLength(includeDefinitions); i++)
+                if(!justCopyIn){
+                    /* Generate the file that includes ORB specific generated header files
+                    */
+                    if (idl_getIsISOCpp())
                     {
-                        /* Extend command line with all include path options */
+                        snprintf(fname,
+                                strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
+                                "%s_DCPS.hpp", basename);
+                    }
+                    else
+                    {
+                        snprintf(fname,
+                                strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
+                                "ccpp_%s.h", basename);
+                    }
+                    idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                    if (idl_fileCur() == NULL) {
+                        idl_reportOpenError(fname);
+                    }
+
+                    if (idl_getIsISOCpp())
+                    {
+                        idl_walk(base, filename, source, traceWalk, idl_genISOCxxHeaderProgram());
+                    }
+                    else
+                    {
+                        idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxCcppProgram());
+                    }
+
+                    idl_fileOutFree(idl_fileCur());
+
+                    /* Expand IDL based application TypeSupport, DataReader and DataWriter interfaces
+                     */
+
+                    /* Create a list of keys and streams existing only in this idl file */
+                    idl_walk(base, filename, source, traceWalk, idl_genIdlHelperProgram());
+
+                    snprintf(fname,
+                             strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
+                             "%sDcps.idl", basename);
+                    idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                    if (idl_fileCur() == NULL) {
+                       idl_reportOpenError(fname);
+                    }
+                    idl_walk(base, filename, source, traceWalk, idl_genIdlProgram());
+                    idl_fileOutFree(idl_fileCur());
+                    if (outputDir) {
+                       dcpsIdlFileName = os_malloc(strlen(idl_dirOutCur()) + strlen(os_fileSep()) + strlen(fname) + 1);
+                       os_sprintf(dcpsIdlFileName, "%s%s%s", idl_dirOutCur(), os_fileSep(), fname);
+                    } else {
+                       dcpsIdlFileName = os_strdup(fname);
+                    }
+
+                    /* Generate the Streams typed API if a #pragma streams is defined in the current file*/
+                    if (os_iterLength(idl_idlScopeStreamsList) > 0) {
+                        /* Generate the main include file which includes ORB specific generated header files */
+                        snprintf(fname,
+                            strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
+                            "%sStreamsApi.h", basename);
+                        idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                        if (idl_fileCur() == NULL) {
+                            idl_reportOpenError(fname);
+                        }
+                        idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxStreamsCcppProgram());
+                        idl_fileOutFree(idl_fileCur());
+
+                        /* Generate the Stream API classes */
+                        snprintf(fname,
+                                strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
+                                "%sStreams_impl.h", basename);
+                        idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                        if (idl_fileCur() == NULL) {
+                            idl_reportOpenError(fname);
+                        }
+                        idl_walk(base, filename, source, traceWalk, idl_genCxxStreamsDefsProgram());
+                        idl_fileOutFree(idl_fileCur());
+
+                        snprintf(fname,
+                                strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
+                                "%sStreams_impl.cpp", basename);
+                        idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                        if (idl_fileCur() == NULL) {
+                            idl_reportOpenError(fname);
+                        }
+                        idl_walk(base, filename, source, traceWalk, idl_genCxxStreamsImplProgram());
+                        idl_fileOutFree(idl_fileCur());
+
+                        /* Generate the IDL file containing the wrapper type and Streams API interfaces */
+                        snprintf(fname,
+                                strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
+                                "%sStreams.idl", basename);
+                        idl_fileSetCur(idl_fileOutNew(fname, "w"));
+                        if (idl_fileCur() == NULL) {
+                            idl_reportOpenError(fname);
+                        }
+                        idl_walk(base, filename, source, traceWalk, idl_genCxxStreamsIdlProgram());
+                        idl_fileOutFree(idl_fileCur());
+                    }
+
+                    if (idl_getCorbaMode() == IDL_MODE_STANDALONE)
+                    {
+                        /* Call cppgen for both the user provided IDL file (filename),
+                         * and the generated IDL file (fname).
+                         */
+                        char cpp_command[MAX_CPP_COMMAND];
+                        cpp_command[0] = '\0';
+
+                        for (i = 0; i < c_iterLength(includeDefinitions); i++)
+                        {
+                            /* Extend command line with all include path options */
+                            os_strncat (cpp_command, " -I", (size_t)3);
+                            os_strncat (cpp_command, QUOTE, strlen(QUOTE));
+                            os_strncat (cpp_command, c_iterObject(includeDefinitions, i),
+                                     (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
+                            os_strncat (cpp_command, QUOTE, strlen(QUOTE));
+                        }
+                        /* Put the path to the dds_dcps.idl in the -I's for cppgen at the end */
+                        templ_path = os_getenv ("OSPL_TMPL_PATH");
+                        if (templ_path == NULL)
+                        {
+                           printf ("Variable OSPL_TMPL_PATH not defined\n");
+                           exit (1);
+                        }
+                        snprintf(fnameA, sizeof(fnameA), "%s", templ_path);
                         os_strncat (cpp_command, " -I", (size_t)3);
                         os_strncat (cpp_command, QUOTE, strlen(QUOTE));
-                        os_strncat (cpp_command, c_iterObject(includeDefinitions, i),
-                                 (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
+                        os_strncat (cpp_command, fnameA, strlen(fnameA));
                         os_strncat (cpp_command, QUOTE, strlen(QUOTE));
-                    }
-                    /* Put the path to the dds_dcps.idl in the -I's for cppgen at the end */
-                    templ_path = os_getenv ("OSPL_TMPL_PATH");
-                    if (templ_path == NULL)
-                    {
-                       printf ("Variable OSPL_TMPL_PATH not defined\n");
-                       exit (1);
-                    }
-                    snprintf(fnameA, sizeof(fnameA), "%s", templ_path);
-                    os_strncat (cpp_command, " -I", (size_t)3);
-                    os_strncat (cpp_command, QUOTE, strlen(QUOTE));
-                    os_strncat (cpp_command, fnameA, strlen(fnameA));
-                    os_strncat (cpp_command, QUOTE, strlen(QUOTE));
 
-                    for (i = 0; i < c_iterLength(macroDefinitions); i++)
-                    {
-                        /* Extend command line with all macro definitions options */
-                        os_strncat (cpp_command, " -D", (size_t)3);
-                        os_strncat (cpp_command, QUOTE, strlen(QUOTE));
-                        os_strncat (cpp_command, c_iterObject(macroDefinitions, i),
-                                 (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
-                        os_strncat (cpp_command, QUOTE, strlen(QUOTE));
+
+                        for (i = 0; i < c_iterLength(macroDefinitions); i++)
+                        {
+                            /* Extend command line with all macro definitions options */
+                            os_strncat (cpp_command, " -D", (size_t)3);
+                            os_strncat (cpp_command, QUOTE, strlen(QUOTE));
+                            os_strncat (cpp_command, c_iterObject(macroDefinitions, i),
+                                     (size_t)(sizeof(cpp_command)-strlen(cpp_command)));
+                            os_strncat (cpp_command, QUOTE, strlen(QUOTE));
+                        }
+
+                        if(idl_getIsISOCpp())
+                        {
+                            os_strncat (cpp_command, " -isocpp", (size_t)8);
+                        }
+
+                        /* First on the dcps idl file that is generated by idlpp */
+                        if (runCppGen (outputDir, cpp_command, dcpsIdlFileName, FALSE) != 0)
+                        {
+                           unlink(dcpsIdlFileName);
+                           reportErrorAndExit("running cppgen.");
+                        }
+                        unlink(dcpsIdlFileName);
+                        os_free(dcpsIdlFileName);
+
+
+                        if(idl_getIsISOCppTypes())
+                        {
+                            /* Extend with the -iso type generation option if required */
+                            os_strncat (cpp_command, " -iso", (size_t)5);
+                            if (idl_getIsISOCppTestMethods())
+                            {
+                                os_strncat (cpp_command, " -isotest", (size_t)9);
+                            }
+                            if(idl_getIsGenEquality())
+                            {
+                                os_strncat (cpp_command, " -genequality", (size_t)13);
+                            }
+                        }
+
+                        /* Now on the orignal idl file. Depending on the -i parameter, also generate code for interfaces */
+                        if (runCppGen (outputDir, cpp_command, filename, cpp_ignoreInterfaces) != 0)
+                        {
+                           unlink(fname);
+                           reportErrorAndExit("running cppgen.");
+                        }
                     }
 
-                    /* First on the orignal idl file. Depending on the -i parameter, also generate code for interfaces */
-                    if (runCppGen (outputDir, cpp_command, filename, cpp_ignoreInterfaces) != 0)
-                    {
-                       unlink(fname);
-                       reportErrorAndExit("running cppgen.");
-                    }
-
-                    /* Now on the dcps idl file that is generated by idlpp */
-                    if (runCppGen (outputDir, cpp_command, dcpsIdlFileName, FALSE) != 0)
-                    {
-                       unlink(dcpsIdlFileName);
-                       reportErrorAndExit("running cppgen.");
-                    }
-                    unlink(dcpsIdlFileName);
-                    os_free(dcpsIdlFileName);
                 }
             } else if (idl_getLanguage() == IDL_LANG_C) {
                 os_char* tmp;
@@ -1273,8 +1361,8 @@ OPENSPLICE_MAIN (ospl_idlpp)
                    user types
                 */
                 snprintf(fname,
-                    strlen(basename) + MAX_FILE_POSTFIX_LENGTH,
-                    "%sSplDcps.h", basename);
+                    strlen(basename) + strlen(suffix) + MAX_FILE_POSTFIX_LENGTH,
+                    "%s%sSplDcps.h", basename, suffix);
                 idl_fileSetCur(idl_fileOutNew (fname, "w"));
                 if (idl_fileCur() == NULL) {
                     idl_reportOpenError(fname);
@@ -1282,11 +1370,11 @@ OPENSPLICE_MAIN (ospl_idlpp)
                 if (dcpsTypes) {
                     idl_fileOutPrintf(idl_fileCur(), "#include \"dds_dcpsSplDcps.h\"\n\n");
                 }
-                tmp = os_malloc((size_t)((int)strlen(basename)+strlen("Dcps"))+1);
+                tmp = os_malloc((size_t)((int)strlen(basename)+strlen(suffix)+strlen("Dcps"))+1);
                 snprintf
                     (tmp,
-                    (size_t)((int)strlen(basename) + strlen("Dcps")+1),
-                    "%sDcps", basename);
+                    (size_t)((int)strlen(basename) +strlen(suffix)+ strlen("Dcps")+1),
+                    "%s%sDcps", basename, suffix);
                 idl_genSpliceTypeSetIncludeFileName(tmp);
                 os_free(tmp);
                 idl_genSpliceTypeUseVoidPtrs(TRUE);
@@ -1443,7 +1531,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
                 idl_walk(base, filename, source, traceWalk, idl_genSACSTypedClassDefsProgram(&csUserData));
                 idl_fileOutFree(idl_fileCur());
             } else if (idl_getLanguage() == IDL_LANG_JAVA) {
-                idl_genJavaHelperInit(orgPackage, tarPackage);
+                idl_genJavaHelperInit(orgPackageList, tarPackageList);
                 idl_walk(base, filename, source, traceWalk, idl_genSajMetaProgram());
                 idl_walk(base, filename, source, traceWalk, idl_genSajTypedClassProgram());
                 if (idl_getCorbaMode() == IDL_MODE_ORB_BOUND) {
@@ -1461,6 +1549,10 @@ OPENSPLICE_MAIN (ospl_idlpp)
                     idl_walk(base, filename, source, traceWalk, idl_genSajHolderProgram());
                 }
             }
+        }
+
+        if (makeMetrics) {
+            idl_genMetaSize(filename);
         }
 
         if (makeSpliceType) {
@@ -1501,7 +1593,13 @@ OPENSPLICE_MAIN (ospl_idlpp)
             }
             switch (idl_getLanguage()) {
             case IDL_LANG_CXX:
-                idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxCopyinProgram());
+                {
+                    idl_program ci = idl_genCorbaCxxCopyinProgram();
+                    /* If the suffix is empty, static type-caching is enabled.
+                     * Disabled otherwise. */
+                    ci->userData = suffix;
+                    idl_walk(base, filename, source, traceWalk, ci);
+                }
                 idl_walk(base, filename, source, traceWalk, idl_genCorbaCxxCopyoutProgram());
             break;
             case IDL_LANG_C:
@@ -1656,7 +1754,6 @@ OPENSPLICE_MAIN (ospl_idlpp)
             c_iterFree (typeNames);
         }
 
-
         /* Free resources related to the file dependencies */
         idl_depDefExit();
         os_free(fname);
@@ -1668,6 +1765,7 @@ OPENSPLICE_MAIN (ospl_idlpp)
         os_sharedMemoryDetach(sHandle);
         os_sharedDestroyHandle(sHandle);
     }
+    os_free(suffix);
     os_free(filename);
     os_free(basename);
     os_free(ccppOrbPath);
@@ -1681,19 +1779,14 @@ OPENSPLICE_MAIN (ospl_idlpp)
         os_free(outputDir);
         idl_dirOurFree();
     }
-    if(orgPackage)
-    {
-        os_free(orgPackage);
-    }
-    if(tarPackage)
-    {
-        os_free(tarPackage);
-    }
     if(clientHeader)
     {
         os_free(clientHeader);
     }
     os_serviceStop();
+
+    c_iterFree(tarPackageList);
+    c_iterFree(orgPackageList);
 
     idl_dllExit();
     return returnCode;

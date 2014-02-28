@@ -12,11 +12,16 @@
 #ifndef OSPL_DDS_CORE_DETAIL_CONFORMANCE_HPP_
 #define OSPL_DDS_CORE_DETAIL_CONFORMANCE_HPP_
 
+// Implementation
+
 /**
  * @file
+ * @internal
+ * @note Values 'set' in this file should be mirrored in etc/doxygen_isocpp_common.cfg
+ * in order to ensure the doxygen documentation includes all supported QoS
+ * and features and ting.
  */
 
-// Implementation
 /* Values from SimD 1.0 */
 #define OMG_DDS_CONTENT_SUBSCRIPTION_SUPPORT                FULL
 // #define OMG_DDS_MULTI_TOPIC_SUPPORT                         FULL

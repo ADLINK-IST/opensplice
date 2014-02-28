@@ -345,6 +345,7 @@ v_serviceChangeState(
             case STATE_NONE:
             case STATE_INITIALISING:
             case STATE_TERMINATING:
+            case STATE_INCOMPATIBLE_CONFIGURATION:
             default:
                 /* ignore */
                 break;

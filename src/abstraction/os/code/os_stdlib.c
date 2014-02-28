@@ -17,7 +17,7 @@
 #include "code/os_stdlib.c"
 
 size_t
-os_strnlen(char *ptr, size_t maxlen)
+os_strnlen(const char *ptr, size_t maxlen)
 {
    size_t len;
    for ( len = 0; len < maxlen && ptr[len] != '\0'; len++ )

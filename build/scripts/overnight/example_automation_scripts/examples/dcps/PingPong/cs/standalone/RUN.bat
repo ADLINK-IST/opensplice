@@ -15,8 +15,6 @@ set BLOKCOUNT=100
    
 call %FUNCTIONS% :check_osplhome
 
-call %FUNCTIONS% :deleteDBFFiles
-
 call %FUNCTIONS% :startOSPL
 
 ECHO "Starting Pong"

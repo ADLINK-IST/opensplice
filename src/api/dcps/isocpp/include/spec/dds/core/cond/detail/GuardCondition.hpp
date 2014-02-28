@@ -22,14 +22,18 @@
 #include <dds/core/cond/TGuardCondition.hpp>
 #include <foo/bar/core/cond/GuardCondition.hpp>
 
-namespace dds {
-  namespace core {
-    namespace cond {
-      namespace detail {
-        typedef dds::core::cond::TGuardCondition<foo::bar::core::cond::GuardCondition> GuardCondition;
-      }
-    }
-  }
+namespace dds
+{
+namespace core
+{
+namespace cond
+{
+namespace detail
+{
+typedef dds::core::cond::TGuardCondition<foo::bar::core::cond::GuardCondition> GuardCondition;
+}
+}
+}
 }
 
 

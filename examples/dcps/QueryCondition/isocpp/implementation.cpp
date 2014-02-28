@@ -18,6 +18,10 @@
 
 #include "QueryConditionData_DCPS.hpp"
 
+namespace {
+    const unsigned int write_loop_count = 20;
+}
+
 namespace examples {
 #ifdef GENERATING_EXAMPLE_DOXYGEN
 GENERATING_EXAMPLE_DOXYGEN /* workaround doxygen bug */
@@ -61,7 +65,7 @@ int publisher(int argc, char *argv[])
                 << dds::core::policy::Reliability::Reliable();
 
         /** A dds::topic::Topic is created for our sample type on the domain participant. */
-        dds::topic::Topic<QueryConditionData::Stock> topic(dp, "StockTrackerExclusive", topicQos);
+        dds::topic::Topic<StockMarket::Stock> topic(dp, "StockTrackerExclusive", topicQos);
 
         /** A dds::pub::Publisher is created on the domain participant. */
         std::string name = "QueryCondition example";
@@ -80,35 +84,31 @@ int publisher(int argc, char *argv[])
         dwqos << dds::core::policy::WriterDataLifecycle::ManuallyDisposeUnregisteredInstances();
 
         /** A dds::pub::DataWriter is created on the Publisher & Topic with the modififed Qos. */
-        dds::pub::DataWriter<QueryConditionData::Stock> dw(pub, topic, dwqos);
+        dds::pub::DataWriter<StockMarket::Stock> dw(pub, topic, dwqos);
 
         /** Two samples are created */
-        QueryConditionData::Stock geQuote;
-        geQuote.ticker = "GE";
-        geQuote.price = 12.00f;
+        StockMarket::Stock geQuote("GE", 12.00f);
 
-        QueryConditionData::Stock msftQuote;
-        msftQuote.ticker = "MSFT";
-        msftQuote.price = 25.00f;
+        StockMarket::Stock msftQuote("MSFT", 25.00f);
 
         dds::core::InstanceHandle geHandle = dw.register_instance(geQuote);
         dds::core::InstanceHandle msftHandle = dw.register_instance(msftQuote);
 
         /** Update sample data and write data each second for 20 seconds */
-        for (int i = 0; i < 20; i++)
+        for (unsigned int i = 0; i < write_loop_count; i++)
         {
-            geQuote.price = geQuote.price + 0.5f;
-            msftQuote.price = msftQuote.price + 1.5f;
+            geQuote.price() += 0.5f;
+            msftQuote.price() += 1.5f;
             std::cout << "=== [QueryConditionDataPublisher] sends 2 stockQuotes : (GE, "
-                      << geQuote.price << ") (MSFT, " << msftQuote.price << ")" << std::endl;
+                      << geQuote.price() << ") (MSFT, " << msftQuote.price() << ")" << std::endl;
             dw << geQuote;
             dw << msftQuote;
             exampleSleepMilliseconds(1000);
         }
 
         /** A signal to terminate is sent to the subscriber */
-        geQuote.price = -1;
-        msftQuote.price = -1;
+        geQuote.price() = -1;
+        msftQuote.price() = -1;
         dw << geQuote;
         dw << msftQuote;
 
@@ -141,10 +141,10 @@ int subscriber(int argc, char *argv[])
     try
     {
         // usage : QueryConditionDataQuerySubscriber <query_string>
-        std::string QueryConditionDataToSubscribe;
+        std::string requested_ticker;
         if (argc > 1)
         {
-            QueryConditionDataToSubscribe = argv[1];
+            requested_ticker = argv[1];
         }
         else
         {
@@ -159,7 +159,7 @@ int subscriber(int argc, char *argv[])
         dds::topic::qos::TopicQos topicQos = dp.default_topic_qos()
                                                     << dds::core::policy::Durability::Transient()
                                                     << dds::core::policy::Reliability::Reliable();
-        dds::topic::Topic<QueryConditionData::Stock> topic(dp, "StockTrackerExclusive", topicQos);
+        dds::topic::Topic<StockMarket::Stock> topic(dp, "StockTrackerExclusive", topicQos);
 
         /** A dds::sub::Subscriber is created on the domain participant. */
         std::string name = "QueryCondition example";
@@ -172,41 +172,67 @@ int subscriber(int argc, char *argv[])
         dds::sub::qos::DataReaderQos drqos = topic.qos();
 
         /** A dds::sub::DataReader is created on the Subscriber & Topic with the DataReaderQos. */
-        dds::sub::DataReader<QueryConditionData::Stock> dr(sub, topic, drqos);
+        dds::sub::DataReader<StockMarket::Stock> dr(sub, topic, drqos);
 
         /** A query and data state are created */
-        std::cout << "=== [QueryConditionDataQuerySubscriber] Query : ticker = " << QueryConditionDataToSubscribe << std::endl;
+        std::cout << "=== [QueryConditionDataQuerySubscriber] Query : ticker = " << requested_ticker << std::endl;
         std::vector<std::string> params;
-        params.push_back(QueryConditionDataToSubscribe);
+        params.push_back(requested_ticker);
         dds::sub::Query query(dr, "ticker=%0", params);
         dds::sub::status::DataState anyDataState;
 
         /** An attempt to take samples is made repeatedly until it succeeds,
          * or 60 seconds have elapsed. */
         bool closed = false;
-        int count = 0;
+        unsigned int count = 0;
+        unsigned int correct_quote_count = 0;
         do
         {
-            dds::sub::LoanedSamples<QueryConditionData::Stock> samples = dr.select().content(query).state(anyDataState).take();
-            for (dds::sub::LoanedSamples<QueryConditionData::Stock>::const_iterator sample = samples.begin();
+            dds::sub::LoanedSamples<StockMarket::Stock> samples;
+            /* The below two approaches are equivalent so we can just alternate between them */
+            if (correct_quote_count % 2)
+            {
+                /* take type #2 */
+                dr >> dds::sub::content(query)
+                   >> dds::sub::state(dds::sub::status::DataState::any())
+                   >> dds::sub::take
+                   >> samples;
+            }
+            else
+            {
+                /* take type #1 */
+                samples = dr.select().content(query).state(dds::sub::status::DataState::any()).take();
+            }
+            for (dds::sub::LoanedSamples<StockMarket::Stock>::const_iterator sample = samples.begin();
                  sample < samples.end();
                  ++sample)
             {
-                if ((*sample).info().valid())
+                if (sample->info().valid())
                 {
-                    if((*sample).data().price == -1.0f)
+                    if(sample->data().price() == -1.0f)
                     {
                         closed = true;
                         break;
                     }
                     std::cout << "=== [QueryConditionDataSubscriber] receives stockQuote :  ("
-                    << (*sample).data().ticker.in() << ": " << (*sample).data().price << ")" << std::endl;
+                              << sample->data().ticker() << ": " << sample->data().price()
+                              << ") using 'take' type #" << (correct_quote_count % 2) + 1 << std::endl;
+
+                    /* Verify the value is as expected */
+                    if (requested_ticker == sample->data().ticker())
+                        ++correct_quote_count;
+                    else
+                    {
+                        std::cerr << "=== [QueryConditionDataQuerySubscriber] Unexpected quote received for "
+                                  << sample->data().ticker() << std::endl;
+                        result = 1;
+                    }
                 }
             }
-            exampleSleepMilliseconds(100);
+            exampleSleepMilliseconds(900);
             ++count;
         }
-        while (!closed && count < 600);
+        while (!closed && count < write_loop_count * 30);
 
         if (!closed)
         {
@@ -216,6 +242,11 @@ int subscriber(int argc, char *argv[])
         else
         {
             std::cout << "=== [QueryConditionDataQuerySubscriber] Market Closed" << std::endl;
+            if (correct_quote_count != (requested_ticker == "GE" || requested_ticker == "MSFT" ? write_loop_count : 0))
+            {
+                std::cerr << "=== [QueryConditionDataQuerySubscriber] Incorrect quote count." << std::endl;
+                result = 1;
+            }
         }
     }
     catch (const dds::core::Exception& e)
@@ -230,3 +261,6 @@ int subscriber(int argc, char *argv[])
 }
 }
 }
+
+EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_QueryCondition_publisher, examples::dcps::QueryCondition::isocpp::publisher)
+EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_QueryCondition_subscriber, examples::dcps::QueryCondition::isocpp::subscriber)

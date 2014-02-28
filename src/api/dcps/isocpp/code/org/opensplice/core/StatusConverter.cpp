@@ -17,13 +17,18 @@
 
 #include <org/opensplice/core/StatusConverter.hpp>
 
-namespace org { namespace opensplice { namespace core {
+namespace org
+{
+namespace opensplice
+{
+namespace core
+{
 
 //--------------------------------------------------------------------------------
 //  DataReader Status
 //--------------------------------------------------------------------------------
 void convertStatus(const DDS::LivelinessChangedStatus& lcs,
-                    dds::core::status::LivelinessChangedStatus& liveliness_changed_status)
+                   dds::core::status::LivelinessChangedStatus& liveliness_changed_status)
 {
     liveliness_changed_status->alive_count(lcs.alive_count);
     liveliness_changed_status->not_alive_count(lcs.not_alive_count);
@@ -32,7 +37,7 @@ void convertStatus(const DDS::LivelinessChangedStatus& lcs,
 }
 
 void convertStatus(const DDS::SampleRejectedStatus& srs,
-                    dds::core::status::SampleRejectedStatus& sample_rejected_status)
+                   dds::core::status::SampleRejectedStatus& sample_rejected_status)
 {
     sample_rejected_status->total_count(srs.total_count);
     sample_rejected_status->total_count_change(srs.total_count_change);
@@ -44,14 +49,14 @@ void convertStatus(const DDS::SampleRejectedStatus& srs,
 }
 
 void convertStatus(const DDS::SampleLostStatus& sls,
-                    dds::core::status::SampleLostStatus& sample_lost_status)
+                   dds::core::status::SampleLostStatus& sample_lost_status)
 {
     sample_lost_status->total_count(sls.total_count);
     sample_lost_status->total_count_change(sls.total_count_change);
 }
 
 void convertStatus(const DDS::RequestedDeadlineMissedStatus& rdms,
-                    dds::core::status::RequestedDeadlineMissedStatus& requested_deadline_missed_status)
+                   dds::core::status::RequestedDeadlineMissedStatus& requested_deadline_missed_status)
 {
     requested_deadline_missed_status->total_count(rdms.total_count);
     requested_deadline_missed_status->total_count_change(rdms.total_count_change);
@@ -60,7 +65,7 @@ void convertStatus(const DDS::RequestedDeadlineMissedStatus& rdms,
 }
 
 void convertStatus(const DDS::RequestedIncompatibleQosStatus& riqs,
-                    dds::core::status::RequestedIncompatibleQosStatus& incompatible_qos_status)
+                   dds::core::status::RequestedIncompatibleQosStatus& incompatible_qos_status)
 {
     incompatible_qos_status->total_count(riqs.total_count);
     incompatible_qos_status->total_count_change(riqs.total_count_change);
@@ -75,7 +80,7 @@ void convertStatus(const DDS::RequestedIncompatibleQosStatus& riqs,
 }
 
 void convertStatus(const DDS::SubscriptionMatchedStatus& sms,
-                    dds::core::status::SubscriptionMatchedStatus& subscription_matched_status)
+                   dds::core::status::SubscriptionMatchedStatus& subscription_matched_status)
 {
     subscription_matched_status->total_count(sms.total_count);
     subscription_matched_status->total_count_change(sms.total_count_change);
@@ -90,7 +95,7 @@ void convertStatus(const DDS::SubscriptionMatchedStatus& sms,
 //--------------------------------------------------------------------------------
 
 void convertStatus(const DDS::OfferedDeadlineMissedStatus& odms,
-                                        dds::core::status::OfferedDeadlineMissedStatus& on_offered_deadline_missed)
+                   dds::core::status::OfferedDeadlineMissedStatus& on_offered_deadline_missed)
 {
     on_offered_deadline_missed->total_count(odms.total_count);
     on_offered_deadline_missed->total_count_change(odms.total_count_change);
@@ -99,7 +104,7 @@ void convertStatus(const DDS::OfferedDeadlineMissedStatus& odms,
 }
 
 void convertStatus(const DDS::OfferedIncompatibleQosStatus& oiqs,
-                                        dds::core::status::OfferedIncompatibleQosStatus& on_offered_incompatible_qos)
+                   dds::core::status::OfferedIncompatibleQosStatus& on_offered_incompatible_qos)
 {
     on_offered_incompatible_qos->total_count(oiqs.total_count);
     on_offered_incompatible_qos->total_count_change(oiqs.total_count_change);
@@ -114,14 +119,14 @@ void convertStatus(const DDS::OfferedIncompatibleQosStatus& oiqs,
 }
 
 void convertStatus(const DDS::LivelinessLostStatus& lls,
-                                        dds::core::status::LivelinessLostStatus& on_liveliness_lost)
+                   dds::core::status::LivelinessLostStatus& on_liveliness_lost)
 {
     on_liveliness_lost->total_count(lls.total_count);
     on_liveliness_lost->total_count_change(lls.total_count_change);
 }
 
 void convertStatus(const DDS::PublicationMatchedStatus& pms,
-                                        dds::core::status::PublicationMatchedStatus& on_publication_matched)
+                   dds::core::status::PublicationMatchedStatus& on_publication_matched)
 {
     on_publication_matched->total_count(pms.total_count);
     on_publication_matched->total_count_change(pms.total_count_change);
@@ -131,4 +136,6 @@ void convertStatus(const DDS::PublicationMatchedStatus& pms,
     on_publication_matched->last_subscription_handle(ih);
 }
 
-}}}
+}
+}
+}

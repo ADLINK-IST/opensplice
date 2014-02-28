@@ -9,6 +9,15 @@ init_submodules ()
     popd &> /dev/null
 }
 
+is_not_old_SunOS ()
+{
+    if expr "`uname -sr`" : 'SunOS 5\.[0-9]$' > /dev/null ; then
+	return 1
+    else
+	return 0
+    fi
+}
+
 set_var ()
 {
     found=0
@@ -22,7 +31,7 @@ set_var ()
         value=$2
     fi
 
-    if [ `uname` != "SunOS" ]
+    if is_not_old_SunOS
     then
         while [ "$i" -lt "${#varkeys[@]}" ]
         do
@@ -67,7 +76,7 @@ unset_var ()
         return
     fi
 
-    if [ `uname` != "SunOS" ]
+    if is_not_old_SunOS
     then
         i=0
         while [ "$i" -lt "${#varkeys[@]}" ]
@@ -86,7 +95,7 @@ unset_var ()
 
 dump_env_vars ()
 {
-    if [ `uname` != "SunOS" ]
+    if is_not_old_SunOS
     then
         i=0
         while [ "$i" -lt "${#varkeys[@]}" ]
@@ -109,7 +118,7 @@ generateReleaseInfo ()
     set_var BASE_VERSION "$BASE_VERSION"
     # We can't base this on git as users aren't necessarily working with a checkout
     # As we only need this to be unique todays date will do.
-    if [ `uname` = "SunOS" ]
+    if is_not_old_SunOS
     then
         TODAYS_DATE=`perl -e 'print int(time)'`
     else
@@ -262,8 +271,8 @@ get_avail_targets ()
             fi
         ;;
         Darwin)
-            required_host=`grep "SPLICE_HOST=.*darwin" "$ENV_DIR/$target"`
-            if [ -n "$required_host" ]
+            required_host=`expr "$target" : '[^.]*\.darwin10[-_]'`
+            if [ "$required_host" -ne 0 ]
             then
                 SELECTED_TARGETS="$SELECTED_TARGETS $target"
             fi
@@ -409,6 +418,7 @@ export_vars ()
     OSPL_HOME_NORMALIZED=`"$OSPL_HOME/bin/ospl_normalizePath" "$OSPL_HOME"`
     set_var OSPL_HOME_NORMALIZED "$OSPL_HOME_NORMALIZED"
     set_var SPLICE_TARGET "$SPLICE_TARGET"
+    set_var SPLICE_REAL_TARGET "$SPLICE_TARGET"
     set_var OSPL_TMPL_PATH "$OSPL_TMPL_PATH"
 }
 

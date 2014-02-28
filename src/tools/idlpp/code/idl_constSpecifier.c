@@ -28,7 +28,7 @@ static char *
 operatorImage (
     idl_exprKind exprKind)
 {
-    char *opImage;
+    char *opImage = NULL;
 
     switch (exprKind) {
     case idl_or:
@@ -110,7 +110,7 @@ char *
 idl_operandImage (
     idl_operand operand)
 {
-    char *image;
+    char *image = NULL;
 
     switch (operand->kind) {
     case idl_cExpr:
@@ -167,7 +167,7 @@ idl_constExpressionImage (
     char *image = NULL;
     char *operandImage = NULL;
     int i;
-    int newLen;
+    int newLen = 0;
 
     if (c_iterLength (constExpression->operands) == 1) {
 	/* Unary operator */

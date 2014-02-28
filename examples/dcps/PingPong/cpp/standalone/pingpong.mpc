@@ -43,18 +43,3 @@ project(sacpp*kernel): ospl_dcpssacpp, c_or_cplusplus_example, ospl_cmxml, ospl_
       ../src/ping.cpp
   }
 }
-
-// @todo 1420 This is WIP - TBD & rationalise
-project(sacpp*kernel): ospl_dcpssacpp, c_or_cplusplus_example, ospl_cmxml, ospl_ddsosnet, ospl_ddsrrstorage, run_osplconf2c {
-  after += sacpp*types
-  libs += sacpp*types
-  requires += dcps_sacpp_example
-  requires += ospl_kernelspace
-  requires += ospl_examples_dynamic
-  includes += .
-  exename = sacpp_pingpong_kernel_app_only
-  Source_Files {
-      ../src/pong.cpp
-      ../src/ping.cpp
-  }
-}

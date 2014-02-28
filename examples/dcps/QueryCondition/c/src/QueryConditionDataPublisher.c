@@ -42,19 +42,19 @@ int OSPL_MAIN (int argc, char *argv[])
 
    DDS_Publisher QueryConditionDataPublisher;
    DDS_DataWriter QueryConditionDataDataWriter;
-   QueryConditionData_Stock* geStockSample;
-   QueryConditionData_Stock* msftStockSample;
+   StockMarket_Stock* geStockSample;
+   StockMarket_Stock* msftStockSample;
    DDS_InstanceHandle_t geInstanceHandle;
    DDS_InstanceHandle_t msftInstancetHandle;
 
    createParticipant("QueryCondition example");
 
    // Register Stock Topic's type in the DDS Domain.
-   g_StockTypeSupport = (DDS_TypeSupport) QueryConditionData_StockTypeSupport__alloc();
-   checkHandle(g_StockTypeSupport, "QueryConditionData_StockTypeSupport__alloc");
+   g_StockTypeSupport = (DDS_TypeSupport) StockMarket_StockTypeSupport__alloc();
+   checkHandle(g_StockTypeSupport, "StockMarket_StockTypeSupport__alloc");
    registerStockType(g_StockTypeSupport);
    // Create Stock Topic in the DDS Domain.
-   g_StockTypeName = QueryConditionData_StockTypeSupport_get_type_name(g_StockTypeSupport);
+   g_StockTypeName = StockMarket_StockTypeSupport_get_type_name(g_StockTypeSupport);
    g_StockTopic = createTopic("StockTrackerExclusive", g_StockTypeName);
    DDS_free(g_StockTypeName);
    DDS_free(g_StockTypeSupport);
@@ -66,8 +66,8 @@ int OSPL_MAIN (int argc, char *argv[])
    QueryConditionDataDataWriter = createDataWriter(QueryConditionDataPublisher, g_StockTopic, FALSE);
 
    // Publish a Stock Sample reflecting the state of the Msg DataWriter.
-   geStockSample = QueryConditionData_Stock__alloc();
-   msftStockSample = QueryConditionData_Stock__alloc();
+   geStockSample = StockMarket_Stock__alloc();
+   msftStockSample = StockMarket_Stock__alloc();
 
    msftStockSample->ticker = DDS_string_alloc(msftTickerLength);
    snprintf(msftStockSample->ticker, msftTickerLength + 1, "%s", msftTicker);
@@ -77,8 +77,8 @@ int OSPL_MAIN (int argc, char *argv[])
    snprintf(geStockSample->ticker, geTickerLength + 1, "%s", geTicker);
    geStockSample->price = 25.00f;
 
-   geInstanceHandle = QueryConditionData_StockDataWriter_register_instance(QueryConditionDataDataWriter, geStockSample);
-   msftInstancetHandle = QueryConditionData_StockDataWriter_register_instance(QueryConditionDataDataWriter, msftStockSample);
+   geInstanceHandle = StockMarket_StockDataWriter_register_instance(QueryConditionDataDataWriter, geStockSample);
+   msftInstancetHandle = StockMarket_StockDataWriter_register_instance(QueryConditionDataDataWriter, msftStockSample);
 
    nb_iteration = 20;
    // The subscriber should display the prices sent by the publisher with the highest ownership strength
@@ -104,8 +104,8 @@ int OSPL_MAIN (int argc, char *argv[])
    os_nanoSleep(os_delay2000);
    printf("Market Closed");
 
-   QueryConditionData_StockDataWriter_unregister_instance (QueryConditionDataDataWriter, geStockSample, geInstanceHandle);
-   QueryConditionData_StockDataWriter_unregister_instance (QueryConditionDataDataWriter, msftStockSample, msftInstancetHandle);
+   StockMarket_StockDataWriter_unregister_instance (QueryConditionDataDataWriter, geStockSample, geInstanceHandle);
+   StockMarket_StockDataWriter_unregister_instance (QueryConditionDataDataWriter, msftStockSample, msftInstancetHandle);
 
    // Cleanup DDS from the created Entities.
    deleteDataWriter(QueryConditionDataPublisher, QueryConditionDataDataWriter);

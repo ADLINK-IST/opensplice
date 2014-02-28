@@ -32,120 +32,125 @@
     template <> \
     class policy_id<POLICY> { \
     public: \
-    static const dds::core::policy::QosPolicyId value = ID; \
-}; \
-template <> \
-class policy_name<POLICY> { \
-public:\
-static const std::string& name(); \
-};
+        static const dds::core::policy::QosPolicyId value = ID; \
+    }; \
+    template <> \
+    class policy_name<POLICY> { \
+    public:\
+        static const std::string& name(); \
+    };
 
 #define OMG_DDS_DEFINE_POLICY_TRAITS(POLICY, NAME) \
     const std::string& dds::core::policy::policy_name<POLICY>::name() { \
-  static std::string the_name = #NAME; \
-  return the_name; \
-}
+        static std::string name = #NAME; \
+        return name; \
+    }
 
 
-namespace dds { namespace core { namespace policy  {
+namespace dds
+{
+namespace core
+{
+namespace policy
+{
 
-  //==============================================================================
-  // Policy Trait Classes
+//==============================================================================
+// Policy Trait Classes
 
-  template <typename Policy>
-  class policy_id { };
+template <typename Policy>
+class policy_id { };
 
-  template <typename Policy>
-  class policy_name { };
+template <typename Policy>
+class policy_name { };
 
 
 
 #ifdef OMG_DDS_EXTENSIBLE_AND_DYNAMIC_TOPIC_TYPE_SUPPORT
-  typedef uint16_t DataRepresentationId;
+typedef uint16_t DataRepresentationId;
 
-  typedef std::vector<DataRepresentationId> DataRepresentationIdSeq;
+typedef std::vector<DataRepresentationId> DataRepresentationIdSeq;
 #endif
 
-  typedef dds::core::policy::detail::Deadline
-      Deadline;
+typedef dds::core::policy::detail::Deadline
+Deadline;
 
-  typedef dds::core::policy::detail::DestinationOrder
-      DestinationOrder;
+typedef dds::core::policy::detail::DestinationOrder
+DestinationOrder;
 
-  typedef dds::core::policy::detail::Durability
-      Durability;
+typedef dds::core::policy::detail::Durability
+Durability;
 
-  typedef dds::core::policy::detail::EntityFactory
-      EntityFactory;
+typedef dds::core::policy::detail::EntityFactory
+EntityFactory;
 
-  typedef dds::core::policy::detail::GroupData
-      GroupData;
+typedef dds::core::policy::detail::GroupData
+GroupData;
 
-  typedef dds::core::policy::detail::History
-      History;
+typedef dds::core::policy::detail::History
+History;
 
-  typedef dds::core::policy::detail::LatencyBudget
-      LatencyBudget;
+typedef dds::core::policy::detail::LatencyBudget
+LatencyBudget;
 
-  typedef dds::core::policy::detail::Lifespan
-      Lifespan;
+typedef dds::core::policy::detail::Lifespan
+Lifespan;
 
-  typedef dds::core::policy::detail::Liveliness
-      Liveliness;
+typedef dds::core::policy::detail::Liveliness
+Liveliness;
 
-  typedef dds::core::policy::detail::Ownership
-      Ownership;
+typedef dds::core::policy::detail::Ownership
+Ownership;
 
 #ifdef  OMG_DDS_OWNERSHIP_SUPPORT
-  typedef dds::core::policy::detail::OwnershipStrength
-      OwnershipStrength;
+typedef dds::core::policy::detail::OwnershipStrength
+OwnershipStrength;
 #endif  // OMG_DDS_OWNERSHIP_SUPPORT
 
-  typedef dds::core::policy::detail::Partition
-      Partition;
+typedef dds::core::policy::detail::Partition
+Partition;
 
-  template <typename Policy>
-  class policy_id;
+template <typename Policy>
+class policy_id;
 
-  template <typename Policy>
-  class policy_name;
+template <typename Policy>
+class policy_name;
 
-  typedef dds::core::policy::detail::Presentation
-      Presentation;
+typedef dds::core::policy::detail::Presentation
+Presentation;
 
-  typedef ::dds::core::policy::detail::QosPolicyCount QosPolicyCount;
+typedef ::dds::core::policy::detail::QosPolicyCount QosPolicyCount;
 
-  typedef std::vector<QosPolicyCount> QosPolicyCountSeq;
+typedef std::vector<QosPolicyCount> QosPolicyCountSeq;
 
-  typedef uint32_t QosPolicyId;
+typedef uint32_t QosPolicyId;
 
-  typedef dds::core::policy::detail::ReaderDataLifecycle
-      ReaderDataLifecycle;
+typedef dds::core::policy::detail::ReaderDataLifecycle
+ReaderDataLifecycle;
 
-  typedef dds::core::policy::detail::Reliability
-      Reliability;
+typedef dds::core::policy::detail::Reliability
+Reliability;
 
-  typedef dds::core::policy::detail::ResourceLimits
-      ResourceLimits;
+typedef dds::core::policy::detail::ResourceLimits
+ResourceLimits;
 
-  typedef dds::core::policy::detail::TimeBasedFilter
-      TimeBasedFilter;
+typedef dds::core::policy::detail::TimeBasedFilter
+TimeBasedFilter;
 
-  typedef dds::core::policy::detail::TopicData
-      TopicData;
+typedef dds::core::policy::detail::TopicData
+TopicData;
 
-  typedef dds::core::policy::detail::TransportPriority
-      TransportPriority;
+typedef dds::core::policy::detail::TransportPriority
+TransportPriority;
 
-  typedef dds::core::policy::detail::UserData
-      UserData;
+typedef dds::core::policy::detail::UserData
+UserData;
 
-  typedef dds::core::policy::detail::WriterDataLifecycle
-      WriterDataLifecycle;
+typedef dds::core::policy::detail::WriterDataLifecycle
+WriterDataLifecycle;
 
 #ifdef  OMG_DDS_PERSISTENCE_SUPPORT
 typedef ::dds::core::policy::detail::DurabilityService
-    DurabilityService;
+DurabilityService;
 #endif  // OMG_DDS_PERSISTENCE_SUPPORT
 
 #ifdef OMG_DDS_EXTENSIBLE_AND_DYNAMIC_TOPIC_TYPE_SUPPORT
@@ -186,7 +191,9 @@ OMG_DDS_POLICY_TRAITS(DurabilityService,    22)
 
 
 
-} } }
+}
+}
+}
 
 
 #endif /* OMG_DDS_CORE_POLICY_CORE_POLICY_HPP_ */

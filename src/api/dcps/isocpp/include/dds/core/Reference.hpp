@@ -22,7 +22,7 @@
 #include <spec/dds/core/Reference.hpp>
 
 // Implementation
-/** @todo Commented OMG_DDS_LOG to remove?? **/
+/** @internal @todo Commented OMG_DDS_LOG to remove?? **/
 template <typename DELEGATE>
 dds::core::Reference<DELEGATE>::Reference(dds::core::null_type&) : impl_()
 {
@@ -48,6 +48,12 @@ template <typename DELEGATE>
 dds::core::Reference<DELEGATE>::Reference(DELEGATE_T* p) : impl_(p)
 {
     //OMG_DDS_LOG("MM", "Reference(DELEGATE_T* p)");
+}
+
+template <typename DELEGATE>
+dds::core::Reference<DELEGATE>::Reference(const DELEGATE_REF_T& p) : impl_(p)
+{
+    //OMG_DDS_LOG("MM", "Reference(DELEGATE_REF_T& p)");
 }
 
 template <typename DELEGATE>
@@ -84,7 +90,7 @@ dds::core::Reference<DELEGATE>&
 dds::core::Reference<DELEGATE>::operator=(const Reference<D>& that)
 {
     OMG_DDS_STATIC_ASSERT((dds::core::is_base_of<DELEGATE_T, D>::value));
-    if (this != (Reference*)&that)
+    if(this != (Reference*)&that)
     {
         *this = Reference<DELEGATE_T>(that);
     }
@@ -97,8 +103,10 @@ dds::core::Reference<DELEGATE>&
 dds::core::Reference<DELEGATE>::operator=(const R& rhs)
 {
     OMG_DDS_STATIC_ASSERT((dds::core::is_base_of< DELEGATE_T, typename R::DELEGATE_T>::value));
-    if (this != (Reference*)&rhs)
+    if(this != (Reference*)&rhs)
+    {
         *this = Reference<DELEGATE_T>(rhs);
+    }
     return *this;
 }
 
@@ -174,12 +182,12 @@ typename dds::core::Reference<DELEGATE>::DELEGATE_REF_T& ()
     return impl_;
 }
 
-template <class D> bool operator == (dds::core::null_type, const dds::core::Reference<D> & r)
+template <class D> bool operator == (dds::core::null_type, const dds::core::Reference<D>& r)
 {
     return r.is_nil();
 }
 
-template <class D> bool operator != (dds::core::null_type, const dds::core::Reference<D> & r)
+template <class D> bool operator != (dds::core::null_type, const dds::core::Reference<D>& r)
 {
     return !r.is_nil();
 }

@@ -20,6 +20,7 @@
  * OMG PSM class declaration
  */
 #include <spec/dds/core/policy/TCorePolicy.hpp>
+#include <org/opensplice/core/exception_helper.hpp>
 
 // Implementation
 
@@ -36,31 +37,44 @@ template <typename D>
 TUserData<D>::TUserData() : dds::core::Value<D>() { }
 
 template <typename D>
-TUserData<D>::TUserData(const dds::core::ByteSeq& seq) : dds::core::Value<D>(seq) { }
+TUserData<D>::TUserData(const dds::core::ByteSeq& sequence) : dds::core::Value<D>(sequence) { }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
-TUserData<D>::TUserData(const uint8_t* value_begin, const uint8_t* value_end) { }
+TUserData<D>::TUserData(const uint8_t* value_begin, const uint8_t* value_end)
+{
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+}
 
 template <typename D>
 TUserData<D>::TUserData(const TUserData& other) : dds::core::Value<D>(other.value()) { }
 
 template <typename D>
-TUserData<D>& TUserData<D>::value(const dds::core::ByteSeq& seq)
+TUserData<D>& TUserData<D>::value(const dds::core::ByteSeq& sequence)
 {
-    this->delegate().value(seq);
+    this->delegate().value(sequence);
     return *this;
 }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 template <typename OCTET_ITER>
 TUserData<D>& TUserData<D>::value(OCTET_ITER begin, OCTET_ITER end)
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return *this;
 }
 
@@ -70,21 +84,39 @@ const dds::core::ByteSeq TUserData<D>::value() const
     return this->delegate().value();
 }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 const uint8_t* TUserData<D>::begin() const
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return NULL;
 }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 const uint8_t* TUserData<D>::end() const
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return NULL;
 }
 
@@ -94,31 +126,48 @@ template <typename D>
 TGroupData<D>::TGroupData() : dds::core::Value<D>() { }
 
 template <typename D>
-TGroupData<D>::TGroupData(const dds::core::ByteSeq& seq) : dds::core::Value<D>(seq) { }
+TGroupData<D>::TGroupData(const dds::core::ByteSeq& sequence) : dds::core::Value<D>(sequence) { }
 
 template <typename D>
 TGroupData<D>::TGroupData(const TGroupData& other) : dds::core::Value<D>(other.value()) { }
 
-/** @bug OSPL-1746 No implementation
- * @todo Implementation required - see OSPL-1746
- * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
-TGroupData<D>::TGroupData(const uint8_t* value_begin, const uint8_t* value_end) { }
+TGroupData<D>::TGroupData(const uint8_t* value_begin, const uint8_t* value_end)
+{
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
+}
 
 template <typename D>
-TGroupData<D>& TGroupData<D>::value(const dds::core::ByteSeq& seq)
+TGroupData<D>& TGroupData<D>::value(const dds::core::ByteSeq& sequence)
 {
-    this->delegate().value(seq);
+    this->delegate().value(sequence);
     return *this;
 }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 template <typename OCTET_ITER>
 TGroupData<D>& TGroupData<D>::value(OCTET_ITER begin, OCTET_ITER end)
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return *this;
 }
 
@@ -128,27 +177,39 @@ const dds::core::ByteSeq TGroupData<D>::value() const
     return this->delegate().value();
 }
 
-template <typename D>
-dds::core::ByteSeq& TGroupData<D>::value(dds::core::ByteSeq& dst) const
-{
-    dst = this->delegate().value();
-    return dst;
-}
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 const uint8_t* TGroupData<D>::begin() const
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return NULL;
 }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 const uint8_t* TGroupData<D>::end() const
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return NULL;
 }
 
@@ -158,31 +219,44 @@ template <typename D>
 TTopicData<D>::TTopicData() : dds::core::Value<D>() { }
 
 template <typename D>
-TTopicData<D>::TTopicData(const dds::core::ByteSeq& seq) : dds::core::Value<D>(seq) { }
+TTopicData<D>::TTopicData(const dds::core::ByteSeq& sequence) : dds::core::Value<D>(sequence) { }
 
 template <typename D>
 TTopicData<D>::TTopicData(const TTopicData& other) : dds::core::Value<D>(other.value()) { }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
-TTopicData<D>::TTopicData(const uint8_t* value_begin, const uint8_t* value_end) { }
+TTopicData<D>::TTopicData(const uint8_t* value_begin, const uint8_t* value_end)
+{
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+}
 
 template <typename D>
-TTopicData<D>& TTopicData<D>::value(const dds::core::ByteSeq& seq)
+TTopicData<D>& TTopicData<D>::value(const dds::core::ByteSeq& sequence)
 {
-    this->delegate().value(seq);
+    this->delegate().value(sequence);
     return *this;
 }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 template <typename OCTET_ITER>
 TTopicData<D>& TTopicData<D>::value(OCTET_ITER begin, OCTET_ITER end)
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return *this;
 }
 
@@ -192,48 +266,54 @@ const dds::core::ByteSeq TTopicData<D>::value() const
     return this->delegate().value();
 }
 
-/** @bug OSPL-1746 No implementation
- * @todo Implementation required - see OSPL-1746
- * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
-template <typename D>
-dds::core::ByteSeq& TTopicData<D>::value(dds::core::ByteSeq& dst) const
-{
-    return dst;
-}
-
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 const uint8_t* TTopicData<D>::begin() const
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return NULL;
 }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 const uint8_t* TTopicData<D>::end() const
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return NULL;
 }
 
 //TEntityFactory
 
 template <typename D>
-TEntityFactory<D>::TEntityFactory() : dds::core::Value<D>(true) { }
-
-template <typename D>
-TEntityFactory<D>::TEntityFactory(bool the_auto_enable) : dds::core::Value<D>(the_auto_enable) { }
+TEntityFactory<D>::TEntityFactory(bool autoenable_created_entities) : dds::core::Value<D>(autoenable_created_entities) { }
 
 template <typename D>
 TEntityFactory<D>::TEntityFactory(const TEntityFactory& other) : dds::core::Value<D>(other.autoenable_created_entities()) { }
 
 template <typename D>
-TEntityFactory<D>& TEntityFactory<D>::autoenable_created_entities(bool on)
+TEntityFactory<D>& TEntityFactory<D>::autoenable_created_entities(bool autoenable_created_entities)
 {
-    this->delegate().auto_enable(on);
+    this->delegate().auto_enable(autoenable_created_entities);
     return *this;
 }
 
@@ -258,18 +338,15 @@ TEntityFactory<D> TEntityFactory<D>::ManuallyEnable()
 //TTransportPriority
 
 template <typename D>
-TTransportPriority<D>::TTransportPriority(int32_t prio) : dds::core::Value<D>(prio) { }
-
-template <typename D>
-TTransportPriority<D>::TTransportPriority() : dds::core::Value<D>(0) { }
+TTransportPriority<D>::TTransportPriority(int32_t priority) : dds::core::Value<D>(priority) { }
 
 template <typename D>
 TTransportPriority<D>::TTransportPriority(const TTransportPriority& other) : dds::core::Value<D>(other.value()) { }
 
 template <typename D>
-TTransportPriority<D>& TTransportPriority<D>::value(int32_t prio)
+TTransportPriority<D>& TTransportPriority<D>::value(int32_t priority)
 {
-    this->delegate().value(prio);
+    this->delegate().value(priority);
     return *this;
 }
 
@@ -282,18 +359,15 @@ int32_t TTransportPriority<D>::value() const
 //TLifeSpan
 
 template <typename D>
-TLifespan<D>::TLifespan(const dds::core::Duration& d) : dds::core::Value<D>(d) { }
-
-template <typename D>
-TLifespan<D>::TLifespan() : dds::core::Value<D>(dds::core::Duration::infinite()) { }
+TLifespan<D>::TLifespan(const dds::core::Duration& duration) : dds::core::Value<D>(duration) { }
 
 template <typename D>
 TLifespan<D>::TLifespan(const TLifespan& other) : dds::core::Value<D>(other.duration()) { }
 
 template <typename D>
-TLifespan<D>& TLifespan<D>::duration(const dds::core::Duration& d)
+TLifespan<D>& TLifespan<D>::duration(const dds::core::Duration& duration)
 {
-    this->delegate().duration(d);
+    this->delegate().duration(duration);
     return *this;
 }
 
@@ -306,18 +380,15 @@ const dds::core::Duration TLifespan<D>::duration() const
 //TDeadline
 
 template <typename D>
-TDeadline<D>::TDeadline(const dds::core::Duration& d) : dds::core::Value<D>(d) { }
+TDeadline<D>::TDeadline(const dds::core::Duration& period) : dds::core::Value<D>(period) { }
 
 template <typename D>
 TDeadline<D>::TDeadline(const TDeadline& other) : dds::core::Value<D>(other.period()) { }
 
 template <typename D>
-TDeadline<D>::TDeadline() : dds::core::Value<D>(dds::core::Duration::infinite()) { }
-
-template <typename D>
-TDeadline<D>& TDeadline<D>::period(const dds::core::Duration& d)
+TDeadline<D>& TDeadline<D>::period(const dds::core::Duration& period)
 {
-    this->delegate().period(d);
+    this->delegate().period(period);
     return *this;
 }
 
@@ -330,18 +401,15 @@ const dds::core::Duration TDeadline<D>::period() const
 //TLatencyBudget
 
 template <typename D>
-TLatencyBudget<D>::TLatencyBudget(const dds::core::Duration& d) : dds::core::Value<D>(d) { }
-
-template <typename D>
-TLatencyBudget<D>::TLatencyBudget() : dds::core::Value<D>(dds::core::Duration::zero()) { }
+TLatencyBudget<D>::TLatencyBudget(const dds::core::Duration& duration) : dds::core::Value<D>(duration) { }
 
 template <typename D>
 TLatencyBudget<D>::TLatencyBudget(const TLatencyBudget& other) : dds::core::Value<D>(other.duration()) { }
 
 template <typename D>
-TLatencyBudget<D>& TLatencyBudget<D>::duration(const dds::core::Duration& d)
+TLatencyBudget<D>& TLatencyBudget<D>::duration(const dds::core::Duration& duration)
 {
-    this->delegate().duration(d);
+    this->delegate().duration(duration);
     return *this;
 }
 
@@ -352,20 +420,16 @@ const dds::core::Duration TLatencyBudget<D>::duration() const
 }
 
 //TTimeBasedFilter
-
 template <typename D>
-TTimeBasedFilter<D>::TTimeBasedFilter() : dds::core::Value<D>(dds::core::Duration::zero()) { }
-
-template <typename D>
-TTimeBasedFilter<D>::TTimeBasedFilter(const dds::core::Duration& the_min_separation) : dds::core::Value<D>(the_min_separation) { }
+TTimeBasedFilter<D>::TTimeBasedFilter(const dds::core::Duration& minimum_separation) : dds::core::Value<D>(minimum_separation) { }
 
 template <typename D>
 TTimeBasedFilter<D>::TTimeBasedFilter(const TTimeBasedFilter& other) : dds::core::Value<D>(other.minimum_separation()) { }
 
 template <typename D>
-TTimeBasedFilter<D>& TTimeBasedFilter<D>::minimum_separation(const dds::core::Duration& ms)
+TTimeBasedFilter<D>& TTimeBasedFilter<D>::minimum_separation(const dds::core::Duration& minimum_separation)
 {
-    this->delegate().min_separation(ms);
+    this->delegate().min_separation(minimum_separation);
     return *this;
 }
 
@@ -378,20 +442,15 @@ const dds::core::Duration TTimeBasedFilter<D>::minimum_separation() const
 //TPartition
 
 template <typename D>
-TPartition<D>::TPartition(const std::string& partition) : dds::core::Value<D>(partition)
+TPartition<D>::TPartition(const std::string& name) : dds::core::Value<D>(name)
 {
 
 }
 
 template <typename D>
-TPartition<D>::TPartition(const dds::core::StringSeq& partitions) : dds::core::Value<D>(partitions)
+TPartition<D>::TPartition(const dds::core::StringSeq& names) : dds::core::Value<D>(names)
 {
 
-}
-
-template <typename D>
-TPartition<D>::TPartition() : dds::core::Value<D>()
-{
 }
 
 template <typename D>
@@ -402,9 +461,17 @@ TPartition<D>::TPartition(const TPartition& other) : dds::core::Value<D>(other.n
 
 template <typename D>
 TPartition<D>&
-TPartition<D>::name(const dds::core::StringSeq& partitions)
+TPartition<D>::name(const std::string& name)
 {
-    this->delegate().name(partitions);
+    this->delegate().name(name);
+    return *this;
+}
+
+template <typename D>
+TPartition<D>&
+TPartition<D>::name(const dds::core::StringSeq& names)
+{
+    this->delegate().name(names);
     return *this;
 }
 
@@ -415,31 +482,20 @@ TPartition<D>::name() const
     return this->delegate().name();
 }
 
-template <typename D>
-dds::core::StringSeq&
-TPartition<D>::name(dds::core::StringSeq& dst) const
-{
-    dst = this->delegate().name();
-    return dst;
-}
-
 #ifdef OMG_DDS_OWNERSHIP_SUPPORT
 
 //TOwnership
 
 template <typename D>
-TOwnership<D>::TOwnership(dds::core::policy::OwnershipKind::Type the_kind) : dds::core::Value<D>(the_kind) { }
+TOwnership<D>::TOwnership(dds::core::policy::OwnershipKind::Type kind) : dds::core::Value<D>(kind) { }
 
 template <typename D>
 TOwnership<D>::TOwnership(const TOwnership& other) : dds::core::Value<D>(other.kind()) { }
 
 template <typename D>
-TOwnership<D>::TOwnership() : dds::core::Value<D>(dds::core::policy::OwnershipKind::SHARED) { }
-
-template <typename D>
-TOwnership<D>& TOwnership<D>::kind(dds::core::policy::OwnershipKind::Type the_kind)
+TOwnership<D>& TOwnership<D>::kind(dds::core::policy::OwnershipKind::Type kind)
 {
-    this->delegate().kind(the_kind);
+    this->delegate().kind(kind);
     return *this;
 }
 
@@ -462,9 +518,8 @@ TOwnership<D> TOwnership<D>::Shared()
 }
 
 //TOwnershipStrength
-
 template <typename D>
-TOwnershipStrength<D>::TOwnershipStrength(int32_t s) : dds::core::Value<D>(s) { }
+TOwnershipStrength<D>::TOwnershipStrength(int32_t strength) : dds::core::Value<D>(strength) { }
 
 template <typename D>
 TOwnershipStrength<D>::TOwnershipStrength(const TOwnershipStrength& other) : dds::core::Value<D>(other.value()) { }
@@ -476,21 +531,17 @@ int32_t TOwnershipStrength<D>::value() const
 }
 
 template <typename D>
-TOwnershipStrength<D>& TOwnershipStrength<D>::value(int32_t s)
+TOwnershipStrength<D>& TOwnershipStrength<D>::value(int32_t strength)
 {
-    this->delegate().strength(s);
+    this->delegate().strength(strength);
     return *this;
 }
 
 #endif  // OMG_DDS_OWNERSHIP_SUPPORT
 
 //TWriterDataLifeCycle
-
 template <typename D>
-TWriterDataLifecycle<D>::TWriterDataLifecycle() : dds::core::Value<D>(true) { }
-
-template <typename D>
-TWriterDataLifecycle<D>::TWriterDataLifecycle(bool the_autodispose) : dds::core::Value<D>(the_autodispose) { }
+TWriterDataLifecycle<D>::TWriterDataLifecycle(bool autodispose_unregistered_instances) : dds::core::Value<D>(autodispose_unregistered_instances) { }
 
 template <typename D>
 TWriterDataLifecycle<D>::TWriterDataLifecycle(const TWriterDataLifecycle& other) : dds::core::Value<D>(other.autodispose_unregistered_instances()) { }
@@ -502,9 +553,9 @@ bool TWriterDataLifecycle<D>::autodispose_unregistered_instances() const
 }
 
 template <typename D>
-TWriterDataLifecycle<D>& TWriterDataLifecycle<D>::autodispose_unregistered_instances(bool b)
+TWriterDataLifecycle<D>& TWriterDataLifecycle<D>::autodispose_unregistered_instances(bool autodispose_unregistered_instances)
 {
-    this->delegate().autodispose(b);
+    this->delegate().autodispose(autodispose_unregistered_instances);
     return *this;
 }
 
@@ -521,13 +572,9 @@ TWriterDataLifecycle<D> TWriterDataLifecycle<D>::ManuallyDisposeUnregisteredInst
 }
 
 //TReaderDataLifecycle
-
 template <typename D>
-TReaderDataLifecycle<D>::TReaderDataLifecycle() : dds::core::Value<D>(dds::core::Duration::infinite(), dds::core::Duration::infinite()) { }
-
-template <typename D>
-TReaderDataLifecycle<D>::TReaderDataLifecycle(const dds::core::Duration& the_nowriter_delay, const dds::core::Duration& the_disposed_samples_delay)
-    : dds::core::Value<D>(the_nowriter_delay, the_disposed_samples_delay) { }
+TReaderDataLifecycle<D>::TReaderDataLifecycle(const dds::core::Duration& autopurge_nowriter_samples_delay, const dds::core::Duration& autopurge_disposed_samples_delay)
+    : dds::core::Value<D>(autopurge_nowriter_samples_delay, autopurge_disposed_samples_delay) { }
 
 template <typename D>
 TReaderDataLifecycle<D>::TReaderDataLifecycle(const TReaderDataLifecycle& other)
@@ -540,9 +587,9 @@ const dds::core::Duration TReaderDataLifecycle<D>::autopurge_nowriter_samples_de
 }
 
 template <typename D>
-TReaderDataLifecycle<D>& TReaderDataLifecycle<D>::autopurge_nowriter_samples_delay(const dds::core::Duration& d)
+TReaderDataLifecycle<D>& TReaderDataLifecycle<D>::autopurge_nowriter_samples_delay(const dds::core::Duration& autopurge_nowriter_samples_delay)
 {
-    this->delegate().autopurge_nowriter_samples_delay(d);
+    this->delegate().autopurge_nowriter_samples_delay(autopurge_nowriter_samples_delay);
     return *this;
 }
 
@@ -553,9 +600,9 @@ const dds::core::Duration TReaderDataLifecycle<D>::autopurge_disposed_samples_de
 }
 
 template <typename D>
-TReaderDataLifecycle<D>& TReaderDataLifecycle<D>::autopurge_disposed_samples_delay(const dds::core::Duration& d)
+TReaderDataLifecycle<D>& TReaderDataLifecycle<D>::autopurge_disposed_samples_delay(const dds::core::Duration& autopurge_disposed_samples_delay)
 {
-    this->delegate().autopurge_disposed_samples_delay(d);
+    this->delegate().autopurge_disposed_samples_delay(autopurge_disposed_samples_delay);
     return *this;
 }
 
@@ -566,26 +613,23 @@ TReaderDataLifecycle<D> TReaderDataLifecycle<D>::NoAutoPurgeDisposedSamples()
 }
 
 template <typename D>
-TReaderDataLifecycle<D> TReaderDataLifecycle<D>::AutoPurgeDisposedSamples(const dds::core::Duration& d)
+TReaderDataLifecycle<D> TReaderDataLifecycle<D>::AutoPurgeDisposedSamples(const dds::core::Duration& autopurge_disposed_samples_delay)
 {
-    return TReaderDataLifecycle().autopurge_disposed_samples_delay(d);
+    return TReaderDataLifecycle().autopurge_disposed_samples_delay(autopurge_disposed_samples_delay);
 }
 
 //TDurability
 
 template <typename D>
-TDurability<D>::TDurability(dds::core::policy::DurabilityKind::Type the_kind) : dds::core::Value<D>(the_kind) { }
+TDurability<D>::TDurability(dds::core::policy::DurabilityKind::Type kind) : dds::core::Value<D>(kind) { }
 
 template <typename D>
 TDurability<D>::TDurability(const TDurability& other) : dds::core::Value<D>(other.kind()) { }
 
 template <typename D>
-TDurability<D>::TDurability() : dds::core::Value<D>(dds::core::policy::DurabilityKind::VOLATILE) { }
-
-template <typename D>
-TDurability<D>& TDurability<D>::kind(dds::core::policy::DurabilityKind::Type the_kind)
+TDurability<D>& TDurability<D>::kind(dds::core::policy::DurabilityKind::Type kind)
 {
-    this->delegate().kind(the_kind);
+    this->delegate().kind(kind);
     return *this;
 }
 
@@ -620,22 +664,18 @@ TDurability<D> TDurability<D>::Persistent()
 }
 
 //TPresentation
-
 template <typename D>
-TPresentation<D>::TPresentation() : dds::core::Value<D>(dds::core::policy::PresentationAccessScopeKind::INSTANCE, false, false) { }
-
-template <typename D>
-TPresentation<D>::TPresentation(dds::core::policy::PresentationAccessScopeKind::Type the_access_scope, bool the_coherent_access, bool the_ordered_access)
-    : dds::core::Value<D>(the_access_scope, the_coherent_access, the_ordered_access) { }
+TPresentation<D>::TPresentation(dds::core::policy::PresentationAccessScopeKind::Type access_scope, bool coherent_access, bool ordered_access)
+    : dds::core::Value<D>(access_scope, coherent_access, ordered_access) { }
 
 template <typename D>
 TPresentation<D>::TPresentation(const TPresentation& other)
     : dds::core::Value<D>(other.access_scope(), other.coherent_access(), other.ordered_access()) { }
 
 template <typename D>
-TPresentation<D>& TPresentation<D>::access_scope(dds::core::policy::PresentationAccessScopeKind::Type  as)
+TPresentation<D>& TPresentation<D>::access_scope(dds::core::policy::PresentationAccessScopeKind::Type access_scope)
 {
-    this->delegate().access_scope(as);
+    this->delegate().access_scope(access_scope);
     return *this;
 }
 
@@ -646,9 +686,9 @@ dds::core::policy::PresentationAccessScopeKind::Type TPresentation<D>::access_sc
 }
 
 template <typename D>
-TPresentation<D>& TPresentation<D>::coherent_access(bool on)
+TPresentation<D>& TPresentation<D>::coherent_access(bool coherent_access)
 {
-    this->delegate().coherent_access(on);
+    this->delegate().coherent_access(coherent_access);
     return *this;
 }
 
@@ -659,9 +699,9 @@ bool TPresentation<D>::coherent_access() const
 }
 
 template <typename D>
-TPresentation<D>& TPresentation<D>::ordered_access(bool on)
+TPresentation<D>& TPresentation<D>::ordered_access(bool ordered_access)
 {
-    this->delegate().ordered_access(on);
+    this->delegate().ordered_access(ordered_access);
     return *this;
 }
 
@@ -672,40 +712,36 @@ bool TPresentation<D>::ordered_access() const
 }
 
 template <typename D>
-TPresentation<D> TPresentation<D>::GroupAccessScope(bool coherent, bool ordered)
+TPresentation<D> TPresentation<D>::GroupAccessScope(bool coherent_access, bool ordered_access)
 {
-    return TPresentation(dds::core::policy::PresentationAccessScopeKind::GROUP, coherent, ordered);
+    return TPresentation(dds::core::policy::PresentationAccessScopeKind::GROUP, coherent_access, ordered_access);
 }
 
 template <typename D>
-TPresentation<D> TPresentation<D>::InstanceAccessScope(bool coherent, bool ordered)
+TPresentation<D> TPresentation<D>::InstanceAccessScope(bool coherent_access, bool ordered_access)
 {
-    return TPresentation(dds::core::policy::PresentationAccessScopeKind::INSTANCE, coherent, ordered);
+    return TPresentation(dds::core::policy::PresentationAccessScopeKind::INSTANCE, coherent_access, ordered_access);
 }
 
 template <typename D>
-TPresentation<D> TPresentation<D>::TopicAccessScope(bool coherent, bool ordered)
+TPresentation<D> TPresentation<D>::TopicAccessScope(bool coherent_access, bool ordered_access)
 {
-    return TPresentation(dds::core::policy::PresentationAccessScopeKind::TOPIC, coherent, ordered);
+    return TPresentation(dds::core::policy::PresentationAccessScopeKind::TOPIC, coherent_access, ordered_access);
 }
 
 //TReliability
-
 template <typename D>
-TReliability<D>::TReliability() : dds::core::Value<D>(dds::core::policy::ReliabilityKind::BEST_EFFORT, dds::core::Duration::zero()) { }
-
-template <typename D>
-TReliability<D>::TReliability(dds::core::policy::ReliabilityKind::Type the_kind, const dds::core::Duration& the_max_blocking_time)
-    :  dds::core::Value<D>(the_kind, the_max_blocking_time) { }
+TReliability<D>::TReliability(dds::core::policy::ReliabilityKind::Type kind, const dds::core::Duration& max_blocking_time)
+    :  dds::core::Value<D>(kind, max_blocking_time) { }
 
 template <typename D>
 TReliability<D>::TReliability(const TReliability& other)
     : dds::core::Value<D>(other.kind(), other.max_blocking_time()) { }
 
 template <typename D>
-TReliability<D>& TReliability<D>::kind(dds::core::policy::ReliabilityKind::Type the_kind)
+TReliability<D>& TReliability<D>::kind(dds::core::policy::ReliabilityKind::Type kind)
 {
-    this->delegate().kind(the_kind);
+    this->delegate().kind(kind);
     return *this;
 }
 
@@ -716,9 +752,9 @@ dds::core::policy::ReliabilityKind::Type TReliability<D>::kind() const
 }
 
 template <typename D>
-TReliability<D>& TReliability<D>::max_blocking_time(const dds::core::Duration& d)
+TReliability<D>& TReliability<D>::max_blocking_time(const dds::core::Duration& max_blocking_time)
 {
-    this->delegate().max_blocking_time(d);
+    this->delegate().max_blocking_time(max_blocking_time);
     return *this;
 }
 
@@ -729,9 +765,9 @@ const dds::core::Duration TReliability<D>::max_blocking_time() const
 }
 
 template <typename D>
-TReliability<D> TReliability<D>::Reliable(const dds::core::Duration& d)
+TReliability<D> TReliability<D>::Reliable(const dds::core::Duration& max_blocking_time)
 {
-    return TReliability(dds::core::policy::ReliabilityKind::RELIABLE, d);
+    return TReliability(dds::core::policy::ReliabilityKind::RELIABLE, max_blocking_time);
 }
 
 template <typename D>
@@ -744,19 +780,16 @@ TReliability<D> TReliability<D>::BestEffort()
 //TDestinationOrder
 
 template <typename D>
-TDestinationOrder<D>::TDestinationOrder(dds::core::policy::DestinationOrderKind::Type the_kind)
-    : dds::core::Value<D>(the_kind) { }
+TDestinationOrder<D>::TDestinationOrder(dds::core::policy::DestinationOrderKind::Type kind)
+    : dds::core::Value<D>(kind) { }
 
 template <typename D>
 TDestinationOrder<D>::TDestinationOrder(const TDestinationOrder& other) : dds::core::Value<D>(other.kind()) { }
 
 template <typename D>
-TDestinationOrder<D>::TDestinationOrder() : dds::core::Value<D>(dds::core::policy::DestinationOrderKind::BY_RECEPTION_TIMESTAMP) { }
-
-template <typename D>
-TDestinationOrder<D>& TDestinationOrder<D>::kind(dds::core::policy::DestinationOrderKind::Type the_kind)
+TDestinationOrder<D>& TDestinationOrder<D>::kind(dds::core::policy::DestinationOrderKind::Type kind)
 {
-    this->delegate().kind(the_kind);
+    this->delegate().kind(kind);
     return *this;
 }
 
@@ -779,13 +812,9 @@ TDestinationOrder<D> TDestinationOrder<D>::ReceptionTimestamp()
 }
 
 //THistory
-
 template <typename D>
-THistory<D>::THistory() : dds::core::Value<D>(dds::core::policy::HistoryKind::KEEP_LAST, 1) { }
-
-template <typename D>
-THistory<D>::THistory(dds::core::policy::HistoryKind::Type the_kind, int32_t the_depth)
-    : dds::core::Value<D>(the_kind, the_depth) { }
+THistory<D>::THistory(dds::core::policy::HistoryKind::Type kind, int32_t depth)
+    : dds::core::Value<D>(kind, depth) { }
 
 template <typename D>
 THistory<D>::THistory(const THistory& other) : dds::core::Value<D>(other.kind(), other.depth()) { }
@@ -797,9 +826,9 @@ dds::core::policy::HistoryKind::Type THistory<D>::kind() const
 }
 
 template <typename D>
-THistory<D>& THistory<D>::kind(dds::core::policy::HistoryKind::Type the_kind)
+THistory<D>& THistory<D>::kind(dds::core::policy::HistoryKind::Type kind)
 {
-    this->delegate().kind(the_kind);
+    this->delegate().kind(kind);
     return *this;
 }
 
@@ -810,9 +839,9 @@ int32_t THistory<D>::depth() const
 }
 
 template <typename D>
-THistory<D>& THistory<D>::depth(int32_t the_depth)
+THistory<D>& THistory<D>::depth(int32_t depth)
 {
-    this->delegate().depth(the_depth);
+    this->delegate().depth(depth);
     return *this;
 }
 
@@ -829,22 +858,18 @@ THistory<D> THistory<D>::KeepLast(uint32_t depth)
 }
 
 //TResourceLimits
-
 template <typename D>
-TResourceLimits<D>::TResourceLimits() : dds::core::Value<D>(dds::core::LENGTH_UNLIMITED, dds::core::LENGTH_UNLIMITED, dds::core::LENGTH_UNLIMITED) { }
-
-template <typename D>
-TResourceLimits<D>::TResourceLimits(int32_t the_max_samples, int32_t the_max_instances, int32_t the_max_samples_per_instance)
-    :  dds::core::Value<D>(the_max_samples, the_max_instances, the_max_samples_per_instance) { }
+TResourceLimits<D>::TResourceLimits(int32_t max_samples, int32_t max_instances, int32_t max_samples_per_instance)
+    :  dds::core::Value<D>(max_samples, max_instances, max_samples_per_instance) { }
 
 template <typename D>
 TResourceLimits<D>::TResourceLimits(const TResourceLimits& other)
     : dds::core::Value<D>(other.max_samples(), other.max_instances(), other.max_samples_per_instance()) { }
 
 template <typename D>
-TResourceLimits<D>& TResourceLimits<D>::max_samples(int32_t samples)
+TResourceLimits<D>& TResourceLimits<D>::max_samples(int32_t max_samples)
 {
-    this->delegate().max_samples(samples);
+    this->delegate().max_samples(max_samples);
     return *this;
 }
 
@@ -855,9 +880,9 @@ int32_t TResourceLimits<D>::max_samples() const
 }
 
 template <typename D>
-TResourceLimits<D>& TResourceLimits<D>::max_instances(int32_t the_max_instances)
+TResourceLimits<D>& TResourceLimits<D>::max_instances(int32_t max_instances)
 {
-    this->delegate().max_instances(the_max_instances);
+    this->delegate().max_instances(max_instances);
     return *this;
 }
 
@@ -868,9 +893,9 @@ int32_t TResourceLimits<D>::max_instances() const
 }
 
 template <typename D>
-TResourceLimits<D>& TResourceLimits<D>::max_samples_per_instance(int32_t the_max_samples_per_instance)
+TResourceLimits<D>& TResourceLimits<D>::max_samples_per_instance(int32_t max_samples_per_instance)
 {
-    this->delegate().max_samples_per_instance(the_max_samples_per_instance);
+    this->delegate().max_samples_per_instance(max_samples_per_instance);
     return *this;
 }
 
@@ -881,21 +906,17 @@ int32_t TResourceLimits<D>::max_samples_per_instance() const
 }
 
 //TLiveliness
-
 template <typename D>
-TLiveliness<D>::TLiveliness() : dds::core::Value<D>(dds::core::policy::LivelinessKind::AUTOMATIC, dds::core::Duration::infinite()) { }
-
-template <typename D>
-TLiveliness<D>::TLiveliness(dds::core::policy::LivelinessKind::Type the_kind, const dds::core::Duration& the_lease_duration)
-    : dds::core::Value<D>(the_kind, the_lease_duration) { }
+TLiveliness<D>::TLiveliness(dds::core::policy::LivelinessKind::Type kind, const dds::core::Duration& lease_duration)
+    : dds::core::Value<D>(kind, lease_duration) { }
 
 template <typename D>
 TLiveliness<D>::TLiveliness(const TLiveliness& other) : dds::core::Value<D>(other.kind(), other.lease_duration()) { }
 
 template <typename D>
-TLiveliness<D>& TLiveliness<D>::kind(dds::core::policy::LivelinessKind::Type the_kind)
+TLiveliness<D>& TLiveliness<D>::kind(dds::core::policy::LivelinessKind::Type kind)
 {
-    this->delegate().kind(the_kind);
+    this->delegate().kind(kind);
     return *this;
 }
 
@@ -906,9 +927,9 @@ dds::core::policy::LivelinessKind::Type TLiveliness<D>::kind() const
 }
 
 template <typename D>
-TLiveliness<D>& TLiveliness<D>::lease_duration(const dds::core::Duration& the_lease_duration)
+TLiveliness<D>& TLiveliness<D>::lease_duration(const dds::core::Duration& lease_duration)
 {
-    this->delegate().lease_duration(the_lease_duration);
+    this->delegate().lease_duration(lease_duration);
     return *this;
 }
 
@@ -925,15 +946,15 @@ TLiveliness<D> TLiveliness<D>::Automatic()
 }
 
 template <typename D>
-TLiveliness<D> TLiveliness<D>::ManualByParticipant(const dds::core::Duration& lease)
+TLiveliness<D> TLiveliness<D>::ManualByParticipant(const dds::core::Duration& lease_duration)
 {
-    return TLiveliness(dds::core::policy::LivelinessKind::MANUAL_BY_PARTICIPANT, lease);
+    return TLiveliness(dds::core::policy::LivelinessKind::MANUAL_BY_PARTICIPANT, lease_duration);
 }
 
 template <typename D>
-TLiveliness<D> TLiveliness<D>::ManualByTopic(const dds::core::Duration& lease)
+TLiveliness<D> TLiveliness<D>::ManualByTopic(const dds::core::Duration& lease_duration)
 {
-    return TLiveliness(dds::core::policy::LivelinessKind::MANUAL_BY_TOPIC, lease);
+    return TLiveliness(dds::core::policy::LivelinessKind::MANUAL_BY_TOPIC, lease_duration);
 }
 
 #ifdef OMG_DDS_PERSISTENCE_SUPPORT
@@ -941,22 +962,19 @@ TLiveliness<D> TLiveliness<D>::ManualByTopic(const dds::core::Duration& lease)
 //TDurabilityService
 
 template <typename D>
-TDurabilityService<D>::TDurabilityService() : dds::core::Value<D>() { }
-
-template <typename D>
 TDurabilityService<D>::TDurabilityService(
-    const dds::core::Duration& the_service_cleanup_delay,
-    dds::core::policy::HistoryKind::Type the_history_kind,
-    int32_t the_history_depth,
-    int32_t the_max_samples,
-    int32_t the_max_instances,
-    int32_t the_max_samples_per_instance)
-    : dds::core::Value<D>(the_service_cleanup_delay,
-                          the_history_kind,
-                          the_history_depth,
-                          the_max_samples,
-                          the_max_instances,
-                          the_max_samples_per_instance) { }
+    const dds::core::Duration& service_cleanup_delay,
+    dds::core::policy::HistoryKind::Type history_kind,
+    int32_t history_depth,
+    int32_t max_samples,
+    int32_t max_instances,
+    int32_t max_samples_per_instance)
+    : dds::core::Value<D>(service_cleanup_delay,
+                          history_kind,
+                          history_depth,
+                          max_samples,
+                          max_instances,
+                          max_samples_per_instance) { }
 
 template <typename D>
 TDurabilityService<D>::TDurabilityService(const TDurabilityService& other)
@@ -965,9 +983,9 @@ TDurabilityService<D>::TDurabilityService(const TDurabilityService& other)
                           other.max_samples(), other.max_instances(), other.max_samples_per_instance()) { }
 
 template <typename D>
-TDurabilityService<D>& TDurabilityService<D>::service_cleanup_delay(const dds::core::Duration& d)
+TDurabilityService<D>& TDurabilityService<D>::service_cleanup_delay(const dds::core::Duration& service_cleanup_delay)
 {
-    this->delegate().service_cleanup_delay(d);
+    this->delegate().service_cleanup_delay(service_cleanup_delay);
     return *this;
 }
 
@@ -978,9 +996,9 @@ const dds::core::Duration TDurabilityService<D>::service_cleanup_delay() const
 }
 
 template <typename D>
-TDurabilityService<D>& TDurabilityService<D>::history_kind(dds::core::policy::HistoryKind::Type the_kind)
+TDurabilityService<D>& TDurabilityService<D>::history_kind(dds::core::policy::HistoryKind::Type kind)
 {
-    this->delegate().history_kind(the_kind);
+    this->delegate().history_kind(kind);
     return *this;
 }
 
@@ -991,9 +1009,9 @@ dds::core::policy::HistoryKind::Type TDurabilityService<D>::history_kind() const
 }
 
 template <typename D>
-TDurabilityService<D>& TDurabilityService<D>::history_depth(int32_t the_depth)
+TDurabilityService<D>& TDurabilityService<D>::history_depth(int32_t history_depth)
 {
-    this->delegate().history_depth(the_depth);
+    this->delegate().history_depth(history_depth);
     return *this;
 }
 
@@ -1004,9 +1022,9 @@ int32_t TDurabilityService<D>::history_depth() const
 }
 
 template <typename D>
-TDurabilityService<D>& TDurabilityService<D>::max_samples(int32_t the_max_samples)
+TDurabilityService<D>& TDurabilityService<D>::max_samples(int32_t max_samples)
 {
-    this->delegate().max_samples(the_max_samples);
+    this->delegate().max_samples(max_samples);
     return *this;
 }
 
@@ -1017,9 +1035,9 @@ int32_t TDurabilityService<D>::max_samples() const
 }
 
 template <typename D>
-TDurabilityService<D>& TDurabilityService<D>::max_instances(int32_t the_max_instances)
+TDurabilityService<D>& TDurabilityService<D>::max_instances(int32_t max_instances)
 {
-    this->delegate().max_instances(the_max_instances);
+    this->delegate().max_instances(max_instances);
     return *this;
 }
 
@@ -1030,9 +1048,9 @@ int32_t TDurabilityService<D>::max_instances() const
 }
 
 template <typename D>
-TDurabilityService<D>& TDurabilityService<D>::max_samples_per_instance(int32_t the_max_samples_per_instance)
+TDurabilityService<D>& TDurabilityService<D>::max_samples_per_instance(int32_t max_samples_per_instance)
 {
-    this->delegate().max_samples_per_instance(the_max_samples_per_instance);
+    this->delegate().max_samples_per_instance(max_samples_per_instance);
     return *this;
 }
 
@@ -1048,7 +1066,7 @@ int32_t TDurabilityService<D>::max_samples_per_instance() const
 
 //TDataRepresentation
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
@@ -1057,23 +1075,17 @@ TDataRepresentation<D>::TDataRepresentation(const dds::core::policy::DataReprese
 template <typename D>
 TDataRepresentation<D>::TDataRepresentation(const TDataRepresentation& other) : dds::core::Value<D>(other.value()) { }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 TDataRepresentation<D>& TDataRepresentation<D>::value(const dds::core::policy::DataRepresentationIdSeq& value);
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 const dds::core::policy::DataRepresentationIdSeq TDataRepresentation<D>::value() const;
-
-/** @bug OSPL-1746 No implementation
- * @todo Implementation required - see OSPL-1746
- * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
-template <typename D>
-dds::core::policy::DataRepresentationIdSeq& TDataRepresentation<D>::value(dds::core::policy::DataRepresentationIdSeq& dst) const;
 
 #endif  // defined(OMG_DDS_EXTENSIBLE_AND_DYNAMIC_TOPIC_TYPE_SUPPORT)
 
@@ -1081,19 +1093,19 @@ dds::core::policy::DataRepresentationIdSeq& TDataRepresentation<D>::value(dds::c
 
 //TTypeConsistencyEnforcement
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
 TTypeConsistencyEnforcement<D>::TTypeConsistencyEnforcement(dds::core::policy::TypeConsistencyEnforcementKind::Type kind) { }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>
-TTypeConsistencyEnforcement<D>& TTypeConsistencyEnforcement<D>::kind(dds::core::policy::TypeConsistencyEnforcementKind::Type  value) { }
+TTypeConsistencyEnforcement<D>& TTypeConsistencyEnforcement<D>::kind(dds::core::policy::TypeConsistencyEnforcementKind::Typekind) { }
 
-/** @bug OSPL-1746 No implementation
+/** @internal @bug OSPL-1746 No implementation
  * @todo Implementation required - see OSPL-1746
  * @see http://jira.prismtech.com:8080/browse/OSPL-1746 */
 template <typename D>

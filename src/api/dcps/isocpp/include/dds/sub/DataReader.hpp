@@ -43,14 +43,14 @@ SELECTOR& take(SELECTOR& selector)
 }
 
 inline dds::sub::functors::ContentFilterManipulatorFunctor
-filter_content(const dds::sub::Query& query)
+content(const dds::sub::Query& query)
 {
     return dds::sub::functors::ContentFilterManipulatorFunctor(query);
 }
 
 
 inline dds::sub::functors::StateFilterManipulatorFunctor
-filter_state(const dds::sub::status::DataState& s)
+state(const dds::sub::status::DataState& s)
 {
     return dds::sub::functors::StateFilterManipulatorFunctor(s);
 }

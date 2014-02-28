@@ -984,7 +984,7 @@ a_anlBaseInterfaceMembers(
 	c_bool abstract = interface->abstract;
 	c_scope scope = interface->scope;
 	c_long scopeCount = c_scopeCount(scope);
-	c_scopeWalkAction scopeWalkAction = (c_scopeWalkAction)a_anlScopeWalkback;
+	c_scopeWalkAction scopeWalkAction = a_anlScopeWalkback;
 	c_interface inherit, reference;
     c_long i;
 		
@@ -1419,7 +1419,7 @@ a_anlMetaModuleMembers(
 {
 	c_scope scope = module->scope;
 	c_long scopeCount = c_scopeCount(scope);
-	c_scopeWalkAction scopeWalkAction = (a_anlScopeWalkback);
+	c_scopeWalkAction scopeWalkAction = a_anlScopeWalkback;
 
 	a_anlOutPointervalue(context, "scope", (void *)scope);
 	if (scope) {
@@ -1629,7 +1629,7 @@ a_anlMetaInterfaceMembers(
 	c_long inhSize = c_arraySize(inherits);
 	c_long refSize = c_arraySize(references);
 	c_scope scope = interface->scope;
-	c_scopeWalkAction scopeWalkAction = (a_anlScopeWalkback);
+	c_scopeWalkAction scopeWalkAction = a_anlScopeWalkback;
     c_long i;
 	c_interface inherit, reference;
 
@@ -1927,7 +1927,7 @@ a_anlMetaStructure(
 	c_array members = structure->members;
 	c_array references = structure->references;
 	c_scope scope = structure->scope;
-	c_scopeWalkAction scopeWalkAction = (a_anlScopeWalkback);
+	c_scopeWalkAction scopeWalkAction = a_anlScopeWalkback;
 	
 	c_long memSize = c_arraySize(members);
 	c_long refSize = c_arraySize(references);
@@ -2041,7 +2041,7 @@ a_anlMetaUnion(
 	c_long refSize = c_arraySize(references);
 	c_type switchType = unionValue->switchType;
 	c_scope scope = unionValue->scope;
-	c_scopeWalkAction scopeWalkAction = (c_scopeWalkAction)a_anlScopeWalkback;
+	c_scopeWalkAction scopeWalkAction = a_anlScopeWalkback;
 	c_long i;
 	c_unionCase unionCase;
 	
@@ -2336,7 +2336,7 @@ a_anlDataInterfaceMembers(
 		scopeContext.scopeCounter = 0;
 		scopeContext.object = object;
 		context->scopeCounter = 0;
-		c_scopeWalk(scope, (a_anlDataClassScopeCallback), &scopeContext);
+		c_scopeWalk(scope, a_anlDataClassScopeCallback, &scopeContext);
 	}
 
 	for (i = 0; i < inhSize; i++) {

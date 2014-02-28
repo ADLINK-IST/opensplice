@@ -201,40 +201,40 @@ corbaTypeFromTypeSpec(
     typeName = NULL;
     switch (idl_typeBasicType(t)) {
     case idl_short:
-        typeName = os_strdup("::CORBA::Short");
+        typeName = os_strdup("::DDS::Short");
     break;
     case idl_ushort:
-        typeName = os_strdup("::CORBA::UShort");
+        typeName = os_strdup("::DDS::UShort");
     break;
     case idl_long:
-        typeName = os_strdup("::CORBA::Long");
+        typeName = os_strdup("::DDS::Long");
     break;
     case idl_ulong:
-        typeName = os_strdup("::CORBA::ULong");
+        typeName = os_strdup("::DDS::ULong");
     break;
     case idl_longlong:
-        typeName = os_strdup("::CORBA::LongLong");
+        typeName = os_strdup("::DDS::LongLong");
     break;
     case idl_ulonglong:
-        typeName = os_strdup("::CORBA::ULongLong");
+        typeName = os_strdup("::DDS::ULongLong");
     break;
     case idl_float:
-        typeName = os_strdup("::CORBA::Float");
+        typeName = os_strdup("::DDS::Float");
     break;
     case idl_double:
-        typeName = os_strdup("::CORBA::Double");
+        typeName = os_strdup("::DDS::Double");
     break;
     case idl_char:
-        typeName = os_strdup("::CORBA::Char");
+        typeName = os_strdup("::DDS::Char");
     break;
     case idl_string:
         typeName = os_strdup("char *");
     break;
     case idl_boolean:
-        typeName = os_strdup("::CORBA::Boolean");
+        typeName = os_strdup("::DDS::Boolean");
     break;
     case idl_octet:
-        typeName = os_strdup("::CORBA::Octet");
+        typeName = os_strdup("::DDS::Octet");
     break;
     default:
         /* No processing required, empty statement to satisfy QAC */
@@ -284,4 +284,10 @@ c_char *
 idl_genCxxConstantGetter(void)
 {
     return NULL;
+}
+
+const c_char*
+idl_isocppCxxStructMemberSuffix()
+{
+  return idl_getIsISOCpp() && idl_getIsISOCppTypes() ? "_" : "";
 }

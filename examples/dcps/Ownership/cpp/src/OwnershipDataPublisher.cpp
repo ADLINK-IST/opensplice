@@ -35,7 +35,7 @@ void OwnershipDataPublisher::initPublisher(string pub, DDS::Long strength)
   StockTypeSupport_var st = new StockTypeSupport();
   mgr.registerType(st.in());
   //create Topic
-  char topic_name[] = "StockTrackerExclusive";
+  char topic_name[] = "OwnershipStockTracker";
   mgr.createTopic(topic_name);
   //create Publisher
   mgr.createPublisher();

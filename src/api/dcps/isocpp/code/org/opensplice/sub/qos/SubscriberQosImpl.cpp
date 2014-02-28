@@ -17,19 +17,26 @@
 
 #include <org/opensplice/sub/qos/SubscriberQosImpl.hpp>
 
-namespace org { namespace opensplice { namespace sub { namespace qos {
+namespace org
+{
+namespace opensplice
+{
+namespace sub
+{
+namespace qos
+{
 
 SubscriberQosImpl::SubscriberQosImpl() {  }
 
 SubscriberQosImpl::SubscriberQosImpl(
-        dds::core::policy::Presentation presentation,
-        dds::core::policy::Partition partition,
-        dds::core::policy::GroupData group_data,
-        dds::core::policy::EntityFactory entity_factory) :
-            presentation_(presentation),
-            partition_(partition),
-            group_data_(group_data),
-            entity_factory_(entity_factory) {  }
+    dds::core::policy::Presentation presentation,
+    dds::core::policy::Partition partition,
+    dds::core::policy::GroupData group_data,
+    dds::core::policy::EntityFactory entity_factory) :
+    presentation_(presentation),
+    partition_(partition),
+    group_data_(group_data),
+    entity_factory_(entity_factory) {  }
 
 org::opensplice::sub::qos::SubscriberQosImpl::~SubscriberQosImpl() { }
 
@@ -53,28 +60,7 @@ void SubscriberQosImpl::policy(const dds::core::policy::EntityFactory& entity_fa
     entity_factory_ = entity_factory;
 }
 
-template<>
-const ::dds::core::policy::Presentation&
-org::opensplice::sub::qos::SubscriberQosImpl::policy<dds::core::policy::Presentation>() const {
-    return presentation_;
 }
-
-template<>
-const ::dds::core::policy::Partition&
-SubscriberQosImpl::policy<dds::core::policy::Partition>() const {
-    return partition_;
 }
-
-template<>
-const ::dds::core::policy::GroupData&
-SubscriberQosImpl::policy<dds::core::policy::GroupData>() const {
-    return group_data_;
 }
-
-template<>
-const ::dds::core::policy::EntityFactory&
-SubscriberQosImpl::policy<dds::core::policy::EntityFactory>() const {
-    return entity_factory_;
 }
-
-}}}}

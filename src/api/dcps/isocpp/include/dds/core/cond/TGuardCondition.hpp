@@ -33,7 +33,10 @@ template <typename DELEGATE>
 TGuardCondition<DELEGATE>::TGuardCondition() : TCondition< DELEGATE >(new DELEGATE()) { }
 
 template <typename DELEGATE>
-TGuardCondition<DELEGATE>::~TGuardCondition() { }
+TGuardCondition<DELEGATE>::~TGuardCondition()
+{
+    this->reset_handler();
+}
 
 template <typename DELEGATE>
 template <typename Functor>
@@ -48,13 +51,17 @@ void TGuardCondition<DELEGATE>::reset_handler()
     this->delegate()->reset_handler();
 }
 
-
 template <typename DELEGATE>
 void TGuardCondition<DELEGATE>::trigger_value(bool value)
 {
     this->delegate()->trigger_value(value);
 }
 
+template <typename DELEGATE>
+bool TGuardCondition<DELEGATE>::trigger_value() const
+{
+    return this->delegate()->get_trigger_value();
+}
 
 }
 }

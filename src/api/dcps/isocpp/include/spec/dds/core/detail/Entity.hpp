@@ -22,8 +22,15 @@
 #include <dds/core/TEntity.hpp>
 #include <foo/bar/core/EntityDelegate.hpp>
 
-namespace dds { namespace core { namespace detail {
-    typedef dds::core::TEntity<foo::bar::EntityDelegate> Entity;
-} } }
+namespace dds
+{
+namespace core
+{
+namespace detail
+{
+typedef dds::core::TEntity<foo::bar::EntityDelegate> Entity;
+}
+}
+}
 
 #endif /* OMG_DDS_CORE_DETAIL_ENTITY_HPP_ */

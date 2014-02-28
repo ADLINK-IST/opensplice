@@ -197,7 +197,12 @@ pbbool be_Source::Open (const DDS_StdString & mainFilename)
    m_filename = mainFilename;
    creationTime = (char*)cTime;
 
-   os.open((const char *)m_filename, ios_base::out);
+   /** @bug OSPL-3472 will append regenerated files
+    * proposed fix - Add find() on DDS_StdString **/
+   if (BE_Globals::isocpp_test_methods)
+       os.open((const char *)m_filename, ios_base::app);
+   else
+       os.open((const char *)m_filename, ios_base::out);
 
    ret = (pbbool) (os.rdbuf() && os.rdbuf()->is_open());
    closed = !ret;
@@ -264,9 +269,23 @@ pbbool be_ClientHeader::Open (const DDS_StdString& mainFilename)
 
       ndefname = Ifndefize(BE_Globals::ClientHeaderFilename);
       os << "#ifndef " << (const char*) ndefname << nl;
-      os << "#define " << (const char*) ndefname << nl << nl;
-      os << "#include \"sacpp_mapping.h\"" << nl;
+      os << "#define " << (const char*) ndefname << nl;
+      if (BE_Globals::isocpp || BE_Globals::isocpp_new_types)
+      {
+        os << "#ifndef OPENSPLICE_ISOCXX_PSM" << nl;
+        os << "#define OPENSPLICE_ISOCXX_PSM" << nl;
+        os << "#endif" << nl;
+      }
+      os << nl << "#include \"sacpp_mapping.h\"" << nl;
       os << "#include \"sacpp_DDS_DCPS.h\"" << nl;
+      if (BE_Globals::isocpp_new_types)
+      {
+        os << "#include <dds/core/ddscore.hpp>" << nl;
+      }
+      if (BE_Globals::isocpp_test_methods)
+      {
+        os << "#include <generate_test_values.hpp>" << nl;
+      }
       if (BE_Globals::UserDLL != (const char *)"" &&
           BE_Globals::UserDLLHeader != (const char *)"" )
       {
@@ -279,7 +298,7 @@ pbbool be_ClientHeader::Open (const DDS_StdString& mainFilename)
       {
          BE_Globals::DLLExtension = " ";
       }
-
+      os << nl;
       return pbtrue;
    }
    else

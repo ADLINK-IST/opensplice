@@ -4,7 +4,7 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
-<title>OpenSplice DDS Release Notes - Changes and Fixed Bugs V5</title>
+<title>OpenSplice DDS Examples</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 <link rel="stylesheet" href="../../docs/css/prismstyle.css" type="text/css">
 
@@ -25,11 +25,13 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
   <li> <a href ="Ownership/README.html">Ownership</a></li>
   <li> <a href ="BuiltInTopics/README.html">BuiltInTopics</a></li>
   <li><a href ="NetworkPartitions/README.html">NetworkPartitions</a></li>
+  <li><a href ="RoundTrip/README.html">RoundTrip</a></li>
+  <li><a href ="Throughput/README.html">Throughput</a></li>
 </ul><h2> SUMMARY </h2>
 <ul>
   <li><a href ="PingPong/README.html">PingPong </a>
   <p>The PingPong example consists of two executables that will exchange data using 2 partitions.
-     Running both executables allows to measure roundtrip duration when sending and
+     Running both executables allows you to measure roundtrip duration when sending and
      receiving back a single message.</p></li>
 
   <li><a href ="Tutorial/README.html">Tutorial </a>
@@ -37,16 +39,16 @@ http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
   <li><a href ="HelloWorld/README.html">HelloWorld </a>
     <p>The HelloWorld example is used to illustrate the necessary
-steps to setup DCPS entities</p>
+steps to set up DCPS entities</p>
   </li>
 
   <li><a href ="WaitSet/README.html">WaitSet </a>
   <p>The Waitset example is used to illustrate the use of waitset and
 conditions :</p>
-	<ul><li>ReadCondition</li>
-	<li> StatusCondition</li>
-	<li> QueryCondition</li>
-	<li> GuardCondition</li></ul>
+        <ul><li>ReadCondition</li>
+        <li> StatusCondition</li>
+        <li> QueryCondition</li>
+        <li> GuardCondition</li></ul>
   </li>
 
   <li><a href ="Listener/README.html">Listener </a>
@@ -79,15 +81,25 @@ through QoS, in DDS.</p>
   <li> <a href ="NetworkPartitions/README.html">NetworkPartitions</a>
   <p>The NetworkPartitions example is used to illustrate the concept of network traffic partitioning based on the configuration of OpenSplice DDS.</p>
   </li>
+
+  <li><a href ="RoundTrip/README.html">RoundTrip </a>
+  <p>The RoundTrip example consists of two executables that will exchange data using 2 partitions.
+     Running both executables allows you to measure roundtrip duration when sending and
+     receiving back a single message.</p></li>
+
+  <li><a href ="Throughput/README.html">Throughput </a>
+  <p>The Throughput example allows the measurement of data throughput when receiving samples
+from a publisher.</p></li>
 </ul>
  <p> Each example can be built individually.  It is also possible to build a number of examples at the same time.</p></br>
 
- <h2>Building all examples in a posix environment</h2> 
+ <h2>Building all examples in a posix environment</h2>
  <p>The examples can be built together using the various makefiles found in the examples directory of the installed version of OpenSpliceDDS
     when building in a posix environment, using the following commands:</br></p>
     <ul>
-    <li><b><i>makefile -f Makefile</i></b>  will build all C and C++ standalone examples</li>
-    <li><b><i>makefile -f Makefile.StandaloneJava</i></b> will build all Java standalone examples</li> 
+    <li><b><i>makefile -f Makefile</i></b>  will build all C and C++ standalone examples as well as ISO C++ examples</li>
+    <li><b><i>makefile -f Makefile.DCPS_ISO_CPlusPlus</i></b>  will build all ISO C++ examples</li>
+    <li><b><i>makefile -f Makefile.StandaloneJava</i></b> will build all Java standalone examples</li>
     <li><b><i>makefile -f Makefile.CORBACPlusPlus</i></b> will build all CORBA C++ examples</li>
     <li><b><i>makefile -f Makefile.CORBAJava</i></b> will build all CORBA Java examples</li>
     </ul></p>
@@ -99,8 +111,9 @@ through QoS, in DDS.</p>
  <p>After installing OpenSpliceDDS, from the start menu select the installed version of OpenSpliceDDS, then select <b>Examples</b>.  There are 3 options:</p>
     <ul>
     <li><b><i>CORBA C++ Examples</i></b> will build all CORBA C++ Examples</li>
-    <li><b><i>C-Sharp Examples</i></b> will build all C# verions of the examples</li>
+    <li><b><i>C-Sharp Examples</i></b> will build all C# versions of the examples</li>
     <li><b><i>Standalone C and C++ Examples</i></b> will build all C and C++ versions of the examples</li>
+    <li><b><i>DCPS ISO C++ Examples</i></b> will build all ISO C++ examples</li>
     </ul></p>
    <p>When building the CORBA examples using the <b>CORBA C++ Examples</b> option the ACE_ROOT and ODBCHOME environment variables must be set.</p>
 
@@ -111,6 +124,6 @@ through QoS, in DDS.</p>
      <li><b><i>BUILD_StandaloneJava.bat</i></b> to build the Java standalone examples</li>
      <li><b><i>BUILD_CORBAJava.bat</i></b> to build the CORBA Java examples</li>
      </ul>
-  <p>If building the CORBA Java examples the JACORB_HOME environment variable must be set.</p> 
+  <p>If building the CORBA Java examples the JACORB_HOME environment variable must be set.</p>
 </body>
 </html>

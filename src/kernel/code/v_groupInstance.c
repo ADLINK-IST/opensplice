@@ -22,6 +22,7 @@
 #include "v__topic.h"
 #include "v_message.h"
 #include "v__messageQos.h"
+#include "v__policy.h"
 
 #include "os_report.h"
 
@@ -298,7 +299,7 @@ v_groupInstanceInit (
     }
     c_free(instanceKeyList);
 
-    _this->epoch              = C_TIME_ZERO;
+    _this->epoch              = C_TIME_MIN_INFINITE;
     _this->registrations      = NULL;
     _this->unregistrations    = NULL;
     _this->oldest             = NULL;
@@ -354,7 +355,7 @@ v_groupInstanceFree(
         instance->unregistrations = NULL;
 
         /* make sure it is removed from any purge list! */
-        instance->epoch = C_TIME_ZERO;
+        instance->epoch = C_TIME_MIN_INFINITE;
 
         v_groupCacheDeinit(instance->targetCache);
         group = v_group(instance->group);
@@ -522,21 +523,29 @@ v_groupInstanceRegister (
             /* No existing registration found so insert a new one for
              * this writer.
              */
-            found = c_new(v_kernelType(v_objectKernel(instance),
-                                       K_REGISTRATION));
-            if (found) {
-                found->writerGID = message->writerGID;
-                found->qos = c_keep(message->qos);
-                found->writeTime = message->writeTime;
-                found->next = instance->registrations;
-                instance->registrations = found;
-                *regMsg = createRegistration(instance, message);
-                result = V_WRITE_REGISTERED;
+            if (v_gidIsValid(message->writerGID)) {
+                found = c_new(v_kernelType(v_objectKernel(instance),
+                                           K_REGISTRATION));
+                if (found) {
+                    found->writerGID = message->writerGID;
+                    found->qos = c_keep(message->qos);
+                    found->writeTime = message->writeTime;
+                    found->next = instance->registrations;
+                    instance->registrations = found;
+                    *regMsg = createRegistration(instance, message);
+                    result = V_WRITE_REGISTERED;
+                } else {
+                    OS_REPORT(OS_ERROR,
+                      "v_groupInstanceRegister",0,
+                      "Failed to allocate v_registration object.");
+                    assert(FALSE);
+                    result = V_WRITE_PRE_NOT_MET;
+                }
             } else {
-                OS_REPORT(OS_ERROR,
-                  "v_groupInstanceRegister",0,
-                  "Failed to allocate v_registration object.");
-                assert(FALSE);
+                /* Don't create a registration for messages with no writer (i.e. created by dispose all data).
+                 * There's a chance that a dispose sample from dispose all (without writerGID and qos),
+                 * is aligned by durability without any data samples (lifespan expired). In that case
+                 * the instance must be created to deliver the dispose sample without creating a registration */
                 result = V_WRITE_PRE_NOT_MET;
             }
         } else {
@@ -586,7 +595,7 @@ v_groupInstanceRegister (
     }
     if (instance->registrations != NULL) {
         v_stateClear(instance->state, L_NOWRITERS);
-        instance->epoch = C_TIME_ZERO;
+        instance->epoch = C_TIME_MIN_INFINITE;
     }
 
     CHECK_COUNT(instance);
@@ -716,6 +725,7 @@ v_groupInstanceRemoveRegistration(
         found->next = instance->unregistrations;
         instance->unregistrations = found;
         result = V_WRITE_UNREGISTERED;
+
     }
     if (instance->registrations == NULL)
     {
@@ -1046,7 +1056,7 @@ v_groupInstanceInsert(
     v_state state;
     c_equality equality;
     v_topicQos topicQos;
-    c_long msgStrength;
+    struct v_owner ownership;
 
     assert(message != NULL);
     assert(instance != NULL);
@@ -1067,41 +1077,31 @@ v_groupInstanceInsert(
     }
 
     /* Exclusive ownership handling */
-    if (message->qos && instance->owner.exclusive) {
-        if (!v_messageQos_isExclusive(message->qos)) {
-            /* If ownership Qos settings does not match, message should not be inserted */
+    /* Before NULL check on QoS was done here. Instead we now check the writer
+       GID for validity and require QoS to be set because QoS is only allowed
+       to be NULL in case of a "dispose all", in which case the writer GID must
+       be NIL as well. */
+    if (v_gidIsValid (message->writerGID)) {
+        assert (message->qos != NULL);
+        ownership.exclusive = v_messageQos_isExclusive(message->qos);
+        ownership.strength = v_messageQos_getOwnershipStrength(message->qos);
+    } else {
+        assert (message->qos == NULL);
+        ownership.exclusive = 0;
+        ownership.strength = 0;
+    }
+
+    ownership.gid = message->writerGID;
+
+    switch (v_determineOwnershipByStrength (
+        &instance->owner, &ownership, TRUE))
+    {
+        case V_OWNERSHIP_INCOMPATIBLE_QOS:
+        case V_OWNERSHIP_NOT_OWNER:
             return V_WRITE_SUCCESS_NOT_STORED;
-        }else
-        {
-            if (v_gidIsValid (instance->owner.gid))
-            {
-                /* Instance has a valid owner, check if owner same as from message */
-                equality = v_gidCompare (message->writerGID, instance->owner.gid);
-                if (equality != C_EQ) {
-                    /* Instance owner is not same as message, compare strength */
-                    msgStrength = v_messageQos_getOwnershipStrength(message->qos);
-                    if (msgStrength == instance->owner.strength) {
-                        if (equality == C_GT) {
-                            /* A writer (which is not the owner) with same ownership strength
-                             * and higher GID becomes new owner to guarantee that same owner
-                             * is selected everywhere */
-                            instance->owner.gid = message->writerGID;
-                        }
-                    }else if (msgStrength > instance->owner.strength) {
-                        /* A writer with a higher strength becomes new owner */
-                        instance->owner.gid = message->writerGID;
-                        instance->owner.strength = msgStrength;
-                    }else {
-                        /* Messages from a writer with lower strength are discarded */
-                        return V_WRITE_SUCCESS_NOT_STORED;
-                    }
-                }
-            }else {
-                /* Instance has no owner, so assign writer of message */
-                instance->owner.gid = message->writerGID;
-                instance->owner.strength = v_messageQos_getOwnershipStrength(message->qos);
-            }
-        }
+            break;
+        default:
+            break;
     }
 
     group = v_group(instance->group);
@@ -1284,7 +1284,7 @@ v_groupInstanceInsert(
         v_stateSet(instance->state, L_DISPOSED);
     } else {
         if (v_stateTest(instance->state, L_DISPOSED)) {
-            instance->epoch = C_TIME_ZERO;
+            instance->epoch = C_TIME_MIN_INFINITE;
             v_stateClear(instance->state, L_DISPOSED);
         }
     }
@@ -1438,7 +1438,6 @@ v_groupInstanceGetRegistration(
     return c_keep(reg);
 }
 
-
 void
 v_groupInstancePurgeTimed(
     v_groupInstance instance,
@@ -1458,8 +1457,13 @@ v_groupInstancePurgeTimed(
 
         while ((proceed == TRUE) && (instance->oldest)) {
             message = v_groupSampleMessage(instance->oldest);
-
-            if (v_timeCompare(message->writeTime, purgeTime) == C_LT) {
+            /* Purge all messages with a source timestamp less than or equal
+             * to purgeTime. The equality is important for the REPLACE merge
+             * policy to gurantees that the dispose message that was generated
+             * on behalf of the REPLACE merge policy is also purged!
+             */
+            if ( (v_timeCompare(message->writeTime, purgeTime) == C_LT) || 
+                 (v_timeCompare(message->writeTime, purgeTime) == C_EQ) ) {
                 v_lifespanAdminRemove(group->lifespanAdmin,
                                       v_lifespanSample(instance->oldest));
                 v_groupInstanceRemove(instance->oldest);
@@ -1479,7 +1483,11 @@ v_groupInstancePurgeTimed(
  */
 #if 1
 void
-v_groupInstancecleanup(v_groupInstance _this, v_registration registration, c_time timestamp)
+v_groupInstancecleanup(
+    v_groupInstance _this,
+    v_registration registration,
+    c_time timestamp,
+    c_bool isImplicit)
 {
     v_message unregMsg, disposeMsg;
     v_group group;
@@ -1489,7 +1497,11 @@ v_groupInstancecleanup(v_groupInstance _this, v_registration registration, c_tim
     if (v_messageQos_isAutoDispose(registration->qos)) {
         disposeMsg = v_groupInstanceCreateMessage(_this);
         if (disposeMsg) {
-            v_nodeState(disposeMsg) = L_DISPOSED;
+            if (isImplicit) {
+                v_nodeState(disposeMsg) = L_DISPOSED | L_IMPLICIT;
+            } else {
+                v_nodeState(disposeMsg) = L_DISPOSED;
+            }
             disposeMsg->qos = c_keep(registration->qos); /* since messageQos does not contain refs */
             disposeMsg->writerGID = registration->writerGID; /* pretend this message comes from the original writer! */
             disposeMsg->writeTime = timestamp;
@@ -1499,7 +1511,11 @@ v_groupInstancecleanup(v_groupInstance _this, v_registration registration, c_tim
     }
     unregMsg = v_groupInstanceCreateMessage(_this);
     if (unregMsg) {
-        v_nodeState(unregMsg) = L_UNREGISTER;
+        if (isImplicit) {
+            v_nodeState(unregMsg) = L_UNREGISTER | L_IMPLICIT;
+        } else {
+            v_nodeState(unregMsg) = L_UNREGISTER;
+        }
         unregMsg->qos = c_keep(registration->qos); /* since messageQos does not contain refs */
         unregMsg->writerGID = registration->writerGID; /* pretend this message comes from the original writer! */
         unregMsg->writeTime = timestamp;

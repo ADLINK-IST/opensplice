@@ -527,7 +527,6 @@ saj_setGenericUnionDefault(
     {
     case M_ENUMERATION:
     {
-        jint enumVal = (jint) discrValue;
         jobject discrEnumObject;
         saj_cfooEnum((sajCopyHeader*)sajCopyUnionEnumDiscrObject(cuh), &discrEnumObject, &discrValue, ctx);
         if (saj_copyGetStatus(ctx) == SAJ_COPYRESULT_OK){
@@ -638,6 +637,8 @@ saj_cfsoBoolean (
     saj_copyResult result;
     c_bool *src;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_bool *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetBooleanField (ctx->javaEnv, javaObject, javaFID, (jboolean)*src);
     result = saj_copyGetStatus(ctx);
@@ -660,6 +661,8 @@ saj_cfuoBooleanGeneric (
     saj_copyResult result;
     c_bool *src;
     jboolean tmp;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_bool *)ctx->src;
     /* Since the footprint of jboolean and c_bool might not be the same, perform the cast
@@ -689,6 +692,8 @@ saj_cfuoBooleanSupported (
     c_bool *src;
     jboolean tmp;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_bool *)ctx->src;
     /* Since the footprint of jboolean and c_bool might not be the same, perform the cast
      * before invoking the saj_setUnionBranch, which assumes it receives a jboolean*, which
@@ -712,8 +717,12 @@ saj_cfsoByte (
     saj_context *ctx)
 {
     saj_copyResult result;
+    c_octet *src;
 
-    c_octet *src = (c_octet *)((PA_ADDRCAST)ctx->src + ctx->offset);
+    OS_UNUSED_ARG(ch);
+
+    src = (c_octet *)((PA_ADDRCAST)ctx->src + ctx->offset);
+
     (*(ctx->javaEnv))->SetByteField (ctx->javaEnv, javaObject, javaFID, (jbyte)*src);
     result = saj_copyGetStatus(ctx);
 
@@ -734,6 +743,8 @@ saj_cfuoByteGeneric (
 {
     saj_copyResult result;
     c_octet *src;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_octet *)ctx->src;
     saj_setGenericUnionBranch(javaObject, cuh, unionCase, jbyte, src, discrValue, ctx);
@@ -757,6 +768,8 @@ saj_cfuoByteSupported (
     saj_copyResult result;
     c_octet *src;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_octet *)ctx->src;
     saj_setSupportedUnionBranch(javaObject, cuh, unionCase, jbyte, Byte, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
@@ -776,6 +789,8 @@ saj_cfsoChar (
 {
     saj_copyResult result;
     c_char *src;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_char *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetCharField (ctx->javaEnv, javaObject, javaFID, (jchar)*src);
@@ -799,6 +814,8 @@ saj_cfuoCharGeneric (
     saj_copyResult result;
     c_char *src;
     jchar tmp;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_char *)ctx->src;
     /* Since the footprint of jchar and c_char are not the same, perform the cast before
@@ -827,6 +844,8 @@ saj_cfuoCharSupported (
     c_char *src;
     jchar tmp;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_char *)ctx->src;
     /* Since the footprint of jchar and c_char are not the same, perform the cast before
      * invoking the saj_setUnionBranch, which assumes it receives a jchar*, which has
@@ -852,6 +871,8 @@ saj_cfsoShort (
     saj_copyResult result;
     c_short *src;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_short *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetShortField (ctx->javaEnv, javaObject, javaFID, (jshort)*src);
     result = saj_copyGetStatus(ctx);
@@ -873,6 +894,8 @@ saj_cfuoShortGeneric (
 {
     saj_copyResult result;
     c_short *src;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_short *)ctx->src;
     saj_setGenericUnionBranch(javaObject, cuh, unionCase, jshort, src, discrValue, ctx);
@@ -896,6 +919,8 @@ saj_cfuoShortSupported (
     saj_copyResult result;
     c_short *src;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_short *)ctx->src;
     saj_setSupportedUnionBranch(javaObject, cuh, unionCase, jshort, Short, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
@@ -915,6 +940,8 @@ saj_cfsoInt (
 {
     saj_copyResult result;
     c_long *src;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_long *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetIntField (ctx->javaEnv, javaObject, javaFID, (jint)*src);
@@ -938,6 +965,8 @@ saj_cfuoIntGeneric (
     saj_copyResult result;
     c_long *src;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_long *)ctx->src;
     saj_setGenericUnionBranch(javaObject, cuh, unionCase, jint, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
@@ -960,6 +989,8 @@ saj_cfuoIntSupported (
     saj_copyResult result;
     c_long *src;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_long *)ctx->src;
     saj_setSupportedUnionBranch(javaObject, cuh, unionCase, jint, Int, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
@@ -979,6 +1010,8 @@ saj_cfsoLong (
 {
     saj_copyResult result;
     c_longlong *src;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_longlong *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetLongField (ctx->javaEnv, javaObject, javaFID, (jlong)*src);
@@ -1002,6 +1035,8 @@ saj_cfuoLongGeneric (
     saj_copyResult result;
     c_longlong *src;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_longlong *)ctx->src;
     saj_setGenericUnionBranch(javaObject, cuh, unionCase, jlong, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
@@ -1024,6 +1059,8 @@ saj_cfuoLongSupported (
     saj_copyResult result;
     c_longlong *src;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_longlong *)ctx->src;
     saj_setSupportedUnionBranch(javaObject, cuh, unionCase, jlong, Long, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
@@ -1043,6 +1080,8 @@ saj_cfsoFloat (
 {
     saj_copyResult result;
     c_float *src;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_float *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetFloatField (ctx->javaEnv, javaObject, javaFID, (jfloat)*src);
@@ -1066,6 +1105,8 @@ saj_cfuoFloatGeneric (
     saj_copyResult result;
     c_float *src;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_float *)ctx->src;
     saj_setGenericUnionBranch(javaObject, cuh, unionCase, jfloat, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
@@ -1088,6 +1129,8 @@ saj_cfuoFloatSupported (
     saj_copyResult result;
     c_float *src;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_float *)ctx->src;
     saj_setSupportedUnionBranch(javaObject, cuh, unionCase, jfloat, Float, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
@@ -1107,6 +1150,8 @@ saj_cfsoDouble (
 {
     saj_copyResult result;
     c_double *src;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_double *)((PA_ADDRCAST)ctx->src + ctx->offset);
     (*(ctx->javaEnv))->SetDoubleField (ctx->javaEnv, javaObject, javaFID, (jdouble)*src);
@@ -1130,6 +1175,8 @@ saj_cfuoDoubleGeneric (
     saj_copyResult result;
     c_double *src;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_double *)ctx->src;
     saj_setGenericUnionBranch(javaObject, cuh, unionCase, jdouble, src, discrValue, ctx);
     result = saj_copyGetStatus(ctx);
@@ -1151,6 +1198,8 @@ saj_cfuoDoubleSupported (
 {
     saj_copyResult result;
     c_double *src;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_double *)ctx->src;
     saj_setSupportedUnionBranch(javaObject, cuh, unionCase, jdouble, Double, src, discrValue, ctx);
@@ -2462,6 +2511,8 @@ saj_cfooSeqBoolean (
     jsize seqLen;
     saj_copyResult result;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_bool **)srcSeq;
     seqLen = c_arraySize ((c_sequence)*src);
     array = (jbooleanArray)(*objectArray);
@@ -2590,6 +2641,8 @@ saj_cfooSeqByte (
     int seqLen;
     saj_copyResult result;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_octet **)srcSeq;
     seqLen = c_arraySize ((c_sequence)*src);
     array = (jbyteArray)(*objectArray);
@@ -2716,6 +2769,8 @@ saj_cfooSeqChar (
     c_char **src;
     int seqLen;
     saj_copyResult result;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_char **)srcSeq;
     seqLen = c_arraySize ((c_sequence)*src);
@@ -2859,6 +2914,8 @@ saj_cfooSeqShort (
     int seqLen;
     saj_copyResult result;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_short **)srcSeq;
     seqLen = c_arraySize ((c_sequence)*src);
     array = (jshortArray)(*objectArray);
@@ -2985,6 +3042,8 @@ saj_cfooSeqInt (
     int seqLen;
     saj_copyResult result;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_long **)srcSeq;
     seqLen = c_arraySize ((c_sequence)*src);
     array = (jintArray)(*objectArray);
@@ -3031,7 +3090,7 @@ saj_cfsoSeqInt (
         TRACE(printf ("JNI: GetObjectField (0x%x, %d) = 0x%x\n", javaObject, javaFID, array));
         result = saj_cfooSeqInt (ch, &array, src, ctx);
 
-        if ((result == SAJ_COPYRESULT_OK)) {
+        if (result == SAJ_COPYRESULT_OK) {
             (*(ctx->javaEnv))->SetObjectField (ctx->javaEnv, javaObject, javaFID, array);
             result = saj_copyGetStatus(ctx);
             TRACE(printf ("JNI: SetObjectField (0x%x, %d, 0x%x)\n", javaObject, javaFID, array));
@@ -3110,6 +3169,8 @@ saj_cfooSeqLong (
     c_longlong **src;
     int seqLen;
     saj_copyResult result;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_longlong **)srcSeq;
     seqLen = c_arraySize ((c_sequence)*src);
@@ -3238,6 +3299,8 @@ saj_cfooSeqFloat (
     int seqLen;
     saj_copyResult result;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_float **)srcSeq;
     seqLen = c_arraySize ((c_sequence)*src);
 
@@ -3364,6 +3427,8 @@ saj_cfooSeqDouble (
     c_double **src;
     int seqLen;
     saj_copyResult result;
+
+    OS_UNUSED_ARG(ch);
 
     src = (c_double **)srcSeq;
     seqLen = c_arraySize ((c_sequence)*src);
@@ -3622,7 +3687,7 @@ saj_cfooUnion (
     unsigned long ci;
     sajCopyUnion *cuh;
     sajCopyUnionLabels *csl;
-    unsigned long long discrVal;
+    unsigned long long discrVal = 0;
     sajCopyUnionLabels *defaultLabel = NULL;
     int active_case = 0;
     saj_copyResult result;
@@ -3643,41 +3708,6 @@ saj_cfooUnion (
     if(result == SAJ_COPYRESULT_OK){
         switch (discrType->kind) {
         case M_ENUMERATION:
-        {
-            c_long *src;
-
-            src = (c_long *)srcUnion;
-            discrVal = (unsigned long long)*src;
-        }
-        break;
-        case M_PRIMITIVE:
-        switch (c_primitive (discrType)->kind) {
-        case P_BOOLEAN:
-            {
-                c_bool *src;
-
-                src = (c_bool *)srcUnion;
-                discrVal = (unsigned long long)*src;
-            }
-            break;
-        case P_CHAR:
-            {
-                c_char *src;
-                src = (c_char *)srcUnion;
-                discrVal = (unsigned long long)*src;
-            }
-            break;
-        case P_SHORT:
-        case P_USHORT:
-            {
-                c_short *src;
-
-                src = (c_short *)srcUnion;
-                discrVal = (unsigned long long)*src;
-            }
-            break;
-        case P_LONG:
-        case P_ULONG:
             {
                 c_long *src;
 
@@ -3685,22 +3715,57 @@ saj_cfooUnion (
                 discrVal = (unsigned long long)*src;
             }
             break;
-        case P_LONGLONG:
-        case P_ULONGLONG:
-            {
-                c_longlong *src;
+        case M_PRIMITIVE:
+            switch (c_primitive (discrType)->kind) {
+            case P_BOOLEAN:
+                {
+                    c_bool *src;
 
-                src = (c_longlong *)srcUnion;
-                discrVal = (unsigned long long)*src;
+                    src = (c_bool *)srcUnion;
+                    discrVal = (unsigned long long)*src;
+                }
+                break;
+            case P_CHAR:
+                {
+                    c_char *src;
+                    src = (c_char *)srcUnion;
+                    discrVal = (unsigned long long)*src;
+                }
+                break;
+            case P_SHORT:
+            case P_USHORT:
+                {
+                    c_short *src;
+
+                    src = (c_short *)srcUnion;
+                    discrVal = (unsigned long long)*src;
+                }
+                break;
+            case P_LONG:
+            case P_ULONG:
+                {
+                    c_long *src;
+
+                    src = (c_long *)srcUnion;
+                    discrVal = (unsigned long long)*src;
+                }
+                break;
+            case P_LONGLONG:
+            case P_ULONGLONG:
+                {
+                    c_longlong *src;
+
+                    src = (c_longlong *)srcUnion;
+                    discrVal = (unsigned long long)*src;
+                }
+                break;
+            default:
+                saj_exceptionThrow (ctx->javaEnv, SAJ_EXCEPTION_TYPE_MARSHAL, "Invalid discriminator type");
+                OS_REPORT(OS_ERROR, "dcpssaj", 0, "saj_cfooUnion: Unexpected primitive kind");
+                result = SAJ_COPYRESULT_BAD_PARAMETER;
+                assert (0);
             }
             break;
-            default:
-            saj_exceptionThrow (ctx->javaEnv, SAJ_EXCEPTION_TYPE_MARSHAL, "Invalid discriminator type");
-            OS_REPORT(OS_ERROR, "dcpssaj", 0, "saj_cfooUnion: Unexpected primitive kind");
-            result = SAJ_COPYRESULT_BAD_PARAMETER;
-            assert (0);
-        }
-        break;
         default:
             saj_exceptionThrow (ctx->javaEnv, SAJ_EXCEPTION_TYPE_MARSHAL, "Invalid discriminator type");
             OS_REPORT(OS_ERROR, "dcpssaj", 0, "saj_cfooUnion: Unexpected switch kind");
@@ -3891,23 +3956,21 @@ saj_cfooString (
     c_string *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_string *)srcString;
 
     assert(src);
 
-    if (*src) {
-        if ((*src)[0] == '\0') {
-            *stringObject = saj_getEmptyStringRef(ctx->javaEnv);
-            TRACE(printf ("Copied out empty string = %s @ offset = %d\n", *src, ctx->offset));
-        } else {
-            *stringObject = (*(ctx->javaEnv))->NewStringUTF (ctx->javaEnv, *src);
-            result = saj_copyGetStatus(ctx);
-
-            TRACE(printf ("JNI: NewStringUTF (\"%s\")\n", *src));
-            TRACE(printf ("Copied out string = %s @ offset = %d\n", *src, ctx->offset));
-        }
+    if (*src == NULL || (*src)[0] == '\0') {
+        *stringObject = saj_getEmptyStringRef(ctx->javaEnv);
+        TRACE(printf ("Copied out empty string = %s @ offset = %d\n", *src, ctx->offset));
     } else {
-        *stringObject = NULL; /* No error in case of non-keyfield on invalid sample. */
+        *stringObject = (*(ctx->javaEnv))->NewStringUTF (ctx->javaEnv, *src);
+        result = saj_copyGetStatus(ctx);
+
+        TRACE(printf ("JNI: NewStringUTF (\"%s\")\n", *src));
+        TRACE(printf ("Copied out string = %s @ offset = %d\n", *src, ctx->offset));
     }
 
     return result;
@@ -3997,23 +4060,21 @@ saj_cfooBString (
     c_string *src;
     saj_copyResult result = SAJ_COPYRESULT_OK;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_string *)srcString;
 
     assert(src);
 
-    if(*src){
-        if ((*src)[0] == '\0') {
-            *stringObject = saj_getEmptyStringRef(ctx->javaEnv);
-            TRACE(printf ("Copied out empty bounded string = %s @ offset = %d\n", *src, ctx->offset));
-        } else {
-           *stringObject = (*(ctx->javaEnv))->NewStringUTF (ctx->javaEnv, *src);
-           result = saj_copyGetStatus(ctx);
-
-           TRACE(printf ("JNI: NewStringUTF (\"%s\")\n", *src));
-           TRACE(printf ("Copied out bounded string = %s @ offset = %d\n", *src, ctx->offset));
-        }
+    if(*src == NULL || (*src)[0] == '\0') {
+        *stringObject = saj_getEmptyStringRef(ctx->javaEnv);
+        TRACE(printf ("Copied out empty bounded string = %s @ offset = %d\n", *src, ctx->offset));
     } else {
-        *stringObject = NULL; /* No error in case of non-keyfield on invalid sample. */
+       *stringObject = (*(ctx->javaEnv))->NewStringUTF (ctx->javaEnv, *src);
+       result = saj_copyGetStatus(ctx);
+
+       TRACE(printf ("JNI: NewStringUTF (\"%s\")\n", *src));
+       TRACE(printf ("Copied out bounded string = %s @ offset = %d\n", *src, ctx->offset));
     }
 
     return result;
@@ -4029,8 +4090,10 @@ saj_cfooBStringToArrChar (
     c_char *src;
     saj_copyResult result;
 
+    OS_UNUSED_ARG(ch);
+
     src = (c_char *)srcArray;
-    if(src[0] == '\0') {
+    if(*src == NULL || src[0] == '\0') {
         *stringObject = saj_getEmptyStringRef(ctx->javaEnv);
         TRACE(printf ("Copied out empty bounded string = %s @ offset = %d\n", src, ctx->offset));
         result = SAJ_COPYRESULT_OK;
@@ -4577,10 +4640,7 @@ saj_CDROutStruct (
     void *dst)
 {
     struct sd_cdrSerdata *serdata;
-    saj_context context;
     saj_dstInfo dstInfo = (saj_dstInfo)dst;
-    sajCopyHeader *ch;
-    saj_copyResult result;
     jobject bb;
     os_uint32 cdr_size;
     struct sd_cdrInfo *ci;

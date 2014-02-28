@@ -122,6 +122,16 @@ int os_posix_destroyKey(const char *name)
     return 0;
 }
 
+void os_posix_cleanSharedMemAndOrKeyFiles()
+{
+}
+
+int os_posix_sharedMemorySegmentFree(const char *fileName)
+{
+    OS_UNUSED_ARG (fileName);
+    return 0;
+}
+
 #else
 
 #include "os_heap.h"
@@ -622,10 +632,109 @@ os_posix_listDomainNamesFree(
     return 0;
 }
 
+/** \brief frees shared memory and/or key files if any key files found
+ *  and creator process not running
+ */
 void
-os_cleanKeyFiles(
+os_posix_cleanSharedMemAndOrKeyFiles(
     void)
 {
+
+    DIR *key_dir;
+    struct dirent *entry;
+    char * dir_name = NULL;
+    char * key_file_name = NULL;
+    int key_file_name_size;
+    FILE *key_file;
+    char line[512];
+    char *name;
+    os_int32 retVal = 0;
+    char imp[32] = "SVR4-IPCSHM";
+    int pid;
+    os_int32 procResult;
+    struct stat info;
+    int uid;
+    int doClean = 0;
+
+    uid = getuid(); /* get current user id */
+
+    dir_name = os_getTempDir();
+    key_dir = opendir(dir_name);
+    if (key_dir)
+    {
+        entry = readdir(key_dir);
+        while (entry != NULL)
+        {
+            doClean = 0;
+            if (strncmp(entry->d_name, "spddskey_", 9) == 0)
+            {
+                key_file_name_size = strlen(dir_name) + strlen(os_posix_key_file_format) + 2;
+                key_file_name = os_malloc (key_file_name_size);
+
+                if (key_file_name != NULL)
+                {
+                    snprintf(key_file_name,key_file_name_size,"%s/%s",dir_name,entry->d_name);
+
+                    /* get key file user id */
+                    if (stat(key_file_name, &info) == 0)
+                    {
+                        if (info.st_uid == uid)
+                        {
+                            key_file = fopen(key_file_name, "r");
+                            if (key_file != NULL)
+                            {
+                                if (fgets(line, sizeof(line), key_file) != NULL) /* domain */
+                                {
+                                    fgets(line, sizeof(line), key_file);    /* address */
+                                    fgets(line, sizeof(line), key_file);    /* size */
+                                    fgets(line, sizeof(line), key_file);    /* implementation */
+
+                                    if (fgets(line, sizeof(line), key_file) != NULL)
+                                    {
+                                        /* creator pid */
+                                        if (strlen(line) < 10)
+                                        {
+                                            sscanf(line, "%d", &pid);
+                                            doClean = 1;
+                                        }
+                                    }
+                                }
+                                if (fclose(key_file) != 0)
+                                {
+                                    retVal = 1;
+                                }
+                            }
+                        }
+                    }
+                    if (doClean == 1)
+                    {
+                        if (kill(pid, 0) == -1)
+                        {
+                            /* unable to send signal to the process so it must have terminated */
+                            /* remove segment then file */
+                            os_sharedMemorySegmentFree(key_file_name);
+                            /* delete key file  */
+                            os_destroyKeyFile(key_file_name);
+                        }
+                    }
+                    os_free (key_file_name);
+                }
+            }
+            entry = readdir(key_dir);
+        }
+        if (closedir(key_dir) != 0)
+        {
+            retVal = 1;
+        }
+    }
+}
+
+
+int
+os_posix_sharedMemorySegmentFree(
+    const char *fileName)
+{
+    return 0;
 }
 
 

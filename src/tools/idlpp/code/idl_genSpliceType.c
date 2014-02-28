@@ -147,7 +147,7 @@ idl_fileOpen(
 
     /* Generate code for inclusion of application specific include files */
     for (i = 0; i < idl_depLength(idl_depDefGet()); i++) {
-        idl_fileOutPrintf(idl_fileCur(), "#include \"%sSplDcps.h\"\n", idl_depGet (idl_depDefGet(), i));
+        idl_fileOutPrintf(idl_fileCur(), "#include \"%sSpl%s.h\"\n", idl_depGet (idl_depDefGet(), i), test_mode ? "Type" : "Dcps");
     }
     if (idl_depLength(idl_depDefGet()) > 0) {
         idl_fileOutPrintf(idl_fileCur(), "\n");
@@ -283,13 +283,26 @@ idl_structureOpen(
                     idl_scopeStack(scope, "_", name));
             } else
             {
-                idl_fileOutPrintf(
-                    idl_fileCur(),
-                    "extern %s c_bool __%s__copyIn(c_base base, struct %s *from, struct _%s *to);\n",
-                    idl_dllGetMacro(),
-                    idl_scopeStack(scope, "_", name),
-                    idl_scopeStack(scope, "::", name),
-                    idl_scopeStack(scope, "_", name));
+                if (idl_getIsISOCpp() && idl_getIsISOCppTypes())
+                {
+                  idl_fileOutPrintf(
+                      idl_fileCur(),
+                      "extern %s c_bool __%s__copyIn(c_base base, class %s *from, struct _%s *to);\n",
+                      idl_dllGetMacro(),
+                      idl_scopeStack(scope, "_", name),
+                      idl_scopeStack(scope, "::", name),
+                      idl_scopeStack(scope, "_", name));
+                }
+                else
+                {
+                  idl_fileOutPrintf(
+                      idl_fileCur(),
+                      "extern %s c_bool __%s__copyIn(c_base base, struct %s *from, struct _%s *to);\n",
+                      idl_dllGetMacro(),
+                      idl_scopeStack(scope, "_", name),
+                      idl_scopeStack(scope, "::", name),
+                      idl_scopeStack(scope, "_", name));
+                }
             }
             idl_fileOutPrintf(
                 idl_fileCur(),

@@ -2,5 +2,5 @@
 // $Id:$
 
 project : streams_typesupport_base, ospl_streamssacpp, ospl_dcpssacpp, ospl_dcps_cpp_app_base_libs {
-  streams_ts_flags += -S -l cpp
+  streams_ts_flags += -l cpp
 }

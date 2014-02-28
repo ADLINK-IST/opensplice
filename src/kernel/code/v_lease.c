@@ -34,6 +34,12 @@ v_leaseCollectObservers(
     c_object o,
     c_voidp arg);
 
+static void
+v_leaseRenewCommon(
+    v_lease _this,
+    v_duration* leaseDuration,
+    c_bool internal);
+
 /**************************************************************
  * constructor/destructor
  **************************************************************/
@@ -63,6 +69,7 @@ v_leaseInit(
         c_mutexInit(&_this->mutex, SHARED_MUTEX);
         _this->expiryTime = c_timeAdd(v_timeGet(), leaseDuration);
         _this->duration = leaseDuration;
+        _this->lastRenewInternal = FALSE;
         _this->observers = c_setNew(v_kernelType(k, K_LEASEMANAGER));
     }
 }
@@ -116,6 +123,23 @@ v_leaseRenew(
     v_lease _this,
     v_duration* leaseDuration /* may be NULL */)
 {
+    v_leaseRenewCommon(_this, leaseDuration, FALSE);
+}
+
+void
+v_leaseRenewInternal(
+    v_lease _this,
+    v_duration* leaseDuration /* may be NULL */)
+{
+    v_leaseRenewCommon(_this, leaseDuration, TRUE);
+}
+
+static void
+v_leaseRenewCommon(
+    v_lease _this,
+    v_duration* leaseDuration /* may be NULL */,
+    c_bool internal)
+{
     c_iter observers;
     v_leaseManager observer;
 
@@ -130,6 +154,7 @@ v_leaseRenew(
 
         /* Update the expiryTime */
         _this->expiryTime = c_timeAdd(v_timeGet(), _this->duration);
+        _this->lastRenewInternal = internal;
 
         /* Notify observers */
         observers = NULL;
@@ -215,6 +240,16 @@ v_leaseExpiryTimeNoLock(
     expTime = _this->expiryTime;
 
     return expTime;
+}
+
+c_bool
+v_leaseLastRenewInternalNoLock(
+    v_lease _this)
+{
+    assert(_this != NULL);
+    assert(C_TYPECHECK(_this, v_lease));
+
+    return _this->lastRenewInternal;
 }
 
 c_bool

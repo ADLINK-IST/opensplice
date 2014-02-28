@@ -23,7 +23,7 @@
 #include "v_query.h"
 #include "v_dataReaderInstance.h"
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT

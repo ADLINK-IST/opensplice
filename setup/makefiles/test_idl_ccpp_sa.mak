@@ -12,12 +12,6 @@ else
   IDL_INC_FLAGS = $(TMP_IDL_DIR_INC_FLAG) $(TMP_IDL_CCPP_INC_FLAG)
 endif
 
-ifeq (,$(or $(findstring win32,$(SPLICE_TARGET)), $(findstring win64,$(SPLICE_TARGET)), $(findstring wince,$(SPLICE_TARGET))))
-  IDL_INC_FLAGS += -I$(OSPL_HOME)/src/api/dlrl/ccpp/idl
-else
-  IDL_INC_FLAGS += -I'$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME)/src/api/dlrl/ccpp/idl)'
-endif
-
 
 vpath %.idl	$(IDL_DIR)
 
@@ -35,20 +29,9 @@ IDLPP_OBJ   = $(IDLPP_CPP:%.cpp=%$(OBJ_POSTFIX))
 JAR_INC_DIR =$(OSPL_HOME)/jar/$(SPLICE_TARGET)
 OUTER_HOME_PATH =`$(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_OUTER_HOME)`
 
-JAR_DIR =$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(JAR_INC_DIR)/ospldcg.jar)
-
-OSPLDCG =java "-DOSPL_HOME=$(shell $(OSPL_HOME)/bin/ospl_normalizePath $(OSPL_HOME))" -classpath "$(JAR_DIR)" DCG.Control.DCGStarter
-OSPLDCGFLAGS +=  -l SACPP $(IDL_INC_FLAGS)
-
-# ospldcg output
-OSPLDCG_PREFIX   = $(addprefix ccpp_,$(DLRL_XML))
-OSPLDCG_ORB_OBJ  = $(DLRL_XML:%.xml=%Object$(OBJ_POSTFIX)) $(DLRL_XML:%.xml=%ObjectDlrl$(OBJ_POSTFIX)) $(OSPLDCG_PREFIX:%.xml=%Object_abstract$(OBJ_POSTFIX)) $(OSPLDCG_PREFIX:%.xml=%Object_impl$(OBJ_POSTFIX)) $(OSPLDCG_PREFIX:%.xml=%ObjectDlrl_impl$(OBJ_POSTFIX))
-OSPLDCG_ORB_SRC  = $(OSPLDCG_ORB_OBJ:%$(OBJ_POSTFIX)=%.cpp)
-OSPLDCG_ORB_HDR  = $(OSPLDCG_ORB_SRC:%.cpp=%.h) $(OSPLDCG_PREFIX:%.xml=%Object.h)
-
 # This determines what/how it will be processed
 # IDL_H will be generated before the actual compile  (may even include C-file like ..SplLoad.c)
 # IDL_O will be linked into the final target
-IDL_H		= $(IDLPP_HDR) $(OSPLDCG_ORB_HDR)
-IDL_C		= $(IDLPP_CPP) $(OSPLDCG_ORB_SRC)
-IDL_O		= $(IDLPP_OBJ) $(OSPLDCG_ORB_OBJ)
+IDL_H		= $(IDLPP_HDR)
+IDL_C		= $(IDLPP_CPP)
+IDL_O		= $(IDLPP_OBJ)

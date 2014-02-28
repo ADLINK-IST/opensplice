@@ -12,6 +12,6 @@ CINCS += -I$(OSPL_HOME)/src/kernel/include
 CINCS += -I$(OSPL_HOME)/src/user/include
 CINCS += -I$(OSPL_HOME)/src/configuration/config/include
 
-LDLIBS += -l$(DDS_DCPSSAC) -l$(DDS_OS) 
+LDLIBS += -l$(DDS_DCPSSAC)  
 
 -include $(DEPENDENCIES)

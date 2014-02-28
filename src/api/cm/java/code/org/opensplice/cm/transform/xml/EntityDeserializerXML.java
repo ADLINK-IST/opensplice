@@ -25,18 +25,33 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.opensplice.cm.Entity;
+import org.opensplice.cm.ServiceStateKind;
+import org.opensplice.cm.com.Communicator;
+import org.opensplice.cm.data.State;
+import org.opensplice.cm.impl.DataReaderImpl;
+import org.opensplice.cm.impl.EntityImpl;
+import org.opensplice.cm.impl.GroupQueueImpl;
+import org.opensplice.cm.impl.NetworkReaderImpl;
+import org.opensplice.cm.impl.ParticipantImpl;
+import org.opensplice.cm.impl.PartitionImpl;
+import org.opensplice.cm.impl.PublisherImpl;
+import org.opensplice.cm.impl.QueryImpl;
+import org.opensplice.cm.impl.QueueImpl;
+import org.opensplice.cm.impl.ServiceImpl;
+import org.opensplice.cm.impl.ServiceStateImpl;
+import org.opensplice.cm.impl.SubscriberImpl;
+import org.opensplice.cm.impl.TopicImpl;
+import org.opensplice.cm.impl.WaitsetImpl;
+import org.opensplice.cm.impl.WriterImpl;
+import org.opensplice.cm.transform.EntityDeserializer;
+import org.opensplice.cm.transform.TransformationException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
-import org.opensplice.cm.*;
-import org.opensplice.cm.impl.*;
-import org.opensplice.cm.transform.EntityDeserializer;
-import org.opensplice.cm.transform.TransformationException;
-import org.opensplice.cm.data.State;
 
 /**
  * The XML implementation of an EntityDeserializer. It is capable of 
@@ -52,7 +67,8 @@ public class EntityDeserializerXML implements EntityDeserializer {
      * @throws ParserConfigurationException Thrown when no DOM parser is
      *                                      available in the standard Java API.
      */
-    public EntityDeserializerXML() throws ParserConfigurationException{
+    public EntityDeserializerXML(Communicator communicator) throws ParserConfigurationException{
+        this.communicator = communicator;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setValidating(false);
         factory.setNamespaceAware(false);
@@ -178,7 +194,7 @@ public class EntityDeserializerXML implements EntityDeserializer {
                 Element typeEl = (Element)(topicList.item(0));
                 typeName = typeEl.getFirstChild().getNodeValue();
             }
-            result = new TopicImpl(index, serial, pointer, name, this.resolveKeyList(el), typeName);
+            result = new TopicImpl(getCommunicator(), index, serial, pointer, name, this.resolveKeyList(el), typeName);
         } else if("QUERY".equals(kind)){
             NodeList queryList = el.getElementsByTagName("expression");
             String expression = null;
@@ -232,28 +248,28 @@ public class EntityDeserializerXML implements EntityDeserializer {
                     viewState = Integer.parseInt(typeEl.getFirstChild().getNodeValue());
                 }
             }
-            result = new QueryImpl(index, serial, pointer, name, expression, params, 
+            result = new QueryImpl(getCommunicator(), index, serial, pointer, name, expression, params,
                         new State(instanceState), new State(sampleState), new State(viewState));
         } else if("DOMAIN".equals(kind)){
-            result = new PartitionImpl(index, serial, pointer, name);        
+            result = new PartitionImpl(getCommunicator(), index, serial, pointer, name);
         } else if("DATAREADER".equals(kind)){
-            result = new DataReaderImpl(index, serial, pointer, name);
+            result = new DataReaderImpl(getCommunicator(), index, serial, pointer, name);
         } else if("QUEUE".equals(kind)){
-            result = new QueueImpl(index, serial, pointer, name);
+            result = new QueueImpl(getCommunicator(), index, serial, pointer, name);
         } else if("GROUPQUEUE".equals(kind)){
-            result = new GroupQueueImpl(index, serial, pointer, name);
+            result = new GroupQueueImpl(getCommunicator(), index, serial, pointer, name);
         } else if("NETWORKREADER".equals(kind)){
-            result = new NetworkReaderImpl(index, serial, pointer, name);
+            result = new NetworkReaderImpl(getCommunicator(), index, serial, pointer, name);
         } else if("WRITER".equals(kind)){
-            result = new WriterImpl(index, serial, pointer, name);
+            result = new WriterImpl(getCommunicator(), index, serial, pointer, name);
         } else if("SUBSCRIBER".equals(kind)){
-            result = new SubscriberImpl(index, serial, pointer, name);
+            result = new SubscriberImpl(getCommunicator(), index, serial, pointer, name);
         } else if("PUBLISHER".equals(kind)){
-            result = new PublisherImpl(index, serial, pointer, name);
+            result = new PublisherImpl(getCommunicator(), index, serial, pointer, name);
         } else if("PARTICIPANT".equals(kind)){
-            result = new ParticipantImpl(index, serial, pointer, name);
+            result = new ParticipantImpl(getCommunicator(), index, serial, pointer, name);
         } else if("SERVICE".equals(kind)){
-            result = new ServiceImpl(index, serial, pointer, name);
+            result = new ServiceImpl(getCommunicator(), index, serial, pointer, name);
         } else if("SERVICESTATE".equals(kind)){
             NodeList stateList = el.getElementsByTagName("statename");
             String stateName = null;
@@ -275,6 +291,8 @@ public class EntityDeserializerXML implements EntityDeserializer {
                 ssk = ServiceStateKind.INITIALISING;
             } else if("OPERATIONAL".equals(stateKind)){
                 ssk = ServiceStateKind.OPERATIONAL;
+            } else if("INCOMPATIBLE_CONFIGURATION".equals(stateKind)){
+                ssk = ServiceStateKind.INCOMPATIBLE_CONFIGURATION;
             } else if("TERMINATING".equals(stateKind)){
                 ssk = ServiceStateKind.TERMINATING;
             } else if("TERMINATED".equals(stateKind)){
@@ -282,9 +300,9 @@ public class EntityDeserializerXML implements EntityDeserializer {
             } else if("DIED".equals(stateKind)){
                 ssk = ServiceStateKind.DIED;
             }
-            result = new ServiceStateImpl(index, serial, pointer, name, stateName, ssk);
+            result = new ServiceStateImpl(getCommunicator(), index, serial, pointer, name, stateName, ssk);
         } else if("WAITSET".equals(kind)){
-            result = new WaitsetImpl(index, serial, pointer, name);
+            result = new WaitsetImpl(getCommunicator(), index, serial, pointer, name);
         } else{
             assert false: "Deserialize entity XML: received unknown entity: " + kind;
             logger.logp(Level.SEVERE,  "EntityDeserializerXML", 
@@ -376,6 +394,10 @@ public class EntityDeserializerXML implements EntityDeserializer {
         }
         return result;
     }
+
+    protected Communicator getCommunicator() {
+      return communicator;
+    }
     
     /**
      * Builder that is capable of creating a DOM tree from an XML string.
@@ -386,4 +408,6 @@ public class EntityDeserializerXML implements EntityDeserializer {
      * Logging facilities for the deserializer.
      */
     private Logger logger;
+
+    private Communicator communicator;
 }

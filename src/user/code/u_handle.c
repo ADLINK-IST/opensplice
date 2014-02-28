@@ -4,111 +4,48 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
-#include "u__handle.h"
 #include "u__types.h"
 #include "u__domain.h"
 #include "u__user.h"
 #include "v_public.h"
 
-/* The U_HANDLE_SERIAL_MASK defines the bits in the highest 4 bytes
- * of a handle that represents the handle lifecycle number.
- * The U_HANDLE_ID_MASK defines the bits in the highest 4 bytes
- * of a handle that represents the kernel id.
- * The lower 4 bytes of the handle represents the handle id.
- */
-#define U_HANDLE_SERIAL_MASK (0x00ffffff)
-#define U_HANDLE_ID_MASK     (0x7f000000)   /* Max 127 kernels per process. */
-                                            /* MSB reserved for GID use.    */
+const u_handle U_HANDLE_NIL;
 
-/* Helper Union to transformate handle into 2 integers and visa versa.
- */
-typedef union {
-    struct {
-        c_long globalId;
-        c_long localId;
-    } lid;
-    u_handle handle;
-} u_handleTranslator;
-
-const u_handle U_HANDLE_NIL = 0;
+static int u__handleResult (v_handleResult result)
+{
+    return ((result == V_HANDLE_OK) ? U_RESULT_OK :
+            (result == V_HANDLE_EXPIRED) ? U_RESULT_ALREADY_DELETED :
+            U_RESULT_ILL_PARAM);
+}
 
 u_handle
 u_handleNew(
     v_public object)
 {
     v_handle handle;
-    u_handleTranslator translator;
-    c_long id;
-
-    if (object) {
-        handle = v_publicHandle(object);
-        id = u_userServerId(object);
-        translator.lid.globalId = (handle.serial | id);
-        translator.lid.localId = handle.index;
-    } else {
-        translator.handle = 0;
-    }
-    return translator.handle;
+    assert (object != NULL);
+    handle = v_publicHandle(object);
+    return handle;
 }
-    
+
 u_result
 u_handleClaim (
     u_handle _this,
     c_voidp  instance)
 {
-    u_result result;
-    v_handleResult vresult;
-    v_handle handle;
-    u_handleTranslator translator;
-
-    if (instance == NULL) {
-        result = U_RESULT_ILL_PARAM;
-    } else if (_this == 0) {
-        result = U_RESULT_ILL_PARAM;
-    } else {
-        translator.handle = _this;
-
-        handle.serial = (translator.lid.globalId & U_HANDLE_SERIAL_MASK);
-        handle.index  = translator.lid.localId;
-        /* The u_userServer method will verify liveliness
-         * and return the handle server.
-         * If NOT alive U_HANDLE_NIL is returned and the
-         * following v_handle claim will fail.
-         */
-        handle.server = u_userServer(translator.lid.globalId & U_HANDLE_ID_MASK);
-        vresult = v_handleClaim(handle,instance);
-        result = u__handleResult(vresult);
-    }
-
-    return result;
+    return u__handleResult (v_handleClaim (_this, instance));
 }
 
 u_result
 u_handleRelease(
     u_handle _this)
 {
-    u_result result;
-    v_handle handle;
-    u_handleTranslator translator;
-
-    if (_this == 0) {
-        result = U_RESULT_ILL_PARAM;
-    } else {
-        translator.handle = _this;
-
-        handle.serial = (translator.lid.globalId & U_HANDLE_SERIAL_MASK);
-        handle.index  = translator.lid.localId;
-        handle.server = u_userServer(translator.lid.globalId & U_HANDLE_ID_MASK);
-
-        result = u__handleResult(v_handleRelease(handle));
-    }
-
-    return result;
+    return u__handleResult (v_handleRelease (_this));
 }
 
 c_bool
@@ -116,13 +53,12 @@ u_handleIsEqual(
     u_handle h1,
     u_handle h2)
 {
-    return (h1 == h2);
+    return v_handleIsEqual (h1, h2);
 }
 
 c_bool
 u_handleIsNil(
-    u_handle _this)
+    u_handle h)
 {
-    return (_this == U_HANDLE_NIL);
+    return v_handleIsNil (h);
 }
-

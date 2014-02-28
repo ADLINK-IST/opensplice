@@ -23,6 +23,8 @@
 
 // Implementation
 #include <org/opensplice/pub/PublisherEventForwarder.hpp>
+#include <org/opensplice/core/Retain.hpp>
+#include <org/opensplice/core/EntityRegistry.hpp>
 
 namespace dds
 {
@@ -34,7 +36,9 @@ TPublisher<DELEGATE>::TPublisher(const dds::domain::DomainParticipant& dp)
     :   ::dds::core::TEntity<DELEGATE>(new DELEGATE(dp,
                                        dp.default_publisher_qos(),
                                        dds::core::status::StatusMask::all()))
-{ }
+{
+    org::opensplice::core::EntityRegistry<DDS::Publisher_ptr, dds::pub::TPublisher<DELEGATE> >::insert(this->delegate()->pub_.get(), *this);
+}
 
 template <typename DELEGATE>
 TPublisher<DELEGATE>::TPublisher(const dds::domain::DomainParticipant& dp,
@@ -42,19 +46,20 @@ TPublisher<DELEGATE>::TPublisher(const dds::domain::DomainParticipant& dp,
                                  dds::pub::PublisherListener* listener,
                                  const dds::core::status::StatusMask& mask)
     :   ::dds::core::TEntity<DELEGATE>(new DELEGATE(dp, qos, mask))
+{
+    if(listener)
     {
-        if (listener)
-        {
-            dds::core::smart_ptr_traits<DDS::PublisherListener>::ref_type h (new org::opensplice::pub::PublisherEventForwarder<TPublisher>(*this, listener));
-            this->delegate()->event_forwarder(listener, h, mask);
-        }
+        dds::core::smart_ptr_traits<DDS::PublisherListener>::ref_type h(new org::opensplice::pub::PublisherEventForwarder<TPublisher>(*this, listener));
+        this->delegate()->event_forwarder(listener, h, mask);
     }
+    org::opensplice::core::EntityRegistry<DDS::Publisher_ptr, dds::pub::TPublisher<DELEGATE> >::insert(this->delegate()->pub_.get(), *this);
+}
 
 template <typename DELEGATE>
 TPublisher<DELEGATE>::~TPublisher() { }
 
 template <typename DELEGATE>
-const dds::pub::qos::PublisherQos TPublisher<DELEGATE>::qos() const
+const dds::pub::qos::PublisherQos& TPublisher<DELEGATE>::qos() const
 {
     return this->delegate()->qos();
 }
@@ -66,40 +71,40 @@ void TPublisher<DELEGATE>::qos(const dds::pub::qos::PublisherQos& pqos)
 }
 
 template <typename DELEGATE>
-TPublisher<DELEGATE>& TPublisher<DELEGATE>::operator <<(const dds::pub::qos::PublisherQos& the_qos)
+dds::pub::qos::PublisherQos& TPublisher<DELEGATE>::operator <<(const dds::pub::qos::PublisherQos& qos)
 {
-    this->delegate()->qos(the_qos);
+    this->qos(qos);
+    return (dds::pub::qos::PublisherQos&)this->qos();
+}
+
+template <typename DELEGATE>
+TPublisher<DELEGATE>& TPublisher<DELEGATE>::operator >> (dds::pub::qos::PublisherQos& qos)
+{
+    qos = this->qos();
     return *this;
 }
 
 template <typename DELEGATE>
-TPublisher<DELEGATE>& TPublisher<DELEGATE>::operator >> (dds::pub::qos::PublisherQos& the_qos)
+TPublisher<DELEGATE>& TPublisher<DELEGATE>::default_datawriter_qos(const dds::pub::qos::DataWriterQos& dwqos)
 {
-    the_qos = this->delegate()->qos();
+    this->delegate()->default_datawriter_qos(dwqos);
     return *this;
 }
 
 template <typename DELEGATE>
-TPublisher<DELEGATE>& TPublisher<DELEGATE>::default_writer_qos(const dds::pub::qos::DataWriterQos& dwqos)
+dds::pub::qos::DataWriterQos TPublisher<DELEGATE>::default_datawriter_qos() const
 {
-    this->delegate()->default_writer_qos(dwqos);
-    return *this;
-}
-
-template <typename DELEGATE>
-dds::pub::qos::DataWriterQos TPublisher<DELEGATE>::default_writer_qos() const
-{
-    return this->delegate()->default_writer_qos();
+    return this->delegate()->default_datawriter_qos();
 }
 
 template <typename DELEGATE>
 void TPublisher<DELEGATE>::listener(Listener* plistener, const dds::core::status::StatusMask& event_mask)
 {
 
-    dds::core::smart_ptr_traits<DDS::PublisherListener>::ref_type h (new org::opensplice::pub::PublisherEventForwarder<TPublisher>(*this, plistener));
+    dds::core::smart_ptr_traits<DDS::PublisherListener>::ref_type h(new org::opensplice::pub::PublisherEventForwarder<TPublisher>(*this, plistener));
     this->delegate()->event_forwarder(plistener, h, event_mask);
 
-   //this->delegate()->listener(plistener, event_mask);
+    //this->delegate()->listener(plistener, event_mask);
 }
 
 template <typename DELEGATE>
@@ -118,6 +123,22 @@ template <typename DELEGATE>
 const dds::domain::DomainParticipant& TPublisher<DELEGATE>::participant() const
 {
     return this->delegate()->participant();
+}
+
+template <typename DELEGATE>
+void
+TPublisher<DELEGATE>::close()
+{
+    this->delegate()->close();
+    org::opensplice::core::retain_remove<TPublisher<DELEGATE> >(*this);
+}
+
+template <typename DELEGATE>
+void
+TPublisher<DELEGATE>::retain()
+{
+    this->delegate()->retain();
+    org::opensplice::core::retain_add<TPublisher<DELEGATE> >(*this);
 }
 
 }

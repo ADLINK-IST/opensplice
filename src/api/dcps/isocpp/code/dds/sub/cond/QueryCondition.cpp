@@ -32,6 +32,8 @@ namespace sub
 namespace cond
 {
 
+QueryCondition::QueryCondition(const dds::core::null_type&) : dds::sub::cond::TReadCondition<DELEGATE>(dds::core::null) { }
+
 QueryCondition::QueryCondition(const dds::sub::Query& query, const dds::sub::status::DataState& status) : TReadCondition<detail::QueryCondition>(new detail::QueryCondition(query, status)) { }
 
 QueryCondition::~QueryCondition() { }

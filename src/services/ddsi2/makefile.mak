@@ -1,21 +1,15 @@
 TARGET_DLIB	:= ddsi2
 ODL_MODULES	:= q_osplserModule
 
+C_FILES_TO_FILTER := %_template.c
 include	$(OSPL_HOME)/setup/makefiles/target.mak
 
 ##
 ## FIXME introduce LDLIBS_IN variable
-LDLIBS += -l$(DDS_OS)
-LDLIBS += -l$(DDS_DATABASE)
-LDLIBS += -l$(DDS_KERNEL)
-LDLIBS += -l$(DDS_UTIL)
-LDLIBS += -l$(DDS_USER)
-LDLIBS += -l$(DDS_SERIALIZATION)
-LDLIBS += -l$(DDS_CONF)
-LDLIBS += -l$(DDS_CONFPARSER)
+LDLIBS += -l$(DDS_CORE)
 LDLIBS += $(LDLIBS_NW)
 
-CPPFLAGS += -DOSPL_BUILD_DDSI2 $(OSPL_OS_CPPFLAGS)
+CPPFLAGS += -DOSPL_BUILD_DDSI2 -DMODEL_q_osplserModule_IMPLEMENTATION $(OSPL_OS_CPPFLAGS)
 
 CFLAGS  += $(SHCFLAGS) $(MTCFLAGS)
 LDFLAGS += $(SHLDFLAGS)
@@ -38,6 +32,5 @@ ifneq "$(WCECOMPAT)" ""
 CINCS += "-I$(WCECOMPAT)/include"
 endif
 
-LDLIBS  += -l$(DDS_OS_NET) 
 
 -include $(DEPENDENCIES)

@@ -436,7 +436,7 @@ idl_CsharpTypeFromTypeSpec (
     idl_typeSpec typeSpec,
     c_bool customPSM)
 {
-    c_char *typeName;
+    c_char *typeName = NULL;
 
     /* QAC EXPECT 3416; No side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
@@ -534,11 +534,11 @@ c_char *
 idl_sequenceCsharpIndexString (
     idl_typeSpec typeSpec,
     SACS_INDEX_POLICY policy,
-    const char *seqLengthName,
-    int *indexStrLen)
+    const char *seqLengthName)
 {
-    c_char *sequenceString, *insertPos;
+    c_char *str, *postfix;
     const c_char *indexStr;
+    int len;
 
     /* Determine the index-size of the current sequence. */
     if (policy == SACS_INCLUDE_INDEXES) {
@@ -558,22 +558,30 @@ idl_sequenceCsharpIndexString (
     }
 
     if (idl_typeSpecType(typeSpec) == idl_tseq) {
-        *indexStrLen += (2 + strlen(indexStr)); /* Current index + '[' and ']'. */
-        sequenceString = idl_sequenceCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, NULL, indexStrLen);
-        insertPos = strchr(sequenceString, '[');
-        snprintf(insertPos - 2 - strlen(indexStr), 2 + strlen(indexStr), "[%s]", indexStr);
+        postfix = idl_sequenceCsharpIndexString (typeSpec, SACS_EXCLUDE_INDEXES, NULL);
+        len = strlen (postfix) + strlen (indexStr) + 3; /* '['. ']' and '\0'*/
+        str = os_malloc (len);
+        assert (str);
+        (void)snprintf (str, len, "[%s]%s", indexStr, postfix);
     } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
-        *indexStrLen += (2 + strlen(indexStr)); /* Current index + '[' and ']'. */
-        sequenceString = idl_arrayCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, indexStrLen);
-        insertPos = strchr(sequenceString, '[');
-        snprintf(insertPos - 2 - strlen(indexStr), 2 + strlen(indexStr), "[%s]", indexStr);
+        postfix = idl_arrayCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES);
+        len = strlen (postfix) + strlen (indexStr) + 3; /* '['. ']' and '\0'*/
+        str = os_malloc (len);
+        assert (str);
+        (void)snprintf (str, len, "[%s]%s", indexStr, postfix);
     } else {
-        *indexStrLen += strlen(indexStr);
-        sequenceString = os_malloc(*indexStrLen + 1);
-        memset(sequenceString, '.', *indexStrLen);
-        snprintf(sequenceString + *indexStrLen - 2 - strlen(indexStr), 3 + strlen(indexStr), "[%s]", indexStr);
+        postfix = NULL;
+        len = strlen (indexStr) + 3;  /* '['. ']' and '\0'*/
+        str = os_malloc (len);
+        assert (str);
+        (void)snprintf (str, len, "[%s]", indexStr);
     }
-    return sequenceString;
+
+    if (postfix) {
+        os_free (postfix);
+    }
+
+    return str;
 }
 
 static c_char *
@@ -594,10 +602,10 @@ idl_indexStr(
 c_char *
 idl_arrayCsharpIndexString (
     idl_typeSpec typeSpec,
-    SACS_INDEX_POLICY policy,
-    int *indexStrLen)
+    SACS_INDEX_POLICY policy)
 {
-    c_char *arrayString, *insertPos, *indexStr;
+    c_char *postfix, *str, *indexStr;
+    int len;
 
     /* Determine the index-size of the current array. */
     indexStr = idl_indexStr(idl_typeArray(typeSpec), policy);
@@ -609,20 +617,28 @@ idl_arrayCsharpIndexString (
     }
 
     if (idl_typeSpecType(typeSpec) == idl_tarray) {
-        *indexStrLen += (1 + strlen(indexStr)); /* Current index + ','. */
-        arrayString = idl_arrayCsharpIndexString(typeSpec, policy, indexStrLen);
-        insertPos = strchr(arrayString, '[');
-        snprintf(insertPos - 1 - strlen(indexStr), 2 + strlen(indexStr), "[%s,", indexStr);
+        postfix = idl_arrayCsharpIndexString(typeSpec, policy);
+        len = strlen (postfix) + strlen (indexStr) + 3; /* '[', ',' and '\0' */
+        str = os_malloc (len);
+        assert (str);
+        (void)snprintf (str, len, "[%s,%s", indexStr, postfix + 1);
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
-        *indexStrLen += (2 + strlen(indexStr)); /* Current index + '[' and ']'. */
-        arrayString = idl_sequenceCsharpIndexString(typeSpec, SACS_EXCLUDE_INDEXES, NULL, indexStrLen);
-        insertPos = strchr(arrayString, '[');
-        snprintf(insertPos - 2 - strlen(indexStr), 2 + strlen(indexStr), "[%s]", indexStr);
+        postfix = idl_sequenceCsharpIndexString (typeSpec, SACS_EXCLUDE_INDEXES, NULL);
+        len = strlen (postfix) + strlen (indexStr) + 3; /* '[', ']' and '\0'*/
+        str = os_malloc (len);
+        assert (str);
+        (void)snprintf (str, len, "[%s]%s", indexStr, postfix);
     } else {
-        *indexStrLen += strlen(indexStr);           /* Current index. */
-        arrayString = os_malloc(*indexStrLen + 1);  /* Allow for the '\0' terminator. */
-        memset(arrayString, '.', *indexStrLen);
-        snprintf(arrayString + *indexStrLen - 2 - strlen(indexStr), 3 + strlen(indexStr), "[%s]", indexStr);
+        postfix = NULL;
+        len = strlen (indexStr) + 3; /* '[', ']' and '\0'*/
+        str = os_malloc (len);
+        assert (str);
+        (void)snprintf (str, len, "[%s]", indexStr);
     }
-    return arrayString;
+
+    if (postfix) {
+        os_free (postfix);
+    }
+
+    return str;
 }

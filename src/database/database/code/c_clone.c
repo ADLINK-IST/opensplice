@@ -18,6 +18,7 @@
 #include "ut_collection.h"
 #include "c_clone.h"
 
+#define c_array(c) ((c_array)(c))
 
 /* to enable debugging tracing for C_CLONE, change below statement to
  * #define C_CLONE_TRACE(p) p
@@ -894,7 +895,7 @@ _c_cloneAction(
                     arg.c = _this;
 
                     if(c_collectionTypeKind(type) == C_SCOPE){
-                        c_scopeWalk(c_scope(srcObj), c_cloneCloneScopeObject, (void*)&arg);
+                        c_scopeWalk(c_scope(srcObj), c_cloneCloneScopeObject, &arg);
                     }
                     else
                     {

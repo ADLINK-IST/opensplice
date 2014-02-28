@@ -13,10 +13,10 @@
 import java.util.Random;
 
 import DDS.DataWriter;
-import ContentFilteredTopicData.Stock;
-import ContentFilteredTopicData.StockDataWriter;
-import ContentFilteredTopicData.StockDataWriterHelper;
-import ContentFilteredTopicData.StockTypeSupport;
+import StockMarket.Stock;
+import StockMarket.StockDataWriter;
+import StockMarket.StockDataWriterHelper;
+import StockMarket.StockTypeSupport;
 
 public class ContentFilteredTopicDataPublisher {
 

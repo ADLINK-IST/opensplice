@@ -19,7 +19,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_DB
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -41,7 +41,7 @@ C_CLASS(c_attribute);
 C_CLASS(c_relation);
 C_CLASS(c_operation);
 C_CLASS(c_collectionType);
-C_CLASS(c_type);
+/* C_CLASS(c_type); Moved to typebase.h... */
 C_CLASS(c_typeDef);
 C_CLASS(c_primitive);
 C_CLASS(c_parameter);

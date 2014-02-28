@@ -20,7 +20,7 @@
 #include "q_time.h"
 #include "q_misc.h"
 #include "q_log.h"
-#include "q_avl.h"
+#include "ut_avl.h"
 #include "q_whc.h"
 #include "q_plist.h"
 #include "q_lease.h"
@@ -42,13 +42,27 @@
 #include "sysdeps.h"
 
 struct deleted_participant {
-  STRUCT_AVLNODE (deleted_participant_avlnode, struct deleted_participant *) avlnode;
+  ut_avlNode_t avlnode;
   nn_guid_t guid;
   os_int64 t_insert;
 };
 
 static os_mutex deleted_participants_lock;
-static STRUCT_AVLTREE (deleted_participants_avltree, struct deleted_participant *) deleted_participants;
+static ut_avlTree_t deleted_participants;
+
+static int compare_guid (const void *va, const void *vb);
+static void augment_wr_prd_match (void *vnode, const void *vleft, const void *vright);
+
+const ut_avlTreedef_t wr_readers_treedef =
+  UT_AVL_TREEDEF_INITIALIZER (offsetof (struct wr_prd_match, avlnode), offsetof (struct wr_prd_match, prd_guid), compare_guid, augment_wr_prd_match);
+const ut_avlTreedef_t rd_writers_treedef =
+  UT_AVL_TREEDEF_INITIALIZER (offsetof (struct rd_pwr_match, avlnode), offsetof (struct rd_pwr_match, pwr_guid), compare_guid, 0);
+const ut_avlTreedef_t pwr_readers_treedef =
+  UT_AVL_TREEDEF_INITIALIZER (offsetof (struct pwr_rd_match, avlnode), offsetof (struct pwr_rd_match, rd_guid), compare_guid, 0);
+const ut_avlTreedef_t prd_writers_treedef =
+  UT_AVL_TREEDEF_INITIALIZER (offsetof (struct prd_wr_match, avlnode), offsetof (struct prd_wr_match, wr_guid), compare_guid, 0);
+const ut_avlTreedef_t deleted_participants_treedef =
+  UT_AVL_TREEDEF_INITIALIZER (offsetof (struct deleted_participant, avlnode), offsetof (struct deleted_participant, guid), compare_guid, 0);
 
 static const unsigned builtin_writers_besmask =
   NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_ANNOUNCER |
@@ -56,10 +70,10 @@ static const unsigned builtin_writers_besmask =
   NN_DISC_BUILTIN_ENDPOINT_PUBLICATION_ANNOUNCER |
   NN_BUILTIN_ENDPOINT_PARTICIPANT_MESSAGE_DATA_WRITER;
 
-static int new_writer_guid (const nn_guid_t *guid, const struct v_gid_s *gid, struct participant *pp, const struct topic *topic, const struct nn_xqos *xqos);
-static int new_reader_guid (const nn_guid_t *guid, const struct v_gid_s *gid, struct participant *pp, const struct topic *topic, const struct nn_xqos *xqos);
-static struct participant *ref_participant (struct participant *pp, const nn_guid_t *guid_of_refing_entity);
-static void unref_participant (struct participant *pp, const nn_guid_t *guid_of_refing_entity);
+static int new_writer_guid (const struct nn_guid *guid, struct participant *pp, const struct topic *topic, const struct nn_xqos *xqos);
+static int new_reader_guid (const struct nn_guid *guid, struct participant *pp, const struct topic *topic, const struct nn_xqos *xqos, deliver_cb_t deliver_cb, void *deliver_cbarg);
+static struct participant *ref_participant (struct participant *pp, const struct nn_guid *guid_of_refing_entity);
+static void unref_participant (struct participant *pp, const struct nn_guid *guid_of_refing_entity);
 
 static int gcreq_participant (struct participant *pp);
 static int gcreq_writer (struct writer *wr);
@@ -114,15 +128,7 @@ static int is_builtin_endpoint (nn_entityid_t id)
   return is_builtin_entityid (id) && id.u != NN_ENTITYID_PARTICIPANT;
 }
 
-void ppguid_from_ppgid (nn_guid_t *ppguid, const struct v_gid_s *ppgid)
-{
-  ppguid->prefix.u[0] = ppgid->systemId;
-  ppguid->prefix.u[1] = ppgid->localId;
-  ppguid->prefix.u[2] = ppgid->serial;
-  ppguid->entityid.u = NN_ENTITYID_PARTICIPANT;
-}
-
-static void entity_common_init (struct entity_common *e, const nn_guid_t *guid, enum entity_kind kind)
+static void entity_common_init (struct entity_common *e, const struct nn_guid *guid, enum entity_kind kind)
 {
   e->guid = *guid;
   e->kind = kind;
@@ -139,13 +145,13 @@ static void entity_common_fini (struct entity_common *e)
 int deleted_participants_admin_init (void)
 {
   os_mutexInit (&deleted_participants_lock, &gv.mattr);
-  avl_init (&deleted_participants, offsetof (struct deleted_participant, avlnode), offsetof (struct deleted_participant, guid), compare_guid, 0);
+  ut_avlInit (&deleted_participants_treedef, &deleted_participants);
   return 0;
 }
 
 void deleted_participants_admin_fini (void)
 {
-  avl_free (&deleted_participants, os_free);
+  ut_avlFree (&deleted_participants_treedef, &deleted_participants, os_free);
   os_mutexDestroy (&deleted_participants_lock);
 }
 
@@ -157,13 +163,13 @@ static void prune_deleted_participant_guids (os_int64 tnow)
   os_int64 tprune = tnow - 10000 * T_MILLISECOND;
   struct deleted_participant *dpp;
   os_mutexLock (&deleted_participants_lock);
-  dpp = avl_findmin (&deleted_participants);
+  dpp = ut_avlFindMin (&deleted_participants_treedef, &deleted_participants);
   while (dpp)
   {
-    struct deleted_participant *dpp1 = avl_findsucc (&deleted_participants, dpp);
+    struct deleted_participant *dpp1 = ut_avlFindSucc (&deleted_participants_treedef, &deleted_participants, dpp);
     if (dpp->t_insert < tprune)
     {
-      avl_delete (&deleted_participants, dpp);
+      ut_avlDelete (&deleted_participants_treedef, &deleted_participants, dpp);
       os_free (dpp);
     }
     dpp = dpp1;
@@ -171,41 +177,39 @@ static void prune_deleted_participant_guids (os_int64 tnow)
   os_mutexUnlock (&deleted_participants_lock);
 }
 
-static void remember_deleted_participant_guid (const nn_guid_t *guid)
+static void remember_deleted_participant_guid (const struct nn_guid *guid)
 {
   struct deleted_participant *n;
-  avlparent_t parent;
+  ut_avlIPath_t path;
   os_mutexLock (&deleted_participants_lock);
-  if (avl_lookup (&deleted_participants, guid, &parent) == NULL)
+  if (ut_avlLookupIPath (&deleted_participants_treedef, &deleted_participants, guid, &path) == NULL)
   {
     if ((n = os_malloc (sizeof (*n))) != NULL)
     {
-      avl_init_node (&n->avlnode, parent);
       n->guid = *guid;
       n->t_insert = now ();
-      avl_insert (&deleted_participants, n);
+      ut_avlInsertIPath (&deleted_participants_treedef, &deleted_participants, n, &path);
     }
   }
   os_mutexUnlock (&deleted_participants_lock);
 }
 
-int is_deleted_participant_guid (const nn_guid_t *guid)
+int is_deleted_participant_guid (const struct nn_guid *guid)
 {
   int known;
   os_mutexLock (&deleted_participants_lock);
-  known = (avl_lookup (&deleted_participants, guid, NULL) != NULL);
+  known = (ut_avlLookup (&deleted_participants_treedef, &deleted_participants, guid) != NULL);
   os_mutexUnlock (&deleted_participants_lock);
   return known;
 }
 
-static void remove_deleted_participant_guid (const nn_guid_t *guid)
+static void remove_deleted_participant_guid (const struct nn_guid *guid)
 {
   struct deleted_participant *n;
-  avlparent_t parent;
   os_mutexLock (&deleted_participants_lock);
-  if ((n = avl_lookup (&deleted_participants, guid, &parent)) != NULL)
+  if ((n = ut_avlLookup (&deleted_participants_treedef, &deleted_participants, guid)) != NULL)
   {
-    avl_delete (&deleted_participants, n);
+    ut_avlDelete (&deleted_participants_treedef, &deleted_participants, n);
     os_free (n);
   }
   os_mutexUnlock (&deleted_participants_lock);
@@ -224,19 +228,19 @@ static void create_a_group (const char *name, const struct topic *topic)
 
   /* any non-wildcard one will do */
   /* create it -- partitions require a v_partitionQos parameter, but
-     that (thankfully!) isn't used by it ... phew! */
+   that (thankfully!) isn't used by it ... phew! */
   TRACE (("create_a_group: %s.%s\n", name, topic_name (topic)));
   memset (&pqos, 0, sizeof (pqos));
   part = v_partitionNew (gv.ospl_kernel, name, pqos);
   group = v_groupSetCreate (gv.ospl_kernel->groupSet, part, topic_ospl_topic (topic));
   /* Assuming the kernel will send a group creation event to all
-     interested parties, which includes our own local discovery -- so
-     that'll then notify the kernel we are interested in it.
+   interested parties, which includes our own local discovery -- so
+   that'll then notify the kernel we are interested in it.
 
-     Nonetheless, there are the local readers' "matching_groups" to be
-     updated, and, consequently, the local proxy-writers' "groups",
-     too. Eventually all this will have to be cleaned up, it'll be
-     really too messy and time consuming once qos changes are allowed. */
+   Nonetheless, there are the local readers' "matching_groups" to be
+   updated, and, consequently, the local proxy-writers' "groups",
+   too. Eventually all this will have to be cleaned up, it'll be
+   really too messy and time consuming once qos changes are allowed. */
   nn_xqos_init_empty (&dummy_part_xqos);
   dummy_part_xqos.present = QP_PARTITION;
   dummy_part_xqos.partition.n = 1;
@@ -263,10 +267,10 @@ static void create_a_group (const char *name, const struct topic *topic)
     ephash_enum_proxy_writer_fini (&est_pwr);
   }
   /* Release resources taken by dummy_part_xqos -- that is, need to do
-     nothing as long as everything in it aliases something temporary.
-     The trouble is that nn_xqos_fini() always wants to free "strs",
-     and whatever "strs" points to as well if the aliased bit isn't
-     set.  So this is but a reminder. */
+   nothing as long as everything in it aliases something temporary.
+   The trouble is that nn_xqos_fini() always wants to free "strs",
+   and whatever "strs" points to as well if the aliased bit isn't
+   set.  So this is but a reminder. */
 }
 
 /* PARTICIPANT ------------------------------------------------------ */
@@ -285,10 +289,9 @@ static int pp_allocate_entityid (nn_entityid_t *id, unsigned kind, struct partic
   return 0;
 }
 
-int new_participant (const struct v_gid_s *ppgid, unsigned flags)
+int new_participant_guid (const nn_guid_t *ppguid, unsigned flags)
 {
   struct participant *pp;
-  nn_guid_t ppguid;
   nn_guid_t subguid;
   os_int64 tnow;
 
@@ -296,18 +299,16 @@ int new_participant (const struct v_gid_s *ppgid, unsigned flags)
   assert ((flags & ~(RTPS_PF_NO_BUILTIN_READERS | RTPS_PF_NO_BUILTIN_WRITERS | RTPS_PF_PRIVILEGED_PP)) == 0);
   /* privileged participant MUST have builtin readers and writers */
   assert (!(flags & RTPS_PF_PRIVILEGED_PP) || (flags & (RTPS_PF_NO_BUILTIN_READERS | RTPS_PF_NO_BUILTIN_WRITERS)) == 0);
-  assert (v_gidIsValid (*ppgid));
 
   tnow = now ();
   prune_deleted_participant_guids (tnow);
-  ppguid_from_ppgid (&ppguid, ppgid);
 
   /* FIXME: FULL LOCKING AROUND NEW_XXX FUNCTIONS, JUST SO EXISTENCE TESTS ARE PRECISE */
 
   /* Participant may not exist yet, but this test is imprecise: if it
-     used to exist, but is currently being deleted, the assertion will
-     pass. */
-  if (ephash_lookup_participant_guid (&ppguid) != NULL)
+     used to exist, but is currently being deleted and we're trying to
+     recreate it. */
+  if (ephash_lookup_participant_guid (ppguid) != NULL)
     return ERR_ENTITY_EXISTS;
 
   if (config.max_participants == 0)
@@ -327,30 +328,27 @@ int new_participant (const struct v_gid_s *ppgid, unsigned flags)
     else
     {
       os_mutexUnlock (&gv.participant_set_lock);
-      NN_ERROR2 ("new_participant(%x:%x:%x:%x, %x) failed: max participants reached\n", PGUID (ppguid), flags);
+      NN_ERROR2 ("new_participant(%x:%x:%x:%x, %x) failed: max participants reached\n", PGUID (*ppguid), flags);
       return ERR_OUT_OF_IDS;
     }
   }
 
-  nn_log (LC_DISCOVERY, "new_participant(%x:%x:%x:%x, %x)\n", PGUID (ppguid), flags);
+  nn_log (LC_DISCOVERY, "new_participant(%x:%x:%x:%x, %x)\n", PGUID (*ppguid), flags);
 
-  if ((pp = os_malloc (sizeof (*pp))) == NULL)
-    goto err_pp_malloc;
+  pp = os_malloc (sizeof (*pp));
 
-  entity_common_init (&pp->e, &ppguid, EK_PARTICIPANT);
+  entity_common_init (&pp->e, ppguid, EK_PARTICIPANT);
   pp->user_refc = 1;
   pp->builtin_refc = 0;
   pp->builtins_deleted = 0;
   os_mutexInit (&pp->refc_lock, &gv.mattr);
   pp->next_entityid = NN_ENTITYID_ALLOCSTEP;
-  pp->lease_duration = 11 * T_SECOND; /* FIXME: fixed duration is a hack */
+  pp->lease_duration = config.lease_duration; /* Default is 100s as per spec */
 
   if (config.many_sockets_mode)
   {
-    if (make_socket (&pp->sock, 0, NULL) < 0)
-      goto err_socket;
-    pp->sockloc = gv.loc_default_uc;
-    pp->sockloc.port = get_socket_port (pp->sock);
+    pp->m_conn = ddsi_factory_create_conn (gv.m_factory, 0, NULL);
+    ddsi_conn_locator (pp->m_conn, &pp->m_locator);
   }
 
   /* Before we create endpoints -- and may call unref_participant if
@@ -370,7 +368,7 @@ int new_participant (const struct v_gid_s *ppgid, unsigned flags)
 #endif
   {
     subguid.entityid = to_entityid (NN_ENTITYID_SPDP_BUILTIN_PARTICIPANT_WRITER);
-    if (new_writer_guid (&subguid, NULL, pp, NULL, &gv.spdp_endpoint_xqos) < 0)
+    if (new_writer_guid (&subguid, pp, NULL, &gv.spdp_endpoint_xqos) < 0)
       goto err_builtin_endpoint;
     /* But we need the as_disc address set for SPDP, because we need to
        send it to everyone regardless of the existence of readers. */
@@ -394,12 +392,12 @@ int new_participant (const struct v_gid_s *ppgid, unsigned flags)
 #endif
   {
     subguid.entityid = to_entityid (NN_ENTITYID_SEDP_BUILTIN_SUBSCRIPTIONS_WRITER);
-    if (new_writer_guid (&subguid, NULL, pp, NULL, &gv.builtin_endpoint_xqos_wr) < 0)
+    if (new_writer_guid (&subguid, pp, NULL, &gv.builtin_endpoint_xqos_wr) < 0)
       goto err_builtin_endpoint;
     pp->bes |= NN_DISC_BUILTIN_ENDPOINT_SUBSCRIPTION_ANNOUNCER;
 
     subguid.entityid = to_entityid (NN_ENTITYID_SEDP_BUILTIN_PUBLICATIONS_WRITER);
-    if (new_writer_guid (&subguid, NULL, pp, NULL, &gv.builtin_endpoint_xqos_wr) < 0)
+    if (new_writer_guid (&subguid, pp, NULL, &gv.builtin_endpoint_xqos_wr) < 0)
       goto err_builtin_endpoint;
     pp->bes |= NN_DISC_BUILTIN_ENDPOINT_PUBLICATION_ANNOUNCER;
   }
@@ -410,7 +408,7 @@ int new_participant (const struct v_gid_s *ppgid, unsigned flags)
 #endif
   {
     subguid.entityid = to_entityid (NN_ENTITYID_P2P_BUILTIN_PARTICIPANT_MESSAGE_WRITER);
-    if (new_writer_guid (&subguid, NULL, pp, NULL, &gv.builtin_endpoint_xqos_wr) < 0)
+    if (new_writer_guid (&subguid, pp, NULL, &gv.builtin_endpoint_xqos_wr) < 0)
       goto err_builtin_endpoint;
     pp->bes |= NN_BUILTIN_ENDPOINT_PARTICIPANT_MESSAGE_DATA_WRITER;
   }
@@ -419,22 +417,22 @@ int new_participant (const struct v_gid_s *ppgid, unsigned flags)
   if (!(flags & RTPS_PF_NO_BUILTIN_READERS))
   {
     subguid.entityid = to_entityid (NN_ENTITYID_SPDP_BUILTIN_PARTICIPANT_READER);
-    if (new_reader_guid (&subguid, NULL, pp, NULL, &gv.spdp_endpoint_xqos) < 0)
+    if (new_reader_guid (&subguid, pp, NULL, &gv.spdp_endpoint_xqos, 0, NULL) < 0)
       goto err_builtin_endpoint;
     pp->bes |= NN_DISC_BUILTIN_ENDPOINT_PARTICIPANT_DETECTOR;
 
     subguid.entityid = to_entityid (NN_ENTITYID_SEDP_BUILTIN_SUBSCRIPTIONS_READER);
-    if (new_reader_guid (&subguid, NULL, pp, NULL, &gv.builtin_endpoint_xqos_rd) < 0)
+    if (new_reader_guid (&subguid, pp, NULL, &gv.builtin_endpoint_xqos_rd, 0, NULL) < 0)
       goto err_builtin_endpoint;
     pp->bes |= NN_DISC_BUILTIN_ENDPOINT_SUBSCRIPTION_DETECTOR;
 
     subguid.entityid = to_entityid (NN_ENTITYID_SEDP_BUILTIN_PUBLICATIONS_READER);
-    if (new_reader_guid (&subguid, NULL, pp, NULL, &gv.builtin_endpoint_xqos_rd) < 0)
+    if (new_reader_guid (&subguid, pp, NULL, &gv.builtin_endpoint_xqos_rd, 0, NULL) < 0)
       goto err_builtin_endpoint;
     pp->bes |= NN_DISC_BUILTIN_ENDPOINT_PUBLICATION_DETECTOR;
 
     subguid.entityid = to_entityid (NN_ENTITYID_P2P_BUILTIN_PARTICIPANT_MESSAGE_READER);
-    if (new_reader_guid (&subguid, NULL, pp, NULL, &gv.builtin_endpoint_xqos_rd) < 0)
+    if (new_reader_guid (&subguid, pp, NULL, &gv.builtin_endpoint_xqos_rd, 0, NULL) < 0)
       goto err_builtin_endpoint;
     pp->bes |= NN_BUILTIN_ENDPOINT_PARTICIPANT_MESSAGE_DATA_READER;
   }
@@ -465,59 +463,58 @@ int new_participant (const struct v_gid_s *ppgid, unsigned flags)
   /* Make it globally visible, then signal receive threads if
      necessary. Must do in this order, or the receive thread won't
      find the new participant */
+
   if (config.many_sockets_mode)
   {
     pa_membar_producer ();
     atomic_inc_u32_nv (&gv.participant_set_generation);
-    os_sockWaitsetTrigger (gv.sockws);
+    os_sockWaitsetTrigger (gv.waitset);
   }
 
   /* SPDP periodic broadcast uses the retransmit path, so the initial
      publication must be done differently. Must be later than making
      the participant globally visible, or the SPDP processing won't
      recognise the participant as a local one. */
-  spdp_write (pp);
+  if (spdp_write (pp) >= 0)
+  {
+    /* Once the initial sample has been written, the automatic and
+       asynchronous broadcasting required by SPDP can start. Also,
+       since we're new alive, PMD updates can now start, too. Note:
+       these two will sometimes fire before the calls return.  If the
+       initial sample wasn't accepted, all is lost, but we continue
+       nonetheless, even though the participant won't be able to
+       discover or be discovered.  */
+    pp->spdp_xevent = qxev_spdp (config.spdp_interval, &pp->e.guid, NULL);
+  }
 
-  /* Once the initial sample has been written, the automatic and
-     asynchronous broadcasting required by SPDP can start. Also, since
-     we're new alive, PMD updates can now start, too. Note: these two
-     will sometimes fire before the calls return. */
-  pp->spdp_xevent = qxev_spdp (config.spdp_interval, &pp->e.guid, NULL);
   pp->pmd_update_xevent = qxev_pmd_update ((pp->lease_duration == T_NEVER) ? T_NEVER : 0, &pp->e.guid);
   return 0;
 
- err_builtin_endpoint:
+err_builtin_endpoint:
+
   /* We haven't yet counted a reference, so better pretend the writers
      exist even if we haven't tried to create them ... */
+
   pp->bes |= builtin_writers_besmask;
   unref_participant (pp, NULL);
-  return ERR_UNSPECIFIED;
 
- err_socket:
-  os_mutexDestroy (&pp->refc_lock);
-  entity_common_fini (&pp->e);
-  os_free (pp);
- err_pp_malloc:
-  os_mutexLock (&gv.participant_set_lock);
-  if (--gv.nparticipants == 0)
-    os_condBroadcast (&gv.participant_set_cond);
-  os_mutexUnlock (&gv.participant_set_lock);
   return ERR_UNSPECIFIED;
 }
 
-static void delete_builtin_endpoint (const nn_guid_t *ppguid, unsigned entityid)
+
+static void delete_builtin_endpoint (const struct nn_guid *ppguid, unsigned entityid)
 {
   nn_guid_t guid;
   guid.prefix = ppguid->prefix;
   guid.entityid.u = entityid;
   assert (is_builtin_entityid (to_entityid (entityid)));
   if (is_writer_entityid (to_entityid (entityid)))
-    delete_writer_guid_nolinger (&guid);
+    delete_writer_nolinger (&guid);
   else
-    delete_reader_guid (&guid);
+    delete_reader (&guid);
 }
 
-static struct participant *ref_participant (struct participant *pp, const nn_guid_t *guid_of_refing_entity)
+static struct participant *ref_participant (struct participant *pp, const struct nn_guid *guid_of_refing_entity)
 {
   nn_guid_t stguid;
   os_mutexLock (&pp->refc_lock);
@@ -536,7 +533,7 @@ static struct participant *ref_participant (struct participant *pp, const nn_gui
   return pp;
 }
 
-static void unref_participant (struct participant *pp, const nn_guid_t *guid_of_refing_entity)
+static void unref_participant (struct participant *pp, const struct nn_guid *guid_of_refing_entity)
 {
   static const unsigned builtin_endpoints_tab[] = {
     NN_ENTITYID_SPDP_BUILTIN_PARTICIPANT_WRITER,
@@ -644,10 +641,12 @@ static void unref_participant (struct participant *pp, const nn_guid_t *guid_of_
     {
       pa_membar_producer ();
       atomic_inc_u32_nv (&gv.participant_set_generation);
+
       /* Deleting the socket will usually suffice to wake up the
          receiver threads, but in general, no one cares if it takes a
          while longer for it to wakeup. */
-      os_sockFree (pp->sock);
+
+      ddsi_conn_free (pp->m_conn);
     }
     os_mutexDestroy (&pp->refc_lock);
     entity_common_fini (&pp->e);
@@ -668,7 +667,7 @@ static void gc_delete_participant (struct gcreq *gcreq)
   unref_participant (pp, NULL);
 }
 
-int delete_participant_guid (const nn_guid_t *ppguid)
+int delete_participant (const struct nn_guid *ppguid)
 {
   struct participant *pp;
   if ((pp = ephash_lookup_participant_guid (ppguid)) == NULL)
@@ -677,13 +676,6 @@ int delete_participant_guid (const nn_guid_t *ppguid)
   ephash_remove_participant_guid (pp);
   gcreq_participant (pp);
   return 0;
-}
-
-int delete_participant (const struct v_gid_s *ppgid)
-{
-  nn_guid_t ppguid;
-  ppguid_from_ppgid (&ppguid, ppgid);
-  return delete_participant_guid (&ppguid);
 }
 
 struct writer *get_builtin_writer (const struct participant *pp, unsigned entityid)
@@ -780,16 +772,16 @@ static void rebuild_writer_addrset (struct writer *wr)
   ASSERT_MUTEX_HELD (&wr->e.lock);
 
   /* compute new addrset */
-  if (!avl_empty (&wr->readers))
+  if (!ut_avlIsEmpty (&wr->readers))
   {
     /* FIXME: ugly hack to use unicast if there is just one reader,
        else prefer multicast. */
-    if (wr->readers.root->avlnode.height == 1)
-      rebuild_writer_addrset_addone_uc (newas, wr->readers.root);
+    if (ut_avlIsSingleton (&wr->readers))
+      rebuild_writer_addrset_addone_uc (newas, ut_avlRoot (&wr_readers_treedef, &wr->readers));
     else
     {
       struct wr_prd_match *m;
-      for (m = avl_findmin (&wr->readers); m; m = avl_findsucc (&wr->readers, m))
+      for (m = ut_avlFindMin (&wr_readers_treedef, &wr->readers); m; m = ut_avlFindSucc (&wr_readers_treedef, &wr->readers, m))
         rebuild_writer_addrset_addone_mc (newas, m);
     }
   }
@@ -834,16 +826,16 @@ static void free_prd_wr_match (struct prd_wr_match *m)
   if (m) os_free (m);
 }
 
-static void writer_drop_connection (const nn_guid_t *wr_guid, const nn_guid_t *prd_guid)
+static void writer_drop_connection (const struct nn_guid *wr_guid, const struct nn_guid *prd_guid)
 {
   struct writer *wr;
   if ((wr = ephash_lookup_writer_guid (wr_guid)) != NULL)
   {
     struct wr_prd_match *m;
     os_mutexLock (&wr->e.lock);
-    if ((m = avl_lookup (&wr->readers, prd_guid, NULL)) != NULL)
+    if ((m = ut_avlLookup (&wr_readers_treedef, &wr->readers, prd_guid)) != NULL)
     {
-      avl_delete (&wr->readers, m);
+      ut_avlDelete (&wr_readers_treedef, &wr->readers, m);
       rebuild_writer_addrset (wr);
       remove_acked_messages (wr);
       wr->num_reliable_readers -= m->is_reliable;
@@ -853,21 +845,21 @@ static void writer_drop_connection (const nn_guid_t *wr_guid, const nn_guid_t *p
   }
 }
 
-static void reader_drop_connection (const nn_guid_t *rd_guid, const nn_guid_t *pwr_guid)
+static void reader_drop_connection (const struct nn_guid *rd_guid, const struct nn_guid *pwr_guid)
 {
   struct reader *rd;
   if ((rd = ephash_lookup_reader_guid (rd_guid)) != NULL)
   {
     struct rd_pwr_match *m;
     os_mutexLock (&rd->e.lock);
-    if ((m = avl_lookup (&rd->writers, pwr_guid, NULL)) != NULL)
-      avl_delete (&rd->writers, m);
+    if ((m = ut_avlLookup (&rd_writers_treedef, &rd->writers, pwr_guid)) != NULL)
+      ut_avlDelete (&rd_writers_treedef, &rd->writers, m);
     os_mutexUnlock (&rd->e.lock);
     free_rd_pwr_match (m);
   }
 }
 
-static void update_reader_init_acknack_count (const nn_guid_t *rd_guid, nn_count_t count)
+static void update_reader_init_acknack_count (const struct nn_guid *rd_guid, nn_count_t count)
 {
   struct reader *rd;
 
@@ -889,31 +881,35 @@ static void update_reader_init_acknack_count (const nn_guid_t *rd_guid, nn_count
   }
 }
 
-static void proxy_writer_drop_connection (const nn_guid_t *pwr_guid, const nn_guid_t *rd_guid)
+static void proxy_writer_drop_connection (const struct nn_guid *pwr_guid, struct reader *rd)
 {
+  /* Only called by gc_delete_reader, so we actually have a reader pointer */
   struct proxy_writer *pwr;
   if ((pwr = ephash_lookup_proxy_writer_guid (pwr_guid)) != NULL)
   {
     struct pwr_rd_match *m;
+
     os_mutexLock (&pwr->e.lock);
-    if ((m = avl_lookup (&pwr->readers, rd_guid, NULL)) != NULL)
-      avl_delete (&pwr->readers, m);
+    if ((m = ut_avlLookup (&pwr_readers_treedef, &pwr->readers, &rd->e.guid)) != NULL)
+      ut_avlDelete (&pwr_readers_treedef, &pwr->readers, m);
+
+
     os_mutexUnlock (&pwr->e.lock);
     if (m != NULL)
-      update_reader_init_acknack_count (rd_guid, m->count);
+      update_reader_init_acknack_count (&rd->e.guid, m->count);
     free_pwr_rd_match (m);
   }
 }
 
-static void proxy_reader_drop_connection (const nn_guid_t *prd_guid, const nn_guid_t *wr_guid)
+static void proxy_reader_drop_connection (const struct nn_guid *prd_guid, const struct nn_guid *wr_guid)
 {
   struct proxy_reader *prd;
   if ((prd = ephash_lookup_proxy_reader_guid (prd_guid)) != NULL)
   {
     struct prd_wr_match *m;
     os_mutexLock (&prd->e.lock);
-    if ((m = avl_lookup (&prd->writers, wr_guid, NULL)) != NULL)
-      avl_delete (&prd->writers, m);
+    if ((m = ut_avlLookup (&prd_writers_treedef, &prd->writers, wr_guid)) != NULL)
+      ut_avlDelete (&prd_writers_treedef, &prd->writers, m);
     os_mutexUnlock (&prd->e.lock);
     free_prd_wr_match (m);
   }
@@ -922,7 +918,7 @@ static void proxy_reader_drop_connection (const nn_guid_t *prd_guid, const nn_gu
 static void writer_add_connection (struct writer *wr, struct proxy_reader *prd)
 {
   struct wr_prd_match *m;
-  avlparent_t parent;
+  ut_avlIPath_t path;
   int pretend_everything_acked;
   if ((m = os_malloc (sizeof (*m))) == NULL)
     abort ();
@@ -965,7 +961,7 @@ static void writer_add_connection (struct writer *wr, struct proxy_reader *prd)
     m->seq = MAX_SEQ_NUMBER;
   else
     m->seq = wr->seq;
-  if (avl_lookup (&wr->readers, &prd->e.guid, &parent))
+  if (ut_avlLookupIPath (&wr_readers_treedef, &wr->readers, &prd->e.guid, &path))
   {
     TRACE (("  writer_add_connection(wr %x:%x:%x:%x prd %x:%x:%x:%x) - already connected\n",
             PGUID (wr->e.guid), PGUID (prd->e.guid)));
@@ -977,15 +973,14 @@ static void writer_add_connection (struct writer *wr, struct proxy_reader *prd)
   {
     TRACE (("  writer_add_connection(wr %x:%x:%x:%x prd %x:%x:%x:%x) - ack seq %lld\n",
             PGUID (wr->e.guid), PGUID (prd->e.guid), m->seq));
-    avl_init_node (&m->avlnode, parent);
-    avl_insert (&wr->readers, m);
+    ut_avlInsertIPath (&wr_readers_treedef, &wr->readers, m, &path);
     rebuild_writer_addrset (wr);
     wr->num_reliable_readers += m->is_reliable;
     os_mutexUnlock (&wr->e.lock);
 
     /* for proxy readers using a non-wildcard partition matching a
-       wildcard partition at the writer (and only a wildcard partition),
-       ensure that a matching non-wildcard partition exists */
+     wildcard partition at the writer (and only a wildcard partition),
+     ensure that a matching non-wildcard partition exists */
     if (!is_builtin_entityid (wr->e.guid.entityid))
     {
       const char *realname = NULL;
@@ -1010,6 +1005,10 @@ static void writer_add_connection (struct writer *wr, struct proxy_reader *prd)
       const os_int64 delta = 1 * T_MILLISECOND;
       const os_int64 tnext = now () + delta;
       os_mutexLock (&wr->e.lock);
+      /* To make sure that we keep sending heartbeats at a higher rate
+         at the start of this discovery, reset the hbs_since_last_write
+         count to zero. */
+      wr->hbcontrol.hbs_since_last_write = 0;
       if (tnext < wr->hbcontrol.tsched)
       {
         wr->hbcontrol.tsched = tnext;
@@ -1023,7 +1022,7 @@ static void writer_add_connection (struct writer *wr, struct proxy_reader *prd)
 static void reader_add_connection (struct reader *rd, struct proxy_writer *pwr, nn_count_t *init_count)
 {
   struct rd_pwr_match *m;
-  avlparent_t parent;
+  ut_avlIPath_t path;
   if ((m = os_malloc (sizeof (*m))) == NULL)
     abort ();
   m->pwr_guid = pwr->e.guid;
@@ -1039,7 +1038,7 @@ static void reader_add_connection (struct reader *rd, struct proxy_writer *pwr, 
   TRACE (("  reader %x:%x:%x:%x init_acknack_count = %d\n", PGUID (rd->e.guid), rd->init_acknack_count));
   *init_count = rd->init_acknack_count;
 
-  if (avl_lookup (&rd->writers, &pwr->e.guid, &parent))
+  if (ut_avlLookupIPath (&rd_writers_treedef, &rd->writers, &pwr->e.guid, &path))
   {
     TRACE (("  reader_add_connection(pwr %x:%x:%x:%x rd %x:%x:%x:%x) - already connected\n",
             PGUID (pwr->e.guid), PGUID (rd->e.guid)));
@@ -1050,8 +1049,7 @@ static void reader_add_connection (struct reader *rd, struct proxy_writer *pwr, 
   {
     TRACE (("  reader_add_connection(pwr %x:%x:%x:%x rd %x:%x:%x:%x)\n",
             PGUID (pwr->e.guid), PGUID (rd->e.guid)));
-    avl_init_node (&m->avlnode, parent);
-    avl_insert (&rd->writers, m);
+    ut_avlInsertIPath (&rd_writers_treedef, &rd->writers, m, &path);
     os_mutexUnlock (&rd->e.lock);
   }
 }
@@ -1059,8 +1057,8 @@ static void reader_add_connection (struct reader *rd, struct proxy_writer *pwr, 
 static int add_matching_groups_helper (v_group g, void *varg)
 {
   /* Damn. Didn't think it through all the way, so now I need to check
-     partition matching *again* :-( Eventually, a real solution will
-     be implemented. */
+   partition matching *again* :-( Eventually, a real solution will
+   be implemented. */
   struct proxy_writer *pwr = varg;
   const char *pname = v_partitionName (g->partition);
   nn_xqos_t tmp;
@@ -1079,12 +1077,12 @@ static int add_matching_groups_helper (v_group g, void *varg)
 static const char *any_nonwildcard_partition (const nn_partition_qospolicy_t *ps)
 {
   int i;
-  if (ps->n == NULL)
+  if (ps->n == 0)
   {
     /* The default partition is a valid non-wildcard partition, but
-       one way of specifying it is an empty set of partitions.  That
-       means no early exit from the loop, and that means we return a
-       null pointer. */
+     one way of specifying it is an empty set of partitions.  That
+     means no early exit from the loop, and that means we return a
+     null pointer. */
     return "";
   }
   for (i = 0; i < ps->n; i++)
@@ -1096,23 +1094,18 @@ static const char *any_nonwildcard_partition (const nn_partition_qospolicy_t *ps
 static void proxy_writer_add_connection (struct proxy_writer *pwr, struct reader *rd, os_int64 tnow, nn_count_t init_count)
 {
   struct pwr_rd_match *m;
-  avlparent_t parent;
+  ut_avlIPath_t path;
   os_int64 last_deliv_seq;
 
   if ((m = os_malloc (sizeof (*m))) == NULL)
     abort ();
 
   os_mutexLock (&pwr->e.lock);
-  if (avl_lookup (&pwr->readers, &rd->e.guid, &parent))
+  if (ut_avlLookupIPath (&pwr_readers_treedef, &pwr->readers, &rd->e.guid, &path))
     goto already_matched;
 
   if (pwr->c.topic == NULL)
     pwr->c.topic = rd->topic;
-  if (pwr->ddsi2direct_cb == 0 && rd->ddsi2direct_cb != 0)
-  {
-    pwr->ddsi2direct_cb = rd->ddsi2direct_cb;
-    pwr->ddsi2direct_cbarg = rd->ddsi2direct_cbarg;
-  }
 
   TRACE (("  proxy_writer_add_connection(pwr %x:%x:%x:%x rd %x:%x:%x:%x)\n",
           PGUID (pwr->e.guid), PGUID (rd->e.guid)));
@@ -1172,7 +1165,7 @@ static void proxy_writer_add_connection (struct proxy_writer *pwr, struct reader
   }
   else if (!config.conservative_builtin_reader_startup &&
            is_builtin_entityid (rd->e.guid.entityid) &&
-           !avl_empty (&pwr->readers))
+           !ut_avlIsEmpty (&pwr->readers))
   {
     /* builtins really don't care about multiple copies */
     m->in_sync = 1;
@@ -1203,13 +1196,14 @@ static void proxy_writer_add_connection (struct proxy_writer *pwr, struct reader
       nn_reorder_new (NN_REORDER_MODE_MONOTONICALLY_INCREASING, config.secondary_reorder_maxsamples);
   }
 
-  avl_init_node (&m->avlnode, parent);
-  avl_insert (&pwr->readers, m);
+  ut_avlInsertIPath (&pwr_readers_treedef, &pwr->readers, m, &path);
+
+
   os_mutexUnlock (&pwr->e.lock);
   return;
 
 already_matched:
-  assert (pwr->c.topic != NULL);
+  assert (is_builtin_entityid (pwr->e.guid.entityid) ? (pwr->c.topic == NULL) : (pwr->c.topic != NULL));
   TRACE (("  proxy_writer_add_connection(pwr %x:%x:%x:%x rd %x:%x:%x:%x) - already connected\n",
           PGUID (pwr->e.guid), PGUID (rd->e.guid)));
   os_mutexUnlock (&pwr->e.lock);
@@ -1220,14 +1214,14 @@ already_matched:
 static void proxy_reader_add_connection (struct proxy_reader *prd, struct writer *wr)
 {
   struct prd_wr_match *m;
-  avlparent_t parent;
+  ut_avlIPath_t path;
   if ((m = os_malloc (sizeof (*m))) == NULL)
     abort ();
   m->wr_guid = wr->e.guid;
   os_mutexLock (&prd->e.lock);
   if (prd->c.topic == NULL)
     prd->c.topic = wr->topic;
-  if (avl_lookup (&prd->writers, &wr->e.guid, &parent))
+  if (ut_avlLookupIPath (&prd_writers_treedef, &prd->writers, &wr->e.guid, &path))
   {
     TRACE (("  proxy_reader_add_connection(wr %x:%x:%x:%x prd %x:%x:%x:%x) - already connected\n",
             PGUID (wr->e.guid), PGUID (prd->e.guid)));
@@ -1238,8 +1232,7 @@ static void proxy_reader_add_connection (struct proxy_reader *prd, struct writer
   {
     TRACE (("  proxy_reader_add_connection(wr %x:%x:%x:%x prd %x:%x:%x:%x)\n",
             PGUID (wr->e.guid), PGUID (prd->e.guid)));
-    avl_init_node (&m->avlnode, parent);
-    avl_insert (&prd->writers, m);
+    ut_avlInsertIPath (&prd_writers_treedef, &prd->writers, m, &path);
     os_mutexUnlock (&prd->e.lock);
   }
 }
@@ -1498,15 +1491,10 @@ static void match_proxy_reader_with_writers (struct proxy_reader *prd, UNUSED_AR
 
 /* ENDPOINT --------------------------------------------------------- */
 
-static int new_reader_writer_common (const nn_guid_t *guid, const v_gid *gid, const struct topic *topic, const struct nn_xqos *xqos)
+static int new_reader_writer_common (const struct nn_guid *guid, const struct topic *topic, const struct nn_xqos *xqos)
 {
   const char *partition = "(default)";
   const char *partition_suffix = "";
-  v_gid stgid;
-  if (gid)
-    stgid = *gid;
-  else
-    v_gidSetNil (stgid);
   assert (is_builtin_entityid (guid->entityid) ? (topic == NULL) : (topic != NULL));
   if (is_builtin_entityid (guid->entityid))
   {
@@ -1521,29 +1509,26 @@ static int new_reader_writer_common (const nn_guid_t *guid, const v_gid *gid, co
     if (xqos->partition.n > 1)
       partition_suffix = "+";
   }
-  nn_log (LC_DISCOVERY, "new_%s(guid %x:%x:%x:%x gid %x:%x:%x, %s%s.%s/%s)\n",
+  nn_log (LC_DISCOVERY, "new_%s(guid %x:%x:%x:%x, %s%s.%s/%s)\n",
           is_writer_entityid (guid->entityid) ? "writer" : "reader",
           PGUID (*guid),
-          stgid.systemId, stgid.localId, stgid.serial,
           partition, partition_suffix,
           topic ? topic_name (topic) : "(null)",
           topic ? topic_typename (topic) : "(null)");
   return 0;
 }
 
-static void endpoint_common_init (struct entity_common *e, struct endpoint_common *c, enum entity_kind kind, const nn_guid_t *guid, const v_gid *gid, struct participant *pp)
+static void endpoint_common_init (struct entity_common *e, struct endpoint_common *c, enum entity_kind kind, const struct nn_guid *guid, struct participant *pp)
 {
   entity_common_init (e, guid, kind);
-  if (gid)
-    c->gid = *gid;
-  else
-    v_gidSetNil (c->gid);
+  memset (&c->gid, 0, sizeof (c->gid));
   c->pp = ref_participant (pp, &e->guid);
 }
 
 static void endpoint_common_fini (struct entity_common *e, struct endpoint_common *c)
 {
   unref_participant (c->pp, &e->guid);
+  entity_common_fini (e);
 }
 
 static int set_topic_type_name (nn_xqos_t *xqos, const struct topic *topic)
@@ -1564,9 +1549,11 @@ static int set_topic_type_name (nn_xqos_t *xqos, const struct topic *topic)
 /* WRITER ----------------------------------------------------------- */
 
 
-static void augment_wr_prd_match (void *vnode)
+static void augment_wr_prd_match (void *vnode, const void *vleft, const void *vright)
 {
   struct wr_prd_match *n = vnode;
+  const struct wr_prd_match *left = vleft;
+  const struct wr_prd_match *right = vright;
   os_int64 min_seq, max_seq;
   unsigned have_replied = n->has_replied_to_hb;
 
@@ -1579,21 +1566,21 @@ static void augment_wr_prd_match (void *vnode)
   max_seq = (n->seq < MAX_SEQ_NUMBER) ? n->seq : 0;
 
   /* 1. Compute {min,max} & have_replied. */
-  if (n->avlnode.left)
+  if (left)
   {
-    if (n->avlnode.left->min_seq < min_seq)
-      min_seq = n->avlnode.left->min_seq;
-    if (n->avlnode.left->max_seq > max_seq)
-      max_seq = n->avlnode.left->max_seq;
-    have_replied = have_replied && n->avlnode.left->all_have_replied_to_hb;
+    if (left->min_seq < min_seq)
+      min_seq = left->min_seq;
+    if (left->max_seq > max_seq)
+      max_seq = left->max_seq;
+    have_replied = have_replied && left->all_have_replied_to_hb;
   }
-  if (n->avlnode.right)
+  if (right)
   {
-    if (n->avlnode.right->min_seq < min_seq)
-      min_seq = n->avlnode.right->min_seq;
-    if (n->avlnode.right->max_seq > max_seq)
-      max_seq = n->avlnode.right->max_seq;
-    have_replied = have_replied && n->avlnode.right->all_have_replied_to_hb;
+    if (right->min_seq < min_seq)
+      min_seq = right->min_seq;
+    if (right->max_seq > max_seq)
+      max_seq = right->max_seq;
+    have_replied = have_replied && right->all_have_replied_to_hb;
   }
   n->min_seq = min_seq;
   n->max_seq = max_seq;
@@ -1611,12 +1598,12 @@ static void augment_wr_prd_match (void *vnode)
     /* if demoted or best-effort, seq != max */
     n->num_reliable_readers_where_seq_equals_max =
       (n->seq == max_seq && n->has_replied_to_hb);
-    if (n->avlnode.left && n->avlnode.left->max_seq == max_seq)
+    if (left && left->max_seq == max_seq)
       n->num_reliable_readers_where_seq_equals_max +=
-        n->avlnode.left->num_reliable_readers_where_seq_equals_max;
-    if (n->avlnode.right && n->avlnode.right->max_seq == max_seq)
+        left->num_reliable_readers_where_seq_equals_max;
+    if (right && right->max_seq == max_seq)
       n->num_reliable_readers_where_seq_equals_max +=
-        n->avlnode.right->num_reliable_readers_where_seq_equals_max;
+        right->num_reliable_readers_where_seq_equals_max;
   }
 
   /* 3. Compute arbitrary unacked reader */
@@ -1632,23 +1619,23 @@ static void augment_wr_prd_match (void *vnode)
     n->arbitrary_unacked_reader = n->prd_guid;
   }
   /* 3b: maybe we can inherit from the children */
-  else if (n->avlnode.left && n->avlnode.left->arbitrary_unacked_reader.entityid.u != NN_ENTITYID_UNKNOWN)
+  else if (left && left->arbitrary_unacked_reader.entityid.u != NN_ENTITYID_UNKNOWN)
   {
-    n->arbitrary_unacked_reader = n->avlnode.left->arbitrary_unacked_reader;
+    n->arbitrary_unacked_reader = left->arbitrary_unacked_reader;
   }
-  else if (n->avlnode.right && n->avlnode.right->arbitrary_unacked_reader.entityid.u != NN_ENTITYID_UNKNOWN)
+  else if (right && right->arbitrary_unacked_reader.entityid.u != NN_ENTITYID_UNKNOWN)
   {
-    n->arbitrary_unacked_reader = n->avlnode.right->arbitrary_unacked_reader;
+    n->arbitrary_unacked_reader = right->arbitrary_unacked_reader;
   }
   /* 3c: else it may be that we can now determine one of our children
      is actually a candidate */
-  else if (n->avlnode.left && n->avlnode.left->max_seq != 0 && n->avlnode.left->max_seq < max_seq)
+  else if (left && left->max_seq != 0 && left->max_seq < max_seq)
   {
-    n->arbitrary_unacked_reader = n->avlnode.left->prd_guid;
+    n->arbitrary_unacked_reader = left->prd_guid;
   }
-  else if (n->avlnode.right && n->avlnode.right->max_seq != 0 && n->avlnode.right->max_seq < max_seq)
+  else if (right && right->max_seq != 0 && right->max_seq < max_seq)
   {
-    n->arbitrary_unacked_reader = n->avlnode.right->prd_guid;
+    n->arbitrary_unacked_reader = right->prd_guid;
   }
   /* 3d: else no candidate in entire subtree */
   else
@@ -1659,15 +1646,16 @@ static void augment_wr_prd_match (void *vnode)
 
 os_int64 writer_max_drop_seq (const struct writer *wr)
 {
-  if (avl_empty (&wr->readers) || wr->readers.root->min_seq == MAX_SEQ_NUMBER)
+  const struct wr_prd_match *n;
+  if (ut_avlIsEmpty (&wr->readers))
     return wr->seq;
-  else
-    return wr->readers.root->min_seq;
+  n = ut_avlRoot (&wr_readers_treedef, &wr->readers);
+  return (n->min_seq == MAX_SEQ_NUMBER) ? wr->seq : n->min_seq;
 }
 
 int writer_must_have_hb_scheduled (const struct writer *wr)
 {
-  if (avl_empty (&wr->readers) || whc_empty (wr->whc))
+  if (ut_avlIsEmpty (&wr->readers) || whc_empty (wr->whc))
   {
     /* Can't transmit a valid heartbeat if there is no data; and it
        wouldn't actually be sent anywhere if there are no readers, so
@@ -1678,7 +1666,7 @@ int writer_must_have_hb_scheduled (const struct writer *wr)
        a heartbeat if no data is available. */
     return 0;
   }
-  else if (!wr->readers.root->all_have_replied_to_hb)
+  else if (!((const struct wr_prd_match *) ut_avlRoot (&wr_readers_treedef, &wr->readers))->all_have_replied_to_hb)
   {
     /* Labouring under the belief that heartbeats must be sent
        regardless of ack state */
@@ -1724,12 +1712,8 @@ int remove_acked_messages (struct writer *wr)
   nremain = writer_number_of_unacked_samples (wr);
   /* when transitioning from >= low-water to < low-water, signal
      anyone waiting in throttle_writer() */
-  if (wr->throttling)
-  {
-    int oldsize = nremain + n;
-    if (nremain < config.whc_lowwater_mark && oldsize >= config.whc_lowwater_mark)
-      os_condBroadcast (&wr->throttle_cond);
-  }
+  if (wr->throttling && nremain < config.whc_lowwater_mark)
+    os_condBroadcast (&wr->throttle_cond);
   if (nremain == 0 && wr->state == WRST_LINGERING)
   {
     nn_log (LC_DISCOVERY, "remove_acked_messages: deleting lingering writer %x:%x:%x:%x\n", PGUID (wr->e.guid));
@@ -1738,26 +1722,17 @@ int remove_acked_messages (struct writer *wr)
   return n;
 }
 
-static int new_writer_guid (const nn_guid_t *guid, const struct v_gid_s *gid, struct participant *pp, const struct topic *topic, const struct nn_xqos *xqos)
+static int new_writer_guid (const struct nn_guid *guid, struct participant *pp, const struct topic *topic, const struct nn_xqos *xqos)
 {
   struct writer *wr;
   int res;
   os_int64 tnow = now ();
 
-  /* A little bit of sanity checking: builtin => (gid == NULL),
-     writer, not known yet, guid belongs to pp. This doesn't guarantee
-     all is well, but it does increase the probability. */
-  assert (gid == NULL || !is_builtin_entityid (guid->entityid));
   assert (is_writer_entityid (guid->entityid));
   assert (ephash_lookup_writer_guid (guid) == NULL);
-  if (gid)
-  {
-    assert (v_gidIsValid (*gid));
-    assert (ephash_lookup_writer_gid (gid) == NULL);
-  }
   assert (memcmp (&guid->prefix, &pp->e.guid.prefix, sizeof (guid->prefix)) == 0);
 
-  if ((res = new_reader_writer_common (guid, gid, topic, xqos)) < 0)
+  if ((res = new_reader_writer_common (guid, topic, xqos)) < 0)
     return res;
 
   if ((wr = os_malloc (sizeof (*wr))) == NULL)
@@ -1766,7 +1741,7 @@ static int new_writer_guid (const nn_guid_t *guid, const struct v_gid_s *gid, st
   /* want a pointer to the participant so that a parallel call to
      delete_participant won't interfere with our ability to address
      the participant */
-  endpoint_common_init (&wr->e, &wr->c, EK_WRITER, guid, gid, pp);
+  endpoint_common_init (&wr->e, &wr->c, EK_WRITER, guid, pp);
   os_condInit (&wr->throttle_cond, &wr->e.lock, &gv.cattr);
   wr->seq = 0;
   wr->seq_xmit = 0;
@@ -1814,7 +1789,9 @@ static int new_writer_guid (const nn_guid_t *guid, const struct v_gid_s *gid, st
        wr->xqos->history.depth == 1);
   }
   wr->handle_as_transient_local = (wr->xqos->durability.kind == NN_TRANSIENT_LOCAL_DURABILITY_QOS);
-  wr->with_key = ((wr->e.guid.entityid.u & NN_ENTITYID_KIND_MASK) == NN_ENTITYID_KIND_WRITER_WITH_KEY);
+  wr->include_keyhash =
+    config.generate_keyhash &&
+    ((wr->e.guid.entityid.u & NN_ENTITYID_KIND_MASK) == NN_ENTITYID_KIND_WRITER_WITH_KEY);
   /* Startup mode causes the writer to treat data in its WHC as if
      transient-local, for the first few seconds after startup of the
      DDSI service. It is done for volatile reliable writers only
@@ -1840,6 +1817,7 @@ static int new_writer_guid (const nn_guid_t *guid, const struct v_gid_s *gid, st
 
 
   /* for non-builtin writers, select the eventqueue based on the channel it is mapped to */
+
   {
     wr->evq = gv.xevents;
   }
@@ -1863,7 +1841,7 @@ static int new_writer_guid (const nn_guid_t *guid, const struct v_gid_s *gid, st
   wr->whc = whc_new ((wr->handle_as_transient_local || wr->startup_mode), wr->aggressive_keep_last1);
 
   /* Connection admin */
-  avl_init (&wr->readers, offsetof (struct wr_prd_match, avlnode), offsetof (struct wr_prd_match, prd_guid), compare_guid, augment_wr_prd_match);
+  ut_avlInit (&wr_readers_treedef, &wr->readers);
 
   /* guid_hash needed for protocol handling, so add it before we send
      out our first message.  Also: needed for matching, and swapping
@@ -1883,47 +1861,28 @@ static int new_writer_guid (const nn_guid_t *guid, const struct v_gid_s *gid, st
 
   if (wr->lease_duration != T_NEVER)
     resched_xevent_if_earlier (pp->pmd_update_xevent, 0);
-
-  ephash_insert_writer_gid (wr);
   return 0;
 }
 
-int new_writer (const struct v_gid_s *ppgid, const struct v_gid_s *gid, C_STRUCT (v_topic) const * const ospl_topic, const struct nn_xqos *xqos)
+int new_writer (struct nn_guid *wrguid, const struct nn_guid *ppguid, const struct topic *topic, const struct nn_xqos *xqos)
 {
-  nn_guid_t ppguid, guid;
   struct participant *pp;
   unsigned entity_kind;
-  topic_t topic;
   int res;
 
-  assert (ospl_topic != NULL);
-
-  if (gid && ephash_lookup_writer_gid (gid))
+  if ((pp = ephash_lookup_participant_guid (ppguid)) == NULL)
   {
-    TRACE (("new_writer(gid %x:%x:%x) - already known\n",
-            gid->systemId, gid->localId, gid->serial));
-    return ERR_ENTITY_EXISTS;
-  }
-
-  ppguid_from_ppgid (&ppguid, ppgid);
-  if ((pp = ephash_lookup_participant_guid (&ppguid)) == NULL)
-  {
-    static struct v_gid_s st_zero_gid;
-    const struct v_gid_s *xgid = gid ? gid : &st_zero_gid;
-    TRACE (("new_writer(gid %x:%x:%x) - participant %x:%x:%x:%x not found\n",
-            xgid->systemId, xgid->localId, xgid->serial, PGUID (ppguid)));
+    TRACE (("new_writer - participant %x:%x:%x:%x not found\n", PGUID (*ppguid)));
     return ERR_UNKNOWN_ENTITY;
   }
   /* participant can't be freed while we're mucking around cos we are
      awake and do not touch the thread's vtime (ephash_lookup already
      verifies we're awake) */
-  if ((topic = deftopic (ospl_topic, NULL)) == NULL)
-    return ERR_UNSPECIFIED;
   entity_kind = (topic_haskey (topic) ? NN_ENTITYID_KIND_WRITER_WITH_KEY : NN_ENTITYID_KIND_WRITER_NO_KEY);
-  guid.prefix = pp->e.guid.prefix;
-  if ((res = pp_allocate_entityid (&guid.entityid, entity_kind, pp)) < 0)
+  wrguid->prefix = pp->e.guid.prefix;
+  if ((res = pp_allocate_entityid (&wrguid->entityid, entity_kind, pp)) < 0)
     return res;
-  return new_writer_guid (&guid, gid, pp, topic, xqos);
+  return new_writer_guid (wrguid, pp, topic, xqos);
 }
 
 static void gc_delete_writer (struct gcreq *gcreq)
@@ -1941,10 +1900,10 @@ static void gc_delete_writer (struct gcreq *gcreq)
   /* Tear down connections -- no proxy reader can be adding/removing
       us now, because we can't be found via guid_hash anymore.  We
       therefore need not take lock. */
-  while (wr->readers.root)
+  while (!ut_avlIsEmpty (&wr->readers))
   {
-    struct wr_prd_match *m = wr->readers.root;
-    avl_delete (&wr->readers, m);
+    struct wr_prd_match *m = ut_avlRoot (&wr_readers_treedef, &wr->readers);
+    ut_avlDelete (&wr_readers_treedef, &wr->readers, m);
     proxy_reader_drop_connection (&m->prd_guid, &wr->e.guid);
     free_wr_prd_match (m);
   }
@@ -1972,7 +1931,7 @@ static void writer_set_state (struct writer *wr, enum writer_state newstate)
   {
     /* It Is particularly important that the writer is removed from
        the GID hash table only once. */
-    ephash_remove_writer_gid (wr);
+    /* ephash_remove_writer_gid (wr); FIXME - why is this commented out (Steve) */
 
     /* Unblock all throttled writers (alternative method: clear WHC --
        but with parallel writes and very small limits on the WHC size,
@@ -1995,7 +1954,7 @@ int delete_writer_nolinger_locked (struct writer *wr)
   return 0;
 }
 
-int delete_writer_guid_nolinger (const nn_guid_t *guid)
+int delete_writer_nolinger (const struct nn_guid *guid)
 {
   struct writer *wr;
   /* We take no care to ensure application writers are not deleted
@@ -2007,27 +1966,25 @@ int delete_writer_guid_nolinger (const nn_guid_t *guid)
   assert (is_writer_entityid (guid->entityid));
   if ((wr = ephash_lookup_writer_guid (guid)) == NULL)
   {
-    nn_log (LC_DISCOVERY, "delete_writer_guid_nolinger(guid %x:%x:%x:%x) - unknown guid\n", PGUID (*guid));
+    nn_log (LC_DISCOVERY, "delete_writer_nolinger(guid %x:%x:%x:%x) - unknown guid\n", PGUID (*guid));
     return ERR_UNKNOWN_ENTITY;
   }
-  nn_log (LC_DISCOVERY, "delete_writer_guid_nolinger(guid %x:%x:%x:%x) ...\n", PGUID (*guid));
+  nn_log (LC_DISCOVERY, "delete_writer_nolinger(guid %x:%x:%x:%x) ...\n", PGUID (*guid));
   os_mutexLock (&wr->e.lock);
   delete_writer_nolinger_locked (wr);
   os_mutexUnlock (&wr->e.lock);
   return 0;
 }
 
-int delete_writer (const struct v_gid_s *gid)
+int delete_writer (const struct nn_guid *guid)
 {
   struct writer *wr;
-  assert (v_gidIsValid (*gid));
-  if ((wr = ephash_lookup_writer_gid (gid)) == NULL)
+  if ((wr = ephash_lookup_writer_guid (guid)) == NULL)
   {
-    nn_log (LC_DISCOVERY, "delete_writer(gid %x:%x:%x) - unknown gid\n",
-            gid->systemId, gid->localId, gid->serial);
+    nn_log (LC_DISCOVERY, "delete_writer(guid %x:%x:%x:%x) - unknown guid\n", PGUID (*guid));
     return ERR_UNKNOWN_ENTITY;
   }
-  nn_log (LC_DISCOVERY, "delete_writer(gid %x:%x:%x) ...\n", gid->systemId, gid->localId, gid->serial);
+  nn_log (LC_DISCOVERY, "delete_writer(guid %x:%x:%x:%x) ...\n", PGUID (*guid));
   os_mutexLock (&wr->e.lock);
   /* If no unack'ed data, don't waste time or resources (expected to
      be the usual case), do it immediately.  If more data is still
@@ -2035,7 +1992,7 @@ int delete_writer (const struct v_gid_s *gid)
      again in the future) it'll potentially be discarded.  */
   if (writer_number_of_unacked_samples (wr) == 0)
   {
-    TRACE (("delete_writer(gid %x:%x:%x) - no unack'ed samples\n", gid->systemId, gid->localId, gid->serial));
+    TRACE (("delete_writer(guid %x:%x:%x:%x) - no unack'ed samples\n", PGUID (*guid)));
     delete_writer_nolinger_locked (wr);
     os_mutexUnlock (&wr->e.lock);
   }
@@ -2047,8 +2004,8 @@ int delete_writer (const struct v_gid_s *gid)
     os_mutexUnlock (&wr->e.lock);
     tsched = now () + config.writer_linger_duration;
     time_to_sec_usec (&tsec, &tusec, tsched);
-    TRACE (("delete_writer(gid %x:%x:%x) - unack'ed samples, will delete when ack'd or at t = %d.%06d\n",
-            gid->systemId, gid->localId, gid->serial, tsec, tusec));
+    TRACE (("delete_writer(guid %x:%x:%x:%x) - unack'ed samples, will delete when ack'd or at t = %d.%06d\n",
+            PGUID (*guid), tsec, tusec));
     qxev_delete_writer (tsched, &wr->e.guid);
   }
   return 0;
@@ -2076,30 +2033,24 @@ void writer_exit_startup_mode (struct writer *wr)
 /* READER ----------------------------------------------------------- */
 
 
-static int new_reader_guid (const nn_guid_t *guid, const struct v_gid_s *gid, struct participant *pp, const struct topic *topic, const struct nn_xqos *xqos)
+static int new_reader_guid (const struct nn_guid *guid, struct participant *pp, const struct topic *topic, const struct nn_xqos *xqos, deliver_cb_t deliver_cb, void *deliver_cbarg)
 {
   /* see new_writer_guid for commenets */
   struct reader *rd;
   int res;
   os_int64 tnow = now ();
 
-  assert (gid == NULL || !is_builtin_entityid (guid->entityid));
   assert (!is_writer_entityid (guid->entityid));
   assert (ephash_lookup_reader_guid (guid) == NULL);
-  if (gid)
-  {
-    assert (v_gidIsValid (*gid));
-    assert (ephash_lookup_reader_gid (gid) == NULL);
-  }
   assert (memcmp (&guid->prefix, &pp->e.guid.prefix, sizeof (guid->prefix)) == 0);
 
-  if ((res = new_reader_writer_common (guid, gid, topic, xqos)) < 0)
+  if ((res = new_reader_writer_common (guid, topic, xqos)) < 0)
     return res;
 
   if ((rd = os_malloc (sizeof (*rd))) == NULL)
     return ERR_OUT_OF_MEMORY;
 
-  endpoint_common_init (&rd->e, &rd->c, EK_READER, guid, gid, pp);
+  endpoint_common_init (&rd->e, &rd->c, EK_READER, guid, pp);
 
   /* Copy QoS, merging in defaults */
   rd->xqos = os_malloc (sizeof (*rd->xqos));
@@ -2118,10 +2069,10 @@ static int new_reader_guid (const nn_guid_t *guid, const struct v_gid_s *gid, st
   assert (rd->xqos->present & QP_DURABILITY);
   rd->handle_as_transient_local = (rd->xqos->durability.kind == NN_TRANSIENT_LOCAL_DURABILITY_QOS);
   rd->topic = topic;
-  rd->ddsi2direct_cb = 0;
-  rd->ddsi2direct_cbarg = 0;
-  rd->matching_groups = nn_groupset_new ();
   rd->init_acknack_count = 0;
+  (void) deliver_cbarg;
+  (void) deliver_cb;
+  rd->matching_groups = nn_groupset_new ();
   if (!is_builtin_entityid (rd->e.guid.entityid))
     nn_groupset_fromqos (rd->matching_groups, gv.ospl_kernel, rd->xqos);
   assert (rd->xqos->present & QP_LIVELINESS);
@@ -2132,50 +2083,31 @@ static int new_reader_guid (const nn_guid_t *guid, const struct v_gid_s *gid, st
   }
 
 
-  avl_init (&rd->writers, offsetof (struct rd_pwr_match, avlnode), offsetof (struct rd_pwr_match, pwr_guid), compare_guid, 0);
+  ut_avlInit (&rd_writers_treedef, &rd->writers);
 
   ephash_insert_reader_guid (rd);
   match_reader_with_proxy_writers (rd, tnow);
   sedp_write_reader (rd);
-
-  ephash_insert_reader_gid (rd);
   return 0;
 }
 
-int new_reader (const struct v_gid_s *ppgid, const struct v_gid_s *gid, C_STRUCT (v_topic) const * const ospl_topic, const struct nn_xqos *xqos)
+int new_reader (struct nn_guid *rdguid, const struct nn_guid *ppguid, const struct topic *topic, const struct nn_xqos *xqos, deliver_cb_t deliver_cb, void *deliver_cbarg)
 {
   /* see new_writer for comments */
-  nn_guid_t ppguid, guid;
   struct participant *pp;
   unsigned entity_kind;
-  topic_t topic;
   int res;
 
-  assert (ospl_topic != NULL);
-
-  if (gid && ephash_lookup_reader_gid (gid))
+  if ((pp = ephash_lookup_participant_guid (ppguid)) == NULL)
   {
-    TRACE (("new_reader(gid %x:%x:%x) - already known\n",
-            gid->systemId, gid->localId, gid->serial));
-    return ERR_ENTITY_EXISTS;
-  }
-
-  ppguid_from_ppgid (&ppguid, ppgid);
-  if ((pp = ephash_lookup_participant_guid (&ppguid)) == NULL)
-  {
-    static struct v_gid_s st_zero_gid;
-    const struct v_gid_s *xgid = gid ? gid : &st_zero_gid;
-    TRACE (("new_reader(gid %x:%x:%x) - participant %x:%x:%x:%x not found\n",
-            xgid->systemId, xgid->localId, xgid->serial, PGUID (ppguid)));
+    TRACE (("new_reader - participant %x:%x:%x:%x not found\n", PGUID (*ppguid)));
     return ERR_UNKNOWN_ENTITY;
   }
-  if ((topic = deftopic (ospl_topic, NULL)) == NULL)
-    return ERR_UNSPECIFIED;
   entity_kind = (topic_haskey (topic) ? NN_ENTITYID_KIND_READER_WITH_KEY : NN_ENTITYID_KIND_READER_NO_KEY);
-  guid.prefix = pp->e.guid.prefix;
-  if ((res = pp_allocate_entityid (&guid.entityid, entity_kind, pp)) < 0)
+  rdguid->prefix = pp->e.guid.prefix;
+  if ((res = pp_allocate_entityid (&rdguid->entityid, entity_kind, pp)) < 0)
     return res;
-  return new_reader_guid (&guid, gid, pp, topic, xqos);
+  return new_reader_guid (rdguid, pp, topic, xqos, deliver_cb, deliver_cbarg);
 }
 
 static void gc_delete_reader (struct gcreq *gcreq)
@@ -2185,11 +2117,11 @@ static void gc_delete_reader (struct gcreq *gcreq)
   gcreq_free (gcreq);
   TRACE (("gc_delete_reader(guid %x:%x:%x:%x)\n", PGUID (rd->e.guid)));
 
-  while (rd->writers.root)
+  while (!ut_avlIsEmpty (&rd->writers))
   {
-    struct rd_pwr_match *m = rd->writers.root;
-    avl_delete (&rd->writers, m);
-    proxy_writer_drop_connection (&m->pwr_guid, &rd->e.guid);
+    struct rd_pwr_match *m = ut_avlRoot (&rd_writers_treedef, &rd->writers);
+    ut_avlDelete (&rd_writers_treedef, &rd->writers, m);
+    proxy_writer_drop_connection (&m->pwr_guid, rd);
     free_rd_pwr_match (m);
   }
 
@@ -2197,6 +2129,7 @@ static void gc_delete_reader (struct gcreq *gcreq)
     sedp_dispose_unregister_reader (rd);
 
   nn_groupset_free (rd->matching_groups);
+
   nn_xqos_fini (rd->xqos);
   os_free (rd->xqos);
 
@@ -2204,7 +2137,7 @@ static void gc_delete_reader (struct gcreq *gcreq)
   os_free (rd);
 }
 
-int delete_reader_guid (const nn_guid_t *guid)
+int delete_reader (const struct nn_guid *guid)
 {
   struct reader *rd;
   assert (!is_writer_entityid (guid->entityid));
@@ -2215,29 +2148,23 @@ int delete_reader_guid (const nn_guid_t *guid)
   }
   nn_log (LC_DISCOVERY, "delete_reader_guid(guid %x:%x:%x:%x) ...\n", PGUID (*guid));
   ephash_remove_reader_guid (rd);
-  ephash_remove_reader_gid (rd);
+  /* ephash_remove_reader_gid (rd); FIXME why is this commented out (Steve) */
   gcreq_reader (rd);
   return 0;
 }
 
-int delete_reader (const struct v_gid_s *gid)
-{
-  /* FIXME: NEED TO SERIALIZE THIS STUFF -- OR MAYBE NOT (NOW THAT GLUELOCK HAS BEEN REINSTATED) */
-  struct reader *rd;
-  assert (v_gidIsValid (*gid));
-  if ((rd = ephash_lookup_reader_gid (gid)) == NULL)
-  {
-    nn_log (LC_DISCOVERY, "delete_reader_gid(gid %x:%x:%x) - unknown gid\n",
-            gid->systemId, gid->localId, gid->serial);
-    return ERR_UNKNOWN_ENTITY;
-  }
-  nn_log (LC_DISCOVERY, "delete_reader_gid(gid %x:%x:%x) ...\n", gid->systemId, gid->localId, gid->serial);
-  return delete_reader_guid (&rd->e.guid);
-}
-
 /* PROXY-PARTICIPANT ------------------------------------------------ */
-
-int new_proxy_participant (const nn_guid_t *ppguid, unsigned bes, const nn_guid_t *privileged_pp_guid, struct addrset *as_default, struct addrset *as_meta, os_int64 tlease_dur, nn_vendorid_t vendor)
+void new_proxy_participant 
+(
+  const struct nn_guid *ppguid,
+  unsigned bes,
+  const struct nn_guid *privileged_pp_guid,
+  struct addrset *as_default,
+  struct addrset *as_meta,
+  os_int64 tlease_dur,
+  nn_vendorid_t vendor,
+  unsigned custom_flags
+)
 {
   /* No locking => iff all participants use unique guids, and sedp
      runs on a single thread, it can't go wrong. FIXME, maybe? The
@@ -2251,8 +2178,7 @@ int new_proxy_participant (const nn_guid_t *ppguid, unsigned bes, const nn_guid_
   tnow = now ();
   prune_deleted_participant_guids (tnow);
 
-  if ((proxypp = os_malloc (sizeof (*proxypp))) == NULL)
-    return ERR_OUT_OF_MEMORY;
+  proxypp = os_malloc (sizeof (*proxypp));
 
   entity_common_init (&proxypp->e, ppguid, EK_PROXY_PARTICIPANT);
   proxypp->refc = 1;
@@ -2260,9 +2186,14 @@ int new_proxy_participant (const nn_guid_t *ppguid, unsigned bes, const nn_guid_
   proxypp->bes = bes;
   proxypp->privileged_pp_guid = *privileged_pp_guid;
   proxypp->lease = lease_new (tlease_dur, &proxypp->e);
-  proxypp->as_default = ref_addrset (as_default);
-  proxypp->as_meta = ref_addrset (as_meta);
+  proxypp->as_default = as_default;
+  proxypp->as_meta = as_meta;
   proxypp->endpoints = NULL;
+
+  if (custom_flags & CF_INC_KERNEL_SEQUENCE_NUMBERS)
+    proxypp->kernel_sequence_numbers = 1;
+  else
+    proxypp->kernel_sequence_numbers = 0;
 
   /* Proxy participant must be in the hash tables for
      new_proxy_{writer,reader} to work */
@@ -2272,6 +2203,7 @@ int new_proxy_participant (const nn_guid_t *ppguid, unsigned bes, const nn_guid_
      ...) built-in endpoint set. */
   {
 #define TE(ap_, a_, bp_, b_) { NN_##ap_##BUILTIN_ENDPOINT_##a_, NN_ENTITYID_##bp_##_BUILTIN_##b_ }
+#define LTE(a_, bp_, b_) { NN_##BUILTIN_ENDPOINT_##a_, NN_ENTITYID_##bp_##_BUILTIN_##b_ }
     static const struct bestab {
       unsigned besflag;
       unsigned entityid;
@@ -2286,10 +2218,11 @@ int new_proxy_participant (const nn_guid_t *ppguid, unsigned bes, const nn_guid_
       TE (DISC_, PUBLICATION_DETECTOR, SEDP, PUBLICATIONS_READER),
       TE (DISC_, SUBSCRIPTION_ANNOUNCER, SEDP, SUBSCRIPTIONS_WRITER),
       TE (DISC_, SUBSCRIPTION_DETECTOR, SEDP, SUBSCRIPTIONS_READER),
-      TE (, PARTICIPANT_MESSAGE_DATA_WRITER, P2P, PARTICIPANT_MESSAGE_WRITER),
-      TE (, PARTICIPANT_MESSAGE_DATA_READER, P2P, PARTICIPANT_MESSAGE_READER)
+      LTE (PARTICIPANT_MESSAGE_DATA_WRITER, P2P, PARTICIPANT_MESSAGE_WRITER),
+      LTE (PARTICIPANT_MESSAGE_DATA_READER, P2P, PARTICIPANT_MESSAGE_READER)
     };
 #undef TE
+#undef LTE
     int i;
     for (i = 0; i < (int) (sizeof (bestab) / sizeof (*bestab)); i++)
     {
@@ -2316,7 +2249,6 @@ int new_proxy_participant (const nn_guid_t *ppguid, unsigned bes, const nn_guid_
   }
 
   lease_register (proxypp->lease);
-  return 0;
 }
 
 static struct proxy_participant *ref_proxy_participant (struct proxy_participant *proxypp)
@@ -2356,41 +2288,104 @@ static struct entity_common *entity_common_from_proxy_endpoint_common (const str
   return (struct entity_common *) ((char *) c - offsetof (struct proxy_writer, c));
 }
 
-int delete_proxy_participant (const nn_guid_t *guid)
+static void delete_ppt (struct proxy_participant * proxypp)
 {
-  struct proxy_participant *proxypp;
-  struct proxy_endpoint_common *c;
-
-  os_mutexLock (&gv.lock);
-  if ((proxypp = ephash_lookup_proxy_participant_guid (guid)) == NULL)
-  {
-    os_mutexUnlock (&gv.lock);
-    return ERR_UNKNOWN_ENTITY;
-  }
-  remember_deleted_participant_guid (&proxypp->e.guid);
-  ephash_remove_proxy_participant_guid (proxypp);
-  os_mutexUnlock (&gv.lock);
+  struct proxy_endpoint_common * c;
+  int ret;
 
   /* delete_proxy_{reader,writer} merely schedules the actual delete
      operation, so we can hold the lock -- at least, for now. */
+
   os_mutexLock (&proxypp->e.lock);
-  for (c = proxypp->endpoints; c; c = c->next_ep)
+  c = proxypp->endpoints;
+  while (c)
   {
     struct entity_common *e = entity_common_from_proxy_endpoint_common (c);
     if (is_writer_entityid (e->guid.entityid))
-      delete_proxy_writer (&e->guid);
+    {
+      ret = delete_proxy_writer (&e->guid);
+    }
     else
-      delete_proxy_reader (&e->guid);
+    {
+      ret = delete_proxy_reader (&e->guid);
+    }
+    (void) ret;
+    c = c->next_ep;
   }
   os_mutexUnlock (&proxypp->e.lock);
 
   gcreq_proxy_participant (proxypp);
+}
+
+typedef struct proxy_purge_data
+{
+  struct proxy_participant *proxypp;
+  os_sockaddr_storage * addr;
+  os_uint32 port;
+}
+* proxy_purge_data_t;
+
+static void purge_helper (const os_sockaddr_storage * n, void * varg)
+{
+  proxy_purge_data_t data = (proxy_purge_data_t) varg;
+  os_ushort port = sockaddr_get_port (n);
+  if 
+  (
+    (port == data->port) &&
+    (os_sockaddrIPAddressEqual ((const os_sockaddr*) data->addr, (const os_sockaddr*) n))
+  )
+  {
+    delete_proxy_participant (data->proxypp);
+  }
+}
+
+void purge_proxy_participants (os_sockaddr_storage * addr, os_uint32 port)
+{
+  struct ephash_enum_proxy_participant est;
+  struct proxy_purge_data data;
+
+  data.addr = addr;
+  data.port = port;
+  ephash_enum_proxy_participant_init (&est);
+  while ((data.proxypp = ephash_enum_proxy_participant_next (&est)) != NULL)
+  {
+    addrset_forall (data.proxypp->as_meta, purge_helper, &data);
+  }
+  ephash_enum_proxy_participant_fini (&est);
+}
+
+void delete_proxy_participant (struct proxy_participant * ppt)
+{
+  os_mutexLock (&gv.lock);
+  remember_deleted_participant_guid (&ppt->e.guid);
+  ephash_remove_proxy_participant_guid (ppt);
+  os_mutexUnlock (&gv.lock);
+  delete_ppt (ppt);
+}
+
+int delete_proxy_participant_by_guid (const struct nn_guid * guid)
+{
+  struct proxy_participant * ppt;
+
+  os_mutexLock (&gv.lock);
+  ppt = ephash_lookup_proxy_participant_guid (guid);
+  if (ppt == NULL)
+  {
+    os_mutexUnlock (&gv.lock);
+    return ERR_UNKNOWN_ENTITY;
+  }
+  remember_deleted_participant_guid (&ppt->e.guid);
+  ephash_remove_proxy_participant_guid (ppt);
+  os_mutexUnlock (&gv.lock);
+  delete_ppt (ppt);
+
   return 0;
 }
 
+
 /* PROXY-ENDPOINT --------------------------------------------------- */
 
-static int proxy_endpoint_common_init (struct entity_common *e, struct proxy_endpoint_common *c, enum entity_kind kind, const nn_guid_t *guid, struct proxy_participant *proxypp, struct addrset *as, nn_xqos_t *xqos)
+static int proxy_endpoint_common_init (struct entity_common *e, struct proxy_endpoint_common *c, enum entity_kind kind, const struct nn_guid *guid, struct proxy_participant *proxypp, struct addrset *as, nn_xqos_t *xqos)
 {
   if (is_builtin_entityid (guid->entityid))
     assert ((xqos->present & (QP_TOPIC_NAME | QP_TYPE_NAME)) == 0);
@@ -2437,7 +2432,7 @@ static void proxy_endpoint_common_fini (struct entity_common *e, struct proxy_en
 
 /* PROXY-WRITER ----------------------------------------------------- */
 
-int new_proxy_writer (const nn_guid_t *guid, struct addrset *as, nn_xqos_t *xqos, struct nn_dqueue *dqueue, struct xeventq *evq)
+int new_proxy_writer (const struct nn_guid *guid, struct addrset *as, nn_xqos_t *xqos, struct nn_dqueue *dqueue, struct xeventq *evq)
 {
   struct proxy_participant *proxypp;
   struct proxy_writer *pwr;
@@ -2465,13 +2460,14 @@ int new_proxy_writer (const nn_guid_t *guid, struct addrset *as, nn_xqos_t *xqos
     return 0;
   }
 
-  avl_init (&pwr->readers, offsetof (struct pwr_rd_match, avlnode), offsetof (struct pwr_rd_match, rd_guid), compare_guid, 0);
+  ut_avlInit (&pwr_readers_treedef, &pwr->readers);
   pwr->groups = nn_groupset_new ();
   pwr->v_message_qos = new_v_message_qos (pwr->c.xqos);
   pwr->n_reliable_readers = 0;
   pwr->last_seq = 0;
   pwr->last_fragnum = -1;
   pwr->nackfragcount = 0;
+  pwr->next_deliv_seq_lowword = 1;
   if (is_builtin_entityid (pwr->e.guid.entityid)) {
     /* The DDSI built-in proxy writers always deliver
        asynchronously */
@@ -2483,7 +2479,6 @@ int new_proxy_writer (const nn_guid_t *guid, struct addrset *as, nn_xqos_t *xqos
        synchronously */
     pwr->deliver_synchronously = 1;
   } else {
-    /* All others asynchronously */
     pwr->deliver_synchronously = 0;
   }
   pwr->have_seen_heartbeat = 0;
@@ -2514,8 +2509,7 @@ int new_proxy_writer (const nn_guid_t *guid, struct addrset *as, nn_xqos_t *xqos
   }
   pwr->dqueue = dqueue;
   pwr->evq = evq;
-  pwr->ddsi2direct_cb = 0;
-  pwr->ddsi2direct_cbarg = 0;
+
 
   ephash_insert_proxy_writer_guid (pwr);
   match_proxy_writer_with_readers (pwr, tnow);
@@ -2527,10 +2521,10 @@ static void gc_delete_proxy_writer (struct gcreq *gcreq)
   struct proxy_writer *pwr = gcreq->arg;
   gcreq_free (gcreq);
 
-  while (pwr->readers.root)
+  while (!ut_avlIsEmpty (&pwr->readers))
   {
-    struct pwr_rd_match *m = pwr->readers.root;
-    avl_delete (&pwr->readers, m);
+    struct pwr_rd_match *m = ut_avlRoot (&pwr_readers_treedef, &pwr->readers);
+    ut_avlDelete (&pwr_readers_treedef, &pwr->readers, m);
     reader_drop_connection (&m->rd_guid, &pwr->e.guid);
     update_reader_init_acknack_count (&m->rd_guid, m->count);
     free_pwr_rd_match (m);
@@ -2544,7 +2538,7 @@ static void gc_delete_proxy_writer (struct gcreq *gcreq)
   os_free (pwr);
 }
 
-int delete_proxy_writer (const nn_guid_t *guid)
+int delete_proxy_writer (const struct nn_guid *guid)
 {
   struct proxy_writer *pwr;
   os_mutexLock (&gv.lock);
@@ -2561,7 +2555,7 @@ int delete_proxy_writer (const nn_guid_t *guid)
 
 /* PROXY-READER ----------------------------------------------------- */
 
-int new_proxy_reader (const nn_guid_t *guid, struct addrset *as, nn_xqos_t *xqos)
+int new_proxy_reader (const struct nn_guid *guid, struct addrset *as, nn_xqos_t *xqos)
 {
   struct proxy_participant *proxypp;
   struct proxy_reader *prd;
@@ -2589,7 +2583,7 @@ int new_proxy_reader (const nn_guid_t *guid, struct addrset *as, nn_xqos_t *xqos
   }
 
   prd->deleting = 0;
-  avl_init (&prd->writers, offsetof (struct prd_wr_match, avlnode), offsetof (struct prd_wr_match, wr_guid), compare_guid, 0);
+  ut_avlInit (&prd_writers_treedef, &prd->writers);
   ephash_insert_proxy_reader_guid (prd);
   match_proxy_reader_with_writers (prd, tnow);
   return 0;
@@ -2604,14 +2598,14 @@ static void proxy_reader_set_delete_and_ack_all_messages (struct proxy_reader *p
   memset (&wrguid, 0, sizeof (wrguid));
   os_mutexLock (&prd->e.lock);
   prd->deleting = 1;
-  while ((m = avl_lookup_succeq (&prd->writers, &wrguid)) != NULL)
+  while ((m = ut_avlLookupSuccEq (&prd_writers_treedef, &prd->writers, &wrguid)) != NULL)
   {
     /* have to be careful walking the tree -- pretty is different, but
        I want to check this before I write a lookup_succ function. */
     struct prd_wr_match *m_a_next;
     nn_guid_t wrguid_next;
     wrguid = m->wr_guid;
-    if ((m_a_next = avl_findsucc (&prd->writers, m)) != NULL)
+    if ((m_a_next = ut_avlFindSucc (&prd_writers_treedef, &prd->writers, m)) != NULL)
       wrguid_next = m_a_next->wr_guid;
     else
     {
@@ -2624,10 +2618,10 @@ static void proxy_reader_set_delete_and_ack_all_messages (struct proxy_reader *p
     {
       struct wr_prd_match *m_wr;
       os_mutexLock (&wr->e.lock);
-      if ((m_wr = avl_lookup (&wr->readers, &prd->e.guid, NULL)) != NULL)
+      if ((m_wr = ut_avlLookup (&wr_readers_treedef, &wr->readers, &prd->e.guid)) != NULL)
       {
         m_wr->seq = MAX_SEQ_NUMBER;
-        avl_augment_update (&wr->readers, m_wr);
+        ut_avlAugmentUpdate (&wr_readers_treedef, m_wr);
         remove_acked_messages (wr);
       }
       os_mutexUnlock (&wr->e.lock);
@@ -2644,10 +2638,10 @@ static void gc_delete_proxy_reader (struct gcreq *gcreq)
   struct proxy_reader *prd = gcreq->arg;
   gcreq_free (gcreq);
 
-  while (prd->writers.root)
+  while (!ut_avlIsEmpty (&prd->writers))
   {
-    struct prd_wr_match *m = prd->writers.root;
-    avl_delete (&prd->writers, m);
+    struct prd_wr_match *m = ut_avlRoot (&prd_writers_treedef, &prd->writers);
+    ut_avlDelete (&prd_writers_treedef, &prd->writers, m);
     writer_drop_connection (&m->wr_guid, &prd->e.guid);
     free_prd_wr_match (m);
   }
@@ -2656,7 +2650,7 @@ static void gc_delete_proxy_reader (struct gcreq *gcreq)
   os_free (prd);
 }
 
-int delete_proxy_reader (const nn_guid_t *guid)
+int delete_proxy_reader (const struct nn_guid *guid)
 {
   struct proxy_reader *prd;
   os_mutexLock (&gv.lock);

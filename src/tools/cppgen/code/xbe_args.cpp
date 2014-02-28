@@ -44,6 +44,8 @@ void BE_usage()
    //cerr << GTDEVEL(" -client_only\t\tgenerate client implementation only\n");
    cerr << GTDEVEL(" -output=<dir>\t\tgenerate files into directory <dir>\n");
    cerr << GTDEVEL(" -import_export=<macro>[,<header_file>] defines dll macro name and optionally a header file which contains the macro\n");
+   cerr << GTDEVEL(" -isocpp\t\tEnables ISO C++ API compilation\n");
+   cerr << GTDEVEL(" -iso\t\t\tEnables ISO C++/C++11 types support\n");
    cerr << GTDEVEL(" -cext=<ext>\t\tuse <ext> for implementation files\n");
    cerr << GTDEVEL(" -hext=<ext>\t\tuse <ext> for header files\n");
    cerr << GTDEVEL(" -ch=<filename>\t\tset client header filename to <filename>\n");
@@ -61,7 +63,9 @@ void BE_usage()
    cerr << GTDEVEL(" -ignore_interfaces\tDo not generate interface code\n");
    //cerr << GTDEVEL(" -no_warn\t\tDisable warning messages\n");
    cerr << GTDEVEL(" -collocated_direct\tGenerate code for direct servant invocation\n");
-   //cerr << GTDEVEL(" -[no]exceptions\tGenerate code for native/non native exceptions\n");
+   cerr << GTDEVEL(" -[no]exceptions\tGenerate code for native/non native exceptions\n");
+   cerr << GTDEVEL(" -isotest\t\t\tProduces test code, == and fill methods\n");
+   cerr << GTDEVEL(" -genequality\t\t\tProduces equality overload methods\n");
 }
 
 void
@@ -69,6 +73,7 @@ DDS_BE_parse_args(int &argc, char **argv)
 {
    // PARSE COMMAND LINE
    BE_Globals::client_only = pbtrue;
+   BE_Globals::isocpp_new_types = pbfalse;
    idl_global->set_warn(I_FALSE);
 
    for (int i = 0; i < argc; i++)
@@ -118,6 +123,37 @@ DDS_BE_parse_args(int &argc, char **argv)
       {
          BE_Globals::ignore_interfaces = pbtrue;
          idl_global->set_ignore_interfaces(I_TRUE);
+         DDSStripArg(argc, argv, i);
+         i = 0;
+      }
+      else if (strcmp(argv[i], "-isocpp") == 0)
+      {
+         BE_Globals::isocpp = pbtrue;
+         DDSStripArg(argc, argv, i);
+         i = 0;
+      }
+      else if (strcmp(argv[i], "-iso") == 0)
+      {
+         /* If the new types are enabled should we produce additional test code
+          * such as the equals and fill operators*
+          */
+         for(int j=0; j < argc; j++)
+         {
+             if(0 == strcmp(argv[j], "-isotest"))
+             {
+                 BE_Globals::isocpp_test_methods = pbtrue;
+                 BE_Globals::gen_equality = pbtrue;
+                 DDSStripArg(argc, argv, j);
+                 j=0;
+             }
+         }
+         BE_Globals::isocpp_new_types = pbtrue;
+         DDSStripArg(argc, argv, i);
+         i = 0;
+      }
+      else if (0 == strcmp(argv[i], "-genequality"))
+      {
+         BE_Globals::gen_equality = pbtrue;
          DDSStripArg(argc, argv, i);
          i = 0;
       }

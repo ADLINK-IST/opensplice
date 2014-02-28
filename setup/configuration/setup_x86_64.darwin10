@@ -1,3 +1,2 @@
 # "Standard" features we don't build for this platform.
-unset   INCLUDE_API_DLRL_SACPP
 set_undefined_var     INCLUDE_API_DCPS_ISOCPP yes

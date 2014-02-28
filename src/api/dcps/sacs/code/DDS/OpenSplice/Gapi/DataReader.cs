@@ -30,7 +30,7 @@ namespace DDS.OpenSplice.Gapi
          *         in ViewStateMask view_states,
          *         in InstanceStateMask instance_states);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_create_readcondition")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_create_readcondition")]
         public static extern IntPtr create_readcondition(
             IntPtr _this,
             SampleStateKind sample_states,
@@ -45,7 +45,7 @@ namespace DDS.OpenSplice.Gapi
          *         in string query_expression,
          *         in StringSeq query_parameters);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_create_querycondition")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_create_querycondition")]
         public static extern IntPtr create_querycondition(
             IntPtr _this,
             SampleStateKind sample_states,
@@ -58,7 +58,7 @@ namespace DDS.OpenSplice.Gapi
          *     delete_readcondition(
          *         in ReadCondition a_condition);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_delete_readcondition")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_delete_readcondition")]
         public static extern ReturnCode delete_readcondition(
             IntPtr _this,
             IntPtr a_condition);
@@ -66,7 +66,7 @@ namespace DDS.OpenSplice.Gapi
         /*     ReturnCode_t
          *     delete_contained_entities();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_delete_contained_entities")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_delete_contained_entities")]
         public static extern ReturnCode delete_contained_entities(
             IntPtr _this);
 
@@ -74,7 +74,7 @@ namespace DDS.OpenSplice.Gapi
           *     create_view (
           *     in DataReaderViewQos * qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_create_view")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_create_view")]
         public static extern IntPtr create_view(
             IntPtr _this,
             IntPtr qos);
@@ -83,7 +83,7 @@ namespace DDS.OpenSplice.Gapi
          *     delete_view(
          *        in DataReaderView a_view);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_delete_view")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_delete_view")]
         public static extern ReturnCode delete_view(
             IntPtr _this,
             IntPtr a_view);
@@ -92,7 +92,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_default_datareaderview_qos(
          *         in DataReaderViewQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_set_default_datareaderview_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_set_default_datareaderview_qos")]
         public static extern ReturnCode set_default_datareaderview_qos(
             IntPtr _this,
             IntPtr qos);
@@ -101,7 +101,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_default_datareaderview_qos(
          *         inout DataReaderViewQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_default_datareaderview_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_default_datareaderview_qos")]
         public static extern ReturnCode get_default_datareaderview_qos(
             IntPtr _this,
             IntPtr qos);
@@ -110,7 +110,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_qos(
          *         in DataReaderQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_set_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_set_qos")]
         public static extern ReturnCode set_qos(
             IntPtr _this,
             IntPtr qos);
@@ -119,7 +119,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_qos(
          *         inout DataReaderQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_qos")]
         public static extern ReturnCode get_qos(
             IntPtr _this,
             IntPtr qos);
@@ -129,7 +129,7 @@ namespace DDS.OpenSplice.Gapi
          *         in DataReaderListener a_listener,
          *         in StatusKindMask mask);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_set_listener")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_set_listener")]
         public static extern ReturnCode set_listener(
             IntPtr _this,
             IntPtr a_listener,
@@ -139,28 +139,28 @@ namespace DDS.OpenSplice.Gapi
         /*     DataReaderListener
          *     get_listener();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_listener")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_listener")]
         public static extern IntPtr get_listener(
             IntPtr _this);
 
         /*     TopicDescription
          *     get_topicdescription();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_topicdescription")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_topicdescription")]
         public static extern IntPtr get_topicdescription(
             IntPtr _this);
 
         /*     Subscriber
          *     get_subscriber();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_subscriber")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_subscriber")]
         public static extern IntPtr get_subscriber(
             IntPtr _this);
 
         /*     SampleRejectedStatus
          *     get_sample_rejected_status();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_sample_rejected_status")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_sample_rejected_status")]
         public static extern ReturnCode get_sample_rejected_status(
             IntPtr _this,
             SampleRejectedStatus status
@@ -169,7 +169,7 @@ namespace DDS.OpenSplice.Gapi
         /*     LivelinessChangedStatus
          *     get_liveliness_changed_status();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_liveliness_changed_status")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_liveliness_changed_status")]
         public static extern ReturnCode get_liveliness_changed_status(
             IntPtr _this,
             LivelinessChangedStatus status
@@ -178,7 +178,7 @@ namespace DDS.OpenSplice.Gapi
         /*     RequestedDeadlineMissedStatus
          *     get_requested_deadline_missed_status();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_requested_deadline_missed_status")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_requested_deadline_missed_status")]
         public static extern ReturnCode get_requested_deadline_missed_status(
             IntPtr _this,
             RequestedDeadlineMissedStatus status
@@ -187,7 +187,7 @@ namespace DDS.OpenSplice.Gapi
         /*     RequestedIncompatibleQosStatus
          *     get_requested_incompatible_qos_status();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_requested_incompatible_qos_status")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_requested_incompatible_qos_status")]
         public static extern ReturnCode get_requested_incompatible_qos_status(
             IntPtr _this,
             IntPtr status
@@ -196,7 +196,7 @@ namespace DDS.OpenSplice.Gapi
         /*     SubscriptionMatchedStatus
          *     get_subscription_match_status();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_subscription_matched_status")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_subscription_matched_status")]
         public static extern ReturnCode get_subscription_matched_status(
             IntPtr _this,
             SubscriptionMatchedStatus status
@@ -205,7 +205,7 @@ namespace DDS.OpenSplice.Gapi
         /*     SampleLostStatus
          *     get_sample_lost_status();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_sample_lost_status")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_sample_lost_status")]
         public static extern ReturnCode get_sample_lost_status(
             IntPtr _this,
             SampleLostStatus status
@@ -215,7 +215,7 @@ namespace DDS.OpenSplice.Gapi
          *     wait_for_historical_data(
          *         in Duration_t max_wait);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_wait_for_historical_data")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_wait_for_historical_data")]
         public static extern ReturnCode wait_for_historical_data(
             IntPtr _this,
             ref Duration max_wait);
@@ -229,7 +229,7 @@ namespace DDS.OpenSplice.Gapi
          *         in ResourceLimitsQosPolicy resource_limits,
          *         in Duration_t max_wait);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_wait_for_historical_data_w_condition")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_wait_for_historical_data_w_condition")]
         public static extern ReturnCode wait_for_historical_data_w_condition(
             IntPtr _this,
             string filter_expression,
@@ -242,7 +242,7 @@ namespace DDS.OpenSplice.Gapi
         /*     ReturnCode_t get_matched_publications(
          *     inout InstanceHandleSeq publication_handles);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_matched_publications")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_matched_publications")]
         public static extern ReturnCode get_matched_publications(
             IntPtr _this,
             IntPtr publication_handles);
@@ -252,7 +252,7 @@ namespace DDS.OpenSplice.Gapi
          *         inout PublicationBuiltinTopicData publication_data,
          *         in InstanceHandle_t publication_handle);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReader_get_matched_publication_data")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReader_get_matched_publication_data")]
         public static extern ReturnCode get_matched_publication_data(
             IntPtr _this,
             IntPtr publication_data,

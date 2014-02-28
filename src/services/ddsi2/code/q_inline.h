@@ -1,6 +1,11 @@
 #ifndef NN_INLINE_H
 #define NN_INLINE_H
 
+#ifdef NN_SUPPRESS_C99_INLINE
+
+#define NN_HAVE_C99_INLINE 0
+
+#else
 /* We want to inline these, but we don't want to emit an exernally
    visible symbol for them and we don't want warnings if we don't use
    them.
@@ -44,6 +49,8 @@
 #  define NN_HAVE_C99_INLINE 1
 #  define NN_C99_INLINE inline
 #endif
+
+#endif /* NN_SUPPRESS_C99_INLINE */
 
 #if ! NN_HAVE_C99_INLINE
 #define NN_C99_INLINE

@@ -27,6 +27,12 @@ namespace dds
 namespace core
 {
 
+/**
+ * @internal @todo We can't assume that the compiler supports variadic templates, yet.
+ * This code should be refactored to take advantage of compilers that do support variadic
+ * templates.
+ */
+
 template <typename D>
 Value<D>::Value() { }
 
@@ -67,7 +73,7 @@ Value<D>::~Value() { }
 template <typename D>
 Value<D>& Value<D>::operator=(const Value& other)
 {
-    if (this != &other)
+    if(this != &other)
     {
         d_ = other.d_;
     }
@@ -111,7 +117,7 @@ D& Value<D>::delegate()
 }
 
 template <typename D>
-Value<D>::operator D&()
+Value<D>::operator D& ()
 {
     return d_;
 }

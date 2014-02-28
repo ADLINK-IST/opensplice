@@ -7,4 +7,4 @@ set EXAMPLE_LANG=sac
 
 call %FUNCTIONS% :runListener
 
-call %FUNCTIONS% :listenerCheckResults
+call %FUNCTIONS% :listenerCheckResults >> run.log

@@ -22,12 +22,14 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 /**
  * Represents a SOAP connection. It is an clientside HTTP connection, which can
  * send SOAPRequest messages and receives answers as SOAPResponse objects.
- * 
+ *
  * @date Feb 16, 2005
  */
 public class SOAPConnection {
@@ -47,8 +49,8 @@ public class SOAPConnection {
 
     /**
      * Constructs a new SOAPConnection.
-     * 
-     * 
+     *
+     *
      * @throws SOAPException
      *             Thrown when the DocumentBuilder could not be initialized.
      */
@@ -66,7 +68,7 @@ public class SOAPConnection {
     /**
      * Sends the supplied message to the supplied URL and returns the response
      * it received.
-     * 
+     *
      * @param message
      *            The message to send. This message must be an instance of
      *            SOAPRequest.
@@ -81,7 +83,7 @@ public class SOAPConnection {
      * @todo TODO: Change 'SOAPMessage message' argument into 'SOAPRequest
      *       message' and change return type into 'SOAPResponse'.
      */
-    public synchronized SOAPMessage call(SOAPMessage message, String url) throws SOAPException, NoSuchMethodError {
+    public synchronized SOAPMessage call(SOAPMessage message, String url) throws SOAPException {
         SOAPResponse response = null;
         int status = 0;
         try {
@@ -107,10 +109,37 @@ public class SOAPConnection {
             } catch (IOException i) {
                 throw new SOAPException("IOException: " + i.getMessage());
             }
-            if (status != HttpURLConnection.HTTP_INTERNAL_ERROR && status != HttpURLConnection.HTTP_NOT_IMPLEMENTED) {
-                throw new SOAPException("IOException: " + ie.getMessage());
+            if (status == HttpURLConnection.HTTP_INTERNAL_ERROR) {
+                Document doc;
+                try {
+                    doc = builder.parse(connection.getErrorStream());
+                } catch (SAXException e) {
+                    throw new SOAPException(e.getMessage());
+                } catch (IOException e) {
+                    throw new SOAPException("IOException: " + e.getMessage());
+                }
+
+                String faultCode = null;
+                String faultString = null;
+
+                NodeList nodeList = doc.getElementsByTagName("faultcode");
+                if (nodeList != null) {
+                    Element nameElement = (Element) nodeList.item(0);
+                    if (nameElement != null) {
+                        faultCode = nameElement.getFirstChild().getNodeValue().trim();
+                    }
+                }
+
+                nodeList = doc.getElementsByTagName("faultstring");
+                if (nodeList != null) {
+                    Element nameElement = (Element) nodeList.item(0);
+                    if (nameElement != null) {
+                        faultString = nameElement.getFirstChild().getNodeValue().trim();
+                    }
+                }
+                throw new SOAPException("IOException: " + ie.getMessage(), faultCode, faultString);
             } else {
-                throw new NoSuchMethodError();
+                throw new SOAPException("IOException: " + ie.getMessage());
             }
         } catch(ClassCastException ce){
             throw new SOAPException("Malformed URL.");

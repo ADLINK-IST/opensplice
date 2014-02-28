@@ -11,6 +11,7 @@
 #include <QtGui/QtGui>
 #include <ui_readerQosForm.h>
 
+namespace demo { namespace ishapes {
 class ReaderQosDialog : public QDialog
 {
     Q_OBJECT;
@@ -29,6 +30,8 @@ private:
     Ui::ReaderQos qosForm_;
     dds::sub::qos::DataReaderQos qos_;
 };
+}
+}
 
 /** @}*/
 

@@ -10,6 +10,9 @@
  *
  */
 #include <math.h>
+#include <errno.h>
+#include <stdlib.h>
+
 #include "c_typebase.h"
 #include "c_base.h" /* for c_keep and c_free */
 
@@ -307,6 +310,148 @@ c_valueImage(
      default: assert(FALSE);
     }
     return os_strdup(buf);
+}
+
+c_bool
+c_imageValue(
+    const char *image,
+    c_value *imgValue,
+    c_type imgType)
+{
+    c_type t;
+    char *endptr;
+
+    assert(imgType);
+
+    t = c_typeActualType(imgType);
+    switch(c_baseObjectKind(t)) {
+    case M_ENUMERATION:
+    {
+        c_literal l = c_enumValue(c_enumeration(imgType), image);
+        if (l) {
+            *imgValue = l->value;
+            c_free(l);
+        } else {
+            imgValue->kind = V_UNDEFINED;
+            OS_REPORT_1(OS_API_INFO,
+                         "c_typebase::c_imageValue",0,
+                         "expected legal enum label instead of \"%s\".",
+                         image);
+        }
+        break;
+    }
+    case M_COLLECTION:
+        if (c_collectionTypeKind(t) == C_STRING) {
+            if(imgValue->is.String){
+                c_free(imgValue->is.String);
+            }
+            imgValue->is.String = c_stringNew(c_getBase(imgType), image);
+            imgValue->kind = V_STRING;
+        }
+        break;
+    case M_PRIMITIVE:
+        switch (c_primitiveKind(t)) {
+        case P_BOOLEAN:
+            if (os_strncasecmp(image,"TRUE",5) == 0) {
+                imgValue->kind = V_BOOLEAN;
+                imgValue->is.Boolean = TRUE;
+            } else if (os_strncasecmp(image,"FALSE",6) == 0) {
+                imgValue->kind = V_BOOLEAN;
+                imgValue->is.Boolean = FALSE;
+            } else {
+                imgValue->kind = V_UNDEFINED;
+            }
+            break;
+        case P_LONGLONG:
+            imgValue->is.LongLong = os_strtoll (image, &endptr, 0);
+            if (*endptr == '\0') {
+                imgValue->kind = V_LONGLONG;
+            } else {
+                imgValue->kind = V_UNDEFINED;
+            }
+            break;
+        case P_ULONGLONG:
+            imgValue->is.ULongLong = os_strtoull (image, &endptr, 0);
+            if (*endptr == '\0') {
+                imgValue->kind = V_ULONGLONG;
+            } else {
+                imgValue->kind = V_UNDEFINED;
+            }
+            break;
+        case P_SHORT:
+            if (sscanf(image,"%hd",&imgValue->is.Short)) {
+                imgValue->kind = V_SHORT;
+            } else {
+                imgValue->kind = V_UNDEFINED;
+            }
+            break;
+        case P_LONG:
+            imgValue->is.Long = strtol (image, &endptr, 0);
+            if (*endptr == '\0') {
+                imgValue->kind = V_LONG;
+            } else {
+                imgValue->kind = V_UNDEFINED;
+            }
+            break;
+        case P_OCTET:
+        {
+            c_short s;
+
+            if (sscanf(image,"%hd",&s)) {
+                imgValue->kind = V_OCTET;
+                imgValue->is.Octet = (c_octet)s;
+            } else {
+                imgValue->kind = V_UNDEFINED;
+            }
+            break;
+        }
+        case P_USHORT:
+            if (sscanf(image,"%hu",&imgValue->is.UShort)) {
+                imgValue->kind = V_USHORT;
+            } else {
+                imgValue->kind = V_UNDEFINED;
+            }
+            break;
+        case P_ULONG:
+            imgValue->is.ULong = strtoul (image, &endptr, 0);
+            if (*endptr == '\0') {
+                imgValue->kind = V_ULONG;
+            } else {
+                imgValue->kind = V_UNDEFINED;
+            }
+            break;
+        case P_CHAR:
+            if (image != NULL) {
+                imgValue->kind = V_CHAR;
+                imgValue->is.Char = *image;
+            } else {
+                imgValue->kind = V_UNDEFINED;
+            }
+            break;
+        case  P_FLOAT:
+            if (sscanf(image,"%f",&imgValue->is.Float)) {
+                imgValue->kind = V_FLOAT;
+            } else {
+                imgValue->kind = V_UNDEFINED;
+            }
+            break;
+        case  P_DOUBLE:
+            imgValue->is.Double = strtod (image, &endptr);
+            if (*endptr == '\0') {
+                imgValue->kind = V_DOUBLE;
+            } else {
+                imgValue->kind = V_UNDEFINED;
+            }
+            break;
+        default:
+            assert(0);
+        }
+        break;
+     default:
+         assert(FALSE);
+         break;
+    }
+    return (imgValue->kind != V_UNDEFINED);
 }
 
 c_equality

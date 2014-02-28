@@ -12,6 +12,7 @@
 #include <vector>
 #include <dds/core/refmacros.hpp>
 
+namespace demo { namespace ishapes {
 class ShapeDynamics
 {
 public:
@@ -39,6 +40,8 @@ protected:
     std::vector<QPoint> plist_;
     QRect  constraint_;
 };
+}
+}
 
 /** @}*/
 

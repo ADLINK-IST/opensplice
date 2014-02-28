@@ -41,6 +41,13 @@ if %ERRORLEVEL% NEQ 0 GOTO error
 
 %SLEEP4% >NUL
 
+ECHO Starting ping with a
+set LEVEL=Starting ping with a
+ping.exe %BLOKCOUNT% %BLOKSIZE% a PongRead PongWrite
+if %ERRORLEVEL% NEQ 0 GOTO error
+
+%SLEEP4% >NUL
+
 ECHO Starting ping with t
 set LEVEL=Starting ping with t
 ping.exe 1 10 t PongRead PongWrite

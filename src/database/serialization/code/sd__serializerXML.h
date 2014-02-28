@@ -18,7 +18,7 @@
 #define SD__SERIALIZERXML_H
 
 #include "sd_serializerXML.h"
-#include "sd_deepwalkMeta.h" /* for sd_errorInfo */
+#include "sd__deepwalkMeta.h" /* for sd_errorInfo */
 
 c_ulong           sd_XMLSerType(
                       c_type type,

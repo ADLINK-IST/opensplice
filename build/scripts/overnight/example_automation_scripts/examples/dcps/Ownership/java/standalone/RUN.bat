@@ -3,8 +3,6 @@ SETLOCAL
 
 call %FUNCTIONS% :stopOSPL
 
-call %FUNCTIONS% :deleteDBFFiles
-
 call %FUNCTIONS% :startOSPL
 
 echo "=== Launching Ownership "
@@ -16,5 +14,5 @@ start "" /B java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes OwnershipDataP
 %SLEEP2% >NUL
 call java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes OwnershipDataPublisher "pub2" 10 5 0 > pub2Result.txt
 
-call %FUNCTIONS% :ownershipCheckResults
+call %FUNCTIONS% :ownershipCheckResults >> run.log
 

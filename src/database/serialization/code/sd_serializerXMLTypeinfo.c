@@ -24,7 +24,7 @@
 #include "sd__confidence.h"
 #include "sd_errorReport.h"
 #include "sd_stringsXML.h"
-#include "sd_deepwalkMeta.h"
+#include "sd__deepwalkMeta.h"
 #include "sd_list.h"
 #include "sd_string.h"
 #include "sd__contextItem.h"

@@ -6,6 +6,9 @@
       <Service name="durability">
          <Command>durability</Command>
       </Service>
+      <Service name="cmsoap">
+         <Command>cmsoap</Command>
+      </Service>
    </Domain>
    <DurabilityService name="durability">
       <Network>
@@ -24,4 +27,9 @@
          <Policy nameSpace="defaultNamespace" durability="Durable" alignee="Initial" aligner="True"/>
       </NameSpaces>
    </DurabilityService>
+   <TunerService name="cmsoap">
+      <Server>
+         <PortNr>Auto</PortNr>
+      </Server>
+   </TunerService>
 </OpenSplice>

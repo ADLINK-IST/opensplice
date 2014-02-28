@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -77,6 +77,11 @@ v_leaseRenew (
     v_lease _this,
     v_duration* leaseDuration);
 
+void
+v_leaseRenewInternal(
+    v_lease _this,
+    v_duration* leaseDuration);
+
 /**
  * \brief This operation returns the expiry time of this lease.
  *
@@ -94,6 +99,10 @@ v_leaseExpiryTime (
  */
 c_time
 v_leaseExpiryTimeNoLock(
+    v_lease _this);
+
+c_bool
+v_leaseLastRenewInternalNoLock(
     v_lease _this);
 
 /**

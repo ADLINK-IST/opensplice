@@ -52,7 +52,7 @@ class DRHolder : public DRHolderBase
 public:
     DRHolder(const dds::sub::DataReader<T>& dr) : dr_(dr)
     {
-        dr_var = DDS::DataReader::_narrow(((dds::sub::DataReader<T>)dr)->get_raw_reader());
+        dr_var_ = DDS::DataReader::_narrow(((dds::sub::DataReader<T>)dr)->get_raw_reader());
     }
     virtual ~DRHolder() { }
 public:
@@ -61,9 +61,9 @@ public:
         return dr_.qos();
     }
 
-    virtual void qos(const dds::sub::qos::DataReaderQos& the_qos)
+    virtual void qos(const dds::sub::qos::DataReaderQos& qos)
     {
-        dr_.qos(the_qos);
+        dr_.qos(qos);
     }
 
     virtual const std::string topic_name() const
@@ -85,12 +85,20 @@ public:
         @endcode
         @see http://jira.prismtech.com:8080/browse/OSPL-2296 */
         throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Method not yet implemented")));
+                                              OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef __SUNPRO_CC
+        /** @internal
+         * @todo Remove this (obviously) once implemented. SunCC is
+         * mad as a box of frogs - it warns without the below line because
+         * the function doesn't return anything, despite the unconditional
+         * throw above */
+        return ::dds::sub::Subscriber(dds::core::null);
+#endif
     }
 
     virtual DDS::DataReader_ptr get_dds_datareader() const
     {
-        return dr_var.in();
+        return dr_var_.in();
     }
 
     virtual void close()
@@ -105,7 +113,7 @@ public:
 
 private:
     dds::sub::DataReader<T> dr_;
-    DDS::DataReader_var dr_var;
+    DDS::DataReader_var dr_var_;
 };
 }
 }

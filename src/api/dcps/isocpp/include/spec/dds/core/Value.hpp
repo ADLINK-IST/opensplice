@@ -20,80 +20,153 @@
  */
 
 
-namespace dds {
-  namespace core {
-    template <typename D>
-    class Value;
-  }
+namespace dds
+{
+namespace core
+{
+template <typename D>
+class Value;
+}
 }
 
 /**
- * This class provides the basic behavior for Value types.
+ * All objects that have a value-type have a deep-copy assignment and copy
+ * construction semantics.
+ * It should also be pointed out that value-types are not 'pure-value-types' in
+ * the sense that they are immutable (as in functional programming languages).
+ *
+ * The DDS-PSM-Cxx makes value-types mutable to limit the number of copies as well
+ * as to limit the time-overhead necessary to change a value-type
+ * (note that for immutable value-types the only form of change is to create a new
+ * value-type).
+ *
+ * QoS, Policy, Statuses, and Topic samples are all modeled as value-types.
+ *
  */
+
 template <typename D>
-class dds::core::Value {
+class dds::core::Value
+{
 protected:
-  Value();
-  Value(const Value& p);
+    Value();
+    Value(const Value& p);
 
 public:
-  template <typename ARG>
-  Value(const ARG& arg);
+    /**
+     * Create a Value of one value
+     * @param arg VALUETYPE value
+     */
+    template <typename ARG>
+    Value(const ARG& arg);
 
-  // -- We can't assume that the compiler supports variadic templates,
-  // -- `yet. this code should be refactored to take advantage of compier that
-  // -- do support variadic templates.
-  template <typename ARG1, typename ARG2>
-  Value(const ARG1& arg1, const ARG2& arg2);
+    /**
+     * Create a Value of two values
+     * @param arg1 VALUETYPES value
+     * @param arg2 VALUETYPES value
+     */
+    template <typename ARG1, typename ARG2>
+    Value(const ARG1& arg1, const ARG2& arg2);
 
-  template <typename ARG1, typename ARG2, typename ARG3>
-  Value(const ARG1& arg1, const ARG2& arg2, const ARG3& arg3);
+    /**
+     * Create a Value of three values
+     * @param arg1 VALUETYPES value
+     * @param arg2 VALUETYPES value
+     * @param arg3 VALUETYPES value
+     */
+    template <typename ARG1, typename ARG2, typename ARG3>
+    Value(const ARG1& arg1, const ARG2& arg2, const ARG3& arg3);
 
-  template <typename ARG1, typename ARG2, typename ARG3, typename ARG4>
-  Value(const ARG1& arg1, const ARG2& arg2, const ARG3& arg3, const ARG4& arg4);
+    /**
+     * Create a Value of four values
+     * @param arg1 VALUETYPES value
+     * @param arg2 VALUETYPES value
+     * @param arg3 VALUETYPES value
+     * @param arg4 VALUETYPES value
+     */
+    template <typename ARG1, typename ARG2, typename ARG3, typename ARG4>
+    Value(const ARG1& arg1, const ARG2& arg2, const ARG3& arg3, const ARG4& arg4);
 
-  template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
-  Value(const ARG1& arg1, const ARG2& arg2, const ARG3& arg3, const ARG4& arg4, const ARG5& arg5);
+    /**
+     * Create a Value of five values
+     * @param arg1 VALUETYPES value
+     * @param arg2 VALUETYPES value
+     * @param arg3 VALUETYPES value
+     * @param arg4 VALUETYPES value
+     * @param arg5 VALUETYPES value
+     */
+    template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
+    Value(const ARG1& arg1, const ARG2& arg2, const ARG3& arg3, const ARG4& arg4, const ARG5& arg5);
 
-  template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6>
-  Value(const ARG1& arg1, const ARG2& arg2, const ARG3& arg3, const ARG4& arg4, const ARG5& arg5, const ARG6& arg6);
+    /**
+     * Create a Value of six values
+     * @param arg1 VALUETYPES value
+     * @param arg2 VALUETYPES value
+     * @param arg3 VALUETYPES value
+     * @param arg4 VALUETYPES value
+     * @param arg5 VALUETYPES value
+     * @param arg6 VALUETYPES value
+     */
+    template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6>
+    Value(const ARG1& arg1, const ARG2& arg2, const ARG3& arg3, const ARG4& arg4, const ARG5& arg5, const ARG6& arg6);
 
 public:
-  ~Value();
+    ~Value();
 
 public:
-  Value& operator=(const Value& other);
+    /**
+     * Assigns new delegate to this Value
+     * @param other Value
+     */
+    Value& operator=(const Value& other);
 
-  bool operator==(const Value& other) const;
+    /**
+     * Compare this Value with another Value
+     *
+     * @param other Value
+     * @return true if equal
+     */
+    bool operator==(const Value& other) const;
 
-  bool operator !=(const Value& other) const;
+    /**
+     * Compare this Value with another Value
+     *
+     * @param other Value
+     * @return true if not equal
+     */
+    bool operator !=(const Value& other) const;
 
 public:
-  /**
-   * Return the delegate.
-   */
-  const D* operator->() const;
+    /**
+     * Return the delegate.
+     */
+    const D* operator->() const;
 
-  /**
-   * Return the delegate.
-   */
-  D* operator->();
+    /**
+     * Return the delegate.
+     */
+    D* operator->();
 
-  /**
-   * Return the delegate.
-   */
-  const D& delegate() const;
+    /**
+     * Return the delegate.
+     */
+    const D& delegate() const;
 
-  /**
-   * Return the delegate.
-   */
-  D& delegate();
+    /**
+     * Return the delegate.
+     */
+    D& delegate();
 
-  operator D& ();
+    /**
+     * Return the delegate.
+     */
+    operator D& ();
 
-  operator const D& () const;
+    /**
+     * Return the delegate.
+     */
+    operator const D& () const;
 protected:
-  D d_;
+    D d_;
 };
 
 

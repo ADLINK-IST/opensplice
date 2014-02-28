@@ -7,6 +7,29 @@ Assert LoadConfigs
 Assert SetupLogDir
 Assert SetupResFile
 
+buildTarGZ ()
+{
+   tar -cf $1.tar $2
+   if [ $? != 0 ]
+   then
+       return 1
+   fi
+   gzip $1.tar
+   if [ $? != 0 ]
+   then
+       return 1
+   fi
+}
+
+buildZip ()
+{
+   zip -r $1.zip $2
+   if [ $? != 0 ]
+   then
+       return 1
+   fi
+}
+
 if [ "$CREATE_SOURCE" != "yes" ]
 then
    echo "CREATE_SOURCE=SKIPPED" >> $RESFILE
@@ -27,72 +50,127 @@ fi
 echo "CREATE_SOURCE=RUNNING" >> $RESFILE
 ArchiveLogs
 
+#MPC needs to be in the source of ospli so start by getting the
+#correct version
+(
+    cd $OSPL_HOME
+    git submodule init
+    if [ $? != 0 ]
+    then
+        exit 1
+    fi
+    git submodule update
+    if [ $? != 0 ]
+    then
+        exit 1
+    fi
+) || exit 1
+
+(
+    if [ -n "$INCLUDE_3RD_PARTY_SOFTWARE" ]
+    then
+        cd $WORKDIR
+        git clone -n $INCLUDE_3RD_PARTY_SOFTWARE
+        if [ $? != 0 ] 
+        then
+            exit 1
+        fi
+        cd ospl-3rd-party-software
+        git archive --format=tar --prefix=ospl-3rd-party-software/ --output=$LOGDIR/ospl-3rd-party-software.tar HEAD
+        if [ $? != 0 ] 
+        then
+            exit 1
+        fi
+        cd ..
+        gzip -9 $LOGDIR/ospl-3rd-party-software.tar
+        if [ $? != 0 ] 
+        then
+            exit 1
+        fi
+        if [ -f "$LOGDIR/ospl-3rd-party-software.tar" ]
+        then
+            rm $LOGDIR/ospl-3rd-party-software.tar
+        fi
+        cd -
+
+        git archive -9 --format=zip --prefix=ospl-3rd-party-software/ --output=$LOGDIR/ospl-3rd-party-software.zip HEAD
+        if [ $? != 0 ] 
+        then
+            exit 1
+        fi
+    fi
+) || exit 1
+
 #the etc/license.lic has been added to the .gitattributes so it ignores the file
 #during an archive
 (
     #Do the tar and zip as the arch is not important its just source
     if [ "$DEP" != "none" ]
     then
-        git archive --format=tar --prefix=osplo/ --output=$LOGDIR/OpenSpliceDDS_src_osplo.tar HEAD
+        CURRENT_WD="`pwd`"
+        OSPLO_SRC=$WORKDIR/tmpsrc/osplo/
+        mkdir -p $OSPLO_SRC
+        if [ $? != 0 ]
+        then
+            exit 1
+        fi
+        git archive --format=tar --prefix=$OSPLO_SRC HEAD | tar -P -xf -
         if [ $? != 0 ] 
         then
             exit 1
         fi
-        cd ..
-        ln -s build osplo
-        tar -rhf $LOGDIR/OpenSpliceDDS_src_osplo.tar osplo/etc/BUILDINFO
-        if [ $? != 0 ] 
-        then
-            exit 1
-        fi
-        cd -
-        gzip -9 $LOGDIR/OpenSpliceDDS_src_osplo.tar
+        cp $OSPL_HOME/etc/BUILDINFO $OSPLO_SRC/etc/.
         if [ $? != 0 ] 
         then
             exit 1
         fi
 
-        git archive -9 --format=zip --prefix=osplo/ --output=$LOGDIR/OpenSpliceDDS_src_osplo.zip HEAD
+        cd $WORKDIR/tmpsrc
+        buildTarGZ $LOGDIR/OpenSpliceDDS_src_osplo osplo > /dev/null 2>&1
         if [ $? != 0 ] 
         then
             exit 1
         fi
-        cd ..
-        zip --grow $LOGDIR/OpenSpliceDDS_src_osplo.zip osplo/etc/BUILDINFO
+        buildZip $LOGDIR/OpenSpliceDDS_src_osplo osplo > /dev/null 2>&1
         if [ $? != 0 ] 
         then
             exit 1
         fi
-        cd -
         cd $OSPL_HOME
     fi
 
-    git archive --format=tar --prefix=ospli/ --output=$LOGDIR/OpenSpliceDDS_src_ospli.tar HEAD
+    OSPLI_SRC=$WORKDIR/tmpsrc/ospli/
+    mkdir -p $OSPLI_SRC
+    if [ $? != 0 ]
+    then
+        exit 1
+    fi
+    git archive --format=tar --prefix=$OSPLI_SRC HEAD | tar -P -xf -
     if [ $? != 0 ] 
     then
         exit 1
     fi
-    cd ..
-    ln -s build ospli
-    tar -rhf $LOGDIR/OpenSpliceDDS_src_ospli.tar ospli/etc/BUILDINFO
-    if [ $? != 0 ] 
-    then
-        exit 1
-    fi
-    cd -
-    gzip -9 $LOGDIR/OpenSpliceDDS_src_ospli.tar
+    cp $OSPL_HOME/etc/BUILDINFO $OSPLI_SRC/etc/.
     if [ $? != 0 ] 
     then
         exit 1
     fi
 
-    git archive -9 --format=zip --prefix=ospli/ --output=$LOGDIR/OpenSpliceDDS_src_ospli.zip HEAD
+    #MPC_ROOT needs to be added as the archive above ignores it
+    cd submods/MPC_ROOT/
+    git archive --format=tar --prefix=$OSPLI_SRC/submods/MPC_ROOT/ HEAD | tar -P -xf -
+    if [ $? != 0 ]
+    then
+        exit 1
+    fi
+
+    cd $WORKDIR/tmpsrc
+    buildTarGZ $LOGDIR/OpenSpliceDDS_src_ospli ospli > /dev/null 2>&1
     if [ $? != 0 ] 
     then
         exit 1
     fi
-    cd ..
-    zip --grow $LOGDIR/OpenSpliceDDS_src_ospli.zip ospli/etc/BUILDINFO
+    buildZip $LOGDIR/OpenSpliceDDS_src_ospli ospli > /dev/null 2>&1
     if [ $? != 0 ] 
     then
         exit 1

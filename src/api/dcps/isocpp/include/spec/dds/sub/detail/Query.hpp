@@ -26,12 +26,15 @@
 #define DDS_SUB_DETAIL_QUERY_HPP_
 
 #include <foo/bar/sub/Query.hpp>
-namespace dds {
-  namespace sub {
-    namespace detail {
-      typedef foo::bar::sub::Query Query;
-    }
-  }
+namespace dds
+{
+namespace sub
+{
+namespace detail
+{
+typedef foo::bar::sub::Query Query;
+}
+}
 }
 
 

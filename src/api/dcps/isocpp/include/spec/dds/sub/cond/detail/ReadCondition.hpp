@@ -23,16 +23,20 @@
 /** @todo Below file does not exist in spec. One needs to be added. */
 #include <dds/sub/cond/detail/Executor.hpp>
 
-namespace dds {
-   namespace sub {
-      namespace cond {
-         namespace detail {
-            class ReadCondition;
-            // For Implementor to fill in
+namespace dds
+{
+namespace sub
+{
+namespace cond
+{
+namespace detail
+{
+class ReadCondition;
+// For Implementor to fill in
 
-         }
-      }
-   }
+}
+}
+}
 }
 
 #endif /* OMG_DDS_SUB_DETAIL_READ_CONDITION_HPP_ */

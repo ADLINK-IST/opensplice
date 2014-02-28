@@ -744,6 +744,10 @@ os_procCheckStatus(
     os_result rv;
     int les;
 
+    if (procId == OS_INVALID_PID) {
+        return os_resultInvalid;
+    }
+
     result = waitpid(procId, &les, WNOHANG);
     if (result == procId) {
         if (WIFEXITED(les)) {
@@ -833,7 +837,7 @@ os_procFigureIdentity(
 #undef _OS_PROCESS_PROCFS_PATH_FMT_
 #undef _OS_PROCESS_DEFAULT_NAME_LEN_
 
-#if !defined (VXWORKS_RTP)
+#if !defined (VXWORKS_RTP) && !defined (PIKEOS_POSIX)
 
 /* os_procServiceDestroy will need an alternative for VXWORKS when ospl
  * extended to include VXWORKS - function not called by 'old' (vxworks) ospl
@@ -1059,6 +1063,10 @@ os_procDestroy(
     os_int32 signal)
 {
     os_result rv;
+
+    if (procId == OS_INVALID_PID) {
+        return os_resultInvalid;
+    }
 
     if (kill(procId, signal) == -1) {
         if (errno == EINVAL) {

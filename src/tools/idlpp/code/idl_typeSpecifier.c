@@ -16,9 +16,11 @@
 
 #include "c_base.h"
 #include "idl_program.h"
+#include "idl_genLanguageHelper.h"
 
 #include "os_heap.h"
 #include "os_stdlib.h"
+
 
 /***********************************************************
  * idl_typeSpec
@@ -247,6 +249,7 @@ idl_typeArray
 idl_typeArrayNew (idl_typeSpec ofType, c_long size)
 {
     idl_typeArray typeArray = os_malloc ((size_t)C_SIZEOF(idl_typeArray));
+    memset(typeArray, 0x00, (size_t)C_SIZEOF(idl_typeArray));
 
     typeArray->arrayType = ofType;
     typeArray->size = size;
@@ -348,6 +351,7 @@ idl_typeSeq
 idl_typeSeqNew (idl_typeSpec ofType, c_long maxSize)
 {
     idl_typeSeq typeSeq = os_malloc ((size_t)C_SIZEOF(idl_typeSeq));
+    memset(typeSeq, 0x00, (size_t)C_SIZEOF(idl_typeSeq));
 
     typeSeq->seqType = ofType;
     typeSeq->maxSize = maxSize;
@@ -452,6 +456,7 @@ idl_typeDefNew (
     idl_typeSpec actualType)
 {
     idl_typeDef typeDef = os_malloc ((size_t)C_SIZEOF(idl_typeDef));
+    memset(typeDef, 0x00, (size_t)C_SIZEOF(idl_typeDef));
 
     typeDef->referedType = referedType;
     typeDef->actualType = actualType;
@@ -588,6 +593,7 @@ idl_typeUnionNew (
     c_long noCases)
 {
     idl_typeUnion typeUnion = os_malloc ((size_t)C_SIZEOF(idl_typeUnion));
+    memset(typeUnion, 0x00, (size_t)C_SIZEOF(idl_typeUnion));
 
     typeUnion->switchKind = switchKind;
     typeUnion->noCases = noCases;
@@ -674,6 +680,7 @@ idl_typeStructNew (
     c_long noMembers)
 {
     idl_typeStruct typeStruct = os_malloc ((size_t)C_SIZEOF(idl_typeStruct));
+    memset(typeStruct, 0x00, (size_t)C_SIZEOF(idl_typeStruct));
 
     typeStruct->noMembers = noMembers;
     idl_typeSpec(typeStruct)->type = idl_tstruct;
@@ -724,6 +731,7 @@ idl_typeEnumNew (
     c_long noElements)
 {
     idl_typeEnum typeEnum = os_malloc ((size_t)C_SIZEOF(idl_typeEnum));
+    memset(typeEnum, 0x00, (size_t)C_SIZEOF(idl_typeEnum));
 
     typeEnum->noElements = noElements;
     idl_typeSpec(typeEnum)->type = idl_tenum;
@@ -775,6 +783,7 @@ idl_typeBasicNew (
     idl_basicType basicType)
 {
     idl_typeBasic typeBasic = os_malloc ((size_t)C_SIZEOF(idl_typeBasic));
+    memset(typeBasic, 0x00, (size_t)C_SIZEOF(idl_typeBasic));
 
     typeBasic->basicType = basicType;
     typeBasic->max_len = -1;
@@ -1173,8 +1182,16 @@ idl_isContiguous(
         }
         return TRUE;
     break;
-    case M_ENUMERATION:
     case M_PRIMITIVE:
+        if (c_primitive(type)->kind == P_BOOLEAN &&
+             idl_getIsISOCpp() && idl_getIsISOCppTypes())
+        {
+            /* Those clever chaps at the STL have optimised
+             * vector<bool> for size. One bit per bool apparently. */
+            return FALSE;
+        }
+        /* Drop through... */
+    case M_ENUMERATION:
         return TRUE;
     break;
     case M_TYPEDEF:

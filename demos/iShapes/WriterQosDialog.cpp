@@ -4,6 +4,8 @@
 #include <WriterQosDialog.hpp>
 #include <iostream>
 
+namespace demo { namespace ishapes {
+
 WriterQosDialog::WriterQosDialog()
 {
     qosForm_.setupUi(this);
@@ -61,3 +63,4 @@ WriterQosDialog::get_qos()
     qos_ << dds::core::policy::History::KeepLast(100);
     return qos_;
 }
+}}

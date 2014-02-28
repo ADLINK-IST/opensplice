@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
 #include "idl.h"
@@ -81,7 +81,7 @@ be_sequence::be_sequence (AST_Expression *v, AST_Type *t)
 
       // Sequence of Typecode mem leak fix eCPP896
       be_predefined_type * pdt = be_predefined_type::_narrow(base_type());
-      
+
       if (pdt && (pdt->pt() == AST_PredefinedType::PT_typecode))
       {
          isInterfaceSeq = TRUE;
@@ -233,10 +233,18 @@ be_sequence::GenerateTypedefs(const DDS_StdString &scope,
 
    os << tab << "typedef " << relTypeName << " "
    << alias.LocalName() << ";" << nl;
-   os << tab << "typedef " << relTypeName << DDSVarExtension
-   << " " << alias.LocalName() << DDSVarExtension << ";" << nl;
-   os << tab << "typedef " << relTypeName << DDSOutExtension
-   << " " << alias.LocalName() << DDSOutExtension << ";" << nl;
+
+   if (BE_Globals::isocpp_new_types)
+   {
+      /* no more */
+   }
+   else
+   {
+      os << tab << "typedef " << relTypeName << DDSVarExtension
+      << " " << alias.LocalName() << DDSVarExtension << ";" << nl;
+      os << tab << "typedef " << relTypeName << DDSOutExtension
+      << " " << alias.LocalName() << DDSOutExtension << ";" << nl;
+   }
 
    if (anonymous)
    {
@@ -435,6 +443,9 @@ DDS::Boolean be_sequence::SetName
 
 void be_sequence::GenerateAuxTypes (be_ClientHeader & source)
 {
+   if (BE_Globals::isocpp_new_types)
+     return;
+
    ostream & os = source.Stream();
    be_Tab tab(source);
    DDS_StdString baseName = BaseTypeName ();
@@ -667,7 +678,7 @@ void be_sequence::getter
    {
       maxArg = length + ", ";
    }
-   
+
    //
    // now, let's declare our get args
    //
@@ -693,7 +704,7 @@ void be_sequence::getter
    }
    else
    {
-      os << tab << data << " = " << ScopedName() << "::allocbuf (" 
+      os << tab << data << " = " << ScopedName() << "::allocbuf ("
          << length << ");" << nl << nl;
    }
 
@@ -722,10 +733,10 @@ void be_sequence::getter
 
    if ( IsBounded() && !isInterfaceSeq )
    {
-      os << tab << seqptr << "->replace (" << length << "," << data << ",TRUE);" << nl;  
+      os << tab << seqptr << "->replace (" << length << "," << data << ",TRUE);" << nl;
    }
    if ( !IsBounded() && !isInterfaceSeq )
-   {      
+   {
       os << tab << seqptr << "->replace (" << length << "," << length << "," << data << ",TRUE);" << nl;
    }
 }
@@ -769,7 +780,7 @@ void be_sequence::generate_tc_put_val (be_Source & source)
 
    /* Sequences of 1/2/4 byte types handled as special cases */
 
-   if 
+   if
    (
       prtype &&
       ! IsBounded () &&
@@ -816,7 +827,7 @@ void be_sequence::generate_tc_put_val (be_Source & source)
       // since the put param must be a sequence pointer pointer,
       // that's what the writer takes.  The putter, however,
 
-      os << tab << ScopedName () << " * p = (" 
+      os << tab << ScopedName () << " * p = ("
          << ScopedName () << "*) arg;" << nl;
 
       // now put the data
@@ -897,7 +908,7 @@ void be_sequence::generate_tc_get_val (be_Source & source)
    }
    else
    {
-      os << tab << ScopedName () << " * p = (" 
+      os << tab << ScopedName () << " * p = ("
          << ScopedName () << "*) arg;" << nl;
 
       getter (os, tab, "p", 0);
@@ -1386,6 +1397,16 @@ void be_sequence::GenerateSequence (be_ClientHeader & source)
    charFileClassname = DDS_StdString("DDSChar");
    boolFileClassname = DDS_StdString("DDSBoolean");
 
+   if (BE_Globals::isocpp_new_types)
+   {
+      if (isStringSeq)
+      {
+          elemName = "::std::string";
+      }
+      os << tab << "typedef ::std::vector < " << elemName << "> " << localName << ";" << nl;
+      return;
+   }
+
    os << tab << "struct " << localName << "_uniq_ {};" << nl;
 
    if (IsBounded())
@@ -1447,7 +1468,7 @@ void be_sequence::GenerateSequence (be_ClientHeader & source)
          }
          else
          {
-            os << tab << "typedef DDS_DCPSUStrSeqT <struct " << localName 
+            os << tab << "typedef DDS_DCPSUStrSeqT <struct " << localName
                << "_uniq_> " << localName << ";" << nl;
          }
       }
@@ -1463,8 +1484,15 @@ void be_sequence::GenerateSequence (be_ClientHeader & source)
       }
       else
       {
-         os << tab << "typedef DDS_DCPSUVLSeq < " << elemName << ", struct "
+        if (BE_Globals::isocpp_new_types)
+        {
+          os << tab << "typedef ::std::vector <" << elemName << "> " << localName << ";" << nl;
+        }
+        else
+        {
+          os << tab << "typedef DDS_DCPSUVLSeq < " << elemName << ", struct "
             << localName << "_uniq_> " << localName << ";" << nl;
+        }
       }
    }
 }
@@ -1535,8 +1563,15 @@ void be_sequence::GenerateSequence (be_ClientImplementation & source)
       }
       else
       {
-         os << tab << "template class DDS_DCPSUVLSeq < " << elemName << ", struct "
+        if (BE_Globals::isocpp_new_types)
+        {
+          os << tab << "template class ::std::vector <" << elemName << ">" << nl;
+        }
+        else
+        {
+          os << tab << "template class DDS_DCPSUVLSeq < " << elemName << ", struct "
             << localName << "_uniq_>;" << nl;
+        }
       }
    }
 

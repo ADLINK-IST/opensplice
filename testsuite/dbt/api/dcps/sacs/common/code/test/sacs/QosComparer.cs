@@ -26,10 +26,17 @@ namespace test.sacs
         public static readonly DDS.TransportPriorityQosPolicy defaultTransportPriorityQosPolicy = new DDS.TransportPriorityQosPolicy();
         public static readonly DDS.UserDataQosPolicy defaultUserDataQosPolicy = new DDS.UserDataQosPolicy();
         public static readonly DDS.WriterDataLifecycleQosPolicy defaultWriterDataLifecycleQosPolicy = new DDS.WriterDataLifecycleQosPolicy();
-        public static readonly DDS.DataWriterQos defaultDataWriterQos = new DDS.DataWriterQos();
-        public static readonly DDS.SubscriberQos defaultSubscriberQos = new DDS.SubscriberQos();
-        public static readonly DDS.DataReaderQos defaultDataReaderQos = new DDS.DataReaderQos();
-        public static readonly DDS.TopicQos defaultTopicQos = new DDS.TopicQos();
+
+        public static readonly DDS.SchedulingQosPolicy defaultSchedulingQosPolicy = new DDS.SchedulingQosPolicy ();
+        public static readonly DDS.ShareQosPolicy defaultShareQosPolicy = new DDS.ShareQosPolicy ();
+
+        /* Default QoSs */
+        public static readonly DDS.DomainParticipantQos defaultDomainParticipantQos = new DDS.DomainParticipantQos ();
+        public static readonly DDS.TopicQos defaultTopicQos = new DDS.TopicQos ();
+        public static readonly DDS.SubscriberQos defaultSubscriberQos = new DDS.SubscriberQos ();
+        public static readonly DDS.DataWriterQos defaultDataWriterQos = new DDS.DataWriterQos ();
+        public static readonly DDS.PublisherQos defaultPublisherQos = new DDS.PublisherQos ();
+        public static readonly DDS.DataReaderQos defaultDataReaderQos = new DDS.DataReaderQos ();
 
         static QosComparer()
         {
@@ -94,6 +101,13 @@ namespace test.sacs
 
             defaultWriterDataLifecycleQosPolicy.AutodisposeUnregisteredInstances = true;
 
+            defaultSchedulingQosPolicy.SchedulingClass.Kind = DDS.SchedulingClassQosPolicyKind.ScheduleDefault;
+            defaultSchedulingQosPolicy.SchedulingPriorityKind.Kind = DDS.SchedulingPriorityQosPolicyKind.PriorityRelative;
+            defaultSchedulingQosPolicy.SchedulingPriority = 0;
+
+            defaultShareQosPolicy.Name = string.Empty;
+            defaultShareQosPolicy.Enable = false;
+
             defaultDataWriterQos.Durability = defaultDurabilityQosPolicy;
             defaultDataWriterQos.Deadline = defaultDeadlineQosPolicy;
             defaultDataWriterQos.LatencyBudget = defaultLatencyBudgetQosPolicy;
@@ -113,9 +127,7 @@ namespace test.sacs
             defaultSubscriberQos.Partition = defaultPartitionQosPolicy;
             defaultSubscriberQos.GroupData = defaultGroupDataQosPolicy;
             defaultSubscriberQos.EntityFactory = defaultEntityFactoryQosPolicy;
-
-            // TODO: JLS, missing ShareQosPolicy
-            //defaultSubscriberQos.Share =
+            defaultSubscriberQos.Share = defaultShareQosPolicy;
 
             defaultDataReaderQos.Durability = defaultDurabilityQosPolicy;
             defaultDataReaderQos.Deadline = defaultDeadlineQosPolicy;
@@ -143,6 +155,47 @@ namespace test.sacs
             defaultTopicQos.TransportPriority = defaultTransportPriorityQosPolicy;
             defaultTopicQos.Lifespan = defaultLifespanQosPolicy;
             defaultTopicQos.Ownership = defaultOwnershipQosPolicy;
+
+            /* Initialize default DDS.DomainParticipantQos */
+            defaultDomainParticipantQos.UserData = defaultUserDataQosPolicy;
+            defaultDomainParticipantQos.EntityFactory = defaultEntityFactoryQosPolicy;
+            defaultDomainParticipantQos.WatchdogScheduling = defaultSchedulingQosPolicy;
+            defaultDomainParticipantQos.ListenerScheduling = defaultSchedulingQosPolicy;
+
+            /* Initialize default DDS.PublisherQos */
+            defaultPublisherQos.Presentation = defaultPresentationQosPolicy;
+            defaultPublisherQos.Partition = defaultPartitionQosPolicy;
+            defaultPublisherQos.GroupData = defaultGroupDataQosPolicy;
+            defaultPublisherQos.EntityFactory = defaultEntityFactoryQosPolicy;
+        }
+
+        /// <summary>Compares all attributes of two DomainParticipantQos objects for equality.</summary>
+        /// <remarks>Compares all attributes of two DomainParticipantQos objects for equality.</remarks>
+        /// <param name="qos1">DomainParticipantQos object to compare.</param>
+        /// <param name="qos2">DomainParticipantQos object to compare agains.</param>
+        /// <returns><code>true</code> if the two qosses are equal, otherwise <code>false</code>.
+        ///     </returns>
+        public static bool DomainParticipantQosEquals(
+            DDS.DomainParticipantQos a,
+            DDS.DomainParticipantQos b)
+        {
+            if (!UserDataQosPolicyEquals (a.UserData, b.UserData)) {
+                System.Console.Error.WriteLine ("'DDS.DomainParticipantQos.UserData' values do not match");
+                return false;
+            }
+            if (!EntityFactoryQosPolicyEquals (a.EntityFactory, b.EntityFactory)) {
+                System.Console.Error.WriteLine ("'DDS.DomainParticipantQos.EntityFactory' values do not match");
+                return false;
+            }
+            if (!SchedulingQosPolicyEquals (a.WatchdogScheduling, b.WatchdogScheduling)) {
+                System.Console.Error.WriteLine ("'DDS.DomainParticipantQos.WatchdogScheduling' values do not match");
+                return false;
+            }
+            if (!SchedulingQosPolicyEquals (a.ListenerScheduling, b.ListenerScheduling)) {
+                System.Console.Error.WriteLine ("'DDS.DomainParticipantQos.ListenerScheduling' values do not match");
+                return false;
+            }
+            return true;
         }
 
         /// <summary>Compares all attributes of two TopicQos objects for equality.</summary>
@@ -428,40 +481,30 @@ namespace test.sacs
 
         }
 
-        public static bool PublisherQosEquals(DDS.PublisherQos qos1, DDS.PublisherQos qos2
-            )
+        /// <summary>Compares all attributes of two PublisherQos objects for equality.</summary>
+        /// <remarks>Compares all attributes of two PublisherQos objects for equality.</remarks>
+        /// <param name="qos1">PublisherQos object to compare.</param>
+        /// <param name="qos2">PublisherQos object to compare agains.</param>
+        /// <returns><code>true</code> if the two qosses are equal, otherwise <code>false</code>.
+        ///     </returns>
+        public static bool PublisherQosEquals (
+            DDS.PublisherQos a,
+            DDS.PublisherQos b)
         {
-            if (qos1.EntityFactory.AutoenableCreatedEntities != qos2.EntityFactory.AutoenableCreatedEntities)
-            {
-                System.Console.Error.WriteLine("'EntityFactory.AutoEnableCreatedEntities' values do not match"
-                    );
+            if (!PresentationQosPolicyEquals (a.Presentation, b.Presentation)) {
+                System.Console.Error.WriteLine ("'DDS.PublisherQos.Presentation' values do not match");
                 return false;
             }
-            if (!ByteArrayEquals(qos1.GroupData.Value, qos2.GroupData.Value))
-            {
-                System.Console.Error.WriteLine("'GroupData.Value' values do not match");
+            if (!PartitionQosPolicyEquals (a.Partition, b.Partition)) {
+                System.Console.Error.WriteLine ("'DDS.PublisherQos.Partition' values do not match");
                 return false;
             }
-            if (!StringArrayEquals(qos1.Partition.Name, qos2.Partition.Name))
-            {
-                System.Console.Error.WriteLine("'Partition.Name' values do not match");
+            if (!GroupDataQosPolicyEquals (a.GroupData, b.GroupData)) {
+                System.Console.Error.WriteLine ("'DDS.PublisherQos.GroupData' values do not match");
                 return false;
             }
-            if (qos1.Presentation.CoherentAccess != qos2.Presentation.CoherentAccess)
-            {
-                System.Console.Error.WriteLine("'Presentation.CoherentAccess' values do not match"
-                    );
-                return false;
-            }
-            if (qos1.Presentation.OrderedAccess != qos2.Presentation.OrderedAccess)
-            {
-                System.Console.Error.WriteLine("'Presentation.OrderedAccess' values do not match"
-                    );
-                return false;
-            }
-            if (qos1.Presentation.AccessScope != qos2.Presentation.AccessScope)
-            {
-                System.Console.Error.WriteLine("'Presentation.AccessScope' values do not match");
+            if (!EntityFactoryQosPolicyEquals (a.EntityFactory, b.EntityFactory)) {
+                System.Console.Error.WriteLine ("'DDS.PublisherQos.EntityFactory' values do not match");
                 return false;
             }
             return true;
@@ -580,6 +623,50 @@ namespace test.sacs
                     System.Console.Error.WriteLine("String arrays not equal (index: " + i + ")");
                     return false;
                 }
+            }
+            return true;
+        }
+
+        /// <summary>Compares two DDS.SchedulingQosPolicy objects.</summary>
+        /// <remarks>Compares two DDS.SchedulingQosPolicy objects.</remarks>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns>true if the two objects have equal values.</returns>
+        public static bool SchedulingQosPolicyEquals (
+            DDS.SchedulingQosPolicy a,
+            DDS.SchedulingQosPolicy b)
+        {
+            if (a.SchedulingClass.Kind != b.SchedulingClass.Kind) {
+                System.Console.Error.WriteLine ("'DDS.SchedulingQosPolicy.SchedulingClass.Kind' values do not match");
+                return false;
+            }
+            if (a.SchedulingPriorityKind.Kind != b.SchedulingPriorityKind.Kind) {
+                System.Console.Error.WriteLine ("'DDS.SchedulingQosPolicy.SchedulingPriorityKind.Kind' values do not match");
+                return false;
+            }
+            if (a.SchedulingPriority != b.SchedulingPriority) {
+                System.Console.Error.WriteLine ("'DDS.SchedulingQosPolicy.SchedulingPriority' values do not match");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>Compares two DDS.ShareQosPolicy objects.</summary>
+        /// <remarks>Compares two DDS.ShareQosPolicy objects.</remarks>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns>true if the two objects have equal values.</returns>
+        public static bool ShareQosPolicyEquals (
+            DDS.ShareQosPolicy a,
+            DDS.ShareQosPolicy b)
+        {
+            if (string.Compare (a.Name, b.Name) != 0) {
+                System.Console.Error.WriteLine ("'DDS.ShareQosPolicy.Name' values do not match");
+                return false;
+            }
+            if (a.Enable != b.Enable) {
+                System.Console.Error.WriteLine ("'DDS.ShareQosPolicy.Enable' values do not match");
+                return false;
             }
             return true;
         }

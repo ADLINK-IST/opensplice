@@ -134,7 +134,7 @@ d_sampleRequestListenerAddRequest(
                     stats->alignerRequestsCombinedOpenDif = 1;
                 }
                 addr = d_networkAddressNew(
-					d_message(request)->senderAddress.systemId,
+                    d_message(request)->senderAddress.systemId,
                     d_message(request)->senderAddress.localId,
                     d_message(request)->senderAddress.lifecycleId);
                 found->addressees = c_iterInsert(found->addressees, addr);
@@ -191,6 +191,18 @@ d_sampleRequestListenerAddRequest(
     return found;
 }
 
+/* When flushing the group, the kernel may return both v_messages and v_registrations. When
+ * a v_registration is flushed this can indicate a register or an unregister which is
+ * specified by the flushType. The flushed objects are stored in a temporary list which is
+ * eventually used to align the samples to other nodes. When the function interpreting this list
+ * encounters a v_registration it must be able to tell whether this was a register or an unregister.
+ * That information is stored by using this struct.
+ */
+typedef struct d_sampleRequestAlignData {
+    c_object object;            /* v_message or v_registration */
+    v_groupFlushType flushType; /* MESSAGE, REGISTRATION or UNREGISTRATION */
+}d_sampleRequestAlignData;
+
 static void
 d_sampleRequestListenerAnswer(
     d_sampleRequestHelper helper)
@@ -198,13 +210,12 @@ d_sampleRequestListenerAnswer(
     d_admin admin;
     d_durability durability;
     d_publisher publisher;
-    d_configuration config;
     d_group group;
     struct writeBeadHelper data;
     d_sampleChain sampleChain;
     c_bool sendData;
     v_group vgroup;
-    c_object object;
+    d_sampleRequestAlignData *objectData;
     c_ulong i;
     d_networkAddress addr;
     d_sampleRequestListener listener;
@@ -213,7 +224,7 @@ d_sampleRequestListenerAnswer(
     v_historicalDataRequest vrequest;
     v_message vmessage;
     v_groupInstance instance;
-    v_registration unregister;
+    v_registration registration;
     struct v_resourcePolicy resourceLimits;
 
     listener        = helper->listener;
@@ -221,7 +232,6 @@ d_sampleRequestListenerAnswer(
     admin           = d_listenerGetAdmin(d_listener(listener));
     durability      = d_adminGetDurability(admin);
     publisher       = d_adminGetPublisher(admin);
-    config          = d_durabilityGetConfiguration(durability);
     group           = d_adminGetLocalGroup(admin, request->partition,
                                 request->topic, request->durabilityKind);
     data.count             = 0;
@@ -312,22 +322,26 @@ d_sampleRequestListenerAnswer(
         }
         c_free(vgroup);
 
-        object = c_iterTakeFirst(data.list);
+        objectData = c_iterTakeFirst(data.list);
 
-        while(object){
+        while(objectData){
             instance = c_iterTakeFirst(data.instances);
             assert(instance);
 
-            if(c_instanceOf(object, "v_registration")){
-                unregister = (v_registration)object;
+            if(c_instanceOf(objectData->object, "v_registration")){
+                registration = (v_registration)objectData->object;
                 vmessage = v_groupInstanceCreateMessage(instance);
 
                 if (vmessage){
-                    vmessage->writerGID = unregister->writerGID;
-                    vmessage->qos = c_keep(unregister->qos);
-                    vmessage->writeTime = unregister->writeTime;
+                    vmessage->writerGID = registration->writerGID;
+                    vmessage->qos = c_keep(registration->qos);
+                    vmessage->writeTime = registration->writeTime;
 
-                    v_stateSet(v_nodeState(vmessage), L_UNREGISTER);
+                    if(objectData->flushType == V_GROUP_FLUSH_REGISTRATION) {
+                        v_stateSet(v_nodeState(vmessage), L_REGISTER);
+                    }else if(objectData->flushType == V_GROUP_FLUSH_UNREGISTRATION){
+                        v_stateSet(v_nodeState(vmessage), L_UNREGISTER);
+                    }
 
                     d_sampleRequestListenerWriteBead(vmessage, &data);
 
@@ -344,7 +358,7 @@ d_sampleRequestListenerAnswer(
                             "Failed to allocate message, alignment will be incomplete");
                 }
             } else {
-                v_message msg = v_message(object);
+                v_message msg = v_message(objectData->object);
                 assert(msg != NULL);
 
                 if (v_stateTest(v_nodeState(msg), L_WRITE) ||
@@ -373,8 +387,9 @@ d_sampleRequestListenerAnswer(
                 }
             }
             c_free(instance);
-            c_free(object);
-            object = c_iterTakeFirst(data.list);
+            c_free(objectData->object);
+            free(objectData);
+            objectData = c_iterTakeFirst(data.list);
         }
         assert(c_iterLength(data.instances) == 0 );
         c_iterFree(data.list);
@@ -555,7 +570,6 @@ void
 d_sampleRequestListenerDeinit(
     d_object object)
 {
-    d_admin admin;
     d_sampleRequestHelper helper;
     c_bool removed;
     d_sampleRequestListener listener;
@@ -564,7 +578,6 @@ d_sampleRequestListenerDeinit(
 
     if(object){
         listener = d_sampleRequestListener(object);
-        admin = d_listenerGetAdmin(d_listener(listener));
         removed = d_actionQueueRemove(listener->actionQueue, listener->actor);
 
         if(removed == TRUE){
@@ -711,9 +724,10 @@ d_sampleRequestListenerAddList(
     struct writeBeadHelper *data;
     c_bool process;
     c_equality timeCompared;
-    c_object objectToAdd;
+    v_group g;
 
     data = (struct writeBeadHelper*)userData;
+    g = instance->group;
     process = TRUE;
 
     switch(flushType){
@@ -724,7 +738,31 @@ d_sampleRequestListenerAddList(
 
             if(timeCompared == C_GT) {
                 process = FALSE;
+            }else if(strcmp(v_entity(g)->name, "Group<__BUILT-IN PARTITION__,DCPSTopic>") == 0) {
+                /* Don't process registrations for DCPSTopic as this would introduce a scalability issue since
+                 * there is always an alive writer per federation. If these registrations would be aligned there
+                 * would be n registrations stored per builtin topic instance where n is the number of
+                 * federations in a system.
+                 * The only condition for aligning a registration is when there are multiple writers
+                 * for the same instance. Therefore this is not an issue for other (builtin) topics. */
+                process = FALSE;
             } else if(data->request->withTimeRange == TRUE){
+                timeCompared = c_timeCompare(registration->writeTime, data->request->beginTime);
+
+                if (timeCompared == C_LT) {
+                    process = FALSE;  /* produced before the time-range */
+                }
+            }
+        }
+        break;
+    case V_GROUP_FLUSH_UNREGISTRATION:
+        registration = (v_registration)object;
+        if(data->checkTimeRange){
+            timeCompared = c_timeCompare(registration->writeTime, data->request->endTime);
+
+            if(timeCompared == C_GT) {
+                process = FALSE;
+            }else if(data->request->withTimeRange == TRUE){
                 timeCompared = c_timeCompare(registration->writeTime, data->request->beginTime);
 
                 if (timeCompared == C_LT) {
@@ -758,11 +796,11 @@ d_sampleRequestListenerAddList(
     }
 
     if(process == TRUE) {
-        objectToAdd = c_keep(object);
-        data->list = c_iterAppend(data->list, objectToAdd);
-
-        objectToAdd = c_keep(instance);
-        data->instances = c_iterAppend(data->instances, objectToAdd);
+        d_sampleRequestAlignData *objectData = malloc(sizeof(d_sampleRequestAlignData));
+        objectData->object = c_keep(object);
+        objectData->flushType = flushType;
+        data->list = c_iterAppend(data->list, objectData);
+        data->instances = c_iterAppend(data->instances, c_keep(instance));
     } else {
         data->skipCount++;
     }
@@ -827,13 +865,11 @@ d_sampleRequestHelperNew(
     os_time timeToAct)
 {
     d_sampleRequestHelper helper;
-    d_admin admin;
     d_networkAddress addr;
 
     assert(request);
     assert(listener);
 
-    admin  = d_listenerGetAdmin(d_listener(listener));
     helper = d_sampleRequestHelper(os_malloc(C_SIZEOF(d_sampleRequestHelper)));
 
     helper->listener  = listener;

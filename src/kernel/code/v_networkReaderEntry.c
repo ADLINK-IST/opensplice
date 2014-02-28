@@ -270,7 +270,7 @@ v_networkReaderEntryReceive(
     OS_UNUSED_ARG(sendTo);
     OS_UNUSED_ARG(receiver);
 
-    return v_groupWrite(entry->group, message,
+    return v_groupWriteCheckSampleLost(entry->group, message,
         NULL /* no instance pointer */, entry->networkId, &resendScope);
 }
 

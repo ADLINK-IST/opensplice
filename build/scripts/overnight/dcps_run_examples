@@ -1,6 +1,8 @@
 
 #!/bin/bash
 
+set -x
+
 . buildsys/functions
 
 ProcessArgs $*
@@ -25,9 +27,9 @@ else
    AWK="awk"
 fi
 
-IS_64_BIT="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "x86_64") }'`"
+IS_64_BIT=` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "x86_64") }'`
 
-IS_STUDIO12="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "studio12") }'`"
+IS_STUDIO12=` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "studio12") }'`
 
 check_platform()
 {
@@ -122,7 +124,9 @@ else
     echo "RUN_EXAMPLES/$EXRUNTYPE_UPPER=RUNNING" >> $RESFILE
     ArchiveLogs
 
-    OSPL_BUILD_HOME=$WORKDIR
+    #If its an inner build then its $WORKDIR/build as the $DEPWORKDIR
+    #already has /build on the end and thats what this vatiable is used like
+    OSPL_BUILD_HOME=$WORKDIR/build
     if [ "$DEP" != "none" ]
     then
         BASE=$DEPWORKDIR/build/scripts/overnight
@@ -155,6 +159,14 @@ else
         INSTALLDIR="$DEPWORKDIR/install"
         EXAMPLESDIR="$DEPWORKDIR/install/HDE/$SHORTSETUP/examples"
     fi
+
+    if [ -f "$WORKDIR/$RTS_INSTALL_DIR" ]
+    then
+        OSPL_RTS_HOME="$WORKDIR/$RTS_INSTALL_DIR/RTS/$SHORTSETUP"
+    else
+        OSPL_RTS_HOME="$DEPWORKDIR/install/RTS/$SHORTSETUP"
+    fi
+    export OSPL_RTS_HOME
 
     #Copy license in place for the ospldcg
     if [ -f "$OSPL_BASE_DIR/etc/license.lic" ]
@@ -210,16 +222,25 @@ else
     add_example dcps/WaitSet/cpp/standalone
     add_example dcps/BuiltInTopics/c/standalone
     add_example dcps/BuiltInTopics/cpp/standalone
+    add_example dcps/RoundTrip/c/
+    add_example dcps/RoundTrip/cpp/
+    add_example dcps/Throughput/cpp/
 
     # isocpp - need to check for more than a directory because the
     # run scripts are copied in as a whole so there will always be
     # an isocpp directory
     if [ -f "$EXAMPLESDIR/dcps/HelloWorld/isocpp/HelloWorld.mpc" ]
     then
+        add_example dcps/BuiltInTopics/isocpp
         add_example dcps/ContentFilteredTopic/isocpp
         add_example dcps/HelloWorld/isocpp
+        add_example dcps/Lifecycle/isocpp
         add_example dcps/Listener/isocpp
+        add_example dcps/Ownership/isocpp
         add_example dcps/QueryCondition/isocpp
+        add_example dcps/RoundTrip/isocpp
+        add_example dcps/Throughput/isocpp
+        add_example dcps/Tutorial/isocpp
         add_example dcps/WaitSet/isocpp
     fi
 
@@ -288,6 +309,15 @@ else
     add_example dcps/Durability/cpp/standalone
     add_example dcps/Durability/java/standalone
 
+    # Always need to check for more than the isocpp directory as
+    # the run scripts are copied in regardless so there will always
+    # be an isocpp directory.  run the durability example last as
+    # it has a it's own config file.
+    if [ -f "$EXAMPLESDIR/dcps/Durability/isocpp/Durability.mpc" ]
+    then
+        add_example dcps/Durability/isocpp
+    fi
+
     if [ "$DEP" != "none" ]
     then
         add_example services/dbmsconnect/SQL/C++/ODBC
@@ -307,9 +337,9 @@ else
 
     if [ -z "$SPLICE_TARGET_HOST" ]
     then
-        if uname | grep -q CYGWIN
+        if [ "$CURRENT_PL_CYGWIN" != "" ]
         then
-            PATH="$PATH:/cygdrive/c/WINDOWS/system32"
+            PATH="/cygdrive/c/WINDOWS/system32:$PATH"
             export PATH
 
             XPATH="$(cygpath -w $BASE)";
@@ -318,11 +348,28 @@ else
             cmd.exe /C $XPATH/run_examples.bat
             RESULT=$?
         else
-            sh $BASE/run_examples.sh
-            RESULT=$?
+            if [ -z `echo $SETUP_TYPE | grep vxworks` ]
+            then
+                export BASE
+                sh $BASE/run_examples.sh
+                RESULT=$?
+            else
+                echo "Running VxWorks examples"
+                cd ..
+                PYTHONUNBUFFERED=yes export PYTHONUNBUFFERED
+                SPLICE_TARGET=$SHORTSETUP $AUTOMATION_DIR/examples.py
+                SPLICE_TARGET=$SHORTSETUP $AUTOMATION_DIR/parse_vxworks_examples
+                RESULT=$?
+                cd examples
+            fi
         fi
     else
         echo '#!/bin/bash' > $INSTALLDIR/remoterun.sh
+        #echo 'set -x' > $INSTALLDIR/remoterun.sh
+        if [ -n "$UNIQE_MC_ADDRESS" ]
+        then
+            echo UNIQE_MC_ADDRESS=$UNIQE_MC_ADDRESS export UNIQE_MC_ADDRESS >> $INSTALLDIR/remoterun.sh
+        fi
         cat $WORKDIR/build/build/scripts/overnight/configs/$SPLICE_TARGET_HOST/runtime.$SHORTSETUP >> $INSTALLDIR/remoterun.sh
         echo LOGDIR=$LOGDIR export LOGDIR >> $INSTALLDIR/remoterun.sh
         echo EXRUNTYPE=$EXRUNTYPE export EXRUNTYPE >> $INSTALLDIR/remoterun.sh

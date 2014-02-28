@@ -1219,24 +1219,26 @@ gapi_dataReader_wait_for_historical_data_w_condition (
                 length = 0;
             }
             kernelCopyInDuration(max_wait, &c_time_max_wait);
-            kernelCopyInTime(min_source_timestamp, &c_time_min_source_timestamp);
-            kernelCopyInTime(max_source_timestamp, &c_time_max_source_timestamp);
+            if ( (kernelCopyInTime(min_source_timestamp, &c_time_min_source_timestamp) != GAPI_RETCODE_OK) ||
+                 (kernelCopyInTime(max_source_timestamp, &c_time_max_source_timestamp) != GAPI_RETCODE_OK) ) {
+                result = GAPI_RETCODE_BAD_PARAMETER;
+            } else {
+                resource.max_samples = resource_limits->max_samples;
+                resource.max_instances = resource_limits->max_instances;
+                resource.max_samples_per_instance = resource_limits->max_samples_per_instance;
 
-            resource.max_samples = resource_limits->max_samples;
-            resource.max_instances = resource_limits->max_instances;
-            resource.max_samples_per_instance = resource_limits->max_samples_per_instance;
+                uResult= u_dataReaderWaitForHistoricalDataWithCondition(
+                        U_DATAREADER_GET(datareader),
+                        (c_char*)filter_expression,
+                        params,
+                        length,
+                        c_time_min_source_timestamp,
+                        c_time_max_source_timestamp,
+                        &resource,
+                        c_time_max_wait);
 
-            uResult= u_dataReaderWaitForHistoricalDataWithCondition(
-                    U_DATAREADER_GET(datareader),
-                    (c_char*)filter_expression,
-                    params,
-                    length,
-                    c_time_min_source_timestamp,
-                    c_time_max_source_timestamp,
-                    &resource,
-                    c_time_max_wait);
-
-            result = kernelResultToApiResult(uResult);
+                result = kernelResultToApiResult(uResult);
+            }
         }
         _EntityRelease(datareader);
     }
@@ -1249,8 +1251,8 @@ copy_matched_publication(
     c_voidp info,
     c_voidp arg)
 {
-	struct v_publicationInfo *publicationInfo;
-	gapi_instanceHandleSeq *to;
+        struct v_publicationInfo *publicationInfo;
+        gapi_instanceHandleSeq *to;
     gapi_instanceHandle_t *tmp_buffer;
 
     publicationInfo = (struct v_publicationInfo*)info;
@@ -1279,6 +1281,18 @@ _DataReader_get_matched_publications (
                   U_READER_GET(_this),
                   copy_matched_publication,
                   publication_handles);
+    return kernelResultToApiResult(uResult);
+}
+
+static gapi_returnCode_t
+_DataReader_set_notread_threshold (
+    _DataReader _this,
+    gapi_long threshold)
+{
+    u_result uResult;
+    uResult = u_dataReaderSetNotReadThreshold(
+                  U_READER_GET(_this),
+                  threshold);
     return kernelResultToApiResult(uResult);
 }
 
@@ -1417,6 +1431,25 @@ gapi_dataReader_get_default_datareaderview_qos (
         }
         _EntityRelease(datareader);
     }
+    return result;
+}
+
+gapi_returnCode_t
+gapi_dataReader_set_notread_threshold (
+    gapi_dataReader _this,
+    gapi_long threshold)
+{
+    _DataReader datareader;
+    gapi_returnCode_t result;
+
+    datareader = gapi_dataReaderClaim(_this, &result);
+    if (datareader != NULL) {
+        result = _DataReader_set_notread_threshold (
+                datareader,
+                threshold);
+    }
+
+    _EntityRelease(datareader);
     return result;
 }
 

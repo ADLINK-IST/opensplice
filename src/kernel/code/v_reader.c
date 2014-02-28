@@ -206,16 +206,25 @@ void
 v_readerFree(
     v_reader r)
 {
+    v_subscriber tmp;
+
     assert(C_TYPECHECK(r,v_reader));
 
-    if (r->subscriber != NULL) {
-        v_subscriberRemoveReader(v_subscriber(r->subscriber),r);
-        c_mutexLock(&(v_observer(r)->mutex));
-        r->subscriber = NULL;
-        c_mutexUnlock(&(v_observer(r)->mutex));
-    }
+    v_observerLock(r);
+    assert (r->subscriber != NULL);
+    tmp = v_subscriber(r->subscriber);
+    r->subscriber = NULL;
+    v_observerUnlock(r);
 
-    /* Free all entries */
+    /* For each readerInstance in each entry, v_subscriberRemoveReader will
+     * eventually deliver an UNREGISTER message to the Reader using
+     * v_dataReaderEntryWrite, which on its turn locks the reader itself.
+     * For that reason, the entryFree function must be called when the readerLock
+     * has been released.
+     */
+    v_subscriberRemoveReader(tmp, r);
+
+    /* Free all entries. */
     v_readerWalkEntries(r, entryFree, NULL);
 
     /* Call inherited free */

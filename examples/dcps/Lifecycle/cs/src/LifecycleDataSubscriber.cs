@@ -66,8 +66,8 @@ namespace LifecycleDataSubscriber
                     Console.WriteLine(" Message        : {0}", msgList[j].message);
                     Console.WriteLine(" writerStates   : {0}", msgList[j].writerStates);
                     Console.WriteLine(" valida data    : {0}", infoSeq[j].ValidData);
-                    Console.WriteLine(" sample_state   : {0}", sSampleState[index((int)infoSeq[j].SampleState)]);                    
-                    Console.WriteLine(" instance_state : {0}", sInstanceState[index((int)infoSeq[j].InstanceState)]);
+                    string str = "sample_state:" + sSampleState[index((int)infoSeq[j].SampleState)] + "-view_state:" + sViewState[index((int)infoSeq[j].ViewState)] + "-instance_state:" + sInstanceState[index((int)infoSeq[j].InstanceState)];
+                    Console.WriteLine(str);
                     Thread.Sleep(200);
                     closed = msgList[j].writerStates.Equals("STOPPING_SUBSCRIBER");
                 }

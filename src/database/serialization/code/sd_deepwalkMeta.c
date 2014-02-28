@@ -161,7 +161,7 @@
  */
 
 /* interface */
-#include "sd_deepwalkMeta.h"
+#include "sd__deepwalkMeta.h"
 
 /* implementation */
 #include "os_heap.h"
@@ -944,6 +944,14 @@ sd_deepwalkMetaCollectionCallback(
     return result;
 }
 
+static void
+sd_deepwalkMetaCollectionScopeWalkAction(
+    c_metaObject o,
+    c_scopeWalkActionArg arg)
+{
+    (void) sd_deepwalkMetaCollectionCallback(c_object(o), arg);
+}
+
 
 /** \brief Routine for walking over all collection elements.
  *
@@ -1029,7 +1037,7 @@ sd_deepwalkMetaScopeElements(
         cContext.type = collectionType->subType;
         cContext.context = context;
         c_scopeWalk(scopeInst,
-                    (c_scopeWalkAction)sd_deepwalkMetaCollectionCallback,
+                    sd_deepwalkMetaCollectionScopeWalkAction,
                     &cContext);
         SD_RETURN_ON_ERROR(context);
     }

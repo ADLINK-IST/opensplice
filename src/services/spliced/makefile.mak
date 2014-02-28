@@ -19,8 +19,7 @@ CPPFLAGS += -DOSPL_BUILD_SPLICED
 CFLAGS  += $(SHCFLAGS) $(MTCFLAGS)
 LDFLAGS += $(SHLDFLAGS)
 LDLIBS  += $(SHLDLIBS)
-LDLIBS += -l$(DDS_USER) -l$(DDS_SERIALIZATION) -l$(DDS_CONF) -l$(DDS_CONFPARSER)
-LDLIBS += -l$(DDS_KERNEL) -l$(DDS_UTIL) -l$(DDS_DATABASE) -l$(DDS_OS)
+LDLIBS +=  -l$(DDS_CORE)  
 
 CINCS	+= -I$(OSPL_HOME)/src/database/database/include
 CINCS	+= -I$(OSPL_HOME)/src/database/serialization/include

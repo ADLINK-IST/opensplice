@@ -17,237 +17,170 @@
 
 #include <org/opensplice/pub/qos/DataWriterQosImpl.hpp>
 
-namespace org { namespace opensplice { namespace pub { namespace qos {
+namespace org
+{
+namespace opensplice
+{
+namespace pub
+{
+namespace qos
+{
 
-    DataWriterQosImpl::DataWriterQosImpl() : strength_(0), lifecycle_(true)
-    {  }
+DataWriterQosImpl::DataWriterQosImpl() : strength_(0), lifecycle_(true)
+{  }
 
-    DataWriterQosImpl::DataWriterQosImpl(const org::opensplice::topic::qos::TopicQosImpl& tqos)
-      : durability_(tqos.policy<dds::core::policy::Durability>()),
+DataWriterQosImpl::DataWriterQosImpl(const org::opensplice::topic::qos::TopicQosImpl& tqos)
+    : durability_(tqos.policy<dds::core::policy::Durability>()),
 
 #ifdef  OMG_DDS_PERSISTENCE_SUPPORT
-        durability_service_(tqos.policy<dds::core::policy::DurabilityService>()),
+      durability_service_(tqos.policy<dds::core::policy::DurabilityService>()),
 #endif
 
-        deadline_(tqos.policy<dds::core::policy::Deadline>()),
-        budget_(tqos.policy<dds::core::policy::LatencyBudget>()),
-        liveliness_(tqos.policy<dds::core::policy::Liveliness>()),
-        reliability_(tqos.policy<dds::core::policy::Reliability>()),
-        order_(tqos.policy<dds::core::policy::DestinationOrder>()),
-        history_(tqos.policy<dds::core::policy::History>()),
-        resources_(tqos.policy<dds::core::policy::ResourceLimits>()),
-        priority_(tqos.policy<dds::core::policy::TransportPriority>()),
-        lifespan_(tqos.policy<dds::core::policy::Lifespan>()),
-        ownership_(tqos.policy<dds::core::policy::Ownership>()),
-        strength_(0)
-    { }
+      deadline_(tqos.policy<dds::core::policy::Deadline>()),
+      budget_(tqos.policy<dds::core::policy::LatencyBudget>()),
+      liveliness_(tqos.policy<dds::core::policy::Liveliness>()),
+      reliability_(tqos.policy<dds::core::policy::Reliability>()),
+      order_(tqos.policy<dds::core::policy::DestinationOrder>()),
+      history_(tqos.policy<dds::core::policy::History>()),
+      resources_(tqos.policy<dds::core::policy::ResourceLimits>()),
+      priority_(tqos.policy<dds::core::policy::TransportPriority>()),
+      lifespan_(tqos.policy<dds::core::policy::Lifespan>()),
+      ownership_(tqos.policy<dds::core::policy::Ownership>()),
+      strength_(0)
+{ }
 
-    DataWriterQosImpl::DataWriterQosImpl(
-                         dds::core::policy::UserData               user_data,
-                         dds::core::policy::Durability              durability,
+DataWriterQosImpl::DataWriterQosImpl(
+    dds::core::policy::UserData               user_data,
+    dds::core::policy::Durability              durability,
 
 #ifdef  OMG_DDS_PERSISTENCE_SUPPORT
-                         dds::core::policy::DurabilityService       durability_service,
+    dds::core::policy::DurabilityService       durability_service,
 #endif  // OMG_DDS_PERSISTENCE_SUPPORT
 
-                         dds::core::policy::Deadline       deadline,
-                         dds::core::policy::LatencyBudget  budget,
-                         dds::core::policy::Liveliness     liveliness,
-                         dds::core::policy::Reliability             reliability,
-                         dds::core::policy::DestinationOrder        order,
-                         dds::core::policy::History                 history,
-                         dds::core::policy::ResourceLimits          resources,
-                         dds::core::policy::TransportPriority       priority,
-                         dds::core::policy::Lifespan                lifespan,
-                         dds::core::policy::Ownership               ownership,
+    dds::core::policy::Deadline       deadline,
+    dds::core::policy::LatencyBudget  budget,
+    dds::core::policy::Liveliness     liveliness,
+    dds::core::policy::Reliability             reliability,
+    dds::core::policy::DestinationOrder        order,
+    dds::core::policy::History                 history,
+    dds::core::policy::ResourceLimits          resources,
+    dds::core::policy::TransportPriority       priority,
+    dds::core::policy::Lifespan                lifespan,
+    dds::core::policy::Ownership               ownership,
 
 #ifdef  OMG_DDS_OWNERSHIP_SUPPORT
-                         dds::core::policy::OwnershipStrength       strength,
+    dds::core::policy::OwnershipStrength       strength,
 #endif  // OMG_DDS_OWNERSHIP_SUPPORT
 
-                         dds::core::policy::WriterDataLifecycle     lifecycle)
-      : user_data_(user_data),
-        durability_(durability),
+    dds::core::policy::WriterDataLifecycle     lifecycle)
+    : user_data_(user_data),
+      durability_(durability),
 
 #ifdef  OMG_DDS_PERSISTENCE_SUPPORT
-        durability_service_(durability_service),
+      durability_service_(durability_service),
 #endif  // OMG_DDS_PERSISTENCE_SUPPORT
 
-        deadline_(deadline),
-        budget_(budget),
-        liveliness_(liveliness),
-        reliability_(reliability),
-        order_(order),
-        history_(history),
-        resources_(resources),
-        priority_(priority),
-        lifespan_(lifespan),
-        ownership_(ownership),
-        strength_(strength),
-        lifecycle_(lifecycle) {}
+      deadline_(deadline),
+      budget_(budget),
+      liveliness_(liveliness),
+      reliability_(reliability),
+      order_(order),
+      history_(history),
+      resources_(resources),
+      priority_(priority),
+      lifespan_(lifespan),
+      ownership_(ownership),
+      strength_(strength),
+      lifecycle_(lifecycle) {}
 
-    DataWriterQosImpl::~DataWriterQosImpl() { }
+DataWriterQosImpl::~DataWriterQosImpl() { }
 
-    void DataWriterQosImpl::policy(const dds::core::policy::UserData& user_data) {
-      user_data_ = user_data;
-    }
+void DataWriterQosImpl::policy(const dds::core::policy::UserData& user_data)
+{
+    user_data_ = user_data;
+}
 
-    void DataWriterQosImpl::policy(const dds::core::policy::Durability& durability) {
-      durability_ = durability;
-    }
-
-
-#ifdef  OMG_DDS_PERSISTENCE_SUPPORT
-
-    void DataWriterQosImpl::policy(const dds::core::policy::DurabilityService& durability_service) {
-      durability_service_ = durability_service;
-    }
-
-#endif  // OMG_DDS_PERSISTENCE_SUPPORT
-
-
-    void DataWriterQosImpl::policy(const dds::core::policy::Deadline& deadline) {
-      deadline_ = deadline;
-    }
-
-    void DataWriterQosImpl::policy(const dds::core::policy::LatencyBudget&  budget) {
-      budget_ = budget;
-    }
-
-
-    void DataWriterQosImpl::policy(const dds::core::policy::Liveliness& liveliness) {
-      liveliness_ = liveliness;
-    }
-
-    void DataWriterQosImpl::policy(const dds::core::policy::Reliability& reliability) {
-      reliability_ = reliability;
-    }
-    void DataWriterQosImpl::policy(const dds::core::policy::DestinationOrder& order) {
-      order_ = order;
-    }
-
-    void DataWriterQosImpl::policy(const dds::core::policy::History& history) {
-      history_ = history;
-    }
-
-    void DataWriterQosImpl::policy(const dds::core::policy::ResourceLimits& resources) {
-      resources_ = resources;
-    }
-    void DataWriterQosImpl::policy(const dds::core::policy::TransportPriority& priority) {
-      priority_ = priority;
-    }
-    void DataWriterQosImpl::policy(const dds::core::policy::Lifespan& lifespan) {
-      lifespan_ = lifespan;
-    }
-    void DataWriterQosImpl::policy(const dds::core::policy::Ownership& ownership) {
-      ownership_ = ownership;
-    }
-
-
-#ifdef  OMG_DDS_OWNERSHIP_SUPPORT
-
-    void
-    DataWriterQosImpl::policy(const dds::core::policy::OwnershipStrength& strength) {
-      strength_ = strength;
-    }
-
-#endif  // OMG_DDS_OWNERSHIP_SUPPORT
-
-
-    void
-    DataWriterQosImpl::policy(const dds::core::policy::WriterDataLifecycle& lifecycle) {
-      lifecycle_ = lifecycle;
-    }
-
-    template<> const dds::core::policy::UserData&
-    DataWriterQosImpl::policy<dds::core::policy::UserData>() const {
-      return user_data_;
-    }
-
-    template<> const dds::core::policy::Durability&
-    DataWriterQosImpl::policy<dds::core::policy::Durability>() const {
-      return durability_;
-    }
+void DataWriterQosImpl::policy(const dds::core::policy::Durability& durability)
+{
+    durability_ = durability;
+}
 
 
 #ifdef  OMG_DDS_PERSISTENCE_SUPPORT
 
-    template<> const dds::core::policy::DurabilityService&
-    DataWriterQosImpl::policy<dds::core::policy::DurabilityService>() const {
-      return durability_service_;
-    }
+void DataWriterQosImpl::policy(const dds::core::policy::DurabilityService& durability_service)
+{
+    durability_service_ = durability_service;
+}
 
 #endif  // OMG_DDS_PERSISTENCE_SUPPORT
 
 
-    template<> const dds::core::policy::Deadline&
-    DataWriterQosImpl::policy<dds::core::policy::Deadline>() const {
-      return deadline_;
-    }
+void DataWriterQosImpl::policy(const dds::core::policy::Deadline& deadline)
+{
+    deadline_ = deadline;
+}
+
+void DataWriterQosImpl::policy(const dds::core::policy::LatencyBudget&  budget)
+{
+    budget_ = budget;
+}
 
 
-    template<> const dds::core::policy::LatencyBudget&
-    DataWriterQosImpl::policy<dds::core::policy::LatencyBudget>() const {
-      return budget_;
-    }
+void DataWriterQosImpl::policy(const dds::core::policy::Liveliness& liveliness)
+{
+    liveliness_ = liveliness;
+}
 
-    template<> const dds::core::policy::Liveliness&
-    DataWriterQosImpl::policy<dds::core::policy::Liveliness>() const {
-      return liveliness_;
-    }
+void DataWriterQosImpl::policy(const dds::core::policy::Reliability& reliability)
+{
+    reliability_ = reliability;
+}
+void DataWriterQosImpl::policy(const dds::core::policy::DestinationOrder& order)
+{
+    order_ = order;
+}
 
-    template<> const dds::core::policy::Reliability&
-    DataWriterQosImpl::policy<dds::core::policy::Reliability>() const {
-      return reliability_;
-    }
+void DataWriterQosImpl::policy(const dds::core::policy::History& history)
+{
+    history_ = history;
+}
 
-    template<> const dds::core::policy::DestinationOrder&
-    DataWriterQosImpl::policy<dds::core::policy::DestinationOrder>() const {
-      return order_;
-    }
-
-    template<> const dds::core::policy::History&
-    DataWriterQosImpl::policy<dds::core::policy::History>() const {
-      return history_;
-    }
-
-    template<> const dds::core::policy::ResourceLimits&
-    DataWriterQosImpl::policy<dds::core::policy::ResourceLimits>() const {
-      return resources_;
-    }
-
-    template<> const dds::core::policy::TransportPriority&
-    DataWriterQosImpl::policy<dds::core::policy::TransportPriority>() const {
-      return priority_;
-    }
-
-    template<> const dds::core::policy::Lifespan&
-    DataWriterQosImpl::policy<dds::core::policy::Lifespan>() const {
-      return lifespan_;
-    }
-
-    template<> const  dds::core::policy::Ownership&
-    DataWriterQosImpl::policy<dds::core::policy::Ownership>() const {
-      return ownership_;
-    }
+void DataWriterQosImpl::policy(const dds::core::policy::ResourceLimits& resources)
+{
+    resources_ = resources;
+}
+void DataWriterQosImpl::policy(const dds::core::policy::TransportPriority& priority)
+{
+    priority_ = priority;
+}
+void DataWriterQosImpl::policy(const dds::core::policy::Lifespan& lifespan)
+{
+    lifespan_ = lifespan;
+}
+void DataWriterQosImpl::policy(const dds::core::policy::Ownership& ownership)
+{
+    ownership_ = ownership;
+}
 
 
 #ifdef  OMG_DDS_OWNERSHIP_SUPPORT
 
-    template<> const  dds::core::policy::OwnershipStrength&
-    DataWriterQosImpl::policy<dds::core::policy::OwnershipStrength>() const {
-      return strength_;
-    }
+void
+DataWriterQosImpl::policy(const dds::core::policy::OwnershipStrength& strength)
+{
+    strength_ = strength;
+}
 
 #endif  // OMG_DDS_OWNERSHIP_SUPPORT
 
 
-    template<> const  dds::core::policy::WriterDataLifecycle&
-    DataWriterQosImpl::policy<dds::core::policy::WriterDataLifecycle>() const {
-      return lifecycle_;
-    }
-
-      }
-    }
-  }
+void
+DataWriterQosImpl::policy(const dds::core::policy::WriterDataLifecycle& lifecycle)
+{
+    lifecycle_ = lifecycle;
+}
+}
+}
+}
 }

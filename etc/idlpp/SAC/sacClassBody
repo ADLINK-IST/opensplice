@@ -9,7 +9,7 @@ $(type_name)TypeSupport__alloc (
     )
 {
     c_ulong i;
-    c_ulong strlength =0;
+    os_size_t strlength =0;
     char * metaDescriptor;
     $(type_name)TypeSupport result;
     for (i = 0; i < $(type_name)_metaDescriptorArrLength; i++) {

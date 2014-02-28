@@ -18,6 +18,7 @@ import org.opensplice.cm.Topic;
 import org.opensplice.cm.Writer;
 import org.opensplice.cm.WriterSnapshot;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.data.UserData;
 import org.opensplice.cm.meta.MetaType;
 import org.opensplice.cm.qos.QoS;
@@ -43,8 +44,8 @@ public class WriterImpl extends EntityImpl implements Writer{
      * @param _name The name of the kernel entity that is associated with this
      *              entity.
      */
-    public WriterImpl(long _index, long _serial, String _pointer, String _name) {
-        super(_index, _serial, _pointer, _name);
+    public WriterImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name) {
+        super(communicator, _index, _serial, _pointer, _name);
     }
     
     /**
@@ -58,12 +59,12 @@ public class WriterImpl extends EntityImpl implements Writer{
      * @throws CMException Thrown when the Writer could not be created.
      */
     public WriterImpl(PublisherImpl publisher, String name, Topic topic, WriterQoS qos) throws CMException{
-        super(0, 0, "", "");
+        super(publisher.getCommunicator(), 0, 0, "", "");
         owner = true;
         WriterImpl w;
         
         try {
-            w = (WriterImpl)CMFactory.getCommunicator().writerNew(publisher, name, topic, qos);
+            w = (WriterImpl)getCommunicator().writerNew(publisher, name, topic, qos);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -92,7 +93,7 @@ public class WriterImpl extends EntityImpl implements Writer{
         }
         WriterSnapshot snapshot;
         try {
-            snapshot = CMFactory.getCommunicator().writerSnapshotNew(this);
+            snapshot = getCommunicator().writerSnapshotNew(this);
         } catch (CommunicationException e) {
             throw new CMException("Snapshot of '" + this.toString() + 
                                         "' could not be created.");
@@ -112,7 +113,7 @@ public class WriterImpl extends EntityImpl implements Writer{
             throw new CMException("Writer has already been freed.");
         }
         try {
-            CMFactory.getCommunicator().writerWrite(this, data);
+            getCommunicator().writerWrite(this, data);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -133,7 +134,7 @@ public class WriterImpl extends EntityImpl implements Writer{
             throw new CMException("No instance to dispose");
         }
         try {
-            CMFactory.getCommunicator().writerDispose(this, data);
+            getCommunicator().writerDispose(this, data);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -151,7 +152,7 @@ public class WriterImpl extends EntityImpl implements Writer{
             throw new CMException("Writer has already been freed.");
         }
         try {
-            CMFactory.getCommunicator().writerWriteDispose(this, data);
+            getCommunicator().writerWriteDispose(this, data);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -169,7 +170,7 @@ public class WriterImpl extends EntityImpl implements Writer{
             throw new CMException("Writer has already been freed.");
         }
         try {
-            CMFactory.getCommunicator().writerRegister(this, data);
+            getCommunicator().writerRegister(this, data);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -187,7 +188,7 @@ public class WriterImpl extends EntityImpl implements Writer{
             throw new CMException("Writer has already been freed.");
         }
         try {
-            CMFactory.getCommunicator().writerUnregister(this, data);
+            getCommunicator().writerUnregister(this, data);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }
@@ -210,7 +211,7 @@ public class WriterImpl extends EntityImpl implements Writer{
         }
         if(dataType == null){
             try {
-                dataType = CMFactory.getCommunicator().writerGetDataType(this);
+                dataType = getCommunicator().writerGetDataType(this);
             } catch (CommunicationException e) {
                 throw new CMException(e.getMessage());
             }
@@ -224,7 +225,7 @@ public class WriterImpl extends EntityImpl implements Writer{
             throw new CMException("Supplied entity is not available (anymore).");
         } else if(qos instanceof WriterQoS){
             try {
-                CMFactory.getCommunicator().entitySetQoS(this, qos);
+                getCommunicator().entitySetQoS(this, qos);
             } catch (CommunicationException ce) {
                 throw new CMException(ce.getMessage());
             }

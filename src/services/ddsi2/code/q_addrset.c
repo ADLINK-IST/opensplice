@@ -1,11 +1,12 @@
 #include <string.h>
 #include <stddef.h>
+#include <assert.h>
 
 #include "os_heap.h"
 #include "os_socket.h"
 #include "os_stdlib.h"
 
-#include "q_avl.h"
+#include "ut_avl.h"
 #include "q_log.h"
 #include "q_misc.h"
 #include "q_config.h"
@@ -25,25 +26,10 @@
 #define TRYLOCK(as) (os_mutexTryLock (&((struct addrset *) (as))->lock))
 #define UNLOCK(as) (os_mutexUnlock (&((struct addrset *) (as))->lock))
 
-void init_locator (nn_locator_t *loc, const os_sockaddr_storage *addr, unsigned short port)
-{
-  /* addr in proper network format; we keep the address part of the
-     locators in proper network format, but not the kind and port fields */
-  if (addr->ss_family == AF_INET)
-  {
-    memset (loc, 0, sizeof (*loc));
-    loc->kind = NN_LOCATOR_KIND_UDPv4;
-    memcpy (loc->address + 12, &((os_sockaddr_in *) addr)->sin_addr, 4);
-    loc->port = port;
-  }
-  else
-  {
-    memset (loc, 0, sizeof (*loc));
-    loc->kind = NN_LOCATOR_KIND_UDPv6;
-    memcpy (loc->address, &((os_sockaddr_in6 *) addr)->sin6_addr, 16);
-    loc->port = port;
-  }
-}
+static int compare_addr (const void *va, const void *vb);
+
+static const ut_avlCTreedef_t addrset_treedef =
+  UT_AVL_CTREEDEF_INITIALIZER (offsetof (struct addrset_node, avlnode), offsetof (struct addrset_node, addr), compare_addr, 0);
 
 static int add_addresses_to_addrset_1 (struct addrset *as, const char *ip, int port_mode, const char *msgtag)
 {
@@ -110,7 +96,7 @@ int add_addresses_to_addrset (struct addrset *as, const char *addrs, int port_mo
     return -1;
   }
   cursor = addrs_copy;
-  while ((a = ddsi2_strsep (&cursor, ",")) != NULL)
+  while ((a = os_strsep (&cursor, ",")) != NULL)
   {
     int port = 0, pos;
     if (!config.useIpv6)
@@ -193,24 +179,24 @@ struct addrset *new_addrset (void)
   struct addrset *as = os_malloc (sizeof (*as));
   as->refc = 1;
   os_mutexInit (&as->lock, &gv.mattr);
-  avl_init (&as->ucaddrs, offsetof (struct addrset_node, avlnode), offsetof (struct addrset_node, addr), compare_addr, 0);
-  avl_init (&as->mcaddrs, offsetof (struct addrset_node, avlnode), offsetof (struct addrset_node, addr), compare_addr, 0);
+  ut_avlCInit (&addrset_treedef, &as->ucaddrs);
+  ut_avlCInit (&addrset_treedef, &as->mcaddrs);
   return as;
 }
 
 struct addrset *ref_addrset (struct addrset *as)
 {
   if (as != NULL)
-    pa_increment (&as->refc);
+    atomic_inc_u32_nv (&as->refc);
   return as;
 }
 
 void unref_addrset (struct addrset *as)
 {
-  if (pa_decrement (&as->refc) == 0)
+  if (atomic_dec_u32_nv (&as->refc) == 0)
   {
-    avl_free (&as->ucaddrs, os_free);
-    avl_free (&as->mcaddrs, os_free);
+    ut_avlCFree (&addrset_treedef, &as->ucaddrs, os_free);
+    ut_avlCFree (&addrset_treedef, &as->mcaddrs, os_free);
     os_mutexDestroy (&as->lock);
     os_free (as);
   }
@@ -221,16 +207,16 @@ int is_mcaddr (const os_sockaddr_storage *addr)
   switch (addr->ss_family)
   {
     case AF_INET:
-      {
-        const os_sockaddr_in *x = (const os_sockaddr_in *) addr;
-        return IN_MULTICAST (ntohl (x->sin_addr.s_addr));
-      }
+    {
+      const os_sockaddr_in *x = (const os_sockaddr_in *) addr;
+      return IN_MULTICAST (ntohl (x->sin_addr.s_addr));
+    }
 #if OS_SOCKET_HAS_IPV6
     case AF_INET6:
-      {
-        const os_sockaddr_in6 *x = (const os_sockaddr_in6 *) addr;
-        return IN6_IS_ADDR_MULTICAST (&x->sin6_addr);
-      }
+    {
+      const os_sockaddr_in6 *x = (const os_sockaddr_in6 *) addr;
+      return IN6_IS_ADDR_MULTICAST (&x->sin6_addr);
+    }
 #endif
     default:
       assert (0);
@@ -241,28 +227,27 @@ int is_mcaddr (const os_sockaddr_storage *addr)
 int addrset_purge (struct addrset *as)
 {
   LOCK (as);
-  avl_free (&as->ucaddrs, os_free);
-  avl_free (&as->mcaddrs, os_free);
+  ut_avlCFree (&addrset_treedef, &as->ucaddrs, os_free);
+  ut_avlCFree (&addrset_treedef, &as->mcaddrs, os_free);
   UNLOCK (as);
   return 0;
 }
 
 void add_to_addrset (struct addrset *as, const os_sockaddr_storage *addr)
 {
-  avlparent_t parent;
-  struct addrset_avltree *tree = is_mcaddr (addr) ? &as->mcaddrs : &as->ucaddrs;
+  ut_avlIPath_t path;
+  ut_avlCTree_t *tree = is_mcaddr (addr) ? &as->mcaddrs : &as->ucaddrs;
   LOCK (as);
-  if (avl_lookup (tree, addr, &parent) == NULL)
+  if (ut_avlCLookupIPath (&addrset_treedef, tree, addr, &path) == NULL)
   {
     struct addrset_node *n = os_malloc (sizeof (*n));
-    avl_init_node (&n->avlnode, parent);
     n->addr = *addr;
-    avl_insert (tree, n);
+    ut_avlCInsertIPath (&addrset_treedef, tree, n, &path);
   }
   UNLOCK (as);
 }
 
-static void copy_addrset_into_addrset_helper (void *vnode, void *varg)
+static void copy_addrset_into_addrset_helper (const void *vnode, void *varg)
 {
   const struct addrset_node *n = vnode;
   add_to_addrset (varg, &n->addr);
@@ -271,14 +256,14 @@ static void copy_addrset_into_addrset_helper (void *vnode, void *varg)
 void copy_addrset_into_addrset_uc (struct addrset *as, const struct addrset *asadd)
 {
   LOCK (asadd);
-  avl_walk ((struct addrset_avltree *) &asadd->ucaddrs, copy_addrset_into_addrset_helper, as);
+  ut_avlCConstWalk (&addrset_treedef, &asadd->ucaddrs, copy_addrset_into_addrset_helper, as);
   UNLOCK (asadd);
 }
 
 void copy_addrset_into_addrset_mc (struct addrset *as, const struct addrset *asadd)
 {
   LOCK (asadd);
-  avl_walk ((struct addrset_avltree *) &asadd->mcaddrs, copy_addrset_into_addrset_helper, as);
+  ut_avlCConstWalk (&addrset_treedef, &asadd->mcaddrs, copy_addrset_into_addrset_helper, as);
   UNLOCK (asadd);
 }
 
@@ -288,11 +273,16 @@ void copy_addrset_into_addrset (struct addrset *as, const struct addrset *asadd)
   copy_addrset_into_addrset_mc (as, asadd);
 }
 
+os_size_t addrset_count (const struct addrset *as)
+{
+  return (ut_avlCCount (&as->ucaddrs) + ut_avlCCount (&as->mcaddrs));
+}
+
 int addrset_empty_uc (const struct addrset *as)
 {
   int isempty;
   LOCK (as);
-  isempty = avl_empty (&as->ucaddrs);
+  isempty = ut_avlCIsEmpty (&as->ucaddrs);
   UNLOCK (as);
   return isempty;
 }
@@ -301,7 +291,7 @@ int addrset_empty_mc (const struct addrset *as)
 {
   int isempty;
   LOCK (as);
-  isempty = avl_empty (&as->mcaddrs);
+  isempty = ut_avlCIsEmpty (&as->mcaddrs);
   UNLOCK (as);
   return isempty;
 }
@@ -310,7 +300,7 @@ int addrset_empty (const struct addrset *as)
 {
   int isempty;
   LOCK (as);
-  isempty = avl_empty (&as->ucaddrs) && avl_empty (&as->mcaddrs);
+  isempty = ut_avlCIsEmpty (&as->ucaddrs) && ut_avlCIsEmpty (&as->mcaddrs);
   UNLOCK (as);
   return isempty;
 }
@@ -318,14 +308,15 @@ int addrset_empty (const struct addrset *as)
 int addrset_any_uc (const struct addrset *as, os_sockaddr_storage *dst)
 {
   LOCK (as);
-  if (avl_empty (&as->ucaddrs))
+  if (ut_avlCIsEmpty (&as->ucaddrs))
   {
     UNLOCK (as);
     return 0;
   }
   else
   {
-    *dst = as->ucaddrs.root->addr;
+    const struct addrset_node *n = ut_avlCRoot (&addrset_treedef, &as->ucaddrs);
+    *dst = n->addr;
     UNLOCK (as);
     return 1;
   }
@@ -334,56 +325,57 @@ int addrset_any_uc (const struct addrset *as, os_sockaddr_storage *dst)
 int addrset_any_mc (const struct addrset *as, os_sockaddr_storage *dst)
 {
   LOCK (as);
-  if (avl_empty (&as->mcaddrs))
+  if (ut_avlCIsEmpty (&as->mcaddrs))
   {
     UNLOCK (as);
     return 0;
   }
   else
   {
-    *dst = as->mcaddrs.root->addr;
+    const struct addrset_node *n = ut_avlCRoot (&addrset_treedef, &as->mcaddrs);
+    *dst = n->addr;
     UNLOCK (as);
     return 1;
   }
 }
 
-struct addrset_forall_addresses_helper_arg {
+struct addrset_forall_helper_arg
+{
   addrset_forall_fun_t f;
-  void *arg;
-  size_t ret;
+  void * arg;
 };
 
 static void addrset_forall_helper (void *vnode, void *varg)
 {
   const struct addrset_node *n = vnode;
-  struct addrset_forall_addresses_helper_arg *arg = varg;
-  arg->ret += arg->f (&n->addr, arg->arg);
+  struct addrset_forall_helper_arg *arg = varg;
+  arg->f (&n->addr, arg->arg);
 }
 
-size_t addrset_forall_addresses (struct addrset *as, addrset_forall_fun_t f, void *arg)
+void addrset_forall (struct addrset *as, addrset_forall_fun_t f, void *arg)
 {
-  struct addrset_forall_addresses_helper_arg arg1;
+  struct addrset_forall_helper_arg arg1;
   arg1.f = f;
   arg1.arg = arg;
-  arg1.ret = 0;
   LOCK (as);
-  avl_walk (&as->mcaddrs, addrset_forall_helper, &arg1);
-  avl_walk (&as->ucaddrs, addrset_forall_helper, &arg1);
+  ut_avlCWalk (&addrset_treedef, &as->mcaddrs, addrset_forall_helper, &arg1);
+  ut_avlCWalk (&addrset_treedef, &as->ucaddrs, addrset_forall_helper, &arg1);
   UNLOCK (as);
-  return arg1.ret;
 }
 
-struct log_addrset_helper_arg {
+struct log_addrset_helper_arg
+{
   logcat_t tf;
 };
 
-static size_t log_addrset_helper (const os_sockaddr_storage *n, void *varg)
+static void log_addrset_helper (const os_sockaddr_storage *n, void *varg)
 {
   const struct log_addrset_helper_arg *arg = varg;
   char buf[INET6_ADDRSTRLEN_EXTENDED];
   if (config.enabled_logcats & arg->tf)
+  {
     nn_log (arg->tf, " %s", sockaddr_to_string_with_port (buf, n));
-  return 0;
+  }
 }
 
 void nn_log_addrset (logcat_t tf, const char *prefix, const struct addrset *as)
@@ -391,21 +383,21 @@ void nn_log_addrset (logcat_t tf, const char *prefix, const struct addrset *as)
   struct log_addrset_helper_arg arg;
   arg.tf = tf;
   nn_log (tf, prefix);
-  addrset_forall_addresses ((struct addrset *) as, log_addrset_helper, &arg); /* drop const, we know it is */
+  addrset_forall ((struct addrset *) as, log_addrset_helper, &arg); /* drop const, we know it is */
 }
 
-static int addrset_eq_onesidederr1 (const struct addrset_avltree *at, const struct addrset_avltree *bt)
+static int addrset_eq_onesidederr1 (const ut_avlCTree_t *at, const ut_avlCTree_t *bt)
 {
   /* Just checking the root */
-  if (at->root == NULL)
-    return (bt->root == NULL);
-  else if (bt->root == NULL)
+  if (ut_avlCIsEmpty (at) && ut_avlCIsEmpty (bt)) {
+    return 1;
+  } else if (ut_avlCIsSingleton (at) && ut_avlCIsSingleton (bt)) {
+    const struct addrset_node *a = ut_avlCRoot (&addrset_treedef, at);
+    const struct addrset_node *b = ut_avlCRoot (&addrset_treedef, bt);
+    return compare_addr (&a->addr, &b->addr) == 0;
+  } else {
     return 0;
-  else
-    return
-      (at->root->avlnode.left == NULL && at->root->avlnode.right == NULL &&
-       bt->root->avlnode.left == NULL && bt->root->avlnode.right == NULL &&
-       compare_addr (&at->root->addr, &bt->root->addr) == 0);
+  }
 }
 
 int addrset_eq_onesidederr (const struct addrset *a, const struct addrset *b)

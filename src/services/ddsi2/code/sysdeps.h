@@ -60,34 +60,13 @@
 #endif
 
 #if defined (_WIN32)
+typedef SOCKET os_handle;
 #define Q_VALID_SOCKET(s) ((s) != INVALID_SOCKET)
 #define Q_INVALID_SOCKET INVALID_SOCKET
 #else /* All Unixes have socket() return -1 on error */
+typedef int os_handle;
 #define Q_VALID_SOCKET(s) ((s) != -1)
 #define Q_INVALID_SOCKET -1
-#endif
-
-#if defined (_WIN32)
-/* Map SOCKEVENT bits to native platform bits if the native ones are
-   suitable.  The native ones aren't likely to change because of
-   binary compatibility, but it possible to change the mapping and
-   using versioned libraries to ensure both binary and source
-   compatibility while changing them in (as-yet) unpredictable ways.
-
-   The code below should be rather robust.  Note that all bits 1 can't
-   be the case, and excluding that value from the range guarantees the
-   preprocessor won't warn about a constant result of a comparison. */
-#if 0 < FD_READ && FD_READ < 4294967295 && ((FD_READ & -FD_READ) == FD_READ) && \
-    0 < FD_WRITE && FD_WRITE < 4294967295 && ((FD_WRITE & -FD_WRITE) == FD_WRITE)
-#define OS_SOCKEVENT_READ FD_READ
-#define OS_SOCKEVENT_WRITE FD_WRITE
-#else
-#define OS_SOCKEVENT_READ 1u
-#define OS_SOCKEVENT_WRITE 2u
-#endif /* use native defs */
-#else /* All Unixes */
-#define OS_SOCKEVENT_READ 1u
-#define OS_SOCKEVENT_WRITE 2u
 #endif
 
 #if defined (__sun) && !defined (_XPG4_2)
@@ -101,9 +80,12 @@
 #define SYSDEPS_MSGHDR_FLAGS 1
 #endif
 
-#if NN_HAVE_C99_INLINE
-#include "sysdeps.template"
+#if NN_HAVE_C99_INLINE && !defined SUPPRESS_SYSDEPS_INLINES
+#include "sysdeps_template.c"
 #else
+#if defined (__cplusplus)
+extern "C" {
+#endif
 os_uint32 atomic_inc_u32_nv (volatile os_uint32 *value);
 os_uint32 atomic_dec_u32_nv (volatile os_uint32 *value);
 void atomic_add_u32_noret (volatile os_uint32 *value, os_uint32 addend);
@@ -115,6 +97,13 @@ void pa_membar_enter (void);
 void pa_membar_exit (void);
 void pa_membar_producer (void);
 void pa_membar_consumer (void);
+#if defined (__cplusplus)
+}
+#endif
+#endif
+
+#if defined (__cplusplus)
+extern "C" {
 #endif
 
 #define ASSERT_RDLOCK_HELD(x) ((void) 0)
@@ -124,7 +113,7 @@ void pa_membar_consumer (void);
 #if ! SYSDEPS_HAVE_IOVEC
 struct iovec {
   void *iov_base;
-  size_t iov_len;
+  os_size_t iov_len;
 };
 #endif
 
@@ -134,9 +123,9 @@ struct msghdr
   void *msg_name;
   socklen_t msg_namelen;
   struct iovec *msg_iov;
-  size_t msg_iovlen;
+  os_size_t msg_iovlen;
   void *msg_control;
-  size_t msg_controllen;
+  os_size_t msg_controllen;
   int msg_flags;
 };
 #endif
@@ -147,17 +136,22 @@ struct msghdr
 
 #if ! SYSDEPS_HAVE_RECVMSG
 /* Only implements iovec of length 1, no control */
-os_ssize_t recvmsg (int fd, struct msghdr *message, int flags);
+os_ssize_t recvmsg (os_handle fd, struct msghdr *message, int flags);
 #endif
 #if ! SYSDEPS_HAVE_SENDMSG
-os_ssize_t sendmsg (int fd, const struct msghdr *message, int flags);
+os_ssize_t sendmsg (os_handle fd, const struct msghdr *message, int flags);
 #endif
 #if ! SYSDEPS_HAVE_RANDOM
 long random (void);
 #endif
 
 os_int64 get_thread_cputime (void);
+
 int os_threadEqual (os_threadId a, os_threadId b);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #if !(defined __APPLE__ && defined __OPTIMIZE__ && NN_HAVE_C99_INLINE)
 #define HAVE_ATOMIC_LIFO 0
@@ -169,10 +163,10 @@ NN_C99_INLINE void os_atomic_lifo_init (os_atomic_lifo_t *head) {
   OSQueueHead q = OS_ATOMIC_QUEUE_INIT;
   memcpy ((void *) head, (void *) &q, sizeof (*head));
 }
-NN_C99_INLINE void os_atomic_lifo_push (os_atomic_lifo_t *head, void *elem, size_t linkoff) {
+NN_C99_INLINE void os_atomic_lifo_push (os_atomic_lifo_t *head, void *elem, os_size_t linkoff) {
   OSAtomicEnqueue (head, elem, linkoff);
 }
-NN_C99_INLINE void *os_atomic_lifo_pop (os_atomic_lifo_t *head, size_t linkoff) {
+NN_C99_INLINE void *os_atomic_lifo_pop (os_atomic_lifo_t *head, os_size_t linkoff) {
   return OSAtomicDequeue (head, linkoff);
 }
 #endif

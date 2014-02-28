@@ -61,7 +61,7 @@ DDS::DataReader_ptr DDS::ReadCondition_impl::get_datareader (
   if (handle)
   {
     ccpp_UserData_ptr drUD = NULL;
-    drUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+    drUD = dynamic_cast<ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
     if (drUD)
     {
       dataReader = dynamic_cast<DDS::DataReader_ptr>(drUD->ccpp_object);
@@ -92,7 +92,7 @@ DDS::DataReaderView_ptr DDS::ReadCondition_impl::get_datareaderview(
     if (handle)
     {
         ccpp_UserData_ptr drUD = NULL;
-        drUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+        drUD = dynamic_cast<ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
         if (drUD)
         {
           dataReaderView = dynamic_cast<DDS::DataReaderView_ptr>(drUD->ccpp_object);

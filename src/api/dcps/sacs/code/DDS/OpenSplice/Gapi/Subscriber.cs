@@ -30,7 +30,7 @@ namespace DDS.OpenSplice.Gapi
          *         in DataReaderQos qos,
          *         in DataReaderListener a_listener);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_create_datareader")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_create_datareader")]
         public static extern IntPtr create_datareader(
             IntPtr _this,
             IntPtr a_topic,
@@ -43,7 +43,7 @@ namespace DDS.OpenSplice.Gapi
          *     delete_datareader(
          *         in DataReader a_datareader);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_delete_datareader")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_delete_datareader")]
         public static extern ReturnCode delete_datareader(
             IntPtr _this,
             IntPtr a_datareader);
@@ -51,7 +51,7 @@ namespace DDS.OpenSplice.Gapi
         /*     ReturnCode_t
          *     delete_contained_entities();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_delete_contained_entities")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_delete_contained_entities")]
         public static extern ReturnCode delete_contained_entities(
             IntPtr _this);
 
@@ -59,7 +59,7 @@ namespace DDS.OpenSplice.Gapi
          *     lookup_datareader(
          *         in string topic_name);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_lookup_datareader")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_lookup_datareader")]
         public static extern IntPtr lookup_datareader(
             IntPtr _this,
             string topic_name);
@@ -71,7 +71,7 @@ namespace DDS.OpenSplice.Gapi
          *         in ViewStateMask view_states,
          *         in InstanceStateMask instance_states);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_get_datareaders")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_get_datareaders")]
         public static extern ReturnCode get_datareaders(
             IntPtr _this,
             IntPtr readers,
@@ -82,7 +82,7 @@ namespace DDS.OpenSplice.Gapi
         /*     ReturnCode_t
          *     notify_datareaders();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_notify_datareaders")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_notify_datareaders")]
         public static extern ReturnCode notify_datareaders(
             IntPtr _this);
 
@@ -90,7 +90,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_qos(
          *         in SubscriberQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_set_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_set_qos")]
         public static extern ReturnCode set_qos(
             IntPtr _this,
             IntPtr qos);
@@ -99,7 +99,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_qos(
          *         inout SubscriberQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_get_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_get_qos")]
         public static extern ReturnCode get_qos(
             IntPtr _this,
             IntPtr qos);
@@ -109,7 +109,7 @@ namespace DDS.OpenSplice.Gapi
          *         in SubscriberListener a_listener,
          *         in StatusKindMask mask);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_set_listener")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_set_listener")]
         public static extern ReturnCode set_listener(
             IntPtr _this,
             IntPtr a_listener,
@@ -119,28 +119,28 @@ namespace DDS.OpenSplice.Gapi
         /*     SubscriberListener
          *     get_listener();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_get_listener")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_get_listener")]
         public static extern IntPtr get_listener(
             IntPtr _this);
 
         /*     ReturnCode_t
          *     begin_access();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_begin_access")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_begin_access")]
         public static extern ReturnCode begin_access(
             IntPtr _this);
 
         /*     ReturnCode_t
          *     end_access();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_end_access")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_end_access")]
         public static extern ReturnCode end_access(
             IntPtr _this);
 
         /*     DomainParticipant
          *     get_participant();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_get_participant")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_get_participant")]
         public static extern IntPtr get_participant(
             IntPtr _this);
 
@@ -148,7 +148,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_default_datareader_qos(
          *         in DataReaderQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_set_default_datareader_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_set_default_datareader_qos")]
         public static extern ReturnCode set_default_datareader_qos(
             IntPtr _this,
             IntPtr qos);
@@ -157,7 +157,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_default_datareader_qos(
          *         inout DataReaderQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_get_default_datareader_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_get_default_datareader_qos")]
         public static extern ReturnCode get_default_datareader_qos(
             IntPtr _this,
             IntPtr qos);
@@ -167,7 +167,7 @@ namespace DDS.OpenSplice.Gapi
          *         inout DataReaderQos a_datareader_qos,
          *         in TopicQos a_topic_qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_subscriber_copy_from_topic_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_subscriber_copy_from_topic_qos")]
         public static extern ReturnCode copy_from_topic_qos(
             IntPtr _this,
             IntPtr a_datareader_qos,

@@ -23,6 +23,3 @@ namespace isocpp  {
 }
 }
 }
-
-ISOCPP_EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_WaitSet_publisher, examples::dcps::WaitSet::isocpp::publisher)
-ISOCPP_EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_WaitSet_subscriber, examples::dcps::WaitSet::isocpp::subscriber)

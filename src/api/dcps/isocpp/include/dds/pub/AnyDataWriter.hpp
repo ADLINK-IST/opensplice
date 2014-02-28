@@ -28,6 +28,11 @@ namespace dds
 namespace pub
 {
 
+inline AnyDataWriter::AnyDataWriter(const dds::core::null_type&)
+    : holder_()
+{
+}
+
 template <typename T>
 AnyDataWriter::AnyDataWriter(const dds::pub::DataWriter<T>& dw)
     : holder_(new dds::pub::detail::DWHolder<T>(dw)) { }
@@ -55,7 +60,7 @@ dds::pub::DataWriter<T> AnyDataWriter::get()
 {
     OMG_DDS_STATIC_ASSERT(::dds::topic::is_topic_type<T>::value == 1);
     detail::DWHolder<T>* h = dynamic_cast<detail::DWHolder<T>* >(holder_.get());
-    if (h == 0)
+    if(h == 0)
     {
         throw ::dds::core::InvalidDowncastError("invalid type");
     }

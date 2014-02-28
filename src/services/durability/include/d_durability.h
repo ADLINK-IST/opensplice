@@ -22,7 +22,6 @@
 #include "v_statistics.h"
 #include "v_statisticsHelpers.h"
 #include "v_statisticsInterface.h"
-#include "v_kernel.h"
 #include "os.h"
 
 #if defined (__cplusplus)
@@ -62,7 +61,8 @@ void                d_durabilitySetState                (d_durability durability
 
 c_bool              d_durabilityMustTerminate           (d_durability durability);
 
-void                d_durabilityTerminate               (d_durability durability);
+void                d_durabilityTerminate               (d_durability durability,
+                                                         c_bool died);
 
 void                d_durabilityUpdateStatistics        (d_durability durability,
                                                          d_durabilityStatisticsCallback callback,

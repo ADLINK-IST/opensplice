@@ -49,7 +49,7 @@ int publisher(int argc, char *argv[])
     try
     {
         /** A dds::domain::DomainParticipant is created for the default domain. */
-        dds::domain::DomainParticipant dp(DDS::DOMAIN_ID_DEFAULT);
+        dds::domain::DomainParticipant dp(org::opensplice::domain::default_id());
 
         /** The Durability::Transient policy is specified as a dds::topic::qos::TopicQos
          * so that even if the subscriber does not join until after the sample is written
@@ -84,24 +84,22 @@ int publisher(int argc, char *argv[])
         dds::pub::DataWriter<WaitSetData::Msg> dw(pub, topic, dwqos);
 
         /** A sample is created and then written. */
-        WaitSetData::Msg msgInstance;
-        msgInstance.userID = 1;
-        msgInstance.message = DDS::string_dup("First Hello");
+        WaitSetData::Msg msgInstance(1, "First Hello");
         dw << msgInstance;
 
         std::cout << "=== [Publisher] written a message containing :" << std::endl;
-        std::cout << "    userID  : " << msgInstance.userID << std::endl;
-        std::cout << "    Message : \"" << msgInstance.message.in() << "\"" << std::endl;
+        std::cout << "    userID  : " << msgInstance.userID() << std::endl;
+        std::cout << "    Message : \"" << msgInstance.message() << "\"" << std::endl;
 
         exampleSleepMilliseconds(500); //Sleep to ensure message is sent
 
         /** A second sample is created and then written */
-        msgInstance.message = DDS::string_dup("Hello again");
+        msgInstance.message() = "Hello again";
         dw << msgInstance;
 
         std::cout << "=== [Publisher] written a message containing :" << std::endl;
-        std::cout << "    userID  : " << msgInstance.userID << std::endl;
-        std::cout << "    Message : \"" << msgInstance.message.in() << "\"" << std::endl;
+        std::cout << "    userID  : " << msgInstance.userID() << std::endl;
+        std::cout << "    Message : \"" << msgInstance.message() << "\"" << std::endl;
 
         /* A short sleep ensures time is allowed for the sample to be written to the network.
         If the example is running in *Single Process Mode* exiting immediately might
@@ -140,8 +138,8 @@ public:
             if((*sample).info().valid())
             {
                 std::cout << "\n    --- New message received ---" << std::endl;
-                std::cout << "    userID  : " << (*sample).data().userID << std::endl;
-                std::cout << "    Message : \"" << (*sample).data().message.in() << "\"" << std::endl;
+                std::cout << "    userID  : " << sample->data().userID() << std::endl;
+                std::cout << "    Message : \"" << sample->data().message() << "\"" << std::endl;
             }
         }
     }
@@ -173,11 +171,11 @@ public:
         for (dds::sub::LoanedSamples<WaitSetData::Msg>::const_iterator sample = samples.begin();
             sample < samples.end(); ++sample)
         {
-            if((*sample).info().valid())
+            if(sample->info().valid())
             {
                 std::cout << "\n    --- message received (with QueryCondition on message field) ---" << std::endl;
-                std::cout << "    userID  : " << (*sample).data().userID << std::endl;
-                std::cout << "    Message : \"" << (*sample).data().message.in() << "\"" << std::endl;
+                std::cout << "    userID  : " << sample->data().userID() << std::endl;
+                std::cout << "    Message : \"" << sample->data().message() << "\"" << std::endl;
             }
         }
     }
@@ -265,7 +263,7 @@ int subscriber(int argc, char *argv[])
     {
         /** A domain participant and topic are created identically as in
          the ::publisher */
-        dds::domain::DomainParticipant dp(DDS::DOMAIN_ID_DEFAULT);
+        dds::domain::DomainParticipant dp(org::opensplice::domain::default_id());
         dds::topic::qos::TopicQos topicQos = dp.default_topic_qos()
                                                     << dds::core::policy::Durability::Transient()
                                                     << dds::core::policy::Reliability::Reliable()
@@ -303,9 +301,7 @@ int subscriber(int argc, char *argv[])
 
         /** A query condition is created which is triggered when a message with the string "Hello again" is received */
         std::cout << "=== [WaitSetDataSubscriber] Query : message = \"Hello again\"" << std::endl;
-        std::vector<std::string> params;
-        params.push_back("Hello again");
-        dds::sub::Query query(dr, "message=%0", params);
+        dds::sub::Query query(dr, "message='Hello again'");
         dds::sub::status::DataState anyDataState;
         QueryCondHandler queryCondHandler(query, anyDataState);
         dds::sub::cond::QueryCondition queryCond(query, anyDataState, queryCondHandler);
@@ -372,3 +368,6 @@ int subscriber(int argc, char *argv[])
 }
 }
 }
+
+EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_WaitSet_publisher, examples::dcps::WaitSet::isocpp::publisher)
+EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_WaitSet_subscriber, examples::dcps::WaitSet::isocpp::subscriber)

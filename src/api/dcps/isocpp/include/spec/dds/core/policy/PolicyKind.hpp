@@ -22,88 +22,121 @@
 #include <dds/core/detail/conformance.hpp>
 #include <dds/core/SafeEnumeration.hpp>
 
-namespace dds { namespace core { namespace policy {
+namespace dds
+{
+namespace core
+{
+namespace policy
+{
 
-  struct OwnershipKind_def {
-    enum Type {
-      SHARED
-
-#ifdef  OMG_DDS_OWNERSHIP_SUPPORT
-      ,
-      EXCLUSIVE
-#endif  // OMG_DDS_OWNERSHIP_SUPPORT
+/** @todo raise spec issue **/
+#if defined (__SUNPRO_CC) && defined(SHARED)
+#   undef SHARED
+#endif
+struct OwnershipKind_def
+{
+    enum Type
+    {
+        SHARED
+        #ifdef  OMG_DDS_OWNERSHIP_SUPPORT
+        ,
+        EXCLUSIVE
+        #endif  // OMG_DDS_OWNERSHIP_SUPPORT
     };
-  };
-  typedef dds::core::safe_enum<OwnershipKind_def> OwnershipKind;
+};
 
-  struct DurabilityKind_def {
-    enum Type {
-      VOLATILE,
-      TRANSIENT_LOCAL
+typedef dds::core::safe_enum<OwnershipKind_def> OwnershipKind;
 
-#ifdef  OMG_DDS_PERSISTENCE_SUPPORT
-      ,
-      TRANSIENT,
-      PERSISTENT
-#endif  // #ifdef  OMG_DDS_PERSISTENCE_SUPPORT
-    }; };
-  typedef dds::core::safe_enum<DurabilityKind_def> DurabilityKind;
+struct DurabilityKind_def
+{
+    enum Type
+    {
+        VOLATILE,
+        TRANSIENT_LOCAL
 
-  struct PresentationAccessScopeKind_def  {
-    enum Type {
-      INSTANCE,
-      TOPIC
-
-#ifdef  OMG_DDS_OBJECT_MODEL_SUPPORT
-      ,
-      GROUP
-#endif  // OMG_DDS_OBJECT_MODEL_SUPPORT
-    }; };
-  typedef dds::core::safe_enum<PresentationAccessScopeKind_def> PresentationAccessScopeKind;
-
-
-  struct ReliabilityKind_def {
-    enum Type {
-      BEST_EFFORT,
-      RELIABLE
+        #ifdef  OMG_DDS_PERSISTENCE_SUPPORT
+        ,
+        TRANSIENT,
+        PERSISTENT
+        #endif  // #ifdef  OMG_DDS_PERSISTENCE_SUPPORT
     };
-  };
-  typedef dds::core::safe_enum<ReliabilityKind_def> ReliabilityKind;
+};
+typedef dds::core::safe_enum<DurabilityKind_def> DurabilityKind;
+
+struct PresentationAccessScopeKind_def
+{
+    enum Type
+    {
+        INSTANCE,
+        TOPIC
+
+        #ifdef  OMG_DDS_OBJECT_MODEL_SUPPORT
+        ,
+        GROUP
+        #endif  // OMG_DDS_OBJECT_MODEL_SUPPORT
+    };
+};
+typedef dds::core::safe_enum<PresentationAccessScopeKind_def> PresentationAccessScopeKind;
 
 
-  struct DestinationOrderKind_def {
-    enum Type {
-      BY_RECEPTION_TIMESTAMP,
-      BY_SOURCE_TIMESTAMP
-    }; };
+struct ReliabilityKind_def
+{
+    enum Type
+    {
+        BEST_EFFORT,
+        RELIABLE
+    };
+};
+typedef dds::core::safe_enum<ReliabilityKind_def> ReliabilityKind;
 
-  typedef dds::core::safe_enum<DestinationOrderKind_def> DestinationOrderKind;
 
-  struct HistoryKind_def {
-    enum Type {
-      KEEP_LAST,
-      KEEP_ALL
-    };};
+struct DestinationOrderKind_def
+{
+    enum Type
+    {
+        BY_RECEPTION_TIMESTAMP,
+        BY_SOURCE_TIMESTAMP
+    };
+};
 
-  typedef dds::core::safe_enum<HistoryKind_def> HistoryKind;
+typedef dds::core::safe_enum<DestinationOrderKind_def> DestinationOrderKind;
 
-  struct LivelinessKind_def {
-    enum Type {
-      AUTOMATIC,
-      MANUAL_BY_PARTICIPANT,
-      MANUAL_BY_TOPIC
-    }; };
-  typedef dds::core::safe_enum<LivelinessKind_def> LivelinessKind;
+struct HistoryKind_def
+{
+    enum Type
+    {
+        KEEP_LAST,
+        KEEP_ALL
+    };
+};
 
-  struct TypeConsistencyEnforcementKind_def {
-    enum Type {
-      EXACT_TYPE_TYPE_CONSISTENCY,
-      EXACT_NAME_TYPE_CONSISTENCY,
-      DECLARED_TYPE_CONSISTENCY,
-      ASSIGNABLE_TYPE_CONSISTENCY
-    }; };
+typedef dds::core::safe_enum<HistoryKind_def> HistoryKind;
 
-  typedef dds::core::safe_enum<TypeConsistencyEnforcementKind_def> TypeConsistencyEnforcementKind;
+struct LivelinessKind_def
+{
+    enum Type
+    {
+        AUTOMATIC,
+        MANUAL_BY_PARTICIPANT,
+        MANUAL_BY_TOPIC
+    };
+};
+typedef dds::core::safe_enum<LivelinessKind_def> LivelinessKind;
 
-} } }
+struct TypeConsistencyEnforcementKind_def
+{
+    enum Type
+    {
+        EXACT_TYPE_TYPE_CONSISTENCY,
+        EXACT_NAME_TYPE_CONSISTENCY,
+        DECLARED_TYPE_CONSISTENCY,
+        ASSIGNABLE_TYPE_CONSISTENCY
+    };
+};
+
+typedef dds::core::safe_enum<TypeConsistencyEnforcementKind_def> TypeConsistencyEnforcementKind;
+
+}
+}
+}
 #endif /* OMG_DDS_CORE_POLICY_POLICYKIND_HPP_ */

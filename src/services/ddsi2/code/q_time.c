@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "os_time.h"
 
 #include "q_time.h"
@@ -14,13 +16,13 @@ os_int64 now (void)
 {
   os_time tv;
   tv = os_timeGet ();
-  return ((os_int64) tv.tv_sec * 1000000000ll + tv.tv_nsec);
+  return ((os_int64) tv.tv_sec * T_SECOND + tv.tv_nsec);
 }
 
 void time_to_sec_usec (int *sec, int *usec, os_int64 t)
 {
-  *sec = (int) (t / 1000000000);
-  *usec = (int) (t % 1000000000) / 1000;
+  *sec = (int) (t / T_SECOND);
+  *usec = (int) (t % T_SECOND) / 1000;
 }
 
 os_int64 time_round_up (os_int64 t, os_int64 round)
@@ -69,9 +71,9 @@ nn_ddsi_time_t nn_to_ddsi_time (os_int64 t)
     /* Do a fixed-point conversion to DDSI time; this mapping maps
        nanoseconds = 0 => fraction = 0. */
     nn_ddsi_time_t x;
-    int ns = (int) (t % 1000000000);
-    x.seconds = (int) (t / 1000000000);
-    x.fraction = (unsigned) ((999999999 + ((os_int64) ns << 32)) / 1000000000);
+    int ns = (int) (t % T_SECOND);
+    x.seconds = (int) (t / T_SECOND);
+    x.fraction = (unsigned) (((T_SECOND-1) + ((os_int64) ns << 32)) / T_SECOND);
     return x;
   }
 }
@@ -86,8 +88,8 @@ os_int64 nn_from_ddsi_time (nn_ddsi_time_t x)
        exhaustively tested for correct conversion of fractions
        computed by nn_to_ddsi_time.  But whether all other
        implementations are truncating, I don't know. */
-    int ns = (int) (((os_int64) x.fraction * 1000000000) >> 32);
-    return x.seconds * (os_int64) 1000000000 + ns;
+    int ns = (int) (((os_int64) x.fraction * T_SECOND) >> 32);
+    return x.seconds * (os_int64) T_SECOND + ns;
   }
 }
 
@@ -99,8 +101,8 @@ nn_duration_t nn_to_ddsi_duration (os_int64 t)
   else
   {
     nn_duration_t x;
-    x.sec = (int) (t / 1000000000);
-    x.nanosec = (int) (t % 1000000000);
+    x.sec = (int) (t / T_SECOND);
+    x.nanosec = (int) (t % T_SECOND);
     return x;
   }
 }
@@ -111,7 +113,7 @@ os_int64 nn_from_ddsi_duration (nn_duration_t x)
   if (x.sec == duration_infinite.sec && x.nanosec == duration_infinite.nanosec)
     t = T_NEVER;
   else
-    t = x.sec * 1000000000ll + x.nanosec;
+    t = x.sec * T_SECOND + x.nanosec;
   return t;
 }
 #else

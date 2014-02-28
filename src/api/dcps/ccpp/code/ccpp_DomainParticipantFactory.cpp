@@ -58,7 +58,7 @@ DDS::DomainParticipantFactory::get_instance(
       {
         if (os_mutexUnlock(&(localMutex.dpf_mutex)) == os_resultSuccess)
         {
-          CORBA::Object * data = (CORBA::Object *)gapi_object_get_user_data(_gapi_self);
+          DDS::Object * data = (DDS::Object *)gapi_object_get_user_data(_gapi_self);
           myUD = dynamic_cast<ccpp_UserData_ptr>(data);
           if (myUD)
           {
@@ -95,7 +95,7 @@ DDS::DomainParticipantFactory::get_instance(
             myUD = new ccpp_UserData(singletonSelf);
             if (myUD)
             {
-              gapi_object_set_user_data(_gapi_self, (CORBA::Object *)myUD,
+              gapi_object_set_user_data(_gapi_self, (DDS::Object *)myUD,
                                         ccpp_CallBack_DeleteUserData,NULL);
             }
             else
@@ -142,7 +142,7 @@ DDS::DomainParticipantFactory::create_participant (
     DDS::DomainParticipant_impl_ptr myParticipant = NULL;
     gapi_domainParticipantQos * gapi_dpqos;
     gapi_domainParticipantListener * gapi_listener = NULL;
-    CORBA::Boolean allocatedQos = false;
+    DDS::Boolean allocatedQos = false;
 
     if (a_listener)
     {
@@ -204,7 +204,7 @@ DDS::DomainParticipantFactory::create_participant (
           if (myUD)
           {
             gapi_domainParticipantFactoryQos *dpfqos = gapi_domainParticipantFactoryQos__alloc();
-            gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
+            gapi_object_set_user_data(handle, (DDS::Object *)myUD,
                                       ccpp_CallBack_DeleteUserData,NULL);
             if(dpfqos){
                 if(gapi_domainParticipantFactory_get_qos(_gapi_self, dpfqos) == GAPI_RETCODE_OK){
@@ -320,7 +320,7 @@ DDS::DomainParticipantFactory::lookup_participant (
      {
         ccpp_UserData_ptr myUD = NULL;
 
-        myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+        myUD = dynamic_cast<ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
         if (myUD)
         {
           myParticipant = dynamic_cast<DDS::DomainParticipant_impl_ptr>(myUD->ccpp_object);
@@ -413,7 +413,7 @@ DDS::DomainParticipantFactory::lookup_domain (
      {
         ccpp_UserData_ptr myUD = NULL;
 
-        myUD = dynamic_cast<ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+        myUD = dynamic_cast<ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
         if (myUD)
         {
           myDomain = dynamic_cast<DDS::Domain_impl_ptr>(myUD->ccpp_object);
@@ -438,7 +438,7 @@ DDS::DomainParticipantFactory::lookup_domain (
                 myUD = new ccpp_UserData(myDomain);
                 if (myUD)
                 {
-                    gapi_object_set_user_data(handle, (CORBA::Object *)myUD,
+                    gapi_object_set_user_data(handle, (DDS::Object *)myUD,
                                               ccpp_CallBack_DeleteUserData,NULL);
                 } else
                 {

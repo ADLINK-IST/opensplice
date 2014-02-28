@@ -137,6 +137,15 @@
                         system to be able to assign some of the privileged priorities.
                     ]]></comment>
                     <default>0</default>
+                        <attributeEnum name="priority_kind" required="false" version="COMMUNITY">
+                            <comment><![CDATA[
+                                This attribute specifies whether the specified
+                                Priority is a relative or absolute priority.
+                            ]]></comment>
+                            <value>Relative</value>
+                            <value>Absolute</value>
+                            <default>Relative</default>
+                        </attributeEnum>
                 </leafInt>
                 <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
                     <comment><![CDATA[
@@ -403,6 +412,95 @@
         </leafEnum>
       </element>
     </element>
+    <element name="Heartbeat" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+                    <p>The Splice Daemon uses an heartbeat mechanism to monitor the
+                    health of the remote domain services. This element allows
+                    fine-tuning of this heartbeat mechanism.</p>
+                    <p>Please note this heartbeat mechanism is similar to but not the
+                    same as the service liveliness assertion.</p>
+                ]]></comment>
+        <attributeInt name="transport_priority" required="false" version="COMMUNITY">
+          <comment><![CDATA[
+                        This attribute controls the transport priority QoS setting (in seconds) that
+                        is only used by the Splice Daemom for for sending its heartbeats.
+                    ]]></comment>
+          <minimum>0</minimum>
+          <default>0</default>
+        </attributeInt>
+        <element name="Scheduling" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+          <comment><![CDATA[
+                        This element specifies the scheduling parameters used by the
+                        thread that periodically sends the heartbeats.
+                    ]]></comment>
+          <leafInt name="Priority" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
+            <comment><![CDATA[
+                            This element specifies the thread priority that will be used
+                            by the thread that periodically sends the heartbeats. Only
+                            priorities that are supported by the underlying operating
+                            system can be assigned to this element. The user may need
+                            special privileges from the underlying operating system to
+                            be able to assign some of the privileged priorities.
+                        ]]></comment>
+            <default>0</default>
+            <attributeEnum name="priority_kind" required="false" version="COMMUNITY">
+              <comment><![CDATA[
+                                This attribute specifies whether the specified
+                                Priority is a relative or absolute priority.
+                            ]]></comment>
+              <value>Relative</value>
+              <value>Absolute</value>
+              <default>Relative</default>
+            </attributeEnum>
+          </leafInt>
+          <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
+            <comment><![CDATA[
+                            This element specifies the thread scheduling class that will
+                            be used by the thread that periodically sends the heartbeats.
+                            The user may need the appropriate privileges from the underlying
+                            operating system to be able to assign some of the privileged
+                            scheduling classes.
+                        ]]></comment>
+            <value>Timeshare</value>
+            <value>Realtime</value>
+            <value>Default</value>
+            <default>Default</default>
+          </leafEnum>
+        </element>
+        <leafFloat name="ExpiryTime" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
+          <comment><![CDATA[
+                        <p>This element specifies the maximum amount of time(in seconds) in
+                        which the Splice Daemon expects a new heartbeat of
+                        remote domain services. This is obviously also the
+                        same amount of time in which the Splice Daemon must
+                        send a heartbeat itself.</p>
+                        <p>Increasing this value will lead to less networking
+                        traffic and overhead but also to less responsiveness with
+                        respect to the liveliness of the Splice Daemon. Change
+                        this value according to the need of your system with respect
+                        to these aspects.</p>
+                    ]]></comment>
+          <default>4.0</default>
+          <minimum>0.2</minimum>
+          <attributeFloat name="update_factor" required="true" version="COMMUNITY">
+            <comment><![CDATA[
+                            <p>In case of a (temporary) high CPU load, the scheduling
+                            behaviour of the operating system might affect the
+                            capability of the Splice Daemon to send its
+                            heartbeat 'on time'. This attribute introduces some
+                            elasticity in this mechanism by making the service
+                            send its heartbeat more often then required by the
+                            ExpiryTime.</p>
+                            <p>The Splice Daemon will report its liveliness
+                            every <i>ExpiryTime</i> multiplied by this
+                            <i>update_factor</i>.</p>
+                        ]]></comment>
+            <minimum>0.1</minimum>
+            <maximum>0.9</maximum>
+            <default>0.25</default>
+          </attributeFloat>
+        </leafFloat>
+      </element>
   </element>
     <element name="Database" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
       <comment><![CDATA[
@@ -1572,6 +1670,18 @@
             <minimum>0</minimum>
           </attributeInt>
         </element>
+        <leafFloat name="TimeToWaitForAligner" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+            <comment><![CDATA[
+                The period (in seconds) to wait until an aligner is available in the domain.
+                If an aligner does not become available within this period the entire federation 
+                will terminate and returns with error code 1 (recoverable error). Currently only
+                values between 0.0 and 1.0 are supported, and all non-zero values are interpreted
+                as infinite.
+            ]]></comment>
+            <minimum>0.0</minimum>
+            <maximum>1.0</maximum>
+            <default>1.0</default>
+        </leafFloat>
       </element>
       <element name="WaitForAttachment" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
@@ -2911,17 +3021,18 @@
             <maximum>1073741823</maximum>
             <default>1073741823</default>
           </leafSize>
-          <leafInt name="ThrottleLimit" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <leafSize name="ThrottleLimit" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
             <comment><![CDATA[
                             Throttling will enable you to further limit (below MaxBurstSize) the amount of data that is
                             sent every Resolution interval. This happens if one of the receiving nodes in the network
                             indicates that it has trouble processing all incoming data. This value is the lower boundary
                             of the range over which the throttling can adapt the limit. If this value is set to the same
                             value (or higher) as MaxBurstSize throttling is disabled.
+                            The ThrottleLimit value is not allowed be smaller than the FragmentSize. If a lower value is
+                            provided, then the value of FragmentSize is used as ThrottleLimit.
                         ]]></comment>
-            <minimum>128</minimum>
             <default>10240</default>
-          </leafInt>
+          </leafSize>
           <leafInt name="ThrottleThreshold" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
             <comment><![CDATA[
                             <p>This is the number of unprocessed network fragments that a node will store before it will inform
@@ -3503,6 +3614,17 @@
           <comment><![CDATA[
                         This element specifies the tracing level for the <i>Receive</i> category.
                         This includes information about incoming data.
+                        Level 0 indicates no tracing, level 6 indicates the most detailed level
+                        of tracing.
+                    ]]></comment>
+          <minimum>0</minimum>
+          <maximum>6</maximum>
+          <default>0</default>
+        </leafInt>
+        <leafInt name="Throttling" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <comment><![CDATA[
+                        This element specifies the tracing level for the <i>Throttling</i> category.
+                        This includes information about throttling.
                         Level 0 indicates no tracing, level 6 indicates the most detailed level
                         of tracing.
                     ]]></comment>
@@ -4149,17 +4271,18 @@
             <maximum>1073741823</maximum>
             <default>1073741823</default>
           </leafSize>
-          <leafInt name="ThrottleLimit" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <leafSize name="ThrottleLimit" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
             <comment><![CDATA[
                             Throttling will enable you to further limit (below MaxBurstSize) the amount of data that is
                             sent every Resolution interval. This happens if one of the receiving nodes in the network
                             indicates that it has trouble processing all incoming data. This value is the lower boundary
                             of the range over which the throttling can adapt the limit. If this value is set to the same
                             value (or higher) as MaxBurstSize throttling is disabled.
+                            The ThrottleLimit value is not allowed be smaller than the FragmentSize. If a lower value is
+                            provided, then the value of FragmentSize is used as ThrottleLimit.
                         ]]></comment>
-            <minimum>128</minimum>
             <default>10240</default>
-          </leafInt>
+          </leafSize>
           <leafInt name="ThrottleThreshold" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
             <comment><![CDATA[
                             <p>This is the number of unprocessed network fragments that a node will store before it will inform
@@ -4748,6 +4871,17 @@
           <maximum>6</maximum>
           <default>0</default>
         </leafInt>
+        <leafInt name="Throttling" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <comment><![CDATA[
+                        This element specifies the tracing level for the <i>Throttling</i> category.
+                        This includes information about throttling.
+                        Level 0 indicates no tracing, level 6 indicates the most detailed level
+                        of tracing.
+                    ]]></comment>
+          <minimum>0</minimum>
+          <maximum>6</maximum>
+          <default>0</default>
+        </leafInt>
         <leafInt name="Test" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
                         This element specifies the tracing level for the <i>Test</i> category.
@@ -4990,7 +5124,7 @@ The default is <i>auto</i>. The participant index is part of the port number cal
         <minimum>0</minimum>
         <maximum>1hr</maximum>
         <maxLength>0</maxLength>
-        <default>10 s</default>
+        <default>30 s</default>
       </leafString>
       <leafString name="SPDPMulticastAddress" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
@@ -5007,7 +5141,7 @@ The default is <i>auto</i>. The participant index is part of the port number cal
       <leafBoolean name="AllowMulticast" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
 <p>This element controls whether the DDSI2 service uses multicasts for data traffic.</p>
-<p>When set to "false", DDSI2 will never advertise multicast addresses and never accept multicast addresses advertised by remote nodes, but it will still listen for multicast packets and perform multicast-based participant discovery. Listening for multicasts can be controlled by General/MulticastRecvNetworkInterfaceAddresses, and transmitting participant discovery multicasts by Unsupported/SuppressSPDPMulticast.</p>
+<p>When set to "false", DDSI2 will never advertise multicast addresses and never accept multicast addresses advertised by remote nodes, but it will still listen for multicast packets and perform multicast-based participant discovery. Listening for multicasts can be controlled by General/MulticastRecvNetworkInterfaceAddresses, and transmitting participant discovery multicasts by Internal/SuppressSPDPMulticast.</p>
 <p>The default, "true", enables full use of multicasts.</p>
           ]]></comment>
         <default>true</default>
@@ -5171,12 +5305,28 @@ The default is <i>writers</i>, as this is thought to be compliant and reasonably
         <maxLength>0</maxLength>
         <default>1280 B</default>
       </leafString>
+      <leafBoolean name="GenerateKeyhash" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p><b>Internal</b> When true, include keyhashes in outgoing data for topics with keys.</p>
+          ]]></comment>
+        <default>true</default>
+      </leafBoolean>
       <leafBoolean name="LateAckMode" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
 <p><b>Internal</b> Ack a sample only when it has been delivered, instead of when committed to delivering it.</p>
           ]]></comment>
         <default>false</default>
       </leafBoolean>
+      <leafString name="LeaseDuration" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p><b>Internal</b> This setting controls the default participant lease duration.<p>
+<p>The unit must be specified explicitly. Recognised units: ns, us, ms, s, min, hr, day.</p>
+          ]]></comment>
+        <minimum>0</minimum>
+        <maximum>1hr</maximum>
+        <maxLength>0</maxLength>
+        <default>100 s</default>
+      </leafString>
       <leafBoolean name="LegacyFragmentation" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
 <p><b>Internal</b> This option enables a backwards-compatible, non-compliant setting and interpretation of the control flags in fragmented data messages. To be enabled <i>only</i> when requiring interoperability between compliant and non-compliant versions of DDSI2 for large messages.</p>
@@ -5212,6 +5362,14 @@ The default is <i>writers</i>, as this is thought to be compliant and reasonably
           ]]></comment>
         <default>200</default>
       </leafInt>
+      <leafString name="MaxSampleSize" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p><b>Internal</b> This setting controls the maximum (CDR) serialised size of samples that DDSI2 will forward in either direction. Samples larger than this are discarded with a warning.</p>
+<p>The unit must be specified explicitly. Recognised units: B (bytes), kB & KiB (2<sup>10</sup> bytes), MB & MiB (2<sup>20</sup> bytes), GB & GiB (2<sup>30</sup> bytes).</p>
+          ]]></comment>
+        <maxLength>0</maxLength>
+        <default>2147483647 B</default>
+      </leafString>
       <leafBoolean name="MeasureHbToAckLatency" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
 <p><b>Internal</b> This element enables heartbeat-to-ack latency among DDSI2 services by prepending timestamps to Heartbeat and AckNack messages and calculating round trip times. This is non-standard behaviour. The measured latencies are quite noisy and are currently not used anywhere.</p>
@@ -5294,6 +5452,20 @@ The default is <i>adaptive</i>. See also Internal/RetransmitMergingPeriod.</p>
         <maxLength>0</maxLength>
         <default>5 ms</default>
       </leafString>
+      <leafBoolean name="RetryOnRejectBestEffort" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p><b>Internal</b> Whether or not to locally retry pusing a received best-effort sample into the reader caches when resource limits are reached.</p>
+          ]]></comment>
+        <default>false</default>
+      </leafBoolean>
+      <leafString name="RetryOnRejectDuration" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p><b>Internal</b> How long to keep locally retrying pushing a received sample into the reader caches when resource limits are reached. Default is dependent on Internal/LateAckMode: if the latter is false, it is 80% of Internal/ResponsivenessTimeout, otherwise it is 0.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+          ]]></comment>
+        <maxLength>0</maxLength>
+        <default>default</default>
+      </leafString>
       <leafString name="SPDPResponseMaxDelay" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
 <p><b>Internal</b> Maximum pseudo-random delay in milliseocnds between discovering a remote participant and responding to it.</p>
@@ -5339,18 +5511,20 @@ The default is <i>adaptive</i>. See also Internal/RetransmitMergingPeriod.</p>
 <p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
           ]]></comment>
         <maxLength>0</maxLength>
-        <default>0 s</default>
+        <default>inf</default>
       </leafString>
       <leafInt name="SynchronousDeliveryPriorityThreshold" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
 <p><b>Internal</b> This element controls whether samples sent by a writer with QoS settings latency_budget <= SynchronousDeliveryLatencyBound and transport_priority greater than or equal to this element's value will be delivered synchronously from the "recv" thread, all others will be delivered asynchronously through delivery queues. This reduces latency at the expense of aggregate bandwidth.</p>
           ]]></comment>
-        <default>2147483647</default>
+        <default>0</default>
       </leafInt>
       <element name="Test" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
 <p><b>Internal</b> Testing options.</p>
+<p>The unit must be specified explicitly. Recognised units: B (bytes), kB & KiB (2<sup>10</sup> bytes), MB & MiB (2<sup>20</sup> bytes), GB & GiB (2<sup>30</sup> bytes).</p>
           ]]></comment>
+        <maxLength>0</maxLength>
         <leafInt name="XmitLossiness" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
 <p><b>Internal</b> This element controls the fraction of outgoing packets to drop, specified as a per mil.</p>
@@ -5367,7 +5541,9 @@ The default is <i>adaptive</i>. See also Internal/RetransmitMergingPeriod.</p>
       <element name="Watermarks" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
 <p><b>Internal</b> Watermarks for flow-control.</p>
+<p>The unit must be specified explicitly. Recognised units: B (bytes), kB & KiB (2<sup>10</sup> bytes), MB & MiB (2<sup>20</sup> bytes), GB & GiB (2<sup>30</sup> bytes).</p>
           ]]></comment>
+        <maxLength>0</maxLength>
         <leafInt name="WhcHigh" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
           <comment><![CDATA[
 <p><b>Internal</b> This element sets the high-water mark for the DDSI2 WHCs, expressed in samples. A writer is suspended when the WHC reaches this size.</p>
@@ -5430,6 +5606,62 @@ The default is <i>adaptive</i>. See also Internal/RetransmitMergingPeriod.</p>
         <maxLength>0</maxLength>
         <default>1 MiB</default>
       </leafString>
+    </element>
+    <element name="TCP" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+      <comment><![CDATA[
+<p>The TCP element allows specifying various parameters related to running DDSI over TCP.</p>
+        ]]></comment>
+      <leafBoolean name="Enable" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p>This element enables the optional TCP transport.</p>
+          ]]></comment>
+        <default>false</default>
+      </leafBoolean>
+      <leafEnum name="Locators" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p>This element specifies what endpoints should be placed in unicast locators (local or none). If set as none, no unicast locators will be advertised via DDSI discovery so peers will use the discovery connection for communication. The default value is local which means that the listener endpoint is advertised so peers will use this to establish a new connection back to the process.</p>
+          ]]></comment>
+        <value>local</value>
+        <value>none</value>
+        <default>local</default>
+      </leafEnum>
+      <leafBoolean name="NoDelay" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p>This element enables the TCP_NODELAY socket option, preventing multiple DDSI messages being sent in the same TCP request.</p>
+          ]]></comment>
+        <default>false</default>
+      </leafBoolean>
+      <leafInt name="Port" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p>This element specifies the port number used for DDSI discovery (the TCP listening port). Dynamically allocated if zero. Disabled if -1 or not configured.</p>
+          ]]></comment>
+        <minimum>-1</minimum>
+        <maximum>65535</maximum>
+        <default>-1</default>
+      </leafInt>
+    </element>
+    <element name="ThreadPool" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+      <comment><![CDATA[
+<p>The ThreadPool element allows specifying various parameters related to ing a thread pool for sending DDSI messages</p>
+        ]]></comment>
+      <leafBoolean name="Enable" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p>This element enables the optional thread pool.</p>
+          ]]></comment>
+        <default>false</default>
+      </leafBoolean>
+      <leafInt name="ThreadMax" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p>This elements configures the maximum number of threads in the thread pool.</p>
+          ]]></comment>
+        <default>8</default>
+      </leafInt>
+      <leafInt name="Threads" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+        <comment><![CDATA[
+<p>This elements configures the initial number of threads in the thread pool.</p>
+          ]]></comment>
+        <default>4</default>
+      </leafInt>
     </element>
     <element name="Threads" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
       <comment><![CDATA[
@@ -5571,21 +5803,34 @@ While <i>none</i>prevents any message from being written to a DDSI2 log file, wa
       <comment><![CDATA[
 <p>This element specifies the type of OS scheduling class will be used by the thread that announces its liveliness periodically.</p>
         ]]></comment>
-      <leafEnum name="Class" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+      <element name="Scheduling" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
         <comment><![CDATA[
+<p>This element specifies the type of OS scheduling class will be used by the thread that announces its liveliness periodically.</p>
+          ]]></comment>
+        <leafEnum name="Class" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+          <comment><![CDATA[
 <p>This element specifies the thread scheduling class that will be used by the watchdog thread. The user may need the appropriate privileges from the underlying operating system to be able to assign some of the privileged scheduling classes.</p>
-          ]]></comment>
-        <value>realtime</value>
-        <value>timeshare</value>
-        <value>default</value>
-        <default>default</default>
-      </leafEnum>
-      <leafInt name="Priority" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
-        <comment><![CDATA[
+            ]]></comment>
+          <value>realtime</value>
+          <value>timeshare</value>
+          <value>default</value>
+          <default>default</default>
+        </leafEnum>
+        <leafInt name="Priority" minOccurrences="0" maxOccurrences="1" version="COMMUNITY">
+          <comment><![CDATA[
 <p>This element specifies the thread priority. Only priorities that are supported by the underlying operating system can be assigned to this element. The user may need special privileges from the underlying operating system to be able to assign some of the privileged priorities.</p>
-          ]]></comment>
-        <default>0</default>
-      </leafInt>
+            ]]></comment>
+          <default>0</default>
+          <attributeEnum name="priority_kind" required="false" version="COMMUNITY">
+            <comment><![CDATA[
+<p>This attribute specifies whether the specified Priority is a relative or absolute priority.</p>
+              ]]></comment>
+            <value>relative</value>
+            <value>absolute</value>
+            <default>relative</default>
+          </attributeEnum>
+        </leafInt>
+      </element>
     </element>
   </element>
 <!-- END DDSI2Service CONFIGURATION AUTOMAGICALLY GENERATED (see src/services/ddsi2e/extract-configuration-xml.awk) -->
@@ -5685,10 +5930,10 @@ While <i>none</i>prevents any message from being written to a DDSI2 log file, wa
       </leafBoolean>
       <leafBoolean name="ManySocketsMode" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
-<p>This option specifies whether a network socket will be created for each domain participant on a host. The specification seems to assume that each participant has a unique address, and setting this option will ensure this to be the case. This is the default.</p>
+<p>This option specifies whether a network socket will be created for each domain participant on a host. The specification seems to assume that each participant has a unique address, and setting this option will ensure this to be the case. This is not the default.</p>
 <p>Disabling it slightly improves performance and reduces network traffic somewhat. It also causes the set of port numbers needed by DDSI2E to become predictable, which may be useful for firewall and NAT configuration.</p>
           ]]></comment>
-        <default>true</default>
+        <default>false</default>
       </leafBoolean>
       <leafBoolean name="RespondToRtiInitZeroAckWithInvalidHeartbeat" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
@@ -5812,7 +6057,7 @@ The default is <i>auto</i>. The participant index is part of the port number cal
         <minimum>0</minimum>
         <maximum>1hr</maximum>
         <maxLength>0</maxLength>
-        <default>10 s</default>
+        <default>30 s</default>
       </leafString>
       <leafString name="SPDPMulticastAddress" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
@@ -5829,7 +6074,7 @@ The default is <i>auto</i>. The participant index is part of the port number cal
       <leafBoolean name="AllowMulticast" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
 <p>This element controls whether the DDSI2E service uses multicasts for data traffic.</p>
-<p>When set to "false", DDSI2E will never advertise multicast addresses and never accept multicast addresses advertised by remote nodes, but it will still listen for multicast packets and perform multicast-based participant discovery. Listening for multicasts can be controlled by General/MulticastRecvNetworkInterfaceAddresses, and transmitting participant discovery multicasts by Unsupported/SuppressSPDPMulticast.</p>
+<p>When set to "false", DDSI2E will never advertise multicast addresses and never accept multicast addresses advertised by remote nodes, but it will still listen for multicast packets and perform multicast-based participant discovery. Listening for multicasts can be controlled by General/MulticastRecvNetworkInterfaceAddresses, and transmitting participant discovery multicasts by Internal/SuppressSPDPMulticast.</p>
 <p>The default, "true", enables full use of multicasts.</p>
           ]]></comment>
         <default>true</default>
@@ -6001,12 +6246,28 @@ The default is <i>writers</i>, as this is thought to be compliant and reasonably
         <maxLength>0</maxLength>
         <default>1280 B</default>
       </leafString>
+      <leafBoolean name="GenerateKeyhash" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p><b>Internal</b> When true, include keyhashes in outgoing data for topics with keys.</p>
+          ]]></comment>
+        <default>true</default>
+      </leafBoolean>
       <leafBoolean name="LateAckMode" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
 <p><b>Internal</b> Ack a sample only when it has been delivered, instead of when committed to delivering it.</p>
           ]]></comment>
         <default>false</default>
       </leafBoolean>
+      <leafString name="LeaseDuration" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p><b>Internal</b> This setting controls the default participant lease duration.<p>
+<p>The unit must be specified explicitly. Recognised units: ns, us, ms, s, min, hr, day.</p>
+          ]]></comment>
+        <minimum>0</minimum>
+        <maximum>1hr</maximum>
+        <maxLength>0</maxLength>
+        <default>100 s</default>
+      </leafString>
       <leafBoolean name="LegacyFragmentation" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
 <p><b>Internal</b> This option enables a backwards-compatible, non-compliant setting and interpretation of the control flags in fragmented data messages. To be enabled <i>only</i> when requiring interoperability between compliant and non-compliant versions of DDSI2E for large messages.</p>
@@ -6042,6 +6303,14 @@ The default is <i>writers</i>, as this is thought to be compliant and reasonably
           ]]></comment>
         <default>200</default>
       </leafInt>
+      <leafString name="MaxSampleSize" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p><b>Internal</b> This setting controls the maximum (CDR) serialised size of samples that DDSI2E will forward in either direction. Samples larger than this are discarded with a warning.</p>
+<p>The unit must be specified explicitly. Recognised units: B (bytes), kB & KiB (2<sup>10</sup> bytes), MB & MiB (2<sup>20</sup> bytes), GB & GiB (2<sup>30</sup> bytes).</p>
+          ]]></comment>
+        <maxLength>0</maxLength>
+        <default>2147483647 B</default>
+      </leafString>
       <leafBoolean name="MeasureHbToAckLatency" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
 <p><b>Internal</b> This element enables heartbeat-to-ack latency among DDSI2E services by prepending timestamps to Heartbeat and AckNack messages and calculating round trip times. This is non-standard behaviour. The measured latencies are quite noisy and are currently not used anywhere.</p>
@@ -6124,6 +6393,20 @@ The default is <i>adaptive</i>. See also Internal/RetransmitMergingPeriod.</p>
         <maxLength>0</maxLength>
         <default>5 ms</default>
       </leafString>
+      <leafBoolean name="RetryOnRejectBestEffort" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p><b>Internal</b> Whether or not to locally retry pusing a received best-effort sample into the reader caches when resource limits are reached.</p>
+          ]]></comment>
+        <default>false</default>
+      </leafBoolean>
+      <leafString name="RetryOnRejectDuration" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p><b>Internal</b> How long to keep locally retrying pushing a received sample into the reader caches when resource limits are reached. Default is dependent on Internal/LateAckMode: if the latter is false, it is 80% of Internal/ResponsivenessTimeout, otherwise it is 0.</p>
+<p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
+          ]]></comment>
+        <maxLength>0</maxLength>
+        <default>default</default>
+      </leafString>
       <leafString name="SPDPResponseMaxDelay" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
 <p><b>Internal</b> Maximum pseudo-random delay in milliseocnds between discovering a remote participant and responding to it.</p>
@@ -6169,18 +6452,20 @@ The default is <i>adaptive</i>. See also Internal/RetransmitMergingPeriod.</p>
 <p>Valid values are finite durations with an explicit unit or the keyword 'inf' for infinity. Recognised units: ns, us, ms, s, min, hr, day.</p>
           ]]></comment>
         <maxLength>0</maxLength>
-        <default>0 s</default>
+        <default>inf</default>
       </leafString>
       <leafInt name="SynchronousDeliveryPriorityThreshold" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
 <p><b>Internal</b> This element controls whether samples sent by a writer with QoS settings latency_budget <= SynchronousDeliveryLatencyBound and transport_priority greater than or equal to this element's value will be delivered synchronously from the "recv" thread, all others will be delivered asynchronously through delivery queues. This reduces latency at the expense of aggregate bandwidth.</p>
           ]]></comment>
-        <default>2147483647</default>
+        <default>0</default>
       </leafInt>
       <element name="Test" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
 <p><b>Internal</b> Testing options.</p>
+<p>The unit must be specified explicitly. Recognised units: B (bytes), kB & KiB (2<sup>10</sup> bytes), MB & MiB (2<sup>20</sup> bytes), GB & GiB (2<sup>30</sup> bytes).</p>
           ]]></comment>
+        <maxLength>0</maxLength>
         <leafInt name="XmitLossiness" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
 <p><b>Internal</b> This element controls the fraction of outgoing packets to drop, specified as a per mil.</p>
@@ -6197,7 +6482,9 @@ The default is <i>adaptive</i>. See also Internal/RetransmitMergingPeriod.</p>
       <element name="Watermarks" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
 <p><b>Internal</b> Watermarks for flow-control.</p>
+<p>The unit must be specified explicitly. Recognised units: B (bytes), kB & KiB (2<sup>10</sup> bytes), MB & MiB (2<sup>20</sup> bytes), GB & GiB (2<sup>30</sup> bytes).</p>
           ]]></comment>
+        <maxLength>0</maxLength>
         <leafInt name="WhcHigh" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
 <p><b>Internal</b> This element sets the high-water mark for the DDSI2E WHCs, expressed in samples. A writer is suspended when the WHC reaches this size.</p>
@@ -6388,6 +6675,62 @@ SHA1 is used on conjunction with all ciphers except "null" to ensure data integr
         <default>1 MiB</default>
       </leafString>
     </element>
+    <element name="TCP" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <comment><![CDATA[
+<p>The TCP element allows specifying various parameters related to running DDSI over TCP.</p>
+        ]]></comment>
+      <leafBoolean name="Enable" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p>This element enables the optional TCP transport.</p>
+          ]]></comment>
+        <default>false</default>
+      </leafBoolean>
+      <leafEnum name="Locators" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p>This element specifies what endpoints should be placed in unicast locators (local or none). If set as none, no unicast locators will be advertised via DDSI discovery so peers will use the discovery connection for communication. The default value is local which means that the listener endpoint is advertised so peers will use this to establish a new connection back to the process.</p>
+          ]]></comment>
+        <value>local</value>
+        <value>none</value>
+        <default>local</default>
+      </leafEnum>
+      <leafBoolean name="NoDelay" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p>This element enables the TCP_NODELAY socket option, preventing multiple DDSI messages being sent in the same TCP request.</p>
+          ]]></comment>
+        <default>false</default>
+      </leafBoolean>
+      <leafInt name="Port" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p>This element specifies the port number used for DDSI discovery (the TCP listening port). Dynamically allocated if zero. Disabled if -1 or not configured.</p>
+          ]]></comment>
+        <minimum>-1</minimum>
+        <maximum>65535</maximum>
+        <default>-1</default>
+      </leafInt>
+    </element>
+    <element name="ThreadPool" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <comment><![CDATA[
+<p>The ThreadPool element allows specifying various parameters related to ing a thread pool for sending DDSI messages</p>
+        ]]></comment>
+      <leafBoolean name="Enable" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p>This element enables the optional thread pool.</p>
+          ]]></comment>
+        <default>false</default>
+      </leafBoolean>
+      <leafInt name="ThreadMax" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p>This elements configures the maximum number of threads in the thread pool.</p>
+          ]]></comment>
+        <default>8</default>
+      </leafInt>
+      <leafInt name="Threads" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment><![CDATA[
+<p>This elements configures the initial number of threads in the thread pool.</p>
+          ]]></comment>
+        <default>4</default>
+      </leafInt>
+    </element>
     <element name="Threads" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
       <comment><![CDATA[
 <p>This element is used to set thread properties.</p>
@@ -6528,21 +6871,34 @@ While <i>none</i>prevents any message from being written to a DDSI2 log file, wa
       <comment><![CDATA[
 <p>This element specifies the type of OS scheduling class will be used by the thread that announces its liveliness periodically.</p>
         ]]></comment>
-      <leafEnum name="Class" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+      <element name="Scheduling" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment><![CDATA[
+<p>This element specifies the type of OS scheduling class will be used by the thread that announces its liveliness periodically.</p>
+          ]]></comment>
+        <leafEnum name="Class" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <comment><![CDATA[
 <p>This element specifies the thread scheduling class that will be used by the watchdog thread. The user may need the appropriate privileges from the underlying operating system to be able to assign some of the privileged scheduling classes.</p>
-          ]]></comment>
-        <value>realtime</value>
-        <value>timeshare</value>
-        <value>default</value>
-        <default>default</default>
-      </leafEnum>
-      <leafInt name="Priority" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
-        <comment><![CDATA[
+            ]]></comment>
+          <value>realtime</value>
+          <value>timeshare</value>
+          <value>default</value>
+          <default>default</default>
+        </leafEnum>
+        <leafInt name="Priority" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+          <comment><![CDATA[
 <p>This element specifies the thread priority. Only priorities that are supported by the underlying operating system can be assigned to this element. The user may need special privileges from the underlying operating system to be able to assign some of the privileged priorities.</p>
-          ]]></comment>
-        <default>0</default>
-      </leafInt>
+            ]]></comment>
+          <default>0</default>
+          <attributeEnum name="priority_kind" required="false" version="COMMERCIAL">
+            <comment><![CDATA[
+<p>This attribute specifies whether the specified Priority is a relative or absolute priority.</p>
+              ]]></comment>
+            <value>relative</value>
+            <value>absolute</value>
+            <default>relative</default>
+          </attributeEnum>
+        </leafInt>
+      </element>
     </element>
   </element>
 <!-- END DDSI2EService CONFIGURATION AUTOMAGICALLY GENERATED (see src/services/ddsi2e/extract-configuration-xml.awk) -->
@@ -6838,6 +7194,15 @@ While <i>none</i>prevents any message from being written to a DDSI2 log file, wa
                         system to be able to assign some of the privileged priorities.
                     ]]></comment>
                     <default>0</default>
+                    <attributeEnum name="priority_kind" required="false" version="COMMUNITY">
+                        <comment><![CDATA[
+                            This attribute specifies whether the specified
+                            Priority is a relative or absolute priority.
+                        ]]></comment>
+                        <value>Relative</value>
+                        <value>Absolute</value>
+                        <default>Relative</default>
+                    </attributeEnum>
                 </leafInt>
                 <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMUNITY">
                     <comment><![CDATA[
@@ -7486,7 +7851,7 @@ While <i>none</i>prevents any message from being written to a DDSI2 log file, wa
             system to be able to assign some of the privileged priorities.
           ]]></comment>
           <default>0</default>
-          <!-- <attributeEnum name="priority_kind" required="false" version="COMMERCIAL">
+          <attributeEnum name="priority_kind" required="false" version="COMMERCIAL">
             <comment><![CDATA[
               This attribute specifies whether the specified
               Priority is a relative or absolute priority.
@@ -7494,7 +7859,7 @@ While <i>none</i>prevents any message from being written to a DDSI2 log file, wa
             <value>Relative</value>
             <value>Absolute</value>
             <default>Relative</default>
-          </attributeEnum> -->
+          </attributeEnum>
         </leafInt>
         <leafEnum name="Class" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
           <comment><![CDATA[
@@ -7525,13 +7890,26 @@ While <i>none</i>prevents any message from being written to a DDSI2 log file, wa
         <default>default</default>
         <maxLength>0</maxLength>
       </attributeString>
-      <element name="rr_storageAttrXML" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+      <element name="rr_storageAttrXML" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
         <comment>
           <![CDATA[Attributes describing an XML storage.]]>
         </comment>
         <leafString name="filename" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
           <comment>
             <![CDATA[The file used to store XML data. The filename may include a relative or absolute path.
+            If a path is omitted, the storage file is created in the current working directory]]>
+          </comment>
+          <maxLength>0</maxLength>
+          <default>rnr-storage.dat</default>
+        </leafString>
+      </element>
+      <element name="rr_storageAttrCDR" minOccurrences="0" maxOccurrences="1" version="COMMERCIAL">
+        <comment>
+          <![CDATA[Attributes describing an CDR storage.]]>
+        </comment>
+        <leafString name="filename" minOccurrences="1" maxOccurrences="1" version="COMMERCIAL">
+          <comment>
+            <![CDATA[The file used to store CDR data. The filename may include a relative or absolute path.
             If a path is omitted, the storage file is created in the current working directory]]>
           </comment>
           <maxLength>0</maxLength>

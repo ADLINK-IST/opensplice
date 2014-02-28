@@ -350,7 +350,7 @@ d_publisherStatusWrite(
                             "Write of d_status message FAILED with result %d.\n", ur);
                     OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_status message FAILED with result %d.", ur);
-                    d_durabilityTerminate(durability);
+                    d_durabilityTerminate(durability, TRUE);
                     terminate = d_durabilityMustTerminate(durability);
                 }
             }
@@ -415,7 +415,7 @@ d_publisherNewGroupWrite(
                             "Write of d_newGroup message FAILED with result %d.\n", ur);
                     OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_newGroup message FAILED with result %d.", ur);
-                    d_durabilityTerminate(durability);
+                    d_durabilityTerminate(durability, TRUE);
                     terminate = d_durabilityMustTerminate(durability);
                 }
             }
@@ -478,7 +478,7 @@ d_publisherGroupsRequestWrite(
                             "Write of d_groupsRequest message FAILED with result %d.\n", ur);
                     OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_groupsRequest message FAILED with result %d.", ur);
-                    d_durabilityTerminate(durability);
+                    d_durabilityTerminate(durability, TRUE);
                     terminate = d_durabilityMustTerminate(durability);
                 }
             }
@@ -541,7 +541,7 @@ d_publisherStatusRequestWrite(
                             "Write of d_statusRequest message FAILED with result %d.\n", ur);
                     OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_statusRequest message FAILED with result %d.", ur);
-                    d_durabilityTerminate(durability);
+                    d_durabilityTerminate(durability, TRUE);
                     terminate = d_durabilityMustTerminate(durability);
                 }
             }
@@ -604,7 +604,7 @@ d_publisherSampleRequestWrite(
                             "Write of d_sampleRequest message FAILED with result %d.\n", ur);
                     OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_sampleRequest message FAILED with result %d.", ur);
-                    d_durabilityTerminate(durability);
+                    d_durabilityTerminate(durability, TRUE);
                     terminate = d_durabilityMustTerminate(durability);
                 }
             }
@@ -667,7 +667,7 @@ d_publisherSampleChainWrite(
                             "Write of d_sampleChain message FAILED with result %d.\n", ur);
                     OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_sampleChain message FAILED with result %d.\n", ur);
-                    d_durabilityTerminate(durability);
+                    d_durabilityTerminate(durability, TRUE);
                     terminate = d_durabilityMustTerminate(durability);
                 }
             }
@@ -730,7 +730,7 @@ d_publisherNameSpacesRequestWrite(
                             "Write of d_nameSpaceRequest message FAILED with result %d.\n", ur);
                     OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_nameSpaceRequest message FAILED with result %d.", ur);
-                    d_durabilityTerminate(durability);
+                    d_durabilityTerminate(durability, TRUE);
                     terminate = d_durabilityMustTerminate(durability);
                 }
             }
@@ -793,7 +793,7 @@ d_publisherNameSpacesWrite(
                             "Write of d_nameSpaces message FAILED with result %d.\n", ur);
                     OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_nameSpaces message FAILED with result %d.", ur);
-                    d_durabilityTerminate(durability);
+                    d_durabilityTerminate(durability, TRUE);
                     terminate = d_durabilityMustTerminate(durability);
                 }
             }
@@ -856,7 +856,7 @@ d_publisherDeleteDataWrite(
                             "Write of d_deleteData message FAILED with result %d.\n", ur);
                     OS_REPORT_1(OS_ERROR, D_CONTEXT_DURABILITY, 0,
                             "Write of d_deleteData message FAILED with result %d.", ur);
-                    d_durabilityTerminate(durability);
+                    d_durabilityTerminate(durability, TRUE);
                     terminate = d_durabilityMustTerminate(durability);
                 }
             }

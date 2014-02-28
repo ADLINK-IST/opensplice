@@ -9,7 +9,6 @@
  *   for full copyright notice and license terms.
  *
  */
-#include "u__handle.h"
 #include "u__types.h"
 #include "u__domain.h"
 #include "u__user.h"
@@ -32,6 +31,13 @@ typedef union {
     } lid;
     u_instanceHandle handle;
 } u_instanceHandleTranslator;
+
+static int u__handleResult (v_handleResult result)
+{
+    return ((result == V_HANDLE_OK) ? U_RESULT_OK :
+            (result == V_HANDLE_EXPIRED) ? U_RESULT_ALREADY_DELETED :
+            U_RESULT_ILL_PARAM);
+}
 
 u_instanceHandle
 u_instanceHandleNew(
@@ -212,39 +218,3 @@ u_instanceHandleFix(
     }
     return translator.handle;
 }
-
-/* Depricated : only for DLRL legacy. */
-
-c_long
-u_instanceHandleServerId(
-    u_instanceHandle _this)
-{
-    u_instanceHandleTranslator translator;
-
-    translator.handle = _this;
-
-    return (translator.lid.lifecycleId & HANDLE_SERVER_MASK);
-}
-
-c_long
-u_instanceHandleIndex(
-    u_instanceHandle _this)
-{
-    u_instanceHandleTranslator translator;
-
-    translator.handle = _this;
-
-    return translator.lid.localId;
-}
-
-c_long
-u_instanceHandleSerial(
-    u_instanceHandle _this)
-{
-    u_instanceHandleTranslator translator;
-
-    translator.handle = _this;
-
-    return (translator.lid.lifecycleId & HANDLE_SERIAL_MASK);
-}
-

@@ -6,7 +6,11 @@ SAJ_CODE_DIR    = code
 IDL_CODE_DIR    = bld/code/$(SPLICE_TARGET)
 JPACKAGES       = DDS org/opensplice/dds/dcps
 
-TOPICIDL        = $(OSPL_HOME)/etc/idl/dds_builtinTopics.idl
+# Input IDL files.
+IDL_DIR		:= $(OSPL_HOME)/etc/idl
+TOPICIDL	:= $(IDL_DIR)/dds_builtinTopics.idl
+QOSIDL		:= $(IDL_DIR)/dds_namedQosTypes.idl
+
 ifneq (,$(or $(findstring win32, $(SPLICE_TARGET)), $(findstring win64, $(SPLICE_TARGET))))
 EXTRA_SOURCE    = $(IDL_CODE_DIR)/DDS/\*.java $(SAJ_CODE_DIR)/DDS/\*.java
 else
@@ -25,10 +29,11 @@ all link: idlpp $(JTIMESTAMP) jar jar-bundle
 
 include $(OSPL_HOME)/setup/makefiles/target.mak
 
-$(JTIMESTAMP): $(TOPICIDL)
+$(JTIMESTAMP): $(TOPICIDL) $(QOSIDL)
 	@rm -rf $(IDL_CODE_DIR) $(CLASS_DIR)
 	@mkdir -p $(IDL_CODE_DIR) $(CLASS_DIR)
 	$(IDLPP) -l java -S -d $(IDL_CODE_DIR) `ospl_normalizePath $(TOPICIDL)`
+	$(IDLPP) -l java -S -d $(IDL_CODE_DIR) `ospl_normalizePath $(QOSIDL)`
 	$(JCC) $(JCC_ARGS) $(EXTRA_SOURCE)
 	@touch $(JTIMESTAMP)
 
@@ -53,4 +58,4 @@ analyse:
 	@$(ANALYSE) bld/$(SPLICE_TARGET) code
 
 clean:
-	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) $(IDL_CODE_DIR) $(MANIFEST) $(BUNDLE_FILE) $(BUNDLE_MANIFEST)
+	@rm -rf bld/$(SPLICE_TARGET) $(JAR_TARGET)/$(JAR_MODULE) $(IDL_CODE_DIR) manifest/$(SPLICE_TARGET) $(BUNDLE_FILE) $(BUNDLE_MANIFEST)

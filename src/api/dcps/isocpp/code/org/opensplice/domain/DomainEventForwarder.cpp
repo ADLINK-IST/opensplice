@@ -18,14 +18,19 @@
 #include <dds/domain/DomainParticipantListener.hpp>
 #include <org/opensplice/domain/DomainEventForwarder.hpp>
 
-namespace org { namespace opensplice { namespace domain {
+namespace org
+{
+namespace opensplice
+{
+namespace domain
+{
 
 template<>
 DomainParticipantEventForwarder<dds::domain::DomainParticipant>::DomainParticipantEventForwarder(
-        const dds::domain::DomainParticipant& domain,
-        dds::domain::DomainParticipantListener* listener) :
-        domain_(domain),
-        listener_(listener)
+    const dds::domain::DomainParticipant& domain,
+    dds::domain::DomainParticipantListener* listener) :
+    domain_(domain),
+    listener_(listener)
 
 {
 }
@@ -42,4 +47,6 @@ DomainParticipantEventForwarder<dds::domain::DomainParticipant>::listener()
     return listener_;
 }
 
-}}}
+}
+}
+}

@@ -109,7 +109,7 @@ public class UserDataSerializerXML implements UserDataSerializer {
 
     private void serializeCollection(StringWriter writer,
             String nestedFieldName, MetaCollection field, UserData data) {
-        int size, tsize;
+        int size, maxSize;
         String typeName = field.getTypeName();
 
         if ((typeName.equals("c_string")) ||
@@ -118,24 +118,28 @@ public class UserDataSerializerXML implements UserDataSerializer {
                 (typeName.startsWith("C_WSTRING<"))) {
             this.serializeString(writer, nestedFieldName, data);
         } else { // Not a String collection.
-            size = field.getMaxSize();
+            maxSize = field.getMaxSize();
 
-            if (size == -1) {
-                tsize = 0;
-            } else {
-                tsize = size;
-            }
-
-            if (size == 0) {
+            if (maxSize == 0) {
                 this.serializeUnboundedSequence(writer, nestedFieldName, field,
                         data);
-            } else if (size == -1) { /* recursive type */
+            } else if (maxSize == -1) { /* recursive type */
                 this.serializeRecursiveType(writer, nestedFieldName, field,
                         data);
             } else {
-                if (!((typeName.startsWith("C_ARRAY")) && (tsize != 0))) {
+                /* This is an array or bounded sequence. */
+                if (typeName.startsWith("C_ARRAY")) {
+                    /* When dealing with an array, then the actual size
+                     * is the same as the maximum size. */
+                    size = maxSize;
+                } else {
+                    /* When dealing with a bounded sequence, then the actual
+                     * size can differ from the maximum size. */
+                    size = getSequenceSize(nestedFieldName, field, data);
+                    /* Also, we need this size within the data. */
                     writer.write("<size>" + size + "</size>");
                 }
+                /* Now, fill up the elements. */
                 for (int i = 0; i < size; i++) {
                     writer.write("<element>");
                     this.serializeType(writer,
@@ -486,6 +490,100 @@ public class UserDataSerializerXML implements UserDataSerializer {
             }
         }
         return result;
+    }
+
+    /**
+     * Acquires the number of elements of the supplied sequence.
+     *
+     * @param nestedFieldName
+     *            The name of the field (including scope)
+     * @param seqType
+     *            The type of the sequence.
+     * @param data
+     *            The data that is being serialized.
+     * @return The number of elements in the given sequence.
+     */
+    private int getSequenceSize(String nestedFieldName,
+            MetaCollection seqType, UserData data) {
+        /*
+         * This is very much based on how serializeUnboundedSequence get
+         * the size of its unbounded sequence.
+         * The same actions can be used on bounded sequences as well to
+         * get their actual size (which can be less then their maximum
+         * size).
+         */
+        int size = 0;
+
+        StringTokenizer tokenizer;
+        String typeName;
+        String value;
+        String token;
+        MetaField subType = seqType.getSubType();
+
+        if (subType instanceof MetaPrimitive) {
+            value = data.getFieldValue(nestedFieldName);
+
+            if (value != null) {
+                if (!(value.equals("NULL") || value.equals("[]"))) {
+                    tokenizer = new StringTokenizer(value.substring(1,
+                            value.length() - 1), ",");
+                    size = tokenizer.countTokens();
+                }
+            } else {
+                // also check for the alternative notation
+                value = data.getFieldValue(nestedFieldName + "[0]");
+                if (value != null) {
+                    List<String> values = new ArrayList<String>();
+                    int index = 1;
+                    while (value != null) {
+                        values.add(value);
+                        value = data.getFieldValue(nestedFieldName + "["
+                                + index + "]");
+                        index++;
+                    }
+                    size = values.size();
+                }
+            }
+        } else if (subType instanceof MetaCollection) {
+            typeName = subType.getTypeName();
+
+            if ((typeName.equals("c_string")) ||
+                    (typeName.equals("c_wstring")) ||
+                    (typeName.startsWith("C_STRING<")) ||
+                    (typeName.startsWith("C_WSTRING<"))) {
+                value = data.getFieldValue(nestedFieldName);
+
+                if (value != null) {
+                    if (!(value.equals("NULL") || value.equals("[]"))) {
+                        tokenizer = new StringTokenizer(value.substring(1,
+                                value.length() - 1), ",");
+                        size = tokenizer.countTokens();
+                    }
+                }
+            }
+        } else if ((subType instanceof MetaStruct) ||
+                   (subType instanceof MetaUnion ) ) {
+            // Verify if member "size" exists, if so, then serialize and
+            // increment
+            LinkedHashSet<String> fields = data.getFieldNames();
+            boolean found = true;
+            while (found) {
+                String entryFieldName = nestedFieldName + "[" + size + "]";
+                boolean fieldExists = false;
+                Iterator<String> it = fields.iterator();
+                while (!fieldExists && it.hasNext()) {
+                    if (it.next().startsWith(entryFieldName)) {
+                        fieldExists = true;
+                    }
+                }
+                if (fieldExists) {
+                    size++;
+                } else {
+                    found = false;
+                }
+            }
+        }
+        return size;
     }
 
     /**

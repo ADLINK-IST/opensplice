@@ -1,0 +1,15 @@
+BUILD=yes
+SETUP_TYPE=x86_64.linux-release
+BUILD_DIST=yes
+BUILD_EXAMPLES=yes
+KEEP_DIST=yes
+RUN_DBT=no
+RUN_RBT=no
+RUN_EXAMPLES_SP=yes
+RUN_EXAMPLES_SHM=no
+VALGRIND=no
+
+. configs/`hostname`/common
+
+export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-RedHat-EL53-gcc412-inline-64bit-OpenSpliceDDS_v4.1_UNSUPPORTED_091104
+

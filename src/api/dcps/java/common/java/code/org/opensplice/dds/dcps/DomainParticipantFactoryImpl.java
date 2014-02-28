@@ -11,6 +11,8 @@
  */
 package org.opensplice.dds.dcps;
 
+import java.lang.reflect.*;
+
 /**
  * Allow the creation and destruction of {@link DomainParticipant} objects.
  * This class is implemented as a Singleton.
@@ -48,7 +50,7 @@ public class DomainParticipantFactoryImpl extends DomainParticipantFactoryBase i
         }
     	return theDomainParticipantFactory;
     }
-    
+
     public DDS.DomainParticipant create_participant (int domainId, DDS.DomainParticipantQos qos, DDS.DomainParticipantListener a_listener, int mask) {
     	org.opensplice.dds.dcps.DomainParticipantImpl dp = jniCreateParticipant(domainId, qos, a_listener,mask);
 
@@ -113,7 +115,7 @@ public class DomainParticipantFactoryImpl extends DomainParticipantFactoryBase i
     public int get_qos (DDS.DomainParticipantFactoryQosHolder qos){
 		return jniGetQos(qos);
     	}
-    
+
     public DDS.Domain lookup_domain (int domain_id) {
         return jniLookupDomain(domain_id);
     }
@@ -150,14 +152,64 @@ class OSPLShutdown extends Thread
 
     public void run()
     {
-        /* Let the shutdown-hook run from its own thread, in order to prevent it
-         * from being executed during listener call-back or the like. */
-        new Thread(new Runnable(){
-            public void run(){
-                int status = DDS.DomainParticipantFactory.get_instance().delete_contained_entities();
-                if (status != DDS.RETCODE_OK.value)
-                    System.err.println("Error in DomainParticipantFactory.delete_contained_entities, status = " + status);
+        Thread exitThreat = lookupShutdownThread();
+        if (exitThreat != null) {
+            if (isThreadCallBackThread(exitThreat)) {
+                System.err.println("Detected deadlock; attempting to exit from within listener call-back. Fatal error: entities have not been deleted; restart of OpenSplice is required");
+                /* Exit status: 0: ok, 1: configuration error, 2: abnormal termination */
+                Runtime.getRuntime().halt(2);
+                /* can not come here after the halt.*/
             }
-        }).start();
+        }
+        int status = DDS.DomainParticipantFactory.get_instance().delete_contained_entities();
+        if (status != DDS.RETCODE_OK.value) {
+            System.err.println("Error in DomainParticipantFactory.delete_contained_entities, status = " + status);
+        }
+
+    }
+
+    private Thread lookupShutdownThread()
+    {
+        for (Thread threadToTest : Thread.getAllStackTraces().keySet()) {
+            StackTraceElement[] stackTraceElements = threadToTest.getStackTrace();
+            for (int i = 0; i < stackTraceElements.length; i++){
+                if (stackTraceElements[i].getMethodName().equals("exit") ) {
+                    if (stackTraceElements[i].getClassName().equals("java.lang.Shutdown")) {
+                        /* this thread called the exit function from the Shutdown class */
+                        return threadToTest;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean isThreadCallBackThread(Thread threadToTest)
+    {
+        StackTraceElement[] stackTraceElements = threadToTest.getStackTrace();
+        for (int i = stackTraceElements.length-1; i >= 0; i--){
+            try {
+                Class<?> classFromStack = Class.forName(stackTraceElements[i].getClassName());
+                while (classFromStack != null) {
+                    for(Class<?> interfaceFromClass : classFromStack.getInterfaces()) {
+                        if (interfaceFromClass.getName().startsWith("DDS.") && interfaceFromClass.getName().contains("Listener") ) {
+                            // this interface seems to be an DDS Listener interface
+                            // check if called function is indeed from the interface
+                            for (Method methodToTest : interfaceFromClass.getMethods()) {
+                                if (methodToTest.getName().equals(stackTraceElements[i].getMethodName())) {
+                                    return (true);
+                                }
+                            }
+                        }
+
+                    }
+                    /* Check also if the interface is not from the superclass */
+                    classFromStack = classFromStack.getSuperclass();
+                }
+            }
+            catch (ClassNotFoundException e){
+            }
+        }
+        return (false);
     }
 }

@@ -26,6 +26,23 @@
 /* Contains the list of key definitions */
 static idl_keyDef idl_keyDefinitions;
 
+/* Get the default key definition list */
+idl_keyDef
+idl_keyDefDefGet (
+    void)
+{
+    return idl_keyDefinitions;
+}
+
+/* Set the default key definition list */
+void
+idl_keyDefDefSet (
+    idl_keyDef keyDef)
+{
+    idl_keyDefinitions = keyDef;
+}
+
+
 /* Create a new key map specified by scope,
    type name and keylist
 */
@@ -92,7 +109,7 @@ idl_keyDefAdd (
 /* Find the key list related to the specified typename in
    the specified scope
 */
-c_char *
+const c_char *
 idl_keyResolve (
     idl_keyDef keyDef,
     idl_scope scope,
@@ -170,18 +187,44 @@ idl_keyResolve2 (
     return NULL;
 }
 
-/* Set the default key definition list */
-void
-idl_keyDefDefSet (
-    idl_keyDef keyDef)
+c_bool
+idl_keyDefIncludesType(
+        idl_keyDef keyDef,
+        const char *typeName)
 {
-    idl_keyDefinitions = keyDef;
-}
+#define KEY_SCOPE_MAX_SIZE (512)
+    char key_scope[KEY_SCOPE_MAX_SIZE];
+    char key_tmp[KEY_SCOPE_MAX_SIZE];
+    c_long li;
+    idl_keyMap keyMap;
+    c_metaObject typeScope;
 
-/* Get the default key definition list */
-idl_keyDef
-idl_keyDefDefGet (
-    void)
-{
-    return idl_keyDefinitions;
+    li = 0;
+    /* check all key definition list elements */
+    while (li < c_iterLength (keyDef->keyList)) {
+        keyMap = c_iterObject (keyDef->keyList, li);
+        /* Start the key scope with the key itself. */
+        key_scope[0] = '\0';
+        strncpy(key_scope, keyMap->typeName, KEY_SCOPE_MAX_SIZE);
+        key_scope[KEY_SCOPE_MAX_SIZE - 1] = '\0';
+        /* Run down this keys' scope. */
+        for (typeScope = keyMap->scope; typeScope != NULL; typeScope = typeScope->definedIn) {
+            if (typeScope->name != NULL) {
+                /* Add current scope to key scope and check it all against the given type. */
+                key_tmp[0] = '\0';
+                snprintf(key_tmp, KEY_SCOPE_MAX_SIZE, "%s_%s", typeScope->name, key_scope);
+                if (strcmp(typeName, key_tmp) == 0) {
+                    return TRUE;
+                }
+                /* Update the key scope to the current one. */
+                key_scope[0] = '\0';
+                strncpy(key_scope, key_tmp, KEY_SCOPE_MAX_SIZE);
+                key_scope[KEY_SCOPE_MAX_SIZE - 1] = '\0';
+            }
+        }
+        li++;
+    }
+
+    return FALSE;
+#undef KEY_SCOPE_MAX_SIZE
 }

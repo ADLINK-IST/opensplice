@@ -13,7 +13,7 @@ class TestHost:
         # The default STAF port
         self.port = port
         
-        # A list of OpenSplice platform strings (ie: x86.linux2.6-dev, x86.win32-release)
+        # A list of OpenSplice platform strings (ie: x86.linux-dev, x86.win32-release)
         self.targets = targets
         self.active_target = None
         
@@ -140,7 +140,7 @@ class TestHost:
                 msg.append('Target %s requires Windows but machine runs Linux' % target)
                 self.targets.remove(target)
                 continue
-            if ((target.find("linux2.6") > -1) and (self.config_map['OSName'].find('Win') > -1)):
+            if ((target.find("linux") > -1) and (self.config_map['OSName'].find('Win') > -1)):
                 msg.append('Target %s requires Linux but machine runs Windows' % target)
                 self.targets.remove(target)
                 continue

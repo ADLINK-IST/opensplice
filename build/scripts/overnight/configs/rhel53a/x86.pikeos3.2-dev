@@ -18,3 +18,4 @@ PATH=$PATH:$PIKEOS_HOME/cdk/x86/i586/bin
 unset TAO_ROOT
 unset MICO_ROOT
 unset MICO_LIBS
+unset QTDIR

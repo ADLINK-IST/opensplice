@@ -8,4 +8,4 @@ set EXAMPLE_LANG=sacs
 
 call %FUNCTIONS% :runOwnership
 
-call %FUNCTIONS% :ownershipCheckResult
+call %FUNCTIONS% :ownershipCheckResult >> run.log

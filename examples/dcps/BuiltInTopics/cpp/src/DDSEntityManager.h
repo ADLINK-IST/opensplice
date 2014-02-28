@@ -23,7 +23,6 @@
       TopicQos reliable_topic_qos;
       TopicQos setting_topic_qos;
       PublisherQos pub_qos;
-      DataWriterQos dw_qos;
       SubscriberQos sub_qos;
 
 	  /* DDS Identifiers */

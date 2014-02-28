@@ -461,10 +461,40 @@ char *read_ident()
    return (accum_result(acc));
 }
 
+/* OSPL-2307: Bug emerged after fixing inclusion of recursively resolved
+   header files. cpp would forget about previous include files if no actual idl
+   was located between recursive includes. */
+extern void output_line_and_file (void)
+{
+    atline += nnls;
+    nnls = 0;
+
+    if (no_line_lines)
+    {
+       accum_char(output_accum, '\n');
+    }
+    else
+    {
+       char temp[1024];
+       char *s;
+
+       os_sprintf(temp, "\n# %d \"%s\"\n", atline, atfile);
+       for (s = temp; *s; s++)
+       {
+          accum_char(output_accum, *s);
+       }
+    }
+    done_line = 1;
+}
+
 extern void out_at (int line, const char * file)
 {
    if ((line - nnls != atline) || strcmp(file, atfile))
    {
+      if (!done_line)
+      {
+         output_line_and_file();
+      }
       os_free(atfile);
       atline = line - nnls;
       atfile = copyofstr(file);
@@ -503,25 +533,7 @@ extern void outputc (char c)
    {
       if ((nnls > 2) || !done_line)
       {
-         atline += nnls;
-         nnls = 0;
-
-         if (no_line_lines)
-         {
-            accum_char(output_accum, '\n');
-         }
-         else
-         {
-            char temp[1024];
-            char *s;
-
-            os_sprintf(temp, "\n# %d \"%s\"\n", atline, atfile);
-            for (s = temp; *s; s++)
-            {
-               accum_char(output_accum, *s);
-            }
-         }
-         done_line = 1;
+         output_line_and_file ();
       }
       for (;nnls;nnls--)
       {

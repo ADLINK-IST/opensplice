@@ -22,9 +22,10 @@
 #include "v_cmsoapStatistics.h"        /* For the cast v_cmsoapStatistics() */
 #include "v_durabilityStatistics.h"    /* For the cast v_durabilityStatistics()*/
 #include "v_kernelStatistics.h"        /* For the cast v_kernelStatistics() */
+#include "v_groupQueueStatistics.h"    /* For the cast v_groupQueueStatistics() */
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -60,6 +61,7 @@
 #define unit_v_reader_numberOfSamplesDiscarded             unit_samples
 #define unit_v_reader_numberOfSamplesRead                  unit_samples
 #define unit_v_reader_numberOfSamplesTaken                 unit_samples
+#define unit_v_reader_numberOfSamplesLost                  unit_samples
 #define unit_v_reader_numberOfReads                        unit_calls
 #define unit_v_reader_numberOfInstanceReads                unit_calls
 #define unit_v_reader_numberOfNextInstanceReads            unit_calls
@@ -83,6 +85,7 @@
 #define resettable_v_reader_numberOfSamplesDiscarded                (TRUE)
 #define resettable_v_reader_numberOfSamplesRead                     (TRUE)
 #define resettable_v_reader_numberOfSamplesTaken                    (TRUE)
+#define resettable_v_reader_numberOfSamplesLost                     (TRUE)
 #define resettable_v_reader_numberOfSamplesRejectedBySamplesLimit   (TRUE)
 #define resettable_v_reader_numberOfSamplesRejectedByInstancesLimit (TRUE)
 #define resettable_v_reader_numberOfReads                           (TRUE)
@@ -124,7 +127,6 @@
 #define unit_v_writer_numberOfInstancesWithStatusUnregistered       unit_instances
 #define unit_v_writer_numberOfSamples                               unit_samples
 #define unit_v_writer_maxNumberOfSamplesPerInstance                 unit_samplesPerInstance
-
 
 #define resettable_v_writer_numberOfWrites                          (TRUE)
 #define resettable_v_writer_numberOfDisposes                        (TRUE)
@@ -217,6 +219,19 @@
 
 #define resettable_v_durability_aligneeTotalSize                    (TRUE)
 #define resettable_v_durability_alignerTotalSize                    (TRUE)
+
+/* GROUPQUEUE */
+#define unit_v_groupQueue_numberOfWrites                            unit_samples
+#define unit_v_groupQueue_numberOfWrites                            unit_samples
+#define unit_v_groupQueue_numberOfWrites                            unit_samples
+#define unit_v_groupQueue_numberOfWrites                            unit_samples
+
+#define resettable_v_groupQueue_numberOfSamples                     (TRUE)
+#define resettable_v_groupQueue_numberOfReads                       (TRUE)
+#define resettable_v_groupQueue_numberOfTakes                       (TRUE)
+#define resettable_v_groupQueue_numberOfWrites                      (TRUE)
+
+
 /* v_entity helpermacro */
 
 #define v_entityStatisticsGetRef(fieldName, entity) \
@@ -275,6 +290,9 @@
 #define v_networkQueueStatisticsGetRef(fieldName, entity) \
     &(v_networkQueue(entity)->statistics->fieldName)
 
+/* v_groupQueue helpermacro */
+#define v_groupQueueStatisticsGetRef(fieldName, entity) \
+        &((v_groupQueueStatistics(v_entity(entity)->statistics))->fieldName)
 
 /* Validity macro */
 

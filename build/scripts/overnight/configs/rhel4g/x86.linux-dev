@@ -1,0 +1,12 @@
+BUILD=yes
+SETUP_TYPE=x86.linux-dev
+BUILD_DIST=yes
+BUILD_EXAMPLES=yes
+KEEP_DIST=yes
+RUN_DBT=no
+RUN_RBT=no
+RUN_EXAMPLES_SP=yes
+RUN_EXAMPLES_SHM=no
+VALGRIND=no
+
+. configs/`hostname`/common

@@ -166,15 +166,22 @@ void be_array::Initialize ()
          assigner = ArrayType() + "_copy";
          copier = ArrayType() + "_dup";
 
-         for (unsigned int i = 0; i < n_dims(); i++)
+         if (BE_Globals::isocpp_new_types)
          {
-            DDS_StdString dim = DimExpr(i);
-
-            arrayType += dim;
-
-            if (i > 0)
+            // Don't put the dimensions onto the typename
+         }
+         else
+         {
+            for (unsigned int i = 0; i < n_dims(); i++)
             {
-               sliceType += dim;
+                DDS_StdString dim = DimExpr(i);
+
+                arrayType += dim;
+
+                if (i > 0)
+                {
+                  sliceType += dim;
+                }
             }
          }
 
@@ -342,6 +349,30 @@ void be_array::Generate (be_ClientHeader & source)
       fileScope = "";
 
       // Generate array
+
+      if (BE_Globals::isocpp_new_types)
+      {
+          os << tab << "typedef ";
+          /* For each dimension we nest the array template */
+          for (unsigned int i = 0; i < n_dims(); i++)
+          {
+              /* Do not 'tidy' that trailing space */
+              os << "::dds::core::array< ";
+          }
+          /* At the inner most level, next the type */
+          os <<  BaseTypeName () << " ";
+          /* We write the dimensions backwards. This is not
+           * a mistake. */
+          for (int i = n_dims() - 1; i >= 0; --i)
+          {
+              os << ", ";
+              dims()[i]->dump(os);
+              os << ">";
+          }
+          os << " " << ArrayType () << ";" << nl;
+          /* Our work here is done */
+          return;
+      }
 
       os << tab << "typedef " << BaseTypeName () << " "
          << SliceType () << ";" << nl;
@@ -663,7 +694,7 @@ void be_array::Generate (be_ClientImplementation& source)
 
    // cast to vector
 
-   os << tab << baseTypeName << "* sv = (" << baseTypeName << "*) from;" << nl;
+   os << tab << "const " << baseTypeName << "* sv = ( const " << baseTypeName << "*) from;" << nl;
    os << tab << baseTypeName << "* tv = (" << baseTypeName << "*) to;" << nl;
 
    // assign as vector
@@ -725,6 +756,18 @@ void be_array::Generate (be_ClientImplementation& source)
 
 void be_array::GenerateGlobal (be_ClientHeader& source)
 {
+   /* With new types we have no truck with this */
+   if (BE_Globals::isocpp_new_types)
+   {
+      return;
+   }
+
+   /* Can't see why we need this for imported types */
+   if (imported())
+   {
+      return;
+   }
+
    ostream & os = source.Stream ();
    DDS_StdString name = CppScoped(LocalName());
 
@@ -758,14 +801,28 @@ void be_array::InitializeTypeMap (be_Type* t)
 
    if ((t_array = (be_array*)t->narrow((long) & be_array::type_id)))
    {
-      t->UnionMemberTypeName(t_array->SliceTypeName() + "*");
+      if (BE_Globals::isocpp_new_types)
+      {
+          t->UnionMemberTypeName(t_array->ArrayType());
+      }
+      else
+      {
+          t->UnionMemberTypeName(t_array->SliceTypeName() + "*");
+      }
       t->DMFAdtMemberTypeName(t_array->SliceTypeName() + "*");
       t->ReturnTypeName(t_array->SliceTypeName() + "*");
       retName = t->Scope(t_array->SliceTypeName());
    }
    else if (t->narrow((long)&be_typedef::type_id))
    {
-      t->UnionMemberTypeName(t->Scope(t->LocalName()) + DDSSliceExtension + "*");
+      if (BE_Globals::isocpp_new_types)
+      {
+          t->UnionMemberTypeName(t->Scope(t->LocalName()));
+      }
+      else
+      {
+          t->UnionMemberTypeName(t->Scope(t->LocalName()) + DDSSliceExtension + "*");
+      }
       t->DMFAdtMemberTypeName(t->Scope(t->LocalName()) + DDSSliceExtension + "*");
       t->ReturnTypeName(t->Scope(t->LocalName()) + DDSSliceExtension + "*");
       retName = t->Scope(t->LocalName()) + DDSSliceExtension;
@@ -968,15 +1025,29 @@ be_array::InRequestArgumentDeclaration(be_Type& btype, const DDS_StdString& arg,
 DDS_StdString
 be_array::Releaser(const DDS_StdString& arg) const
 {
+   if (BE_Globals::isocpp_new_types)
+   {
+      DDS_StdString str("delete ");
+      return str + arg + ";";
+   }
    return Scope(releaser) + "(" + arg + ");";
 }
 
 DDS_StdString
 be_array::Assigner(const DDS_StdString& arg1, const DDS_StdString& arg2) const
 {
+   DDS_StdString ret;
+   if (BE_Globals::isocpp_new_types)
+   {
+    ret = arg1 + " = " + arg2 + ";";
+   }
+   else
+   {
    // casts prevent warnings in union set functions
-   return CppScoped(assigner) + "((" + CppScoped(SliceTypeName()) + "*) " + arg1
+    ret = CppScoped(assigner) + "((" + CppScoped(SliceTypeName()) + "*) " + arg1
       + ", (const " + CppScoped(SliceTypeName()) + " *) " + arg2 + ");";
+   }
+   return ret;
 }
 
 DDS_StdString be_array::Duplicater
@@ -987,7 +1058,15 @@ DDS_StdString be_array::Duplicater
    const pbbool isConst
 ) const
 {
-   DDS_StdString ret = Allocater (arg) + " " + Assigner(arg, val);
+   DDS_StdString ret;
+   if (BE_Globals::isocpp_new_types)
+   {
+      ret = arg + " = new " + ArrayType() + "(" + val + ");";
+   }
+   else
+   {
+      ret = Allocater (arg) + " " + Assigner(arg, val);
+   }
    return ret;
 }
 

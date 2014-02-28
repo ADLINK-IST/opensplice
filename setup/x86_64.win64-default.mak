@@ -73,10 +73,22 @@ CFLAGS_DEBUG     = -Z7 -Od -D_TYPECHECK_
 CFLAGS_STRICT	 = -W3
 
 ifneq (,$(or $(findstring 15,$(VS_VER)),$(findstring 16,$(VS_VER))))
+# VS2008 & VS 2010
    VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
    VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include"
-
+ 
    VS_LIB_FLAGS  = -L"$(VS_HOME)/VC/lib/amd64"
+   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib/x64"
+else
+# VS2012 onwards
+   VS_INCLUDE =  -I"$(VS_HOME)/VC/include"
+   VS_INCLUDE += -I"$(WINDOWSSDKDIR)/Include/shared" -I"$(WINDOWSSDKDIR)/Include/um"
+
+   VS_LIB_FLAGS += -L"$(VS_HOME)/VC/lib/amd64"
+   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib/win8/um/x64"
+
+   VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/Lib/winv6.3/um/x64"
+
    VS_LIB_FLAGS += -L"$(WINDOWSSDKDIR)/lib/x64"
 endif
 
@@ -87,7 +99,7 @@ CXXFLAGS	= -EHsc -TP $(VS_INCLUDE) $(CFLAGS_OPT) $(CFLAGS_DEBUG)
 CSFLAGS	= -noconfig -nowarn:1701,1702 -errorreport:prompt -warn:4 $(CSFLAGS_DEBUG) -optimize-
 
 # Set CPP flags
-CPPFLAGS	 = -nologo -DOSPL_NO_ZLIB -DOSPL_ENV_$(SPECIAL) -DWIN32 -DWIN64 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE $(VS_INCLUDE)
+CPPFLAGS	 = -nologo -DOSPL_ENV_$(SPECIAL) -DWIN32 -DWIN64 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE $(VS_INCLUDE)
 
 # Set compiler options for multi threaded process
 # notify usage of posix threads
@@ -117,9 +129,10 @@ LDLIBS_OS = -lkernel32 -lAdvapi32
 LDLIBS_CMS = -lws2_32
 LDLIBS_JAVA = -ljvm
 LDLIBS_ODBC= -lodbc32
-LDLIBS_ZLIB =
-LDFLAGS_ZLIB =
-CINCS_ZLIB =
+
+LDLIBS_ZLIB = -lzlib
+LDFLAGS_ZLIB = "-L$(ZLIB_HOME)"
+CINCS_ZLIB = "-I$(ZLIB_HOME)"
 
 #set platform specific pre- and postfixes for the names of libraries and executables
 OBJ_POSTFIX = .obj
@@ -131,7 +144,7 @@ JLIB_PREFIX =
 JLIB_POSTFIX = .dll
 EXEC_PREFIX =
 EXEC_POSTFIX = .exe
-INLINESRC_POSTFIX = .i
+INLINESRC_POSTFIX = .inl
 CSLIB_PREFIX =
 CSLIB_POSTFIX = .dll
 CSMOD_PREFIX =

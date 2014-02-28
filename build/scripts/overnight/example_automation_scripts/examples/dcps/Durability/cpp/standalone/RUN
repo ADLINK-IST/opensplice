@@ -1,7 +1,6 @@
 . $OSPL_HOME/examples/functions
 
 rm -rf ./tmp/pstore/*
-rm -f *.log
 rm -f *.txt
 
 check_osplhome

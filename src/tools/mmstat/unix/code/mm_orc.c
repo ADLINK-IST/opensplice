@@ -13,7 +13,6 @@
 #include "u_user.h"
 #include "c_base.h"
 #include "c__base.h"
-#include "c_avltree.h"
 #include "ut_collection.h"
 #include "os_stdlib.h"
 #include "c_module.h"

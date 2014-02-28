@@ -27,28 +27,28 @@ namespace DDS.OpenSplice.Gapi
        /* ReturnCode_t
         *     enable();
         */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_entity_enable")]
+        [DllImport("ddskernel", EntryPoint = "gapi_entity_enable")]
         public static extern ReturnCode enable(IntPtr _this);
 
         /*
          *     StatusCondition
          *     get_statuscondition();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_entity_get_statuscondition")]
+        [DllImport("ddskernel", EntryPoint = "gapi_entity_get_statuscondition")]
         public static extern IntPtr get_statuscondition(IntPtr _this);
 
         /*
          *     StatusKindMask
          *     get_status_changes();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_entity_get_status_changes")]
+        [DllImport("ddskernel", EntryPoint = "gapi_entity_get_status_changes")]
         public static extern StatusKind get_status_changes(IntPtr _this);
 
         /*
          *     InstanceHandle_t
          *     get_instance_handle();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_entity_get_instance_handle")]
+        [DllImport("ddskernel", EntryPoint = "gapi_entity_get_instance_handle")]
         public static extern long get_instance_handle(IntPtr _this);
 
        /*
@@ -56,10 +56,10 @@ namespace DDS.OpenSplice.Gapi
         * // Administrative gapi functions.
         * // ----------------------------------------------------------------------
         */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_object_set_user_data")]
+        [DllImport("ddskernel", EntryPoint = "gapi_object_set_user_data")]
         public static extern void set_user_data(IntPtr _this, IntPtr userData, Delegate deleteAction, IntPtr deleteActionArg);
 
-        [DllImport("dcpsgapi", EntryPoint = "gapi_object_get_user_data")]
+        [DllImport("ddskernel", EntryPoint = "gapi_object_get_user_data")]
         public static extern IntPtr get_user_data(IntPtr _this);
     }
 }

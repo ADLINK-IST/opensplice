@@ -1517,7 +1517,7 @@ shareQosPolicyCopy (
     gapi_shareQosPolicy *dst)
 {
     dst->enable = src->enable;
-    dst->name   = gapi_string_dup(src->name);
+    gapi_string_replace(src->name, &dst->name);
 }
 
 

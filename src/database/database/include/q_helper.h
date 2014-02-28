@@ -17,7 +17,7 @@ extern "C" {
 #endif
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_DB
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -58,6 +58,16 @@ OS_API c_ulong
 q_exprGetViewState(
     q_expr expr);
 
+OS_API c_iter
+deOr(
+    q_expr e,
+    c_iter list);
+
+OS_API void
+translate(
+    q_expr expr,
+    c_array sourceKeyList, /* c_array<c_field> */
+    c_array indexKeyList); /* c_array<c_field> */
 
 #undef OS_API
 

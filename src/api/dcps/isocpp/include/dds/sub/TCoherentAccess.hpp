@@ -26,7 +26,7 @@ namespace dds
 {
 namespace sub
 {
-/** @bug OSPL-2476 No implementation
+/** @internal @bug OSPL-2476 No implementation
 * @todo Implementation required - see OSPL-2476
 * @see http://jira.prismtech.com:8080/browse/OSPL-2476 */
 
@@ -34,10 +34,18 @@ template <typename D>
 TCoherentAccess<D>::~TCoherentAccess(void) {}
 
 template <typename D>
-TCoherentAccess<D>::TCoherentAccess(const dds::sub::Subscriber& sub) {}
+TCoherentAccess<D>::TCoherentAccess(const dds::sub::Subscriber& sub)
+{
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+}
 
 template <typename D>
-void TCoherentAccess<D>::end() {}
+void TCoherentAccess<D>::end()
+{
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+}
 }
 }
 // End of implementation

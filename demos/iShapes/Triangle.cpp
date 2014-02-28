@@ -5,6 +5,8 @@
 
 #include "Triangle.hpp"
 
+namespace demo { namespace ishapes {
+
 Triangle::Triangle(const QRect& bounds,
                    ShapeDynamics::ref_type dynamics,
                    const QPen& pen,
@@ -84,3 +86,4 @@ Triangle::paint(QPainter& painter)
         ++idx;
     }
 }
+}}

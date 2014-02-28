@@ -12,7 +12,7 @@ fi
 
 function testing_prefices ()
 {
-    echo "LIN64 LIN32"
+    echo "LIN64 LIN32 WIN32"
 }
 
 function testing_hosts ()

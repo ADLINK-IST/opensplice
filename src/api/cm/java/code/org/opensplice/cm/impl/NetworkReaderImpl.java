@@ -14,6 +14,7 @@ package org.opensplice.cm.impl;
 import org.opensplice.cm.CMException;
 import org.opensplice.cm.NetworkReader;
 import org.opensplice.cm.ReaderSnapshot;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.meta.MetaType;
 import org.opensplice.cm.status.Status;
 
@@ -32,8 +33,8 @@ public class NetworkReaderImpl extends ReaderImpl implements NetworkReader {
      * @param _pointer The heap address of the Entity.
      * @param _name The name of the Entity.
      */
-    public NetworkReaderImpl(long _index, long _serial, String _pointer, String _name) {
-        super(_index, _serial, _pointer, _name);
+    public NetworkReaderImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name) {
+        super(communicator, _index, _serial, _pointer, _name);
     }
 
     public ReaderSnapshot makeSnapshot() throws CMException{

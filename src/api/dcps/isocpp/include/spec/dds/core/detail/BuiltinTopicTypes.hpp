@@ -25,16 +25,19 @@
 #ifndef OMG_DDS_CORE_DELEGATE_BUILTIN_TOPIC_TYPES_HPP_
 #define OMG_DDS_CORE_DELEGATE_BUILTIN_TOPIC_TYPES_HPP_
 
-namespace dds {
-  namespace core {
-    namespace detail {
+namespace dds
+{
+namespace core
+{
+namespace detail
+{
 
-      class BytesTopicType { };
-      class StringTopicType { };
-      class KeyedBytesTopicType { };
-      class KeyedStringTopicType { };
-    }
-  }
+class BytesTopicType { };
+class StringTopicType { };
+class KeyedBytesTopicType { };
+class KeyedStringTopicType { };
+}
+}
 }
 
 

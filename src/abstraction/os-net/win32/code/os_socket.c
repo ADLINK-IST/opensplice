@@ -110,26 +110,49 @@ os_sockGetsockname(
     return result;
 }
 
-os_int32
+os_result
 os_sockSendto(
     os_socket s,
     const void *msg,
-    os_uint len,
+    size_t len,
     const struct sockaddr *to,
-    os_uint tolen)
+    size_t tolen,
+    size_t *bytesSent)
 {
-    return sendto(s, msg, len, 0, to, tolen);
+    int res = sendto(s, msg, len, 0, to, tolen);
+    if (res < 0)
+    {
+        *bytesSent = 0;
+        return os_resultFail;
+    }
+    else
+    {
+        *bytesSent = res;
+        return os_resultSuccess;
+    }
 }
 
-os_int32
+os_result
 os_sockRecvfrom(
     os_socket s,
     void *buf,
-    os_uint len,
+    size_t len,
     struct sockaddr *from,
-    os_uint *fromlen)
+    size_t *fromlen,
+    size_t *bytesRead)
 {
-    return recvfrom(s, buf, len, 0, from, (int *)fromlen);
+    int res;
+    res = recvfrom(s, buf, (int)len, 0, from, (int *)fromlen);
+    if (res == SOCKET_ERROR)
+    {
+        *bytesRead = 0;
+        return os_resultFail;
+    }
+    else
+    {
+        *bytesRead = (size_t)res;
+        return os_resultSuccess;
+    }
 }
 
 os_result
@@ -479,12 +502,12 @@ os_sockQueryIPv6Interfaces (
     unsigned int *validElements)
 {
     os_result result = os_resultSuccess;
-    DWORD filter;
+    ULONG filter;
     PIP_ADAPTER_ADDRESSES pAddresses = NULL;
     PIP_ADAPTER_ADDRESSES pCurrAddress = NULL;
     PIP_ADAPTER_UNICAST_ADDRESS pUnicast = NULL;
-    unsigned long outBufLen = WORKING_BUFFER_SIZE;
-    int retVal;
+    ULONG outBufLen = WORKING_BUFFER_SIZE;
+    ULONG retVal;
     int iterations = 0;
     int listIndex = 0;
 
@@ -752,7 +775,8 @@ os_sockQueryInterfaceStatus(
     *status = OS_FALSE;
 
     if (info) {
-        t = timeout.tv_sec;
+        assert(timeout.tv_sec >= 0);
+        t = (DWORD)timeout.tv_sec;
         t = t * 1000 + timeout.tv_nsec / 1000000;
 
         if (WaitForSingleObject(info->overlap.hEvent, t) == WAIT_OBJECT_0) {
@@ -764,42 +788,6 @@ os_sockQueryInterfaceStatus(
     }
 
     return result;
-}
-
-
-
-/* We need this on windows to make sure the main thread of MFC applications
- * calls os_osInit().
- */
-BOOL WINAPI DllMain(
-    HINSTANCE hinstDLL,  /* handle to DLL module */
-    DWORD fdwReason,     /* reason for calling function */
-    LPVOID lpReserved )  /* reserved */
-{
-    /* Perform actions based on the reason for calling.*/
-    switch( fdwReason ) {
-    case DLL_PROCESS_ATTACH:
-        /* Initialize once for each new process.
-         * Return FALSE to fail DLL load.
-         */
-        /* os_init will be called when the library is loaded */
-        os_socketModuleInit();
-    break;
-    case DLL_THREAD_ATTACH:
-         /* Do thread-specific initialization.
-          */
-    break;
-    case DLL_THREAD_DETACH:
-         /* Do thread-specific cleanup.
-          */
-    break;
-    case DLL_PROCESS_DETACH:
-        /* Perform any necessary cleanup.
-         */
-        os_socketModuleExit();
-    break;
-    }
-    return TRUE;  /* Successful DLL_PROCESS_ATTACH.*/
 }
 
 #undef MAX_INTERFACES

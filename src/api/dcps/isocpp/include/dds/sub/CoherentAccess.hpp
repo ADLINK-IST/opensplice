@@ -22,9 +22,6 @@
 #include <spec/dds/sub/CoherentAccess.hpp>
 
 // Implementation
-/** @bug OSPL-2476 No implementation
-* @todo Implementation required - see OSPL-2476
-* @see http://jira.prismtech.com:8080/browse/OSPL-2476 */
 // End of implementation
 
 #endif /* OSPL_DDS_SUB_COHERENTACCESS_HPP_ */

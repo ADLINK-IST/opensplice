@@ -28,7 +28,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_qos(
          *         in DataReaderViewQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReaderView_set_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReaderView_set_qos")]
         public static extern ReturnCode set_qos(
             IntPtr _this,
             IntPtr qos);
@@ -37,7 +37,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_qos(
          *         inout DataReaderViewQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReaderView_get_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReaderView_get_qos")]
         public static extern ReturnCode get_qos(
             IntPtr _this,
             IntPtr qos);
@@ -45,7 +45,7 @@ namespace DDS.OpenSplice.Gapi
         /*     Datareader
          *     get_datareader();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReaderView_get_datareader")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReaderView_get_datareader")]
         public static extern IntPtr get_datareader(
             IntPtr _this);
 
@@ -55,7 +55,7 @@ namespace DDS.OpenSplice.Gapi
          *         in ViewStateMask view_states,
          *         in InstanceStateMask instance_states);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReaderView_create_readcondition")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReaderView_create_readcondition")]
         public static extern IntPtr create_readcondition(
             IntPtr _this,
             SampleStateKind sample_states,
@@ -70,7 +70,7 @@ namespace DDS.OpenSplice.Gapi
          *         in string query_expression,
          *         in StringSeq query_parameters);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReaderView_create_querycondition")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReaderView_create_querycondition")]
         public static extern IntPtr create_querycondition(
             IntPtr _this,
             SampleStateKind sample_states,
@@ -83,7 +83,7 @@ namespace DDS.OpenSplice.Gapi
          *     delete_readcondition(
          *         in ReadCondition a_condition);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReaderView_delete_readcondition")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReaderView_delete_readcondition")]
         public static extern ReturnCode delete_readcondition(
             IntPtr _this,
             IntPtr a_condition);
@@ -91,7 +91,7 @@ namespace DDS.OpenSplice.Gapi
         /*     ReturnCode_t
          *     delete_contained_entities();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_dataReaderView_delete_contained_entities")]
+        [DllImport("ddskernel", EntryPoint = "gapi_dataReaderView_delete_contained_entities")]
         public static extern ReturnCode delete_contained_entities(
             IntPtr _this);
     }

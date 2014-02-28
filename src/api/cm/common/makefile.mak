@@ -11,6 +11,6 @@ CINCS   += -I$(OSPL_HOME)/src/api/dcps/jni/include
 
 LDFLAGS += $(SHLDFLAGS)
 LDLIBS  += $(SHLDLIBS)
-LDLIBS  += -l$(DDS_DATABASE) -l$(DDS_KERNEL) -l$(DDS_USER) -l$(DDS_DCPSJNI)
+LDLIBS  +=    -l$(DDS_DCPSJNI)
 
 -include $(DEPENDENCIES)

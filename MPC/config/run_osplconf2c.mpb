@@ -17,7 +17,7 @@ feature(src_co, !ospl_os_ver_5_5) {
     }
 }
 
-feature(ospl_os_vxworks, ospl_os_ver_5_5) {
+feature(ospl_os_vxworks, ospl_os_ver_5_5, !win_use_subst) {
     verbatim(make, local) {
         "URIFILE=$(patsubst file:\/\/%, %, $(OSPL_URI))"
 
@@ -25,3 +25,13 @@ feature(ospl_os_vxworks, ospl_os_ver_5_5) {
         "	osplconf2c -o $@"
     }
 }
+
+feature(ospl_os_vxworks, ospl_os_ver_5_5, win_use_subst) {
+    verbatim(make, local) {
+        "URIFILE=$(subst( \/, \\, $(subst file:\/\/\/, , $(OSPL_URI)))"
+
+        "ospl_config.c: $(URIFILE)"
+        "	osplconf2c -o $@"
+    }
+}
+

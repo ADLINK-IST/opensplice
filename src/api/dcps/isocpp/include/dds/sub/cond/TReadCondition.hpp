@@ -37,14 +37,14 @@ TReadCondition<DELEGATE>::TReadCondition(const dds::sub::DataReader<T>& dr, cons
 
 template <typename DELEGATE>
 template <typename T, typename FUN>
-TReadCondition<DELEGATE>::TReadCondition(   const dds::sub::DataReader<T>& dr,
+TReadCondition<DELEGATE>::TReadCondition(const dds::sub::DataReader<T>& dr,
         const dds::sub::status::DataState& status,
         const FUN& functor)
     : dds::core::cond::TCondition<DELEGATE>(new DELEGATE(dr, status, functor)) { }
 
 template <typename DELEGATE>
 template <typename FUN>
-TReadCondition<DELEGATE>::TReadCondition(   const dds::sub::AnyDataReader& adr,
+TReadCondition<DELEGATE>::TReadCondition(const dds::sub::AnyDataReader& adr,
         const dds::sub::status::DataState& status,
         const FUN& functor)
     : dds::core::cond::TCondition<DELEGATE>(new DELEGATE(adr, status, functor)) { }

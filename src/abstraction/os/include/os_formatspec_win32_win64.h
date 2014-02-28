@@ -1,6 +1,8 @@
 #ifndef OS_FORMATSPEC_H
 #define OS_FORMATSPEC_H
 
+/* Include platform-specific os_abstract.h */
+#include "include/os_abstract.h"
 /* printf() format specifiers that work for Win32/Win64/WinCE */
 
 #define PA_PA_PRId16 "hd"

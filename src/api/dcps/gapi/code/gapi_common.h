@@ -16,7 +16,7 @@
 #include "c_typebase.h"
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_DCPSGAPI
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -148,7 +148,7 @@ OS_API gapi_boolean
 gapi_stringToLongLong (
     const gapi_char *str,
     gapi_long_long *retval);
-    
+
 #undef OS_API
 
 #endif /* GAPI_COMMON_H */

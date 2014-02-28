@@ -19,6 +19,15 @@ extern "C" {
 
 #include "v_policy.h"
 
+typedef enum {
+    V_OWNERSHIP_ALREADY_OWNER, /* already owner, strength might have changed */
+    V_OWNERSHIP_OWNER, /* became owner */
+    V_OWNERSHIP_NOT_OWNER, /* did not became owner */
+    V_OWNERSHIP_OWNER_RESET, /* reset because of NIL owner (dispose all) */
+    V_OWNERSHIP_SHARED_QOS,
+    V_OWNERSHIP_INCOMPATIBLE_QOS
+} v_ownershipResult;
+
 v_partitionPolicy
 v_partitionPolicyAdd(
     v_partitionPolicy _this,
@@ -34,6 +43,12 @@ v_partitionPolicyRemove(
 c_iter
 v_partitionPolicySplit(
     v_partitionPolicy _this);
+
+v_ownershipResult
+v_determineOwnershipByStrength (
+    struct v_owner *owner,
+    struct v_owner *candidate,
+    c_bool claim); /* Workaround for dds1784, see v_policy.c for details. */
 
 #if defined (__cplusplus)
 }

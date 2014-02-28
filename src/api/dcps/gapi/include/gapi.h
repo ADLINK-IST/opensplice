@@ -22,7 +22,7 @@
 #include "v_kernel.h"
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_DCPSGAPI
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -226,8 +226,6 @@ typedef struct {
 OS_API gapi_instanceHandleSeq *gapi_instanceHandleSeq__alloc (void);
 OS_API gapi_instanceHandle_t *gapi_instanceHandleSeq_allocbuf (gapi_unsigned_long len);
 
-/* Helper functions for efficient implementation of DLRL */
-
 typedef struct {
     gapi_unsigned_long gid1;
     gapi_unsigned_long gid2;
@@ -360,7 +358,7 @@ gapi_time_t__alloc (void);
 #define GAPI_RETCODE_ALREADY_DELETED                9
 #define GAPI_RETCODE_TIMEOUT                        10
 #define GAPI_RETCODE_NO_DATA                        11
-#define GAPI_RETCODE_ILLEGAL_OPERATION               12
+#define GAPI_RETCODE_ILLEGAL_OPERATION              12
 
 /*
  * // ----------------------------------------------------------------------
@@ -2967,7 +2965,6 @@ gapi_typeSupport_allocbuf (
     gapi_typeSupport _this,
     gapi_unsigned_long len);
 
-
 /*
  * interface TopicDescription
  */
@@ -4227,6 +4224,15 @@ gapi_dataReader_get_matched_publication_data (
     gapi_publicationBuiltinTopicData *publication_data,
     const gapi_instanceHandle_t publication_handle);
 
+/*     ReturnCode_t
+ *     set_notread_threshold(
+ *         in long threshold);
+ */
+OS_API gapi_returnCode_t
+gapi_dataReader_set_notread_threshold (
+    gapi_dataReader _this,
+    gapi_long threshold);
+
 
 
 /*
@@ -4617,6 +4623,14 @@ gapi_fooTypeSupport__alloc (
     gapi_topicAllocBuffer alloc_buffer,
     gapi_writerCopy writer_copy,
     gapi_readerCopy reader_copy);
+
+gapi_copyIn
+gapi_typeSupport_get_copy_in (
+    gapi_typeSupport _this);
+
+gapi_copyOut
+gapi_typeSupport_get_copy_out (
+    gapi_typeSupport _this);
 
 /*
  * The following FooDataWriter operations are not for
@@ -6392,51 +6406,51 @@ gapi_subscriptionBuiltinTopicDataDataReader_get_key_value (
  * Type description parser interface
  */
 typedef enum {
-	GAPI_TYPE_ELEMENT_KIND_MODULE,
-	GAPI_TYPE_ELEMENT_KIND_STRUCT,
-	GAPI_TYPE_ELEMENT_KIND_MEMBER,
-	GAPI_TYPE_ELEMENT_KIND_UNION,
-	GAPI_TYPE_ELEMENT_KIND_UNIONCASE,
-	GAPI_TYPE_ELEMENT_KIND_UNIONSWITCH,
-	GAPI_TYPE_ELEMENT_KIND_UNIONLABEL,
-	GAPI_TYPE_ELEMENT_KIND_TYPEDEF,
-	GAPI_TYPE_ELEMENT_KIND_ENUM,
-	GAPI_TYPE_ELEMENT_KIND_ENUMLABEL,
-	GAPI_TYPE_ELEMENT_KIND_TYPE,
-	GAPI_TYPE_ELEMENT_KIND_ARRAY,
-	GAPI_TYPE_ELEMENT_KIND_SEQUENCE,
-	GAPI_TYPE_ELEMENT_KIND_STRING,
-	GAPI_TYPE_ELEMENT_KIND_CHAR,
-	GAPI_TYPE_ELEMENT_KIND_BOOLEAN,
-	GAPI_TYPE_ELEMENT_KIND_OCTET,
-	GAPI_TYPE_ELEMENT_KIND_SHORT,
-	GAPI_TYPE_ELEMENT_KIND_USHORT,
-	GAPI_TYPE_ELEMENT_KIND_LONG,
-	GAPI_TYPE_ELEMEMT_KIND_ULONG,
-	GAPI_TYPE_ELEMENT_KIND_LONGLONG,
-	GAPI_TYPE_ELEMENT_KIND_ULONGLONG,
-	GAPI_TYPE_ELEMENT_KIND_FLOAT,
-	GAPI_TYPE_ELEMENT_KIND_DOUBLE,
+        GAPI_TYPE_ELEMENT_KIND_MODULE,
+        GAPI_TYPE_ELEMENT_KIND_STRUCT,
+        GAPI_TYPE_ELEMENT_KIND_MEMBER,
+        GAPI_TYPE_ELEMENT_KIND_UNION,
+        GAPI_TYPE_ELEMENT_KIND_UNIONCASE,
+        GAPI_TYPE_ELEMENT_KIND_UNIONSWITCH,
+        GAPI_TYPE_ELEMENT_KIND_UNIONLABEL,
+        GAPI_TYPE_ELEMENT_KIND_TYPEDEF,
+        GAPI_TYPE_ELEMENT_KIND_ENUM,
+        GAPI_TYPE_ELEMENT_KIND_ENUMLABEL,
+        GAPI_TYPE_ELEMENT_KIND_TYPE,
+        GAPI_TYPE_ELEMENT_KIND_ARRAY,
+        GAPI_TYPE_ELEMENT_KIND_SEQUENCE,
+        GAPI_TYPE_ELEMENT_KIND_STRING,
+        GAPI_TYPE_ELEMENT_KIND_CHAR,
+        GAPI_TYPE_ELEMENT_KIND_BOOLEAN,
+        GAPI_TYPE_ELEMENT_KIND_OCTET,
+        GAPI_TYPE_ELEMENT_KIND_SHORT,
+        GAPI_TYPE_ELEMENT_KIND_USHORT,
+        GAPI_TYPE_ELEMENT_KIND_LONG,
+        GAPI_TYPE_ELEMEMT_KIND_ULONG,
+        GAPI_TYPE_ELEMENT_KIND_LONGLONG,
+        GAPI_TYPE_ELEMENT_KIND_ULONGLONG,
+        GAPI_TYPE_ELEMENT_KIND_FLOAT,
+        GAPI_TYPE_ELEMENT_KIND_DOUBLE,
     GAPI_TYPE_ELEMENT_KIND_TIME,
     GAPI_TYPE_ELEMENT_KIND_UNIONLABELDEFAULT
 } gapi_typeElementKind;
 
 typedef enum {
-	GAPI_TYPE_ATTRIBUTE_KIND_NUMBER,
-	GAPI_TYPE_ATTRIBUTE_KIND_STRING
+        GAPI_TYPE_ATTRIBUTE_KIND_NUMBER,
+        GAPI_TYPE_ATTRIBUTE_KIND_STRING
 } gapi_typeAttributeKind;
 
 typedef struct gapi_typeAttributeValue {
-	gapi_typeAttributeKind _d;
-	union {
-		gapi_long   nvalue;
-		gapi_string svalue;
+        gapi_typeAttributeKind _d;
+        union {
+                gapi_long   nvalue;
+                gapi_string svalue;
     } _u;
 } gapi_typeAttributeValue;
 
 typedef struct gapi_typeAttribute {
-	gapi_string             name;
-	gapi_typeAttributeValue value;
+        gapi_string             name;
+        gapi_typeAttributeValue value;
 } gapi_typeAttribute;
 
 typedef struct {
@@ -6449,23 +6463,23 @@ typedef struct {
 typedef void * gapi_typeParserHandle;
 
 typedef gapi_boolean (*gapi_typeParserCallback)(
-	gapi_typeElementKind         kind,
-	const gapi_string            elementName,
-	const gapi_typeAttributeSeq *attributes,
+        gapi_typeElementKind         kind,
+        const gapi_string            elementName,
+        const gapi_typeAttributeSeq *attributes,
     gapi_typeParserHandle        handle,
-	void                        *argument);
+        void                        *argument);
 
 OS_API gapi_returnCode_t
 gapi_typeSupport_parse_type_description (
-	const gapi_string        description,
-	gapi_typeParserCallback  callback,
-	void                    *argument);
+        const gapi_string        description,
+        gapi_typeParserCallback  callback,
+        void                    *argument);
 
 OS_API gapi_returnCode_t
 gapi_typeSupport_walk_type_description (
-	gapi_typeParserHandle    handle,
-	gapi_typeParserCallback  callback,
-	void                    *argument);
+        gapi_typeParserHandle    handle,
+        gapi_typeParserCallback  callback,
+        void                    *argument);
 
 
 /*
@@ -6480,18 +6494,18 @@ typedef gapi_long gapi_errorCode_t;
 /*    // ----------------------------------------------------------------------
  *    // Error codes
  *    // ----------------------------------------------------------------------
- *    const ErrorCode_t ERRORCODE_UNDEFINED  	                = 0;
- *    const ErrorCode_t ERRORCODE_ERROR			        = 1;
- *    const ErrorCode_t ERRORCODE_OUT_OF_RESOURCES	        = 2;
- *    const ErrorCode_t ERRORCODE_CREATION_KERNEL_ENTITY_FAILED	= 3;
- *    const ErrorCode_t ERRORCODE_INVALID_VALUE           	= 4;
- *    const ErrorCode_t ERRORCODE_INVALID_DURATION		= 5;
- *    const ErrorCode_t ERRORCODE_INVALID_TIME    		= 6;
- *    const ErrorCode_t ERRORCODE_ENTITY_INUSE            	= 7;
+ *    const ErrorCode_t ERRORCODE_UNDEFINED                     = 0;
+ *    const ErrorCode_t ERRORCODE_ERROR                         = 1;
+ *    const ErrorCode_t ERRORCODE_OUT_OF_RESOURCES              = 2;
+ *    const ErrorCode_t ERRORCODE_CREATION_KERNEL_ENTITY_FAILED = 3;
+ *    const ErrorCode_t ERRORCODE_INVALID_VALUE                 = 4;
+ *    const ErrorCode_t ERRORCODE_INVALID_DURATION              = 5;
+ *    const ErrorCode_t ERRORCODE_INVALID_TIME                  = 6;
+ *    const ErrorCode_t ERRORCODE_ENTITY_INUSE                  = 7;
  *    const ErrorCode_t ERRORCODE_CONTAINS_ENTITIES               = 8;
- *    const ErrorCode_t ERRORCODE_ENTITY_UNKNOWN  		= 9;
- *    const ErrorCode_t ERRORCODE_HANDLE_NOT_REGISTERED   	= 10;
- *    const ErrorCode_t ERRORCODE_HANDLE_NOT_MATCH		= 11;
+ *    const ErrorCode_t ERRORCODE_ENTITY_UNKNOWN                = 9;
+ *    const ErrorCode_t ERRORCODE_HANDLE_NOT_REGISTERED         = 10;
+ *    const ErrorCode_t ERRORCODE_HANDLE_NOT_MATCH              = 11;
  *    const ErrorCode_t ERRORCODE_HANDLE_INVALID                  = 12;
  *    const ErrorCode_t ERRORCODE_INVALID_SEQUENCE                = 13;
  *    const ErrorCode_t ERRORCODE_UNSUPPORTED_VALUE               = 14;
@@ -6504,18 +6518,18 @@ typedef gapi_long gapi_errorCode_t;
  *    const ErrorCode_t ERRORCODE_INCONSISTENT_TOPIC              = 21;
  */
 
-#define GAPI_ERRORCODE_UNDEFINED  	                0
-#define GAPI_ERRORCODE_ERROR			        1
-#define GAPI_ERRORCODE_OUT_OF_RESOURCES	                2
-#define GAPI_ERRORCODE_CREATION_KERNEL_ENTITY_FAILED	3
-#define GAPI_ERRORCODE_INVALID_VALUE           	        4
-#define GAPI_ERRORCODE_INVALID_DURATION		        5
-#define GAPI_ERRORCODE_INVALID_TIME    		        6
-#define GAPI_ERRORCODE_ENTITY_INUSE            	        7
+#define GAPI_ERRORCODE_UNDEFINED                        0
+#define GAPI_ERRORCODE_ERROR                            1
+#define GAPI_ERRORCODE_OUT_OF_RESOURCES                 2
+#define GAPI_ERRORCODE_CREATION_KERNEL_ENTITY_FAILED    3
+#define GAPI_ERRORCODE_INVALID_VALUE                    4
+#define GAPI_ERRORCODE_INVALID_DURATION                 5
+#define GAPI_ERRORCODE_INVALID_TIME                     6
+#define GAPI_ERRORCODE_ENTITY_INUSE                     7
 #define GAPI_ERRORCODE_CONTAINS_ENTITIES                8
-#define GAPI_ERRORCODE_ENTITY_UNKNOWN  		        9
-#define GAPI_ERRORCODE_HANDLE_NOT_REGISTERED   	        10
-#define GAPI_ERRORCODE_HANDLE_NOT_MATCH		        11
+#define GAPI_ERRORCODE_ENTITY_UNKNOWN                   9
+#define GAPI_ERRORCODE_HANDLE_NOT_REGISTERED            10
+#define GAPI_ERRORCODE_HANDLE_NOT_MATCH                 11
 #define GAPI_ERRORCODE_HANDLE_INVALID                   12
 #define GAPI_ERRORCODE_INVALID_SEQUENCE                 13
 #define GAPI_ERRORCODE_UNSUPPORTED_VALUE                14
@@ -6719,7 +6733,6 @@ gapi_metaData_unionUnionCase(gapi_union unionBase, c_long index);
  */
 OS_API gapi_type
 gapi_metaData_unionCaseType(gapi_unionCase caseBase);
-
 
 #undef OS_API
 

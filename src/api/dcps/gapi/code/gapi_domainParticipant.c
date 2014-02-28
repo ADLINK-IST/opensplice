@@ -1539,6 +1539,7 @@ gapi_domainParticipant_find_topic (
     char *typeName = NULL;
     gapi_context context;
     u_participant uParticipant;
+    _TypeSupport typeSupport;
 
     GAPI_CONTEXT_SET(context, _this, GAPI_METHOD_FIND_TOPIC);
 
@@ -1564,6 +1565,31 @@ gapi_domainParticipant_find_topic (
             if (topicList) {
                 u_topic t;
                 uTopic = c_iterTakeFirst(topicList);
+                /* OSPL-103: It's allowed to have a topic without the
+                   corresponding type support. It's however not allowed to have
+                   a topic with a faulty type support (AKA two different types
+                   under the same name). */
+                typeName = (char *)u_topicTypeName(uTopic);
+                typeSupport = _DomainParticipantFindType (participant, typeName);
+                if (typeSupport) {
+                    /* type_name verified if reached. Meta data matches, verify
+                       key list matches too or disregard uTopic. */
+                    c_string keys;
+                    keys = u_topicGetTopicKeys (uTopic);
+                    if (keys) {
+                        if (strcmp (typeSupport->type_keys, keys) != 0) {
+                            OS_REPORT_2 (OS_API_INFO,
+                                "gapi_domainParticipant_find_topic", 0,
+                                "keys in topic %s do not match keys defined in type %s",
+                                topic_name, typeName);
+                            u_topicFree (uTopic);
+                            uTopic = NULL;
+                        }
+                        c_free (keys);
+                    }
+                    /* don't free typeSupport here */
+                }
+
                 t = c_iterTakeFirst(topicList);
                 while(t) {
                     u_topicFree(t);
@@ -1572,9 +1598,6 @@ gapi_domainParticipant_find_topic (
                 c_iterFree(topicList);
             }
 
-            if (uTopic) {
-                typeName = (char *)u_topicTypeName(uTopic);
-            }
             participant = gapi_domainParticipantClaim(_this, &result);
             if ( result == GAPI_RETCODE_OK ) {
                 if (uTopic && typeName) {

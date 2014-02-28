@@ -15,6 +15,7 @@ import org.opensplice.cm.meta.MetaType;
 import org.opensplice.cm.qos.PublisherQoS;
 import org.opensplice.cm.qos.SubscriberQoS;
 import org.opensplice.cm.qos.TopicQoS;
+import org.opensplice.cm.statistics.Statistics;
 
 /**
  * Represents a participant in SPLICE-DDS. This interface offers the entrance
@@ -159,4 +160,6 @@ public interface Participant extends Entity {
     public Topic createTopic(String name, String typeName, String keyList, TopicQoS qos) throws CMException;
     
     public Waitset createWaitset() throws CMException;
+    
+    public Statistics[] getStatistics(Entity[] entities) throws CMException ;
 }

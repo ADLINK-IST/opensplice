@@ -15,6 +15,7 @@
 // -- Shaped Include
 #include <topic-traits.hpp>
 
+namespace demo { namespace ishapes {
 class BouncingShapeDynamics : public ShapeDynamics
 {
 public:
@@ -49,6 +50,8 @@ private:
     ShapeType shape_;
     dds::pub::DataWriter<ShapeType>  shapeWriter_;
 };
+}
+}
 
 /** @}*/
 

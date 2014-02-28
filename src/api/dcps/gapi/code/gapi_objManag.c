@@ -16,6 +16,7 @@
 #include "os_abstract.h"
 #include "gapi_common.h"
 #include "gapi_genericCopyBuffer.h"
+#include "gapi_objManag.h"
 
 #define MEM_ALIGNMENT	8
 #define HMM_MAGIC       (0xabcdefed)

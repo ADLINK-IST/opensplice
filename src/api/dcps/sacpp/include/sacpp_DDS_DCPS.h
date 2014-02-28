@@ -15,7 +15,9 @@
 #include "os_defs.h"
 #include "os_stdlib.h"
 #include "sacpp_if.h"
-#include <string.h>
+
+#include <string>
+#include <vector>
 
 /**
  * @file
@@ -52,9 +54,13 @@ template <class T> class DDS_DCPS_mgr;
 namespace DDS
 {
    // Primitive types
+#ifdef OPENSPLICE_ISOCXX_PSM
+   typedef bool Boolean;
+#else
    /**
     * @bug OSPL-918 This should be bool */
    typedef os_uchar Boolean;
+#endif
    typedef Boolean& Boolean_out;
    typedef Boolean* Boolean_ptr;
 
@@ -131,6 +137,7 @@ namespace DDS
    typedef DDS_DCPSInterface_out<Object> Object_out;
    typedef DDS_DCPSInterface_mgr<Object> Object_mgr;
    SACPP_API void release(Object_ptr p);
+   SACPP_API Boolean is_nil(Object_ptr p);
 
    class SACPP_API LocalObject;
    typedef LocalObject* LocalObject_ptr;
@@ -214,6 +221,11 @@ SACPP_API inline DDS::Long DDS::string_cmp (const char* str1, const char* str2)
    }
 
    return ret;
+}
+
+SACPP_API inline DDS::Boolean DDS::is_nil (DDS::Object * p)
+{
+   return (p == 0);
 }
 
 #undef SACPP_API

@@ -66,7 +66,7 @@ namespace DDS {
             gapi_copyOut copy_out,
             gapi_readerCopy reader_copy,
             TypeSupportFactory_impl_ptr factory,
-            const CORBA::ULong type_def_length
+            const DDS::ULong type_def_length
         );
 
     public:

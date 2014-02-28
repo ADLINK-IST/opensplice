@@ -98,9 +98,8 @@ src/include/dbmsModule.h
 src/include
 src/services/durability2/ospl.xml
 src/api/cm/java/manifest
-src/api/dcps/java/saj/manifest
-src/api/dcps/java/cj/manifest
-src/api/dlrl/saj/java/manifest
+src/api/dcps/cj/java/manifest
+src/api/dcps/saj/java/manifest
 src/api/dcps/java/manifest
 install/VC
 install/HDE

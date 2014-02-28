@@ -29,9 +29,38 @@ public class EntitySerializerXML implements EntitySerializer {
             throw new TransformationException("Supplied Entity is not valid.");
         }
         StringWriter writer = new StringWriter();
-        
+        writeEntity(writer, e);
+        writer.flush();
+        return writer.toString();
+    }
+    
+	@Override
+	public String serializeEntities(Entity[] entities) throws TransformationException {
+	       if(entities == null || entities.length == 0){
+	            throw new TransformationException("Supplied Entities are not valid.");
+	        }
+	        StringWriter writer = new StringWriter();
+	        writer.write("<entityList>");
+	        for(Entity e : entities){
+	        	writeEntity(writer, e);
+	        }
+	        writer.write("</entityList>");
+	        writer.flush();
+	        return writer.toString();
+	} 
+	
+    /**
+     * Helper method to serialize a supplied Entity into a serialized representation.
+     * 
+     * @param writer The string buffer used to store the serialized entity 
+     * @param e The entity that is serialized to the writer
+     */
+	private void writeEntity(StringWriter writer, Entity e) throws TransformationException{
+    	if(e == null){
+            throw new TransformationException("Supplied Entity is not valid.");
+        }
         writer.write("<entity><pointer>" + e.getPointer() + 
-                        "<pointer><handle_index>" + e.getIndex() + 
+                        "</pointer><handle_index>" + e.getIndex() + 
                         "</handle_index><handle_serial>" + e.getSerial() +
                         "</handle_serial><name>" + e.getName() + "</name>" +
                         "<enabled>" + Boolean.toString(e.isEnabled()).toUpperCase() + 
@@ -95,8 +124,6 @@ public class EntitySerializerXML implements EntitySerializer {
         } else {
             assert false: "Serialize entity XML: received unknown entity";
         }
-        writer.write("</entity>");
-        writer.flush();
-        return writer.toString();
-    }   
+        writer.write("</entity>");	
+	}
 }

@@ -42,8 +42,8 @@ void os_osInit (void)
   initCount = pa_increment(&_ospl_osInitCount);
 
   if (initCount == 1) {
-    os_reportInit(OS_FALSE);
     os_mutexModuleInit();
+    os_reportInit(OS_FALSE);
     /*os_processModuleInit();*/
     os_threadModuleInit();
     os_sharedMemoryInit();
@@ -72,8 +72,8 @@ void os_osExit (void)
     os_sharedMemoryExit();
     os_threadModuleExit();
     /*os_processModuleExit();*/
-    os_mutexModuleExit();
     os_reportExit();
+    os_mutexModuleExit();
   } else if ((initCount + 1) < initCount){
     /* The 0 boundary is passed, so os_osExit is called more often than
      * os_osInit. Therefore undo decrement as nothing happened and warn. */

@@ -24,7 +24,7 @@ extern "C" {
 #include "include/os_socket.h"
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_OSNET
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -114,6 +114,10 @@ OS_API extern const os_in6_addr os_in6addr_any;
 #define INET6_ADDRSTRLEN 46 /* strlen("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff:255.255.255.255") + 1 */
 #endif
 #define INET6_ADDRSTRLEN_EXTENDED (INET6_ADDRSTRLEN + 8) /* + strlen("[]:12345") */
+
+/* The maximum buffersize needed to safely store the output of
+ * os_sockaddrAddressPortToString or os_sockaddrAddressToString. */
+#define OS_SOCKET_MAX_ADDRSTRLEN INET6_ADDRSTRLEN_EXTENDED
 
 #define SD_FLAG_IS_SET(flags, flag) ((((os_uint32)(flags) & (os_uint32)(flag))) != 0U)
 
@@ -205,21 +209,23 @@ os_sockGetsockname(
     const struct sockaddr *name,
     os_uint32 namelen);
 
-OS_API os_int32
+OS_API os_result
 os_sockSendto(
     os_socket s,
     const void *msg,
-    os_uint32 len,
+    size_t len,
     const struct sockaddr *to,
-    os_uint32 tolen);
+    size_t tolen,
+    size_t *bytesSent);
 
-OS_API os_int32
+OS_API os_result
 os_sockRecvfrom(
     os_socket s,
     void *buf,
-    os_uint32 len,
+    size_t len,
     struct sockaddr *from,
-    os_uint32 *fromlen);
+    size_t *fromlen,
+    size_t *bytesRead);
 
 OS_API os_result
 os_sockGetsockopt(

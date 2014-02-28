@@ -4,9 +4,9 @@
  *   This software and documentation are Copyright 2006 to 2013 PrismTech
  *   Limited and its licensees. All rights reserved. See file:
  *
- *                     $OSPL_HOME/LICENSE 
+ *                     $OSPL_HOME/LICENSE
  *
- *   for full copyright notice and license terms. 
+ *   for full copyright notice and license terms.
  *
  */
  * This file contains the global definitions and macros for AAPI.
@@ -19,9 +19,9 @@
 
 /* Private files included here for cloning c_base:
 */
+#include "ut_avl.h"
 #include "c_metabase.h"
 #include "c_sync.h"
-#include "c_avltree.h"
 
 
 #ifndef NULL
@@ -176,18 +176,18 @@ C_CLASS(a_base);
  * Clone of c_base
  */
 C_STRUCT(a_base) {
-	C_EXTENDS(c_module);
-	c_mm      mm;
-	c_long    confidence;
-	c_avlTree bindings;
-	c_ulong   skipUnknownMutexbindLock[9];    // cheap hack to skip
-	c_ulong   skipUnknownMutexSchemaLock[8];  //      some c_ulongs
-//	c_mutex   bindLock;
-//	c_mutex   schemaLock;
-	c_type    metaType[M_COUNT];
-	c_type    string_type;
-	c_object  firstObject;
-	c_object  lastObject;
+        C_EXTENDS(c_module);
+        c_mm      mm;
+        c_long    confidence;
+        ut_avlTree_t bindings;
+        c_ulong   skipUnknownMutexbindLock[9];    // cheap hack to skip
+        c_ulong   skipUnknownMutexSchemaLock[8];  //      some c_ulongs
+//      c_mutex   bindLock;
+//      c_mutex   schemaLock;
+        c_type    metaType[M_COUNT];
+        c_type    string_type;
+        c_object  firstObject;
+        c_object  lastObject;
 };
 
 

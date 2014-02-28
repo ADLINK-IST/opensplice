@@ -27,7 +27,7 @@
 #define MAX_MSG_LEN 256
 
 using namespace DDS;
-using namespace ContentFilteredTopicData;
+using namespace StockMarket;
 
 int OSPL_MAIN (int argc, char *argv[])
 {

@@ -1,10 +1,18 @@
 #include <ctype.h>
 #include <stddef.h>
+#include <assert.h>
+
+#ifndef _WIN32
+#include <limits.h> /* for IOV_MAX */
+#endif
 
 #include "os_heap.h"
 #include "os_if.h"
+#include "os_semaphore.h"
 
-#include "q_avl.h"
+#include "ut_avl.h"
+#include "ut_thread_pool.h"
+
 #include "q_osplser.h"
 #include "q_protocol.h"
 #include "q_xqos.h"
@@ -65,6 +73,7 @@ struct nn_xmsg {
   struct nn_xmsgpool *pool;
   unsigned maxsz;
   unsigned sz;
+  int have_params;
   struct serdata *refd_payload;
   struct iovec refd_payload_iov;
   os_int64 maxdelay;
@@ -122,28 +131,34 @@ struct nn_xmsg_chain {
 };
 
 
-struct nn_xpack {
+struct nn_xpack 
+{
   Header_t hdr;
-#ifndef NDEBUG
-  os_threadId owner_tid;
-#endif
+  MsgLen_t msg_len;
   nn_guid_prefix_t *last_src;
   InfoDST_t *last_dst;
-  unsigned sz;
-  os_socket sock;
   os_int64 maxdelay;
   unsigned packetid;
-
+  os_uint32 calls;
+  ddsi_tran_conn_t conn;
+  os_sem_t sem;
+  os_size_t niov;
+  struct iovec iov[NN_XMSG_MAX_MESSAGE_IOVECS];
   enum nn_xmsg_dstmode dstmode;
-  union {
-    os_sockaddr_storage loc;     /* send just to this locator */
+
+  union
+  {
+    os_sockaddr_storage loc;    /* send just to this locator */
     struct addrset *as;         /* send to all addresses in set */
   } dstaddr;
 
   struct nn_xmsg_chain included_msgs;
 
-  int niov;
-  struct iovec iov[NN_XMSG_MAX_MESSAGE_IOVECS];
+#ifndef NDEBUG
+  os_threadId owner_tid;
+#endif
+
+
 
 };
 
@@ -160,15 +175,10 @@ struct nn_xmsgpool *nn_xmsgpool_new (void)
 #if USE_ATOMIC_LIFO
   os_atomic_lifo_init (&pool->freelist);
 #else
-  {
-    os_mutexAttr attr;
-    os_mutexAttrInit (&attr);
-    attr.scopeAttr = OS_SCOPE_PRIVATE;
-    os_mutexInit (&pool->lock, &attr);
-    pool->freelist = NULL;
-    pool->nalloced = 0;
-    pool->nfree = 0;
-  }
+  os_mutexInit (&pool->lock, &gv.mattr);
+  pool->freelist = NULL;
+  pool->nalloced = 0;
+  pool->nfree = 0;
 #endif
   return pool;
 }
@@ -211,6 +221,7 @@ void nn_xmsgpool_free (struct nn_xmsgpool *pool)
 static void nn_xmsg_reinit (struct nn_xmsg *m, enum nn_xmsg_kind kind)
 {
   m->sz = 0;
+  m->have_params = 0;
   m->refd_payload = NULL;
   m->dstmode = NN_XMSG_DST_UNSET;
   m->kind = kind;
@@ -326,7 +337,10 @@ static int submsg_is_compatible (const struct nn_xmsg *msg, SubmessageKind_t smk
         case SMID_INFO_TS:
         case SMID_ACKNACK: case SMID_HEARTBEAT:
         case SMID_GAP: case SMID_NACK_FRAG:
-        case SMID_HEARTBEAT_FRAG: case SMID_PT_INFO_CONTAINER:
+        case SMID_HEARTBEAT_FRAG:
+        case SMID_PT_INFO_CONTAINER:
+        case SMID_PT_MSG_LEN:
+        case SMID_PT_ENTITY_ID:
           /* normal control stuff is ok */
           return 1;
         case SMID_DATA: case SMID_DATA_FRAG:
@@ -353,9 +367,14 @@ static int submsg_is_compatible (const struct nn_xmsg *msg, SubmessageKind_t smk
              won't work for initial transmits, but those currently
              don't allow a readerId */
           return msg->kindspecific.data.readerId_off == 0;
-        case SMID_ACKNACK: case SMID_HEARTBEAT:
-        case SMID_GAP: case SMID_NACK_FRAG:
-        case SMID_HEARTBEAT_FRAG: case SMID_PT_INFO_CONTAINER:
+        case SMID_ACKNACK:
+        case SMID_HEARTBEAT:
+        case SMID_GAP:
+        case SMID_NACK_FRAG:
+        case SMID_HEARTBEAT_FRAG:
+        case SMID_PT_INFO_CONTAINER:
+        case SMID_PT_MSG_LEN:
+        case SMID_PT_ENTITY_ID:
           /* anything else is strictly verboten */
           return 0;
       }
@@ -421,16 +440,18 @@ void nn_xmsg_submsg_init (struct nn_xmsg *msg, struct nn_xmsg_marker marker, Sub
 void nn_xmsg_submsg_setnext (struct nn_xmsg *msg, struct nn_xmsg_marker marker)
 {
   SubmessageHeader_t *hdr = (SubmessageHeader_t *) (msg->data->payload + marker.offset);
-  unsigned plsize = msg->refd_payload ? msg->refd_payload_iov.iov_len : 0;
+  unsigned plsize = msg->refd_payload ? (unsigned) msg->refd_payload_iov.iov_len : 0;
   assert ((msg->sz % 4) == 0);
   assert ((plsize % 4) == 0);
   assert ((unsigned) (msg->data->payload + msg->sz + plsize - (char *) hdr) >= RTPS_SUBMESSAGE_HEADER_SIZE);
-  hdr->octetsToNextHeader =
+  hdr->octetsToNextHeader = (unsigned short)
     (msg->data->payload + msg->sz + plsize - (char *) hdr) - RTPS_SUBMESSAGE_HEADER_SIZE;
 }
 
-void *nn_xmsg_append_aligned (struct nn_xmsg *m, struct nn_xmsg_marker *marker, unsigned sz, unsigned a)
+void * nn_xmsg_append (struct nn_xmsg *m, struct nn_xmsg_marker *marker, unsigned sz)
 {
+  static const unsigned a = 4;
+
   /* May realloc, in which case m may change.  But that will not
      happen if you do not exceed expected_size.  Max size is always a
      multiple of A: that means we don't have to worry about memory
@@ -448,8 +469,6 @@ void *nn_xmsg_append_aligned (struct nn_xmsg *m, struct nn_xmsg_marker *marker, 
   {
     unsigned nmax = (m->maxsz + sz + NN_XMSG_CHUNK_SIZE - 1) & -NN_XMSG_CHUNK_SIZE;
     struct nn_xmsg_data *ndata = os_realloc (m->data, offsetof (struct nn_xmsg_data, payload) + nmax);
-    if (ndata == NULL)
-      return NULL;
     m->maxsz = nmax;
     m->data = ndata;
   }
@@ -472,8 +491,8 @@ int nn_xmsg_add_timestamp (struct nn_xmsg *m, os_int64 t)
 {
   InfoTimestamp_t *ts;
   struct nn_xmsg_marker sm;
-  if ((ts = (InfoTimestamp_t *) nn_xmsg_append_aligned (m, &sm, sizeof (InfoTimestamp_t), 4)) == NULL)
-    return ERR_OUT_OF_MEMORY;
+
+  ts = (InfoTimestamp_t *) nn_xmsg_append (m, &sm, sizeof (InfoTimestamp_t));
   nn_xmsg_submsg_init (m, sm, SMID_INFO_TS);
   ts->time = nn_to_ddsi_time (t);
   nn_xmsg_submsg_setnext (m, sm);
@@ -483,20 +502,10 @@ int nn_xmsg_add_timestamp (struct nn_xmsg *m, os_int64 t)
 int nn_xmsg_serdata (struct nn_xmsg *m, serdata_t serdata, unsigned off, unsigned len)
 {
   unsigned len4 = ALIGN4 (len);
-#if 0
-  char *p;
-#endif
   assert (m->refd_payload == NULL);
-#if 0
-  if (len4 < 64 && (p = nn_xmsg_append_aligned (m, NULL, len4, 4)) != NULL)
-    memcpy (p, (char *) &serdata->hdr + off, len4);
-  else
-#endif
-  {
-    m->refd_payload = serdata_ref (serdata);
-    m->refd_payload_iov.iov_base = (char *) &m->refd_payload->hdr + off;
-    m->refd_payload_iov.iov_len = len4;
-  }
+  m->refd_payload = serdata_ref (serdata);
+  m->refd_payload_iov.iov_base = (char *) &m->refd_payload->hdr + off;
+  m->refd_payload_iov.iov_len = len4;
   return 0;
 }
 
@@ -666,8 +675,8 @@ void *nn_xmsg_addpar (struct nn_xmsg *m, int pid, int len)
   const int len4 = (len + 3) & -4; /* must alloc a multiple of 4 */
   nn_parameter_t *phdr;
   char *p;
-  if ((phdr = nn_xmsg_append_aligned (m, NULL, sizeof (nn_parameter_t) + len4, 4)) == NULL)
-    return NULL;
+  m->have_params = 1;
+  phdr = nn_xmsg_append (m, NULL, sizeof (nn_parameter_t) + len4);
   phdr->parameterid = pid;
   phdr->length = len4;
   p = (char *) (phdr + 1);
@@ -684,7 +693,7 @@ void *nn_xmsg_addpar (struct nn_xmsg *m, int pid, int len)
 int nn_xmsg_addpar_string (struct nn_xmsg *m, int pid, const char *str)
 {
   struct cdrstring *p;
-  int len = strlen (str) + 1;
+  int len = (int) strlen (str) + 1;
   if ((p = nn_xmsg_addpar (m, pid, 4 + len)) == NULL)
     return ERR_OUT_OF_MEMORY;
   p->length = len;
@@ -709,7 +718,7 @@ int nn_xmsg_addpar_stringseq (struct nn_xmsg *m, int pid, const nn_stringseq_t *
 
   for (i = 0; i < sseq->n; i++)
   {
-    int len1 = strlen (sseq->strs[i]) + 1;
+    int len1 = (int) strlen (sseq->strs[i]) + 1;
     len += 4 + ALIGN4 (len1);
   }
 
@@ -721,7 +730,7 @@ int nn_xmsg_addpar_stringseq (struct nn_xmsg *m, int pid, const nn_stringseq_t *
   for (i = 0; i < sseq->n; i++)
   {
     struct cdrstring *p = (struct cdrstring *) tmp;
-    int len1 = strlen (sseq->strs[i]) + 1;
+    int len1 = (int) strlen (sseq->strs[i]) + 1;
     p->length = len1;
     memcpy (p->contents, sseq->strs[i], len1);
     if (len1 < ALIGN4 (len1))
@@ -812,20 +821,49 @@ int nn_xmsg_addpar_statusinfo (struct nn_xmsg *m, unsigned statusinfo)
   return nn_xmsg_addpar_BE4u (m, PID_STATUSINFO, statusinfo);
 }
 
+int nn_xmsg_addpar_wrinfo (struct nn_xmsg *m, const struct nn_prismtech_writer_info *wri)
+{
+  struct nn_prismtech_writer_info *p;
+  if ((p = nn_xmsg_addpar (m, PID_PRISMTECH_WRITER_INFO, sizeof (*p))) == NULL)
+    return ERR_OUT_OF_MEMORY;
+  *p = *wri;
+  return 0;
+}
+
 int nn_xmsg_addpar_sentinel (struct nn_xmsg *m)
 {
   if (nn_xmsg_addpar (m, PID_SENTINEL, 0) == NULL)
     return ERR_OUT_OF_MEMORY;
-  return 0;
+  return 1;
 }
 
-int nn_xmsg_add_pl_cdr_header (struct nn_xmsg *m)
+int nn_xmsg_addpar_sentinel_ifparam (struct nn_xmsg *m)
 {
-  struct CDRHeader *plhdr;
-  if ((plhdr = nn_xmsg_append_aligned (m, NULL, sizeof (struct CDRHeader), 4)) == NULL)
+  if (!m->have_params)
+    return 0;
+  else
+    return nn_xmsg_addpar_sentinel (m);
+}
+
+int nn_xmsg_addpar_parvinfo (struct nn_xmsg *m, int pid, const struct nn_prismtech_participant_version_info *pvi)
+{
+  int i;
+  unsigned slen;
+  unsigned *pu;
+  struct cdrstring *ps;
+
+  /* pvi->internals cannot be NULL here */
+  slen = strlen(pvi->internals) + 1; /* +1 for '\0' terminator */
+  if ((pu = nn_xmsg_addpar (m, pid, NN_PRISMTECH_PARTICIPANT_VERSION_INFO_FIXED_CDRSIZE + slen)) == NULL)
     return ERR_OUT_OF_MEMORY;
-  plhdr->identifier = PLATFORM_IS_LITTLE_ENDIAN ? PL_CDR_LE : PL_CDR_BE;
-  plhdr->options = 0;
+  pu[0] = pvi->version;
+  pu[1] = pvi->flags;
+  for (i = 0; i < 3; i++)
+    pu[i+2] = (pvi->unused[i]);
+  ps = (struct cdrstring *)&pu[5];
+  ps->length = slen;
+  memcpy(ps->contents, pvi->internals, slen);
+
   return 0;
 }
 
@@ -905,15 +943,16 @@ static void nn_xpack_reinit (struct nn_xpack *xp)
 {
   xp->dstmode = NN_XMSG_DST_UNSET;
   xp->niov = 0;
-  xp->sz = 0;
+  xp->msg_len.length = 0;
   xp->included_msgs.latest = NULL;
   xp->maxdelay = T_NEVER;
   xp->packetid++;
 }
 
-struct nn_xpack *nn_xpack_new (
-        os_socket sock
-                               )
+struct nn_xpack *nn_xpack_new
+(
+  ddsi_tran_conn_t conn
+)
 {
   const nn_vendorid_t myvendorid = MY_VENDOR_ID;
   struct nn_xpack *xp;
@@ -933,9 +972,17 @@ struct nn_xpack *nn_xpack_new (
   xp->hdr.version.minor = RTPS_MINOR;
   xp->hdr.vendorid = myvendorid;
 
-  xp->sock = sock;
+  /* MSG_LEN first sub message for stream based connections */
+
+  xp->msg_len.smhdr.submessageId = SMID_PT_MSG_LEN;
+  xp->msg_len.smhdr.flags = (PLATFORM_IS_LITTLE_ENDIAN ? SMFLAG_ENDIANNESS : 0);
+  xp->msg_len.smhdr.octetsToNextHeader = 4;
+
+  xp->conn = conn;
   xp->packetid = 0;
   nn_xpack_reinit (xp);
+
+  os_sem_init (&xp->sem, 0);
 
   return xp;
 }
@@ -945,14 +992,10 @@ void nn_xpack_free (struct nn_xpack *xp)
   assert (os_threadEqual (os_threadIdSelf (), xp->owner_tid));
   assert (xp->niov == 0);
   assert (xp->included_msgs.latest == NULL);
+  os_sem_destroy (&xp->sem);
   os_free (xp);
 }
 
-
-struct xpack_send_arg {
-  os_socket sock;
-  struct msghdr mhdr;
-};
 
 static int sockaddr_size (const os_sockaddr_storage *a)
 {
@@ -964,11 +1007,12 @@ static int sockaddr_size (const os_sockaddr_storage *a)
   }
 }
 
-static size_t nn_xpack_send1 (const os_sockaddr_storage *addr, void *varg)
+static void nn_xpack_send1 (const os_sockaddr_storage * addr, void * varg)
 {
-  struct xpack_send_arg *arg = varg;
-  os_ssize_t nbytes;
-  int retry = 2;
+  struct iovec iov[NN_XMSG_MAX_MESSAGE_IOVECS];
+  struct nn_xpack * xp = varg;
+  struct msghdr mhdr;
+  int nbytes = 0;
 
   if (config.enabled_logcats & LC_TRACE)
   {
@@ -983,102 +1027,113 @@ static size_t nn_xpack_send1 (const os_sockaddr_storage *addr, void *varg)
     if ((random () % 1000) < config.xmit_lossiness)
     {
       TRACE (("(dropped)"));
-      return 0;
+      return;
     }
   }
 
-  arg->mhdr.msg_name = (os_sockaddr_storage *) addr; /* cast drops const */
-  arg->mhdr.msg_namelen = sockaddr_size (addr);
-  /* Normally the sendmsg call does not return EPERM on an UDP socket.
-     However on Redhat 6.2 it is observed that when sending to localhost
-     a packet may be dropped with error code EPERM.
-     This may occur when several programs send a packet at the same time
-     to a particular receiving socket.
-     Therefore when sendmsg returns EPERM a retry is performed.
-   */
-  do {
-    nbytes = sendmsg (arg->sock, &arg->mhdr, 0);
-  } while ((nbytes < 0) && (os_sockError() == os_sockEPERM) && (retry-- > 0));
+  /* Set target data/address in message */
 
-  if (nbytes <= 0)
+  memcpy (iov, xp->iov, sizeof (iov));
+  memset (&mhdr, 0, sizeof (mhdr));
+  mhdr.msg_iov = iov;
+  mhdr.msg_iovlen = xp->niov;
+  mhdr.msg_name = (os_sockaddr_storage*) addr;
+  mhdr.msg_namelen = sockaddr_size (addr);
+
   {
-    int err = os_sockError ();
-    NN_ERROR3 ("sendmsg sock %d: %d errno %d\n", (int) arg->sock, nbytes, err);
-    if (err != os_sockECONNRESET)
-      NN_ERROR3 ("sendmsg sock %d: %d errno %d\n", (int) arg->sock, nbytes, err);
-    nbytes = 0;
-  }
-  else
-  {
-    if (gv.pcap_fp)
-    {
-      os_sockaddr_storage srcaddr;
-      socklen_t srcaddrlen = sizeof (srcaddr);
-      (void) getsockname (arg->sock, (struct sockaddr *) &srcaddr, &srcaddrlen);
-      write_pcap_sent (gv.pcap_fp, now (), &srcaddr, &arg->mhdr, nbytes);
-    }
+    nbytes = ddsi_conn_write (xp->conn, &mhdr, xp->msg_len.length);
   }
 
-  return nbytes;
+  /* Expected that connection based writes will fail if not yet connected */
+
+  if (nbytes <= 0 && xp->conn->m_connless)
+  {
+    NN_ERROR1 ("ddsi_conn_write failed %d\n", nbytes);
+  }
 }
 
-size_t nn_xpack_send (struct nn_xpack *xp)
+typedef struct nn_xpack_send1_thread_arg
 {
-  struct xpack_send_arg arg;
-  size_t nbytes = 0; /* either this, or a default in the switch ... */
+  const os_sockaddr_storage * addr;
+  struct nn_xpack * xp;
+} 
+* nn_xpack_send1_thread_arg_t;
+
+static void * nn_xpack_send1_thread (void * varg)
+{
+  nn_xpack_send1_thread_arg_t arg = varg;
+  nn_xpack_send1 (arg->addr, arg->xp);
+  if (atomic_dec_u32_nv (&arg->xp->calls) == 0)
+  {
+    os_sem_post (&arg->xp->sem);
+  }
+  os_free (varg);
+  return NULL;
+}
+
+static void nn_xpack_send1_threaded (const os_sockaddr_storage * addr, void * varg)
+{
+  nn_xpack_send1_thread_arg_t arg = os_malloc (sizeof (*arg));
+  arg->xp = (struct nn_xpack *) varg;
+  arg->addr = addr;
+  ut_thread_pool_submit (gv.thread_pool, nn_xpack_send1_thread, arg);
+}
+
+void nn_xpack_send (struct nn_xpack * xp)
+{
+  os_uint32 calls;
 
   assert (os_threadEqual (os_threadIdSelf (), xp->owner_tid));
   assert (xp->niov <= NN_XMSG_MAX_MESSAGE_IOVECS);
 
   if (xp->niov == 0)
-    return 0;
+  {
+    return;
+  }
 
   assert (xp->dstmode != NN_XMSG_DST_UNSET);
 
   if (config.enabled_logcats & LC_TRACE)
   {
     int i;
-    TRACE (("nn_xpack_send %u:", xp->sz));
+    TRACE (("nn_xpack_send %u:", xp->msg_len.length));
     for (i = 0; i < (int) xp->niov; i++)
+    {
       TRACE ((" %p:%u", (void *) xp->iov[i].iov_base, xp->iov[i].iov_len));
+    }
   }
-
-  /* arg.mhdr.msg_name set by xpack_send1 */
-  arg.mhdr.msg_iov = xp->iov;
-  arg.mhdr.msg_iovlen = xp->niov;
-#if SYSDEPS_MSGHDR_ACCRIGHTS
-  arg.mhdr.msg_accrights = NULL;
-  arg.mhdr.msg_accrightslen = 0;
-#else
-  arg.mhdr.msg_control = NULL;
-  arg.mhdr.msg_controllen = 0;
-#endif
-#if SYSDEPS_MSGHDR_FLAGS
-  /* flags is meaningless on send, but valgrind might complain about
-     uninitialised bytes if we don't set it */
-  arg.mhdr.msg_flags = 0;
-#endif
-
-  arg.sock = xp->sock;
 
   TRACE ((" ["));
-  switch (xp->dstmode)
+  if (xp->dstmode == NN_XMSG_DST_ONE)
   {
-    case NN_XMSG_DST_UNSET:
-      assert (0);
-    case NN_XMSG_DST_ONE:
-      nbytes = nn_xpack_send1 (&xp->dstaddr.loc, &arg);
-      break;
-    case NN_XMSG_DST_ALL:
-      nbytes = addrset_forall_addresses (xp->dstaddr.as, nn_xpack_send1, &arg);
-      unref_addrset (xp->dstaddr.as);
-      break;
+    calls = 1;
+    nn_xpack_send1 (&xp->dstaddr.loc, xp);
+  }
+  else
+  {
+    calls = addrset_count (xp->dstaddr.as);
+    if (calls)
+    {
+      if (gv.thread_pool == NULL)
+      {
+        addrset_forall (xp->dstaddr.as, nn_xpack_send1, xp);
+      }
+      else
+      {
+        xp->calls = calls;
+        addrset_forall (xp->dstaddr.as, nn_xpack_send1_threaded, xp);
+        os_sem_wait (&xp->sem);
+      }
+    }
+    unref_addrset (xp->dstaddr.as);
   }
   TRACE ((" ]\n"));
-  nn_log (LC_TRAFFIC, "traffic-xmit %u\n", (unsigned) nbytes);
+  if (calls)
+  {
+    nn_log (LC_TRAFFIC, "traffic-xmit (%d) %u\n", calls, xp->msg_len.length);
+  }
   nn_xmsg_chain_release (&xp->included_msgs);
   nn_xpack_reinit (xp);
-  return nbytes;
 }
 
 static void copy_addressing_info (struct nn_xpack *xp, const struct nn_xmsg *m)
@@ -1125,10 +1180,10 @@ static int nn_xpack_mayaddmsg (const struct nn_xpack *xp, const struct nn_xmsg *
   if (xp->niov + NN_XMSG_MAX_SUBMESSAGE_IOVECS > NN_XMSG_MAX_MESSAGE_IOVECS)
     return 0;
 
-  payload_size = m->refd_payload ? m->refd_payload_iov.iov_len : 0;
+  payload_size = m->refd_payload ? (unsigned) m->refd_payload_iov.iov_len : 0;
 
 
-  if (xp->sz + m->sz + payload_size > max_msg_size)
+  if (xp->msg_len.length + m->sz + payload_size > max_msg_size)
     return 0;
 
 
@@ -1161,7 +1216,7 @@ int nn_xpack_addmsg (struct nn_xpack *xp, struct nn_xmsg *m)
   /* Submessage offset must be a multiple of 4 to meet alignment
      requirement (DDSI 2.1, 9.4.1).  If we keep everything 4-byte
      aligned all the time, we don't need to check for padding here. */
-  assert ((xp->sz % 4) == 0);
+  assert ((xp->msg_len.length % 4) == 0);
   assert ((m->sz % 4) == 0);
   assert (m->refd_payload == NULL || (m->refd_payload_iov.iov_len % 4) == 0);
 
@@ -1174,7 +1229,7 @@ int nn_xpack_addmsg (struct nn_xpack *xp, struct nn_xmsg *m)
   }
 
   niov = xp->niov;
-  sz = xp->sz;
+  sz = xp->msg_len.length;
 
   /* We try to merge iovecs, but we can never merge across messages
      because of all the headers. So we can speculatively start adding
@@ -1200,26 +1255,38 @@ int nn_xpack_addmsg (struct nn_xpack *xp, struct nn_xmsg *m)
   TRACE (("): niov %d sz %d", niov, sz));
 
   /* If a fresh xp has been provided, add an RTPS header */
+
   if (niov == 0)
   {
     copy_addressing_info (xp, m);
     xp->hdr.guid_prefix = m->data->src.guid_prefix;
-    xp->iov[niov].iov_base = &xp->hdr;
+    xp->iov[niov].iov_base = (void*) &xp->hdr;
     xp->iov[niov].iov_len = sizeof (xp->hdr);
-    sz = xp->iov[niov].iov_len;
+    sz = (unsigned) xp->iov[niov].iov_len;
     niov++;
+
+    /* Add MSG_LEN sub message for stream based transports */
+
+    if (gv.m_factory->m_stream)
+    {
+      xp->iov[niov].iov_base = (void*) &xp->msg_len;
+      xp->iov[niov].iov_len = sizeof (xp->msg_len);
+      sz += sizeof (xp->msg_len);
+      niov++;
+    }
+
     xp->last_src = &xp->hdr.guid_prefix;
     xp->last_dst = NULL;
   }
   else
   {
     xpo_niov = xp->niov;
-    xpo_sz = xp->sz;
+    xpo_sz = xp->msg_len.length;
     if (!guid_prefix_eq (xp->last_src, &m->data->src.guid_prefix))
     {
       /* If m's source participant differs from that of the source
          currently set in the packed message, add an InfoSRC note. */
-      xp->iov[niov].iov_base = &m->data->src;
+      xp->iov[niov].iov_base = (void*) &m->data->src;
       xp->iov[niov].iov_len = sizeof (m->data->src);
       sz += sizeof (m->data->src);
       xp->last_src = &m->data->src.guid_prefix;
@@ -1252,10 +1319,12 @@ int nn_xpack_addmsg (struct nn_xpack *xp, struct nn_xmsg *m)
     /* Try to merge iovecs, a few large ones should be more efficient
        than many small ones */
     if ((char *) xp->iov[niov-1].iov_base + xp->iov[niov-1].iov_len == (char *) dst)
+    {
       xp->iov[niov-1].iov_len += sizeof (*dst);
+    }
     else
     {
-      xp->iov[niov].iov_base = dst;
+      xp->iov[niov].iov_base = (void*) dst;
       xp->iov[niov].iov_len = sizeof (*dst);
       niov++;
     }
@@ -1289,13 +1358,15 @@ int nn_xpack_addmsg (struct nn_xpack *xp, struct nn_xmsg *m)
      submessage that is too large for a message ... but the latter
      isn't worth checking. */
   assert (niov <= NN_XMSG_MAX_MESSAGE_IOVECS);
-  xp->sz = sz;
+
+  /* Set total message length in MSG_LEN sub message */
+  xp->msg_len.length = sz;
   xp->niov = niov;
 
-  if (xpo_niov > 0 && xp->sz > config.max_msg_size)
+  if (xpo_niov > 0 && sz > config.max_msg_size)
   {
     TRACE ((" => now niov %d sz %u > max_msg_size %u, nn_xpack_send niov %d sz %u now\n", niov, sz, config.max_msg_size, xpo_niov, xpo_sz));
-    xp->sz = xpo_sz;
+    xp->msg_len.length = xpo_sz;
     xp->niov = xpo_niov;
     nn_xpack_send (xp);
     result = nn_xpack_addmsg (xp, m); /* Retry on emptied xp */

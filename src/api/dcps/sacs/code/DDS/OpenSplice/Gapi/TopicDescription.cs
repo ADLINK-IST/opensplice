@@ -27,21 +27,21 @@ namespace DDS.OpenSplice.Gapi
         /*     string
          *     get_type_name();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_topicDescription_get_type_name")]
+        [DllImport("ddskernel", EntryPoint = "gapi_topicDescription_get_type_name")]
         public static extern IntPtr get_type_name(
             IntPtr _this);
 
         /*     string
          *     get_name();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_topicDescription_get_name")]
+        [DllImport("ddskernel", EntryPoint = "gapi_topicDescription_get_name")]
         public static extern IntPtr get_name(
             IntPtr _this);
 
         /*     DomainParticipant
          *     get_participant();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_topicDescription_get_participant")]
+        [DllImport("ddskernel", EntryPoint = "gapi_topicDescription_get_participant")]
         public static extern IntPtr get_participant(
             IntPtr _this);
     }

@@ -649,12 +649,12 @@ d_instanceInject(
         c_cloneIn(inj->messageType, storeMessage, (c_voidp*)messagePtr);
 
         /* inject message */
-        wr = v_groupWriteNoStream(inj->vgroup, message, NULL, V_NETWORKID_LOCAL);
+        wr = v_groupWriteNoStream(inj->vgroup, message, NULL, V_NETWORKID_ANY);
         oneSec.tv_sec  = 1;
         oneSec.tv_nsec = 0;
 
         while(wr == V_WRITE_REJECTED){
-            wr = v_groupWriteNoStream(inj->vgroup, message, NULL, V_NETWORKID_LOCAL);
+            wr = v_groupWriteNoStream(inj->vgroup, message, NULL, V_NETWORKID_ANY);
             os_nanoSleep(oneSec);
         }
 
@@ -691,10 +691,10 @@ d_instanceInject(
         unregisterMsg = v_message(c_iterTakeFirst(unregisterMessagesToInject));
 
         while (unregisterMsg) {
-            wr = v_groupWriteNoStream(inj->vgroup, unregisterMsg, NULL, V_NETWORKID_LOCAL);
+            wr = v_groupWriteNoStream(inj->vgroup, unregisterMsg, NULL, V_NETWORKID_ANY);
 
             while(wr == V_WRITE_REJECTED){
-                wr = v_groupWriteNoStream(inj->vgroup, unregisterMsg, NULL, V_NETWORKID_LOCAL);
+                wr = v_groupWriteNoStream(inj->vgroup, unregisterMsg, NULL, V_NETWORKID_ANY);
                 os_nanoSleep(oneSec);
             }
             c_free(unregisterMsg);

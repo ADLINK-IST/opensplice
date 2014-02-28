@@ -419,7 +419,6 @@ SAJ_FUNCTION(jniFindTopic) (
     gapi_duration_t timeout;
     const gapi_char* topicName;
     gapi_domainParticipant participant;
-    saj_returnCode rc;
 
     javaTopic = NULL;
     gapiTopic = GAPI_OBJECT_NIL;
@@ -448,7 +447,7 @@ SAJ_FUNCTION(jniFindTopic) (
          * the existing one if it already exists.
          */
         if(javaTopic == NULL){
-            rc = saj_construct_java_object(env, PACKAGENAME "TopicImpl",
+            saj_construct_java_object(env, PACKAGENAME "TopicImpl",
                                             (PA_ADDRCAST)gapiTopic,
                                             &javaTopic);
         }
@@ -474,7 +473,6 @@ SAJ_FUNCTION(jniLookupTopicdescription) (
     gapi_domainParticipant participant;
     gapi_topicDescription gapiTopicDescription;
     const gapi_char* topicName;
-    saj_returnCode rc;
 
     javaTopicDescription = NULL;
     gapiTopicDescription = GAPI_OBJECT_NIL;
@@ -500,7 +498,7 @@ SAJ_FUNCTION(jniLookupTopicdescription) (
              * This can only happen when this is a builtin Topic that has
              * not been used already.
              */
-            rc = saj_construct_java_object(env, PACKAGENAME
+            saj_construct_java_object(env, PACKAGENAME
                                             "TopicImpl",
                                             (PA_ADDRCAST)gapiTopicDescription,
                                             &javaTopicDescription);

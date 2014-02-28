@@ -89,19 +89,17 @@ int publisher(int argc, char *argv[])
         dds::pub::DataWriter<ListenerData::Msg> dw(pub, topic, dwqos);
 
         /** A sample is created on the stack and then written. */
-        ListenerData::Msg msgInstance;
-        msgInstance.userID = 1;
-        msgInstance.message = "Hello World";
+        ListenerData::Msg msgInstance(1, "Hello World");
         dw << msgInstance;
 
         std::cout << "=== [Publisher] written a message containing :" << std::endl;
-        std::cout << "    userID  : " << msgInstance.userID << std::endl;
-        std::cout << "    Message : \"" << msgInstance.message.in() << "\"" << std::endl;
+        std::cout << "    userID  : " << msgInstance.userID() << std::endl;
+        std::cout << "    Message : \"" << msgInstance.message() << "\"" << std::endl;
 
         /* A short sleep ensures time is allowed for the sample to be written to the network.
         If the example is running in *Single Process Mode* exiting immediately might
         otherwise shutdown the domain services before this could occur */
-        exampleSleepMilliseconds(1000);
+        exampleSleepMilliseconds(1500);
     }
     catch (const dds::core::Exception& e)
     {
@@ -161,6 +159,9 @@ int subscriber(int argc, char *argv[])
 
         result = ! (listener.deadline_expired_ && listener.data_received_);
 
+        /** Remove the ExampleDataReaderListener from the DataReader */
+        dr.listener(0, dds::core::status::StatusMask::none());
+
         std::cout << "=== [ListenerDataSubscriber] Closed" << std::endl;
     }
     catch (const dds::core::Exception& e)
@@ -176,3 +177,6 @@ int subscriber(int argc, char *argv[])
 }
 }
 }
+
+EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_Listener_publisher, examples::dcps::Listener::isocpp::publisher)
+EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_Listener_subscriber, examples::dcps::Listener::isocpp::subscriber)

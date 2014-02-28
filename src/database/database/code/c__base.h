@@ -16,16 +16,16 @@
 #ifndef C__BASE_H
 #define C__BASE_H
 
+#include "ut_avl.h"
 #include "c_base.h"
 #include "c_mmbase.h"
 #include "c_module.h"
-#include "c_avltree.h"
 
 #if defined (__cplusplus)
 extern "C" {
 #endif
 
-#ifdef OSPL_BUILD_DB
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -101,13 +101,15 @@ C_STRUCT(c_baseCache) {
 C_STRUCT(c_base) {
     C_EXTENDS(c_module);
     c_mm      mm;
+    c_bool    maintainObjectCount;
     c_long    confidence;
-    c_avlTree bindings;
+    ut_avlTree_t bindings;
     c_mutex   bindLock;
     c_mutex   serLock; /* currently only used for defining enums from sd_serializerXMLTypeinfo.c */
     c_type    metaType[M_COUNT];
     c_type    string_type;
     c_string  emptyString;
+    c_wstring  emptyWstring;
     C_STRUCT(c_baseCache) baseCache;
 
 #ifndef NDEBUG
@@ -136,6 +138,8 @@ OS_API void     c__assertValidDatabaseObject(c_voidp o);
 #else
 #define c_assertValidDatabaseObject(o)
 #endif
+
+OS_API c_mutexAttr c_baseGetMutexAttr(c_base base);
 
 #undef OS_API
 

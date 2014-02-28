@@ -44,6 +44,8 @@ SAJ_FUNCTION(jniRegisterInstance) (
     C_STRUCT(saj_srcInfo) srcInfo;
     const gapi_foo *src = NULL;
 
+    OS_UNUSED_ARG(object);
+
     if (instance_data != NULL) {
 	srcInfo.javaEnv = env;
         srcInfo.javaObject = instance_data;
@@ -82,6 +84,8 @@ SAJ_FUNCTION(jniRegisterInstanceWTimestamp) (
     gapi_time_t timestamp;
     const gapi_time_t *ts = NULL;
     const gapi_foo *src = NULL;
+
+    OS_UNUSED_ARG(object);
 
     if (instance_data != NULL) {
         srcInfo.javaEnv = env;
@@ -126,6 +130,8 @@ SAJ_FUNCTION(jniUnregisterInstance) (
     C_STRUCT(saj_srcInfo) srcInfo;
     const gapi_foo *src = NULL;
 
+    OS_UNUSED_ARG(object);
+
     if (instance_data != NULL) {
         srcInfo.javaEnv = env;
         srcInfo.javaObject = instance_data;
@@ -167,6 +173,8 @@ SAJ_FUNCTION(jniUnregisterInstanceWTimestamp) (
     gapi_time_t timestamp;
     const gapi_time_t *ts = NULL;
     const gapi_foo *src = NULL;
+
+    OS_UNUSED_ARG(object);
 
     srcInfo.javaEnv = env;
     if (instance_data != NULL) {
@@ -212,6 +220,8 @@ SAJ_FUNCTION(jniWrite) (
     C_STRUCT(saj_srcInfo) srcInfo;
     const gapi_foo *src = NULL;
 
+    OS_UNUSED_ARG(object);
+
     if (instance_data != NULL) {
         srcInfo.javaEnv = env;
         srcInfo.javaObject = instance_data;
@@ -253,6 +263,8 @@ SAJ_FUNCTION(jniWriteWTimestamp) (
     gapi_time_t timestamp;
     const gapi_time_t *ts = NULL;
     const gapi_foo *src = NULL;
+
+    OS_UNUSED_ARG(object);
 
     if (instance_data != NULL && source_timestamp != NULL) {
         srcInfo.javaEnv = env;
@@ -296,6 +308,8 @@ SAJ_FUNCTION(jniDispose) (
     C_STRUCT(saj_srcInfo) srcInfo;
     const gapi_foo *src = NULL;
 
+    OS_UNUSED_ARG(object);
+
     if (instance_data != NULL) {
         srcInfo.javaEnv = env;
         srcInfo.javaObject = instance_data;
@@ -338,6 +352,8 @@ SAJ_FUNCTION(jniDisposeWTimestamp) (
     const gapi_time_t *ts = NULL;
     const gapi_foo *src = NULL;
 
+    OS_UNUSED_ARG(object);
+
     if (instance_data != NULL && source_timestamp != NULL) {
         srcInfo.javaEnv = env;
         srcInfo.javaObject = instance_data;
@@ -378,6 +394,8 @@ SAJ_FUNCTION(jniWritedispose) (
 {
     C_STRUCT(saj_srcInfo) srcInfo;
     const gapi_foo *src = NULL;
+
+    OS_UNUSED_ARG(object);
 
     if (instance_data != NULL) {
         srcInfo.javaEnv = env;
@@ -421,6 +439,8 @@ SAJ_FUNCTION(jniWritedisposeWTimestamp) (
     const gapi_time_t *ts = NULL;
     const gapi_foo *src = NULL;
 
+    OS_UNUSED_ARG(object);
+
     if (instance_data != NULL && source_timestamp != NULL) {
         srcInfo.javaEnv = env;
         srcInfo.javaObject = instance_data;
@@ -462,24 +482,26 @@ SAJ_FUNCTION(jniGetKeyValue) (
     C_STRUCT(saj_dstInfo) dstInfo;
     gapi_foo *dst = NULL;
     jint result;
-    jobject element;
+    jobject element = NULL;
     sajReaderCopyCache *rc = saj_copyCacheReaderCache ((saj_copyCache)(PA_ADDRCAST)copyCache);
 
+    OS_UNUSED_ARG(object);
+
     if (key_holder != NULL) {
-	element = (*env)->GetObjectField (env, key_holder, rc->dataHolder_value_fid);
+        element = (*env)->GetObjectField (env, key_holder, rc->dataHolder_value_fid);
         dstInfo.javaEnv = env;
         dstInfo.javaObject = element;
         dstInfo.copyProgram = (saj_copyCache)(PA_ADDRCAST)copyCache;
-	dst = (gapi_foo *)&dstInfo;
+        dst = (gapi_foo *)&dstInfo;
     }
 
     result = gapi_fooDataWriter_get_key_value (
-	(gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
-	(gapi_foo *)dst,
-	(gapi_instanceHandle_t)handle);
+            (gapi_fooDataWriter)saj_read_gapi_address (env, DataWriter),
+            (gapi_foo *)dst,
+            (gapi_instanceHandle_t)handle);
 
     if ((key_holder != NULL) && (dstInfo.javaObject != element)) {
-	(*env)->SetObjectField (env, key_holder, rc->dataHolder_value_fid, dstInfo.javaObject);
+        (*env)->SetObjectField (env, key_holder, rc->dataHolder_value_fid, dstInfo.javaObject);
     }
     return result;
 }
@@ -499,6 +521,8 @@ SAJ_FUNCTION(jniLookupInstance)(
 {
     C_STRUCT(saj_srcInfo) srcInfo;
     const gapi_foo *src = NULL;
+
+    OS_UNUSED_ARG(object);
 
     if (instanceData != NULL) {
         srcInfo.javaEnv = env;

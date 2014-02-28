@@ -19,6 +19,10 @@
 #include "q_fibheap.h"
 
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 struct nn_xmsgpool;
 struct serstatepool;
 struct nn_dqueue;
@@ -29,6 +33,10 @@ struct xeventq;
 struct gcreq_queue;
 struct ephash;
 struct lease;
+struct ddsi_tran_conn;
+struct ddsi_tran_listener;
+struct ddsi_tran_factory;
+struct ut_thread_pool_s;
 
 typedef struct ospl_in_addr_node {
    os_sockaddr_storage addr;
@@ -47,8 +55,10 @@ enum recvips_mode {
 #define N_LEASE_LOCKS ((int) (1 << N_LEASE_LOCKS_LG2))
 
 struct q_globals {
+  volatile int terminate;
+
   /* Process-scope mutex & cond. var. attributes, so we don't have to
-     initialise attributes all the time. */
+   initialise attributes all the time. */
   os_mutexAttr mattr;
   os_condAttr cattr;
   os_rwlockAttr rwattr;
@@ -60,9 +70,8 @@ struct q_globals {
 
   /* Hash tables for participants, readers, writers, proxy
      participants, proxy readers and proxy writers by GUID
-     (guid_hash); readers and writers by GID (gid_hash) */
+     (guid_hash) */
   struct ephash *guid_hash;
-  struct ephash *gid_hash;
 
   /* Timed events admin */
   struct xeventq *xevents;
@@ -76,22 +85,35 @@ struct q_globals {
   os_mutex lease_locks[N_LEASE_LOCKS];
   struct fibheap leaseheap;
 
-  /* Sockets for multicast discovery & data, and those that correspond
+  /* Transport factory */
+
+  struct ddsi_tran_factory * m_factory;
+
+  /* Connections for multicast discovery & data, and those that correspond
      to the one DDSI participant index that the DDSI2 service uses. The
      DCPS participant of DDSI2 itself will be mirrored in a DDSI
      participant, and in multi-socket mode that one gets its own
      socket. */
-  os_socket discsock_mc;
-  os_socket datasock_mc;
-  os_socket discsock_uc;
-  os_socket datasock_uc;
+
+  struct ddsi_tran_conn * disc_conn_mc;
+  struct ddsi_tran_conn * data_conn_mc;
+  struct ddsi_tran_conn * disc_conn_uc;
+  struct ddsi_tran_conn * data_conn_uc;
+
+  /* TCP listener */
+
+  struct ddsi_tran_listener * listener;
+
+  /* Thread pool */
+
+  struct ut_thread_pool_s * thread_pool;
 
   /* Receive thread triggering: must have a socket per receive thread
      because all receive threads must be triggered, even though each
      receive thread takes the trigger message from the socket. With one
      trigger socket, we can only have one receive thread (which enables
      other optimisations that we don't currently do). */
-  os_sockWaitset sockws;
+  os_sockWaitset waitset;
 
   /* In many sockets mode, the receive threads maintain a local array
      with participant GUIDs and sockets, participant_set_generation is
@@ -112,6 +134,7 @@ struct q_globals {
   struct participant *privileged_pp;
   os_mutex privileged_pp_lock;
 
+
   /* number of up, non-loopback, IPv4/IPv6 interfaces, the index of
      the selected/preferred one, and the discovered interfaces. */
   int n_interfaces;
@@ -130,15 +153,19 @@ struct q_globals {
   enum recvips_mode recvips_mode;
   struct ospl_in_addr_node *recvips;
   struct in_addr extmask;
+
   os_sockaddr_storage ownip;
   os_sockaddr_storage extip;
-  os_sockaddr_storage mcip;
 
   /* InterfaceNo that the OwnIP is tied to */
   os_uint interfaceNo;
 
-  /* Locators:  */
-  nn_locator_t loc_meta_mc, loc_meta_uc, loc_default_mc, loc_default_uc;
+  /* Locators */
+
+  nn_locator_t loc_meta_mc;
+  nn_locator_t loc_meta_uc;
+  nn_locator_t loc_default_mc;
+  nn_locator_t loc_default_uc;
 
   /* Initial discovery address set, and the current discovery address
      set. These are the addresses that SPDP pings get sent to. FIXME:
@@ -152,6 +179,7 @@ struct q_globals {
 
   os_mutex lock;
 
+  
   /* Receive thread. (We can only has one for now, cos of the signal
      trigger socket.) Receive buffer pool is per receive thread,
      practical considerations led to it being a global variable
@@ -183,6 +211,8 @@ struct q_globals {
   nn_xqos_t builtin_endpoint_xqos_rd;
   nn_xqos_t builtin_endpoint_xqos_wr;
 
+  /* Unique 64-bit ID generator for entities */
+  
   /* SPDP packets get very special treatment (they're the only packets
      we accept from writers we don't know) and have their very own
      do-nothing defragmentation and reordering thingummies, as well as a
@@ -195,10 +225,11 @@ struct q_globals {
      delivery queue; currently just SEDP and PMD */
   struct nn_dqueue *builtins_dqueue;
 
-  /* Socket used by general timed-event queue for transmitting data */
-  os_socket tev_socket;
+  /* Connection used by general timed-event queue for transmitting data */
 
-  c_ulong networkQueueId;
+  struct ddsi_tran_conn * tev_conn;
+
+  os_uint32 networkQueueId;
   struct thread_state1 *channel_reader_ts;
 
   /* Application data gets its own delivery queue */
@@ -212,7 +243,7 @@ struct q_globals {
   /* Network ID needed by v_groupWrite -- FIXME: might as well pass it
      to the receive thread instead of making it global (and that would
      remove the need to include kernelModule.h) */
-  v_networkId myNetworkId;
+  os_uint32 myNetworkId;
 
 
   /* File for dumping captured packets, NULL if disabled */
@@ -228,6 +259,10 @@ struct q_globals {
 };
 
 extern struct q_globals gv;
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* Q_GLOBALS_H */
 

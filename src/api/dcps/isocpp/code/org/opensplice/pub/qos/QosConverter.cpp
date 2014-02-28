@@ -25,12 +25,12 @@ org::opensplice::pub::qos::convertQos(const DDS::DataWriterQos& from)
 {
     dds::pub::qos::DataWriterQos to;
     to = to << convertPolicy(from.durability) << convertPolicy(from.deadline)
-      << convertPolicy(from.latency_budget) << convertPolicy(from.liveliness)
-      << convertPolicy(from.reliability) << convertPolicy(from.destination_order)
-      << convertPolicy(from.history) << convertPolicy(from.resource_limits)
-      << convertPolicy(from.transport_priority) << convertPolicy(from.lifespan)
-      << convertPolicy(from.user_data) << convertPolicy(from.ownership)
-      << convertPolicy(from.ownership_strength) << convertPolicy(from.writer_data_lifecycle);
+         << convertPolicy(from.latency_budget) << convertPolicy(from.liveliness)
+         << convertPolicy(from.reliability) << convertPolicy(from.destination_order)
+         << convertPolicy(from.history) << convertPolicy(from.resource_limits)
+         << convertPolicy(from.transport_priority) << convertPolicy(from.lifespan)
+         << convertPolicy(from.user_data) << convertPolicy(from.ownership)
+         << convertPolicy(from.ownership_strength) << convertPolicy(from.writer_data_lifecycle);
     return to;
 }
 
@@ -97,7 +97,7 @@ org::opensplice::pub::qos::convertQos(const DDS::PublisherQos& from)
 {
     dds::pub::qos::PublisherQos to;
     to = to << convertPolicy(from.presentation) << convertPolicy(from.partition)
-      << convertPolicy(from.group_data) << convertPolicy(from.entity_factory);
+         << convertPolicy(from.group_data) << convertPolicy(from.entity_factory);
     return to;
 }
 

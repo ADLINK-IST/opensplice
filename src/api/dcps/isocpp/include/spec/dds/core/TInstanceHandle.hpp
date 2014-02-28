@@ -23,54 +23,89 @@
 #include <dds/core/Value.hpp>
 
 
-namespace dds {
-  namespace core {
-    template <typename DELEGATE>
-    class TInstanceHandle;
-  }
+namespace dds
+{
+namespace core
+{
+template <typename DELEGATE>
+class TInstanceHandle;
+}
 }
 
 template <typename DELEGATE>
-class dds::core::TInstanceHandle : public dds::core::Value<DELEGATE> {
+class dds::core::TInstanceHandle : public dds::core::Value<DELEGATE>
+{
 public:
-  /**
-   * Default construct an instance handle.
-   */
-  TInstanceHandle();
+    /**
+     * Default construct an instance handle.
+     */
+    TInstanceHandle();
 
-  /**
-   * Construct a nil instance handle.
-   */
-  TInstanceHandle(const dds::core::null_type& nullHandle);
+    /**
+     * Construct a nil instance handle.
+     */
+    TInstanceHandle(const dds::core::null_type& nullHandle);
 
-  /**
-   * Copy Constructor
-   */
-  TInstanceHandle(const TInstanceHandle& other);
+    /**
+     * Copy an existing InstancHandle
+     * @param TInstanceHandle
+     */
+    TInstanceHandle(const TInstanceHandle& other);
 
-  /**
-   * Destructor
-   */
-  ~TInstanceHandle();
+    ~TInstanceHandle();
 
-  /**
-   * Parametric constructor for creating an instance-handle
-   * from some other type. This method is intended for internal
-   * usage.
-   */
-  template <typename ARG0>
-  TInstanceHandle(const ARG0& arg0);
-
-public:
-  TInstanceHandle& operator=(const TInstanceHandle& that);
-
-  bool operator==(const TInstanceHandle& that) const;
-
+    /**
+     * Parametric constructor for creating an instance-handle
+     * from some other type. This function is intended for internal
+     * usage.
+     */
+    template <typename ARG0>
+    TInstanceHandle(const ARG0& arg0);
 
 public:
-  static const TInstanceHandle nil();
+    /**
+     * Assign an existing InstancHandle to this InstancHandle
+     * @param that The TInstanceHandle to assign to this
+     */
+    TInstanceHandle& operator=(const TInstanceHandle& that);
 
-  bool is_nil() const;
+    /**
+     * Compare this InstanceHandle to another InstanceHandle
+     *
+     * @param that The TInstanceHandle to compare
+     * @return true if they match
+     */
+    bool operator==(const TInstanceHandle& that) const;
+
+    /**
+     * Compare this InstanceHandle to another InstanceHandle
+     *
+     * @param that The TInstanceHandle to compare
+     * @return true if this is less than that
+     */
+    bool operator<(const TInstanceHandle& that) const;
+
+    /**
+     * Compare this InstanceHandle to another InstanceHandle
+     *
+     * @param that The TInstanceHandle to compare
+     * @return true if this is greater than that
+     */
+    bool operator>(const TInstanceHandle& that) const;
+
+
+public:
+    /**
+     * Returns a nil InstanceHandle
+     *
+     * @return a nil InstanceHandle
+     */
+    static const TInstanceHandle nil();
+
+    /**
+     * @return true if the InstanceHandle is nil
+     */
+    bool is_nil() const;
 };
 
 

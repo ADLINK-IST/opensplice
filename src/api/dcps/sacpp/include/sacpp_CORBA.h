@@ -15,77 +15,42 @@
 #include "sacpp_DDS_DCPS.h"
 #include "sacpp_if.h"
 
+#ifndef OSPL_CPP_CORBA_BACWARD_COMPAT
+#define OSPL_CPP_CORBA_BACWARD_COMPAT 1
+#endif
+
+#if OSPL_CPP_CORBA_BACWARD_COMPAT == 1
+
 namespace CORBA
 {
-    typedef DDS::Double Double;
-    typedef DDS::Float Float;
-    typedef DDS::Short Short;
-    typedef DDS::LongLong LongLong;
-    typedef DDS::Boolean Boolean;
-    typedef DDS::Octet   Octet;
-    typedef DDS::Long    Long;
-    typedef DDS::ULong   ULong;
-    typedef DDS::Object          Object;
-    typedef DDS::Object_ptr      Object_ptr;
-    typedef DDS::ValueBase       ValueBase;
-    typedef DDS::LocalObject     LocalObject;
-    typedef DDS::LocalObject_ptr LocalObject_ptr;
-    typedef DDS::String_var      String_var;
-    typedef DDS::Exception       Exception;
-    typedef DDS::UserException   UserException;
-    typedef DDS::SystemException SystemException;
+    using DDS::Double;
+    using DDS::Float;
+    using DDS::Short;
+    using DDS::LongLong;
+    using DDS::Boolean;
+    using DDS::Octet;
+    using DDS::Long;
+    using DDS::ULong;
+    using DDS::Object;
+    using DDS::Object_ptr;
+    using DDS::ValueBase;
+    using DDS::LocalObject;
+    using DDS::LocalObject_ptr;
+    using DDS::String_var;
+    using DDS::Exception;
+    using DDS::UserException;
+    using DDS::SystemException;
 
-    static void string_free(char* str);
-    static char* string_dup(const char* s);
-    static void release(Object_ptr p);
-    static void release(LocalObject_ptr p);
-    static void add_ref(ValueBase* vb);
-    static void remove_ref(ValueBase* vb);
-    static Boolean is_nil(Object_ptr p);
+
+    using DDS::string_free;
+    using DDS::string_dup;
+    using DDS::release;
+    using DDS::add_ref;
+    using DDS::remove_ref;
+    using DDS::is_nil;
 }
 
-/* ************************************************************************** */
-/*                           Inline Implementations                           */
-/* ************************************************************************** */
-inline void
-CORBA::string_free(char * str)
-{
-   DDS::string_free(str);
-}
-
-inline char *
-CORBA::string_dup(const char * s)
-{
-   return DDS::string_dup(s);
-}
-
-inline void CORBA::release(CORBA::Object * p)
-{
-   DDS::release(p);
-}
-
-inline void CORBA::release(CORBA::LocalObject * p)
-{
-   DDS::release(p);
-}
-
-inline CORBA::Boolean CORBA::is_nil(CORBA::Object * p)
-{
-   return (p == 0);
-}
-
-
-inline void
-CORBA::add_ref(ValueBase* vb)
-{
-   DDS::add_ref(vb);
-}
-
-inline void
-CORBA::remove_ref(ValueBase* vb)
-{
-   DDS::remove_ref(vb);
-}
+#endif
 
 #undef SACPP_API
 

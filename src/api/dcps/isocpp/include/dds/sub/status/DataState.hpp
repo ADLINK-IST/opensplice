@@ -23,9 +23,12 @@
 
 // Implementation
 
-namespace dds {
-namespace sub {
-namespace status {
+namespace dds
+{
+namespace sub
+{
+namespace status
+{
 
 inline const SampleState SampleState::read()
 {

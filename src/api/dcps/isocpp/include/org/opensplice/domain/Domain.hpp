@@ -20,18 +20,25 @@
 
 #include <org/opensplice/core/config.hpp>
 
-namespace org { namespace opensplice { namespace domain {
-    inline uint32_t any_id()
-    {
-        return 0;
-    }
+namespace org
+{
+namespace opensplice
+{
+namespace domain
+{
+inline uint32_t any_id()
+{
+    return 0;
+}
 
-    inline uint32_t default_id()
-    {
-        return DDS::DOMAIN_ID_DEFAULT;
-    }
+inline uint32_t default_id()
+{
+    return DDS::DOMAIN_ID_DEFAULT;
+}
 
-    OSPL_ISOCPP_IMPL_API void configure(uint32_t, int, char*[]);
-} } }
+OSPL_ISOCPP_IMPL_API void configure(uint32_t, int, char*[]);
+}
+}
+}
 
 #endif /* ORG_OPENSPLICE_DOMAIN_DOMAIN_HPP_ */

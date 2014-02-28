@@ -29,7 +29,7 @@ namespace core
 {
 
 /**
- * With GuardCondition, a handler functor can be passed in at construction time which is then
+ *  @internal With GuardCondition, a handler functor can be passed in at construction time which is then
  * executed by WaitSetImpl which calls it's dispatch member function when the condition is triggered.
  */
 class GuardConditionImpl : public org::opensplice::core::ConditionImpl
@@ -50,14 +50,15 @@ public:
 
     virtual ~GuardConditionImpl()
     {
-        if(fholder_)
-            delete fholder_;
+
     }
 
     inline void trigger_value(bool b)
     {
         guard_condition_->set_trigger_value(b);
     }
+
+    using org::opensplice::core::ConditionImpl::get_trigger_value;
 
     virtual void dispatch()
     {
@@ -70,15 +71,20 @@ public:
     {
         org::opensplice::core::FunctorHolder* tmp = fholder_;
         fholder_ = new org::opensplice::core::VoidFunctorHolder<Functor>(func);
-        if (tmp != 0)
+        if(tmp != 0)
+        {
             delete tmp;
+        }
     }
 
     void reset_handler()
     {
-        org::opensplice::core::FunctorHolder* tmp = fholder_;
-        fholder_ = 0;
-        delete tmp;
+        if(fholder_)
+        {
+            org::opensplice::core::FunctorHolder* tmp = fholder_;
+            fholder_ = 0;
+            delete tmp;
+        }
     }
 
 private:

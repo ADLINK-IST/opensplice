@@ -8,6 +8,7 @@
 
 // How many messages the subscriber will wait for:
 #define MSG_COUNT 20
+#define INS_COUNT 10
 
 #include "ccpp_dds_dcps.h"
 #include "../testlibs/CPPTestProcess.h"
@@ -119,9 +120,10 @@ class DDS2466Subscriber: public virtual OSPLTestLib::CPPTestProcess
                 return -1;
             }
 
-            DDS::DataReaderQos dr_qos = DATAREADER_QOS_DEFAULT;  
+            DDS::DataReaderQos dr_qos = DATAREADER_QOS_DEFAULT;
             dr_qos.durability.kind = ::DDS::PERSISTENT_DURABILITY_QOS;
             dr_qos.destination_order.kind = ::DDS::BY_SOURCE_TIMESTAMP_DESTINATIONORDER_QOS;
+            dr_qos.history.depth = 2;
 
             ::DDS::DataReader_var generic_reader =
                 subscriber->create_datareader(
@@ -133,7 +135,22 @@ class DDS2466Subscriber: public virtual OSPLTestLib::CPPTestProcess
                 Test2466::SampleDataReader::_narrow(generic_reader.in());
             if (::DDS::is_nil(sample_reader.in()))
             {
-                std::cerr << "FAIL: Can't create the data writer!" << std::endl;
+                std::cerr << "FAIL: Can't create the data reader!" << std::endl;
+                return -1;
+            }
+
+            ::DDS::DataReader_var generic_reader2 =
+                subscriber->create_datareader(
+                    topic,
+                    dr_qos,
+                    ::DDS::DataReaderListener::_nil(),
+                    0U);
+
+            Test2466::SampleDataReader_var sample_reader2 =
+                Test2466::SampleDataReader::_narrow(generic_reader2.in());
+            if (::DDS::is_nil(sample_reader.in()))
+            {
+                std::cerr << "FAIL: Can't create the data reader!" << std::endl;
                 return -1;
             }
 
@@ -141,27 +158,43 @@ class DDS2466Subscriber: public virtual OSPLTestLib::CPPTestProcess
                 sample_reader->get_statuscondition();
             reader_status_condition->set_enabled_statuses(::DDS::DATA_AVAILABLE_STATUS);
 
+            ::DDS::ReadCondition_var reader_condition =
+                sample_reader2->create_readcondition(::DDS::NOT_READ_SAMPLE_STATE,
+                                                     ::DDS::ANY_VIEW_STATE,
+                                                     ::DDS::ANY_INSTANCE_STATE);
+
             ::DDS::WaitSet wait_set;
-            wait_set.attach_condition(reader_status_condition);
+            wait_set.attach_condition(reader_condition);
 
             ::DDS::ConditionSeq_var condition_list_out = new ::DDS::ConditionSeq();
 
+            int read_samples = 0;
             int received_samples = 0;
-            while (received_samples < MSG_COUNT)
+            DDS::Duration_t timeout = ::DDS::DURATION_INFINITE;
+
+            Test2466::SampleSeq result_sample_seq;
+            result_sample_seq.length(INS_COUNT);
+            ::DDS::SampleInfoSeq result_info_seq;
+            result_info_seq.length(INS_COUNT);
+
+            while (read_samples < MSG_COUNT)
             {
                 result = wait_set.wait(condition_list_out.inout(),
-                                       ::DDS::DURATION_INFINITE);
+                                       timeout);
+
+                timeout.sec     = 5;
+                timeout.nanosec = 0;
 
                 if (result != ::DDS::RETCODE_OK)
                 {
-                    std::cerr << "FAIL: Can't wait data!" << std::endl;
+                    std::cerr << "FAIL: Waitset wait timed out!" << std::endl;
                     return -1;
                 }
 
                 if (condition_list_out->length() != 1 ||
-                    condition_list_out[0U].in()  != reader_status_condition.in())
+                    condition_list_out[0U].in()  != reader_condition.in())
                 {
-                    std::cerr << "FAIL: Unexpected status condition value!" << std::endl;
+                    std::cerr << "FAIL: Unexpected read condition value!" << std::endl;
                     return -1;
                 }
 
@@ -175,6 +208,49 @@ class DDS2466Subscriber: public virtual OSPLTestLib::CPPTestProcess
                                              ::DDS::ANY_VIEW_STATE,
                                              ::DDS::ANY_INSTANCE_STATE);
 
+                if (result == ::DDS::RETCODE_OK)
+                {
+                    for (unsigned int i = 0; i < sample_seq.length(); i++)
+                    {
+                        if (info_seq[i].valid_data == true)
+                        {
+                            unsigned int n = sample_seq[i].id;
+
+                            result_sample_seq[n] = sample_seq[i];
+                            result_info_seq[n]   = info_seq[i];
+
+                            std::cout << "Subscriber["
+                                      << this->id
+                                      << "] received sample with id ["
+                                      << sample_seq[i].id
+                                      << "] data ["
+                                      << sample_seq[i].data.in()
+                                      << "] with time stamp ["
+                                      << info_seq[i].source_timestamp.sec
+                                      << ":"
+                                      << info_seq[i].source_timestamp.nanosec
+                                      << "] from Publisher["
+                                      << sample_seq[i].publisher_id
+                                      << "]"
+                                      << std::endl;
+
+                            received_samples++;
+                        }
+                    }
+
+                    sample_reader->return_loan(sample_seq, info_seq);
+                }
+                else if (result != ::DDS::RETCODE_NO_DATA)
+                {
+                    std::cerr << "FAIL: Can't read data!" << std::endl;
+                    return -1;
+                }
+
+                result = sample_reader2->read_w_condition(sample_seq,
+                                                          info_seq,
+                                                          ::DDS::LENGTH_UNLIMITED,
+                                                          reader_condition.in());
+
                 if (result != ::DDS::RETCODE_OK)
                 {
                     std::cerr << "FAIL: Can't read data!" << std::endl;
@@ -185,26 +261,63 @@ class DDS2466Subscriber: public virtual OSPLTestLib::CPPTestProcess
                 {
                     if (info_seq[i].valid_data == true)
                     {
-                        std::cout << "Subscriber["
-                                  << this->id
-                                  << "] received sample with id ["
-                                  << sample_seq[i].id
-                                  << "] data ["
-                                  << sample_seq[i].data.in()
-                                  << "] with time stamp ["
-                                  << info_seq[i].source_timestamp.sec
-                                  << ":"
-                                  << info_seq[i].source_timestamp.nanosec
-                                  << "] from Publisher["
-                                  << sample_seq[i].publisher_id
-                                  << "]"
-                                  << std::endl;
-                    received_samples++;
-                    }//if
-                }//for-i
+                        read_samples++;
+                    }
+                }
 
                 sample_reader->return_loan(sample_seq, info_seq);
-            }//while
+            }
+
+            std::cout << std::endl
+                      << "------------------------------------------------"
+                      << std::endl
+                      << "Last sample of each instance"
+                      << std::endl
+                      << std::endl;
+
+            for (unsigned int i = 0; i < result_sample_seq.length(); i++) {
+               std::cout << "Subscriber["
+                          << this->id
+                          << "] received sample with id ["
+                          << result_sample_seq[i].id
+                          << "] data ["
+                          << result_sample_seq[i].data.in()
+                          << "] with time stamp ["
+                          << result_info_seq[i].source_timestamp.sec
+                          << ":"
+                          << result_info_seq[i].source_timestamp.nanosec
+                          << "] from Publisher["
+                          << result_sample_seq[i].publisher_id
+                          << "]"
+                          << std::endl;
+            }
+
+            ::DDS::SampleLostStatus lost_status;
+            result = sample_reader->get_sample_lost_status(lost_status);
+            if (result != ::DDS::RETCODE_OK)
+            {
+                std::cerr << "FAIL: Can't read sample lost status!" << std::endl;
+                return -1;
+            }
+
+            std::cout << std::endl
+                      << "received: "
+                      << received_samples
+                      << " lost: "
+                      << lost_status.total_count
+                      << " expected total: "
+                      << MSG_COUNT
+                      << " total: "
+                      << received_samples + lost_status.total_count
+                      << std::endl;
+
+            if (received_samples + lost_status.total_count != MSG_COUNT)
+            {
+                std::cout << std::endl
+                          << "FAIL: total number of samples is incorrect"
+                          << std::endl;
+            }
+
             return 0;
         }//run
     //--------------------------------------------------------------------------

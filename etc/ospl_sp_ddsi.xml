@@ -9,6 +9,9 @@
       <Service name="durability">
          <Command>durability</Command>
       </Service>
+      <Service name="cmsoap">
+         <Command>cmsoap</Command>
+      </Service>
    </Domain>
    <DDSI2Service name="ddsi2">
       <General>
@@ -44,4 +47,9 @@
          <Policy alignee="Initial" aligner="true" durability="Durable" nameSpace="defaultNamespace"/>
       </NameSpaces>
    </DurabilityService>
+   <TunerService name="cmsoap">
+      <Server>
+         <PortNr>Auto</PortNr>
+      </Server>
+   </TunerService>
 </OpenSplice>

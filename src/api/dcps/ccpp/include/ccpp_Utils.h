@@ -26,15 +26,15 @@ namespace DDS
     OS_DCPS_API void ccpp_AllocateGapiSeq(gapi_string* *buffer, gapi_unsigned_long len);
     OS_DCPS_API void ccpp_AllocateGapiSeq( gapi_instanceHandle_t* *buffer, gapi_unsigned_long len);
 
-    OS_DCPS_API void ccpp_AllocateDdsSeq(CORBA::Octet * *buffer, CORBA::ULong len);
-    OS_DCPS_API void ccpp_AllocateDdsSeq(char** *buffer, CORBA::ULong len);
-    OS_DCPS_API void ccpp_AllocateDdsSeq(::DDS::InstanceHandle_t* *buffer, CORBA::ULong len);
+    OS_DCPS_API void ccpp_AllocateDdsSeq(DDS::Octet * *buffer, DDS::ULong len);
+    OS_DCPS_API void ccpp_AllocateDdsSeq(char** *buffer, DDS::ULong len);
+    OS_DCPS_API void ccpp_AllocateDdsSeq(::DDS::InstanceHandle_t* *buffer, DDS::ULong len);
 
-    OS_DCPS_API void ccpp_CopySeqElemIn(CORBA::Octet & from, gapi_octet & to);
+    OS_DCPS_API void ccpp_CopySeqElemIn(DDS::Octet & from, gapi_octet & to);
     OS_DCPS_API void ccpp_CopySeqElemIn(char* & from, gapi_string & to);
     OS_DCPS_API void ccpp_CopySeqElemIn(::DDS::InstanceHandle_t & from, gapi_instanceHandle_t & to);
 
-    OS_DCPS_API void ccpp_CopySeqElemOut(gapi_octet & from, CORBA::Octet & to);
+    OS_DCPS_API void ccpp_CopySeqElemOut(gapi_octet & from, DDS::Octet & to);
     OS_DCPS_API void ccpp_CopySeqElemOut(gapi_string & from, char* & to);
     OS_DCPS_API void ccpp_CopySeqElemOut(gapi_instanceHandle_t & from, ::DDS::InstanceHandle_t & to);
     OS_DCPS_API void ccpp_CopySeqElemOut(gapi_qosPolicyCount_s & from, ::DDS::QosPolicyCount & to);
@@ -59,7 +59,7 @@ namespace DDS
     void ccpp_sequenceCopyOut( const GAPI_SEQT &from, CCPP_SEQT &to)
     {
        to.length(from._length);
-       for (CORBA::ULong i=0; i<from._length; i++)
+       for (DDS::ULong i=0; i<from._length; i++)
        {
          ccpp_CopySeqElemOut(from._buffer[i], to[i]);
        }
@@ -79,13 +79,13 @@ namespace DDS
     struct ccpp_UserData : public LOCAL_REFCOUNTED_OBJECT
     {
 
-        CORBA::Object_ptr ccpp_object;
+        DDS::Object_ptr ccpp_object;
         ::DDS::Listener_ptr ccpp_listener;
         ccpp_UserData_ptr ccpp_statusconditiondata;
         bool isWeakRef;
 
         ccpp_UserData(
-            CORBA::Object_ptr myObject,
+            DDS::Object_ptr myObject,
             ::DDS::Listener_ptr myListener = NULL,
             ::DDS::ccpp_UserData_ptr myStatusConditionData = NULL,
             bool weak = false
@@ -96,7 +96,7 @@ namespace DDS
         {
             if (!isWeakRef)
             {
-                CORBA::Object::_duplicate(ccpp_object);
+                DDS::Object::_duplicate(ccpp_object);
             }
             if (ccpp_listener)
             {
@@ -108,7 +108,7 @@ namespace DDS
         {
           if (ccpp_listener)
           {
-            CORBA::release(ccpp_listener);
+            DDS::release(ccpp_listener);
           }
           ccpp_listener = a_listener;
           ::DDS::Listener::_duplicate(a_listener);
@@ -118,11 +118,11 @@ namespace DDS
         {
             if (!isWeakRef)
             {
-                CORBA::release(ccpp_object);
+                DDS::release(ccpp_object);
             }
             if (ccpp_listener)
             {
-                CORBA::release(ccpp_listener);
+                DDS::release(ccpp_listener);
             }
             if (ccpp_statusconditiondata)
             {

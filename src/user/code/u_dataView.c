@@ -14,7 +14,6 @@
 #include "u__dataReader.h"
 #include "u__types.h"
 #include "u__entity.h"
-#include "u__handle.h"
 #include "u_user.h"
 #include "v_topic.h"
 #include "v_public.h"
@@ -302,8 +301,8 @@ u_dataViewReadInstance(
                                       u_readInstanceAction,
                                       (c_voidp)&instanceActionArg);
     if (result == U_RESULT_ALREADY_DELETED) {
-        /* Error propagation moves the role of the handle from 
-         * being the object to being a parameter, this affect the 
+        /* Error propagation moves the role of the handle from
+         * being the object to being a parameter, this affect the
          * already deleted status into precondition not met status.
          */
         result = U_RESULT_PRECONDITION_NOT_MET;
@@ -351,8 +350,8 @@ u_dataViewTakeInstance(
                                       u_takeInstanceAction,
                                       (c_voidp)&instanceActionArg);
     if (result == U_RESULT_ALREADY_DELETED) {
-        /* Error propagation moves the role of the handle from 
-         * being the object to being a parameter, this affect the 
+        /* Error propagation moves the role of the handle from
+         * being the object to being a parameter, this affect the
          * already deleted status into precondition not met status.
          */
         result = U_RESULT_PRECONDITION_NOT_MET;

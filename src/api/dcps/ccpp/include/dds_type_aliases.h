@@ -15,18 +15,17 @@
 #ifndef CCPP_DDS_TYPE_ALIASES_H
 #define CCPP_DDS_TYPE_ALIASES_H
 
-#ifndef CCPP_ORB_ABSTRACTION_H
-#error Do not include this file directly. Include ccpp.h
-#endif
-
 namespace DDS
 {
     using CORBA::Double;
     using CORBA::Float;
     using CORBA::Short;
+    using CORBA::UShort;
     using CORBA::LongLong;
+    using CORBA::ULongLong;
     using CORBA::Boolean;
     using CORBA::Octet;
+    using CORBA::Char;
     using CORBA::Long;
     using CORBA::ULong;
     using CORBA::Object;
@@ -45,6 +44,7 @@ namespace DDS
     using CORBA::release;
     using CORBA::add_ref;
     using CORBA::remove_ref;
+    using CORBA::is_nil;
 }
 
 #endif

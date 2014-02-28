@@ -16,6 +16,7 @@ import org.opensplice.cm.CMFactory;
 import org.opensplice.cm.DataTypeUnsupportedException;
 import org.opensplice.cm.Snapshot;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.data.Sample;
 import org.opensplice.cm.data.State;
 import org.opensplice.cm.meta.MetaType;
@@ -25,19 +26,25 @@ import org.opensplice.cm.meta.MetaType;
  * 
  * @date May 18, 2005 
  */
-public abstract class SnapshotImpl implements Snapshot{
+public abstract class SnapshotImpl implements Snapshot {
     protected String id;
     protected boolean freed;
     protected MetaType type = null;
+
+    private final Communicator communicator;
     
     /**
      * Creates a new snapshot
      *
      * @param _id The heap address of the snapshot.
      */
-    public SnapshotImpl(String _id){
+    public SnapshotImpl(Communicator communicator, String _id){
+        if(communicator == null) {
+        	throw new IllegalArgumentException("The communicator parameter can not be null.");
+        }
         id = _id;
         freed = false;
+        this.communicator = communicator;
     }
     
     /**
@@ -65,7 +72,7 @@ public abstract class SnapshotImpl implements Snapshot{
             throw new CMException("Snapshot already freed.");
         }
         try {
-            sample = CMFactory.getCommunicator().snapshotRead(this);
+            sample = getCommunicator().snapshotRead(this);
             
             if(sample != null){
                 state = sample.getState();
@@ -99,7 +106,7 @@ public abstract class SnapshotImpl implements Snapshot{
             throw new CMException("Snapshot already freed.");
         }
         try {
-            sample = CMFactory.getCommunicator().snapshotTake(this);
+            sample = getCommunicator().snapshotTake(this);
             
             if(sample != null){
                 state = sample.getState();
@@ -125,10 +132,14 @@ public abstract class SnapshotImpl implements Snapshot{
             freed = true;
             
             try {
-                CMFactory.getCommunicator().snapshotFree(this);
+                getCommunicator().snapshotFree(this);
             } 
             catch (CMException e) {} 
             catch (CommunicationException e) {}
         }
     }
+
+  protected Communicator getCommunicator() throws CMException {
+    return communicator;
+  }
 }

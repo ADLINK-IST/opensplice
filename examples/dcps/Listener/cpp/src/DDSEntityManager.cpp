@@ -92,7 +92,7 @@ void DDSEntityManager::deleteWriter(DDS::DataWriter_ptr dataWriter)
 
 void DDSEntityManager::createSubscriber()
 {
-  int status = participant->get_default_subscriber_qos(sub_qos);
+  status = participant->get_default_subscriber_qos(sub_qos);
   checkStatus(status, "DDS::DomainParticipant::get_default_subscriber_qos");
   sub_qos.partition.name.length(1);
   sub_qos.partition.name[0] = partition;

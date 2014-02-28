@@ -41,17 +41,19 @@ class QueryCondition;
 }
 
 /**
- * QueryCondition inherits from ReadCondition and additionally provides the ability
+ *  @internal QueryCondition inherits from ReadCondition and additionally provides the ability
  * to store a query made up of a query expression and parameters. As with ReadCondition,
  * a handler functor can be passed in at construction time which is then executed
  * by WaitSetImpl which calls it's dispatch member function when the condition is triggered.
  */
-class dds::sub::cond::detail::QueryCondition: public ReadCondition
+class dds::sub::cond::detail::QueryCondition: public dds::sub::cond::detail::ReadCondition
 {
 public:
     typedef std::vector<std::string>::iterator iterator;
     typedef std::vector<std::string>::const_iterator const_iterator;
 public:
+    QueryCondition() : ReadCondition(), query_(dds::core::null) { }
+
     QueryCondition(
         const dds::sub::Query& query,
         const dds::sub::status::DataState& data_state)
@@ -59,23 +61,24 @@ public:
           query_(query)
     {
         DDS::StringSeq params;
-        params.length(static_cast<DDS::ULong>(query.parameters_length()));
+        params.length(static_cast<DDS::ULong>(query.parameters_length() + 1));
         for(unsigned int i = 0; i < query.parameters_length(); i++)
         {
             params[i] = (query.begin() + i)->c_str();
         }
+        params[query.parameters_length()] = DDS::string_dup("");
         query_condition_ = adr_->get_dds_datareader()->create_querycondition(status_.sample_state().to_ulong(),
-            status_.view_state().to_ulong(), status_.instance_state().to_ulong(), query.expression().c_str(), params);
+                           status_.view_state().to_ulong(), status_.instance_state().to_ulong(), query.expression().c_str(), params);
 
-        if (query_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
-                                    "Nil return from ::create_querycondition")));
+        if(query_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                        OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
+                                             "Nil return from ::create_querycondition")));
         condition_ = query_condition_.in();
     }
 
     template <typename FUN>
     QueryCondition(const dds::sub::Query& query,
-        const dds::sub::status::DataState& data_state, const FUN& functor)
+                   const dds::sub::status::DataState& data_state, const FUN& functor)
         : ReadCondition(query.data_reader(), data_state, functor, true),
           query_(query)
     {
@@ -86,17 +89,20 @@ public:
             params[i] = (query.begin() + i)->c_str();
         }
         query_condition_ = adr_->get_dds_datareader()->create_querycondition(status_.sample_state().to_ulong(),
-            status_.view_state().to_ulong(), status_.instance_state().to_ulong(), query.expression().c_str(), params);
-        if (query_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
-                                    "Nil return from ::create_querycondition")));
+                           status_.view_state().to_ulong(), status_.instance_state().to_ulong(), query.expression().c_str(), params);
+        if(query_condition_.in() == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                        OSPL_CONTEXT_LITERAL("dds::core::NullReferenceError : Unable to create QueryCondition. "
+                                             "Nil return from ::create_querycondition")));
         condition_ = query_condition_.in();
     }
 
     virtual ~QueryCondition()
     {
-        DDS::ReturnCode_t result = adr_->get_dds_datareader()->delete_readcondition(query_condition_.in());
-        org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::delete_readcondition"));
+        if(query_condition_)
+        {
+            DDS::ReturnCode_t result = adr_->get_dds_datareader()->delete_readcondition(query_condition_.in());
+            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::delete_readcondition"));
+        }
     }
 
     void expression(const std::string& expr)
@@ -111,7 +117,7 @@ public:
 
 
     /**
-     * Provides the begin iterator to the parameter list.
+     *  @internal Provides the begin iterator to the parameter list.
      */
     iterator begin()
     {
@@ -119,7 +125,7 @@ public:
     }
 
     /**
-     * The end iterator to the parameter list.
+     *  @internal The end iterator to the parameter list.
      */
     iterator end()
     {
@@ -132,7 +138,7 @@ public:
     }
 
     /**
-     * The end iterator to the parameter list.
+     *  @internal The end iterator to the parameter list.
      */
     const_iterator end() const
     {

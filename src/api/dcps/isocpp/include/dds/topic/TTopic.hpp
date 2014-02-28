@@ -20,6 +20,8 @@
  * OMG PSM class declaration
  */
 #include <spec/dds/topic/TTopic.hpp>
+#include <dds/topic/AnyTopic.hpp>
+#include <org/opensplice/core/Retain.hpp>
 
 // Implementation
 
@@ -27,6 +29,9 @@ namespace dds
 {
 namespace topic
 {
+
+class AnyTopic;
+
 template <typename T, template <typename Q> class DELEGATE>
 Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
                           const std::string& topic_name)
@@ -36,7 +41,12 @@ Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
             dp.default_topic_qos(),
             NULL,
             dds::core::status::StatusMask::all()))
-{ }
+{
+    std::stringstream ss;
+    ss << topic_name;
+    ss << dp.domain_id();
+    org::opensplice::core::EntityRegistry<std::string, Topic<T, DELEGATE> >::insert(ss.str(), *this);
+}
 
 template <typename T, template <typename Q> class DELEGATE>
 Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
@@ -48,7 +58,12 @@ Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
             dp.default_topic_qos(),
             NULL,
             dds::core::status::StatusMask::all()))
-{ }
+{
+    std::stringstream ss;
+    ss << topic_name;
+    ss << dp.domain_id();
+    org::opensplice::core::EntityRegistry<std::string, Topic<T, DELEGATE> >::insert(ss.str(), *this);
+}
 
 template <typename T, template <typename Q> class DELEGATE>
 Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
@@ -63,11 +78,15 @@ Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
             listener,
             mask))
 {
-    if (listener != NULL)
+    if(listener != NULL)
     {
         throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : TopicListener is not yet implemented")));
+                                              OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : TopicListener is not currently supported")));
     }
+    std::stringstream ss;
+    ss << topic_name;
+    ss << dp.domain_id();
+    org::opensplice::core::EntityRegistry<std::string, Topic<T, DELEGATE> >::insert(ss.str(), *this);
 }
 
 template <typename T, template <typename Q> class DELEGATE>
@@ -84,11 +103,15 @@ Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
             listener,
             mask))
 {
-    if (listener != NULL)
+    if(listener != NULL)
     {
         throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : TopicListener is not yet implemented")));
+                                              OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : TopicListener is not currently supported")));
     }
+    std::stringstream ss;
+    ss << topic_name;
+    ss << dp.domain_id();
+    org::opensplice::core::EntityRegistry<std::string, Topic<T, DELEGATE> >::insert(ss.str(), *this);
 }
 
 template <typename T, template <typename Q> class DELEGATE>
@@ -96,13 +119,26 @@ Topic<T, DELEGATE>::~Topic() {}
 
 /** @internal  @todo Relates to OMG_DDS_X_TYPE_DYNAMIC_TYPE_SUPPORT OSPL-1736 no implementation */
 template <typename T, template <typename Q> class DELEGATE>
-void Topic<T, DELEGATE>::listener(Listener* the_listener,
-                                  const ::dds::core::status::StatusMask& event_mask) { }
+void Topic<T, DELEGATE>::listener(Listener* listener,
+                                  const ::dds::core::status::StatusMask& event_mask)
+{
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+}
 
 /** @internal @todo Relates to OMG_DDS_X_TYPE_DYNAMIC_TYPE_SUPPORT OSPL-1736 no implementation */
 template <typename T, template <typename Q> class DELEGATE>
 typename Topic<T, DELEGATE>::Listener* Topic<T, DELEGATE>::listener() const
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return this->::dds::core::Reference<DELEGATE<T> >::delegate()->listener();
 }
 
@@ -113,9 +149,23 @@ const dds::topic::qos::TopicQos& Topic<T, DELEGATE>::qos() const
 }
 
 template <typename T, template <typename Q> class DELEGATE>
-void Topic<T, DELEGATE>::qos(const dds::topic::qos::TopicQos& the_qos)
+void Topic<T, DELEGATE>::qos(const dds::topic::qos::TopicQos& qos)
 {
-    this->::dds::core::Reference<DELEGATE<T> >::delegate()->qos(the_qos);
+    this->::dds::core::Reference<DELEGATE<T> >::delegate()->qos(qos);
+}
+
+template <typename T, template <typename Q> class DELEGATE>
+dds::topic::qos::TopicQos& Topic<T, DELEGATE>::operator << (const dds::topic::qos::TopicQos& qos)
+{
+    this->qos(qos);
+    return (dds::topic::qos::TopicQos&)this->qos();
+}
+
+template <typename T, template <typename Q> class DELEGATE>
+const Topic<T, DELEGATE>& Topic<T, DELEGATE>::operator >> (dds::topic::qos::TopicQos& qos) const
+{
+    qos = this->qos();
+    return *this;
 }
 
 template <typename T, template <typename Q> class DELEGATE>
@@ -123,6 +173,24 @@ const ::dds::core::status::InconsistentTopicStatus&
 Topic<T, DELEGATE>::inconsistent_topic_status() const
 {
     return this->delegate()->inconsistent_topic_status();
+}
+
+template <typename T, template <typename Q> class DELEGATE>
+void
+Topic<T, DELEGATE>::close()
+{
+    this->delegate()->close();
+    dds::topic::AnyTopic at(*this);
+    org::opensplice::core::retain_remove<dds::topic::AnyTopic>(at);
+}
+
+template <typename T, template <typename Q> class DELEGATE>
+void
+Topic<T, DELEGATE>::retain()
+{
+    this->delegate()->retain();
+    dds::topic::AnyTopic at(*this);
+    org::opensplice::core::retain_add<dds::topic::AnyTopic>(at);
 }
 
 }

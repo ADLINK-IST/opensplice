@@ -30,7 +30,7 @@ namespace DDS.OpenSplice.Gapi
          *         in DataWriterQos qos,
          *         in DataWriterListener a_listener);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_create_datawriter")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_create_datawriter")]
         public static extern IntPtr create_datawriter(
             IntPtr _this,
             IntPtr a_topic,
@@ -43,7 +43,7 @@ namespace DDS.OpenSplice.Gapi
          *     delete_datawriter(
          *         in DataWriter a_datawriter);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_delete_datawriter")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_delete_datawriter")]
         public static extern ReturnCode delete_datawriter(
             IntPtr _this,
             IntPtr a_datawriter);
@@ -52,7 +52,7 @@ namespace DDS.OpenSplice.Gapi
          *     lookup_datawriter(
          *         in string topic_name);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_lookup_datawriter")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_lookup_datawriter")]
         public static extern IntPtr lookup_datawriter(
             IntPtr _this,
             string topic_name);
@@ -60,7 +60,7 @@ namespace DDS.OpenSplice.Gapi
         /*     ReturnCode_t
          *     delete_contained_entities();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_delete_contained_entities")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_delete_contained_entities")]
         public static extern ReturnCode delete_contained_entities(
             IntPtr _this);
 
@@ -68,7 +68,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_qos(
          *         in PublisherQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_set_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_set_qos")]
         public static extern ReturnCode set_qos(
             IntPtr _this,
             IntPtr qos);
@@ -77,7 +77,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_qos(
          *         inout PublisherQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_get_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_get_qos")]
         public static extern ReturnCode get_qos(
             IntPtr _this,
             IntPtr qos);
@@ -87,7 +87,7 @@ namespace DDS.OpenSplice.Gapi
          *         in PublisherListener a_listener,
          *         in StatusKindMask mask);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_set_listener")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_set_listener")]
         public static extern ReturnCode set_listener(
             IntPtr _this,
             IntPtr a_listener,
@@ -97,35 +97,35 @@ namespace DDS.OpenSplice.Gapi
         /*     PublisherListener
          *     get_listener();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_get_listener")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_get_listener")]
         public static extern IntPtr get_listener(
             IntPtr _this);
 
         /*     ReturnCode_t
          *     suspend_publications();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_suspend_publications")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_suspend_publications")]
         public static extern ReturnCode suspend_publications(
             IntPtr _this);
 
         /*     ReturnCode_t
          *     resume_publications();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_resume_publications")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_resume_publications")]
         public static extern ReturnCode resume_publications(
             IntPtr _this);
 
         /*     ReturnCode_t
          *     begin_coherent_changes();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_begin_coherent_changes")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_begin_coherent_changes")]
         public static extern ReturnCode begin_coherent_changes(
             IntPtr _this);
 
         /*     ReturnCode_t
          *     end_coherent_changes();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_end_coherent_changes")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_end_coherent_changes")]
         public static extern ReturnCode end_coherent_changes(
             IntPtr _this);
 
@@ -133,7 +133,7 @@ namespace DDS.OpenSplice.Gapi
          *   wait_for_acknowledgments(
          *      in Duration_t max_wait);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_wait_for_acknowledgments")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_wait_for_acknowledgments")]
         public static extern ReturnCode wait_for_acknowledgments(
             IntPtr _this,
             ref Duration max_wait
@@ -142,7 +142,7 @@ namespace DDS.OpenSplice.Gapi
         /*     DomainParticipant
          *     get_participant();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_get_participant")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_get_participant")]
         public static extern IntPtr get_participant(
             IntPtr _this);
 
@@ -150,7 +150,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_default_datawriter_qos(
          *         in DataWriterQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_set_default_datawriter_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_set_default_datawriter_qos")]
         public static extern ReturnCode set_default_datawriter_qos(
             IntPtr _this,
             IntPtr qos);
@@ -159,7 +159,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_default_datawriter_qos(
          *         inout DataWriterQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_get_default_datawriter_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_get_default_datawriter_qos")]
         public static extern ReturnCode get_default_datawriter_qos(
             IntPtr _this,
             IntPtr qos);
@@ -169,7 +169,7 @@ namespace DDS.OpenSplice.Gapi
          *         inout DataWriterQos a_datawriter_qos,
          *         in TopicQos a_topic_qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_publisher_copy_from_topic_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_publisher_copy_from_topic_qos")]
         public static extern ReturnCode copy_from_topic_qos(
             IntPtr _this,
             IntPtr a_datawriter_qos,

@@ -45,24 +45,24 @@ static void sleep(int secs)
 #define NUM_MSG 10
 #define TERMINATION_MESSAGE -1
 
-#ifdef _VXWORKS
-int Chatter_main (int argc, char ** argv);
-int Chatter (char * args)
+#ifdef _WRS_KERNEL
+int chatter_main (int argc, char ** argv);
+int chatter (char * args)
 {
    int argc=1;
    char *argv[256];
    char *str1;
-   argv[0] = strdup ("Chatter");
-   str1 = strtok(args, " ");
+   argv[0] = (char*) strdup ("Chatter");
+   str1 = (char*) strtok(args, " ");
    while (str1)
    {
-      argv[argc] = strdup (str1);
+      argv[argc] = (char*) strdup (str1);
       argc++;
       str1 = strtok(NULL, " ");
    }
-   return Chatter_main (argc, argv);
+   return chatter_main (argc, argv);
 }
-int Chatter_main (int argc, char ** argv)
+int chatter_main (int argc, char ** argv)
 #else
 int OSPL_MAIN (int argc, char ** argv)
 #endif

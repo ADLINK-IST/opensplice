@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <stddef.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #if HAVE_VALGRIND && ! defined (NDEBUG)
 #include <memcheck.h>
@@ -16,7 +17,7 @@
 #include "os_if.h"
 #include "os_stdlib.h"
 
-#include "q_avl.h"
+#include "ut_avl.h"
 #include "q_osplser.h"
 #include "q_protocol.h"
 #include "q_rtps.h"
@@ -25,19 +26,15 @@
 #include "q_config.h"
 #include "q_log.h"
 
-#include "q_mlv.h"
 #include "q_align.h"
 #include "q_plist.h"
 #include "q_unused.h"
 #include "q_radmin.h"
 #include "q_bitset.h"
 #include "q_thread.h"
+#include "q_globals.h" /* for mattr, cattr */
 
 #include "sysdeps.h"
-
-/* Arguably, this upper bound is overkill. But this is copy-pasteable
-   to wherever we need it. */
-#define MAX_TREEHEIGHT (3 * CHAR_BIT * sizeof (void *) / 2)
 
 /* Avoiding all nn_log-related activities when LC_RADMIN is not set
    (and it hardly ever is, as it is not even included in "trace")
@@ -310,10 +307,14 @@ static void nn_rbuf_release (struct nn_rbuf *rbuf);
 #define ASSERT_RBUFPOOL_OWNER(rbp) ((void) (0))
 #endif
 
+static os_uint32 max_uint32 (os_uint32 a, os_uint32 b)
+{
+  return a >= b ? a : b;
+}
+
 struct nn_rbufpool *nn_rbufpool_new (int rbuf_size, int max_rmsg_size)
 {
   struct nn_rbufpool *rbp;
-  os_mutexAttr mattr;
 
   assert (max_rmsg_size > 0);
 
@@ -323,13 +324,22 @@ struct nn_rbufpool *nn_rbufpool_new (int rbuf_size, int max_rmsg_size)
   rbp->owner_tid = os_threadIdSelf ();
 #endif
 
-  os_mutexAttrInit (&mattr);
-  mattr.scopeAttr = OS_SCOPE_PRIVATE;
-  if (os_mutexInit (&rbp->lock, &mattr) != os_resultSuccess)
+  if (os_mutexInit (&rbp->lock, &gv.mattr) != os_resultSuccess)
     goto fail_lock;
 
   rbp->rbuf_size = rbuf_size;
-  rbp->max_rmsg_size = (os_uint32) max_rmsg_size;
+
+  /* rbuf_alloc allocates max_rmsg_size, which is actually max
+     _payload_ size (this is so 64kB max_rmsg_size always suffices for
+     a UDP packet, regardless of internal structure).  We use it for
+     nn_rmsg and nn_rmsg_chunk, but the difference in size is
+     negligible really.  So in the interest of simplicity, we always
+     allocate for the worst case, and may waste a few bytes here or
+     there. */
+  rbp->max_rmsg_size =
+    max_uint32 ((os_uint32) offsetof (struct nn_rmsg, chunk.u.payload),
+                (os_uint32) offsetof (struct nn_rmsg_chunk, u.payload))
+    + (os_uint32) max_rmsg_size;
 
 #if USE_VALGRIND
   VALGRIND_CREATE_MEMPOOL (rbp, 0, 0);
@@ -462,9 +472,10 @@ static void nn_rbuf_release (struct nn_rbuf *rbuf)
 #define ASSERT_RMSG_UNCOMMITTED(rmsg) ((void) 0)
 #endif
 
-static void *nn_rbuf_alloc (struct nn_rbufpool *rbufpool, os_uint32 asize)
+static void *nn_rbuf_alloc (struct nn_rbufpool *rbufpool)
 {
   /* Note: only one thread calls nn_rmsg_new on a pool */
+  os_uint32 asize = rbufpool->max_rmsg_size;
   struct nn_rbuf *rb;
   TRACE_RADMIN (("rmsg_rbuf_alloc(%p, %u)\n", (void *) rbufpool, asize));
   ASSERT_RBUFPOOL_OWNER (rbufpool);
@@ -504,7 +515,7 @@ struct nn_rmsg *nn_rmsg_new (struct nn_rbufpool *rbufpool)
   struct nn_rmsg *rmsg;
   TRACE_RADMIN (("rmsg_new(%p)\n", rbufpool));
 
-  rmsg = nn_rbuf_alloc (rbufpool, offsetof (struct nn_rmsg, chunk.u.payload) + rbufpool->max_rmsg_size);
+  rmsg = nn_rbuf_alloc (rbufpool);
   if (rmsg == NULL)
     return NULL;
 
@@ -669,7 +680,7 @@ void *nn_rmsg_alloc (struct nn_rmsg *rmsg, os_uint32 size)
     struct nn_rmsg_chunk *newchunk;
     TRACE_RADMIN (("rmsg_alloc(%p, %u) limit hit - new chunk\n", rmsg, size));
     commit_rmsg_chunk (chunk);
-    newchunk = nn_rbuf_alloc (rbufpool, offsetof (struct nn_rmsg_chunk, u.payload) + rbufpool->max_rmsg_size);
+    newchunk = nn_rbuf_alloc (rbufpool);
     if (newchunk == NULL)
     {
       NN_WARNING1 ("nn_rmsg_alloc: can't allocate more memory (%u bytes) ... giving up\n", size);
@@ -814,7 +825,7 @@ static void nn_rdata_unref (struct nn_rdata *rdata)
    anyway). */
 
 struct nn_defrag_iv {
-  STRUCT_AVLNODE (nn_defrag_iv_avlnode, struct nn_defrag_iv *) avlnode; /* for nn_rsample.defrag::fragtree */
+  ut_avlNode_t avlnode; /* for nn_rsample.defrag::fragtree */
   os_uint32 min, maxp1;
   struct nn_rdata *first;
   struct nn_rdata *last;
@@ -823,14 +834,14 @@ struct nn_defrag_iv {
 struct nn_rsample {
   union {
     struct nn_rsample_defrag {
-      STRUCT_AVLNODE (nn_rsample_defrag_avlnode, struct nn_rsample *) avlnode; /* for nn_defrag::sampletree */
-      STRUCT_AVLTREE (nn_defrag_ivtree, struct nn_defrag_iv *) fragtree;
+      ut_avlNode_t avlnode; /* for nn_defrag::sampletree */
+      ut_avlTree_t fragtree;
       struct nn_defrag_iv *lastfrag;
       struct nn_rsample_info *sampleinfo;
       os_int64 seq;
     } defrag;
     struct nn_rsample_reorder {
-      STRUCT_AVLNODE (nn_rsample_reorder_avlnode, struct nn_rsample *) avlnode; /* for nn_reorder::sampleivtree, if head of a chain */
+      ut_avlNode_t avlnode;       /* for nn_reorder::sampleivtree, if head of a chain */
       struct nn_rsample_chain sc; /* this interval's samples, covering ... */
       os_int64 min, maxp1;        /* ... seq nos: [min,maxp1), but possibly with holes in it */
       os_uint32 n_samples;        /* so this is the actual length of the chain */
@@ -839,12 +850,18 @@ struct nn_rsample {
 };
 
 struct nn_defrag {
-  STRUCT_AVLTREE (nn_defrag_sampletree, struct nn_rsample *) sampletree;
+  ut_avlTree_t sampletree;
   struct nn_rsample *max_sample; /* = max(sampletree) */
   os_uint32 n_samples;
   os_uint32 max_samples;
   enum nn_defrag_drop_mode drop_mode;
 };
+
+static int compare_uint32 (const void *va, const void *vb);
+static int compare_int64 (const void *va, const void *vb);
+
+static const ut_avlTreedef_t defrag_sampletree_treedef = UT_AVL_TREEDEF_INITIALIZER (offsetof (struct nn_rsample, u.defrag.avlnode), offsetof (struct nn_rsample, u.defrag.seq), compare_int64, 0);
+static const ut_avlTreedef_t rsample_defrag_fragtree_treedef = UT_AVL_TREEDEF_INITIALIZER (offsetof (struct nn_defrag_iv, avlnode), offsetof (struct nn_defrag_iv, min), compare_uint32, 0);
 
 static int compare_uint32 (const void *va, const void *vb)
 {
@@ -866,7 +883,7 @@ struct nn_defrag *nn_defrag_new (enum nn_defrag_drop_mode drop_mode, os_uint32 m
   assert (max_samples >= 1);
   if ((d = os_malloc (sizeof (*d))) == NULL)
     return NULL;
-  avl_init (&d->sampletree, offsetof (struct nn_rsample, u.defrag.avlnode), offsetof (struct nn_rsample, u.defrag.seq), compare_int64, 0);
+  ut_avlInit (&defrag_sampletree_treedef, &d->sampletree);
   d->drop_mode = drop_mode;
   d->max_samples = max_samples;
   d->n_samples = 0;
@@ -907,44 +924,25 @@ static void defrag_rsample_drop (struct nn_defrag *defrag, struct nn_rsample *rs
      So we need to walk the fragments while guaranteeing strict
      "forward progress" in the memory accesses, which this particular
      inorder treewalk does provide. */
-  struct nn_defrag_iv *todo[MAX_TREEHEIGHT], **todop = todo;
+  ut_avlIter_t iter;
+  struct nn_defrag_iv *iv;
   TRACE_RADMIN (("  defrag_rsample_drop (%p, %p)\n", (void *) defrag, (void *) rsample));
-  avl_delete (&defrag->sampletree, rsample);
+  ut_avlDelete (&defrag_sampletree_treedef, &defrag->sampletree, rsample);
   assert (defrag->n_samples > 0);
   defrag->n_samples--;
-  *todop = rsample->u.defrag.fragtree.root;
-  while (*todop)
-  {
-    struct nn_defrag_iv *right, *n;
-    /* First locate the minimum value in this subtree */
-    n = (*todop)->avlnode.left;
-    while (n)
-    {
-      *++todop = n;
-      n = n->avlnode.left;
-    }
-    /* Then process it and its parents until a node N is hit that has
-       a right subtree, with (by definition) key values between N and
-       the parent of N */
-    do {
-      right = (*todop)->avlnode.right;
-      fragchain_free ((*todop)->first, 0);
-    } while (todop-- > todo && right == NULL);
-    /* Continue with right subtree rooted at 'right' before processing
-       the parent node of the last node processed in the loop above */
-    *++todop = right;
-  }
+  for (iv = ut_avlIterFirst (&rsample_defrag_fragtree_treedef, &rsample->u.defrag.fragtree, &iter); iv; iv = ut_avlIterNext (&iter))
+    fragchain_free (iv->first, 0);
 }
 
 void nn_defrag_free (struct nn_defrag *defrag)
 {
   struct nn_rsample *s;
-  s = avl_findmin (&defrag->sampletree);
+  s = ut_avlFindMin (&defrag_sampletree_treedef, &defrag->sampletree);
   while (s)
   {
     TRACE_RADMIN (("defrag_free(%p, sample %p seq %lld)\n", defrag, s, s->u.defrag.seq));
     defrag_rsample_drop (defrag, s, nn_fragchain_rmbias_anythread);
-    s = avl_findmin (&defrag->sampletree);
+    s = ut_avlFindMin (&defrag_sampletree_treedef, &defrag->sampletree);
   }
   assert (defrag->n_samples == 0);
   os_free (defrag);
@@ -963,7 +961,7 @@ static int defrag_try_merge_with_succ (struct nn_rsample_defrag *sample, struct 
     return 0;
   }
 
-  succ = avl_findsucc (&sample->fragtree, node);
+  succ = ut_avlFindSucc (&rsample_defrag_fragtree_treedef, &sample->fragtree, node);
   assert (succ != NULL);
   TRACE_RADMIN (("  succ is %p [%u..%u)\n", (void *) succ, succ->min, succ->maxp1));
   if (succ->min > node->maxp1)
@@ -978,7 +976,7 @@ static int defrag_try_merge_with_succ (struct nn_rsample_defrag *sample, struct 
     /* no longer a gap between node & succ => succ will be removed
        from the interval tree and therefore node will become the
        last interval if succ currently is */
-    avl_delete (&sample->fragtree, succ);
+    ut_avlDelete (&rsample_defrag_fragtree_treedef, &sample->fragtree, succ);
     if (sample->lastfrag == succ)
     {
       TRACE_RADMIN (("  succ is lastfrag\n"));
@@ -1010,18 +1008,17 @@ static int defrag_try_merge_with_succ (struct nn_rsample_defrag *sample, struct 
   }
 }
 
-static void defrag_rsample_addiv (struct nn_rsample_defrag *sample, struct nn_rdata *rdata, avlparent_t parent)
+static void defrag_rsample_addiv (struct nn_rsample_defrag *sample, struct nn_rdata *rdata, ut_avlIPath_t *path)
 {
   struct nn_defrag_iv *newiv;
   if ((newiv = nn_rmsg_alloc (rdata->rmsg, sizeof (*newiv))) == NULL)
     return;
-  avl_init_node (newiv, parent);
   rdata->nextfrag = NULL;
   newiv->first = newiv->last = rdata;
   newiv->min = rdata->min;
   newiv->maxp1 = rdata->maxp1;
   nn_rdata_addbias (rdata);
-  avl_insert (&sample->fragtree, newiv);
+  ut_avlInsertIPath (&rsample_defrag_fragtree_treedef, &sample->fragtree, newiv, path);
   if (sample->lastfrag == NULL || rdata->min > sample->lastfrag->min)
     sample->lastfrag = newiv;
 }
@@ -1030,12 +1027,11 @@ static void rsample_init_common (UNUSED_ARG (struct nn_rsample *rsample), UNUSED
 {
 }
 
-static struct nn_rsample *defrag_rsample_new (struct nn_rdata *rdata, const struct nn_rsample_info *sampleinfo, avlparent_t sampleparent)
+static struct nn_rsample *defrag_rsample_new (struct nn_rdata *rdata, const struct nn_rsample_info *sampleinfo)
 {
   struct nn_rsample *rsample;
   struct nn_rsample_defrag *dfsample;
-  avlparent_t ivparent;
-  ivparent.addr = NULL;
+  ut_avlIPath_t ivpath;
 
   if ((rsample = nn_rmsg_alloc (rdata->rmsg, sizeof (*rsample))) == NULL)
     return NULL;
@@ -1047,8 +1043,7 @@ static struct nn_rsample *defrag_rsample_new (struct nn_rdata *rdata, const stru
     return NULL;
   *dfsample->sampleinfo = *sampleinfo;
 
-  avl_init_node (&dfsample->avlnode, sampleparent);
-  avl_init (&dfsample->fragtree, offsetof (struct nn_defrag_iv, avlnode), offsetof (struct nn_defrag_iv, min), compare_uint32, 0);
+  ut_avlInit (&rsample_defrag_fragtree_treedef, &dfsample->fragtree);
 
   /* add sentinel if rdata is not the first fragment of the message */
   if (rdata->min > 0)
@@ -1056,16 +1051,15 @@ static struct nn_rsample *defrag_rsample_new (struct nn_rdata *rdata, const stru
     struct nn_defrag_iv *sentinel;
     if ((sentinel = nn_rmsg_alloc (rdata->rmsg, sizeof (*sentinel))) == NULL)
       return NULL;
-    avl_init_node (sentinel, ivparent);
     sentinel->first = sentinel->last = NULL;
     sentinel->min = sentinel->maxp1 = 0;
-    avl_insert (&dfsample->fragtree, sentinel);
-    /* sentinel necessarily is the parent of the interval representing rdata */
-    avl_parent_from_node (&dfsample->fragtree, sentinel, &ivparent);
+    ut_avlLookupIPath (&rsample_defrag_fragtree_treedef, &dfsample->fragtree, &sentinel->min, &ivpath);
+    ut_avlInsertIPath (&rsample_defrag_fragtree_treedef, &dfsample->fragtree, sentinel, &ivpath);
   }
 
   /* add an interval for the first received fragment */
-  defrag_rsample_addiv (dfsample, rdata, ivparent);
+  ut_avlLookupIPath (&rsample_defrag_fragtree_treedef, &dfsample->fragtree, &rdata->min, &ivpath);
+  defrag_rsample_addiv (dfsample, rdata, &ivpath);
   return rsample;
 }
 
@@ -1111,7 +1105,7 @@ static int is_complete (const struct nn_rsample_defrag *sample)
      one interval covering all bytes. One interval because of the
      greedy coalescing in add_fragment(). There is at least one
      interval if we get here. */
-  const struct nn_defrag_iv *iv = sample->fragtree.root;
+  const struct nn_defrag_iv *iv = ut_avlRoot (&rsample_defrag_fragtree_treedef, &sample->fragtree);
   assert (iv != NULL);
   if (iv->min == 0 && iv->maxp1 >= sample->sampleinfo->size)
   {
@@ -1121,7 +1115,7 @@ static int is_complete (const struct nn_rsample_defrag *sample)
        samples that will never be completed; dropping them in the
        defragmenter would be feasible by discarding all fragments of
        that sample collected so far. */
-    assert (iv->avlnode.left == NULL && iv->avlnode.right == NULL);
+    assert (ut_avlIsSingleton (&sample->fragtree));
     return 1;
   }
   else
@@ -1138,13 +1132,14 @@ static void rsample_convert_defrag_to_reorder (struct nn_rsample *sample)
      self-respecting compiler will optimise them away, and any
      self-respecting CPU would need to copy them via registers anyway
      because it uses a load-store architecture. */
-  struct nn_rdata *fragchain = sample->u.defrag.fragtree.root->first;
+  struct nn_defrag_iv *iv = ut_avlRoot (&rsample_defrag_fragtree_treedef, &sample->u.defrag.fragtree);
+  struct nn_rdata *fragchain = iv->first;
   struct nn_rsample_info *sampleinfo = sample->u.defrag.sampleinfo;
   struct nn_rsample_chain_elem *sce;
   os_int64 seq = sample->u.defrag.seq;
 
   /* re-use memory fragment interval node for sample chain */
-  sce = (struct nn_rsample_chain_elem *) sample->u.defrag.fragtree.root;
+  sce = (struct nn_rsample_chain_elem *) ut_avlRoot (&rsample_defrag_fragtree_treedef, &sample->u.defrag.fragtree);
   sce->fragchain = fragchain;
   sce->next = NULL;
   sce->sampleinfo = sampleinfo;
@@ -1168,7 +1163,7 @@ static struct nn_rsample *defrag_add_fragment (struct nn_rsample *sample, struct
   /* and it must concern this message */
   assert (dfsample->seq == sampleinfo->seq);
   /* relatively expensive test: lastfrag, tree must be consistent */
-  assert (dfsample->lastfrag == avl_findmax (&dfsample->fragtree));
+  assert (dfsample->lastfrag == ut_avlFindMax (&rsample_defrag_fragtree_treedef, &dfsample->fragtree));
 
   TRACE_RADMIN (("  lastfrag %p [%u..%u)\n",
                  (void *) dfsample->lastfrag,
@@ -1185,7 +1180,7 @@ static struct nn_rsample *defrag_add_fragment (struct nn_rsample *sample, struct
   else
   {
     /* Slow path: find preceding fragment by tree search */
-    predeq = avl_lookup_predeq (&dfsample->fragtree, &min);
+    predeq = ut_avlLookupPredEq (&rsample_defrag_fragtree_treedef, &dfsample->fragtree, &min);
     TRACE_RADMIN (("  slow path: predeq = lookup %u => %p [%u..%u)\n",
                    min, (void *) predeq, predeq->min, predeq->maxp1));
   }
@@ -1228,7 +1223,7 @@ static struct nn_rsample *defrag_add_fragment (struct nn_rsample *sample, struct
     return is_complete (dfsample) ? sample : NULL;
   }
   else if (predeq != dfsample->lastfrag && /* if predeq is last frag, there is no succ */
-           (succ = avl_findsucc (&dfsample->fragtree, predeq)) != NULL &&
+           (succ = ut_avlFindSucc (&rsample_defrag_fragtree_treedef, &dfsample->fragtree, predeq)) != NULL &&
            succ->min <= maxp1)
   {
     /* extends succ (at the low end; no guarantee each individual
@@ -1258,11 +1253,11 @@ static struct nn_rsample *defrag_add_fragment (struct nn_rsample *sample, struct
   {
     /* doesn't extend either predeq at the end or succ at the head =>
        new interval; rdata did not cause completion of sample */
-    avlparent_t parent;
+    ut_avlIPath_t path;
     TRACE_RADMIN (("  new interval\n"));
-    if (avl_lookup (&dfsample->fragtree, &min, &parent))
+    if (ut_avlLookupIPath (&rsample_defrag_fragtree_treedef, &dfsample->fragtree, &min, &path))
       assert (0);
-    defrag_rsample_addiv (dfsample, rdata, parent);
+    defrag_rsample_addiv (dfsample, rdata, &path);
     return NULL;
   }
 }
@@ -1296,7 +1291,7 @@ static int defrag_limit_samples (struct nn_defrag *defrag, os_int64 seq, os_int6
       break;
     case NN_DEFRAG_DROP_OLDEST:
       TRACE_RADMIN (("  drop mode = DROP_OLDEST\n"));
-      sample_to_drop = avl_findmin (&defrag->sampletree);
+      sample_to_drop = ut_avlFindMin (&defrag_sampletree_treedef, &defrag->sampletree);
       if (seq < sample_to_drop->u.defrag.seq)
       {
         TRACE_RADMIN (("  new sample is new oldest => discarding it\n"));
@@ -1308,7 +1303,7 @@ static int defrag_limit_samples (struct nn_defrag *defrag, os_int64 seq, os_int6
   defrag_rsample_drop (defrag, sample_to_drop, nn_fragchain_adjust_refcount);
   if (sample_to_drop == defrag->max_sample)
   {
-    defrag->max_sample = avl_findmax (&defrag->sampletree);
+    defrag->max_sample = ut_avlFindMax (&defrag_sampletree_treedef, &defrag->sampletree);
     *max_seq = defrag->max_sample ? defrag->max_sample->u.defrag.seq : 0;
     TRACE_RADMIN (("  updating max_sample: now %p %lld\n",
                    (void *) defrag->max_sample,
@@ -1343,7 +1338,7 @@ struct nn_rsample *nn_defrag_rsample (struct nn_defrag *defrag, struct nn_rdata 
      by adding BIAS to the refcount. */
   struct nn_rsample *sample, *result;
   os_int64 max_seq;
-  avlparent_t parent;
+  ut_avlIPath_t path;
 
   assert (defrag->n_samples <= defrag->max_samples);
 
@@ -1355,7 +1350,7 @@ struct nn_rsample *nn_defrag_rsample (struct nn_defrag *defrag, struct nn_rdata 
   /* max_seq is used for the fast path, and is 0 when there is no
      last message in 'defrag'. max_seq and max_sample must be
      consistent. Max_sample must be consistent with tree */
-  assert (defrag->max_sample == avl_findmax (&defrag->sampletree));
+  assert (defrag->max_sample == ut_avlFindMax (&defrag_sampletree_treedef, &defrag->sampletree));
   max_seq = defrag->max_sample ? defrag->max_sample->u.defrag.seq : 0;
   TRACE_RADMIN (("defrag_rsample(%p, %p [%u..%u) msg %p, %p seq %lld size %u) max_seq %p %lld:\n",
                  (void *) defrag, (void *) rdata, rdata->min, rdata->maxp1, rdata->rmsg,
@@ -1375,25 +1370,26 @@ struct nn_rsample *nn_defrag_rsample (struct nn_defrag *defrag, struct nn_rdata 
   }
   else if (sampleinfo->seq > max_seq)
   {
-    /* a node with a key greater than the maximum in a tree always has
-       the old maximum node as its parent */
+    /* a node with a key greater than the maximum always is the right
+       child of the old maximum node */
+    /* FIXME: MERGE THIS ONE WITH THE NEXT */
     TRACE_RADMIN (("  new max sample\n"));
-    avl_parent_from_node (&defrag->sampletree, defrag->max_sample, &parent);
-    if ((sample = defrag_rsample_new (rdata, sampleinfo, parent)) == NULL)
+    ut_avlLookupIPath (&defrag_sampletree_treedef, &defrag->sampletree, &sampleinfo->seq, &path);
+    if ((sample = defrag_rsample_new (rdata, sampleinfo)) == NULL)
       return NULL;
-    avl_insert (&defrag->sampletree, sample);
+    ut_avlInsertIPath (&defrag_sampletree_treedef, &defrag->sampletree, sample, &path);
     defrag->max_sample = sample;
     defrag->n_samples++;
     result = NULL;
   }
-  else if ((sample = avl_lookup (&defrag->sampletree, &sampleinfo->seq, &parent)) == NULL)
+  else if ((sample = ut_avlLookupIPath (&defrag_sampletree_treedef, &defrag->sampletree, &sampleinfo->seq, &path)) == NULL)
   {
     /* a new sequence number, but smaller than the maximum */
     TRACE_RADMIN (("  new sample less than max\n"));
     assert (sampleinfo->seq < max_seq);
-    if ((sample = defrag_rsample_new (rdata, sampleinfo, parent)) == NULL)
+    if ((sample = defrag_rsample_new (rdata, sampleinfo)) == NULL)
       return NULL;
-    avl_insert (&defrag->sampletree, sample);
+    ut_avlInsertIPath (&defrag_sampletree_treedef, &defrag->sampletree, sample, &path);
     defrag->n_samples++;
     result = NULL;
   }
@@ -1410,12 +1406,12 @@ struct nn_rsample *nn_defrag_rsample (struct nn_defrag *defrag, struct nn_rdata 
        reorder format. If it is the sample with the maximum sequence in
        the tree, an update of max_sample is required. */
     TRACE_RADMIN (("  complete\n"));
-    avl_delete (&defrag->sampletree, result);
+    ut_avlDelete (&defrag_sampletree_treedef, &defrag->sampletree, result);
     assert (defrag->n_samples > 0);
     defrag->n_samples--;
     if (result == defrag->max_sample)
     {
-      defrag->max_sample = avl_findmax (&defrag->sampletree);
+      defrag->max_sample = ut_avlFindMax (&defrag_sampletree_treedef, &defrag->sampletree);
       TRACE_RADMIN (("  updating max_sample: now %p %lld\n",
                      (void *) defrag->max_sample,
                      defrag->max_sample ? defrag->max_sample->u.defrag.seq : 0));
@@ -1423,7 +1419,7 @@ struct nn_rsample *nn_defrag_rsample (struct nn_defrag *defrag, struct nn_rdata 
     rsample_convert_defrag_to_reorder (result);
   }
 
-  assert (defrag->max_sample == avl_findmax (&defrag->sampletree));
+  assert (defrag->max_sample == ut_avlFindMax (&defrag_sampletree_treedef, &defrag->sampletree));
   return result;
 }
 
@@ -1432,14 +1428,14 @@ void nn_defrag_notegap (struct nn_defrag *defrag, os_int64 min, os_int64 maxp1)
   /* All sequence numbers in [min,maxp1) are unavailable so any
      fragments in that range must be discarded.  Used both for
      Hearbeats (by setting min=1) and for Gaps. */
-  struct nn_rsample *s = avl_lookup_succeq (&defrag->sampletree, &min);
+  struct nn_rsample *s = ut_avlLookupSuccEq (&defrag_sampletree_treedef, &defrag->sampletree, &min);
   while (s && s->u.defrag.seq < maxp1)
   {
-    struct nn_rsample *s1 = avl_findsucc (&defrag->sampletree, s);
+    struct nn_rsample *s1 = ut_avlFindSucc (&defrag_sampletree_treedef, &defrag->sampletree, s);
     defrag_rsample_drop (defrag, s, nn_fragchain_adjust_refcount);
     s = s1;
   }
-  defrag->max_sample = avl_findmax (&defrag->sampletree);
+  defrag->max_sample = ut_avlFindMax (&defrag_sampletree_treedef, &defrag->sampletree);
 }
 
 int nn_defrag_nackmap (struct nn_defrag *defrag, os_int64 seq, os_uint32 maxfragnum, struct nn_fragment_number_set *map, os_uint32 maxsz)
@@ -1448,7 +1444,7 @@ int nn_defrag_nackmap (struct nn_defrag *defrag, os_int64 seq, os_uint32 maxfrag
   struct nn_defrag_iv *iv;
   os_uint32 i, fragsz, nfrags;
   assert (maxsz <= 256);
-  s = avl_lookup (&defrag->sampletree, &seq, NULL);
+  s = ut_avlLookup (&defrag_sampletree_treedef, &defrag->sampletree, &seq);
   if (s == NULL)
   {
     if (maxfragnum == 0xffffffff)
@@ -1485,7 +1481,7 @@ int nn_defrag_nackmap (struct nn_defrag *defrag, os_int64 seq, os_uint32 maxfrag
        are missing the first fragment. */
     struct nn_defrag_iv *liv = s->u.defrag.lastfrag;
     nn_fragment_number_t map_end;
-    iv = avl_findmin (&s->u.defrag.fragtree);
+    iv = ut_avlFindMin (&rsample_defrag_fragtree_treedef, &s->u.defrag.fragtree);
     assert (iv != NULL);
     /* iv is first interval, iv->maxp1 is first byte beyond that =>
        divide by fragsz to get first missing fragment */
@@ -1505,7 +1501,7 @@ int nn_defrag_nackmap (struct nn_defrag *defrag, os_int64 seq, os_uint32 maxfrag
        map->bitmap_base, but there is nothing to request in that
        case. */
     map->numbits = (map_end < map->bitmap_base) ? 0 : map_end - map->bitmap_base + 1;
-    iv = avl_findsucc (&s->u.defrag.fragtree, iv);
+    iv = ut_avlFindSucc (&rsample_defrag_fragtree_treedef, &s->u.defrag.fragtree, iv);
   }
 
   /* Clear bitmap, then set bits for gaps in available fragments */
@@ -1535,7 +1531,7 @@ int nn_defrag_nackmap (struct nn_defrag *defrag, os_int64 seq, os_uint32 maxfrag
        at fragment containing maxp1 (because we don't have that byte
        yet), and runs until the next interval begins */
     i = iv->maxp1 / fragsz;
-    iv = avl_findsucc (&s->u.defrag.fragtree, iv);
+    iv = ut_avlFindSucc (&rsample_defrag_fragtree_treedef, &s->u.defrag.fragtree, iv);
   }
   /* and set bits for missing fragments beyond the highest interval */
   for (; i < map->bitmap_base + map->numbits; i++)
@@ -1623,7 +1619,7 @@ int nn_defrag_nackmap (struct nn_defrag *defrag, os_int64 seq, os_uint32 maxfrag
    in the overview comment at the top of this file. */
 
 struct nn_reorder {
-  STRUCT_AVLTREE (nn_reorder_ivtree, struct nn_rsample *) sampleivtree;
+  ut_avlTree_t sampleivtree;
   struct nn_rsample *max_sampleiv; /* = max(sampleivtree) */
   os_int64 next_seq;
   enum nn_reorder_mode mode;
@@ -1631,12 +1627,15 @@ struct nn_reorder {
   os_uint32 n_samples;
 };
 
+static const ut_avlTreedef_t reorder_sampleivtree_treedef =
+  UT_AVL_TREEDEF_INITIALIZER (offsetof (struct nn_rsample, u.reorder.avlnode), offsetof (struct nn_rsample, u.reorder.min), compare_int64, 0);
+
 struct nn_reorder *nn_reorder_new (enum nn_reorder_mode mode, os_uint32 max_samples)
 {
   struct nn_reorder *r;
   if ((r = os_malloc (sizeof (*r))) == NULL)
     return NULL;
-  avl_init (&r->sampleivtree, offsetof (struct nn_rsample, u.reorder.avlnode), offsetof (struct nn_rsample, u.reorder.min), compare_int64, 0);
+  ut_avlInit (&reorder_sampleivtree_treedef, &r->sampleivtree);
   r->max_sampleiv = NULL;
   r->next_seq = 1;
   r->mode = mode;
@@ -1661,10 +1660,10 @@ void nn_reorder_free (struct nn_reorder *r)
   struct nn_rsample *iv;
   struct nn_rsample_chain_elem *sce;
   /* FXIME: instead of findmin/delete, a treewalk can be used. */
-  iv = avl_findmin (&r->sampleivtree);
+  iv = ut_avlFindMin (&reorder_sampleivtree_treedef, &r->sampleivtree);
   while (iv)
   {
-    avl_delete (&r->sampleivtree, iv);
+    ut_avlDelete (&reorder_sampleivtree_treedef, &r->sampleivtree, iv);
     sce = iv->u.reorder.sc.first;
     while (sce)
     {
@@ -1672,18 +1671,17 @@ void nn_reorder_free (struct nn_reorder *r)
       nn_fragchain_unref (sce->fragchain);
       sce = sce1;
     }
-    iv = avl_findmin (&r->sampleivtree);
+    iv = ut_avlFindMin (&reorder_sampleivtree_treedef, &r->sampleivtree);
   }
   os_free (r);
 }
 
 static void reorder_add_rsampleiv (struct nn_reorder *reorder, struct nn_rsample *rsample)
 {
-  avlparent_t parent;
-  if (avl_lookup (&reorder->sampleivtree, &rsample->u.reorder.min, &parent) != NULL)
+  ut_avlIPath_t path;
+  if (ut_avlLookupIPath (&reorder_sampleivtree_treedef, &reorder->sampleivtree, &rsample->u.reorder.min, &path) != NULL)
     assert (0);
-  avl_init_node (&rsample->u.reorder.avlnode, parent);
-  avl_insert (&reorder->sampleivtree, rsample);
+  ut_avlInsertIPath (&reorder_sampleivtree_treedef, &reorder->sampleivtree, rsample, &path);
 }
 
 #ifndef NDEBUG
@@ -1731,7 +1729,7 @@ static int reorder_try_append_and_discard (struct nn_reorder *reorder, struct nn
                    appendto->u.reorder.min, appendto->u.reorder.maxp1, (void *) appendto,
                    todiscard->u.reorder.min, todiscard->u.reorder.maxp1, (void *) todiscard));
     assert (todiscard->u.reorder.min == appendto->u.reorder.maxp1);
-    avl_delete (&reorder->sampleivtree, todiscard);
+    ut_avlDelete (&reorder_sampleivtree_treedef, &reorder->sampleivtree, todiscard);
     append_rsample_interval (appendto, todiscard);
     TRACE_RADMIN (("  try_append_and_discard: max_sampleiv needs update? %s\n",
                    (todiscard == reorder->max_sampleiv) ? "yes" : "no"));
@@ -1811,8 +1809,8 @@ static void delete_last_sample (struct nn_reorder *reorder)
        recalc max_sampleiv. */
     TRACE_RADMIN (("  delete_last_sample: in singleton interval\n"));
     fragchain = last->sc.first->fragchain;
-    avl_delete (&reorder->sampleivtree, reorder->max_sampleiv);
-    reorder->max_sampleiv = avl_findmax (&reorder->sampleivtree);
+    ut_avlDelete (&reorder_sampleivtree_treedef, &reorder->sampleivtree, reorder->max_sampleiv);
+    reorder->max_sampleiv = ut_avlFindMax (&reorder_sampleivtree_treedef, &reorder->sampleivtree);
     /* No harm done if it the sampleivtree is empty, except that we
        chose not to allow it */
     assert (reorder->max_sampleiv != NULL);
@@ -1865,7 +1863,7 @@ nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_r
      seq; max must be set iff the reorder is non-empty. */
 #ifndef NDEBUG
   {
-    struct nn_rsample *min = avl_findmin (&reorder->sampleivtree);
+    struct nn_rsample *min = ut_avlFindMin (&reorder_sampleivtree_treedef, &reorder->sampleivtree);
     if (min)
       TRACE_RADMIN (("  min = %lld @ %p\n", min->u.reorder.min, (void *) min));
     assert (min == NULL || reorder->next_seq < min->u.reorder.min);
@@ -1873,8 +1871,8 @@ nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_r
             (reorder->max_sampleiv != NULL && min != NULL));
   }
 #endif
-  assert ((!!avl_empty (&reorder->sampleivtree)) == (reorder->max_sampleiv == NULL));
-  assert (reorder->max_sampleiv == NULL || reorder->max_sampleiv == avl_findmax (&reorder->sampleivtree));
+  assert ((!!ut_avlIsEmpty (&reorder->sampleivtree)) == (reorder->max_sampleiv == NULL));
+  assert (reorder->max_sampleiv == NULL || reorder->max_sampleiv == ut_avlFindMax (&reorder_sampleivtree_treedef, &reorder->sampleivtree));
   assert (reorder->n_samples <= reorder->max_samples);
   if (reorder->max_sampleiv)
     TRACE_RADMIN (("  max = [%lld,%lld) @ %p\n", reorder->max_sampleiv->u.reorder.min, reorder->max_sampleiv->u.reorder.maxp1, (void *) reorder->max_sampleiv));
@@ -1901,7 +1899,7 @@ nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_r
        out-of-order either ends up here or in discard.)  */
     if (reorder->max_sampleiv != NULL)
     {
-      struct nn_rsample *min = avl_findmin (&reorder->sampleivtree);
+      struct nn_rsample *min = ut_avlFindMin (&reorder_sampleivtree_treedef, &reorder->sampleivtree);
       TRACE_RADMIN (("  try append_and_discard\n"));
       if (reorder_try_append_and_discard (reorder, rsampleiv, min))
         reorder->max_sampleiv = NULL;
@@ -1926,7 +1924,7 @@ nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_r
     TRACE_RADMIN (("  discard: too old\n"));
     return NN_REORDER_TOO_OLD; /* don't want refcount increment */
   }
-  else if (avl_empty (&reorder->sampleivtree))
+  else if (ut_avlIsEmpty (&reorder->sampleivtree))
   {
     /* else, if nothing's stored simply add this one, max_samples = 0
        is technically allowed, and potentially useful, so check for
@@ -1952,7 +1950,7 @@ nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_r
     if (delivery_queue_full_p)
     {
       /* growing last inteval will not be accepted when this flag is set */
-      TRACE_RADMIN (("  discarding sample: Only accepting delayed samples due to backlog in delivery queue\n"));
+      TRACE_RADMIN (("  discarding sample: only accepting delayed samples due to backlog in delivery queue\n"));
       return NN_REORDER_REJECT;
     }
 
@@ -1973,9 +1971,9 @@ nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_r
   {
     if (delivery_queue_full_p)
     {
-        /* new interval at the end will not be accepted when this flag is set */
-        TRACE_RADMIN (("  discarding sample: Only accepting delayed samples due to backlog in delivery queue\n"));
-        return NN_REORDER_REJECT;
+      /* new interval at the end will not be accepted when this flag is set */
+      TRACE_RADMIN (("  discarding sample: only accepting delayed samples due to backlog in delivery queue\n"));
+      return NN_REORDER_REJECT;
     }
     if (reorder->n_samples < reorder->max_samples)
     {
@@ -2008,7 +2006,7 @@ nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_r
       return NN_REORDER_REJECT;
     }
 
-    predeq = avl_lookup_predeq (&reorder->sampleivtree, &s->min);
+    predeq = ut_avlLookupPredEq (&reorder_sampleivtree_treedef, &reorder->sampleivtree, &s->min);
     if (predeq)
       TRACE_RADMIN (("  predeq = [%lld,%lld) @ %p\n",
                      predeq->u.reorder.min, predeq->u.reorder.maxp1, (void *) predeq));
@@ -2021,7 +2019,7 @@ nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_r
       return NN_REORDER_REJECT;
     }
 
-    immsucc = avl_lookup (&reorder->sampleivtree, &s->maxp1, NULL);
+    immsucc = ut_avlLookup (&reorder_sampleivtree_treedef, &reorder->sampleivtree, &s->maxp1);
     if (immsucc)
       TRACE_RADMIN (("  immsucc = [%lld,%lld) @ %p\n",
                      immsucc->u.reorder.min, immsucc->u.reorder.maxp1, (void *) immsucc));
@@ -2045,14 +2043,29 @@ nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_r
       immsucc->u.reorder.sc.first = s->sc.first;
       immsucc->u.reorder.min = s->min;
       immsucc->u.reorder.n_samples += s->n_samples;
+
+      /* delete_last_sample may eventually decide to delete the last
+         sample contained in immsucc without checking whether immsucc
+         were allocated dependent on that sample.  That in turn would
+         cause sampleivtree to point to freed memory (either freed as
+         in free(), or freed as in available for reuse, and hence the
+         result may be a silent corruption of the interval tree).
+
+         We do know that rsampleiv will remain live, that it is not
+         dependent on the last sample (because we're growing immsucc
+         at the head), and that we don't otherwise need it anymore.
+         Therefore, we can swap rsampleiv in for immsucc and avoid the
+         case above. */
+      rsampleiv->u.reorder = immsucc->u.reorder;
+      ut_avlSwapNode (&reorder_sampleivtree_treedef, &reorder->sampleivtree, immsucc, rsampleiv);
+      if (immsucc == reorder->max_sampleiv)
+        reorder->max_sampleiv = rsampleiv;
     }
     else
     {
       /* neither extends predeq nor immsucc */
       TRACE_RADMIN (("  new interval\n"));
       reorder_add_rsampleiv (reorder, rsampleiv);
-      if (rsampleiv->u.reorder.min > reorder->max_sampleiv->u.reorder.min)
-        reorder->max_sampleiv = rsampleiv;
     }
 
     /* do not let radmin grow beyond max_samples; now that we've
@@ -2062,23 +2075,26 @@ nn_reorder_result_t nn_reorder_rsample (struct nn_rsample_chain *sc, struct nn_r
     if (reorder->n_samples < reorder->max_samples)
       reorder->n_samples++;
     else
+    {
       delete_last_sample (reorder);
+    }
   }
 
   (*refcount_adjust)++;
   return NN_REORDER_ACCEPT;
 }
 
-static struct nn_rsample *coalesce_intervals_touching_range (struct nn_reorder *reorder, os_int64 min, os_int64 maxp1)
+static struct nn_rsample *coalesce_intervals_touching_range (struct nn_reorder *reorder, os_int64 min, os_int64 maxp1, int *valuable)
 {
   struct nn_rsample *s, *t;
+  *valuable = 0;
   /* Find first (lowest m) interval [m,n) s.t. n >= min && m <= maxp1 */
-  s = avl_lookup_predeq (&reorder->sampleivtree, &min);
+  s = ut_avlLookupPredEq (&reorder_sampleivtree_treedef, &reorder->sampleivtree, &min);
   if (s && s->u.reorder.maxp1 >= min)
   {
     /* m <= min && n >= min (note: pred of s [m',n') necessarily has n' < m) */
 #ifndef NDEBUG
-    struct nn_rsample *q = avl_findpred (&reorder->sampleivtree, s);
+    struct nn_rsample *q = ut_avlFindPred (&reorder_sampleivtree_treedef, &reorder->sampleivtree, s);
     assert (q == NULL || q->u.reorder.maxp1 < min);
 #endif
   }
@@ -2087,23 +2103,30 @@ static struct nn_rsample *coalesce_intervals_touching_range (struct nn_reorder *
     /* No good, but the first (if s = NULL) or the next one (if s !=
        NULL) may still have m <= maxp1 (m > min is implied now).  If
        not, no such interval.  */
-    s = avl_findsucc (&reorder->sampleivtree, s);
+    s = ut_avlFindSucc (&reorder_sampleivtree_treedef, &reorder->sampleivtree, s);
     if (!(s && s->u.reorder.min <= maxp1))
       return NULL;
   }
   /* Append successors [m',n') s.t. m' <= maxp1 to s */
   assert (s->u.reorder.min + s->u.reorder.n_samples <= s->u.reorder.maxp1);
-  while ((t = avl_findsucc (&reorder->sampleivtree, s)) != NULL && t->u.reorder.min <= maxp1)
+  while ((t = ut_avlFindSucc (&reorder_sampleivtree_treedef, &reorder->sampleivtree, s)) != NULL && t->u.reorder.min <= maxp1)
   {
-    avl_delete (&reorder->sampleivtree, t);
+    ut_avlDelete (&reorder_sampleivtree_treedef, &reorder->sampleivtree, t);
     assert (t->u.reorder.min + t->u.reorder.n_samples <= t->u.reorder.maxp1);
     append_rsample_interval (s, t);
+    *valuable = 1;
   }
   /* If needed, grow range to [min,maxp1) */
   if (min < s->u.reorder.min)
+  {
+    *valuable = 1;
     s->u.reorder.min = min;
+  }
   if (maxp1 > s->u.reorder.maxp1)
+  {
+    *valuable = 1;
     s->u.reorder.maxp1 = maxp1;
+  }
   return s;
 }
 
@@ -2120,8 +2143,8 @@ static int reorder_insert_gap (struct nn_reorder *reorder, struct nn_rdata *rdat
 {
   struct nn_rsample_chain_elem *sce;
   struct nn_rsample *s;
-  avlparent_t parent;
-  if (avl_lookup (&reorder->sampleivtree, &min, &parent) != NULL)
+  ut_avlIPath_t path;
+  if (ut_avlLookupIPath (&reorder_sampleivtree_treedef, &reorder->sampleivtree, &min, &path) != NULL)
     assert (0);
   if ((sce = nn_rmsg_alloc (rdata->rmsg, sizeof (*sce))) == NULL)
     return 0;
@@ -2130,12 +2153,11 @@ static int reorder_insert_gap (struct nn_reorder *reorder, struct nn_rdata *rdat
   sce->sampleinfo = NULL;
   if ((s = nn_rmsg_alloc (rdata->rmsg, sizeof (*s))) == NULL)
     return 0;
-  avl_init_node (&s->u.reorder.avlnode, parent);
   s->u.reorder.sc.first = s->u.reorder.sc.last = sce;
   s->u.reorder.min = min;
   s->u.reorder.maxp1 = maxp1;
   s->u.reorder.n_samples = 1;
-  avl_insert (&reorder->sampleivtree, s);
+  ut_avlInsertIPath (&reorder_sampleivtree_treedef, &reorder->sampleivtree, s, &path);
   return 1;
 }
 
@@ -2167,6 +2189,7 @@ nn_reorder_result_t nn_reorder_gap (struct nn_rsample_chain *sc, struct nn_reord
      path for out-of-order delivery if all readers of a reliable
      proxy-writer are unrelibale depends on it. */
   struct nn_rsample *coalesced;
+  int valuable;
 
   TRACE_RADMIN (("reorder_gap(%p %c, [%lld,%lld) data %p) expecting %lld:\n",
                  (void *) reorder, reorder_mode_as_char (reorder),
@@ -2184,7 +2207,7 @@ nn_reorder_result_t nn_reorder_gap (struct nn_rsample_chain *sc, struct nn_reord
   }
 
   /* Coalesce all intervals [m,n) with n >= min or m <= maxp1 */
-  if ((coalesced = coalesce_intervals_touching_range (reorder, min, maxp1)) == NULL)
+  if ((coalesced = coalesce_intervals_touching_range (reorder, min, maxp1, &valuable)) == NULL)
   {
     nn_reorder_result_t res;
     TRACE_RADMIN (("  coalesced = null\n"));
@@ -2192,7 +2215,7 @@ nn_reorder_result_t nn_reorder_gap (struct nn_rsample_chain *sc, struct nn_reord
     {
       TRACE_RADMIN (("  next expected: %lld\n", maxp1));
       reorder->next_seq = maxp1;
-      res = NN_REORDER_REJECT;
+      res = NN_REORDER_ACCEPT;
     }
     else if (reorder->n_samples == reorder->max_samples &&
              (reorder->max_sampleiv == NULL || min > reorder->max_sampleiv->u.reorder.maxp1))
@@ -2219,7 +2242,7 @@ nn_reorder_result_t nn_reorder_gap (struct nn_rsample_chain *sc, struct nn_reord
         delete_last_sample (reorder);
       (*refcount_adjust)++;
     }
-    reorder->max_sampleiv = avl_findmax (&reorder->sampleivtree);
+    reorder->max_sampleiv = ut_avlFindMax (&reorder_sampleivtree_treedef, &reorder->sampleivtree);
     return res;
   }
   else if (coalesced->u.reorder.min <= reorder->next_seq)
@@ -2227,11 +2250,11 @@ nn_reorder_result_t nn_reorder_gap (struct nn_rsample_chain *sc, struct nn_reord
     TRACE_RADMIN (("  coalesced = [%lld,%lld) @ %p containing %d samples\n",
                    coalesced->u.reorder.min, coalesced->u.reorder.maxp1,
                    (void *) coalesced, coalesced->u.reorder.n_samples));
-    avl_delete (&reorder->sampleivtree, coalesced);
+    ut_avlDelete (&reorder_sampleivtree_treedef, &reorder->sampleivtree, coalesced);
     if (coalesced->u.reorder.min <= reorder->next_seq)
       assert (min <= reorder->next_seq);
     reorder->next_seq = coalesced->u.reorder.maxp1;
-    reorder->max_sampleiv = avl_findmax (&reorder->sampleivtree);
+    reorder->max_sampleiv = ut_avlFindMax (&reorder_sampleivtree_treedef, &reorder->sampleivtree);
     TRACE_RADMIN (("  next expected: %lld\n", reorder->next_seq));
     *sc = coalesced->u.reorder.sc;
 
@@ -2245,9 +2268,21 @@ nn_reorder_result_t nn_reorder_gap (struct nn_rsample_chain *sc, struct nn_reord
   {
     TRACE_RADMIN (("  coalesced = [%lld,%lld) @ %p - that is all\n",
                    coalesced->u.reorder.min, coalesced->u.reorder.maxp1, (void *) coalesced));
-    reorder->max_sampleiv = avl_findmax (&reorder->sampleivtree);
-    return NN_REORDER_REJECT;
+    reorder->max_sampleiv = ut_avlFindMax (&reorder_sampleivtree_treedef, &reorder->sampleivtree);
+    return valuable ? NN_REORDER_ACCEPT : NN_REORDER_REJECT;
   }
+}
+
+int nn_reorder_wantsample (struct nn_reorder *reorder, os_int64 seq)
+{
+  struct nn_rsample *s;
+  if (seq < reorder->next_seq)
+    /* trivially not interesting */
+    return 0;
+  /* Find interval that contains seq, if we know seq.  We are
+     interested if seq is outside this interval (if any). */
+  s = ut_avlLookupPredEq (&reorder_sampleivtree_treedef, &reorder->sampleivtree, &seq);
+  return (s == NULL || s->u.reorder.maxp1 <= seq);
 }
 
 int nn_reorder_nackmap (struct nn_reorder *reorder, os_int64 base, os_int64 maxseq, struct nn_sequence_number_set *map, os_uint32 maxsz, int notail)
@@ -2285,7 +2320,7 @@ int nn_reorder_nackmap (struct nn_reorder *reorder, os_int64 base, os_int64 maxs
     map->numbits = (os_uint32) (maxseq + 1 - base);
   nn_bitset_zero (map->numbits, map->bits);
 
-  if ((iv = avl_findmin (&reorder->sampleivtree)) != NULL)
+  if ((iv = ut_avlFindMin (&reorder_sampleivtree_treedef, &reorder->sampleivtree)) != NULL)
     assert (iv->u.reorder.min > base);
   i = base;
   while (iv && i < base + map->numbits)
@@ -2296,7 +2331,7 @@ int nn_reorder_nackmap (struct nn_reorder *reorder, os_int64 base, os_int64 maxs
       nn_bitset_set (map->numbits, map->bits, x);
     }
     i = iv->u.reorder.maxp1;
-    iv = avl_findsucc (&reorder->sampleivtree, iv);
+    iv = ut_avlFindSucc (&reorder_sampleivtree_treedef, &reorder->sampleivtree, iv);
   }
   if (notail && i < base + map->numbits)
     map->numbits = (int) (i - base);
@@ -2340,7 +2375,8 @@ enum dqueue_elem_kind {
 
 enum nn_dqueue_bubble_kind {
   NN_DQBK_STOP, /* _not_ os_malloc()ed! */
-  NN_DQBK_CALLBACK
+  NN_DQBK_CALLBACK,
+  NN_DQBK_RDGUID
 };
 
 struct nn_dqueue_bubble {
@@ -2355,6 +2391,10 @@ struct nn_dqueue_bubble {
       nn_dqueue_callback_t cb;
       void *arg;
     } cb;
+    struct {
+      nn_guid_t rdguid;
+      os_uint32 count;
+    } rdguid;
   } u;
 };
 
@@ -2373,6 +2413,8 @@ static void *dqueue_thread (struct nn_dqueue *q)
   struct thread_state1 *self = lookup_thread_state ();
   os_int64 next_thread_cputime = 0;
   int keepgoing = 1;
+  nn_guid_t rdguid, *prdguid = NULL;
+  os_int32 rdguid_count = 0;
 
   os_mutexLock (&q->lock);
   while (keepgoing)
@@ -2397,11 +2439,17 @@ static void *dqueue_thread (struct nn_dqueue *q)
       switch (dqueue_elem_kind (e))
       {
         case DQEK_DATA:
-          ret = q->handler (e->sampleinfo, e->fragchain, q->handler_arg);
+          ret = q->handler (e->sampleinfo, e->fragchain, prdguid, q->handler_arg);
+          (void) ret; /* eliminate set-but-not-used in NDEBUG case */
           assert (ret == 0); /* so every handler will return 0 */
           /* FALLS THROUGH */
         case DQEK_GAP:
           nn_fragchain_unref (e->fragchain);
+          if (rdguid_count > 0)
+          {
+            if (--rdguid_count == 0)
+              prdguid = NULL;
+          }
           break;
 
         case DQEK_BUBBLE:
@@ -2426,6 +2474,11 @@ static void *dqueue_thread (struct nn_dqueue *q)
                 case NN_DQBK_CALLBACK:
                   b->u.cb.cb (b->u.cb.arg);
                   break;
+                case NN_DQBK_RDGUID:
+                  rdguid = b->u.rdguid.rdguid;
+                  rdguid_count = b->u.rdguid.count;
+                  prdguid = &rdguid;
+                  break;
               }
               os_free (b);
             }
@@ -2444,8 +2497,6 @@ static void *dqueue_thread (struct nn_dqueue *q)
 struct nn_dqueue *nn_dqueue_new (const char *name, os_uint32 max_samples, nn_dqueue_handler_t handler, void *arg)
 {
   struct nn_dqueue *q;
-  os_mutexAttr mattr;
-  os_condAttr cattr;
   char *thrname;
 
   if ((q = os_malloc (sizeof (*q))) == NULL)
@@ -2458,14 +2509,10 @@ struct nn_dqueue *nn_dqueue_new (const char *name, os_uint32 max_samples, nn_dqu
   q->handler_arg = arg;
   q->sc.first = q->sc.last = NULL;
 
-  os_mutexAttrInit (&mattr);
-  mattr.scopeAttr = OS_SCOPE_PRIVATE;
-  if (os_mutexInit (&q->lock, &mattr) != os_resultSuccess)
+  if (os_mutexInit (&q->lock, &gv.mattr) != os_resultSuccess)
     goto fail_lock;
 
-  os_condAttrInit (&cattr);
-  cattr.scopeAttr = OS_SCOPE_PRIVATE;
-  if (os_condInit (&q->cond, &q->lock, &cattr) != os_resultSuccess)
+  if (os_condInit (&q->cond, &q->lock, &gv.cattr) != os_resultSuccess)
     goto fail_cond;
 
   if ((thrname = os_malloc (3 + strlen (name) + 1)) == NULL)
@@ -2490,6 +2537,23 @@ struct nn_dqueue *nn_dqueue_new (const char *name, os_uint32 max_samples, nn_dqu
   return NULL;
 }
 
+static int nn_dqueue_enqueue_locked (struct nn_dqueue *q, struct nn_rsample_chain *sc)
+{
+  int must_signal;
+  if (q->sc.first == NULL)
+  {
+    must_signal = 1;
+    q->sc = *sc;
+  }
+  else
+  {
+    must_signal = 0;
+    q->sc.last->next = sc->first;
+    q->sc.last = sc->last;
+  }
+  return must_signal;
+}
+
 void nn_dqueue_enqueue (struct nn_dqueue *q, struct nn_rsample_chain *sc, nn_reorder_result_t rres)
 {
   assert (rres > 0);
@@ -2497,39 +2561,28 @@ void nn_dqueue_enqueue (struct nn_dqueue *q, struct nn_rsample_chain *sc, nn_reo
   assert (sc->last->next == NULL);
   os_mutexLock (&q->lock);
   atomic_add_u32_noret (&q->nof_samples, (os_uint32) rres);
-  if (q->sc.first)
-  {
-    q->sc.last->next = sc->first;
-    q->sc.last = sc->last;
-    os_mutexUnlock (&q->lock);
-  }
-  else
-  {
-    q->sc = *sc;
+  if (nn_dqueue_enqueue_locked (q, sc))
     os_condSignal (&q->cond);
-    os_mutexUnlock (&q->lock);
-  }
+  os_mutexUnlock (&q->lock);
+}
+
+static int nn_dqueue_enqueue_bubble_locked (struct nn_dqueue *q, struct nn_dqueue_bubble *b)
+{
+  struct nn_rsample_chain sc;
+  b->sce.next = NULL;
+  b->sce.fragchain = NULL;
+  b->sce.sampleinfo = (struct nn_rsample_info *) b;
+  sc.first = sc.last = &b->sce;
+  return nn_dqueue_enqueue_locked (q, &sc);
 }
 
 static void nn_dqueue_enqueue_bubble (struct nn_dqueue *q, struct nn_dqueue_bubble *b)
 {
-  b->sce.next = NULL;
-  b->sce.fragchain = NULL;
-  b->sce.sampleinfo = (struct nn_rsample_info *) b;
   os_mutexLock (&q->lock);
   atomic_inc_u32_nv (&q->nof_samples);
-  if (q->sc.first)
-  {
-    q->sc.last->next = &b->sce;
-    q->sc.last = &b->sce;
-    os_mutexUnlock (&q->lock);
-  }
-  else
-  {
-    q->sc.first = q->sc.last = &b->sce;
+  if (nn_dqueue_enqueue_bubble_locked (q, b))
     os_condSignal (&q->cond);
-    os_mutexUnlock (&q->lock);
-  }
+  os_mutexUnlock (&q->lock);
 }
 
 void nn_dqueue_enqueue_callback (struct nn_dqueue *q, nn_dqueue_callback_t cb, void *arg)
@@ -2542,15 +2595,36 @@ void nn_dqueue_enqueue_callback (struct nn_dqueue *q, nn_dqueue_callback_t cb, v
   nn_dqueue_enqueue_bubble (q, b);
 }
 
+void nn_dqueue_enqueue1 (struct nn_dqueue *q, const nn_guid_t *rdguid, struct nn_rsample_chain *sc, nn_reorder_result_t rres)
+{
+  struct nn_dqueue_bubble *b;
+
+  b = os_malloc (sizeof (*b));
+  b->kind = NN_DQBK_RDGUID;
+  b->u.rdguid.rdguid = *rdguid;
+  b->u.rdguid.count = (os_uint32) rres;
+
+  assert (rres > 0);
+  assert (rdguid != NULL);
+  assert (sc->first);
+  assert (sc->last->next == NULL);
+  os_mutexLock (&q->lock);
+  atomic_add_u32_noret (&q->nof_samples, 1 + (os_uint32) rres);
+  if (nn_dqueue_enqueue_bubble_locked (q, b))
+    os_condSignal (&q->cond);
+  nn_dqueue_enqueue_locked (q, sc);
+  os_mutexUnlock (&q->lock);
+}
+
 int nn_dqueue_is_full (struct nn_dqueue *q)
 {
-  /* Reading nof_samples exactly once. It IS a 32-bit int, so at worst
-     we get an old value. That mean: we think it is full when it is
-     not, in which case we discard the sample and rely on a
+  /* Reading nof_samples exactly once. It IS a 32-bit int, so at
+     worst we get an old value. That mean: we think it is full when
+     it is not, in which case we discard the sample and rely on a
      retransmit; or we think it is not full when it is. But if we
      don't mind the occasional extra sample in the queue (we don't),
-     and survive the occasional decision to not queue when it could've
-     been queued (we do), it should be ok. */
+     and survive the occasional decision to not queue when it
+     could've been queued (we do), it should be ok. */
   const os_uint32 count = atomic_read_u32 (&q->nof_samples);
   return (count >= q->max_samples);
 }

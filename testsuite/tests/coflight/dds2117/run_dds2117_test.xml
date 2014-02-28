@@ -75,10 +75,10 @@
       </function-required-arg>
 
       <function-required-arg name="master_ospl_release_name">
-        Name of ospl release script (for example, x86_64.linux2.6-dev or x86_64.linux2.6-release ) on the master host
+        Name of ospl release script (for example, x86_64.linux-dev or x86_64.linux-release ) on the master host
       </function-required-arg>
       <function-required-arg name="slave_ospl_release_name">
-        Name of ospl release script (for example, x86_64.linux2.6-dev or x86_64.linux2.6-release ) on the slave host
+        Name of ospl release script (for example, x86_64.linux-dev or x86_64.linux-release ) on the slave host
       </function-required-arg>
       
       <function-required-arg name="stax_test_root">

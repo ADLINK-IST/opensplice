@@ -18,27 +18,36 @@
 #ifndef ORG_OPENSPLICE_TOPIC_BUILTIN_TOPIC_KEY_IMPL_HPP_
 #define ORG_OPENSPLICE_TOPIC_BUILTIN_TOPIC_KEY_IMPL_HPP_
 
-namespace org { namespace opensplice { namespace topic {
+namespace org
+{
+namespace opensplice
+{
+namespace topic
+{
 
-      class BuiltinTopicKeyImpl {
-      public:
+class BuiltinTopicKeyImpl
+{
+public:
     typedef uint32_t VALUE_T;
-      public:
+public:
     BuiltinTopicKeyImpl() { }
-    BuiltinTopicKeyImpl(int32_t v[]) {
-      key_[0] = v[0];
-      key_[1] = v[1];
-      key_[2] = v[2];
+    BuiltinTopicKeyImpl(int32_t v[])
+    {
+        key_[0] = v[0];
+        key_[1] = v[1];
+        key_[2] = v[2];
     }
-      public:
-    const int32_t* value() const {
-      return key_;
+public:
+    const int32_t* value() const
+    {
+        return key_;
     }
 
-    void value(int32_t v[]) {
-      key_[0] = v[0];
-      key_[1] = v[1];
-      key_[2] = v[2];
+    void value(int32_t v[])
+    {
+        key_[0] = v[0];
+        key_[1] = v[1];
+        key_[2] = v[2];
     }
 
     bool operator ==(const BuiltinTopicKeyImpl& other) const
@@ -46,11 +55,11 @@ namespace org { namespace opensplice { namespace topic {
         return other.key_ == key_;
     }
 
-      private:
+private:
     int32_t key_[3];
-      };
+};
 
-    }
-  }
+}
+}
 }
 #endif /* ORG_OPENSPLICE_TOPIC_BUILTIN_TOPIC_KEY_IMPL_HPP_ */

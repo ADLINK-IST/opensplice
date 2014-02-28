@@ -368,6 +368,7 @@ STATIC saj_copyResult
 saj_copyGetStatus(
         saj_context* context)
 {
+    OS_UNUSED_ARG(context);
     return SAJ_COPYRESULT_OK;
 }
 #else
@@ -482,6 +483,8 @@ saj_cfsiBoolean (
     saj_copyResult result;
     c_bool *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_bool *)((PA_ADDRCAST)ctx->dst + ctx->offset);
     *dst = (*(ctx->javaEnv))->GetBooleanField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
@@ -501,6 +504,8 @@ saj_cfuiBooleanGeneric (
 {
     saj_copyResult result;
     c_bool *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_bool *)ctx->dst;
     *dst = (*(ctx->javaEnv))->CallBooleanMethod (ctx->javaEnv, javaObject, getterID);
@@ -522,6 +527,8 @@ saj_cfuiBooleanSupported (
     saj_copyResult result;
     c_bool *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_bool *)ctx->dst;
     *dst = (*(ctx->javaEnv))->GetBooleanField (ctx->javaEnv, javaObject, caseID);
     result = saj_copyGetStatus(ctx);
@@ -541,6 +548,8 @@ saj_cfsiByte (
 {
     saj_copyResult result;
     c_octet *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_octet *)((PA_ADDRCAST)ctx->dst + ctx->offset);
     *dst = (*(ctx->javaEnv))->GetByteField (ctx->javaEnv, javaObject, javaFID);
@@ -562,6 +571,8 @@ saj_cfuiByteGeneric (
     saj_copyResult result;
     c_octet *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_octet *)ctx->dst;
     *dst = (*(ctx->javaEnv))->CallByteMethod (ctx->javaEnv, javaObject, getterID);
     result = saj_copyGetStatus(ctx);
@@ -581,6 +592,8 @@ saj_cfuiByteSupported (
 {
     saj_copyResult result;
     c_octet *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_octet *)ctx->dst;
     *dst = (*(ctx->javaEnv))->GetByteField (ctx->javaEnv, javaObject, caseID);
@@ -602,6 +615,8 @@ saj_cfsiChar (
     saj_copyResult result;
     c_char *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_char *)((PA_ADDRCAST)ctx->dst + ctx->offset);
     *dst = (c_char)(*(ctx->javaEnv))->GetCharField(ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
@@ -621,6 +636,8 @@ saj_cfuiCharGeneric (
 {
     saj_copyResult result;
     c_char *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_char *)ctx->dst;
     *dst = (c_char)(*(ctx->javaEnv))->CallCharMethod(ctx->javaEnv, javaObject, getterID);
@@ -642,6 +659,8 @@ saj_cfuiCharSupported (
     saj_copyResult result;
     c_char *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_char *)ctx->dst;
     *dst = (c_char)(*(ctx->javaEnv))->GetCharField(ctx->javaEnv, javaObject, caseID);
     result = saj_copyGetStatus(ctx);
@@ -661,6 +680,8 @@ saj_cfsiShort (
 {
     saj_copyResult result;
     c_short *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_short *)((PA_ADDRCAST)ctx->dst + ctx->offset);
     *dst = (*(ctx->javaEnv))->GetShortField (ctx->javaEnv, javaObject, javaFID);
@@ -682,6 +703,8 @@ saj_cfuiShortGeneric (
     saj_copyResult result;
     c_short *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_short *)ctx->dst;
     *dst = (*(ctx->javaEnv))->CallShortMethod (ctx->javaEnv, javaObject, getterID);
     result = saj_copyGetStatus(ctx);
@@ -701,6 +724,8 @@ saj_cfuiShortSupported (
 {
     saj_copyResult result;
     c_short *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_short *)ctx->dst;
     *dst = (*(ctx->javaEnv))->GetShortField (ctx->javaEnv, javaObject, caseID);
@@ -722,6 +747,8 @@ saj_cfsiInt (
     saj_copyResult result;
     c_long *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_long *)((PA_ADDRCAST)ctx->dst + ctx->offset);
     *dst = (*(ctx->javaEnv))->GetIntField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
@@ -741,6 +768,8 @@ saj_cfuiIntGeneric (
 {
     saj_copyResult result;
     c_long *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_long *)ctx->dst;
     *dst = (*(ctx->javaEnv))->CallIntMethod (ctx->javaEnv, javaObject, getterID);
@@ -762,6 +791,8 @@ saj_cfuiIntSupported (
     saj_copyResult result;
     c_long *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_long *)ctx->dst;
     *dst = (*(ctx->javaEnv))->GetIntField (ctx->javaEnv, javaObject, caseID);
     result = saj_copyGetStatus(ctx);
@@ -781,6 +812,8 @@ saj_cfsiLong (
 {
     saj_copyResult result;
     c_longlong *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_longlong *)((PA_ADDRCAST)ctx->dst + ctx->offset);
     *dst = (*(ctx->javaEnv))->GetLongField (ctx->javaEnv, javaObject, javaFID);
@@ -802,6 +835,8 @@ saj_cfuiLongGeneric (
     saj_copyResult result;
     c_longlong *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_longlong *)ctx->dst;
     *dst = (*(ctx->javaEnv))->CallLongMethod (ctx->javaEnv, javaObject, getterID);
     result = saj_copyGetStatus(ctx);
@@ -821,6 +856,8 @@ saj_cfuiLongSupported (
 {
     saj_copyResult result;
     c_longlong *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_longlong *)ctx->dst;
     *dst = (*(ctx->javaEnv))->GetLongField (ctx->javaEnv, javaObject, caseID);
@@ -842,6 +879,8 @@ saj_cfsiFloat (
     saj_copyResult result;
     c_float *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_float *)((PA_ADDRCAST)ctx->dst + ctx->offset);
     *dst = (*(ctx->javaEnv))->GetFloatField (ctx->javaEnv, javaObject, javaFID);
     result = saj_copyGetStatus(ctx);
@@ -861,6 +900,8 @@ saj_cfuiFloatGeneric (
 {
     saj_copyResult result;
     c_float *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_float *)ctx->dst;
     *dst = (*(ctx->javaEnv))->CallFloatMethod (ctx->javaEnv, javaObject, getterID);
@@ -883,6 +924,8 @@ saj_cfuiFloatSupported (
     saj_copyResult result;
     c_float *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_float *)ctx->dst;
     *dst = (*(ctx->javaEnv))->GetFloatField (ctx->javaEnv, javaObject, caseID);
     result = saj_copyGetStatus(ctx);
@@ -903,6 +946,8 @@ saj_cfsiDouble (
 {
     saj_copyResult result;
     c_double *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_double *)((PA_ADDRCAST)ctx->dst + ctx->offset);
     *dst = (*(ctx->javaEnv))->GetDoubleField (ctx->javaEnv, javaObject, javaFID);
@@ -925,6 +970,8 @@ saj_cfuiDoubleGeneric (
     saj_copyResult result;
     c_double *dst;
 
+    OS_UNUSED_ARG(ch);
+
     dst = (c_double *)ctx->dst;
     *dst = (*(ctx->javaEnv))->CallDoubleMethod (ctx->javaEnv, javaObject, getterID);
     result = saj_copyGetStatus(ctx);
@@ -944,6 +991,8 @@ saj_cfuiDoubleSupported (
 {
     saj_copyResult result;
     c_double *dst;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_double *)ctx->dst;
     *dst = (*(ctx->javaEnv))->GetDoubleField (ctx->javaEnv, javaObject, caseID);
@@ -3049,23 +3098,28 @@ saj_cfoiStruct (
     sajCopyStructMember *csm;
     saj_copyResult result;
 
-    context.dst = dstStruct;
-    context.base = ctx->base;
-    context.javaEnv = ctx->javaEnv;
-    csh = (sajCopyStruct *)ch;
-    result = SAJ_COPYRESULT_OK;
-    csm = sajCopyStructMemberObject (csh);
+    if (structObject == NULL) {
+        result = SAJ_COPYRESULT_BAD_PARAMETER;
+    } else {
+        context.dst = dstStruct;
+        context.base = ctx->base;
+        context.javaEnv = ctx->javaEnv;
+        csh = (sajCopyStruct *)ch;
+        result = SAJ_COPYRESULT_OK;
+        csm = sajCopyStructMemberObject (csh);
 
-    for (mi = 0; (mi < csh->nrOfMembers) && (result == SAJ_COPYRESULT_OK); mi++) {
-        context.offset = csm->memberOffset;
-        ch = sajCopyStructMemberDescription (csm);
-        result = ciFromStruct[ch->copyType] (ch, structObject, csm->javaFID, &context);
-        if(result != SAJ_COPYRESULT_OK) {
-            saj_reportCopyInFail(structObject, csm->javaFID, ctx);
+        for (mi = 0; (mi < csh->nrOfMembers) && (result == SAJ_COPYRESULT_OK); mi++) {
+            context.offset = csm->memberOffset;
+            ch = sajCopyStructMemberDescription (csm);
+            assert(ch != NULL);
+            result = ciFromStruct[ch->copyType] (ch, structObject, csm->javaFID, &context);
+            if(result != SAJ_COPYRESULT_OK) {
+                saj_reportCopyInFail(structObject, csm->javaFID, ctx);
+            }
+            csm = (sajCopyStructMember *)sajCopyHeaderNextObject (ch);
         }
-        csm = (sajCopyStructMember *)sajCopyHeaderNextObject (ch);
+        TRACE(printf ("Copied in Struct @ offset = %d. Result = %d\n", ctx->offset, result));
     }
-    TRACE(printf ("Copied in Struct @ offset = %d. Result = %d\n", ctx->offset, result));
 
     return result;
 }
@@ -3484,6 +3538,8 @@ saj_cfoiString (
     c_string *dst;
     const char *strNative;
     saj_copyResult result;
+
+    OS_UNUSED_ARG(ch);
 
     dst = (c_string *)(dstString);
 

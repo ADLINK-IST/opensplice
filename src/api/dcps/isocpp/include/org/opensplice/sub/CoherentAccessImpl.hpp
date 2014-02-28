@@ -25,13 +25,17 @@ namespace opensplice
 namespace sub
 {
 
-/** @bug OSPL-2476 No implementation
+/** @internal @bug OSPL-2476 No implementation
 * @todo Implementation required - see OSPL-2476
 * @see http://jira.prismtech.com:8080/browse/OSPL-2476 */
 class CoherentAccessImpl
 {
 public:
-    CoherentAccessImpl() {}
+    CoherentAccessImpl()
+    {
+        throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                              OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Function not currently supported")));
+    }
 
     bool operator==(const CoherentAccessImpl& other) const
     {

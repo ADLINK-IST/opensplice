@@ -18,7 +18,9 @@
 #ifdef _WIN32
 #include <Windows.h>
 #else
+#ifndef _WRS_KERNEL
 #include <sys/time.h>
+#endif
 #endif
 
 #include "example_main.h"
@@ -869,6 +871,7 @@ int OSPL_MAIN (int argc, char ** argv)
                         memset (&PPdata, 0, sizeof(PPdata));
                         PPdata.count = 0;
                         PPdata.block = block;
+                        PPdata.a_bstring = DDS::string_dup("a_bstring");
                         preWriteTime = timeGet ();
                         PP_fixed_writer->write (PPdata, HANDLE_NIL);
                         postWriteTime = timeGet ();

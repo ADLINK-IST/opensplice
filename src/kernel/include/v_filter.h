@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-#ifdef OSPL_BUILD_KERNEL
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -33,10 +33,25 @@ v_filterNew (
     q_expr e,
     c_value params[]);
 
+OS_API v_filter
+v_filterNewFromIndex (
+	v_index t,
+    q_expr e,
+    c_value params[]);
+
 OS_API c_bool
 v_filterEval (
     v_filter _this,
     c_object o);
+
+OS_API void
+v_filterSplit (
+    v_topic topic,
+    q_expr where,
+    c_value *params,
+    c_array *instanceQ,
+    c_array *sampleQ,
+    v_index index);
 
 #undef OS_API
 

@@ -278,6 +278,7 @@ v_groupStreamInit(
     const c_char *name,
     v_subscriber subscriber,
     v_readerQos qos,
+    v_statistics rs,
     c_iter expr)
 {
     v_kernel kernel;
@@ -291,7 +292,7 @@ v_groupStreamInit(
     stream->expr = c_listNew(c_resolve(c_getBase(stream), "::c_string"));
     c_iterWalk(expr, fillExprList, stream->expr);
 
-    v_readerInit(v_reader(stream),name,subscriber,qos,NULL,TRUE);
+    v_readerInit(v_reader(stream),name,subscriber,qos,rs,TRUE);
     v_subscriberAddReader(subscriber,v_reader(stream));
 }
 

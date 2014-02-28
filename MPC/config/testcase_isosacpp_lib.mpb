@@ -7,7 +7,7 @@ project : isosacpp_typesupport, ospl_testframe {
         splice_ts_flags += -P  OS_TEST_API,testlib_export.h
     }
     specific (make) {
-        obj_dir = .obj$(CFG)/
+        obj_dir = .obj$(CFG)<%slash%>
     }
     includes += .
 }

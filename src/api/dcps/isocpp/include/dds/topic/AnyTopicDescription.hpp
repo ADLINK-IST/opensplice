@@ -72,8 +72,8 @@ template <typename T>
 const dds::topic::TopicDescription<T>& AnyTopicDescription::get()
 {
     OMG_DDS_STATIC_ASSERT(::dds::topic::is_topic_type<T>::value == 1);
-    detail::TDHolder<T>* h = dynamic_cast<detail::TDHolder<T>* >(holder_.get() );
-    if (h == 0)
+    detail::TDHolder<T>* h = dynamic_cast<detail::TDHolder<T>* >(holder_.get());
+    if(h == 0)
     {
         throw dds::core::InvalidDowncastError("invalid type");
     }

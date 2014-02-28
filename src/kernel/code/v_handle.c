@@ -15,6 +15,56 @@
 #include "os_report.h"
 #include "os_abstract.h"
 
+#if defined __sun && (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) < 40100
+/* GCC compiler intrinsics are polymorphic, Sun's library is not --
+   but we only use them with unsigned 32-bit numbers, hence can easily
+   get away with these definitions.
+
+   Also GCC ones are full memory barriers, but each of these
+   operations is used only in a certain context, so I believe I can
+   get away with some alternative. */
+#include <atomic.h>
+static inline void __sync_synchronize (void) {
+  membar_producer ();
+}
+static inline int __sync_bool_compare_and_swap (volatile uint32_t *var, uint32_t old, uint32_t new) {
+  const int success = atomic_cas_32 (var, old, new) == old;
+  membar_consumer ();
+  return success;
+}
+#elif defined _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+static void __sync_synchronize (void) {
+  volatile LONG tmp = 0;
+  InterlockedExchange (&tmp, 0);
+}
+static int __sync_bool_compare_and_swap (volatile os_uint32 *var, os_uint32 old, os_uint32 new) {
+  return InterlockedCompareExchange (var, new, old) == old;
+}
+#elif __GNUC__ > 0 && (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) < 40100
+static inline int __sync_bool_compare_and_swap (volatile uint32_t *var, uint32_t old, uint32_t new) {
+#ifdef __i386
+  uint32_t ret;
+  __asm__ __volatile__ ("lock; cmpxchgl %2,%1\n" : "=a" (ret), "+m" (*var) : "r" (new), "0" (old) : "memory", "cc");
+  return ret == old;
+#else
+#error "__sync_bool_compare_and_swap workaround: unsupported CPU"
+#endif
+}
+static inline void __sync_synchronize (void) {
+#if __x86_64__
+  __asm__ __volatile__ ("mfence\n");
+#elif defined __i386
+  __asm__ __volatile__ ("lock; xorl $0, (%esp)\n");
+#else
+#error "__sync_synchronize workaround: unsupported CPU"
+#endif
+}
+#endif
+
 /**
  * All handles are kept in a handle pool. Once a handle is allocated in memory it
  * will never be freed, this is because applications may refer to the address at any time
@@ -43,56 +93,13 @@
 /*
  * This MARCRO specifies the non zero value as first serial value.
  */
-#define SERIALSTART (1)
-#define MAXSERIAL   (0x00ffffff)
+#define MAX_SERIAL   (0x00ffffff)
 
 const v_handle V_HANDLE_NIL = {0, 0, 0};
 
-#define CHECK_REF (0)
-
-#if CHECK_REF
-#define CHECK_REF_TYPE (43)
-#define CHECK_REF_DEPTH (64)
-static char* CHECK_REF_FILE = NULL;
-
-#define UT_TRACE(object, old_count, new_count) \
-        ut_trace(object, old_count, new_count)
-
-static void
-ut_trace(
-    v_object object,
-    c_ulong old_count,
-    c_ulong new_count)
-{
-    void *tr[CHECK_REF_DEPTH];
-    char **strs;
-    size_t s,i;
-    FILE* stream;
-
-    if (v_object(object)->kind == CHECK_REF_TYPE) {
-        if(!CHECK_REF_FILE){
-            CHECK_REF_FILE = os_malloc(16);
-            os_sprintf(CHECK_REF_FILE, "handle.log");
-        }
-        s = backtrace(tr, CHECK_REF_DEPTH);
-        strs = backtrace_symbols(tr, s);
-        stream = fopen(CHECK_REF_FILE, "a");
-        if (old_count < new_count) {
-            fprintf(stream, "\n\nClaim   (0x%x): %d -> %d\n",
-                    object, old_count, new_count);
-        } else {
-            fprintf(stream, "\n\nRelease (0x%x): %d -> %d\n",
-                    object, old_count, new_count);
-        }
-        for (i=0;i<s;i++) fprintf(stream, "%s\n", strs[i]);
-        free(strs);
-        fflush(stream);
-        fclose(stream);
-    }
-}
-#else
-#define UT_TRACE(object, old_count, new_count)
-#endif
+#define STATUS_DEREGISTERING 0x80000000
+#define STATUS_ON_FREELIST   0x40000000
+#define STATUS_COUNT_MASK    0x00ffffff
 
 v_handleServer
 v_handleServerNew (
@@ -109,9 +116,6 @@ v_handleServerNew (
     if (server) {
         type = c_resolve(base,"kernelModule::v_handleInfoList");
         server->handleInfos = c_arrayNew(type,NROFCOL);
-#ifdef DDS_1958_CANNOT_CALL_REGISTERED_FUNC_PTR_FROM_DIFF_PROCESS
-        server->lowMemWarningCount = 0;
-#endif
         c_free(type);
         if (server->handleInfos) {
             server->firstFree = NOHANDLE;
@@ -199,38 +203,6 @@ v_handleServerLookup(
     return NULL;
 }
 
-void
-v_handleServerSuspend(
-    v_handleServer server)
-{
-    if (server == NULL) {
-        OS_REPORT(OS_ERROR,
-                  "kernel::v_handle::v_handleServerSuspend",0,
-                  "No server specified");
-    } else {
-        server->suspended = TRUE;
-        OS_REPORT(OS_WARNING,
-                  "kernel::v_handle::v_handleServerSuspend",0,
-                  "Handle Server is suspended.");
-    }
-}
-
-void
-v_handleServerResume(
-    v_handleServer server)
-{
-    if (server == NULL) {
-        OS_REPORT(OS_ERROR,
-                  "kernel::v_handle::v_handleServerResume",0,
-                  "No server specified");
-    } else {
-        server->suspended = FALSE;
-        OS_REPORT(OS_WARNING,
-                  "kernel::v_handle::v_handleServerResume",0,
-                  "Handle Server is resumed.");
-    }
-}
-
 v_handle
 v_handleServerRegister(
     v_handleServer server,
@@ -246,16 +218,6 @@ v_handleServerRegister(
 
     info = NULL;
 
-    if(server->suspended == TRUE) {
-        /* For now the suspended state means that an unrecoverable error has
-         * occured. This implies that from now on any access to the kernel is
-         * unsafe and the result is undefined.
-         * So because of this and that registering new object are useless
-         * skip this action and return NULL.
-         */
-        return V_HANDLE_NIL;
-    }
-
     c_mutexLock(&server->mutex);
 
     if (server->firstFree != NOHANDLE) {
@@ -264,7 +226,8 @@ v_handleServerRegister(
         idx = server->firstFree;
         block = ((v_handleInfo**)server->handleInfos)[COL(idx)];
         info = &block[ROW(idx)];
-        server->firstFree = info->nextFree;
+        assert (info->status_count == STATUS_ON_FREELIST);
+        server->firstFree = (c_long) info->object_nextFree;
     } else {
         if (server->lastIndex == ((NROFCOL*NROFROW)-1)) {
             OS_REPORT(OS_ERROR,
@@ -292,7 +255,7 @@ v_handleServerRegister(
         block = ((v_handleInfo**)server->handleInfos)[COL(idx)];
         if (block) {
             info = &block[row];
-            info->serial = SERIALSTART;
+            info->serial = 1;
         } else {
             OS_REPORT(OS_ERROR,
                       "kernel::v_handle::v_handleServerRegister",0,
@@ -303,14 +266,18 @@ v_handleServerRegister(
     /* Initialize the handle and associated info record.
      */
     if (info) {
-        info->object   = c_keep(o);
-        info->nextFree = NOHANDLE;
-        info->count    = 0;
-        info->freed    = FALSE;
+      info->object_nextFree = (c_address) c_keep(o);
+      /* memory barrier here will ensure that any accidental
+         handleClaim (we haven't advertised the handle, but in case
+         somehow it gets fed random garbage) will fail because
+         status_count still has ON_FREELIST set until object_nextFree
+         properly points to the object. */
+      __sync_synchronize ();
+      info->status_count = 0;
 
-        handle.server  = (c_address)server;
-        handle.serial  = info->serial;
-        handle.index   = idx;
+      handle.server  = (c_address)server;
+      handle.serial  = info->serial;
+      handle.index   = idx;
     } else {
         handle  = V_HANDLE_NIL;
     }
@@ -320,110 +287,127 @@ v_handleServerRegister(
     return handle;
 }
 
+static v_handleResult get_server_info (v_handleServer *server, v_handleInfo **info, v_handle handle)
+{
+  v_handleInfo *block;
+
+  /* Valid serial in [1,MAX_SERIAL] => (serial-1) in [0,MAX_SERIAL-1];
+     this guarantees us that an allocated but never yet used entry in
+     the handle table (which has serial = 0) will not match handle
+     accidentally, and indeed will cause a return code of
+     V_HANDLE_ILLEGAL in claim_int. */
+  if (handle.serial - 1 >= MAX_SERIAL)
+    return V_HANDLE_ILLEGAL;
+
+  /* Valid index in [0,NROFCOL * NROFROW) */
+  if (handle.index >= NROFCOL * NROFROW)
+    return V_HANDLE_ILLEGAL;
+
+  /* First perform some checks to confirm handle validity. */
+  *server = v_handleServer ((c_object) handle.server);
+  if (*server == NULL) {
+#if 0 /* Following test can be re-inserted when ticket scdds2814 is resolved. */
+    OS_REPORT(OS_ERROR,
+              "kernel::v_handle::v_handleClaim",0,
+              "Operation aborted: Handle is invalid."
+              OS_REPORT_NL "Reason: Server address = NULL");
+#endif
+    return V_HANDLE_ILLEGAL;
+  }
+
+  /* The handle is valid so retrieve the handle's info record.
+   */
+  if ((block = ((v_handleInfo**) (*server)->handleInfos)[COL(handle.index)]) == NULL)
+    return V_HANDLE_ILLEGAL;
+  *info = &block[ROW(handle.index)];
+  return V_HANDLE_OK;
+}
+
 static void
 v_handleServerDeregister (
     v_handleServer server,
-    v_handleInfo *info)
+    v_handleInfo *info,
+    c_long idx)
 {
-    c_long idx;
     v_public o;
 
     c_mutexLock(&server->mutex);
-    if (info->freed) {
-        info->serial = (info->serial + 1) % MAXSERIAL;
-        idx = info->nextFree;
-        assert(idx != NOHANDLE);
-        info->nextFree = server->firstFree;
-        server->firstFree = idx;
-        info->freed = FALSE;
-        o = v_public(info->object);
-        info->object = NULL;
-    } else {
-        o = NULL;
-    }
+    assert (info->status_count == STATUS_DEREGISTERING);
+    o = v_public((v_object) info->object_nextFree);
+    info->serial = (info->serial == MAX_SERIAL) ? 1 : (info->serial + 1);
+    info->status_count = STATUS_ON_FREELIST;
+    info->object_nextFree = (c_address) server->firstFree;
+    server->firstFree = idx;
     c_mutexUnlock(&server->mutex);
+
     v_publicDispose(o);
+}
+
+static void release_int (v_handleServer server, v_handleInfo *info, c_long idx)
+{
+  /* GCC atomic builtins imply barriers => whatever had been done
+     before release_int will be visible in time. */
+  assert (!(info->status_count & STATUS_ON_FREELIST));
+  if (pa_decrement (&info->status_count) == STATUS_DEREGISTERING)
+    v_handleServerDeregister (server, info, idx);
+}
+
+static v_handleResult claim_int (v_handleServer server, v_handleInfo *info, v_handle handle)
+{
+  c_ulong status_count;
+
+ retry:
+  status_count = *((volatile c_ulong *) &info->status_count);
+  if (status_count & (STATUS_DEREGISTERING | STATUS_ON_FREELIST)) {
+    /* can't trust serials unless we first lock server->mutex, but
+       then again, who cares whether it is EXPIRED or INVALID
+       anyway? */
+    return V_HANDLE_EXPIRED;
+  } else {
+    c_ulong new_status_count = status_count + 1;
+    if (!__sync_bool_compare_and_swap (&info->status_count, status_count, new_status_count))
+      goto retry;
+  }
+
+  /* successfully incremented refcount => serial is stable */
+  if (handle.serial == info->serial) {
+    return V_HANDLE_OK;
+  } else {
+    /* Incremented refcount, but for the wrong handle => decide
+       whether it is expired or illegal, then immediately release
+       it */
+    v_handleResult result =
+      (handle.serial < info->serial) ? V_HANDLE_EXPIRED : V_HANDLE_ILLEGAL;
+    release_int (server, info, handle.index);
+    return result;
+  }
 }
 
 v_handleResult
 v_handleDeregister(
     v_handle handle)
 {
-    v_handleResult result;
-    v_handleServer server;
-    v_handleInfo *info, *block;
-    c_long idx;
-    c_ulong count;
+  v_handleResult result;
+  v_handleServer server;
+  v_handleInfo *info;
+  c_ulong status_count;
 
-    /* First perform some checks to confirm handle validity.
-     */
-    server = v_handleServer((c_object)handle.server);
-    if (server == NULL) {
-#if 0 /* Following test can be re-inserted when ticket scdds2814 is resolved. */
-        OS_REPORT(OS_ERROR,
-                  "kernel::v_handle::v_handleDeregister",0,
-                  "Operation aborted: Handle is invalid."
-                  OS_REPORT_NL "Reason: Server address = NULL");
-#endif
-        return V_HANDLE_ILLEGAL;
-    }
-    idx = handle.index;
-    if ((idx < 0) || (idx > server->lastIndex)) {
-        OS_REPORT_1(OS_ERROR,
-                    "kernel::v_handle::v_handleDeregister",0,
-                    "Operation aborted: Handle is invalid."
-                    OS_REPORT_NL "Reason: handle index is out of range (%d).",
-                    idx);
-        return V_HANDLE_ILLEGAL;
-    }
-
-    /* The handle is valid so retrieve the handle's info record.
-     */
-    result = V_HANDLE_OK;
-    block = ((v_handleInfo**)server->handleInfos)[COL(idx)];
-    info = &block[ROW(idx)];
-
-    /* Increase the protect count to protect the handle against invalidation
-     * and if handle lifecycle is valid then safely set the 'freed' status.
-     * Any subsequent operation on this 'freed' handle that decreases the
-     * protect count to zero will invalidate this handle.
-     */
-    count = pa_increment(&info->count);
-    assert(count > 0);
-    UT_TRACE(info->object, count-1, count);
-
-    c_mutexLock(&server->mutex);
-    if (handle.serial == info->serial) {
-        /* The lifecycle of the handle is correct so now invalidate the
-         * handle.
-         */
-        if (!info->freed) {
-            info->freed = TRUE;
-            info->nextFree = idx; /* temporary reminder of the index to be freed */
-        }
-    } else {
-        if (handle.serial < info->serial) {
-            result = V_HANDLE_EXPIRED;
-        } else {
-            result = V_HANDLE_ILLEGAL;
-        }
-    }
-    c_mutexUnlock(&server->mutex);
-
-    count = pa_decrement(&info->count);
-    assert(count+1 > count);
-    UT_TRACE(info->object, count+1, count);
-
-    /* Accidental dirty read on info->freed is acceptable.
-     * Is corrected later on when protected by server mutex.
-     */
-    if ((count == 0) && (info->freed)) {
-        /* At the previous pa_decrement the handle was invalid but
-         * no not yet deregistered so deregister now!
-         */
-        v_handleServerDeregister(server, info);
-    }
+  if ((result = get_server_info (&server, &info, handle)) != V_HANDLE_OK)
     return result;
+  if ((result = claim_int (server, info, handle)) != V_HANDLE_OK)
+    return result;
+
+ retry:
+  status_count = *((volatile c_ulong *) &info->status_count);
+  if (!(status_count & STATUS_DEREGISTERING))
+  {
+    c_ulong new_status_count = status_count | STATUS_DEREGISTERING;
+    if (!__sync_bool_compare_and_swap (&info->status_count, status_count, new_status_count))
+      goto retry;
+  }
+
+  release_int (server, info, handle.index);
+  return V_HANDLE_OK;
 }
 
 v_handleResult
@@ -431,168 +415,42 @@ v_handleClaim (
     v_handle handle,
     v_object *o)
 {
-    v_handleResult result;
-    v_handleServer server;
-    v_handleInfo *info, *block;
-    c_long idx;
-    c_ulong count;
+  v_handleResult result;
+  v_handleServer server;
+  v_handleInfo *info;
 
-    /* First perform some checks to confirm handle validity.
-     */
-    server = v_handleServer((c_object)handle.server);
-    if (server == NULL) {
-#if 0 /* Following test can be re-inserted when ticket scdds2814 is resolved. */
-        OS_REPORT(OS_ERROR,
-                  "kernel::v_handle::v_handleClaim",0,
-                  "Operation aborted: Handle is invalid."
-                  OS_REPORT_NL "Reason: Server address = NULL");
-#endif
-        *o = NULL;
-        return V_HANDLE_ILLEGAL;
-    }
-    if(server->suspended == TRUE) {
-        /* For now the suspended state means that an unrecoverable error has
-         * occured. This implies that from now on any access to the kernel is
-         * unsafe and the result is undefined.
-         * So because of this skip this action and return NULL.
-         */
-        *o = NULL;
-        return V_HANDLE_SUSPENDED;
-    }
-    idx = handle.index;
-    if ((idx < 0) || (idx > server->lastIndex)) {
-        OS_REPORT_1(OS_ERROR,
-                    "kernel::v_handle::v_handleClaim",0,
-                    "Operation aborted: Handle is invalid."
-                    OS_REPORT_NL "Reason: handle index is out of range (%d).",
-                    idx);
-        *o = NULL;
-        return V_HANDLE_ILLEGAL;
-    }
-
-    /* The handle is valid so retrieve the handle's info record.
-     */
-    result = V_HANDLE_OK;
-    block = ((v_handleInfo**)server->handleInfos)[COL(idx)];
-    info = &block[ROW(idx)];
-
-    /* Increase the protect count to protect the handle against invalidation.
-     * The handle can only be invalidated if count is zero.
-     */
-    count = pa_increment(&info->count);
-    assert(count > 0);
-    UT_TRACE(info->object, count-1, count);
-
-    if (handle.serial == info->serial) {
-        if (info->freed) { /* Too late, it is already being freed... */
-            result = V_HANDLE_EXPIRED;
-            *o = NULL;
-        } else {
-            count = pa_increment(&info->count);
-            UT_TRACE(info->object, count-1, count);
-            *o = (v_object)info->object;
-            if(*o == NULL)
-            {
-                OS_REPORT(OS_WARNING,
-                          "kernel::v_handle::v_handleClaim", 0,
-                          "Unable to obtain kernel entity for handle");
-                result = V_HANDLE_ILLEGAL;
-            }
-        }
-    } else {
-        if (handle.serial < info->serial) {
-            result = V_HANDLE_EXPIRED;
-        } else {
-            result = V_HANDLE_ILLEGAL;
-        }
-        *o = NULL;
-    }
-    count = pa_decrement(&info->count);
-    assert(count+1 > count);
-    UT_TRACE(info->object, count+1, count);
-
-    /* Accidental dirty read on info->freed is acceptable.
-     * Is corrected later on when protected by server mutex.
-     */
-    if ((count == 0) && (info->freed)) {
-        /* At the previous pa_decrement the handle was invalid but
-         * no not yet deregistered so deregister now!
-         */
-        v_handleServerDeregister(server, info);
-    }
-
+  if ((result = get_server_info (&server, &info, handle)) != V_HANDLE_OK) {
+    *o = NULL;
     return result;
+  }
+  if ((result = claim_int (server, info, handle)) != V_HANDLE_OK) {
+    *o = NULL;
+    return result;
+  }
+  assert (info->object_nextFree != 0);
+  *o = (v_object) info->object_nextFree;
+  return V_HANDLE_OK;
 }
 
 v_handleResult
 v_handleRelease (
     v_handle handle)
 {
-    v_handleResult result;
-    v_handleServer server;
-    v_handleInfo *info, *block;
-    c_long idx;
-    c_ulong count;
+  v_handleResult result;
+  v_handleServer server;
+  v_handleInfo *info;
 
-    /* First perform some checks to confirm handle validity.
-     */
-    server = v_handleServer((c_object)handle.server);
-    if (server == NULL) {
-#if 0 /* Following test can be re-inserted when ticket scdds2814 is resolved. */
-        OS_REPORT(OS_ERROR,
-                  "kernel::v_handle::v_handleRelease",0,
-                  "Operation aborted: Handle is invalid."
-                  OS_REPORT_NL "Reason: Server address = NULL");
-#endif
-        return V_HANDLE_ILLEGAL;
-    }
-    idx = handle.index;
-    if ((idx < 0) || (idx > server->lastIndex)) {
-        OS_REPORT_1(OS_ERROR,
-                    "kernel::v_handle::v_handleRelease",0,
-                    "Operation aborted: Handle is invalid."
-                    OS_REPORT_NL "Reason: handle index is out of range (%d).",
-                    idx);
-        return V_HANDLE_ILLEGAL;
-    }
-
-    /* The handle is valid so retrieve the handle's info record.
-     */
-    result = V_HANDLE_OK;
-    block = ((v_handleInfo**)server->handleInfos)[COL(idx)];
-    info = &block[ROW(idx)];
-
-    /* Increase the protect count to protect the handle against invalidation.
-     * The handle can only be invalidated if count is zero.
-     */
-    count = pa_increment(&info->count);
-    assert(count > 0);
-    UT_TRACE(info->object, count-1, count);
-
-    if (handle.serial == info->serial) {
-        count = pa_decrement(&info->count);
-        assert(count+1 > count);
-        UT_TRACE(info->object, count+1, count);
-    } else {
-        if (handle.serial < info->serial) {
-            result = V_HANDLE_EXPIRED;
-        } else {
-            result = V_HANDLE_ILLEGAL;
-        }
-    }
-    count = pa_decrement(&info->count);
-    assert(count+1 > count);
-    UT_TRACE(info->object, count+1, count);
-
-    /* Accidental dirty read on info->freed is acceptable.
-     * Is corrected later on when protected by server mutex.
-     */
-    if ((count == 0) && (info->freed)) {
-        /* At the previous pa_decrement the handle was invalid but
-         * no not yet deregistered so deregister now!
-         */
-        v_handleServerDeregister(server, info);
-    }
-
+  if ((result = get_server_info (&server, &info, handle)) != V_HANDLE_OK)
     return result;
+
+  /* It must be claimed, therefore the serial can't change and must
+     match ... Now what if it wasn't claimed? There's no guarantee
+     whatsoever that an issue will be caught, but do some assertions
+     anyway. */
+  assert ((info->status_count & STATUS_COUNT_MASK) > 0);
+  assert (!(info->status_count & STATUS_ON_FREELIST));
+  assert (handle.serial == info->serial);
+
+  release_int (server, info, handle.index);
+  return V_HANDLE_OK;
 }

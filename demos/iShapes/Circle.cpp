@@ -4,7 +4,9 @@
 #include <QtGui/qpainter.h>
 #include <vector>
 #include "Circle.hpp"
-//#define TESTBUILD
+
+namespace demo { namespace ishapes {
+
 Circle::Circle(const QRect& bounds,
                ShapeDynamics::ref_type dynamics,
                const QPen& pen,
@@ -60,3 +62,4 @@ Circle::paint(QPainter& painter)
     }
     plist.erase(plist.begin(), plist.end());
 }
+}}

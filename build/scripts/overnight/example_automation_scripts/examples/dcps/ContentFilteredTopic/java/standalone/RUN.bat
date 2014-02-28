@@ -7,9 +7,6 @@ call %FUNCTIONS% :check_osplhome
 echo "====Calling stopOSPL ===="
 call %FUNCTIONS% :stopOSPL
 
-echo "====Calling deleteDBFFiles ===="
-call %FUNCTIONS% :deleteDBFFiles
-
 echo "====Calling startOSPL ===="
 call %FUNCTIONS% :startOSPL
 
@@ -24,7 +21,7 @@ java -classpath "%OSPL_HOME%\jar\dcpssaj.jar";classes ContentFilteredTopicDataPu
 %SLEEP5% > NUL
 
 echo "===== Calling contentfilteredtopicCheckResult ===="
-call %FUNCTIONS% :contentfilteredtopicCheckResult
+call %FUNCTIONS% :contentfilteredtopicCheckResult >> run.log
 
 echo "===== calling stopOSPL ===="
 rem Don't kill it too soon.

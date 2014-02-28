@@ -45,7 +45,8 @@ v_instanceAlone (
 
 void
 v_instanceUpdate (
-    v_instance _this);
+    v_instance _this,
+    c_time timestamp);
 
 v_writeResult
 v_instanceWrite (

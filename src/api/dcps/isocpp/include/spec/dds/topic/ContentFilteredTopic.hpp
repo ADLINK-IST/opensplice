@@ -21,10 +21,14 @@
 
 #include <dds/topic/detail/ContentFilteredTopic.hpp>
 
-namespace dds { namespace topic {
-  template <typename T, template <typename Q> class DELEGATE = dds::topic::detail::ContentFilteredTopic>
-  class ContentFilteredTopic;
-} }
+namespace dds
+{
+namespace topic
+{
+template <typename T, template <typename Q> class DELEGATE = dds::topic::detail::ContentFilteredTopic>
+class ContentFilteredTopic;
+}
+}
 
 #include <dds/topic/TContentFilteredTopic.hpp>
 

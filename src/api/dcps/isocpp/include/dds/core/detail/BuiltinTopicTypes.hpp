@@ -19,7 +19,7 @@
 
 // Implementation
 
-/** @file
+/** @internal @file
  * @internal @todo No implementation. Relates only to OMG_DDS_X_TYPES_BUILTIN_TOPIC_TYPES_SUPPORT See OSPL-1736
  * @see http://jira.prismtech.com:8080/browse/OSPL-1736
  */

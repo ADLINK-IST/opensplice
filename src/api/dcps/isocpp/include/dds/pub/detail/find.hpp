@@ -21,6 +21,8 @@
 #include <string>
 
 #include <dds/pub/Publisher.hpp>
+#include <org/opensplice/core/EntityRegistry.hpp>
+#include <org/opensplice/core/RegisterBuiltinTopics.hpp>
 
 namespace dds
 {
@@ -29,29 +31,42 @@ namespace pub
 namespace detail
 {
 
-/** @bug OSPL-1743 No implementation
- * @todo Implementation required - see OSPL-1743
- * @see http://jira.prismtech.com:8080/browse/OSPL-1743 */
 template <typename WRITER, typename FwdIterator>
 uint32_t
 find(const dds::pub::Publisher& pub, const std::string& topic_name,
      FwdIterator begin, int32_t max_size)
 {
-    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Method not yet implemented")));
+    DDS::DataWriter_ptr ddsdw = pub->pub_.get()->lookup_datawriter(topic_name.c_str());
+    if(ddsdw)
+    {
+        WRITER dw = org::opensplice::core::EntityRegistry<DDS::DataWriter_ptr, WRITER >::get(ddsdw);
+        if(max_size > 0 && dw != dds::core::null)
+        {
+            *begin = dw;
+            return 1;
+        }
+    }
+    return 0;
 }
 
-/** @bug OSPL-1743 No implementation
- * @todo Implementation required - see OSPL-1743
- * @see http://jira.prismtech.com:8080/browse/OSPL-1743 */
+
 template <typename WRITER, typename BinIterator>
 uint32_t
 find(const dds::pub::Publisher& pub,
      const std::string& topic_name,
      BinIterator begin)
 {
-    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Method not yet implemented")));
+    DDS::DataWriter_ptr ddsdw = pub->pub_.get()->lookup_datawriter(topic_name.c_str());
+    if(ddsdw)
+    {
+        WRITER dw = org::opensplice::core::EntityRegistry<DDS::DataWriter_ptr, WRITER >::get(ddsdw);
+        if(dw != dds::core::null)
+        {
+            *begin = dw;
+            return 1;
+        }
+    }
+    return 0;
 }
 
 }

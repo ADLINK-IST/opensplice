@@ -27,7 +27,8 @@
 
 dds::domain::qos::DomainParticipantQos org::opensplice::domain::DomainParticipantDelegate::default_participant_qos_ = init_default_participant_qos();
 
-org::opensplice::domain::DomainParticipantDelegate::DomainParticipantDelegate(uint32_t id) : listener_(0)
+org::opensplice::domain::DomainParticipantDelegate::DomainParticipantDelegate(uint32_t id) :
+    listener_(0)
 {
     this->common_init(id,
                       PARTICIPANT_QOS_DEFAULT,
@@ -53,7 +54,7 @@ org::opensplice::domain::DomainParticipantDelegate::DomainParticipantDelegate
 
 void
 org::opensplice::domain::DomainParticipantDelegate::common_init(::DDS::DomainId_t domainId,
-        const ::DDS::DomainParticipantQos & qos,
+        const ::DDS::DomainParticipantQos& qos,
         ::DDS::DomainParticipantListener_ptr a_listener,
         ::DDS::StatusMask mask)
 {
@@ -72,7 +73,7 @@ org::opensplice::domain::DomainParticipantDelegate::common_init(::DDS::DomainId_
                                  a_listener,
                                  mask);
 
-    if (DDS::is_nil(dp))
+    if(DDS::is_nil(dp))
         throw dds::core::NullReferenceError(
             org::opensplice::core::exception_helper(
                 OSPL_CONTEXT_LITERAL(
@@ -139,15 +140,23 @@ org::opensplice::domain::DomainParticipantDelegate::qos() const
 
 
 void
-org::opensplice::domain::DomainParticipantDelegate::qos(const dds::domain::qos::DomainParticipantQos& the_qos)
+org::opensplice::domain::DomainParticipantDelegate::qos(const dds::domain::qos::DomainParticipantQos& qos)
 {
     org::opensplice::core::check_and_throw
-    (dp_->set_qos(org::opensplice::domain::qos::convertQos(the_qos)), OSPL_CONTEXT_LITERAL("Calling ::set_qos"));
-    qos_ = the_qos;
+    (dp_->set_qos(org::opensplice::domain::qos::convertQos(qos)), OSPL_CONTEXT_LITERAL("Calling ::set_qos"));
+    qos_ = qos;
 }
 
 void
-org::opensplice::domain::DomainParticipantDelegate::close() { }
+org::opensplice::domain::DomainParticipantDelegate::close()
+{
+    org::opensplice::core::DPDeleter* d = OSPL_CXX11_STD_MODULE::get_deleter<org::opensplice::core::DPDeleter>(dp_);
+    if(d)
+    {
+        d->close(dp_.get());
+    }
+
+}
 
 const dds::topic::qos::TopicQos&
 org::opensplice::domain::DomainParticipantDelegate::default_topic_qos() const
@@ -229,6 +238,15 @@ org::opensplice::domain::DomainParticipantDelegate::default_participant_qos(cons
 dds::domain::DomainParticipantListener*
 org::opensplice::domain::DomainParticipantDelegate::listener() const
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : DomainParticipantListener is not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
     return this->listener_;
 }
 
@@ -236,19 +254,23 @@ org::opensplice::domain::DomainParticipantDelegate::listener() const
 * @internal
 * @bug OSPL-1944 Listener not implemented
 */
-#ifdef _WIN32
-#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
-#endif
 void
-org::opensplice::domain::DomainParticipantDelegate::event_forwarder (dds::domain::DomainParticipantListener* listener,
+org::opensplice::domain::DomainParticipantDelegate::event_forwarder(dds::domain::DomainParticipantListener* listener,
         const dds::core::smart_ptr_traits<DDS::DomainParticipantListener>::ref_type& forwarder,
         const dds::core::status::StatusMask& event_mask)
 {
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
     throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : DomainParticipantListener is not yet implemented")));
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : DomainParticipantListener is not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
 
     dds::core::smart_ptr_traits<DDS::DomainParticipantListener>::ref_type tmp_fwd;
-    if (listener)
+    if(listener)
     {
         tmp_fwd = forwarder;
     }

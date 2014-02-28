@@ -24,43 +24,91 @@
 #include <dds/topic/detail/AnyTopic.hpp>
 #include <dds/topic/TopicDescription.hpp>
 
-namespace dds {
-  namespace topic {
-    class AnyTopic;
+namespace dds
+{
+namespace topic
+{
+class AnyTopic;
 
+/**
+ * Extracts a typed Topic from an AnyTopic.
+ *
+ * @param at the AnyTopic
+ * @return the typed Topic
+ */
+template <typename T>
+Topic<T> get(const AnyTopic& at);
+}
+}
+class OMG_DDS_API dds::topic::AnyTopic
+{
+public:
     /**
-     * Extracts a typed <code>Topic</code> from an
-     * <code>AnyTopic</code>.
+     * Create an AnyTopic instance from a Topic.
+     *
+     * @param t the Topic
      */
     template <typename T>
-    Topic<T> get(const AnyTopic& at);
-  }
-}
-class OMG_DDS_API dds::topic::AnyTopic {
-public:
-  template <typename T>
-  AnyTopic(const dds::topic::Topic<T>& t);
-
+    AnyTopic(const dds::topic::Topic<T>& t);
 
 public:
-  const dds::domain::DomainParticipant& domain_participant() const;
+    /**
+     * Gets the DomainParticipant associated with the contained Topic.
+     *
+     * @param the DomainParticipant
+     */
+    const dds::domain::DomainParticipant& domain_participant() const;
 
-  const dds::core::status::InconsistentTopicStatus& inconsistent_topic_status();
+    /**
+     * This function allows the application to retrieve the
+     * inconsistent_topic_status of the contained Topic.
+     *
+     * Each DomainEntity has a set of relevant communication statuses.
+     * A change of status causes the corresponding Listener to be invoked
+     * and can also be monitored by means of the associated StatusCondition.
+     */
+    const dds::core::status::InconsistentTopicStatus& inconsistent_topic_status();
 
-  const dds::topic::qos::TopicQos& qos() const;
+    /**
+     * Gets the QoS of the contained Topic.
+     *
+     * @return the QoS
+     */
+    const dds::topic::qos::TopicQos& qos() const;
 
-  void qos(const dds::topic::qos::TopicQos& q);
+    /**
+     * Sets the QoS of the contained Topic.
+     *
+     * @param q the QoS
+     */
+    void qos(const dds::topic::qos::TopicQos& q);
 
 public:
-  template <typename T>
-  Topic<T> get();
-public:
-  inline const detail::THolderBase* operator->() const;
+    /**
+     * Extracts a typed Topic from an AnyTopic.
+     *
+     * @param at the AnyTopic
+     * @return the typed Topic
+     */
+    template <typename T>
+    Topic<T> get();
 
-  detail::THolderBase* operator->();
+    /**
+     * Checks if two AnyTopics contain the same Topic.
+     *
+     * @param other the AnyTopic to compare with
+     */
+    bool operator==(const dds::topic::AnyTopic& other) const
+    {
+        return holder_.get()->get_dds_topic() == other.holder_.get()->get_dds_topic();
+    }
+public:
+    inline const detail::THolderBase* operator->() const;
+
+    detail::THolderBase* operator->();
 
 private:
-  dds::core::smart_ptr_traits<detail::THolderBase>::ref_type holder_;
+    dds::core::smart_ptr_traits<detail::THolderBase>::ref_type holder_;
 };
 
 

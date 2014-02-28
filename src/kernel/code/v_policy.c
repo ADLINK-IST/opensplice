@@ -11,6 +11,11 @@
  */
 
 #include "v__policy.h"
+#include "v_kernel.h"
+#include "v__messageQos.h"
+#include "v__dataReaderInstance.h"
+#include "v__groupInstance.h"
+#include "v_public.h"
 
 #include "c_stringSupport.h"
 
@@ -163,6 +168,96 @@ v_partitionPolicySplit(
     } while (*head != '\0');
 
     return iter;
+}
+
+/* FIXME:
+ * "claim" parameter serves as a workaround for dds1784. We need to make sure
+ * that the owner is not set for DataReader instances when there are no more
+ * live DataWriters. Otherwise a new DataWriter with a lower strength would
+ * never be able to take over again!
+ *
+ * THIS IS A WORKAROUND AND NEEDS A REAL FIX.
+ */
+v_ownershipResult
+v_determineOwnershipByStrength (
+    struct v_owner *owner,
+    struct v_owner *candidate,
+    c_bool claim)
+{
+    c_equality equality;
+    v_ownershipResult result;
+
+    assert (owner != NULL);
+    assert (candidate != NULL);
+
+    result = V_OWNERSHIP_NOT_OWNER;
+
+    if (v_gidIsValid (candidate->gid)) {
+        if (owner->exclusive == TRUE) {
+            if (owner->exclusive == candidate->exclusive) {
+                if (v_gidIsValid (owner->gid)) {
+                    equality = v_gidCompare (owner->gid, candidate->gid);
+
+                    if (candidate->strength > owner->strength) {
+                        owner->strength = candidate->strength;
+                        if (equality == C_EQ) {
+                            result = V_OWNERSHIP_ALREADY_OWNER;
+                        } else {
+                            owner->gid = candidate->gid;
+                            result = V_OWNERSHIP_OWNER;
+                        }
+                    } else if (candidate->strength < owner->strength) {
+                        if (equality == C_EQ) {
+                            /* The current message comes from the a writer,
+                             * which is the owner AND which lowered it's
+                             * strength. The strength associated with the
+                             * ownership must be updated.
+                             */
+                            owner->strength = candidate->strength;
+                            result = V_OWNERSHIP_ALREADY_OWNER;
+                        } else {
+                            result = V_OWNERSHIP_NOT_OWNER;
+                        }
+                    } else {
+                        if (equality == C_EQ) {
+                            result = V_OWNERSHIP_ALREADY_OWNER;
+                        } else if (equality == C_GT) {
+                            /* The current message comes from a writer, which
+                             * is not owner AND has a strength that is equal to
+                             * the strength of the current owner. So we must
+                             * determine which writer should be the owner.
+                             * Every reader must determine the ownership
+                             * identically, so we determine it by comparing the
+                             * identification of the writer. The writer with
+                             * the highest gid will be the owner.
+                             */
+                            owner->gid = candidate->gid;
+                            result = V_OWNERSHIP_OWNER;
+                        } else {
+                            result = V_OWNERSHIP_NOT_OWNER;
+                        }
+                    }
+                } else if (claim == TRUE) {
+                    owner->gid = candidate->gid;
+                    owner->strength = candidate->strength;
+                    result = V_OWNERSHIP_OWNER;
+                } else {
+                    /* Instance has no owner and no registrations either.
+                     * This may happen during deletion of a DataReader.
+                     */
+                }
+            } else {
+                result = V_OWNERSHIP_INCOMPATIBLE_QOS;
+            }
+        } else {
+            result = V_OWNERSHIP_SHARED_QOS;
+        }
+    } else {
+        v_gidSetNil (owner->gid);
+        result = V_OWNERSHIP_OWNER_RESET;
+    }
+
+    return result;
 }
 
 /**************************************************************

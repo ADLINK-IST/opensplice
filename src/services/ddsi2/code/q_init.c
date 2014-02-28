@@ -19,20 +19,21 @@
 #include "os_thread.h"
 #include "os_socket.h"
 #include "os_stdlib.h"
+#include "os_init.h"
 #include "os_if.h"
 
+#include "ut_avl.h"
+#include "ut_thread_pool.h"
+
 #include "q_md5.h"
-#include "q_avl.h"
 #include "q_osplser.h"
 #include "q_protocol.h"
 #include "q_rtps.h"
 #include "q_misc.h"
 #include "q_config.h"
 #include "q_log.h"
-#include "q_mlv.h"
 #include "q_plist.h"
 #include "q_unused.h"
-#include "q_groupset.h"
 #include "q_bswap.h"
 #include "q_lat_estim.h"
 #include "q_bitset.h"
@@ -54,47 +55,59 @@
 #include "q_receive.h"
 #include "q_pcap.h"
 
-#include "q_osplserModule.h"
-
 #include "sysdeps.h"
 
-#define PGUIDPREFIX(gp) (gp).u[0], (gp).u[1], (gp).u[2]
-#define PGUID(g) PGUIDPREFIX ((g).prefix), (g).entityid.u
+#include "ddsi_tran.h"
+#include "ddsi_udp.h"
+#include "ddsi_tcp.h"
 
-static int add_peer_addresses (struct addrset *as, const struct config_peer_listelem *list)
+static void add_peer_addresses (struct addrset *as, const struct config_peer_listelem *list)
 {
   while (list)
   {
     add_addresses_to_addrset (as, list->peer, -1, "add_peer_addresses");
     list = list->next;
   }
-  return 0;
 }
 
-static int make_uc_sockets (int *port_disc, int *port_data, int ppid)
+static int make_uc_sockets (os_uint32 * pdisc, os_uint32 * pdata, int ppid)
 {
-  int r, pdisc = 0, pdata = 0;
-
-  if (ppid >= 0) {
-    pdisc = config.port_base + config.port_dg * config.domainId + ppid * config.port_pg + config.port_d1;
-    pdata = config.port_base + config.port_dg * config.domainId + ppid * config.port_pg + config.port_d3;
-  } else if (ppid == PARTICIPANT_INDEX_NONE) {
-    /* leave both at 0 */
-  } else {
-    NN_FATAL1 ("make_uc_sockets: invalid participant index %d\n", ppid);
-  }
-
-  if ((r = make_socket (&gv.discsock_uc, pdisc, NULL)) < 0)
-    return r;
-  if ((r = make_socket (&gv.datasock_uc, pdata, NULL)) < 0)
+  if (ppid >= 0)
   {
-    os_sockFree (gv.discsock_uc);
-    return r;
+    os_uint32 base = config.port_base + (config.port_dg * config.domainId) + (ppid * config.port_pg);
+    *pdisc = base + config.port_d1;
+    *pdata = base + config.port_d3;
+  }
+  else if (ppid == PARTICIPANT_INDEX_NONE)
+  {
+    *pdata = 0;
+    *pdisc = 0;
+  }
+  else
+  {
+    NN_FATAL1 ("make_uc_sockets: invalid participant index %d\n", ppid);
+    return -1;
   }
 
-  *port_disc = get_socket_port (gv.discsock_uc);
-  *port_data = get_socket_port (gv.datasock_uc);
-  return 0;
+  gv.disc_conn_uc = ddsi_factory_create_conn (gv.m_factory, *pdisc, NULL);
+  if (gv.disc_conn_uc)
+  {
+    gv.data_conn_uc = ddsi_factory_create_conn (gv.m_factory, *pdata, NULL);
+    if (gv.data_conn_uc == NULL)
+    {
+      ddsi_conn_free (gv.disc_conn_uc);
+      gv.disc_conn_uc = NULL;
+    }
+    else
+    {
+      /* Set unicast locators */
+
+      ddsi_conn_locator (gv.disc_conn_uc, &gv.loc_meta_uc);
+      ddsi_conn_locator (gv.data_conn_uc, &gv.loc_default_uc);
+    }
+  }
+
+  return gv.data_conn_uc ? 0 : -1;
 }
 
 static int make_builtin_endpoint_xqos (nn_xqos_t *q, const nn_xqos_t *template)
@@ -151,8 +164,8 @@ static void set_recvips (void)
     else if (gv.ipv6_link_local)
     {
       /* If the configuration explicitly includes the selected
-         interface, treat it as "preferred", else as "none"; warn if
-         interfaces other than the selected one are included. */
+       interface, treat it as "preferred", else as "none"; warn if
+       interfaces other than the selected one are included. */
       int i, have_selected = 0, have_others = 0;
       for (i = 0; config.networkRecvAddressStrings[i] != NULL; i++)
       {
@@ -207,46 +220,156 @@ static void set_recvips (void)
   }
 }
 
-static void set_spdp_address (void)
+
+static int check_thread_properties (void)
 {
-  if (strcmp (config.spdpMulticastAddressString, "239.255.0.1") != 0)
+  static const char *fixed[] = { "recv", "tev", "gc", "lease", "dq.builtins", "xmit.user", "dq.user", NULL };
+  const struct config_thread_properties_listelem *e;
+  int ok = 1, i;
+  for (e = config.thread_properties; e; e = e->next)
   {
-    if (!os_sockaddrStringToAddress (
-                config.spdpMulticastAddressString, (os_sockaddr *) &gv.mcip, !config.useIpv6))
+    for (i = 0; fixed[i]; i++)
+      if (strcmp (fixed[i], e->name) == 0)
+        break;
+    if (fixed[i] == NULL)
     {
-      NN_ERROR1 ("%s: not a valid IP address\n", config.spdpMulticastAddressString);
-      exit (1);
+      NN_ERROR1 ("config: DDSI2Service/Threads/Thread[@name=\"%s\"]: unknown thread\n", e->name);
+      ok = 0;
     }
+  }
+  return ok;
+}
+
+static int open_tracing_file (void)
+{
+  if (config.tracingOutputFileName == NULL || *config.tracingOutputFileName == 0 || config.enabled_logcats == 0)
+  {
+    config.enabled_logcats = 0;
+    config.tracingOutputFile = NULL;
+    return 1;
+  }
+  else if (os_strcasecmp (config.tracingOutputFileName, "stdout") == 0)
+  {
+    config.tracingOutputFile = stdout;
+    return 1;
+  }
+  else if (os_strcasecmp (config.tracingOutputFileName, "stderr") == 0)
+  {
+    config.tracingOutputFile = stderr;
+    return 1;
+  }
+  else if ((config.tracingOutputFile = fopen (config.tracingOutputFileName, config.tracingAppendToFile ? "a" : "w")) == NULL)
+  {
+    NN_ERROR1 ("%s: cannot open for writing\n", config.tracingOutputFileName);
+    return 0;
   }
   else
   {
-#if OS_SOCKET_HAS_IPV6
-    if (config.useIpv6)
-    {
-      /* There isn't a standard IPv6 multicast group for DDSI. For
-         some reason, node-local multicast addresses seem to be
-         unsupported (ff01::... would be a node-local one I think), so
-         instead do link-local. I suppose we could use the hop limit
-         to make it node-local.  If other hosts reach us in some way,
-         we'll of course respond. */
-      os_sockaddrStringToAddress ("ff02::ffff:239.255.0.1", (os_sockaddr *) &gv.mcip, 0);
-    }
-    else
-#endif
-      os_sockaddrStringToAddress ("239.255.0.1", (os_sockaddr *) &gv.mcip, 1);
+    return 1;
   }
-  sockaddr_set_port (&gv.mcip, 0);
 }
 
-
-void rtps_init (void)
+int rtps_config_prep (struct cfgst *cfgst)
 {
-  int port_disc_uc = 0, port_data_uc = 0;
+
+  /* if the discovery domain id was explicitly set, override the default here */
+  if (!config.discoveryDomainId.isdefault)
+  {
+    config.domainId = config.discoveryDomainId.value;
+  }
+
+  /* retry_on_reject_duration default is dependent on late_ack_mode and responsiveness timeout, so fix up */
+  if (config.retry_on_reject_duration.isdefault)
+  {
+    if (config.late_ack_mode)
+      config.retry_on_reject_duration.value = 0;
+    else
+      config.retry_on_reject_duration.value = 4 * (config.responsiveness_timeout / 5);
+  }
+
+  /* Dependencies between default values is not handled
+   automatically by the config processing (yet) */
+  if (config.many_sockets_mode)
+  {
+    if (config.max_participants == 0)
+      config.max_participants = 100;
+  }
+  if (NN_STRICT_P)
+  {
+    /* Should not be sending invalid messages when strict */
+    config.respond_to_rti_init_zero_ack_with_invalid_heartbeat = 0;
+    config.acknack_numbits_emptyset = 1;
+  }
+  if (config.max_queued_rexmit_bytes == 0)
+  {
+    config.max_queued_rexmit_bytes = 2147483647u;
+  }
+
+  /* Verify thread properties refer to defined threads */
+  if (!check_thread_properties ())
+  {
+    NN_ERROR0 ("Could not initialise configuration\n");
+    goto err_config_late_error;
+  }
+
+#if ! OS_SOCKET_HAS_IPV6
+  /* If the platform doesn't support IPv6, guarantee useIpv6 is
+   false. There are two ways of going about it, one is to do it
+   silently, the other to let the user fix his config. Clearly, we
+   have chosen the latter. */
+  if (config.useIpv6)
+  {
+    NN_ERROR0 ("IPv6 addressing requested but not supported on this platform\n");
+    goto err_config_late_error;
+  }
+#endif
+
+
+
+  /* Open tracing file after all possible config errors have been
+   printed */
+  if (!open_tracing_file ())
+  {
+    NN_ERROR0 ("Could not initialise configuration\n");
+    goto err_config_late_error;
+  }
+
+  /* Thread admin: need max threads, which is currently (2 or 3) for each
+   configured channel plus 6: main, recv, dqueue.builtin,
+   lease, gc; once thread state admin has been inited, upgrade the
+   main thread one participating in the thread tracking stuff as
+   if it had been created using create_thread(). */
+
+  {
+    int max_threads = 8 + config.ddsi2direct_max_threads;
+    thread_states_init (max_threads);
+  }
+
+  /* Now the per-thread-log-buffers are set up, so print the configuration */
+  config_print_and_free_cfgst (cfgst);
+  return 0;
+
+err_config_late_error:
+  return -1;
+}
+
+int rtps_init (void)
+{
+  os_uint32 port_disc_uc = 0;
+  os_uint32 port_data_uc = 0;
 
   gv.tstart = now ();
 
+  gv.disc_conn_uc = NULL;
+  gv.data_conn_uc = NULL;
+  gv.disc_conn_mc = NULL;
+  gv.data_conn_mc = NULL;
+  gv.tev_conn = NULL;
+  gv.listener = NULL;
+  gv.thread_pool = NULL;
+
   /* Print start time for referencing relative times in the remainder
-     of the nn_log. */
+   of the nn_log. */
   {
     int sec = (int) (gv.tstart / 1000000000);
     unsigned usec = (unsigned) (gv.tstart % 1000000000) / 1000;
@@ -259,6 +382,29 @@ void rtps_init (void)
     if ((pnl = strchr (str, '\n')) != NULL)
       *pnl = 0;
     nn_log (LC_INFO | LC_CONFIG, "started at %d.06%u -- %s\n", sec, usec, str);
+  }
+
+  /* Initialize thread pool */
+
+  if (config.tp_enable)
+  {
+    gv.thread_pool = ut_thread_pool_new
+      (config.tp_threads, config.tp_max_threads, 0, NULL);
+  }
+
+  /* Initialize UDP or TCP transport and resolve factory */
+
+  config.publish_uc_locators = TRUE;
+
+  if (config.tcp_enable)
+  {
+    ddsi_tcp_init ();
+    gv.m_factory = ddsi_factory_find ("tcp");
+  }
+  else
+  {
+    ddsi_udp_init ();
+    gv.m_factory = ddsi_factory_find ("udp");
   }
 
   if (!find_own_ip (config.networkAddressString))
@@ -282,11 +428,13 @@ void rtps_init (void)
     }
   }
   set_recvips ();
-  set_spdp_address ();
 
   /* Check configuration of external IP address, (NAT support) */
+
   if (!config.externalAddressString)
+  {
     gv.extip = gv.ownip;
+  }
   else if (!os_sockaddrStringToAddress (config.externalAddressString, (os_sockaddr *) &gv.extip, config.useIpv6))
   {
     /* explicit configuration for external network address */
@@ -326,16 +474,10 @@ void rtps_init (void)
   if (gv.ownip.ss_family != gv.extip.ss_family)
     NN_FATAL0 ("mismatch between network address kinds\n");
 
-  if (config.startup_mode_duration > 0)
-    gv.startup_mode = 1;
-  else
-    gv.startup_mode = 0;
+  gv.startup_mode = (config.startup_mode_duration > 0) ? 1 : 0;
   nn_log (LC_CONFIG, "startup-mode: %s\n", gv.startup_mode ? "enabled" : "disabled");
 
-  gv.ospl_qostype =
-    (c_collectionType) c_metaArrayTypeNew (c_metaObject (gv.ospl_base),
-                                           "C_ARRAY<c_octet>", c_octet_t (gv.ospl_base), 0);
-  osplser_init (gv.ospl_base);
+  osplser_init ();
 
   gv.xmsgpool = nn_xmsgpool_new ();
   gv.serpool = serstatepool_new ();
@@ -348,90 +490,136 @@ void rtps_init (void)
   make_builtin_endpoint_xqos (&gv.builtin_endpoint_xqos_rd, &gv.default_xqos_rd);
   make_builtin_endpoint_xqos (&gv.builtin_endpoint_xqos_wr, &gv.default_xqos_wr);
 
+
   os_mutexInit (&gv.participant_set_lock, &gv.mattr);
   os_condInit (&gv.participant_set_cond, &gv.participant_set_lock, &gv.cattr);
   lease_management_init ();
   deleted_participants_admin_init ();
-  ephash_init ();
+  gv.guid_hash = ephash_new (config.guid_hash_softlimit);
 
   os_mutexInit (&gv.privileged_pp_lock, &gv.mattr);
   gv.privileged_pp = NULL;
 
-  /* Create xeventqueues */
-  if (make_socket (&gv.tev_socket, 0, NULL) < 0)
-  {
-    NN_ERROR0 ("failed to create transmit socket for timed events\n");
-    exit (1);
-  }
-  TRACE (("tev transmit socket: %d\n", (int) gv.tev_socket));
-  gv.xevents = xeventq_new (gv.tev_socket, config.max_queued_rexmit_bytes, config.max_queued_rexmit_msgs);
 
   os_mutexInit (&gv.lock, &gv.mattr);
   os_mutexInit (&gv.spdp_lock, &gv.mattr);
   gv.spdp_defrag = nn_defrag_new (NN_DEFRAG_DROP_OLDEST, config.defrag_unreliable_maxsamples);
   gv.spdp_reorder = nn_reorder_new (NN_REORDER_MODE_ALWAYS_DELIVER, config.primary_reorder_maxsamples);
 
-  if (config.participantIndex >= 0 || config.participantIndex == PARTICIPANT_INDEX_NONE)
+  if (gv.m_factory->m_connless)
   {
-    if (make_uc_sockets (&port_disc_uc, &port_data_uc, config.participantIndex) < 0)
+    if (config.participantIndex >= 0 || config.participantIndex == PARTICIPANT_INDEX_NONE)
     {
-      NN_ERROR2 ("rtps_init: failed to create unicast sockets for domain %d participant %d\n", config.domainId, config.participantIndex);
-      exit (1);
-    }
-  }
-  else if (config.participantIndex == PARTICIPANT_INDEX_AUTO)
-  {
-    /* try to find a free one, and update config.participantIndex */
-    const int max_attempts = 10;
-    int ppid;
-    nn_log (LC_CONFIG, "rtps_init: trying to find a free participant index\n");
-    for (ppid = 0; ppid < max_attempts; ppid++)
-    {
-      int r = make_uc_sockets (&port_disc_uc, &port_data_uc, ppid);
-      if (r == 0) /* Success! */
-        break;
-      else if (r == -1) /* Try next one */
-        continue;
-      else /* Oops! */
+      if (make_uc_sockets (&port_disc_uc, &port_data_uc, config.participantIndex) < 0)
       {
-        NN_ERROR2 ("rtps_init: failed to create unicast sockets for domain %d participant %d\n", config.domainId, ppid);
+        NN_ERROR2 ("rtps_init: failed to create unicast sockets for domain %d participant %d\n", config.domainId, config.participantIndex);
         exit (1);
       }
     }
-    if (ppid == max_attempts)
+    else if (config.participantIndex == PARTICIPANT_INDEX_AUTO)
     {
-      NN_ERROR1 ("rtps_init: failed to find a free participant index for domain %d\n", config.domainId);
+      /* try to find a free one, and update config.participantIndex */
+      const int max_attempts = 10;
+      int ppid;
+      nn_log (LC_CONFIG, "rtps_init: trying to find a free participant index\n");
+      for (ppid = 0; ppid < max_attempts; ppid++)
+      {
+        int r = make_uc_sockets (&port_disc_uc, &port_data_uc, ppid);
+        if (r == 0) /* Success! */
+          break;
+        else if (r == -1) /* Try next one */
+          continue;
+        else /* Oops! */
+        {
+          NN_ERROR2 ("rtps_init: failed to create unicast sockets for domain %d participant %d\n", config.domainId, ppid);
+          exit (1);
+        }
+      }
+      if (ppid == max_attempts)
+      {
+        NN_ERROR1 ("rtps_init: failed to find a free participant index for domain %d\n", config.domainId);
+        exit (1);
+      }
+      config.participantIndex = ppid;
+    }
+    else
+    {
+      NN_FATAL1 ("rtps_init: invalid participant index setting %d\n", config.participantIndex);
       exit (1);
     }
-    config.participantIndex = ppid;
-  }
-  else
-  {
-    NN_FATAL1 ("rtps_init: invalid participant index setting %d\n", config.participantIndex);
+    nn_log (LC_CONFIG, "rtps_init: uc ports: disc %d data %d\n", port_disc_uc, port_data_uc);
   }
   nn_log (LC_CONFIG, "rtps_init: domainid %d participantid %d\n", config.domainId, config.participantIndex);
-  nn_log (LC_CONFIG, "rtps_init: uc ports: disc %d data %d\n", port_disc_uc, port_data_uc);
 
-  gv.sockws = os_sockWaitsetNew (1);
+  gv.waitset = os_sockWaitsetNew ();
 
   if (config.pcap_file && *config.pcap_file)
-    gv.pcap_fp = new_pcap_file (config.pcap_file);
-  else
-    gv.pcap_fp = NULL;
-  if (gv.pcap_fp)
-    os_mutexInit (&gv.pcap_lock, &gv.mattr);
-
-  if (make_socket (&gv.discsock_mc, config.port_base + config.port_dg * config.domainId + config.port_d0, &gv.mcip) < 0 ||
-      make_socket (&gv.datasock_mc, config.port_base + config.port_dg * config.domainId + config.port_d2, &gv.mcip) < 0)
   {
-    NN_ERROR2 ("rtps_init: failed to create multicast sockets for domain %d participant %d\n", config.domainId, config.participantIndex);
-    exit (1);
+    gv.pcap_fp = new_pcap_file (config.pcap_file);
+    if (gv.pcap_fp)
+    {
+      os_mutexInit (&gv.pcap_lock, &gv.mattr);
+    }
+  }
+  else
+  {
+    gv.pcap_fp = NULL;
   }
 
-  init_locator (&gv.loc_meta_uc, &gv.extip, port_disc_uc);
-  init_locator (&gv.loc_default_uc, &gv.extip, port_data_uc);
-  init_locator (&gv.loc_meta_mc, &gv.mcip, config.port_base + config.port_dg * config.domainId + config.port_d0);
-  init_locator (&gv.loc_default_mc, &gv.mcip, config.port_base + config.port_dg * config.domainId + config.port_d2);
+  if (gv.m_factory->m_connless)
+  {
+    os_uint32 port;
+    ddsi_tran_qos_t qos = ddsi_tran_create_qos ();
+    qos->m_multicast = TRUE;
+
+    port = config.port_base + config.port_dg * config.domainId + config.port_d0;
+    gv.disc_conn_mc = ddsi_factory_create_conn (gv.m_factory, port, qos);
+
+    port = config.port_base + config.port_dg * config.domainId + config.port_d2;
+    gv.data_conn_mc = ddsi_factory_create_conn (gv.m_factory, port, qos);
+
+    ddsi_tran_free_qos (qos);
+
+    TRACE (("Ports: disc_uc %d disc_mc %d data_uc %d data_mc %d\n",
+      ddsi_tran_port (gv.disc_conn_uc), ddsi_tran_port (gv.disc_conn_mc),
+      ddsi_tran_port (gv.data_conn_uc), ddsi_tran_port (gv.data_conn_mc)));
+
+    /* Set multicast locators */
+
+    ddsi_conn_locator (gv.disc_conn_mc, &gv.loc_meta_mc);
+    ddsi_conn_locator (gv.data_conn_mc, &gv.loc_default_mc);
+  }
+  else
+  {
+    /* Must have a data_conn_uc/tev_conn/transmit_conn */
+    gv.data_conn_uc = ddsi_factory_create_conn (gv.m_factory, 0, NULL);
+
+    if (config.tcp_port != -1)
+    {
+      gv.listener = ddsi_factory_create_listener (gv.m_factory, NULL);
+      ddsi_listener_listen (gv.listener);
+
+      /* Set unicast locators from listener */
+
+      ddsi_listener_locator (gv.listener, &gv.loc_meta_uc);
+      ddsi_listener_locator (gv.listener, &gv.loc_default_uc);
+    }
+  }
+
+  /* Create shared transmit connection */
+
+  gv.tev_conn = gv.data_conn_uc;
+  TRACE (("Timed event transmit port: %d\n", (int) ddsi_tran_port (gv.tev_conn)));
+
+
+  /* Create event queues */
+
+  gv.xevents = xeventq_new
+  (
+    gv.tev_conn,
+    config.max_queued_rexmit_bytes,
+    config.max_queued_rexmit_msgs
+  );
 
   gv.as_disc_init = new_addrset ();
   if (!config.suppress_spdp_multicast)
@@ -442,12 +630,10 @@ void rtps_init (void)
   }
   if (config.peers)
   {
-    if (add_peer_addresses (gv.as_disc_init, config.peers) < 0)
-      exit (1);
+    add_peer_addresses (gv.as_disc_init, config.peers);
   }
   gv.as_disc = new_addrset ();
   copy_addrset_into_addrset (gv.as_disc, gv.as_disc_init);
-  TRACE (("sockets: disc_uc %d disc_mc %d uc %d mc %d\n", gv.discsock_uc, gv.discsock_mc, gv.datasock_uc, gv.datasock_mc));
 
   gv.gcreq_queue = gcreq_queue_new ();
 
@@ -466,16 +652,21 @@ void rtps_init (void)
     int r;
     gv.builtins_dqueue = nn_dqueue_new ("builtins", config.delivery_queue_maxsamples, builtins_dqueue_handler, NULL);
     if ((r = xeventq_start (gv.xevents, NULL)) < 0)
+    {
       NN_FATAL1 ("failed to start global event processing thread (%d)\n", r);
+    }
   }
 
   gv.user_dqueue = nn_dqueue_new ("user", config.delivery_queue_maxsamples, user_dqueue_handler, NULL);
 
   gv.recv_ts = create_thread ("recv", (void * (*) (void *)) recv_thread, gv.rbufpool);
 
-  qxev_info (0);
   if (gv.startup_mode)
+  {
     qxev_end_startup_mode (now () + config.startup_mode_duration);
+  }
+
+  return 0;
 }
 
 void rtps_term (void)
@@ -487,7 +678,7 @@ void rtps_term (void)
   gv.rtps_keepgoing = 0; /* so threads will stop once they get round to checking */
   pa_membar_producer ();
   /* can't wake up throttle_writer, currently */
-  os_sockWaitsetTrigger (gv.sockws);
+  os_sockWaitsetTrigger (gv.waitset);
   os_mutexUnlock (&gv.lock);
   join_thread (gv.recv_ts, NULL);
 
@@ -508,7 +699,9 @@ void rtps_term (void)
     thread_state_awake (self);
     ephash_enum_proxy_participant_init (&est);
     while ((proxypp = ephash_enum_proxy_participant_next (&est)) != NULL)
-      delete_proxy_participant (&proxypp->e.guid);
+    {
+      delete_proxy_participant (proxypp);
+    }
     ephash_enum_proxy_participant_fini (&est);
     thread_state_asleep (self);
   }
@@ -530,7 +723,7 @@ void rtps_term (void)
     while ((wr = ephash_enum_writer_next (&est_wr)) != NULL)
     {
       if (!is_builtin_entityid (wr->e.guid.entityid))
-        delete_writer_guid_nolinger (&wr->e.guid);
+        delete_writer_nolinger (&wr->e.guid);
     }
     ephash_enum_writer_fini (&est_wr);
     thread_state_awake (self);
@@ -538,18 +731,14 @@ void rtps_term (void)
     while ((rd = ephash_enum_reader_next (&est_rd)) != NULL)
     {
       if (!is_builtin_entityid (rd->e.guid.entityid))
-        delete_reader_guid (&rd->e.guid);
+        delete_reader (&rd->e.guid);
     }
     ephash_enum_reader_fini (&est_rd);
     thread_state_awake (self);
     ephash_enum_participant_init (&est_pp);
     while ((pp = ephash_enum_participant_next (&est_pp)) != NULL)
     {
-      v_gid gid;
-      gid.systemId = pp->e.guid.prefix.u[0];
-      gid.localId = pp->e.guid.prefix.u[1];
-      gid.serial = pp->e.guid.prefix.u[2];
-      delete_participant (&gid);
+      delete_participant (&pp->e.guid);
     }
     ephash_enum_participant_fini (&est_pp);
     thread_state_asleep (self);
@@ -574,21 +763,26 @@ void rtps_term (void)
      has ended, so now we can drain the delivery queues to end up with
      the expected reference counts all over the radmin thingummies. */
   nn_dqueue_free (gv.builtins_dqueue);
+
   nn_dqueue_free (gv.user_dqueue);
 
   xeventq_free (gv.xevents);
 
+
   unref_addrset (gv.as_disc);
   unref_addrset (gv.as_disc_init);
 
-  os_sockFree (gv.discsock_uc);
-  os_sockFree (gv.discsock_mc);
-  os_sockFree (gv.datasock_uc);
-  os_sockFree (gv.datasock_mc);
+  ut_thread_pool_free (gv.thread_pool);
 
-  os_sockWaitsetFree (gv.sockws);
+  os_sockWaitsetFree (gv.waitset);
 
-  os_sockFree (gv.tev_socket);
+  ddsi_conn_free (gv.disc_conn_uc);
+  ddsi_conn_free (gv.disc_conn_mc);
+  ddsi_conn_free (gv.data_conn_uc);
+  ddsi_conn_free (gv.data_conn_mc);
+  ddsi_conn_free (gv.tev_conn);
+
+  ddsi_factory_free (gv.m_factory);
 
   if (gv.pcap_fp)
   {
@@ -602,11 +796,12 @@ void rtps_term (void)
      queues been drained.  I.e., until very late in the game. */
   nn_rbufpool_free (gv.rbufpool);
 
-  ephash_fini ();
+  ephash_free (gv.guid_hash);
   deleted_participants_admin_fini ();
   lease_management_term ();
   os_mutexDestroy (&gv.participant_set_lock);
   os_condDestroy (&gv.participant_set_cond);
+
 
   nn_xqos_fini (&gv.builtin_endpoint_xqos_wr);
   nn_xqos_fini (&gv.builtin_endpoint_xqos_rd);
@@ -626,7 +821,6 @@ void rtps_term (void)
   serstatepool_free (gv.serpool);
   nn_xmsgpool_free (gv.xmsgpool);
   osplser_fini ();
-  c_free (gv.ospl_qostype);
 }
 
 /* SHA1 not available (unoffical build.) */

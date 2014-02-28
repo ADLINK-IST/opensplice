@@ -5,6 +5,10 @@
 
 #include "q_log.h"
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #define NN_LAT_ESTIM_MEDIAN_WINSZ 7
 
 struct nn_lat_estim {
@@ -21,6 +25,10 @@ void nn_lat_estim_fini (struct nn_lat_estim *le);
 void nn_lat_estim_update (struct nn_lat_estim *le, os_int64 est);
 double nn_lat_estim_current (const struct nn_lat_estim *le);
 int nn_lat_estim_log (logcat_t logcat, const char *tag, const struct nn_lat_estim *le);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* NN_LAT_ESTIM_H */
 

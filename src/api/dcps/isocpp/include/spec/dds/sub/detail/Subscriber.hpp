@@ -21,9 +21,16 @@
 
 #include <dds/sub/TSubscriber.hpp>
 #include <foo/bar/sub/Subscriber.hpp>
-namespace dds { namespace sub { namespace detail {
-  typedef dds::sub::TSubscriber<foo::bar::sub::Subscriber> Subscriber;
-} } }
+namespace dds
+{
+namespace sub
+{
+namespace detail
+{
+typedef dds::sub::TSubscriber<foo::bar::sub::Subscriber> Subscriber;
+}
+}
+}
 
 
 #endif /* OMG_DDS_SUB_DETAIL_SUBSCRIBER_HPP_ */

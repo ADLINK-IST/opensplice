@@ -25,11 +25,11 @@ else
    AWK="awk"
 fi
 
-IS_64_BIT="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "x86_64") }'`"
+IS_64_BIT=` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "x86_64") }'`
 
-IS_STUDIO12="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "studio12") }'`"
+IS_STUDIO12=` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "studio12") }'`
 
-IS_DEBUG="` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "-dev") }'`"
+IS_DEBUG=` $AWK -v a=$SETUP_TYPE 'BEGIN { print index(a, "-dev") }'`
 
 if [ "$DEP" = "none" ]
 then
@@ -56,7 +56,11 @@ check_platform()
   if [ "$CURRENT_PL_LINUX" != "" -o "$CURRENT_PL_AIX" != "" -o "$CURRENT_PL_SUNOS" != "" ] ;then
     return 0
   elif [ "$CURRENT_PL_CYGWIN" != "" ];then
-    return 1
+    if [ "$TARGET_PIKEOS" = "" ] ;then
+      return 1
+    else
+      return 0
+    fi
   else
    echo UNKNOWN Platform:
    echo Current platform: `uname`
@@ -99,7 +103,7 @@ install_ospl()
     echo "Installing..."
 
 # What is our installer called?
-    INSTALLER_FILENAME=`echo $INSTALLERDIR/VC/OpenSplice*HDE*installer.*`
+    INSTALLER_FILENAME=`echo $INSTALLERDIR/VC/P*OpenSplice*HDE*installer.*`
 
     if [ -f ${INSTALLER_FILENAME} ]
     then
@@ -117,7 +121,7 @@ install_ospl()
                 mkdir "$WORKDIR/$EXAMPLE_INSTALL_DIR"
                 (
                   cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/" && \
-                  tar -xvf ${INSTALLER_FILENAME}
+                  tar -xf ${INSTALLER_FILENAME}
                   mv HDE/$SHORTSETUP/release.com \
                       HDE/$SHORTSETUP/release.com.orig
                   sed < HDE/$SHORTSETUP/release.com.orig \
@@ -150,6 +154,51 @@ install_ospl()
         esac
     else
         echo "Unable to find an installer in $INSTALLERDIR/VC"
+    fi
+
+    INSTALLER_RTS_FILENAME=`ls $INSTALLERDIR/VC/P*OpenSplice*RTS*installer.* | grep -v HDE`
+    if [ -f ${INSTALLER_RTS_FILENAME} ]
+    then
+        RTS_EXTENSION=`echo $INSTALLER_RTS_FILENAME | sed -e 's/.*\.\(...\)$/\1/g'`
+        case $RTS_EXTENSION in
+            bin)
+                echo "Installing ${INSTALLER_RTS_FILENAME} (RTS) into $WORKDIR/$RTS_INSTALL_DIR/"
+                ${INSTALLER_RTS_FILENAME} --mode unattended --prefix "$WORKDIR/$RTS_INSTALL_DIR/"
+                ;;
+
+            tar)
+                echo "Untarring ${INSTALLER_RTS_FILENAME} (RTS) ..."
+                mkdir "$WORKDIR/$RTS_INSTALL_DIR"
+                (
+                  cd "$WORKDIR/$RTS_INSTALL_DIR/" && \
+                  tar -xf ${INSTALLER_RTS_FILENAME}
+                )
+                ;;
+
+            zip)
+                echo "Unzipping ${INSTALLER_FILENAME} (RTS)..."
+                mkdir "$WORKDIR/$RTS_INSTALL_DIR"
+                (
+                  cd "$WORKDIR/$RTS_INSTALL_DIR/" && \
+                  unzip ${INSTALLER_RTS_FILENAME}
+                )
+                ;;
+            exe)
+                IS_WINDOWS_EXE="true"
+                mkdir "$WORKDIR/$RTS_INSTALL_DIR"
+
+                PATH="$PATH:/cygdrive/c/WINDOWS/system32"
+                export PATH
+
+                XPATH_INSTALLFILE=`cygpath -w "$INSTALLER_RTS_FILENAME"`
+                XPATH_WORKDIR=`cygpath -w "$WORKDIR"`
+
+                echo "exe file exists installing (RTS) to $WORKDIR/$RTS_INSTALL_DIR ...."
+                cmd.exe /C $XPATH_INSTALLFILE --mode unattended --prefix "$XPATH_WORKDIR/$RTS_INSTALL_DIR/"
+                ;;
+        esac
+    else
+        echo "Unable to find an RTS installer in $INSTALLERDIR/VC. (This is expected for enterprise platforms)"
     fi
 
     if [ -n "$LICENSE_FILE" ]
@@ -271,6 +320,11 @@ unix_windows_examples()
 
         PROJECTS=`ls Makefile*`
 
+        if [ -n "$OSPL_EXAMPLE_BUILD_PREFIX_PATH" ]
+        then
+            PATH=$OSPL_EXAMPLE_BUILD_PREFIX_PATH:$PATH
+        fi
+
         echo " ####  Example Build Begin #### "
         for PROJECT in $PROJECTS
         do
@@ -287,25 +341,6 @@ unix_windows_examples()
                 echo "Not making make file $PROJECT as make file not found"
             fi
         done
-
-        # We cannot just rely on the directory being an indication that the dlrl example is
-        # there because when we run the examples overnight we copy in RUN scripts en masse from
-        # the example_automation_scripts directory and that includes the dlrl directory.  So
-        # the directory will exist but will only hold a RUN script.
-        if [ -f "dlrl/standalone/java/Tutorial/BUILD" ]
-        then
-            echo " ####  Project: examples/dlrl/standalone/java/Tutorial Begin #### "
-            pushd dlrl/standalone/java/Tutorial > /dev/null
-            ./BUILD
-            if [ $? -ne 0 ]
-            then
-                echo "Error building DLRL Java Tutorial"
-                BUILD_ERROR=1
-            fi
-            popd > /dev/null
-        else
-            echo "Not building examples/dlrl/standalone/java/Tutorial as directory not found"
-        fi
     else
         PATH="$PATH:/cygdrive/c/WINDOWS/system32"
         export PATH
@@ -382,7 +417,13 @@ vxworks6x_examples()
    EXAMPLESDIR="$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/examples"
    cd "$WORKDIR/$EXAMPLE_INSTALL_DIR/HDE/$SHORTSETUP/"
 
-   . ./release.com
+
+   if [ "$CURRENT_PL_CYGWIN" == "" ]
+   then
+      . ./release.com
+   else
+      . ./release.bat
+   fi
 
    PATH="$JAVA_HOME/bin:$PATH"
    cd examples
@@ -446,6 +487,9 @@ case $SETUP_TYPE in
        vxworks6x_examples;;
     *vxworks5*)
        TARGET_VX5=1
+       unix_windows_examples;;
+    *pikeos3*)
+       TARGET_PIKEOS=1
        unix_windows_examples;;
     *)
        unix_windows_examples;;

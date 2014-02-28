@@ -22,57 +22,66 @@
 #include <dds/core/status/detail/Status.hpp>
 #include <dds/core/status/State.hpp>
 
-namespace dds { namespace core { namespace status {
+namespace dds
+{
+namespace core
+{
+namespace status
+{
 
-  class DataAvailableStatus {
+class DataAvailableStatus
+{
     // empty
-  };
+};
 
 
-  class DataOnReadersStatus {
+class DataOnReadersStatus
+{
     // empty
-  };
+};
 
-  // This trait is used to get the state associated with each status
-  template <typename STATUS>
-  StatusMask get_status();
+// This trait is used to get the state associated with each status
+template <typename STATUS>
+StatusMask get_status();
 
-  typedef ::dds::core::status::detail::InconsistentTopicStatus
-      InconsistentTopicStatus;
+typedef ::dds::core::status::detail::InconsistentTopicStatus
+InconsistentTopicStatus;
 
-  typedef ::dds::core::status::detail::LivelinessChangedStatus
-      LivelinessChangedStatus;
+typedef ::dds::core::status::detail::LivelinessChangedStatus
+LivelinessChangedStatus;
 
-  typedef ::dds::core::status::detail::LivelinessLostStatus
-      LivelinessLostStatus;
+typedef ::dds::core::status::detail::LivelinessLostStatus
+LivelinessLostStatus;
 
-  typedef ::dds::core::status::detail::OfferedDeadlineMissedStatus
-      OfferedDeadlineMissedStatus;
+typedef ::dds::core::status::detail::OfferedDeadlineMissedStatus
+OfferedDeadlineMissedStatus;
 
-  typedef ::dds::core::status::detail::OfferedIncompatibleQosStatus
-      OfferedIncompatibleQosStatus;
+typedef ::dds::core::status::detail::OfferedIncompatibleQosStatus
+OfferedIncompatibleQosStatus;
 
-  typedef ::dds::core::status::detail::PublicationMatchedStatus
-      PublicationMatchedStatus;
+typedef ::dds::core::status::detail::PublicationMatchedStatus
+PublicationMatchedStatus;
 
-  class SampleRejectedState;
+class SampleRejectedState;
 
-  typedef ::dds::core::status::detail::SampleRejectedStatus
-      SampleRejectedStatus;
+typedef ::dds::core::status::detail::SampleRejectedStatus
+SampleRejectedStatus;
 
-  typedef ::dds::core::status::detail::RequestedDeadlineMissedStatus
-      RequestedDeadlineMissedStatus;
+typedef ::dds::core::status::detail::RequestedDeadlineMissedStatus
+RequestedDeadlineMissedStatus;
 
-  typedef ::dds::core::status::detail::RequestedIncompatibleQosStatus
-      RequestedIncompatibleQosStatus;
+typedef ::dds::core::status::detail::RequestedIncompatibleQosStatus
+RequestedIncompatibleQosStatus;
 
-  typedef ::dds::core::status::detail::SampleLostStatus
-      SampleLostStatus;
+typedef ::dds::core::status::detail::SampleLostStatus
+SampleLostStatus;
 
-  class StatusMask;
+class StatusMask;
 
-  typedef ::dds::core::status::detail::SubscriptionMatchedStatus
-      SubscriptionMatchedStatus;
-} } }
+typedef ::dds::core::status::detail::SubscriptionMatchedStatus
+SubscriptionMatchedStatus;
+}
+}
+}
 
 #endif /* OMG_DDS_CORE_STATUS_STATUS_HPP_ */

@@ -25,31 +25,78 @@
 #include <dds/sub/Rank.hpp>
 #include <dds/sub/status/DataState.hpp>
 
-namespace dds {
-  namespace sub {
-    template <typename DELEGATE>
-    class TSampleInfo;
-  }
+namespace dds
+{
+namespace sub
+{
+template <typename DELEGATE>
+class TSampleInfo;
+}
 }
 
 /**
- * This class implements the DDS <code>SampleInfo</code>.
+ * The SampleInfo contains information pertaining to the associated Data value
  */
 template <typename DELEGATE>
-class dds::sub::TSampleInfo : public dds::core::Value<DELEGATE> {
+class dds::sub::TSampleInfo : public dds::core::Value<DELEGATE>
+{
 
 public:
-  // Required for containers
-  TSampleInfo();
+    // Required for containers
+    TSampleInfo();
 
 public:
-  const dds::core::Time         timestamp() const;
-  const dds::sub::status::DataState   state() const;
-  dds::sub::GenerationCount       generation_count() const;
-  dds::sub::Rank             rank() const;
-  bool                   valid() const;
-  dds::core::InstanceHandle       instance_handle() const;
-  dds::core::InstanceHandle       publication_handle() const;
+    /**
+     * Gets the timestamp of the sample. This is the timestamp provided by the
+     * DataWriter at the time the sample was produced.
+     *
+     * @return the timestamp
+     */
+    const dds::core::Time timestamp() const;
+
+    /**
+     * Gets the DataState of the sample.
+     *
+     * @return the DataState
+     */
+    const dds::sub::status::DataState state() const;
+
+    /**
+     * Gets the GenerationCount of the sample.
+     *
+     * @return the GenerationCount
+     */
+    dds::sub::GenerationCount generation_count() const;
+
+    /**
+     * Gets the Rank of the sample.
+     *
+     * @return the Rank
+     */
+    dds::sub::Rank rank() const;
+
+    /**
+     * Gets the valid_data flag. This flag indicates whether there is data
+     * associated with the sample. Some samples do not contain data, indicating
+     * only a change on the instance_state of the corresponding instance.
+     *
+     * @return the valid_data flag
+     */
+    bool valid() const;
+
+    /**
+     * Gets the InstanceHandle of the sample.
+     *
+     * @return the InstanceHandle of the sample
+     */
+    dds::core::InstanceHandle instance_handle() const;
+
+    /**
+     * Gets the publication_handle of the sample.
+     *
+     * @return the publication_handle
+     */
+    dds::core::InstanceHandle publication_handle() const;
 };
 
 #endif /* OMG_DDS_SUB_TSAMPLE_INFO_HPP_ */

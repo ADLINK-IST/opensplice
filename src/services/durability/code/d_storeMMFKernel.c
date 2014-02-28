@@ -448,6 +448,8 @@ d_storeMMFKernelBackupRestore(
     d_groupInfo restore, found;
     d_storeResult result;
 
+    OS_UNUSED_ARG(store);
+
     if(kernel && nameSpace){
         groups = ospl_c_select(kernel->backup, 0);
         group = d_groupInfo(c_iterTakeFirst(groups));

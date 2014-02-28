@@ -8,13 +8,12 @@ set_undefined_var INCLUDE_DBT_USER yes
 set_undefined_var INCLUDE_DBT_KERNEL yes
 set_undefined_var INCLUDE_DBT_DATABASE yes
 set_undefined_var INCLUDE_DBT_UTILITIES yes
-set_undefined_var INCLUDE_DBT_DLRL yes
 set_undefined_var INCLUDE_DBT_INSTALLER yes
 
 if [ -n "$INCLUDE_SERVICES" ]
 then
     set_undefined_var INCLUDE_DBT_SERVICES yes
-    set_undefined_var     INCLUDE_DBT_SERVICES_SERIALIZATION yes
+    set_undefined_var INCLUDE_DBT_SERVICES_SERIALIZATION yes
     if [ -n "$INCLUDE_SERVICES_NETWORKING" ]; then
         set_undefined_var INCLUDE_DBT_SERVICES_NETWORKING yes
     else
@@ -44,6 +43,11 @@ then
         set_undefined_var INCLUDE_DBT_SERVICES_DBMS yes
     else
 	unset_var INCLUDE_DBT_SERVICES_DBMS
+    fi
+    if [ -n "$INCLUDE_SERVICES_RNR" ]; then
+        set_undefined_var INCLUDE_DBT_SERVICES_RNR yes
+    else
+    unset_var INCLUDE_DBT_SERVICES_RNR
     fi
 else
     unset_var INCLUDE_DBT_SERVICES
@@ -128,27 +132,6 @@ then
         set_undefined_var INCLUDE_DBT_API_CM yes
     else
 	unset_var INCLUDE_DBT_API_CM
-    fi
-    if  [ -n "$INCLUDE_DLRL" ]; then
-        set_undefined_var INCLUDE_DBT_LOC yes
-        if  [ -n "$INCLUDE_API_DLRL" ]; then
-            set_undefined_var INCLUDE_DBT_API_DLRL yes
-            if  [ -n "$INCLUDE_API_DLRL_SAJ" ]; then
-                set_undefined_var INCLUDE_DBT_API_DLRL_SAJ yes
-            else
-                unset_var INCLUDE_DBT_API_DLRL_SAJ
-            fi
-            if  [ -n "$INCLUDE_API_DLRL_SACPP" ]; then
-                set_undefined_var INCLUDE_DBT_API_DLRL_SACPP yes
-            else
-                unset_var INCLUDE_DBT_API_DLRL_SACPP
-            fi
-        else
-            unset_var INCLUDE_DBT_LOC
-            unset_var INCLUDE_DBT_API_DLRL
-        fi
-    else
-        unset_var INCLUDE_DBT_DLRL
     fi
 else
     unset_var INCLUDE_DBT_API

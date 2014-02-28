@@ -25,7 +25,7 @@ using System.Threading;
 
 using DDS;
 using DDSAPIHelper;
-using ContentFilteredTopicData;
+using StockMarket;
 
 
 namespace ContentFilteredPublisher

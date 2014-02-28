@@ -19,10 +19,12 @@
  * limitations under the License.
  */
 
-/* This implementation-defined header stands in for the C99 header files
- * inttypes.h. Under toolchains that support inttypes.h, this header can
- * simply include that one. Under toolchains that do not, this header must
- * provide equivalent definitions.
+/* This implementation-defined header stands in for the C99 header file
+ * inttypes.h.
+ * Under toolchains that support inttypes.h, this header can
+ * simply include that one.
+ * Under toolchains that do not support inttypes.h, this header
+ * must provide equivalent definitions.
  */
 
 #include <stdint.h>

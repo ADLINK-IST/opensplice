@@ -781,6 +781,8 @@ c_moduleSpec(
     /* Standard starting lines and includes */
     c_outi(&newContext,0,"\n#ifndef MODULE_%s_HEADER\n",moduleName);
     c_outi(&newContext,0,"#define MODULE_%s_HEADER\n\n",moduleName);
+
+    c_outi(&newContext,0,"#include \"os_if.h\"\n");
     c_outi(&newContext,0,"#include \"c_base.h\"\n");
     c_outi(&newContext,0,"#include \"c_misc.h\"\n");
     c_outi(&newContext,0,"#include \"c_sync.h\"\n");
@@ -794,15 +796,23 @@ c_moduleSpec(
     c_genDependancies(c_baseObject(o), &newContext);
     c_out(&newContext,"\n");
 
+    c_outi(&newContext,0,"\n#ifdef MODEL_%s_IMPLEMENTATION\n",moduleName);
+    c_outi(&newContext,0,"#define OS_API OS_API_EXPORT\n");
+    c_outi(&newContext,0,"#else\n");
+    c_outi(&newContext,0,"#define OS_API OS_API_IMPORT\n");
+    c_outi(&newContext,0,"#endif\n\n");
+
     /* Now start the actual generation of types */
     newContext.processing = context->processing;
     newContext.action = c_genObjectSpec;
 
     c_metaWalk(c_metaObject(o), (c_metaWalkAction)c_genObjectSpec, &newContext);
 
-    c_outi(&newContext,0,"c_bool\n");
+    c_outi(&newContext,0,"OS_API c_bool\n");
     c_outi(&newContext,0,"load%s(\n",moduleName);
     c_outi(&newContext,1,"c_base base);\n\n");
+
+    c_outi(&newContext,0,"#undef OS_API\n\n");
 
     c_outi(&newContext,0,"\n#endif /* MODULE_%s_HEADER */\n\n",moduleName);
 
@@ -846,6 +856,31 @@ c_moduleBody(
     c_outi(&newContext,0,"#define Resolve(s,o) c_metaResolve(c_metaObject(s),o)\n");
     c_outi(&newContext,0,"#define ResolveType(s,t) c_type(c_metaResolve(c_metaObject(s),t))\n");
     c_outi(&newContext,0,"#define ResolveClass(s,c) c_class(c_metaResolve(c_metaObject(s),c))\n\n");
+
+    c_outi(&newContext, 0, "#if defined(__GNUC__)\n");
+    c_outi(&newContext, 0, "#if ((__GNUC__ * 100) + __GNUC_MINOR__) >= 402\n");
+    c_outi(&newContext, 0, "#define OSPL_GCC_DIAG_STR(s) #s\n");
+    c_outi(&newContext, 0, "#define OSPL_GCC_DIAG_JOINSTR(x,y) OSPL_GCC_DIAG_STR(x ## y)\n");
+    c_outi(&newContext, 0, "#define OSPL_GCC_DIAG_DO_PRAGMA(x) _Pragma (#x)\n");
+    c_outi(&newContext, 0, "#define OSPL_GCC_DIAG_PRAGMA(x) OSPL_GCC_DIAG_DO_PRAGMA(GCC diagnostic x)\n");
+    c_outi(&newContext, 0, "#if ((__GNUC__ * 100) + __GNUC_MINOR__) >= 406\n");
+    c_outi(&newContext, 0, "#define OSPL_DIAG_OFF(x) OSPL_GCC_DIAG_PRAGMA(push) OSPL_GCC_DIAG_PRAGMA(ignored OSPL_GCC_DIAG_JOINSTR(-W,x))\n");
+    c_outi(&newContext, 0, "#define OSPL_DIAG_ON(x) OSPL_GCC_DIAG_PRAGMA(pop)\n");
+    c_outi(&newContext, 0, "#else\n");
+    c_outi(&newContext, 0, "#define OSPL_DIAG_OFF(x) OSPL_GCC_DIAG_PRAGMA(ignored OSPL_GCC_DIAG_JOINSTR(-W,x))\n");
+    c_outi(&newContext, 0, "#define OSPL_DIAG_ON(x)  OSPL_GCC_DIAG_PRAGMA(warning OSPL_GCC_DIAG_JOINSTR(-W,x))\n");
+    c_outi(&newContext, 0, "#endif\n");
+    c_outi(&newContext, 0, "#else\n");
+    c_outi(&newContext, 0, "#define OSPL_DIAG_OFF(x)\n");
+    c_outi(&newContext, 0, "#define OSPL_DIAG_ON(x)\n");
+    c_outi(&newContext, 0, "#endif\n");
+    c_outi(&newContext, 0, "#else\n");
+    c_outi(&newContext, 0, "#define OSPL_DIAG_OFF(x)\n");
+    c_outi(&newContext, 0, "#define OSPL_DIAG_ON(x)\n");
+    c_outi(&newContext, 0, "#endif\n\n");
+
+    c_outi(&newContext, 0, "OSPL_DIAG_OFF(unused-variable)\n\n");
+
     c_outi(&newContext,0,"c_bool\n");
     c_outi(&newContext,0,"load%s(\n",moduleName);
     c_outi(&newContext,1,"c_base base)\n{\n");

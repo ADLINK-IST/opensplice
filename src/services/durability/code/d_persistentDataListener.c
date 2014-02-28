@@ -48,16 +48,6 @@ d_storeGroupAction(
     os_time waitTime)
 {
     d_storeResult result;
-    c_ulong storeCount, disposeCount, lifespanCount, cleanupCount, deleteCount;
-    c_ulong registerCount, unregisterCount;
-
-    storeCount = 0;
-    disposeCount = 0;
-    lifespanCount = 0;
-    cleanupCount = 0;
-    deleteCount = 0;
-    registerCount = 0;
-    unregisterCount = 0;
 
     switch(msg->kind){
         case V_GROUP_ACTION_WRITE:
@@ -380,9 +370,7 @@ d_smpPersist(
     d_admin admin;
     d_subscriber subscriber;
     d_store store;
-    d_storeResult result;
     d_durability durability;
-    u_result ur;
     os_time waitTime;
     v_groupQueue queue;
     c_ulong runCount;
@@ -401,7 +389,6 @@ d_smpPersist(
 
     waitTime.tv_sec = 0;
     waitTime.tv_nsec = 100000000; /*100ms*/
-    ur = U_RESULT_OK;
 
     terminate = d_durabilityMustTerminate(durability);
 
@@ -437,7 +424,7 @@ d_smpPersist(
         /* Store all messages */
         while(!terminate && msg){
             count++;
-            result = d_storeGroupAction(msg, listener, store, waitTime);
+            (void)d_storeGroupAction(msg, listener, store, waitTime);
             c_free(msg);
             msg = v_groupQueueTake(queue);
             terminate = d_durabilityMustTerminate(durability);
@@ -457,12 +444,6 @@ d_smpPersist(
                 os_mutexUnlock(&(listener->pauseMutex));
             }
         }
-
-        d_printTimedEvent(durability, D_LEVEL_SEVERE,
-                D_THREAD_PERISTENT_DATA_LISTENER,
-                "Worker sleeping again... (processed: %d, runCount=%d)\n",
-                count, listener->runCount);
-
     }
 
     /* Unlock condition variable */
@@ -744,23 +725,15 @@ c_iter
 d_persistentDataListenerGetGroupExpr(
     d_persistentDataListener listener)
 {
-    d_durability durability;
     d_admin admin;
-    c_char *result;
     d_nameSpace ns;
     d_durabilityKind dkind;
     c_iter exprList;
-    c_ulong length;
-    c_long i, j;
+    c_long i;
     c_iter nameSpaces;
 
     admin = d_listenerGetAdmin(d_listener(listener));
-    durability = d_adminGetDurability(admin);
-
-    result = NULL;
     nameSpaces = NULL;
-    length = 0;
-    j = 0;
     exprList = c_iterNew(NULL);
 
     assert (admin);
@@ -790,6 +763,7 @@ freeExpression(
     void* o,
     void* udata)
 {
+    OS_UNUSED_ARG(udata);
     d_free(o);
 }
 

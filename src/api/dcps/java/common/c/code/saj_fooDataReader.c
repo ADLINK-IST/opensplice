@@ -332,9 +332,8 @@ saj_fooDataReaderParallelDemarshallingMain(
             if(os_condWait(&pdc->startCnd, &pdc->mtx) != os_resultSuccess) goto err_condwait;
         }
         os_mutexUnlock(&pdc->mtx);
-        /* pdc->terminate is guaranteed to only toggle to TRUE in a lock, and it
-         * is only toggled back to FALSE in a single-threaded context, so reading
-         * outside the lock is OK. */
+        /* pdc->terminate is guaranteed to only toggle to TRUE in a lock,
+         * so reading outside the lock is OK. */
         if(pdc->terminate) break;
 
         saj_dataReaderParallelCopy(env, pdc);
@@ -356,11 +355,6 @@ saj_fooDataReaderParallelDemarshallingMain(
     if(os_mutexLock(&pdc->superMtx) != os_resultSuccess) goto err_mtx_lock;
     if(os_mutexLock(&pdc->mtx) != os_resultSuccess) goto err_double_mtx_lock;
     pdc->nrofWorkers--;
-    if(pdc->nrofWorkers == 0){
-        /* This is single-threaded access now, so pdc->terminate can be toggled
-         * back to 0 outside the pdc->mtx lock. */
-        pdc->terminate = 0U;
-    }
     os_mutexUnlock(&pdc->mtx);
     os_mutexUnlock(&pdc->superMtx);
 
@@ -385,9 +379,8 @@ saj_fooDataReaderParallelDemarshallingContextFinalize(
     if(pdc){
         saj_parDemContext_signal_terminate(pdc);
         (*env)->CallVoidMethod(env, jdatareader, GET_CACHED(dataReaderImplClassJoinWorkers_mid));
-        /* Assert that all threads are actually stopped, so the terminate flag
-         * is reset (last one to stop will do this). */
-        assert(pdc->terminate == 0);
+        /* Assert that all threads are actually stopped. */
+        assert(pdc->nrofWorkers == 0);
 
         saj_parDemContext_free(pdc);
     }
@@ -404,6 +397,7 @@ saj_fooDataReaderSetParallelReadThreadCount(
     int started = 0;
     sajParDemContext pdc = NULL;
 
+
     if(saj_read_parallelDemarshallingContext_address(env, jdatareader, &pdc) != SAJ_RETCODE_OK){
         goto err_get_address;
     }
@@ -413,9 +407,10 @@ saj_fooDataReaderSetParallelReadThreadCount(
         saj_parDemContext_signal_terminate(pdc);
         /* Join threads */
         (*env)->CallVoidMethod(env, jdatareader, GET_CACHED(dataReaderImplClassJoinWorkers_mid));
-        /* Assert that all threads are actually stopped, so the terminate flag is
-        * reset (last  one to stop will do this). */
-        assert(pdc->terminate == 0);
+        /* Assert that all threads are actually stopped */
+        assert(pdc->nrofWorkers == 0);
+        /* pdc can be reused if new set number is >1, reset terminate flag */
+        pdc->terminate = 0;
         /* If the requested size is 0 or 1, this will both result in a single-threaded
          * copy, so we don't have to start any extra threads. If previously there
          * were threads created, we can now cleanup the context as well. */
@@ -565,6 +560,8 @@ SAJ_FUNCTION(jniRead)(
     saj_readerContext ctx;
     gapi_fooDataReader dataReader;
 
+    OS_UNUSED_ARG(object);
+
     dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
     result = fillReaderContext(env, DataReader,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -624,6 +621,8 @@ SAJ_FUNCTION(jniTake)(
     saj_readerContext ctx;
     gapi_fooDataReader dataReader;
 
+    OS_UNUSED_ARG(object);
+
     dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
     result = fillReaderContext(env, DataReader,
         (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -679,6 +678,8 @@ SAJ_FUNCTION(jniReadWCondition)(
     saj_readerContext ctx;
     gapi_fooDataReader dataReader;
 
+    OS_UNUSED_ARG(object);
+
     dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
     result = fillReaderContext(env, DataReader,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -732,6 +733,8 @@ SAJ_FUNCTION(jniTakeWCondition)(
     saj_readerContext ctx;
     gapi_fooDataReader dataReader;
 
+    OS_UNUSED_ARG(object);
+
     dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
     result = fillReaderContext(env, DataReader,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -782,9 +785,10 @@ SAJ_FUNCTION(jniReadNextSample)(
     gapi_sampleInfo *si = NULL;
     C_STRUCT(saj_dstInfo) dstInfo;
     gapi_foo *dst = NULL;
-    jobject data_element;
+    jobject data_element = NULL;
     sajReaderCopyCache *rc = saj_copyCacheReaderCache((saj_copyCache)(PA_ADDRCAST)copyCache);
 
+    OS_UNUSED_ARG(object);
     assert (DataReader);
 
     if (received_data != NULL) {
@@ -839,8 +843,10 @@ SAJ_FUNCTION(jniTakeNextSample)(
     gapi_sampleInfo *si = NULL;
     C_STRUCT(saj_dstInfo) dstInfo;
     gapi_foo *dst = NULL;
-    jobject data_element;
+    jobject data_element = NULL;
     sajReaderCopyCache *rc = saj_copyCacheReaderCache((saj_copyCache)(PA_ADDRCAST)copyCache);
+
+    OS_UNUSED_ARG(object);
 
     if (received_data != NULL) {
         data_element = (*env)->GetObjectField(env, received_data, rc->dataHolder_value_fid);
@@ -905,6 +911,8 @@ SAJ_FUNCTION(jniReadInstance)(
     saj_readerContext ctx;
     gapi_fooDataReader dataReader;
 
+    OS_UNUSED_ARG(object);
+
     dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
     result = fillReaderContext(env, DataReader,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -967,6 +975,8 @@ SAJ_FUNCTION(jniTakeInstance)(
     saj_readerContext ctx;
     gapi_fooDataReader dataReader;
 
+    OS_UNUSED_ARG(object);
+
     dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
     result = fillReaderContext(env, DataReader,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -1028,6 +1038,8 @@ SAJ_FUNCTION(jniReadNextInstance)(
     jint result;
     saj_readerContext ctx;
     gapi_fooDataReader dataReader;
+
+    OS_UNUSED_ARG(object);
 
     dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
     result = fillReaderContext(env, DataReader,
@@ -1092,6 +1104,8 @@ SAJ_FUNCTION(jniTakeNextInstance)(
     saj_readerContext ctx;
     gapi_fooDataReader dataReader;
 
+    OS_UNUSED_ARG(object);
+
     dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
     result = fillReaderContext(env, DataReader,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -1150,6 +1164,8 @@ SAJ_FUNCTION(jniReadNextInstanceWCondition)(
     saj_readerContext ctx;
     gapi_fooDataReader dataReader;
 
+    OS_UNUSED_ARG(object);
+
     dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
     result = fillReaderContext(env, DataReader,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -1206,6 +1222,8 @@ SAJ_FUNCTION(jniTakeNextInstanceWCondition)(
     saj_readerContext ctx;
     gapi_fooDataReader dataReader;
 
+    OS_UNUSED_ARG(object);
+
     dataReader = (gapi_fooDataReader)saj_read_gapi_address(env, DataReader);
     result = fillReaderContext(env, DataReader,
                 (saj_copyCache)(PA_ADDRCAST)copyCache,
@@ -1256,8 +1274,10 @@ SAJ_FUNCTION(jniGetKeyValue)(
     C_STRUCT(saj_dstInfo) dstInfo;
     gapi_foo *dst = NULL;
     jint result;
-    jobject element;
+    jobject element = NULL;
     sajReaderCopyCache *rc = saj_copyCacheReaderCache((saj_copyCache)(PA_ADDRCAST)copyCache);
+
+    OS_UNUSED_ARG(object);
 
     assert (DataReader);
 
@@ -1304,6 +1324,7 @@ SAJ_FUNCTION(jniLookupInstance)(
     gapi_foo *src = NULL;
     jlong result;
 
+    OS_UNUSED_ARG(object);
     assert (DataReader);
 
     if (instance != NULL) {

@@ -39,6 +39,7 @@ JNI_CLASS += DomainParticipantFactoryImpl.class
 JNI_CLASS += GuardCondition.class
 JNI_CLASS += WaitSet.class
 JNI_CLASS += ErrorInfo.class
+JNI_CLASS += QosProvider.class
 
 FULL_CLASSPATH="$(JNI_CLASS_DIR):$(JAVAH_INCLUDE)"
 
@@ -54,18 +55,19 @@ saj_%.h: $(JNI_CLASS_DIR_DDS)/%.class
 	$(JAVAH) $(JAVAH_FLAGS) -o $@ -classpath $(FULL_CLASSPATH) -jni DDS.$(notdir $(subst .class,,$<))
 
 CPPFLAGS	+= -DOSPL_BUILD_DCPSSAJ
-CFLAGS   += $(SHCFLAGS) $(MTCFLAGS)
+CFLAGS		+= $(SHCFLAGS) $(MTCFLAGS)
+CINCS		+= -I$(OSPL_HOME)/src/api/dcps/common/include
+CINCS		+= -I$(OSPL_HOME)/src/api/dcps/sac/include
 CINCS		+= -I$(OSPL_HOME)/src/api/dcps/gapi/include
 CINCS		+= -I$(OSPL_HOME)/src/database/database/include
-CINCS           += -I$(OSPL_HOME)/src/database/serialization/include
+CINCS		+= -I$(OSPL_HOME)/src/database/serialization/include
 CINCS		+= -I$(OSPL_HOME)/src/kernel/include
 CINCS		+= -I$(OSPL_HOME)/src/user/include
 CINCS		+= -I$(OSPL_HOME)/src/tools/idlpp/include
 CINCS		+= $(JAVA_INCLUDE)
 
 LDFLAGS  += $(SHLDFLAGS)
-LDLIBS   += $(SHLDLIBS)
-LDLIBS	+= -l$(DDS_OS) -l$(DDS_DATABASE) -l$(DDS_SERIALIZATION) -l$(DDS_DCPSGAPI) -l$(DDS_USER) -l$(DDS_KERNEL)
+LDLIBS   += -l$(DDS_CORE) $(SHLDLIBS)
 
 -include $(DEPENDENCIES)
 

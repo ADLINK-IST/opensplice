@@ -152,7 +152,7 @@ v_deliveryServiceNew (
         _this->subscriptions = c_tableNew(type, "userData.key.systemId,userData.key.localId");
         c_free(type);
 
-        c_mutexInit(&(_this->mutex), PRIVATE_MUTEX);
+        c_mutexInit(&(_this->mutex), SHARED_MUTEX);
 
         q->userKey.enable = TRUE;
         q->userKey.expression = NULL;

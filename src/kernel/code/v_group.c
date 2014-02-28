@@ -25,6 +25,7 @@
 #include "v_public.h"
 #include "v_instance.h"
 #include "v__dataReaderInstance.h"
+#include "v__dataReaderEntry.h"
 #include "v_groupCache.h"
 #include "v__groupInstance.h"
 #include "v__groupStream.h"
@@ -97,6 +98,7 @@ createGroupSampleType(
     c_base base;
     c_char *name;
     c_long length,sres;
+    (void)sres;
 
     kernel = v_objectKernel(topic);
     base = c_getBase(kernel);
@@ -142,6 +144,7 @@ createGroupInstanceType(
     c_base base;
     c_char *name;
     c_long length,sres;
+    (void)sres;
 
     kernel = v_objectKernel(topic);
     base = c_getBase(kernel);
@@ -387,6 +390,16 @@ instanceFree (
 {
     OS_UNUSED_ARG(arg);
     v_groupInstanceFree(v_groupInstance(o));
+    return TRUE;
+}
+
+static c_bool
+groupwriterAdministrationFree (
+    c_object o,
+    c_voidp arg)
+{
+    OS_UNUSED_ARG(arg);
+    c_free(v_groupwriterAdministration(o));
     return TRUE;
 }
 
@@ -858,6 +871,28 @@ entrySetDisposeAction(v_groupEntry entry, c_voidp arg)
 }
 
 static c_bool
+entrySetMarkReadersInstanceStatesAction(v_groupEntry entry, c_voidp arg)
+{
+    v_dataReaderEntry reader;
+    c_ulong flags = *((c_ulong *)arg);
+
+    reader = v_dataReaderEntry(entry->entry);
+    v_dataReaderEntryMarkInstanceStates (reader, flags);
+    return TRUE;
+}
+
+static c_bool
+entrySetUnmarkReadersInstanceStatesAction(v_groupEntry entry, c_voidp arg)
+{
+    v_dataReaderEntry reader;
+    c_ulong flags = *((c_ulong *)arg);
+
+    reader = v_dataReaderEntry(entry->entry);
+    v_dataReaderEntryUnmarkInstanceStates (reader, flags);
+    return TRUE;
+}
+
+static c_bool
 v_groupEntrySetWalk(
     struct v_groupEntrySet *s,
     v_groupEntrySetWalkAction action,
@@ -872,6 +907,24 @@ v_groupEntrySetWalk(
         proxy = proxy->next;
     }
     return proceed;
+}
+
+/* Set the specified flags for the instanceStates of the
+ * specified DataReader entries.
+ */
+static void
+v_groupEntrySetMarkReaderInstanceStates( struct v_groupEntrySet *set, c_ulong flags )
+{
+   v_groupEntrySetWalk( set, entrySetMarkReadersInstanceStatesAction, &flags );
+}
+
+/* Reset the specified flags for the instanceStates of the
+ * specified DataReader entries.
+ */
+static void
+v_groupEntrySetUnmarkReaderInstanceStates( struct v_groupEntrySet *set, c_ulong flags )
+{
+   v_groupEntrySetWalk( set, entrySetUnmarkReadersInstanceStatesAction, &flags );
 }
 
 static c_bool
@@ -1008,6 +1061,10 @@ v_groupInit(
      * partition involved in this group.
      */
     group->partitionAccessMode = v_kernelPartitionAccessMode(kernel, v_partitionName(partition));
+
+    type  = c_resolve(base,"kernelModule::v_groupwriterAdministration");
+    group->writerAdministration = c_tableNew(type, "gid.systemId,gid.localId,gid.serial");
+    c_free(type);
 }
 
 v_group
@@ -1049,6 +1106,8 @@ v_groupDeinit(
     assert(C_TYPECHECK(group,v_group));
 
     c_free(group->streams);
+    c_tableWalk(group->writerAdministration,groupwriterAdministrationFree,NULL);
+    c_free(group->writerAdministration);
     c_tableWalk(group->instances,instanceFree,NULL);
     c_condDestroy(&group->cv);
 }
@@ -1335,6 +1394,7 @@ C_STRUCT(v_groupFlushArg) {
     v_groupFlushCallback action;
     v_entry entry;
     v_groupInstance grInst;
+    v_writeResult writeResult;
 };
 C_CLASS(v_groupFlushArg);
 
@@ -1349,19 +1409,17 @@ doFlush(
     c_bool          propagateTheMessage;
 
     assert(C_TYPECHECK(sample,v_groupSample));
+    assert(sample != NULL);
+    assert(arg != NULL);
 
     groupFlushArg = (v_groupFlushArg)arg;
-
-    assert(sample != NULL);
-    assert(groupFlushArg != NULL);
-
     entry = groupFlushArg->entry;
-
     message = v_groupSampleMessage(sample);
     assert(message);
 
     assert(v_messageStateTest(message,L_WRITE) ||
            v_messageStateTest(message,L_DISPOSED));
+
     /* perform action and/or process the message */
     if (groupFlushArg->action == NULL) {
         propagateTheMessage = TRUE;
@@ -1410,7 +1468,7 @@ doUnregisterFlush(
     else
     {
         propagateTheMessage = groupFlushArg->action(unregister, grInst,
-                V_GROUP_FLUSH_REGISTRATION, groupFlushArg->arg);
+                V_GROUP_FLUSH_UNREGISTRATION, groupFlushArg->arg);
     }
     if (entry && propagateTheMessage)
     {
@@ -1441,6 +1499,75 @@ doUnregisterFlush(
 }
 
 static c_bool
+findWriter(
+    v_groupSample o,
+    c_voidp arg)
+{
+    v_gid *gidArg = arg;
+    v_message message = v_groupSampleMessage(o);
+
+    if(v_gidCompare(message->writerGID, *gidArg) != C_EQ) {
+        /* If the gid does not match the writer we're looking for, keep searching. */
+        return TRUE;
+    }
+
+    /* Writer is found, stop walk. */
+    return FALSE;
+}
+
+static void
+flushInstanceRegistrations(
+    v_groupInstance grInst,
+    v_groupFlushArg arg)
+{
+    v_registration  registration;
+    v_entry entry;
+
+    entry = arg->entry;
+    registration = grInst->registrations;
+
+    while(registration) {
+        /* Check if writerGID occurs in one of the samples */
+        if(v_groupInstanceWalkSamples(grInst,findWriter,&registration->writerGID)) {
+            c_bool propagateTheMessage = FALSE;
+
+            if (arg->action == NULL) {
+                propagateTheMessage = TRUE;
+            } else {
+                propagateTheMessage = arg->action(registration,
+                        grInst, V_GROUP_FLUSH_REGISTRATION,
+                        arg->arg);
+            }
+            if(entry && propagateTheMessage) {
+                v_message message = v_groupInstanceCreateMessage(grInst);
+
+                if (message)
+                {
+                    message->writerGID = registration->writerGID;
+                    message->qos = c_keep(registration->qos);
+                    message->writeTime = registration->writeTime;
+
+                    /* Set the nodeState of the message to REGISTER. */
+                    v_stateSet(v_nodeState(message), L_REGISTER);
+                    /* write the sample to other node(s) */
+                    v_entryWrite(entry, message, V_NETWORKID_LOCAL,NULL);
+                    c_free(message);
+                }
+                else
+                {
+                    OS_REPORT_2(OS_ERROR,
+                              "v_group",0,
+                              "v_group::doUnregisterFlush(unregister=0x%x, arg=0x%x)\n"
+                              "        Failed to allocate an unregister message.",
+                              registration, arg);
+                }
+            }
+        }
+        registration = registration->next;
+    }
+}
+
+static c_bool
 flushInstance (
     c_object o,
     c_voidp arg)
@@ -1451,6 +1578,12 @@ flushInstance (
 
     grInst = v_groupInstance(o);
     groupFlushArg = (v_groupFlushArg)arg;
+
+    /* For each registration that doesn't have a sample, insert an explicit registration
+     * message. When the group contains unregister messages for instances that are still
+     * alive, the explicit registrations will make sure that when interpreting the result of
+     * a flush the final registration-count will be correct. */
+    flushInstanceRegistrations(grInst, groupFlushArg);
 
     result = v_groupInstanceWalkSamples(grInst,doFlush,arg);
     if(grInst->oldest) {
@@ -1564,6 +1697,29 @@ C_STRUCT(v_nwEntryWriteArg) {
 };
 
 C_CLASS(v_nwEntryWriteArg);
+
+C_STRUCT(v_writerAdmin) {
+    c_ulong missedMessages;
+    v_message message;
+};
+
+C_CLASS(v_writerAdmin);
+
+static c_bool
+handleSampleLost(
+    v_groupEntry proxy,
+    c_voidp arg)
+{
+    c_bool result = TRUE;
+    v_writerAdmin wrAdmin = (v_writerAdmin)arg;
+    v_reader reader = v_entryReader(proxy->entry);
+    /* Filter-out all QoS-incompatible messages. */
+    if (v_messageQos_isReaderCompatible(wrAdmin->message->qos,reader)) {
+        result = v_dataReaderUpdateSampleLost(reader,wrAdmin->missedMessages);
+    }
+    return result;
+
+}
 
 static c_bool
 entryRegister(
@@ -1751,10 +1907,52 @@ instanceWrite(
         } else {
             writeArg->writeResult = V_WRITE_PRE_NOT_MET;
         }
-        assert(item->registrationCount <= instance->liveliness);
+        /* Once registrationCount becomes 0, instance may not be read anymore. */
+        assert(item->registrationCount == 0 || item->registrationCount <= instance->liveliness);
     }
     if (item->registrationCount == 0) {
         writeArg->deadCacheItems = c_iterInsert(writeArg->deadCacheItems, item);
+    }
+
+    return TRUE;
+}
+
+static c_bool
+groupReadyToAcceptSample (
+                          v_group group
+                          )
+{
+    v_kernel kernel = v_objectKernel(group);
+
+    /* If the kernel's configuration has at least one network service, and
+     * they are not all yet connected to the group (i.e. because a service
+     * has not finished its initialization), then the group must not accept
+     * the sample.  If it did accept, that sample would never be received
+     * by v_networkQueue and therefore would never be sent remotely.  This
+     * would have the effect of remote nodes not getting some early written
+     * samples (see scarab 2907 for discussion)
+     * If the group rejects the sample, the ResendManager will be responsible
+     * for ensuring the subsequent sending of the sample when the network
+     * queues become active
+     */
+
+    /* Note this is a window where builtin topics are written before the kernel
+     * has even parsed the XML.  In this case it may be possible that these
+     * could be missed by the slow starting services.  However this is not an
+     * issue since these can be aligned later by the durability service.
+     */
+
+    /* Implementation decision: it was considered to add something like an
+     * "allServicesConnected" status flag to the group.  However in line with
+     * the possible future requirement to support the dynamic starting, stopping
+     * and restarting of internal services, as well as a possible altering of
+     * the configuration at run time, it was felt that a check that the number
+     * of currently attached services matched the number expected was more
+     * future proof.  In this case the v_kernelNetworkCount function could be
+     * updated to support the idea of a nodal configuration repository.
+     */
+    if (v_kernelNetworkCount (kernel) > (c_count(group->attachedServices) + c_count(group->notInterestedServices))) {
+        return FALSE;
     }
 
     return TRUE;
@@ -1782,15 +1980,41 @@ forwardMessageToNetwork (
         group = v_groupInstanceOwner(instance);
 
         if (writingNetworkId == V_NETWORKID_LOCAL) {
-            v_groupEntrySetWalk(&group->networkEntrySet,
-                                nwEntryWrite,
-                                &writeArg);
-        } else {
-            /* TODO: For routing network services, echo-cancellation may need to
-             * be added here. */
-            v_groupEntrySetWalk(&group->routedEntrySet,
-                                nwEntryWrite,
-                                &writeArg);
+            /* Locally produced data must go out over the network, so check
+             * whether the group is connected to all expected networking services.
+             * If this is not the case, then reject the sample so it will not be
+             * missed by late joining services.
+             */
+            if (!groupReadyToAcceptSample(group)) {
+                writeArg.writeResult = V_WRITE_REJECTED;
+            } else {
+                v_groupEntrySetWalk(&group->networkEntrySet,
+                                    nwEntryWrite,
+                                    &writeArg);
+            }
+        } else if (writingNetworkId != V_NETWORKID_ANY){
+            /* Data coming in from another network may have to be routed to other
+             * network serves, but presumably only when not from V_NETWORKID_ANY
+             * (although the intended meaning is not documented anywhere, this is
+             * what seems to be the expected outcome).  If it has to be routed, and
+             * the group is not yet connected to all expected networking services,
+             * late joining services may miss the sample, hence the potential
+             * rejection.
+             */
+            if (!groupReadyToAcceptSample(group)) {
+                /* Routing effectively isn't implemented, but
+                   rejecting here causes big trouble.  So better not
+                   reject. */
+#if 0
+                writeArg.writeResult = V_WRITE_REJECTED;
+#endif
+            } else {
+                /* TODO: For routing network services, echo-cancellation may need to
+                 * be added here. */
+                v_groupEntrySetWalk(&group->routedEntrySet,
+                                    nwEntryWrite,
+                                    &writeArg);
+            }
         }
     }
     return writeArg.writeResult;
@@ -1828,6 +2052,8 @@ forwardRegisterMessage (
         v_groupEntrySetWalk(&group->topicEntrySet,
                             entryRegister,
                             &registerArg);
+    } else {
+        registerArg.writeResult = V_WRITE_PRE_NOT_MET;
     }
     return registerArg.writeResult;
 }
@@ -1995,47 +2221,6 @@ v_groupSampleCount (
 }
 */
 
-static c_bool
-groupReadyToAcceptSample (
-    v_group group
-)
-{
-    v_kernel kernel = v_objectKernel(group);
-
-    /* If the kernel's configuration has at least one network service, and
-     * they are not all yet connected to the group (i.e. because a service
-     * has not finished its initialization), then the group must not accept
-     * the sample.  If it did accept, that sample would never be received
-     * by v_networkQueue and therefore would never be sent remotely.  This
-     * would have the effect of remote nodes not getting some early written
-     * samples (see scarab 2907 for discussion)
-     * If the group rejects the sample, the ResendManager will be responsible
-     * for ensuring the subsequent sending of the sample when the network
-     * queues become active
-     */
-
-    /* Note this is a window where builtin topics are written before the kernel
-     * has even parsed the XML.  In this case it may be possible that these
-     * could be missed by the slow starting services.  However this is not an
-     * issue since these can be aligned later by the durability service.
-     */
-
-    /* Implementation decision: it was considered to add something like an
-     * "allServicesConnected" status flag to the group.  However in line with
-     * the possible future requirement to support the dynamic starting, stopping
-     * and restarting of internal services, as well as a possible altering of
-     * the configuration at run time, it was felt that a check that the number
-     * of currently attached services matched the number expected was more
-     * future proof.  In this case the v_kernelNetworkCount function could be
-     * updated to support the idea of a nodal configuration repository.
-     */
-    if (v_kernelNetworkCount (kernel) != (c_count(group->attachedServices) + c_count(group->notInterestedServices))) {
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
 static v_groupActionKind
 determineStreamAction(v_groupInstance instance, c_time now, v_groupActionKind intentdedAction)
 {
@@ -2077,6 +2262,44 @@ determineStreamAction(v_groupInstance instance, c_time now, v_groupActionKind in
     return resultingAction;
 }
 
+/* Set the specified flags for all DataReader instance states associated
+ * with the specified group.
+ */
+void
+v_groupMarkReaderInstanceStates (
+    v_group group,
+    c_ulong flags)
+{
+    assert(C_TYPECHECK(group,v_group));
+
+    if (flags != 0) {
+        c_mutexLock(&group->mutex);
+
+        v_groupEntrySetMarkReaderInstanceStates( &group->topicEntrySet, flags );
+
+        c_mutexUnlock(&group->mutex);
+    }
+}
+
+/* Reset the specified flags for all DataReader instance states associated
+ * with the specified group.
+ */
+void
+v_groupUnmarkReaderInstanceStates (
+    v_group group,
+    c_ulong flags)
+{
+    assert(C_TYPECHECK(group,v_group));
+
+    if (flags != 0) {
+        c_mutexLock(&group->mutex);
+
+        v_groupEntrySetUnmarkReaderInstanceStates( &group->topicEntrySet, flags );
+
+        c_mutexUnlock(&group->mutex);
+    }
+}
+
 static c_bool
 disposeGroupInstance (
     c_object o,
@@ -2097,7 +2320,8 @@ disposeGroupInstance (
 v_writeResult
 v_groupDisposeAll (
     v_group group,
-    c_time timestamp)
+    c_time timestamp,
+    c_ulong flags)
 {
     C_STRUCT(disposeAllArg) disposeArg;
     v_kernel kernel;
@@ -2115,8 +2339,8 @@ v_groupDisposeAll (
     disposeMsg = v_groupCreateInvalidMessage(kernel, nullGID, NULL, timestamp);
     if (disposeMsg)
     {
-        /* Set the nodeState of the message to DISPOSED. */
-        v_stateSet(v_nodeState(disposeMsg), L_DISPOSED);
+        /* Set the nodeState of the message to DISPOSED, additionally, set all bits in the flags. */
+        v_stateSet(v_nodeState(disposeMsg), L_DISPOSED | flags);
 
         disposeArg.result = V_WRITE_SUCCESS;
         disposeArg.disposeMsg = disposeMsg;
@@ -2146,6 +2370,63 @@ v_groupDisposeAll (
     c_mutexUnlock(&group->mutex);
 
     return disposeArg.result;
+}
+
+void
+v_groupCheckForSampleLost(
+    v_group group,
+    v_message msg)
+{
+    v_groupwriterAdministration tmp, admin;
+    C_STRUCT(v_groupwriterAdministration) templ;
+    C_STRUCT(v_writerAdmin) status;
+    c_long diff;
+    c_type type;
+
+    templ.gid = msg->writerGID;
+
+    admin = v_groupwriterAdministration(c_find(group->writerAdministration, &templ));
+    if (admin) {
+        diff = msg->sequenceNumber - admin->seqNumber;
+        if (diff > 1) {
+            diff--; /* remove current sample from diff to match missed number of samples*/
+
+            status.missedMessages = diff;
+            status.message = msg;
+
+            /* We missed messages notify the reader to update the lostsamples statistic and give sample lost notification.
+             * Please note that handleSampleLost() always returns TRUE, and thus v_groupEntrySetWalk() will also always
+             * return TRUE. Therefore we consciously ignore its return type by casting it to void.
+             */
+            (void) v_groupEntrySetWalk(&group->topicEntrySet,
+                                       handleSampleLost,
+                                       &status);
+            (void) v_groupEntrySetWalk(&group->variantEntrySet,
+                                       handleSampleLost,
+                                       &status);
+        }
+
+        if (diff >= 1) {
+            admin->seqNumber = msg->sequenceNumber;
+        }
+    } else {
+        /* Add new writer admin */
+        type = c_subType(group->writerAdministration);
+        admin = c_new(type);
+        c_free(type);
+        if (admin) {
+            admin->gid = msg->writerGID;
+            admin->seqNumber = msg->sequenceNumber;
+            tmp = c_insert(group->writerAdministration, admin);
+            assert(tmp == admin);
+        } else {
+            OS_REPORT(OS_ERROR,
+              "v_groupCheckForSampleLost",0,
+              "Failed to allocate v_groupwriterAdministration object.");
+            assert(FALSE);
+        }
+    }
+    c_free(admin);
 }
 
 /* As part of scarab#2907, the new inout v_resendScope parameter to groupWrite
@@ -2182,6 +2463,7 @@ groupWrite (
     c_value keyValues[32];
     c_array messageKeyList;
     c_long i, nrOfKeys;
+    (void)found;
 
     assert(C_TYPECHECK(group,v_group));
     assert(C_TYPECHECK(msg,v_message));
@@ -2248,7 +2530,7 @@ groupWrite (
                  * So to be sure that it will not be disposed reset the epoch.
                  * Note that the v_groupInstanceRegister should perform this.
                  */
-                instance->epoch = C_TIME_ZERO;
+                instance->epoch = C_TIME_MIN_INFINITE;
             }
         }
         if ((instancePtr != NULL) && (*instancePtr == NULL)) {
@@ -2288,19 +2570,11 @@ groupWrite (
         }
     }
 
-    /* Now forward the message to all networks. Check whether the group is connected
-     * to all expected networking services.  If this is not the case, then reject the
-     * sample so it will not be missed by late joining services.
-     */
-    if (!groupReadyToAcceptSample(group)) {
+    /* Now forward the message to all networks. */
+    result = forwardMessageToNetwork(instance,msg,writingNetworkId, entry);
+    if (result == V_WRITE_REJECTED) {
         rejected = TRUE;
         *resendScope |= V_RESEND_REMOTE;
-    } else {
-        result = forwardMessageToNetwork(instance,msg,writingNetworkId, entry);
-        if (result == V_WRITE_REJECTED) {
-            rejected = TRUE;
-            *resendScope |= V_RESEND_REMOTE;
-        }
     }
 
     /* Now forward the message to all subscribers.
@@ -2490,6 +2764,28 @@ v_groupWriteNoStreamWithEntry (
 
     c_mutexLock(&group->mutex);
     result = groupWrite(group, msg, instancePtr, writingNetworkId, FALSE, entry, &resendScope);
+    c_mutexUnlock(&group->mutex);
+
+    return result;
+}
+
+v_writeResult
+v_groupWriteCheckSampleLost(
+    v_group group,
+    v_message msg,
+    v_groupInstance *instancePtr,
+    v_networkId writingNetworkId,
+    v_resendScope *resendScope)
+{
+    v_writeResult result;
+
+    c_mutexLock(&group->mutex);
+
+    v_groupCheckForSampleLost(group, msg);
+
+    V_MESSAGE_STAMP(msg, groupInsertTime);
+    result = groupWrite(group, msg, instancePtr, writingNetworkId, TRUE, NULL, resendScope);
+
     c_mutexUnlock(&group->mutex);
 
     return result;
@@ -2911,17 +3207,37 @@ removeRegistrationFromGroupInstance(
 }
 #endif
 
+void
+removeWriterAdmin(
+    v_group _this,
+    v_gid writerGID)
+{
+    C_STRUCT(v_groupwriterAdministration) templ;
+    v_groupwriterAdministration found;
+
+    templ.gid = writerGID;
+
+    found = c_remove(_this->writerAdministration, &templ, NULL, NULL);
+    if (found) {
+        c_free(found);
+    }
+}
 
 /*
  * This function unregisters all instances that relate through the provided
  * predicate to the GID supplied in the template.
+ * The argument 'isImplicit' indicates whether the request to unregister was
+ * implicit (i.e., on conto of the splice daemon) or an explicit unregister.
+ * Setting 'isImplicit' to TRUE will cause the unregister message (and possibly
+ * the dispose message generated by autodispose) to contain the flag L_IMPLICIT.
  */
 static void
 v_groupUnregisterByGidTemplate(
     v_group _this,
     v_gid tmplGid,
     v_matchIdentityAction predicate,
-    c_time timestamp)
+    c_time timestamp,
+    c_bool isImplicit)
 {
     v_registration registration;
     struct InstanceWalkArg arg;
@@ -2931,6 +3247,9 @@ v_groupUnregisterByGidTemplate(
 
     /* Lock group. */
     c_mutexLock(&_this->mutex);
+
+    /* Remove the writer admin for sample lost count */
+    removeWriterAdmin(_this, tmplGid);
 
     /* Update the purgeList to make room for what is to come. */
     updatePurgeList(_this, v_timeGet());
@@ -2956,7 +3275,7 @@ v_groupUnregisterByGidTemplate(
     grInst = v_groupInstance(c_iterTakeFirst(arg.instanceList));
     while (registration)
     {
-        v_groupInstancecleanup(grInst, registration, timestamp);
+        v_groupInstancecleanup(grInst, registration, timestamp, isImplicit);
         /* Decrease refCount of the registration and instance again. */
         c_free(registration);
         c_free(grInst);
@@ -2975,9 +3294,13 @@ void
 v_groupDisconnectWriter(
     v_group _this,
     struct v_publicationInfo *oInfo,
-    c_time timestamp)
+    c_time timestamp,
+    c_bool isLocal)
 {
-    v_groupUnregisterByGidTemplate(_this, oInfo->key, v_gidCompare, timestamp);
+    if (!isLocal) {
+        /* unregister the group because the writer has disconnect */
+        v_groupUnregisterByGidTemplate(_this, oInfo->key, v_gidCompare, timestamp, FALSE);
+    }
 }
 
 /* This function provides a predicate for finding GIDs that originate on the
@@ -3002,6 +3325,10 @@ v_systemIdCompare(
  * first locating the registration for the builtin writer of the node that
  * got disconnected for this group, and then using the default mechanism
  * for finding and unregistering all its builtin topics.
+ * Such unregistrations are considered to be implicit because no
+ * unregistration is actually received; the splice daemon only deduced
+ * that the writer is not alive anymore and generates an unregistration
+ * (and possibly a disconnect).
  */
 void
 v_groupDisconnectNode(
@@ -3009,7 +3336,7 @@ v_groupDisconnectNode(
     struct v_heartbeatInfo *missedHB)
 {
     v_groupUnregisterByGidTemplate(_this, missedHB->id,
-            v_systemIdCompare, missedHB->period);
+            v_systemIdCompare, missedHB->period, TRUE);
 }
 
 struct streamHelper{
@@ -3765,10 +4092,36 @@ v_groupLookupInstance(
     v_groupInstance result;
 
     if(group && keyValue){
+        c_mutexLock(&group->mutex);
         result = c_tableFind(group->instances, &keyValue[0]);
+        c_mutexUnlock(&group->mutex);
     } else {
         result = NULL;
     }
     return result;
 }
 
+v_groupInstance
+v_groupLookupInstanceAndRegistration(
+    v_group group,
+    c_value keyValue[],
+    v_gid gidTemplate,
+    v_matchIdentityAction predicate,
+    v_registration *registration)
+{
+    v_groupInstance result;
+
+    if(group && keyValue){
+        c_mutexLock(&group->mutex);
+        result = c_tableFind(group->instances, &keyValue[0]);
+        if (result) {
+            if (registration) {
+                *registration = v_groupInstanceGetRegistration(result, gidTemplate, predicate);
+            }
+        }
+        c_mutexUnlock(&group->mutex);
+    } else {
+        result = NULL;
+    }
+    return result;
+}

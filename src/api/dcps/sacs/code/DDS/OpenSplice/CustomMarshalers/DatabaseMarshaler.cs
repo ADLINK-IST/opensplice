@@ -74,7 +74,7 @@ namespace DDS.OpenSplice.CustomMarshalers
             }
         }
 
-        public Delegate CopyOutDelegate
+        public SampleCopyOutDelegate CopyOutDelegate
         {
             get
             {

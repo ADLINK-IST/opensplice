@@ -68,28 +68,64 @@ jni_writerNew(
     v_writerQos qos)
 {
     jni_writer wri;
-    u_writer uw;
     u_result ur;
     struct jni_writerTypeArg arg;
     
-    wri = NULL;
-    
-    if((pub != NULL) && (top != NULL)){    
-        ur = u_entityAction(u_entity(top->utopic), jni_writerTypeAction, &arg);
-        
-        if ((ur == U_RESULT_OK) && (arg.type != NULL)){
-            uw = u_writerNew(pub->upublisher, NULL, top->utopic, jni_writerCopy, qos, TRUE);
-    
-            if(uw != NULL){
-                wri = jni_writer(os_malloc((size_t)(C_SIZEOF(jni_writer))));
-                wri->publisher = pub;
-                wri->topic = top;
-                wri->uwriter = uw;
-                wri->deserializer = sd_serializerXMLNewTyped(arg.type);
-            }
-        }
+    if((pub == NULL) || (top == NULL)){
+        OS_REPORT_2(OS_ERROR, "jni_writerNew", 0,
+                "Bad parameter; jni_publisher (%p) and jni_topic (%p) may not be NULL.",
+                pub,
+                top);
+        goto err_badParam;
     }
+
+    assert(pub->upublisher);
+    assert(top->utopic);
+
+    if((ur = u_entityAction(u_entity(top->utopic), jni_writerTypeAction, &arg)) != U_RESULT_OK){
+        OS_REPORT_1(OS_ERROR, "jni_writerNew", ur,
+                "Failed to invoke jni_writerTypeAction(...) on top->utopic; u_entityAction(...) returned %s.",
+                u_resultImage(ur));
+        goto err_getWriterType;
+    }
+
+    if(arg.type == NULL){
+        /* Error reported by jni_writerTypeAction */
+        goto err_getWriterType;
+    }
+
+    if((wri = os_malloc(sizeof *wri)) == NULL){
+        OS_REPORT_1(OS_ERROR, "jni_writerNew", 0,
+                "Memory claim of %" PA_PRIuSIZE " denied.",
+                sizeof *wri);
+        goto err_malloc;
+    }
+
+    if((wri->deserializer = sd_serializerXMLNewTyped(arg.type)) == NULL){
+        /* Error reported by sd_serializerXMLNewTyped */
+        goto err_sd_serializerXMLNewTyped;
+    }
+
+    if((wri->uwriter = u_writerNew(pub->upublisher, NULL, top->utopic, jni_writerCopy, qos, TRUE)) == NULL){
+        /* Error reported by u_writerNew */
+        goto err_uwriterNew;
+    }
+
+    wri->publisher = pub;
+    wri->topic = top;
+
     return wri;
+
+/* Error handling */
+err_uwriterNew:
+    sd_serializerFree(wri->deserializer);
+err_sd_serializerXMLNewTyped:
+    os_free(wri);
+err_malloc:
+/* No undo for jni_writerTypeAction */
+err_getWriterType:
+err_badParam:
+    return NULL;
 }
 
 jni_result
@@ -154,6 +190,8 @@ jni_writerCopy(
     jni_writerCopyArg copyArg;
     sd_serializedData serData;
     
+    OS_UNUSED_ARG(type);
+
     copyArg = (jni_writerCopyArg)data;
     serData = sd_serializerFromString(copyArg->writer->deserializer, copyArg->xmlData);
     sd_serializerDeserializeIntoValidated(copyArg->writer->deserializer, serData, to);

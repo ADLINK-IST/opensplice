@@ -262,6 +262,7 @@ idl_basicMemberType (
     os_boolean stacRequested)
 {
     c_long maxlen = 0;
+    c_char *cIdName = idl_cId(name);
 
     switch (idl_typeBasicType(typeBasic)) {
     case idl_short:
@@ -277,30 +278,24 @@ idl_basicMemberType (
     case idl_octet:
         idl_fileOutPrintf (idl_fileCur(), "    %s%s = (%s)%s%s;\n",
             to_id,
-	    idl_cId(name),
-	    idl_corbaCTypeFromTypeSpec (idl_typeSpec(typeBasic)),
-	    from_id,
-	    idl_cId(name));
+            cIdName,
+            idl_corbaCTypeFromTypeSpec (idl_typeSpec(typeBasic)),
+            from_id,
+            cIdName);
         break;
     case idl_string:
         maxlen = idl_typeBasicMaxlen(typeBasic);
-        if(stacRequested)
-        {
-            idl_fileOutPrintf (idl_fileCur(), "    DDS_string_replace (%s%s, &%s%s);\n",
-                from_id,
-                idl_cId(name),
-                to_id,
-                idl_cId(name));
-        } else
-        {
-            idl_fileOutPrintf (idl_fileCur(), "    DDS_string_replace (%s%s, &%s%s);\n",
-                from_id,
-                idl_cId(name),
-                to_id,
-                idl_cId(name));
-        }
+        idl_fileOutPrintf (idl_fileCur(), "    DDS_string_replace (%s%s ? %s%s : \"\", &%s%s);\n",
+            from_id,
+            cIdName,
+            from_id,
+            cIdName,
+            to_id,
+            cIdName);
         break;
     }
+
+    os_free(cIdName);
 }
 
 /** @brief Generate copy statement for union case of basic type.
@@ -330,6 +325,7 @@ idl_basicCaseType (
     const char *from_id,
     const char *to_id)
 {
+    c_char *cIdName = idl_cId(name);
     switch (idl_typeBasicType(typeBasic)) {
     case idl_short:
     case idl_ushort:
@@ -344,19 +340,22 @@ idl_basicCaseType (
     case idl_octet:
         idl_fileOutPrintf (idl_fileCur(), "        %s%s = (%s)%s%s;\n",
             to_id,
-	    idl_cId(name),
-	    idl_corbaCTypeFromTypeSpec (idl_typeSpec(typeBasic)),
-	    from_id,
-	    idl_cId(name));
+            cIdName,
+            idl_corbaCTypeFromTypeSpec (idl_typeSpec(typeBasic)),
+            from_id,
+            cIdName);
         break;
     case idl_string:
-        idl_fileOutPrintf (idl_fileCur(), "        DDS_string_replace (%s%s, &%s%s);\n",
-	    from_id,
-	    idl_cId(name),
+        idl_fileOutPrintf (idl_fileCur(), "        DDS_string_replace (%s%s ? %s%s : \"\", &%s%s);\n",
+            from_id,
+            cIdName,
+            from_id,
+            cIdName,
             to_id,
-	    idl_cId(name));
+            cIdName);
         break;
     }
+    os_free(cIdName);
 }
 
 /** @brief callback function called on definition of a structure member in the IDL input file.
@@ -857,21 +856,13 @@ idl_arrayLoopCopyBody (
             case idl_tbasic:
                     /* QAC EXPECT 3416; No side effect here */
                 if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(typeSpec)))) == idl_string) {
-                    if(stacRequested)
-                    {
-                        idl_fileOutPrintf (idl_fileCur(), "    DDS_string_replace ((*%s)", from);
-                        idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf (idl_fileCur(), ", &(%s)", to);
-                        idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf (idl_fileCur(), ");\n");
-                    } else
-                    {
-                        idl_fileOutPrintf (idl_fileCur(), "    DDS_string_replace ((*%s)", from);
-                        idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf (idl_fileCur(), ", &(%s)", to);
-                        idl_arrayLoopCopyIndex(typeArray);
-                        idl_fileOutPrintf (idl_fileCur(), ");\n");
-                    }
+                    idl_fileOutPrintf (idl_fileCur(), "    DDS_string_replace ((*%s)", from);
+                    idl_arrayLoopCopyIndex(typeArray);
+                    idl_fileOutPrintf (idl_fileCur(), " ? (*%s)", from);
+                    idl_arrayLoopCopyIndex(typeArray);
+                    idl_fileOutPrintf (idl_fileCur(), " : \"\", &(%s)", to);
+                    idl_arrayLoopCopyIndex(typeArray);
+                    idl_fileOutPrintf (idl_fileCur(), ");\n");
                 } else {
                     idl_fileOutPrintf (idl_fileCur(), "    memcpy (%s", to);
                     idl_arrayLoopCopyIndex(typeArray);
@@ -897,21 +888,13 @@ idl_arrayLoopCopyBody (
         /* This may only be string */
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeBasicType (idl_typeBasic(typeSpec)) == idl_string) {
-            if(stacRequested)
-            {
-                idl_fileOutPrintf (idl_fileCur(), "DDS_string_replace ((*%s)", from);
-                idl_arrayLoopCopyIndex(typeArray);
-                idl_fileOutPrintf (idl_fileCur(), ", &(%s)", to);
-                idl_arrayLoopCopyIndex(typeArray);
-                idl_fileOutPrintf (idl_fileCur(), ");\n");
-            } else
-            {
-                idl_fileOutPrintf (idl_fileCur(), "DDS_string_replace ((*%s)", from);
-                idl_arrayLoopCopyIndex(typeArray);
-                idl_fileOutPrintf (idl_fileCur(), ", &(%s)", to);
-                idl_arrayLoopCopyIndex(typeArray);
-                idl_fileOutPrintf (idl_fileCur(), ");\n");
-            }
+            idl_fileOutPrintf (idl_fileCur(), "DDS_string_replace ((*%s)", from);
+            idl_arrayLoopCopyIndex(typeArray);
+            idl_fileOutPrintf (idl_fileCur(), " ? (*%s)", from);
+            idl_arrayLoopCopyIndex(typeArray);
+            idl_fileOutPrintf (idl_fileCur(), " : \"\", &(%s)", to);
+            idl_arrayLoopCopyIndex(typeArray);
+            idl_fileOutPrintf (idl_fileCur(), ");\n");
         } else {
             assert (0);
         }
@@ -1012,7 +995,7 @@ idl_arrayLoopCopyClose (
            ..
                for (i# = 0; i# < <size-dimension-last>; i#++) {
                     // copy array element
-                    DDS_string_replace (from[i1][i2]..[i#], &to[i1][i2]..[i#]) // for string
+                    DDS_string_replace (from[i1][i2]..[i#] ? from[i1][i2]..[i#] : "", &to[i1][i2]..[i#]) // for string
                     __<type>__copyOut (&from[i1][i2]..[i#], &to[i1][i2]..[i#]) // for struct, union
                     .. // for sequence, see sequence copy construction
                }
@@ -1275,157 +1258,161 @@ idl_seqLoopCopy (
     idl_fileOutPrintf (idl_fileCur(), "    long i%d;\n", loop_index-1);
     idl_printIndent (indent);
     idl_fileOutPrintf (idl_fileCur(), "    for (i%d = 0; i%d < size%d; i%d++) {\n",
-	loop_index-1,
-	loop_index-1,
-	loop_index-1,
-	loop_index-1);
+            loop_index-1,
+            loop_index-1,
+            loop_index-1,
+            loop_index-1);
 
     switch (idl_typeSpecType (typeSpec)) {
     case idl_tenum:
-	idl_printIndent (indent);
-	idl_fileOutPrintf (idl_fileCur(), "        (%s%d)._buffer[i%d] = (%s)%s[i%d];\n",
-	    to,
-	    loop_index-1,
-	    loop_index-1,
-	    idl_corbaCTypeFromTypeSpec (typeSpec),
-	    from,
-	    loop_index-1);
-	break;
+        idl_printIndent (indent);
+        idl_fileOutPrintf (idl_fileCur(), "        (%s%d)._buffer[i%d] = (%s)%s[i%d];\n",
+                to,
+                loop_index-1,
+                loop_index-1,
+                idl_corbaCTypeFromTypeSpec (typeSpec),
+                from,
+                loop_index-1);
+        break;
     case idl_tbasic:
-	idl_printIndent (indent);
+        idl_printIndent (indent);
         /* QAC EXPECT 3416; No side effect here */
-	if (idl_typeBasicType (idl_typeBasic(typeSpec)) == idl_string) {
-            idl_fileOutPrintf (idl_fileCur(), "    DDS_string_replace (%s[i%d], &(%s%d)._buffer[i%d]);",
-		from,
-		loop_index-1,
-		to,
-		loop_index-1,
-		loop_index-1);
-	} else {
-/* This branch is never executed because the first if statement that is added as a copy improvement
-   at the top of this method already covers this condition */
-	    idl_fileOutPrintf (idl_fileCur(), "        (%s%d)._buffer[i%d] = (%s)%s[i%d];\n",
-		to,
-	        loop_index-1,
-	        loop_index-1,
-		idl_corbaCTypeFromTypeSpec (typeSpec),
-		from,
-		loop_index-1);
-	}
-	break;
+        if (idl_typeBasicType (idl_typeBasic(typeSpec)) == idl_string) {
+            idl_fileOutPrintf (idl_fileCur(), "        DDS_string_replace (%s[i%d] ? %s[i%d] : \"\", &(%s%d)._buffer[i%d]);\n",
+                    from,
+                    loop_index-1,
+                    from,
+                    loop_index-1,
+                    to,
+                    loop_index-1,
+                    loop_index-1);
+        } else {
+            /* This branch is never executed because the first if statement that is added as a copy improvement
+               at the top of this method already covers this condition */
+            idl_fileOutPrintf (idl_fileCur(), "        (%s%d)._buffer[i%d] = (%s)%s[i%d];\n",
+                    to,
+                    loop_index-1,
+                    loop_index-1,
+                    idl_corbaCTypeFromTypeSpec (typeSpec),
+                    from,
+                    loop_index-1);
+        }
+        break;
     case idl_tstruct:
     case idl_tunion:
-	idl_printIndent (indent);
-	idl_fileOutPrintf (idl_fileCur(), "        extern void __%s__copyOut(void *, void *);\n",
-	    idl_scopedTypeName(typeSpec));
-	idl_printIndent (indent);
-	idl_fileOutPrintf (idl_fileCur(), "        __%s__copyOut(&%s[i%d], &(%s%d)._buffer[i%d]);\n",
-	    idl_scopedTypeName(typeSpec),
-	    from,
-	    loop_index-1,
-	    to,
-	    loop_index-1,
-	    loop_index-1);
-	break;
+        idl_printIndent (indent);
+        idl_fileOutPrintf (idl_fileCur(), "        extern void __%s__copyOut(void *, void *);\n",
+                idl_scopedTypeName(typeSpec));
+        idl_printIndent (indent);
+        idl_fileOutPrintf (idl_fileCur(), "        __%s__copyOut(&%s[i%d], &(%s%d)._buffer[i%d]);\n",
+                idl_scopedTypeName(typeSpec),
+                from,
+                loop_index-1,
+                to,
+                loop_index-1,
+                loop_index-1);
+        break;
     case idl_ttypedef:
-	switch (idl_typeSpecType(idl_typeDefActual(idl_typeDef(typeSpec)))) {
-	case idl_tstruct:
-	case idl_tunion:
-	case idl_tarray:
-	    idl_printIndent (indent);
-	    idl_fileOutPrintf (idl_fileCur(), "        extern void __%s__copyOut(void *, void *);\n",
-	        idl_scopedTypeName(typeSpec));
-	    idl_printIndent (indent);
-	    idl_fileOutPrintf (idl_fileCur(), "        __%s__copyOut(&%s[i%d], &(%s%d)._buffer[i%d]);\n",
-	        idl_scopedTypeName(typeSpec),
-		from,
-		loop_index-1,
-		to,
-		loop_index-1,
-	        loop_index-1);
-	    break;
-	case idl_tbasic:
+        switch (idl_typeSpecType(idl_typeDefActual(idl_typeDef(typeSpec)))) {
+        case idl_tstruct:
+        case idl_tunion:
+        case idl_tarray:
+            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "        extern void __%s__copyOut(void *, void *);\n",
+                    idl_scopedTypeName(typeSpec));
+            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "        __%s__copyOut(&%s[i%d], &(%s%d)._buffer[i%d]);\n",
+                    idl_scopedTypeName(typeSpec),
+                    from,
+                    loop_index-1,
+                    to,
+                    loop_index-1,
+                    loop_index-1);
+            break;
+        case idl_tbasic:
             /* QAC EXPECT 3416; No side effect here */
-	    idl_printIndent (indent);
-	    if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(typeSpec)))) == idl_string) {
-	        idl_fileOutPrintf (idl_fileCur(), "        DDS_string_replace (%s[i%d], &(%s%d)._buffer[i%d]);\n",
-		    from,
-	            loop_index-1,
-		    to,
-	            loop_index-1,
-		    loop_index-1);
-	    } else {
-	        idl_fileOutPrintf (idl_fileCur(), "        (%s%d)._buffer[i%d] = (%s)%s[i%d];\n",
-		    to,
-	            loop_index-1,
-	            loop_index-1,
-		    idl_corbaCTypeFromTypeSpec (typeSpec),
-		    from,
-		    loop_index-1);
-	    }
-	    break;
-	case idl_tenum:
-	    idl_printIndent (indent);
-	    idl_fileOutPrintf (idl_fileCur(), "        (%s%d)._buffer[i%d] = (%s)%s[i%d];\n",
-	        to,
-	        loop_index-1,
-	        loop_index-1,
-	        idl_corbaCTypeFromTypeSpec (typeSpec),
-	        from,
-		loop_index-1);
-	    break;
-	default:
-	    printf ("idl_arrayLoopCopyBody: Unexpected type\n");
-	    assert (0);
-	}
-	break;
+            idl_printIndent(indent);
+            if (idl_typeBasicType(idl_typeBasic(idl_typeDefActual(idl_typeDef(typeSpec)))) == idl_string) {
+                idl_fileOutPrintf(idl_fileCur(), "        DDS_string_replace (%s[i%d] ? %s[i%d] : \"\", &(%s%d)._buffer[i%d]);\n",
+                        from,
+                        loop_index - 1,
+                        from,
+                        loop_index - 1,
+                        to,
+                        loop_index - 1,
+                        loop_index - 1);
+            } else {
+                idl_fileOutPrintf (idl_fileCur(), "        (%s%d)._buffer[i%d] = (%s)%s[i%d];\n",
+                        to,
+                        loop_index-1,
+                        loop_index-1,
+                        idl_corbaCTypeFromTypeSpec (typeSpec),
+                        from,
+                        loop_index-1);
+            }
+            break;
+        case idl_tenum:
+            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "        (%s%d)._buffer[i%d] = (%s)%s[i%d];\n",
+                    to,
+                    loop_index-1,
+                    loop_index-1,
+                    idl_corbaCTypeFromTypeSpec (typeSpec),
+                    from,
+                    loop_index-1);
+            break;
+        default:
+            printf ("idl_arrayLoopCopyBody: Unexpected type\n");
+            assert (0);
+        }
+        break;
     case idl_tseq:
         nextType = idl_typeSeqType(idl_typeSeq(typeSpec));
-	idl_printIndent (indent);
+        idl_printIndent (indent);
         idl_fileOutPrintf (idl_fileCur(), "        long size%d;\n", loop_index);
-	idl_printIndent (indent);
-        idl_fileOutPrintf (idl_fileCur(), "        %s *src%d = (%s *)src%d%s;\n",
-	    idl_scopedSplTypeIdent(nextType),
-	    loop_index,
-	    idl_scopedSplTypeIdent(nextType),
-	    loop_index-1,
-	    idl_seqIndex(loop_index));
-	idl_printIndent (indent);
+        idl_printIndent (indent);
+        idl_fileOutPrintf(idl_fileCur(), "        %s *src%d = (%s *)src%d%s;\n",
+                idl_scopedSplTypeIdent(nextType),
+                loop_index,
+                idl_scopedSplTypeIdent(nextType),
+                loop_index - 1,
+                idl_seqIndex(loop_index));
+        idl_printIndent (indent);
         idl_fileOutPrintf (idl_fileCur(), "        %s *dst%d = (%s *)&dst%d->_buffer[i%d];\n",
-            idl_sequenceIdent (idl_typeSeq(typeSpec)),
-            loop_index,
-	    idl_sequenceIdent (idl_typeSeq(typeSpec)),
-	    loop_index-1,
-	    loop_index-1);
+                idl_sequenceIdent (idl_typeSeq(typeSpec)),
+                loop_index,
+                idl_sequenceIdent (idl_typeSeq(typeSpec)),
+                loop_index-1,
+                loop_index-1);
         idl_fileOutPrintf (idl_fileCur(), "\n");
-	idl_printIndent (indent);
+        idl_printIndent (indent);
         idl_fileOutPrintf (idl_fileCur(), "        size%d = c_arraySize((c_sequence)(src%d));\n",
-	    loop_index,
-	    loop_index);
-	if (idl_typeSeqMaxSize(idl_typeSeq(typeSpec)) == 0) {
-	    /* For unbounded sequence set maximum size */
-	    idl_printIndent (indent);
-	    idl_fileOutPrintf (idl_fileCur(), "        DDS_sequence_replacebuf (dst%d, (bufferAllocatorType)%s_allocbuf, size%d);\n",
-		loop_index,
-	        idl_sequenceIdent (idl_typeSeq(typeSpec)),
-		loop_index);
-	} else {
-	    idl_printIndent (indent);
-	    idl_fileOutPrintf (idl_fileCur(), "    DDS_sequence_replacebuf (dst%d, (bufferAllocatorType)%s_allocbuf, %d);\n",
-		loop_index,
-	        idl_sequenceIdent (idl_typeSeq(typeSpec)),
-		idl_typeSeqMaxSize(idl_typeSeq(typeSpec)));
-	}
-	idl_printIndent (indent);
-	idl_fileOutPrintf (idl_fileCur(), "        dst%d->_length = size%d;\n",
-	    loop_index,
-	    loop_index);
+                loop_index,
+                loop_index);
+        if (idl_typeSeqMaxSize(idl_typeSeq(typeSpec)) == 0) {
+            /* For unbounded sequence set maximum size */
+            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "        DDS_sequence_replacebuf (dst%d, (bufferAllocatorType)%s_allocbuf, size%d);\n",
+                    loop_index,
+                    idl_sequenceIdent (idl_typeSeq(typeSpec)),
+                    loop_index);
+        } else {
+            idl_printIndent (indent);
+            idl_fileOutPrintf (idl_fileCur(), "    DDS_sequence_replacebuf (dst%d, (bufferAllocatorType)%s_allocbuf, %d);\n",
+                    loop_index,
+                    idl_sequenceIdent (idl_typeSeq(typeSpec)),
+                    idl_typeSeqMaxSize(idl_typeSeq(typeSpec)));
+        }
+        idl_printIndent (indent);
+        idl_fileOutPrintf (idl_fileCur(), "        dst%d->_length = size%d;\n",
+                loop_index,
+                loop_index);
         snprintf (source, (size_t)sizeof(source), "src%d", loop_index);
         idl_seqLoopCopy (nextType, source, to, loop_index+1, indent+1);
-	break;
+        break;
     default:
-	assert (0);
-	break;
+        assert (0);
+        break;
     }
     idl_printIndent (indent);
     idl_fileOutPrintf (idl_fileCur(), "    }\n");
@@ -1766,40 +1753,42 @@ idl_unionCaseOpenClose (
     idl_typeSpec typeSpec,
     void *userData)
 {
+    c_char * cIdName = idl_cId(name);
     /* QAC EXPECT 3416; No side effect here */
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeBasicType(idl_typeBasic(typeSpec)) == idl_string) {
-            idl_fileOutPrintf (idl_fileCur(), "        DDS_string_replace (from->_u.%s, &to->_u.%s);\n",
-                idl_cId(name),
-                idl_cId(name));
+            idl_fileOutPrintf (idl_fileCur(), "        DDS_string_replace (from->_u.%s ? from->_u.%s : \"\", &to->_u.%s);\n",
+                    cIdName,
+                    cIdName,
+                    cIdName);
         } else {
-	    idl_basicCaseType (scope, name, idl_typeBasic(typeSpec), "from->_u.", "to->_u.");
+            idl_basicCaseType (scope, name, idl_typeBasic(typeSpec), "from->_u.", "to->_u.");
         }
         idl_fileOutPrintf (idl_fileCur(), "        break;\n");
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_ttypedef) {
         /* QAC EXPECT 3416; No side effect here */
         if (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tarray) {
-	    idl_fileOutPrintf (idl_fileCur(), "        {\n");
-	    idl_fileOutPrintf (idl_fileCur(), "            extern void __%s__copyOut(void *, void *);\n",
-	        idl_scopedTypeName (typeSpec));
+            idl_fileOutPrintf (idl_fileCur(), "        {\n");
+            idl_fileOutPrintf (idl_fileCur(), "            extern void __%s__copyOut(void *, void *);\n",
+                    idl_scopedTypeName (typeSpec));
             idl_fileOutPrintf (idl_fileCur(), "            __%s__copyOut(&from->_u.%s, &to->_u.%s);\n",
-                idl_scopedTypeName (typeSpec),
-                idl_cId(name),
-		idl_cId(name));
-	    idl_fileOutPrintf (idl_fileCur(), "        }\n");
+                    idl_scopedTypeName (typeSpec),
+                    cIdName,
+                    cIdName);
+            idl_fileOutPrintf (idl_fileCur(), "        }\n");
             idl_fileOutPrintf (idl_fileCur(), "        break;\n");
             /* QAC EXPECT 3416; No side effect here */
-	} else if (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tseq) {
-	    idl_fileOutPrintf (idl_fileCur(), "        {\n");
-	    idl_fileOutPrintf (idl_fileCur(), "            extern void __%s__copyOut(void *, void *);\n",
-	        idl_scopedTypeName (typeSpec));
+        } else if (idl_typeSpecType(idl_typeDefRefered(idl_typeDef(typeSpec))) == idl_tseq) {
+            idl_fileOutPrintf (idl_fileCur(), "        {\n");
+            idl_fileOutPrintf (idl_fileCur(), "            extern void __%s__copyOut(void *, void *);\n",
+                    idl_scopedTypeName (typeSpec));
             idl_fileOutPrintf (idl_fileCur(), "            __%s__copyOut(&from->_u.%s, &to->_u.%s);\n",
-                idl_scopedTypeName (typeSpec),
-                idl_cId(name),
-		idl_cId(name));
-	    idl_fileOutPrintf (idl_fileCur(), "        }\n");
+                    idl_scopedTypeName (typeSpec),
+                    cIdName,
+                    cIdName);
+            idl_fileOutPrintf (idl_fileCur(), "        }\n");
             idl_fileOutPrintf (idl_fileCur(), "        break;\n");
         } else {
             /* Calls itself for the actual type in case of typedef */
@@ -1812,31 +1801,31 @@ idl_unionCaseOpenClose (
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tenum) {
         idl_fileOutPrintf (idl_fileCur(), "        to->_u.%s = (%s)from->_u.%s;\n",
-	    idl_cId(name),
-	    idl_corbaCTypeFromTypeSpec (typeSpec),
-	    idl_cId(name));
+                cIdName,
+                idl_corbaCTypeFromTypeSpec (typeSpec),
+                cIdName);
         idl_fileOutPrintf (idl_fileCur(), "        break;\n");
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tstruct) {
-	idl_fileOutPrintf (idl_fileCur(), "        {\n");
-	idl_fileOutPrintf (idl_fileCur(), "            extern void __%s__copyOut(void *, void *);\n",
-	    idl_scopedTypeName (typeSpec));
-	idl_fileOutPrintf (idl_fileCur(), "            __%s__copyOut(&from->_u.%s, &to->_u.%s);\n",
-	    idl_scopedTypeName (typeSpec),
-	    idl_cId(name),
-	    idl_cId(name));
-	idl_fileOutPrintf (idl_fileCur(), "        }\n");
+        idl_fileOutPrintf (idl_fileCur(), "        {\n");
+        idl_fileOutPrintf (idl_fileCur(), "            extern void __%s__copyOut(void *, void *);\n",
+                idl_scopedTypeName (typeSpec));
+        idl_fileOutPrintf (idl_fileCur(), "            __%s__copyOut(&from->_u.%s, &to->_u.%s);\n",
+                idl_scopedTypeName (typeSpec),
+                cIdName,
+                cIdName);
+        idl_fileOutPrintf (idl_fileCur(), "        }\n");
         idl_fileOutPrintf (idl_fileCur(), "        break;\n");
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tunion) {
-	idl_fileOutPrintf (idl_fileCur(), "        {\n");
-	idl_fileOutPrintf (idl_fileCur(), "            extern void __%s__copyOut(void *, void *);\n",
-	    idl_scopedTypeName (typeSpec));
-	idl_fileOutPrintf (idl_fileCur(), "            __%s__copyOut(&from->_u.%s, &to->_u.%s);\n",
-	    idl_scopedTypeName (typeSpec),
-	    idl_cId(name),
-	    idl_cId(name));
-	idl_fileOutPrintf (idl_fileCur(), "        }\n");
+        idl_fileOutPrintf (idl_fileCur(), "        {\n");
+        idl_fileOutPrintf (idl_fileCur(), "            extern void __%s__copyOut(void *, void *);\n",
+                idl_scopedTypeName (typeSpec));
+        idl_fileOutPrintf (idl_fileCur(), "            __%s__copyOut(&from->_u.%s, &to->_u.%s);\n",
+                idl_scopedTypeName (typeSpec),
+                cIdName,
+                cIdName);
+        idl_fileOutPrintf (idl_fileCur(), "        }\n");
         idl_fileOutPrintf (idl_fileCur(), "        break;\n");
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tarray) {
@@ -1849,43 +1838,45 @@ idl_unionCaseOpenClose (
         idl_arrayDimensions (idl_typeArray(typeSpec), OS_FALSE);
         idl_fileOutPrintf (idl_fileCur(), ";\n");
         idl_fileOutPrintf (idl_fileCur(), "        _DestType *src = &from->_u.%s;\n\n",
-                idl_cId(name));
+                cIdName);
         idl_arrayElements (scope, name, idl_typeArray(typeSpec), "src", destin, 2, OS_FALSE, OS_FALSE);
         idl_fileOutPrintf (idl_fileCur(), "    }\n");
         idl_fileOutPrintf (idl_fileCur(), "    break;\n");
         /* QAC EXPECT 3416; No side effect here */
     } else if (idl_typeSpecType(typeSpec) == idl_tseq) {
         c_char type_name[256];
-	idl_typeSpec nextType = idl_typeSeqType(idl_typeSeq(typeSpec));
+        idl_typeSpec nextType = idl_typeSeqType(idl_typeSeq(typeSpec));
 
         snprintf (type_name, (size_t)sizeof(type_name), "_%s_seq", name);
         idl_fileOutPrintf (idl_fileCur(), "    {\n");
         idl_fileOutPrintf (idl_fileCur(), "        long size0;\n");
         idl_fileOutPrintf (idl_fileCur(), "        %s *src0 = (%s *)from->_u.%s;\n",
-	    idl_scopedSplTypeName(nextType),
-	    idl_scopedSplTypeName(nextType),
-	    idl_cId(name));
+                idl_scopedSplTypeName(nextType),
+                idl_scopedSplTypeName(nextType),
+                cIdName);
         idl_fileOutPrintf (idl_fileCur(), "        %s *dst0 = &to->_u.%s;\n\n",
-            idl_sequenceIdent (idl_typeSeq(typeSpec)),
-            idl_cId(name));
+                idl_sequenceIdent (idl_typeSeq(typeSpec)),
+                cIdName);
         idl_fileOutPrintf (idl_fileCur(), "        size0 = c_arraySize((c_sequence)(from->_u.%s));\n",
-	    idl_cId(name));
-	if (idl_typeSeqMaxSize(idl_typeSeq(typeSpec)) == 0) {
-	    /* For unbounded sequence set maximum size */
-	    idl_fileOutPrintf (idl_fileCur(), "        DDS_sequence_replacebuf (dst0, (bufferAllocatorType)%s_allocbuf, size0);\n",
-	        idl_sequenceIdent (idl_typeSeq(typeSpec)));
-	} else {
-	    idl_fileOutPrintf (idl_fileCur(), "        DDS_sequence_replacebuf (dst0, (bufferAllocatorType)%s_allocbuf, %d);\n",
-	        idl_sequenceIdent (idl_typeSeq(typeSpec)),
-		idl_typeSeqMaxSize(idl_typeSeq(typeSpec)));
-	}
-	idl_fileOutPrintf (idl_fileCur(), "        dst0->_length = size0;\n");
+                cIdName);
+        if (idl_typeSeqMaxSize(idl_typeSeq(typeSpec)) == 0) {
+            /* For unbounded sequence set maximum size */
+            idl_fileOutPrintf (idl_fileCur(), "        DDS_sequence_replacebuf (dst0, (bufferAllocatorType)%s_allocbuf, size0);\n",
+                    idl_sequenceIdent (idl_typeSeq(typeSpec)));
+        } else {
+            idl_fileOutPrintf (idl_fileCur(), "        DDS_sequence_replacebuf (dst0, (bufferAllocatorType)%s_allocbuf, %d);\n",
+                    idl_sequenceIdent (idl_typeSeq(typeSpec)),
+                    idl_typeSeqMaxSize(idl_typeSeq(typeSpec)));
+        }
+        idl_fileOutPrintf (idl_fileCur(), "        dst0->_length = size0;\n");
         idl_seqLoopCopy (nextType, "src0", "*dst", 1, 2);
         idl_fileOutPrintf (idl_fileCur(), "    }\n");
         idl_fileOutPrintf (idl_fileCur(), "    break;\n");
     } else {
-	/* Do nothing, only to prevent dangling else-ifs QAC reports */
+        /* Do nothing, only to prevent dangling else-ifs QAC reports */
     }
+
+    os_free(cIdName);
 }
 
 /** @brief callback function called on definition of the union case labels in the IDL input file.

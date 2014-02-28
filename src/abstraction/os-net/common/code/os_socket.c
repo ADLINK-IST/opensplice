@@ -77,30 +77,51 @@ os_sockGetsockname(
     return result;
 }
 
-os_int32
+os_result
 os_sockSendto(
     os_socket s,
     const void *msg,
-    os_uint32 len,
+    size_t len,
     const struct sockaddr *to,
-    os_uint32 tolen)
+    size_t tolen,
+    size_t *bytesSent)
 {
-    return sendto(s, msg, (os_uint)len, 0, to, (os_uint)tolen);
+    ssize_t res = sendto(s, msg, len, 0, to, tolen);
+    if (res < 0)
+    {
+        *bytesSent = 0;
+        return os_resultFail;
+    }
+    else
+    {
+        *bytesSent = res;
+        return os_resultSuccess;
+    }
 }
 
-os_int32
+os_result
 os_sockRecvfrom(
     os_socket s,
     void *buf,
-    os_uint32 len,
+    size_t len,
     struct sockaddr *from,
-    os_uint32 *fromlen)
+    size_t *fromlen,
+    size_t *bytesRead)
 {
-   int res;
+   ssize_t res;
    socklen_t fl = *fromlen;
-   res = recvfrom(s, buf, (os_uint)len, 0, from, &fl);
-   *fromlen=fl;
-   return (os_int32)res;
+   res = recvfrom(s, buf, len, 0, from, &fl);
+   if (res < 0)
+   {
+      *bytesRead = 0;
+      return os_resultFail;
+   }
+   else
+   {
+      *fromlen=fl;
+      *bytesRead = (size_t)res;
+      return os_resultSuccess;
+   }
 }
 
 os_result
@@ -175,6 +196,226 @@ os_sockSelect(
     return r;
 }
 
+#if defined (VXWORKS_RTP)
+static os_uint
+os_nameToIndex (
+    const char *ifname,
+    short addressFamily)
+{
+    os_uint ifno = 0;
+    os_socket sk;
+
+    sk = os_sockNew(addressFamily, SOCK_DGRAM);
+    if (sk >= 0) {
+        struct ifreq ifr;
+
+        memset(&ifr, 0, sizeof(ifr));
+        strcpy(ifr.ifr_name, ifname);
+        if (ioctl(sk, SIOCGIFINDEX, &ifr) == 0) {
+            ifno = ifr.ifr_ifindex;
+        }
+        os_sockFree(sk);
+    }
+
+    return ifno;
+}
+#endif
+
+#ifndef OS_NO_SIOCGLIFCONF
+
+/* Interface list parsing code using the 'L' form ioctls */
+
+static short int
+os_getInterfaceFlagsL(
+    os_socket s,
+    const os_char *ifName,
+    short addressFamily)
+{
+    struct lifreq lifr;
+    short int flags = 0;
+
+    memset(&lifr, 0, sizeof(lifr));
+    os_strncpy(lifr.lifr_name, ifName, OS_LIFNAMESIZE);
+
+    if (ioctl (s, SIOCGLIFFLAGS, &lifr) != -1) {
+        flags = lifr.lifr_flags;
+    }
+
+    return flags;
+}
+
+/**
+* Populates an os_ifAttributes_s struct for a particular lifreq interface instance.
+* @param s A socket fd that is required for ioctl calls
+* @param ifr The interface we want to query the attributes of. Its ifr_addr
+* will be stored and the ifr_name used for the other ioctl calls.
+* @param ifElement The struct to be populated with the interface's attributes
+* @return os_resultSuccess on success, os_resultFail otherwise.
+*/
+static os_result
+os_queryInterfaceAttributesL(
+    os_socket s,
+    struct lifreq *lifr,
+    os_ifAttributes *ifElement)
+{
+    int retVal;
+    struct lifreq lifAttr;
+    os_result result = os_resultSuccess;
+
+    os_strncpy (ifElement->name, lifr->lifr_name, OS_LIFNAMESIZE);
+
+    if (lifr->lifr_addr.ss_family == AF_INET6)
+    {
+#if (OS_SOCKET_HAS_IPV6 == 1)
+        memcpy(&ifElement->address, &lifr->lifr_addr, sizeof (struct sockaddr_storage));
+        /* Just zero these fields for IPv6 */
+        memset (&ifElement->broadcast_address, 0, sizeof (ifElement->broadcast_address));
+        memset (&ifElement->network_mask, 0, sizeof (&ifElement->network_mask));
+        ifElement->flags = os_getInterfaceFlagsL(s, lifr->lifr_name, AF_INET6);
+#else
+        result = os_resultFail;
+#endif
+    }
+    else
+    {
+        memcpy(&ifElement->address, &lifr->lifr_addr, lifr->lifr_addrlen);
+        lifAttr = *lifr;
+        retVal = ioctl (s, SIOCGLIFFLAGS, &lifAttr);
+        if (retVal != -1) {
+            ifElement->flags = lifAttr.lifr_flags;
+        } else {
+            result = os_resultFail;
+        }
+        if (ifElement->flags & IFF_BROADCAST)
+        {
+            lifAttr = *lifr;
+            retVal = ioctl (s, SIOCGLIFBRDADDR, &lifAttr);
+            if (retVal != -1) {
+                memcpy(&ifElement->broadcast_address, &lifAttr.lifr_broadaddr, sizeof(os_sockaddr_storage));
+            } else {
+                result = os_resultFail;
+            }
+        }
+        else
+        {
+            memset (&ifElement->broadcast_address, 0, sizeof (ifElement->broadcast_address));
+        }
+        lifAttr = *lifr;
+        retVal = ioctl (s, SIOCGLIFNETMASK, &lifAttr);
+        if (retVal != -1) {
+            memcpy(&ifElement->network_mask, &lifAttr.lifr_addr, sizeof(os_sockaddr_storage));
+        } else {
+            result = os_resultFail;
+        }
+    }
+#if defined (OS_NO_SIOCGIFINDEX)
+    /* Looks like Greenhills & AIX at least don't have SIOCGIFINDEX */
+    /* @todo dds2523 To investigate - note only really required for IPv6 */
+    ifElement->interfaceIndexNo = 0;
+#elif defined (OS_SOLARIS) || defined (AIX)
+    /* Solaris has if_nametoindex */
+    ifElement->interfaceIndexNo = (os_uint) if_nametoindex((const char*)&lifr->lifr_name);
+#else
+    /* Get the interface index number */
+    lifAttr = *lifr;
+    retVal = ioctl (s, SIOCGLIFINDEX, &lifAttr);
+    if (retVal  != -1)
+    {
+        ifElement->interfaceIndexNo = (os_uint) lifAttr.lifr_ifindex;
+    } else {
+        result = os_resultFail;
+    }
+#endif
+    return result;
+}
+
+
+/**
+* Use the SIOCGLIFCONF ioctl query on a socket to list available network
+* interfaces.
+* Is used for IPv6 queries on platforms where getifaddrs is not available
+* @param addressFamily Determines the type of socket and hence which
+* interfaces you wish to query. AF_INET for IPv4, AF_INET6 for IPv6
+* @see os_sockQueryInterfaces
+* @see os_sockQueryIPv6Interfaces
+*/
+static os_result
+os_sockQueryInterfacesBaseL(
+    os_ifAttributes *ifList,
+    os_uint32 listSize,
+    os_uint32 *validElements,
+    short addressFamily)
+{
+    os_result result = os_resultSuccess;
+    struct lifconf ifc;
+    struct lifnum ifn;
+    struct lifreq *ifr;
+    os_socket ifcs;
+    unsigned int listIndex;
+
+    ifcs = os_sockNew (addressFamily, SOCK_DGRAM);
+    if (ifcs >= -1) {
+        ifn.lifn_family = addressFamily;
+        ifn.lifn_flags = 0;
+        ioctl (ifcs, SIOCGLIFNUM, &ifn);
+        ifc.lifc_len = sizeof (struct lifreq) * ifn.lifn_count;
+        ifc.lifc_buf = os_malloc (ifc.lifc_len);
+        ifc.lifc_family = addressFamily;
+        ifc.lifc_flags = 0;
+        ioctl (ifcs, SIOCGLIFCONF, &ifc);
+        ifr = ifc.lifc_req;
+        listIndex = 0;
+        while (
+            (char *)ifr < ((char *)ifc.lifc_req) + ifc.lifc_len &&
+            listIndex < (unsigned int)ifn.lifn_count &&
+            listIndex < listSize) {
+            result = os_queryInterfaceAttributesL (ifcs, ifr, &ifList[listIndex]);
+            ifr += 1;
+            if (result == os_resultSuccess) {
+                listIndex += 1;
+            }
+        }
+        *validElements = listIndex;
+        os_free (ifc.lifc_buf);
+        os_sockFree (ifcs);
+    }
+    return result;
+}
+
+#endif
+
+static short int
+os_getInterfaceFlags(
+    os_socket s,
+    const os_char *ifName,
+    short addressFamily)
+{
+    struct ifreq ifr;
+    short int flags = 0;
+
+    memset(&ifr, 0, sizeof(ifr));
+    os_strncpy(ifr.ifr_name, ifName, OS_IFNAMESIZE);
+
+    if (ioctl (s, SIOCGIFFLAGS, &ifr) != -1) {
+        flags = ifr.ifr_flags;
+    }
+
+    if (flags == 0) {
+        if (!os_strncasecmp("lo0", ifr.ifr_name, OS_IFNAMESIZE)) {
+            flags = IFF_UP | IFF_LOOPBACK;
+        } else {
+            if (addressFamily == AF_INET6) {
+                flags = IFF_MULTICAST | IFF_UP;
+            } else {
+                flags = IFF_BROADCAST | IFF_MULTICAST | IFF_UP;
+            }
+        }
+    }
+
+    return flags;
+}
+
+
 /**
 * Populates an os_ifAttributes_s struct for a particular ifreq interface instance.
 * @param s A socket fd that is required for ioctl calls
@@ -200,9 +441,9 @@ os_queryInterfaceAttributes(
 #if (OS_SOCKET_HAS_IPV6 == 1)
         memcpy(&ifElement->address, &ifr->ifr_addr, sizeof(os_sockaddr_in6));
         /* Just zero these fileds for IPv6 */
-        ifElement->flags = ifr->ifr_flags;
         memset (&ifElement->broadcast_address, 0, sizeof (ifElement->broadcast_address));
         memset (&ifElement->network_mask, 0, sizeof (&ifElement->network_mask));
+        ifElement->flags = os_getInterfaceFlags(s, ifr->ifr_name, AF_INET6);
 #else
         result = os_resultFail;
 #endif
@@ -280,7 +521,7 @@ os_queryInterfaceAttributes(
 * @see os_sockQueryInterfaces
 * @see os_sockQueryIPv6Interfaces
 */
-os_result
+static os_result
 os_sockQueryInterfacesBase(
     os_ifAttributes *ifList,
     os_uint32 listSize,
@@ -372,17 +613,6 @@ os_sockQueryInterfacesBase(
 }
 
 os_result
-os_sockQueryInterfacesx(
-    os_ifAttributes *ifList,
-    os_uint32 listSize,
-    os_uint32 *validElements)
-{
-    return os_sockQueryInterfacesBase(ifList, listSize, validElements, AF_INET);
-}
-
-
-
-os_result
 os_sockQueryInterfaces(
     os_ifAttributes *ifList,
     os_uint32 listSize,
@@ -425,8 +655,11 @@ os_sockQueryInterfaces(
             }
 
             memcpy(&ifList[listIndex].network_mask, nextInterface->ifa_addr, sizeof(os_sockaddr_in));
-
+#if defined (VXWORKS_RTP)
+            ifList[listIndex].interfaceIndexNo = os_nameToIndex(nextInterface->ifa_name, AF_INET);
+#else
             ifList[listIndex].interfaceIndexNo = (os_uint) if_nametoindex(nextInterface->ifa_name);
+#endif
             ++listIndex;
         }
         nextInterface = nextInterface->ifa_next;
@@ -479,13 +712,20 @@ os_sockQueryIPv6Interfaces(
     os_uint32 listSize,
     os_uint32 *validElements)
 {
+/* Implementations in order of preference:
+ * getifaddrs() - this method
+ * 'L' form ioctls (SIOCGLIFCONF etc) - os_sockQueryInterfacesBaseL
+ * older spec ioctls (SIOCGIFCONF etc) - os_sockQueryInterfacesBase
+ */
 #if (OS_SOCKET_HAS_IPV6 == 1)
 #ifdef OS_NO_GETIFADDRS
-    /* If getifaddrs isn't available fall back to ioctl. Might work... */
+#ifdef OS_NO_SIOCGLIFCONF
     return os_sockQueryInterfacesBase(ifList, listSize, validElements, AF_INET6);
 #else
-    /* SIOCGIFCONF doesn't list Ipv6 interfaces on Linux. getifaddrs is preferable
-    if available anyway */
+    return os_sockQueryInterfacesBaseL(ifList, listSize, validElements, AF_INET6);
+#endif
+#else
+    /* getifaddrs is preferable if available */
     struct ifaddrs* interfaceList = NULL;
     struct ifaddrs* nextInterface = NULL;
     unsigned int listIndex = 0;
@@ -515,7 +755,13 @@ os_sockQueryIPv6Interfaces(
                 ifList[listIndex].flags = nextInterface->ifa_flags;
                 memset(&ifList[listIndex].broadcast_address, 0, sizeof (ifList[listIndex].broadcast_address));
                 memset(&ifList[listIndex].network_mask, 0, sizeof (&ifList[listIndex].network_mask));
+
+#if defined (VXWORKS_RTP)
+                ifList[listIndex].interfaceIndexNo = os_nameToIndex(nextInterface->ifa_name, AF_INET6);
+#else
                 ifList[listIndex].interfaceIndexNo = (os_uint) if_nametoindex(nextInterface->ifa_name);
+#endif
+
                 ++listIndex;
             }
         }
@@ -611,7 +857,6 @@ os_sockQueryInterfaceStatusInit(
     return info;
 }
 
-
 os_result
 os_sockQueryInterfaceStatus(
     void *handle,
@@ -619,66 +864,77 @@ os_sockQueryInterfaceStatus(
     os_boolean *status)
 {
     os_sockQueryInterfaceStatusInfo *info = (os_sockQueryInterfaceStatusInfo *) handle;
-    os_result result = os_resultFail;
-    os_uint len;
+    os_result result = os_resultBusy;
+    unsigned int len;
     char buffer[1024];
     struct nlmsghdr *nlh;
     fd_set fdset;
     int r;
     struct timeval t;
+    os_time endTime;
 
-    *status = OS_FALSE;
+    *status = 0;
 
     if (info && info->sock >= 0) {
 
         FD_ZERO(&fdset);
         FD_SET(info->sock, &fdset);
 
-        t.tv_sec = timeout.tv_sec;
-        t.tv_usec = timeout.tv_nsec / 1000;
+        endTime = os_timeAdd(os_timeGet(), timeout);
+        do {
 
-        r = select(info->sock + 1, &fdset, NULL, NULL, &t);
-        if (r > 0) {
-            nlh = (struct nlmsghdr *)buffer;
-            while ((result != os_resultSuccess) && (len = recv(info->sock, nlh, sizeof(buffer), 0)) > 0) {
-                while ((result != os_resultSuccess) && (NLMSG_OK(nlh, len)) && (nlh->nlmsg_type != NLMSG_DONE)) {
-                    char name[IFNAMSIZ];
-                    struct ifaddrmsg *ifa;
-                    struct rtattr *rth;
-                    int rtl;
+            t.tv_sec  = timeout.tv_sec;
+            t.tv_usec = timeout.tv_nsec / 1000;
 
-                    if ((nlh->nlmsg_type == RTM_NEWADDR) ||
-                        (nlh->nlmsg_type == RTM_DELADDR)) {
-                        ifa = (struct ifaddrmsg *) NLMSG_DATA(nlh);
-                        rth = IFA_RTA(ifa);
-                        rtl = IFA_PAYLOAD(nlh);
+            r = select(info->sock + 1, &fdset, NULL, NULL, &t);
+            if (r > 0) {
+                nlh = (struct nlmsghdr *)buffer;
+                if ((len = recv(info->sock, nlh, sizeof(buffer), 0)) > 0) {
+                    while ((result == os_resultBusy) && (NLMSG_OK(nlh, len)) && (nlh->nlmsg_type != NLMSG_DONE)) {
+                        char name[IFNAMSIZ];
+                        struct ifaddrmsg *ifa;
+                        struct rtattr *rth;
+                        int rtl;
 
-                        while ((result != os_resultSuccess) && rtl && RTA_OK(rth, rtl)) {
-                            if (rth->rta_type == IFA_LOCAL) {
-                                if (if_indextoname(ifa->ifa_index, name) != NULL) {
-                                    if (strncmp(info->ifName, name, IFNAMSIZ) == 0) {
-                                        if (nlh->nlmsg_type == RTM_NEWADDR) {
-                                            *status = 1;
+                        if ((nlh->nlmsg_type == RTM_NEWADDR) || (nlh->nlmsg_type == RTM_DELADDR)) {
+                            ifa = (struct ifaddrmsg *) NLMSG_DATA(nlh);
+                            rth = IFA_RTA(ifa);
+                            rtl = IFA_PAYLOAD(nlh);
+
+                            while ((result == os_resultBusy) && rtl && RTA_OK(rth, rtl)) {
+                                if (rth->rta_type == IFA_LOCAL) {
+                                    if (if_indextoname(ifa->ifa_index, name) != NULL) {
+                                        if (strncmp(info->ifName, name, IFNAMSIZ) == 0) {
+                                            if (nlh->nlmsg_type == RTM_NEWADDR) {
+                                                *status = 1;
+                                            }
+                                            result = os_resultSuccess;
                                         }
-                                        result = os_resultSuccess;
                                     }
                                 }
+                                rth = RTA_NEXT(rth, rtl);
                             }
-                            rth = RTA_NEXT(rth, rtl);
                         }
+                        nlh = NLMSG_NEXT(nlh, len);
                     }
                 }
-                nlh = NLMSG_NEXT(nlh, len);
+                if (result == os_resultBusy) {
+                    timeout = os_timeSub(endTime, os_timeGet());
+                }
+            } else if (r == 0) {
+                result = os_resultTimeout;
+            } else {
+                result = os_resultFail;
             }
-        } else if (r == 0) {
-            result = os_resultTimeout;
-        } else {
-            result = os_resultFail;
-        }
+        } while ((result == os_resultBusy) && (timeout.tv_sec > 0));
+        result = (result == os_resultBusy) ? os_resultTimeout : result;
+    } else {
+        result = os_resultFail;
     }
 
     return result;
 }
+
 #else
 
 void

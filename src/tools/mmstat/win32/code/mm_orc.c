@@ -13,7 +13,6 @@
 #include "u_user.h"
 #include "c_base.h"
 #include "c__base.h"
-#include "c_avltree.h"
 #include "ut_collection.h"
 #include "os_stdlib.h"
 #include "c_module.h"
@@ -120,7 +119,7 @@ monitor_orcNew (
       }
       else
       {
-	 o->filterExpression = NULL;
+         o->filterExpression = NULL;
       }
       o->refTree = ut_tableNew (compareLeafs, NULL);
       o->totalSizeCount = 0;

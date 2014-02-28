@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <stddef.h>
+#include <assert.h>
 
 #include "os_heap.h"
 #include "os_mutex.h"
@@ -12,7 +13,6 @@
 #include "q_misc.h"
 #include "q_config.h"
 #include "q_log.h"
-#include "q_mlv.h"
 #include "q_plist.h"
 #include "q_unused.h"
 #include "q_xevent.h"
@@ -32,7 +32,7 @@
 
 /* This is absolute bottom for signed integers, where -x = x and yet x
    != 0 -- and note that it had better be 2's complement machine! */
-#define TSCHED_NOT_ON_HEAP ((os_int64) ((os_uint64) 1 << 63))
+#define TSCHED_NOT_ON_HEAP INT64_MIN
 
 struct lease {
   struct fibheap_node heapnode;
@@ -69,8 +69,8 @@ void lease_management_term (void)
 
 static os_mutex *lock_lease_addr (struct lease const * const l)
 {
-  unsigned u = (unsigned short) ((os_address) l >> 3);
-  unsigned v = u * 0xb4817365;
+  os_uint32 u = (os_ushort) ((os_address) l >> 3);
+  os_uint32 v = u * 0xb4817365;
   int idx = v >> (32 - N_LEASE_LOCKS_LG2);
   return &gv.lease_locks[idx];
 }
@@ -220,19 +220,19 @@ void check_and_handle_lease_expiration (UNUSED_ARG (struct thread_state1 *self),
     switch (k)
     {
       case EK_PARTICIPANT:
-        delete_participant_guid (&g);
+        delete_participant (&g);
         break;
       case EK_PROXY_PARTICIPANT:
-        delete_proxy_participant (&g);
+        delete_proxy_participant_by_guid (&g);
         break;
       case EK_WRITER:
-        delete_writer_guid_nolinger (&g);
+        delete_writer_nolinger (&g);
         break;
       case EK_PROXY_WRITER:
         delete_proxy_writer (&g);
         break;
       case EK_READER:
-        delete_reader_guid (&g);
+        delete_reader (&g);
         break;
       case EK_PROXY_READER:
         delete_proxy_reader (&g);
@@ -309,7 +309,7 @@ void handle_PMD (UNUSED_ARG (const struct receiver_state *rst), unsigned statusi
       {
         ppguid.prefix = nn_ntoh_guid_prefix (*((nn_guid_prefix_t *) (data + 1)));
         ppguid.entityid.u = NN_ENTITYID_PARTICIPANT;
-        if (delete_proxy_participant (&ppguid) < 0)
+        if (delete_proxy_participant_by_guid (&ppguid) < 0)
           TRACE ((" unknown"));
         else
           TRACE ((" delete"));

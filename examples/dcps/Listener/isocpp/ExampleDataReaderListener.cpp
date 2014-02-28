@@ -66,8 +66,8 @@ void ExampleDataReaderListener::on_data_available(dds::sub::DataReader<ListenerD
         {
                 data_received_ = true;
                 std::cout << "=== [Subscriber] message received :" << std::endl;
-                std::cout << "    userID  : " << (*sample).data().userID << std::endl;
-                std::cout << "    Message : \"" << (*sample).data().message.in() << "\"" << std::endl;
+                std::cout << "    userID  : " << sample->data().userID() << std::endl;
+                std::cout << "    Message : \"" << sample->data().message() << "\"" << std::endl;
         }
     }
 }

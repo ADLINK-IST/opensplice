@@ -24,6 +24,10 @@
 #include <dds/sub/status/DataState.hpp>
 #include <dds/topic/TopicDescription.hpp>
 
+#include <org/opensplice/core/EntityRegistry.hpp>
+#include <org/opensplice/core/RegisterBuiltinTopics.hpp>
+#include <org/opensplice/topic/qos/QosConverter.hpp>
+
 namespace dds
 {
 namespace sub
@@ -31,82 +35,205 @@ namespace sub
 namespace detail
 {
 
-/** @bug OSPL-1743 No implementation
- * @todo Implementation required - see OSPL-1743
- * @see http://jira.prismtech.com:8080/browse/OSPL-1743 */
 template <typename READER, typename FwdIterator>
 uint32_t
 find(const dds::sub::Subscriber& sub,
-     const std::string& topic_name,
+     const std::string topic_name,
      FwdIterator begin, uint32_t max_size)
 {
-    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Method not yet implemented")));
+    DDS::DataReader_ptr ddsdr = sub->sub_.get()->lookup_datareader(topic_name.c_str());
+    if(ddsdr)
+    {
+        READER dr = org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::get(ddsdr);
+        if(max_size > 0)
+        {
+            if(dr != dds::core::null)
+            {
+                *begin = dr;
+            }
+            else if(sub->is_builtin())
+            {
+                DDS::DataReaderQos drqos;
+                ddsdr->get_qos(drqos);
+                dds::topic::Topic<typename READER::DataType> topic(dds::core::null);
+                dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
+                org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
+                dr->init_builtin(ddsdr, ddsdr->get_topicdescription());
+                dr.retain();
+                org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdr, dr);
+
+                *begin = dr;
+            }
+            return 1;
+        }
+    }
+    return 0;
 }
 
-/** @bug OSPL-1743 No implementation
- * @todo Implementation required - see OSPL-1743
- * @see http://jira.prismtech.com:8080/browse/OSPL-1743 */
 template <typename READER, typename BinIterator>
 uint32_t
 find(const dds::sub::Subscriber& sub,
-     const std::string& topic_name,
+     const std::string topic_name,
      BinIterator begin)
 {
-    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Method not yet implemented")));
+    DDS::DataReader_ptr ddsdr = sub->sub_.get()->lookup_datareader(topic_name.c_str());
+    if(ddsdr)
+    {
+        READER dr = org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::get(ddsdr);
+        if(dr != dds::core::null)
+        {
+            *begin = dr;
+        }
+        else if(sub->is_builtin())
+        {
+            DDS::DataReaderQos drqos;
+            ddsdr->get_qos(drqos);
+            dds::topic::Topic<typename READER::DataType> topic(dds::core::null);
+            dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
+            org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
+            dr->init_builtin(ddsdr, ddsdr->get_topicdescription());
+            dr.retain();
+            org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdr, dr);
+
+            *begin = dr;
+        }
+        return 1;
+    }
+    return 0;
 }
 
-/** @bug OSPL-1743 No implementation
- * @todo Implementation required - see OSPL-1743
- * @see http://jira.prismtech.com:8080/browse/OSPL-1743 */
 template <typename READER, typename T, typename FwdIterator>
 uint32_t
 find(const dds::sub::Subscriber& sub,
      const dds::topic::TopicDescription<T>& topic_description,
      FwdIterator begin, uint32_t max_size)
 {
-    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Method not yet implemented")));
+    DDS::DataReader_ptr ddsdr = sub->sub_.get()->lookup_datareader(topic_description.name().c_str());
+    if(ddsdr)
+    {
+        READER dr = org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER>::get(ddsdr);
+        if(dr != dds::core::null && max_size > 0)
+        {
+            *begin = dr;
+        }
+        else if(sub->is_builtin())
+        {
+            DDS::DataReaderQos drqos;
+            ddsdr->get_qos(drqos);
+            dds::topic::Topic<typename READER::DataType> topic(dds::core::null);
+            dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
+            org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
+            dr->init_builtin(ddsdr, ddsdr->get_topicdescription());
+            dr.retain();
+            org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdr, dr);
+
+            *begin = dr;
+        }
+        return 1;
+    }
+    return 0;
 }
 
-/** @bug OSPL-1743 No implementation
- * @todo Implementation required - see OSPL-1743
- * @see http://jira.prismtech.com:8080/browse/OSPL-1743 */
 template <typename READER, typename T, typename BinIterator>
 uint32_t
 find(const dds::sub::Subscriber& sub,
      const dds::topic::TopicDescription<T>& topic_description,
      BinIterator begin)
 {
-    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Method not yet implemented")));
+    DDS::DataReader_ptr ddsdr = sub->sub_.get()->lookup_datareader(topic_description.name().c_str());
+    if(ddsdr)
+    {
+        READER dr = org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER>::get(ddsdr);
+        if(dr != dds::core::null)
+        {
+            *begin = dr;
+        }
+        else if(sub->is_builtin())
+        {
+            DDS::DataReaderQos drqos;
+            ddsdr->get_qos(drqos);
+            dds::topic::Topic<typename READER::DataType> topic(dds::core::null);
+            dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
+            org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
+            dr->init_builtin(ddsdr, ddsdr->get_topicdescription());
+            dr.retain();
+            org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdr, dr);
+
+            *begin = dr;
+        }
+        return 1;
+    }
+    return 0;
 }
 
-/** @bug OSPL-1743 No implementation
- * @todo Implementation required - see OSPL-1743
- * @see http://jira.prismtech.com:8080/browse/OSPL-1743 */
 template <typename READER, typename FwdIterator>
 uint32_t
 find(const dds::sub::Subscriber& sub,
      const dds::sub::status::DataState& rs,
      FwdIterator begin, uint32_t max_size)
 {
-    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Method not yet implemented")));
+    DDS::DataReaderSeq ddsdrseq;
+    sub->sub_.get()->get_datareaders(
+        ddsdrseq, rs.sample_state().to_ulong(), rs.view_state().to_ulong(), rs.instance_state().to_ulong());
+    for(int i = 0; i < ddsdrseq.length() && i < max_size; i++)
+    {
+        READER dr = org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER>::get(ddsdrseq[i]);
+        if(dr != dds::core::null)
+        {
+            *begin = dr;
+            begin++;
+        }
+        else if(sub->is_builtin())
+        {
+            DDS::DataReaderQos drqos;
+            ddsdrseq[i]->get_qos(drqos);
+            dds::topic::Topic<typename READER::DataType> topic(dds::core::null);
+            dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
+            org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
+            dr->init_builtin(ddsdrseq[i], ddsdrseq[i]->get_topicdescription());
+            dr.retain();
+            org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdrseq[i], dr);
+
+            *begin = dr;
+            begin++;
+        }
+    }
+    return ddsdrseq.length();
 }
 
-/** @bug OSPL-1743 No implementation
- * @todo Implementation required - see OSPL-1743
- * @see http://jira.prismtech.com:8080/browse/OSPL-1743 */
 template <typename READER, typename BinIterator>
 uint32_t
 find(const dds::sub::Subscriber& sub,
      const dds::sub::status::DataState& rs,
      BinIterator begin)
 {
-    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-            OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : Method not yet implemented")));
+    DDS::DataReaderSeq ddsdrseq;
+    sub->sub_.get()->get_datareaders(
+        ddsdrseq, rs.sample_state().to_ulong(), rs.view_state().to_ulong(), rs.instance_state().to_ulong());
+    for(int i = 0; i < ddsdrseq.length(); i++)
+    {
+        READER dr = org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER>::get(ddsdrseq[i]);
+        if(dr != dds::core::null)
+        {
+            *begin = dr;
+            begin++;
+        }
+        else if(sub->is_builtin())
+        {
+            DDS::DataReaderQos drqos;
+            ddsdrseq[i]->get_qos(drqos);
+            dds::topic::Topic<typename READER::DataType> topic(dds::core::null);
+            dr = READER(sub, topic, org::opensplice::sub::qos::convertQos(drqos));
+            org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::remove(dr->get_raw_reader());
+            dr->init_builtin(ddsdrseq[i], ddsdrseq[i]->get_topicdescription());
+            dr.retain();
+            org::opensplice::core::EntityRegistry<DDS::DataReader_ptr, READER >::insert(ddsdrseq[i], dr);
+
+            *begin = dr;
+            begin++;
+        }
+    }
+    return ddsdrseq.length();
 }
 
 }
@@ -114,3 +241,4 @@ find(const dds::sub::Subscriber& sub,
 }
 
 #endif /* OSPL_DDS_SUB_DETAIL_FIND_HPP_ */
+

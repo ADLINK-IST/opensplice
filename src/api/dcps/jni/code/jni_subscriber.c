@@ -32,10 +32,15 @@ jni_subscriberNew(
         usub = u_subscriberNew(p->uparticipant, NULL, qos, TRUE);
         
         if(usub != NULL){
-            s = jni_subscriber(os_malloc((size_t)(C_SIZEOF(jni_subscriber))));
-            s->usubscriber = usub;
-            s->participant = p;
-            s->readers = NULL;
+            s = os_malloc(sizeof *s);
+            if (s) {
+                s->usubscriber = usub;
+                s->participant = p;
+                s->readers = NULL;
+            } else {
+                /* Ignore return value since we are already in an error condition. */
+                (void) u_subscriberFree(usub);
+            }
         }
     }
     return s;

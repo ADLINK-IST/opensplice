@@ -19,35 +19,58 @@
 extern "C" {
 #endif
 
-#define S_CFG_SERVICETERMINATEPERIOD_MINIMUM    (0.0F)
-#define S_CFG_SERVICETERMINATEPERIOD_DEFAULT    (10.0F)
-#define S_CFG_SERVICETERMINATEPERIOD_MAXIMUM    (60.0F)
+#define S_CFG_SERVICETERMINATEPERIOD_MINIMUM       (0.0F)
+#define S_CFG_SERVICETERMINATEPERIOD_DEFAULT       (10.0F)
+#define S_CFG_SERVICETERMINATEPERIOD_MAXIMUM       (60.0F)
 
-#define S_CFG_LEASE_EXPIRYTIME_MINIMUM          (0.2F)
-#define S_CFG_LEASE_EXPIRYTIME_DEFAULT          (10.0F)
+#define S_CFG_HEARTBEAT_EXPIRYTIME_MINIMUM         (0.2F)
+#define S_CFG_HEARTBEAT_EXPIRYTIME_DEFAULT         (10.0F)
 
-#define S_CFG_LEASE_UPDATE_FACTOR_MINIMUM       (0.01F)
-#define S_CFG_LEASE_UPDATE_FACTOR_DEFAULT       (0.2F)
-#define S_CFG_LEASE_UPDATE_FACTOR_MAXIMUM       (1.0F)
+#define S_CFG_HEARTBEAT_UPDATE_FACTOR_MINIMUM      (0.01F)
+#define S_CFG_HEARTBEAT_UPDATE_FACTOR_DEFAULT      (0.2F)
+#define S_CFG_HEARTBEAT_UPDATE_FACTOR_MAXIMUM      (1.0F)
+
+#if 0
+#define S_CFG_HEARTBEAT_LATENCY_BUDGET_MINIMUM     (0.0F)
+#define S_CFG_HEARTBEAT_LATENCY_BUDGET_DEFAULT     (0.0F)
+#define S_CFG_HEARTBEAT_LATENCY_BUDGET_MAXIMUM     (2147483647.2147483647F)
+#endif
+
+#define S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_MINIMUM (0)
+#define S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_DEFAULT (0)
+#define S_CFG_HEARTBEAT_TRANSPORT_PRIORITY_MAXIMUM (2147483647)
+
+#define S_CFG_LEASE_EXPIRYTIME_MINIMUM             (0.2F)
+#define S_CFG_LEASE_EXPIRYTIME_DEFAULT             (10.0F)
+
+#define S_CFG_LEASE_UPDATE_FACTOR_MINIMUM          (0.01F)
+#define S_CFG_LEASE_UPDATE_FACTOR_DEFAULT          (0.2F)
+#define S_CFG_LEASE_UPDATE_FACTOR_MAXIMUM          (1.0F)
 
 C_STRUCT(s_configuration)
 {
-    FILE*         tracingOutputFile;
-    c_char*       tracingOutputFileName;
-    c_bool        tracingSynchronous;
-    c_bool        tracingTimestamps;
-    c_bool        tracingRelativeTimestamps;
-    s_reportlevel tracingVerbosityLevel;
-    os_time       startTime;
-    os_time       serviceTerminatePeriod;
-    v_duration    leasePeriod;        /* ExpiryTime */
-    v_duration    leaseRenewalPeriod; /* ExpiryTime * ExpiryTime@update_factor */
-    os_threadAttr kernelManagerScheduling;
-    os_threadAttr garbageCollectorScheduling;
-    os_threadAttr resendManagerScheduling;
-    os_threadAttr cAndMCommandScheduling;
-    c_bool        enableCandMCommandThread;
-    os_threadAttr leaseRenewScheduling;
+    FILE*          tracingOutputFile;
+    c_char*        tracingOutputFileName;
+    c_bool         tracingSynchronous;
+    c_bool         tracingTimestamps;
+    c_bool         tracingRelativeTimestamps;
+    s_reportlevel  tracingVerbosityLevel;
+    os_time        startTime;
+    os_time        serviceTerminatePeriod;
+
+    v_duration     heartbeatExpiryTime;
+    v_duration     heartbeatUpdateInterval;
+    os_threadAttr* heartbeatScheduling;
+    c_long         heartbeatTransportPriority;
+
+    v_duration     leasePeriod;        /* ExpiryTime */
+    v_duration     leaseRenewalPeriod; /* ExpiryTime * ExpiryTime@update_factor */
+    os_threadAttr  kernelManagerScheduling;
+    os_threadAttr  garbageCollectorScheduling;
+    os_threadAttr  resendManagerScheduling;
+    os_threadAttr  cAndMCommandScheduling;
+    c_bool         enableCandMCommandThread;
+    os_threadAttr  leaseRenewScheduling;
     os_char* domainName;
 };
 

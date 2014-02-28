@@ -1,11 +1,5 @@
 #include "q_bswap.h"
 
-/* If C99 bare "inline" behaviour available, we don't need these three functions. */
-
-#if ! NN_HAVE_C99_INLINE
-#include "q_bswap.template"
-#endif
-
 nn_guid_prefix_t nn_hton_guid_prefix (nn_guid_prefix_t p)
 {
   int i;

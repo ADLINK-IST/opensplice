@@ -32,7 +32,7 @@ namespace DDS.OpenSplice.Gapi
          *
          *     DomainParticipantFactory get_instance (void)
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactory_get_instance")]
+        [DllImport("ddskernel", EntryPoint = "gapi_domainParticipantFactory_get_instance")]
         public static extern IntPtr get_instance();
 
         /*     DomainParticipant
@@ -44,7 +44,7 @@ namespace DDS.OpenSplice.Gapi
          *         in gapi_listenerThreadAction thread_stop_action,
          *         in void *thread_action_arg);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactory_create_participant")]
+        [DllImport("ddskernel", EntryPoint = "gapi_domainParticipantFactory_create_participant")]
         public static extern IntPtr create_participant(
             IntPtr _this,
             int domainId,
@@ -60,7 +60,7 @@ namespace DDS.OpenSplice.Gapi
          *     delete_participant(
          *         in DomainParticipant a_participant);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactory_delete_participant")]
+        [DllImport("ddskernel", EntryPoint = "gapi_domainParticipantFactory_delete_participant")]
         public static extern ReturnCode delete_participant(
             IntPtr _this,
             IntPtr a_participant);
@@ -69,7 +69,7 @@ namespace DDS.OpenSplice.Gapi
          *     lookup_participant(
          *         in DomainId_t domainId);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactory_lookup_participant")]
+        [DllImport("ddskernel", EntryPoint = "gapi_domainParticipantFactory_lookup_participant")]
         public static extern IntPtr lookup_participant(
             IntPtr _this,
             int domainId);
@@ -78,7 +78,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_qos(
          *         in DomainParticipantFactoryQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactory_set_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_domainParticipantFactory_set_qos")]
         public static extern ReturnCode set_qos(
             IntPtr _this,
             IntPtr qos);
@@ -87,7 +87,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_qos(
          *         inout DomainParticipantFactoryQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactory_get_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_domainParticipantFactory_get_qos")]
         public static extern ReturnCode get_qos(
             IntPtr _this,
             IntPtr qos);
@@ -96,7 +96,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_default_participant_qos(
          *         in DomainParticipantQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactory_set_default_participant_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_domainParticipantFactory_set_default_participant_qos")]
         public static extern ReturnCode set_default_participant_qos(
             IntPtr _this,
             IntPtr qos);
@@ -105,7 +105,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_default_participant_qos(
          *         inout DomainParticipantQos qos);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_domainParticipantFactory_get_default_participant_qos")]
+        [DllImport("ddskernel", EntryPoint = "gapi_domainParticipantFactory_get_default_participant_qos")]
         public static extern ReturnCode get_default_participant_qos(
             IntPtr _this,
             IntPtr qos);

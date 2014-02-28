@@ -245,7 +245,11 @@ kernelCopyInTime (
     gapi_returnCode_t result = GAPI_RETCODE_OK;
 
     if ( from && to ) {
-        if ( gapi_validTime(from) ) {
+        if ( (from->sec     ==  GAPI_TIMESTAMP_INVALID_SEC) &&
+             (from->nanosec == GAPI_TIMESTAMP_INVALID_NSEC) ) {
+            to->seconds     = C_TIME_INVALID.seconds;
+            to->nanoseconds = C_TIME_INVALID.nanoseconds;
+        } else if ( gapi_validTime(from) ) {
             to->seconds     = from->sec;
             to->nanoseconds = from->nanosec;
         } else {

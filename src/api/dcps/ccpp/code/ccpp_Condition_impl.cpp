@@ -18,8 +18,8 @@ DDS::Condition_impl::Condition_impl(
 {
 }
 
-CORBA::Boolean DDS::Condition_impl::get_trigger_value (
+DDS::Boolean DDS::Condition_impl::get_trigger_value (
 ) THROW_ORB_EXCEPTIONS
 {
-    return gapi_condition_get_trigger_value( _gapi_self);
+    return gapi_condition_get_trigger_value( _gapi_self) != 0;
 }

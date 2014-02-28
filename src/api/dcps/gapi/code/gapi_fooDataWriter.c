@@ -166,7 +166,7 @@ gapi_fooDataWriter_write (
             data.data = (void *)instance_data;
             r = u_writerWrite (U_WRITER_GET(datawriter),
                                &data,
-                               C_TIME_ZERO,
+                               C_TIME_INVALID,
                                handle);
             _EntityReadRelease(datawriter);
             result = kernelResultToApiResult(r);
@@ -228,7 +228,7 @@ gapi_fooDataWriter_dispose (
 
             r = u_writerDispose (U_WRITER_GET(datawriter),
                                  &data,
-                                 C_TIME_ZERO,
+                                 C_TIME_INVALID,
                                  handle);
             _EntityReadRelease(datawriter);
             result = kernelResultToApiResult(r);
@@ -291,7 +291,7 @@ gapi_fooDataWriter_writedispose (
 
             r = u_writerWriteDispose(U_WRITER_GET(datawriter),
                                      &data,
-                                     C_TIME_ZERO,
+                                     C_TIME_INVALID,
                                      handle);
             _EntityReadRelease(datawriter);
             result = kernelResultToApiResult(r);

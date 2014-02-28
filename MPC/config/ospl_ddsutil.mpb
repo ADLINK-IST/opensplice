@@ -2,7 +2,7 @@
 // $Id:$
 
 project : ospl_ddsos, ospl_base {
-  lit_libs += ddsutil
+  //lit_libs += ddsutil
 }
 
 feature(src_co) {

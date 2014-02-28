@@ -7,4 +7,4 @@ set EXAMPLE_LANG=sac
 
 call %FUNCTIONS% :runHelloWorld
 
-call %FUNCTIONS% :helloworldCheckResult
+call %FUNCTIONS% :helloworldCheckResult >> run.log

@@ -314,26 +314,13 @@ createSampleType(
     const c_char* topicName)
 {
     c_base base;
-    c_type sampleType, baseType, foundType, found;
+    c_type sampleType, baseType, found, foundType = NULL;
     c_metaObject o;
     c_char *name;
     c_long length,sres;
 
-    base = c_getBase(messageType);
-    baseType = c_resolve(base, "durabilityModule2::d_sample");
-    assert(baseType != NULL);
-
-    sampleType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
-    c_class(sampleType)->extends = c_class(baseType);
-
-    o = c_metaDefine(c_metaObject(sampleType),M_ATTRIBUTE);
-    c_property(o)->type = c_keep(messageType);
-    found = c_type(c_metaBind(c_metaObject(sampleType),"message",o));
-    c_free(o);
-    c_free(found);
-
-    c_metaObject(sampleType)->definedIn = c_keep(base);
-    c_metaFinalize(c_metaObject(sampleType));
+    assert(messageType);
+    assert(topicName);
 
 #define SAMPLE_NAME   "d_sample<>"
 #define SAMPLE_FORMAT "d_sample<%s>"
@@ -341,16 +328,35 @@ createSampleType(
     /* The sizeof contains \0 */
     length = sizeof(SAMPLE_NAME) + strlen(topicName);
     name = os_malloc(length);
-    sres = snprintf(name,length,SAMPLE_FORMAT,topicName);
-    assert(sres == (length-1));
+    if(name){
+        sres = snprintf(name, length, SAMPLE_FORMAT, topicName);
+        assert(sres == (length-1));
 #undef SAMPLE_NAME
 #undef SAMPLE_FORMAT
 
-    foundType = c_type(c_metaBind(c_metaObject(base),
-                                  name,
-                                  c_metaObject(sampleType)));
-    os_free(name);
-    c_free(sampleType);
+        base = c_getBase(messageType);
+        baseType = c_resolve(base, "durabilityModule2::d_sample");
+        assert(baseType != NULL);
+
+        sampleType = c_type(c_metaDefine(c_metaObject(base),M_CLASS));
+        c_class(sampleType)->extends = c_class(baseType);
+
+        o = c_metaDefine(c_metaObject(sampleType),M_ATTRIBUTE);
+        c_property(o)->type = c_keep(messageType);
+        found = c_type(c_metaBind(c_metaObject(sampleType),"message",o));
+        c_free(o);
+        c_free(found);
+
+        c_metaObject(sampleType)->definedIn = c_keep(base);
+        c_metaFinalize(c_metaObject(sampleType));
+
+        foundType = c_type(c_metaBind(c_metaObject(base),
+                                      name,
+                                      c_metaObject(sampleType)));
+
+        c_free(sampleType);
+        os_free(name);
+    }
 
     return foundType;
 }
@@ -442,6 +448,8 @@ cloneType(
 {
     c_clone c;
     c_type type;
+
+    OS_UNUSED_ARG(src);
 
     c = c_cloneNew(dst);
 
@@ -638,7 +646,7 @@ d_topicInfoInject(
 
         if(utopic) {
            d_storeReport(store, D_LEVEL_FINE, "Topic %s created.\n", _this->name);
-           u_topicFree(utopic);
+           (void)u_topicFree(utopic);
            result = D_STORE_RESULT_OK;
         } else {
            result = D_STORE_RESULT_METADATA_MISMATCH;

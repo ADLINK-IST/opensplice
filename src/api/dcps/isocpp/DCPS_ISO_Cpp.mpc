@@ -2,5 +2,4 @@
 // $Id:$
 
 project (Build*lib) : build_ospl_dcpsisocpp {
-    after += Build_DCPS_Stand_Alone_Cpp_Lib
 }

@@ -7,4 +7,4 @@ set EXAMPLE_LANG=sacs
 
 call %FUNCTIONS% :runQueryCondition
 
-call %FUNCTIONS% :queryconditionCheckResults
+call %FUNCTIONS% :queryconditionCheckResults >> run.log

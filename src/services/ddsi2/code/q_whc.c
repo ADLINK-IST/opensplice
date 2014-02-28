@@ -8,10 +8,29 @@
 #include "q_config.h"
 #include "q_whc.h"
 
+/* FIXME: instead of having a single hash table and rehashing once the
+   hash table's load factor because too large it would be better to
+   have multiple hash tables, s.t. HT0 stores seq numbers 0..N1, HT1
+   seq numbers N1..N2, .. HTk seq numbers Nk..inf. Once the load
+   factor of HTk becomes too large, create HT(k+1) starting at N(k+1)
+   and stop adding entries in HTk.  HT(k+1) is twice as large as HTk.
+   Once a hash table becomes empty, we can free it.
+
+   That still doesn't allow reducing the memory use by the WHC once
+   the number of entries in it drops significantly (but practically
+   speaking, that probably means many unregisters, which is more
+   likely at the end of its life. */
+
 #define MIN_SEQHASH_SIZE_LG2 5 /* just a guess */
 #define MIN_SEQHASH_SIZE (1 << MIN_SEQHASH_SIZE_LG2)
 
 static void insert_whcn_in_hash (struct whc *whc, struct whc_node *whcn);
+static int compare_seq (const void *va, const void *vb);
+
+static const ut_avlTreedef_t whc_seq_treedef =
+  UT_AVL_TREEDEF_INITIALIZER (offsetof (struct whc_intvnode, avlnode), offsetof (struct whc_intvnode, min), compare_seq, 0);
+static const ut_avlTreedef_t whc_tlidx_treedef =
+  UT_AVL_TREEDEF_INITIALIZER_INDKEY (offsetof (struct whc_node, avlnode_tlidx), offsetof (struct whc_node, serdata), (int (*) (const void *, const void *)) serdata_cmp, 0);
 
 static struct whc_node *whc_findmax_procedurally (const struct whc *whc)
 {
@@ -24,7 +43,7 @@ static struct whc_node *whc_findmax_procedurally (const struct whc *whc)
   }
   else
   {
-    struct whc_intvnode *intv = avl_findpred (&whc->seq, whc->open_intv);
+    struct whc_intvnode *intv = ut_avlFindPred (&whc_seq_treedef, &whc->seq, whc->open_intv);
     assert (intv->first);
     return intv->last;
   }
@@ -38,13 +57,13 @@ static void check_whc (const struct whc *whc)
      contiguous; all samples in seq & in seqhash; tlidx \subseteq seq;
      seq-number ordered list correct; &c. */
   assert (whc->open_intv != NULL);
-  assert (whc->open_intv == avl_findmax (&whc->seq));
+  assert (whc->open_intv == ut_avlFindMax (&whc_seq_treedef, &whc->seq));
   assert (whc->seqhash_size >= MIN_SEQHASH_SIZE);
   assert (whc->seqhash_size == 1 << whc->seqhash_size_lg2);
 #if 0 /* relation need not hold if we are out of memory */
   assert (whc->seq_size <= 3 * whc->seqhash_size / 4);
 #endif
-  assert (avl_findsucc (&whc->seq, whc->open_intv) == NULL);
+  assert (ut_avlFindSucc (&whc_seq_treedef, &whc->seq, whc->open_intv) == NULL);
   if (whc->maxseq_node)
   {
     assert (whc->maxseq_node->next_seq == NULL);
@@ -140,7 +159,6 @@ struct whc *whc_new (int transient_local, int keep_last1)
 {
   struct whc *whc;
   struct whc_intvnode *intv;
-  avlparent_t parent;
 
   if ((whc = os_malloc (sizeof (*whc))) == NULL)
     return NULL;
@@ -161,7 +179,7 @@ struct whc *whc_new (int transient_local, int keep_last1)
   memset (whc->seqhash, 0, whc->seqhash_size * sizeof (*whc->seqhash));
 
   /* seq interval tree: always has an "open" node */
-  avl_init (&whc->seq, offsetof (struct whc_intvnode, avlnode), offsetof (struct whc_intvnode, min), compare_seq, 0);
+  ut_avlInit (&whc_seq_treedef, &whc->seq);
   if ((intv = os_malloc (sizeof (*intv))) == NULL)
   {
     os_free (whc->seqhash);
@@ -170,9 +188,7 @@ struct whc *whc_new (int transient_local, int keep_last1)
   }
   intv->min = intv->maxp1 = 1;
   intv->first = intv->last = NULL;
-  avl_lookup (&whc->seq, &intv->min, &parent); /* mere formality - gets me a properly init'd parent */
-  avl_init_node (&intv->avlnode, parent);
-  avl_insert (&whc->seq, intv);
+  ut_avlInsert (&whc_seq_treedef, &whc->seq, intv);
   whc->open_intv = intv;
   whc->maxseq_node = NULL;
 
@@ -180,7 +196,7 @@ struct whc *whc_new (int transient_local, int keep_last1)
   whc->freelist = NULL;
 
   /* transient-local tree */
-  avl_init_indkey (&whc->tlidx, offsetof (struct whc_node, avlnode_tlidx), offsetof (struct whc_node, serdata), (int (*) (const void *, const void *)) serdata_cmp, 0);
+  ut_avlInit (&whc_tlidx_treedef, &whc->tlidx);
 
   check_whc (whc);
   return whc;
@@ -214,9 +230,9 @@ void whc_free (struct whc *whc)
      eventually) */
   {
     struct whc_intvnode *intv;
-    while ((intv = avl_findmin (&whc->seq)) != NULL)
+    while ((intv = ut_avlFindMin (&whc_seq_treedef, &whc->seq)) != NULL)
     {
-      avl_delete (&whc->seq, intv);
+      ut_avlDelete (&whc_seq_treedef, &whc->seq, intv);
       os_free (intv);
     }
   }
@@ -243,7 +259,7 @@ os_int64 whc_min_seq (const struct whc *whc)
   const struct whc_intvnode *intv;
   check_whc (whc);
   assert (!whc_empty (whc));
-  intv = avl_findmin (&whc->seq);
+  intv = ut_avlFindMin (&whc_seq_treedef, &whc->seq);
   /* not empty, open node may be anything but is (by definition)
      findmax, and whc is claimed to be non-empty, so min interval
      can't be empty */
@@ -262,6 +278,7 @@ os_int64 whc_max_seq (const struct whc *whc)
   /* precond: whc not empty */
   check_whc (whc);
   assert (!whc_empty (whc));
+  assert (whc->maxseq_node != NULL);
   return whc->maxseq_node->seq;
 }
 
@@ -276,12 +293,12 @@ static struct whc_node *find_nextseq_intv (struct whc_intvnode **p_intv, const s
        SEQ < Y can't exist */
 #ifndef NDEBUG
     {
-      struct whc_intvnode *predintv = avl_lookup_predeq (&whc->seq, &seq);
+      struct whc_intvnode *predintv = ut_avlLookupPredEq (&whc_seq_treedef, &whc->seq, &seq);
       assert (predintv == NULL || predintv->maxp1 <= seq);
     }
 #endif
-    if ((intv = avl_lookup_succeq (&whc->seq, &seq)) == NULL) {
-      assert (avl_lookup_predeq (&whc->seq, &seq) == whc->open_intv);
+    if ((intv = ut_avlLookupSuccEq (&whc_seq_treedef, &whc->seq, &seq)) == NULL) {
+      assert (ut_avlLookupPredEq (&whc_seq_treedef, &whc->seq, &seq) == whc->open_intv);
       return NULL;
     } else if (intv->min < intv->maxp1) { /* only if not empty interval */
       assert (intv->min > seq);
@@ -299,9 +316,10 @@ static struct whc_node *find_nextseq_intv (struct whc_intvnode **p_intv, const s
   }
   else
   {
+    assert (whc->maxseq_node != NULL);
     assert (n->seq < whc->maxseq_node->seq);
     n = n->next_seq;
-    *p_intv = avl_lookup_predeq (&whc->seq, &n->seq);
+    *p_intv = ut_avlLookupPredEq (&whc_seq_treedef, &whc->seq, &n->seq);
     return n;
   }
 }
@@ -322,7 +340,7 @@ static void delete_one_from_tlidx (struct whc *whc, struct whc_node *whcn)
   assert (whcn->in_tlidx);
   assert (whc->tlidx_size > 0);
   whcn->in_tlidx = 0;
-  avl_delete (&whc->tlidx, whcn);
+  ut_avlDelete (&whc_tlidx_treedef, &whc->tlidx, whcn);
   whc->tlidx_size--;
 }
 
@@ -332,7 +350,7 @@ static void swapnode_in_tlidx (struct whc *whc, struct whc_node *old, struct whc
   assert (whc->tlidx_size > 0);
   old->in_tlidx = 0;
   new->in_tlidx = 1;
-  avl_swapnode (&whc->tlidx, old, new);
+  ut_avlSwapNode (&whc_tlidx_treedef, &whc->tlidx, old, new);
 }
 
 static void whc_delete_tlidx_entry_helper (void *vnode)
@@ -366,7 +384,7 @@ void whc_downgrade_to_volatile (struct whc *whc)
          anything, but avl_free is simply a synonym for a walk with
          callback after locating the next node, and a resetting of the
          root pointer. */
-      avl_free (&whc->tlidx, whc_delete_tlidx_entry_helper);
+      ut_avlFree (&whc_tlidx_treedef, &whc->tlidx, whc_delete_tlidx_entry_helper);
       whc->tlidx_size = 0;
     }
   }
@@ -419,9 +437,9 @@ static int whc_delete_one_intv (struct whc *whc, struct whc_intvnode **p_intv, s
     if (whcn == intv->last && intv != whc->open_intv)
     {
       struct whc_intvnode *tmp = intv;
-      *p_intv = avl_findsucc (&whc->seq, intv);
+      *p_intv = ut_avlFindSucc (&whc_seq_treedef, &whc->seq, intv);
       /* only sample in interval and not the open interval => delete interval */
-      avl_delete (&whc->seq, tmp);
+      ut_avlDelete (&whc_seq_treedef, &whc->seq, tmp);
       os_free (tmp);
     }
     else
@@ -442,7 +460,7 @@ static int whc_delete_one_intv (struct whc *whc, struct whc_intvnode **p_intv, s
     assert (whcn->prev_seq->seq + 1 == whcn->seq);
     intv->last = whcn->prev_seq;
     intv->maxp1--;
-    *p_intv = avl_findsucc (&whc->seq, intv);
+    *p_intv = ut_avlFindSucc (&whc_seq_treedef, &whc->seq, intv);
   }
   else
   {
@@ -451,7 +469,7 @@ static int whc_delete_one_intv (struct whc *whc, struct whc_intvnode **p_intv, s
        issue only, and so we can (for now) get away with splitting
        it greedily */
     struct whc_intvnode *new_intv;
-    avlparent_t parent;
+    ut_avlIPath_t path;
 
     if ((new_intv = os_malloc (sizeof (*new_intv))) == NULL)
     {
@@ -483,10 +501,9 @@ static int whc_delete_one_intv (struct whc *whc, struct whc_intvnode **p_intv, s
 
     /* insert new node & continue the loop with intv set to the
        new interval */
-    if (avl_lookup (&whc->seq, &new_intv->min, &parent) != NULL)
+    if (ut_avlLookupIPath (&whc_seq_treedef, &whc->seq, &new_intv->min, &path) != NULL)
       assert (0);
-    avl_init_node (&new_intv->avlnode, parent);
-    avl_insert (&whc->seq, new_intv);
+    ut_avlInsertIPath (&whc_seq_treedef, &whc->seq, new_intv, &path);
 
     if (intv == whc->open_intv)
       whc->open_intv = new_intv;
@@ -503,7 +520,7 @@ static int whc_delete_one_intv (struct whc *whc, struct whc_intvnode **p_intv, s
 static int whc_delete_one (struct whc *whc, struct whc_node *whcn)
 {
   struct whc_intvnode *intv;
-  intv = avl_lookup_predeq (&whc->seq, &whcn->seq);
+  intv = ut_avlLookupPredEq (&whc_seq_treedef, &whc->seq, &whcn->seq);
   assert (intv != NULL);
   return whc_delete_one_intv (whc, &intv, &whcn);
 }
@@ -524,7 +541,7 @@ int whc_remove_acked_messages (struct whc *whc, os_int64 max_drop_seq)
     {
       /* quickly skip over samples in tlidx */
       if (whcn == intv->last)
-        intv = avl_findsucc (&whc->seq, intv);
+        intv = ut_avlFindSucc (&whc_seq_treedef, &whc->seq, intv);
       whcn = whcn->next_seq;
     }
     else if (whc_delete_one_intv (whc, &intv, &whcn))
@@ -561,7 +578,7 @@ int whc_remove_acked_messages (struct whc *whc, os_int64 max_drop_seq)
 struct whc_node *whc_findkey (const struct whc *whc, const struct serdata *serdata_key)
 {
   check_whc (whc);
-  return avl_lookup (&whc->tlidx, serdata_key, NULL);
+  return ut_avlLookup (&whc_tlidx_treedef, &whc->tlidx, serdata_key);
 }
 
 static struct whc_node *whc_insert_seq (struct whc *whc, os_int64 seq, serdata_t serdata)
@@ -601,15 +618,14 @@ static struct whc_node *whc_insert_seq (struct whc *whc, os_int64 seq, serdata_t
   {
     /* gap => need new open_intv */
     struct whc_intvnode *intv1;
-    avlparent_t parent;
+    ut_avlIPath_t path;
     intv1 = os_malloc (sizeof (*intv1));
     intv1->min = seq;
     intv1->maxp1 = seq + 1;
     intv1->first = intv1->last = newn;
-    if (avl_lookup (&whc->seq, &seq, &parent) != NULL)
+    if (ut_avlLookupIPath (&whc_seq_treedef, &whc->seq, &seq, &path) != NULL)
       assert (0);
-    avl_init_node (&intv1->avlnode, parent);
-    avl_insert (&whc->seq, intv1);
+    ut_avlInsertIPath (&whc_seq_treedef, &whc->seq, intv1, &path);
     whc->open_intv = intv1;
   }
 
@@ -643,10 +659,10 @@ int whc_insert (struct whc *whc, os_int64 max_drop_seq, os_int64 seq, serdata_t 
 
   if (whc->keep_last1 || whc->transient_local) /* Maintaining a tlidx */
   {
-    avlparent_t parent;
+    ut_avlIPath_t path;
     struct whc_node *oldtln;
     assert (newn != NULL);
-    if ((oldtln = avl_lookup (&whc->tlidx, serdata, &parent)) != NULL)
+    if ((oldtln = ut_avlLookupIPath (&whc_tlidx_treedef, &whc->tlidx, serdata, &path)) != NULL)
     {
       /* If unregister, simply delete oldtln (unregisters can't be
          kept around or the history keeps growing). Else, swap the new
@@ -670,9 +686,8 @@ int whc_insert (struct whc *whc, os_int64 max_drop_seq, os_int64 seq, serdata_t 
     else if (!(serdata->v.msginfo.statusinfo & NN_STATUSINFO_UNREGISTER))
     {
       /* Ignore unregisters, but insert anything else */
-      avl_init_node (&newn->avlnode_tlidx, parent);
       newn->in_tlidx = 1;
-      avl_insert (&whc->tlidx, newn);
+      ut_avlInsertIPath (&whc_tlidx_treedef, &whc->tlidx, newn, &path);
       whc->tlidx_size++;
     }
   }

@@ -14,33 +14,31 @@ source_ospldist_env || exit 1
 check_ex_prereqs || exit 1
 
 if [ "$(uname -o)" = 'Cygwin' ]; then
-    cmd /C "devenv $OSPL_HOME/examples/StandaloneCandCPlusPlus.sln /Upgrade"
-    cmd /C "devenv $OSPL_HOME/examples/StandaloneCandCPlusPlus.sln /Clean"
-    cmd /C "devenv $OSPL_HOME/examples/StandaloneCandCPlusPlus.sln /Rebuild"
+    cmd /C "devenv $OSPL_HOME/examples/All_Standalone_C_and_CPlusPlus.sln /Upgrade"
+    cmd /C "devenv $OSPL_HOME/examples/All_Standalone_C_and_CPlusPlus.sln /Clean"
+    cmd /C "devenv $OSPL_HOME/examples/All_Standalone_C_and_CPlusPlus.sln /Rebuild"
 
-    cmd /C "devenv $OSPL_HOME/examples/CORBACPlusPlus.sln /Upgrade"
-    cmd /C "devenv $OSPL_HOME/examples/CORBACPlusPlus.sln /Clean"
-    cmd /C "devenv $OSPL_HOME/examples/CORBACPlusPlus.sln /Rebuild"
+    cmd /C "devenv $OSPL_HOME/examples/CORBA_CPlusPlus.sln /Upgrade"
+    cmd /C "devenv $OSPL_HOME/examples/CORBA_CPlusPlus.sln /Clean"
+    cmd /C "devenv $OSPL_HOME/examples/CORBA_CPlusPlus.sln /Rebuild"
 
     cmd /C "devenv $OSPL_HOME/examples/CSharp.sln /Upgrade"
     cmd /C "devenv $OSPL_HOME/examples/CSharp.sln /Clean"
     cmd /C "devenv $OSPL_HOME/examples/CSharp.sln  /Rebuild"
 
-    cd "$OSPL_HOME/examples/"
-    cmd /C "call Build_StandaloneJava.bat"
-    cmd /C "call Build_CORBAJava.bat"
+    cmd /C "devenv $OSPL_HOME/examples/DCPS_ISO_CPlusPlus.sln /Upgrade"
+    cmd /C "devenv $OSPL_HOME/examples/DCPS_ISO_CPlusPlus.sln /Clean"
+    cmd /C "devenv $OSPL_HOME/examples/DCPS_ISO_CPlusPlus.sln /Rebuild"
 
-    # The dlrl java Tutorial is not included in the above so
-    # we need to build it separately.
-    cd "$OSPL_HOME/examples/dlrl/standalone/java/Tutorial"
-    cmd /C "call BUILD.bat"
+    cd "$OSPL_HOME/examples/"
+    cmd /C "call BUILD_Standalone_Java.bat"
+    cmd /C "call BUILD_CORBA_Java.bat"
 else
     for i in \
         'Makefile' \
         'Makefile.Standalone_Java' \
         'Makefile.CORBA_CPlusPlus' \
-        'Makefile.CORBA_Java' \
-        'Makefile.DCPS_ISO_CPlusPlus'
+        'Makefile.CORBA_Java'
     do
         echo -e "\nBuilding $OSPL_HOME/examples/${i}..."
         cd "$OSPL_HOME/examples"
@@ -51,10 +49,12 @@ else
         fi
     done
 
-    cd "$OSPL_HOME/examples/dlrl/standalone/java/Tutorial"
-    ./BUILD >> build.log 2>&1
-    if [ $? -ne 0 ]
-    then
-        echo "Error building DLRL Java Tutorial"
-    fi        
+    if [ "$(uname)" != 'SunOS' ]; then
+        cd "$OSPL_HOME/examples"
+        make -f Makefile.DCPS_ISO_CPlusPlus >> build.log 2>&1
+        if [ $? -ne 0 ]
+        then
+            echo "Error calling make on Makefile.DCPS_ISO_CPlusPlus"
+        fi
+    fi
 fi

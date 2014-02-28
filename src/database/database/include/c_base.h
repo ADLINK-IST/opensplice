@@ -12,6 +12,14 @@
 #ifndef C_BASE_H
 #define C_BASE_H
 
+#if __GNUC__
+#define c_likely(x)       __builtin_expect(!!(x),1)
+#define c_unlikely(x)     __builtin_expect(!!(x),0)
+#else
+#define c_likely(x) (x)
+#define c_unlikely(x) (x)
+#endif
+
 /** \file c_base.h
  *  \brief This file specifies the main database interface.
  *
@@ -52,7 +60,7 @@
 #include "c_mmbase.h"
 #include "os_if.h"
 
-#ifdef OSPL_BUILD_DB
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -351,31 +359,48 @@ c_lookup (
  *        the value of the given string.
  *
  * This operation will create a new database string object and copy the value
- * of the given string.
+ * of the given string. When str is the empty string "", a database intern of the
+ * empty string may be returned. Since any modification to the empty string will
+ * yield an invalid string, the memory returned when str == "" should be
+ * considered immutable and hence never be written to.
  *
- * \param _this The database in which the new string object must reside.
+ * \param base  The database in which the new string object must reside.
  * \param str   The string value that must be assigned to the created string
  *              object.
+ * \pre base is a valid database
+ * \pre str is either NULL or a '\0'-terminated string
+ * \post returned c_string is either NULL or a '\0'-terminated string
  *
- * \return On a successful operation a reference to the created string object
- *         is returned. Otherwise NULL is returned.
+ * \return A reference to the allocated string object is returned. If str == NULL
+ * or if str != NULL and not enough resources are available for a copy of string
+ * str, NULL is returned.
  */
 OS_API c_string
 c_stringNew (
-    c_base _this,
+    c_base base,
     const c_char *str);
 
 /**
  * \brief This operation will create a new database string object of the
  *        specified length.
  *
- * This operation will create a new database string of the specified length.
+ * This operation will allocate a new database string with enough room to
+ * accomodate a string of the specified length (including the '\0'-terminator).
+ * The returned string will be '\0'-terminated (truncated at length 0). The
+ * content of the memory past the '\0'-terminator is undefined. When length == 1,
+ * an intern of the empty string may be returned. Since any modification to the
+ * empty string will yield an invalid string, the memory returned when
+ * length == 1 should be considered immutable and hence never be written to.
  *
- * \param _this The database in which the new string object must reside.
+ * \param base The database in which the new string object must reside.
  * \param length The string length that must be allocated.
+ * \pre base is a valid database
+ * \pre length >= 1
+ * \post result == NULL || strlen(result) == 0
  *
- * \return On a successful operation a reference to the created string object
- *         is returned. Otherwise NULL is returned.
+ * \return A reference to the allocated string object is returned. Iff not
+ * enough resources are available for a string of length 'length', NULL is
+ * returned.
  */
 OS_API c_string
 c_stringMalloc(
@@ -386,23 +411,32 @@ c_stringMalloc(
  * \brief This operation will create a new database wstring object of the
  *        specified length.
  *
- * This operation will create a new database wstring of the specified length.
+ * This operation will allocate a new database wstring with enough room to
+ * accomodate a wstring of the specified length (including the 0-terminator).
+ * The returned string will be 0-terminated (truncated at length 0). The
+ * content of the memory past the 0-terminator is undefined. When length == 1,
+ * an intern of the empty string may be returned. Since any modification to the
+ * empty string will yield an invalid string, the memory returned when
+ * length == 1 should be considered immutable and hence never be written to.
  *
- * \param _this The database in which the new wstring object must reside.
- * \param length The wstring length that must be allocated.
+ * \param base The database in which the new string object must reside.
+ * \param length The string length that must be allocated.
+ * \pre base is a valid database
+ * \pre length >= 1
+ * \post result == NULL || strlen(result) == 0
  *
- * \return On a successful operation a reference to the created wstring object
- *         is returned. Otherwise NULL is returned.
+ * \return A reference to the allocated wstring object is returned. Iff not
+ * enough resources are available for a wstring of length 'length', NULL is
+ * returned.
  */
 c_wstring
 c_wstringMalloc(
     c_base base,
     c_size length);
 
-
 /**
- * \brief 	This operation behaves the same as c_arrayNew, with the exception that
- * 			it will always return an object with valid header.
+ * \brief       This operation behaves the same as c_arrayNew, with the exception that
+ *                      it will always return an object with valid header.
  *
  * This operation is provided by the database primarily to be able to serialize
  * sequences\arrays with a zero length, where c_arrayNew would return a NULL object.
@@ -418,8 +452,19 @@ c_arrayNew_w_header(
     c_collectionType arrayType,
     c_long length);
 
+/**
+ * \brief: this operations destroy the database
+ */
 OS_API void
 c_destroy (
+    c_base _this);
+
+/**
+ * \brief: this operations detaches from the database without
+ * destroying the data structures.
+ */
+OS_API void
+c_detach (
     c_base _this);
 
 OS_API c_type c_voidp_t     (c_base _this);

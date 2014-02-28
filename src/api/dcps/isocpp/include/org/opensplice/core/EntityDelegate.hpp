@@ -22,40 +22,48 @@
 #include <dds/core/InstanceHandle.hpp>
 #include <dds/core/status/State.hpp>
 
-namespace org { namespace opensplice { namespace core {
+namespace org
+{
+namespace opensplice
+{
+namespace core
+{
 
-   class OSPL_ISOCPP_IMPL_API EntityDelegate {
-   public:
-      EntityDelegate();
-      virtual ~EntityDelegate();
+class OSPL_ISOCPP_IMPL_API EntityDelegate
+{
+public:
+    EntityDelegate();
+    virtual ~EntityDelegate();
 
-   public:
-      /** @todo This operator not implemented so should we remove ? Or make PV ?
-      Doesn't seem to be presetn on at least some subclasses
-      EntityDelegate& operator=(const EntityDelegate& other); */
+public:
+    /** @internal @todo This operator not implemented so should we remove ? Or make PV ?
+    Doesn't seem to be presetn on at least some subclasses
+    EntityDelegate& operator=(const EntityDelegate& other); */
 
-   public:
-      /**
-       * Enables this entity.
-       */
-      virtual void enable();
+public:
+    /**
+     *  @internal Enables this entity.
+     */
+    virtual void enable();
 
-      virtual const ::dds::core::status::StatusMask status_changes();
+    virtual const ::dds::core::status::StatusMask status_changes();
 
-      virtual const ::dds::core::InstanceHandle instance_handle() const;
+    virtual const ::dds::core::InstanceHandle instance_handle() const;
 
-      virtual void close();
+    virtual void close();
 
-      virtual void retain();
+    virtual void retain();
 
-      virtual DDS::Entity_ptr get_dds_entity();
+    virtual DDS::Entity_ptr get_dds_entity();
 
-   protected:
-      static volatile unsigned int entityID_;
-      bool enabled_;
-      DDS::Entity_var entity_;
-   };
+protected:
+    static volatile unsigned int entityID_;
+    bool enabled_;
+    DDS::Entity_var entity_;
+};
 
-} } }
+}
+}
+}
 
 #endif /* ORG_OPENSPLICE_CORE_ENTITY_DELEGATE_HPP_ */

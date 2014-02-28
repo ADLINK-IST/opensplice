@@ -22,8 +22,12 @@
 #include <dds/sub/TQuery.hpp>
 #include <dds/sub/detail/Query.hpp>
 
-namespace dds { namespace sub {
-  typedef dds::sub::detail::Query Query;
-} }
+namespace dds
+{
+namespace sub
+{
+typedef dds::sub::detail::Query Query;
+}
+}
 
 #endif /* DDS_CORE_TQUERY_HPP_ */

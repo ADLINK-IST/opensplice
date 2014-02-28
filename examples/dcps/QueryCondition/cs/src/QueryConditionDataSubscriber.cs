@@ -27,7 +27,7 @@ using System.IO;
 using DDS;
 using DDS.OpenSplice;
 
-using QueryConditionData;
+using StockMarket;
 using DDSAPIHelper;
 
 namespace QueryConditionDataSubscriber

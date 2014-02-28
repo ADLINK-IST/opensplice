@@ -22,6 +22,7 @@ extern "C" {
 #define OS_SOCKET_USE_FCNTL 1
 #define OS_SOCKET_USE_IOCTL 0
 #define OS_HAS_UCONTEXT_T
+#define OS_HAS_TSD_USING_THREAD_KEYWORD 1
 
 typedef char               os_os_char;      /* 1 byte   signed integer*/
 typedef uint8_t            os_os_uchar;     /* 1 byte unsigned integer*/
@@ -48,8 +49,8 @@ typedef mode_t os_os_mode_t;
 /* Platform specific integers, 32-bit on most 32-bit and also 64-bit archs (LP64), but it could
  * be also 64-bit wide (ILP64 & SILP64). This type is required for systems calls relying on
  * 'int' parameters, such as setsockopt */
-typedef unsigned int	os_os_uint;
-typedef          int	os_os_int;
+typedef unsigned int    os_os_uint;
+typedef          int    os_os_int;
 typedef unsigned long int os_os_ulong_int;
 
 #if defined (__cplusplus)

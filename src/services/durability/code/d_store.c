@@ -274,23 +274,27 @@ d_storeGroupsRead(
     return result;
 }
 
-/* A temporal fix to solve the memory leak when reading the groups from the KV store */
 d_storeResult
 d_storeGroupListFree(
      const d_store store,
      d_groupList list)
 {
-    if (store->type == D_STORE_TYPE_KV) {
-        d_groupList next = list;
-        while (next) {
-            list = list->next;
-            os_free(next);
-            next = list;
+    d_storeResult result;
+
+    if(store){
+        if(store->groupListFreeFunc){
+            result = store->groupListFreeFunc(store, list);
+        } else {
+            result = D_STORE_RESULT_OK;
         }
+    } else {
+        result = D_STORE_RESULT_ILL_PARAM;
     }
 
-    return D_STORE_RESULT_OK;
+    return result;
 }
+
+
 d_storeResult
 d_storeGroupInject(
     const d_store store,

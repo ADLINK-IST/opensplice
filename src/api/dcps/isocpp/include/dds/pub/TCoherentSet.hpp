@@ -40,7 +40,7 @@ void TCoherentSet<DELEGATE>::end()
 template <typename DELEGATE>
 TCoherentSet<DELEGATE>::~TCoherentSet()
 {
-    this->delegate().end();
+    //this->delegate().end();
 }
 
 }

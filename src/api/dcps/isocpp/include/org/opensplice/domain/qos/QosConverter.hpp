@@ -22,18 +22,22 @@
 #include <dds/domain/qos/DomainParticipantQos.hpp>
 #include <org/opensplice/core/config.hpp>
 
-namespace org {
-   namespace opensplice {
-      namespace domain {
-         namespace qos {
-            dds::domain::qos::DomainParticipantQos
-            OSPL_ISOCPP_IMPL_API convertQos(const DDS::DomainParticipantQos& from);
+namespace org
+{
+namespace opensplice
+{
+namespace domain
+{
+namespace qos
+{
+dds::domain::qos::DomainParticipantQos
+OSPL_ISOCPP_IMPL_API convertQos(const DDS::DomainParticipantQos& from);
 
-            DDS::DomainParticipantQos
-            OSPL_ISOCPP_IMPL_API convertQos(const dds::domain::qos::DomainParticipantQos& from);
-         }
-      }
-   }
+DDS::DomainParticipantQos
+OSPL_ISOCPP_IMPL_API convertQos(const dds::domain::qos::DomainParticipantQos& from);
+}
+}
+}
 }
 
 #endif /* ORG_OPENSPLICE_DOMAIN_QOS_QOSCONVERTER_HPP_ */

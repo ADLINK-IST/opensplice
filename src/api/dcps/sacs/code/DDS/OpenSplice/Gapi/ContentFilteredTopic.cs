@@ -27,7 +27,7 @@ namespace DDS.OpenSplice.Gapi
         /*     string
          *     get_filter_expression();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_contentFilteredTopic_get_filter_expression")]
+        [DllImport("ddskernel", EntryPoint = "gapi_contentFilteredTopic_get_filter_expression")]
         public static extern IntPtr get_filter_expression(
             IntPtr _this);
 
@@ -35,7 +35,7 @@ namespace DDS.OpenSplice.Gapi
          *     get_expression_parameters(
          *         inout StringSeq expression_parameters);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_contentFilteredTopic_get_expression_parameters")]
+        [DllImport("ddskernel", EntryPoint = "gapi_contentFilteredTopic_get_expression_parameters")]
         public static extern ReturnCode get_expression_parameters(
             IntPtr _this,
             IntPtr expression_parameters
@@ -45,7 +45,7 @@ namespace DDS.OpenSplice.Gapi
          *     set_expression_parameters(
          *         in StringSeq expression_parameters);
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_contentFilteredTopic_set_expression_parameters")]
+        [DllImport("ddskernel", EntryPoint = "gapi_contentFilteredTopic_set_expression_parameters")]
         public static extern ReturnCode set_expression_parameters(
             IntPtr _this,
             IntPtr expression_parameters);
@@ -53,7 +53,7 @@ namespace DDS.OpenSplice.Gapi
         /*     Topic
          *     get_related_topic();
          */
-        [DllImport("dcpsgapi", EntryPoint = "gapi_contentFilteredTopic_get_related_topic")]
+        [DllImport("ddskernel", EntryPoint = "gapi_contentFilteredTopic_get_related_topic")]
         public static extern IntPtr get_related_topic(
             IntPtr _this);
     }

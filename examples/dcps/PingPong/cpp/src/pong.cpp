@@ -176,6 +176,9 @@ int OSPL_MAIN (int argc, char ** argv)
     sQos.partition.name[0] = DDS::string_dup (read_partition);
     s = dp->create_subscriber (sQos, NULL, DDS::STATUS_MASK_NONE);
 
+    p->get_default_datawriter_qos (dwQos);
+    dwQos.reliability.kind = DDS::BEST_EFFORT_RELIABILITY_QOS;
+
     //
     // PP_min_msg
     //
@@ -185,7 +188,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_min_topic = dp->create_topic ("PP_min_topic", "pingpong::PP_min_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
     // Create datawriter
-    dw = p->create_datawriter (PP_min_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
+    dw = p->create_datawriter (PP_min_topic, dwQos, NULL, DDS::STATUS_MASK_NONE);
     PP_min_writer = dynamic_cast<PP_min_msgDataWriter_ptr> (dw);
 
     // Create datareader
@@ -206,7 +209,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_seq_topic = dp->create_topic ("PP_seq_topic", "pingpong::PP_seq_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
     // Create datawriter
-    dw = p->create_datawriter (PP_seq_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
+    dw = p->create_datawriter (PP_seq_topic, dwQos, NULL, DDS::STATUS_MASK_NONE);
     PP_seq_writer = dynamic_cast<PP_seq_msgDataWriter_ptr> (dw);
 
     // Create datareader
@@ -227,7 +230,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_string_topic = dp->create_topic ("PP_string_topic", "pingpong::PP_string_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
     // Create datawriter
-    dw = p->create_datawriter (PP_string_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
+    dw = p->create_datawriter (PP_string_topic, dwQos, NULL, DDS::STATUS_MASK_NONE);
     PP_string_writer = dynamic_cast<PP_string_msgDataWriter_ptr> (dw);
 
     // Create datareader
@@ -248,7 +251,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_fixed_topic = dp->create_topic ("PP_fixed_topic", "pingpong::PP_fixed_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
     // Create datawriter
-    dw = p->create_datawriter (PP_fixed_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
+    dw = p->create_datawriter (PP_fixed_topic, dwQos, NULL, DDS::STATUS_MASK_NONE);
     PP_fixed_writer = dynamic_cast<PP_fixed_msgDataWriter_ptr> (dw);
 
     // Create datareader
@@ -269,7 +272,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_array_topic = dp->create_topic ("PP_array_topic", "pingpong::PP_array_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
     // Create datawriter
-    dw = p->create_datawriter (PP_array_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
+    dw = p->create_datawriter (PP_array_topic, dwQos, NULL, DDS::STATUS_MASK_NONE);
     PP_array_writer = dynamic_cast<PP_array_msgDataWriter_ptr> (dw);
 
     // Create datareader
@@ -290,7 +293,7 @@ int OSPL_MAIN (int argc, char ** argv)
     PP_bseq_topic = dp->create_topic ("PP_bseq_topic", "pingpong::PP_bseq_msg", TOPIC_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
 
     // Create datawriter
-    dw = p->create_datawriter (PP_bseq_topic, DATAWRITER_QOS_DEFAULT, NULL, DDS::STATUS_MASK_NONE);
+    dw = p->create_datawriter (PP_bseq_topic, dwQos, NULL, DDS::STATUS_MASK_NONE);
     PP_bseq_writer = dynamic_cast<PP_bseq_msgDataWriter_ptr> (dw);
 
     // Create datareader

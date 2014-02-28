@@ -18,14 +18,19 @@
 #include <dds/pub/PublisherListener.hpp>
 #include <org/opensplice/pub/PublisherEventForwarder.hpp>
 
-namespace org { namespace opensplice { namespace pub {
+namespace org
+{
+namespace opensplice
+{
+namespace pub
+{
 
 template<>
 PublisherEventForwarder<dds::pub::Publisher>::PublisherEventForwarder(
-        const dds::pub::Publisher& pub,
-        dds::pub::PublisherListener* listener) :
-        pub_(pub),
-        listener_(listener)
+    const dds::pub::Publisher& pub,
+    dds::pub::PublisherListener* listener) :
+    pub_(pub),
+    listener_(listener)
 
 {
 }
@@ -42,4 +47,6 @@ PublisherEventForwarder<dds::pub::Publisher>::listener()
     return listener_;
 }
 
-}}}
+}
+}
+}

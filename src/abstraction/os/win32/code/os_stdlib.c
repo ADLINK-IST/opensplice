@@ -218,6 +218,23 @@ os_strncpy(
 }
 #pragma warning( default : 4996 )
 
+char *
+os_strsep (char **str, const char *sep)
+{
+    char *ret;
+    if (**str == '\0')
+        return 0;
+    ret = *str;
+    while (**str && strchr (sep, **str) == 0)
+        (*str)++;
+    if (**str != '\0')
+    {
+        **str = '\0';
+        (*str)++;
+    }
+    return ret;
+}
+
 #pragma warning( disable : 4996 )
 int
 os_sprintf(
@@ -273,76 +290,16 @@ os_strtoll(
     char **endptr,
     os_int32 base)
 {
-    long long value = 0LL;
-    long long sign = 1LL;
-    long long radix;
-    long long dvalue;
+    return _strtoi64(str, endptr, base);
+}
 
-    errno = 0;
-
-    if (endptr) {
-        *endptr = (char *)str;
-    }
-    while (isspace ((int)*str)) {
-        str++;
-    }
-    if (*str == '-') {
-        sign = -1LL;
-        str++;
-    } else if (*str == '+') {
-        sign = 1LL;
-        str++;
-    }
-    if (base == 0) {
-	/* determine radix from string str */
-        if (*str == '\0') {
-            errno = EINVAL;
-            return value;
-        }
-        if (*str == '0') {
-            str++;
-            /* base = 8, 10 or 16 */
-            if (*str == '\0') {
-                base = 10;
-            } else if (*str == 'x' || *str == 'X') {
-                base = 16;
-                str++;
-            } else if (*str >= '0' || *str <= '7') {
-                base = 8;
-            } else {
-                errno = EINVAL;
-                return value;
-            }
-        } else if (*str >= '1' || *str <= '9') {
-            base = 10;
-        }
-    } else if (base < 2) {
-        /* invalid radix */
-        errno = EINVAL;
-        return value;
-    } else if (base > 36) {
-        /* invalid radix */
-        errno = EINVAL;
-        return value;
-    } else if (base == 16) {
-        /* Check if prefixed by 0x or 0X */
-        if (*str == '0' && (*(str+1) == 'x' || *(str+1) == 'X')) {
-            str++;
-            str++;
-        }
-    }
-    radix = (long long)base;
-    dvalue = digit_value (*str, base);
-    while (dvalue >= 0) {
-        value = value * radix + dvalue;
-        str++;
-        dvalue = digit_value (*str, base);
-    }
-    if (endptr) {
-        *endptr = (char *)str;
-    }
-
-    return value*sign;
+unsigned long long
+os_strtoull(
+    const char *str,
+    char **endptr,
+    os_int32 base)
+{
+    return _strtoui64(str, endptr, base);
 }
 
 long long
@@ -350,6 +307,13 @@ os_atoll(
     const char *str)
 {
     return os_strtoll(str, NULL, 10);
+}
+
+unsigned long long
+os_atoull(
+    const char *str)
+{
+    return os_strtoull(str, NULL, 10);
 }
 
 char *

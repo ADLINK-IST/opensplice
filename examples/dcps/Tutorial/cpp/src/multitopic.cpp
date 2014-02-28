@@ -27,6 +27,10 @@
 #include <sstream>
 #ifdef _WIN32
 #include "os_stdlib.h"
+#else
+#ifdef _WRS_KERNEL
+#define USE_NANOSLEEP
+#endif
 #endif
 
 #define MAX_MSG_LEN 256

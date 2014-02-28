@@ -39,7 +39,7 @@ then
     sed -e "s@<Name>ospl_[^<]*</Name>@<Name>oex_$UNIQID</Name>@" \
         -e "s@<Id>0</Id>@<Id>$UNIQID</Id>@" < $XMLFILE > $NEWXMLFILE
 
-    echo "SET OSPL_URI=\"file://$OSPL_HOME/etc/config/ospl_shmem_no_network_uniq.xml\"" >> $OSPL_HOME/examples/swap_URI.bat
+    echo "SET OSPL_URI=file://$OSPL_HOME/etc/config/ospl_shmem_no_network_uniq.xml" >> $OSPL_HOME/examples/swap_URI.bat
 else
     XMLFILE=ospl_sp_ddsi.xml
     NEWXMLFILE=ospl_sp_ddsi_uniq.xml
@@ -64,7 +64,7 @@ else
         exit 1;
     fi
 
-    echo "SET OSPL_URI=\"file://$OSPL_HOME/etc/config/ospl_sp_ddsi_uniq.xml\"" >> $OSPL_HOME/examples/swap_URI.bat
+    echo "SET OSPL_URI=file://$OSPL_HOME/etc/config/ospl_sp_ddsi_uniq.xml" >> $OSPL_HOME/examples/swap_URI.bat
 fi
 
 echo "XMLFILE is $XMLFILE"

@@ -45,7 +45,6 @@ cmx_topicNew(
     u_participant par;
     u_topic top;
     c_char* result;
-    cmx_entityArg arg;
     u_result ur;
     v_topicQos tQos;
     struct cmx_topicQos tq;
@@ -73,17 +72,17 @@ cmx_topicNew(
             }
             
             if(top != NULL){
+                C_STRUCT(cmx_entityArg) arg;
+
                 cmx_registerEntity(u_entity(top));
-                arg = cmx_entityArg(os_malloc(C_SIZEOF(cmx_entityArg)));
-                arg->entity = u_entity(top);
-                arg->create = FALSE;
-                arg->participant = NULL;
-                arg->result = NULL;
-                ur = u_entityAction(u_entity(top), cmx_entityNewFromAction, (c_voidp)(arg));
+                arg.entity = u_entity(top);
+                arg.create = FALSE;
+                arg.participant = NULL;
+                arg.result = NULL;
+                ur = u_entityAction(u_entity(top), cmx_entityNewFromAction, &arg);
                 
                 if(ur == U_RESULT_OK){
-                    result = arg->result;
-                    os_free(arg);
+                    result = arg.result; /* Transfer string content to return result. */
                 }
             }
         }

@@ -65,7 +65,7 @@ function ospldist_arch_dot_os ()
         if [ "$(uname -o)" = 'Cygwin' ]; then
             arch_dot_os="${arch_dot_os}.win32"
         else
-             arch_dot_os="${arch_dot_os}.linux2.6"
+             arch_dot_os="${arch_dot_os}.linux"
         fi
     else
         arch_dot_os='sparc.solaris10_studio12'

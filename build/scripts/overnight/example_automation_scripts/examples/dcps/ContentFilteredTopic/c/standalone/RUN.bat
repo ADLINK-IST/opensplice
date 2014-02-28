@@ -8,4 +8,4 @@ set EXAMPLE_LANG=sac
 
 call %FUNCTIONS% :runContentFilteredTopic
 
-call %FUNCTIONS% :contentfilteredtopicCheckResult
+call %FUNCTIONS% :contentfilteredtopicCheckResult >> run.log

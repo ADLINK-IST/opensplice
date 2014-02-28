@@ -39,20 +39,24 @@ template <typename T1, typename T2>
 struct dds::core::is_same : public boost::is_same<T1, T1> { };
 
 template <typename T>
-struct dds::core::smart_ptr_traits {
+struct dds::core::smart_ptr_traits
+{
     typedef boost::shared_ptr<T> ref_type;
     typedef boost::weak_ptr<T>   weak_ref_type;
 };
 
 
 template <typename TO, typename FROM>
-TO dds::core::polymorphic_cast(FROM& from) {
+TO dds::core::polymorphic_cast(FROM& from)
+{
     typename TO::DELEGATE_REF_T dr =
-            boost::dynamic_pointer_cast< typename TO::DELEGATE_T>(from.delegate());
+        boost::dynamic_pointer_cast< typename TO::DELEGATE_T>(from.delegate());
     TO to(dr);
 
-    if (to == dds::core::null)
+    if(to == dds::core::null)
+    {
         throw dds::core::InvalidDowncastError("Attempted invalid downcast.");
+    }
     return to;
 }
 #endif /* OMG_DDS_CORE_DETAIL_REF_TRAITS_H_ */

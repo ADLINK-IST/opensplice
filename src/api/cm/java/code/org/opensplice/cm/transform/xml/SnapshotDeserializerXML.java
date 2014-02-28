@@ -20,6 +20,7 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.opensplice.cm.com.Communicator;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
@@ -49,7 +50,8 @@ public class SnapshotDeserializerXML implements SnapshotDeserializer {
      * @throws ParserConfigurationException Thrown if the parser could not be
      *                                      configured.
      */
-    public SnapshotDeserializerXML() throws ParserConfigurationException {
+    public SnapshotDeserializerXML(Communicator communicator) throws ParserConfigurationException {
+        this.communicator = communicator;
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setValidating(false);
         factory.setNamespaceAware(false);
@@ -94,7 +96,7 @@ public class SnapshotDeserializerXML implements SnapshotDeserializer {
             
             if("writerSnapshot".equals(el.getNodeName())){
                 String id = el.getFirstChild().getFirstChild().getNodeValue();
-                result = new WriterSnapshotImpl(id, writer);
+                result = new WriterSnapshotImpl(getCommunicator(), id, writer);
             }
         }
         return result;
@@ -137,11 +139,15 @@ public class SnapshotDeserializerXML implements SnapshotDeserializer {
             
             if("readerSnapshot".equals(el.getNodeName())){
                 String id = el.getFirstChild().getFirstChild().getNodeValue();
-                result = new ReaderSnapshotImpl(id, reader);
+                result = new ReaderSnapshotImpl(getCommunicator(), id, reader);
             }
         }
         return result;
     }
+
+  protected Communicator getCommunicator() {
+    return communicator;
+  }
     
     /**
      * Builder that is capable of creating a DOM tree from an XML string.
@@ -152,4 +158,6 @@ public class SnapshotDeserializerXML implements SnapshotDeserializer {
      * Logging facilities for the deserializer.
      */
     private Logger logger;
+
+    private Communicator communicator;
 }

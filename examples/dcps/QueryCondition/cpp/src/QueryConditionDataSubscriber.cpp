@@ -30,7 +30,7 @@
 #include "example_main.h"
 
 using namespace DDS;
-using namespace QueryConditionData;
+using namespace StockMarket;
 
 int OSPL_MAIN (int argc, char *argv[])
 {

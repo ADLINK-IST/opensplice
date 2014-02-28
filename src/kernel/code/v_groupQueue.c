@@ -14,6 +14,8 @@
 #include "v_groupQueue.h"
 #include "v_groupStream.h"
 #include "v__groupStream.h"
+#include "v_groupQueueStatistics.h"
+#include "v__statisticsInterface.h"
 #include "v_reader.h"
 #include "v_readerQos.h"
 #include "v_observer.h"
@@ -23,6 +25,8 @@
 #include "c_collection.h"
 #include "os_report.h"
 #include "v_message.h"
+#include "v_statistics.h"
+#include "v__statCat.h"
 
 v_groupQueue
 v_groupQueueNew(
@@ -34,22 +38,40 @@ v_groupQueueNew(
 {
     v_kernel kernel;
     v_groupQueue queue;
+    v_groupQueueStatistics gqs;
     v_readerQos q;
 
     assert(C_TYPECHECK(subscriber,v_subscriber));
 
     kernel = v_objectKernel(subscriber);
+
+    if (v_isEnabledStatistics(kernel, V_STATCAT_READER) ||
+        v_isEnabledStatistics(kernel, V_STATCAT_DURABILITY)) {
+        gqs = v_groupQueueStatisticsNew(kernel);
+        if (gqs == NULL) {
+            OS_REPORT_1(OS_ERROR,
+                        "kernel::v_groupQueue::v_groupQueueNew", 0,
+                        "Failed to create Statistics for GroupQueue (name=\"%s\").",
+                        name);
+            assert(FALSE);
+            return NULL;
+        }
+    } else {
+        gqs = NULL;
+    }
+
     q = v_readerQosNew(kernel,qos);
 
     if (q != NULL) {
         queue = v_groupQueue(v_objectNew(kernel,K_GROUPQUEUE));
-        v_groupQueueInit(queue, subscriber, name, maxSize, q, expr);
+        v_groupQueueInit(queue, subscriber, name, maxSize, q, v_statistics(gqs), expr);
         c_free(q); /* ref now in v_reader(queue)->qos */
     } else {
         OS_REPORT(OS_ERROR,
                   "v_groupQueueNew", 0,
                   "v_groupQueue not created: inconsistent qos");
         queue = NULL;
+        v_groupQueueStatisticsFree(gqs);
     }
 
     return queue;
@@ -62,6 +84,7 @@ v_groupQueueInit(
     const c_char *name,
     c_ulong maxSize,
     v_readerQos qos,
+    v_statistics gqs,
     c_iter expr)
 {
     assert(C_TYPECHECK(queue, v_groupQueue));
@@ -74,7 +97,7 @@ v_groupQueueInit(
     queue->size    = 0;
     queue->markerReached = FALSE;
 
-    v_groupStreamInit(v_groupStream(queue), name, subscriber, qos, expr);
+    v_groupStreamInit(v_groupStream(queue), name, subscriber, qos, gqs, expr);
 }
 
 void
@@ -147,6 +170,7 @@ v_groupQueueRead(
 
     if (queue->head) {
         action = c_keep(queue->head->action);
+        v_statisticsULongValueInc(v_groupQueue, numberOfReads, queue);
     } else {
         action = NULL;
     }
@@ -186,6 +210,8 @@ v_groupQueueTake(
 				queue->tail = NULL;
 				v_statusReset(v_entity(queue)->status,V_EVENT_DATA_AVAILABLE);
 			}
+	        v_statisticsULongValueInc(v_groupQueue, numberOfTakes, queue);
+	        v_statisticsFullCounterValueMin(v_groupQueue, numberOfSamples, queue);
     	}
     }
 
@@ -247,6 +273,9 @@ v_groupQueueWrite(
 
                 queue->size++;
                 v_groupStreamNotifyDataAvailable(v_groupStream(queue));
+
+                v_statisticsULongValueInc(v_groupQueue, numberOfWrites, queue);
+                v_statisticsFullCounterValuePlus(v_groupQueue, numberOfSamples, queue);
             } else {
                 OS_REPORT(OS_ERROR,
                           "v_groupQueueWrite",0,

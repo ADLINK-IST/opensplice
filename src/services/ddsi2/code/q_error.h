@@ -8,6 +8,7 @@
 #define ERR_UNKNOWN_ENTITY      -5
 #define ERR_OUT_OF_IDS          -6
 #define ERR_INVALID_DATA        -7
+#define ERR_BUSY                -8
 
 #endif /* NN_ERROR_H */
 

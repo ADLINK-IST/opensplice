@@ -65,10 +65,33 @@ delayedEscape(
     return NULL;
 }
 
+#ifdef _WRS_KERNEL
+int userload_main (int argc, char ** argv);
+extern "C" {
+   int userload (char * args);
+}
+int userload (char * args)
+{
+   int argc=1;
+   char *argv[256];
+   char *str1;
+   argv[0] = (char*) strdup ("userload");
+   str1 = (char*) strtok(args, " ");
+   while (str1)
+   {
+      argv[argc] = (char*) strdup (str1);
+      argc++;
+      str1 = strtok(NULL, " ");
+   }
+   return userload_main (argc, argv);
+}
+int userload_main (int argc, char ** argv)
+#else
 int
 OSPL_MAIN (
     int argc,
     char *argv[])
+#endif
 {
     /* Generic DDS entities */
     DomainParticipant_var           participant;

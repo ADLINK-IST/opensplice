@@ -18,7 +18,7 @@
 #ifndef OSPL_DDS_PUB_ANYDATAWRITER_CPP_
 #define OSPL_DDS_PUB_ANYDATAWRITER_CPP_
 
-#include <spec/dds/pub/AnyDataWriter.hpp>
+#include <dds/pub/AnyDataWriter.hpp>
 
 namespace dds
 {

@@ -16,6 +16,7 @@ import org.opensplice.cm.CMFactory;
 import org.opensplice.cm.Query;
 import org.opensplice.cm.ReaderSnapshot;
 import org.opensplice.cm.com.CommunicationException;
+import org.opensplice.cm.com.Communicator;
 import org.opensplice.cm.qos.QoS;
 import org.opensplice.cm.status.Status;
 import org.opensplice.cm.data.State;
@@ -46,10 +47,10 @@ public class QueryImpl extends ReaderImpl implements Query{
      * @param _expression The query expression that is used to create the 
      *                    query.
      */
-    public QueryImpl(long _index, long _serial, String _pointer, String _name, 
+    public QueryImpl(Communicator communicator, long _index, long _serial, String _pointer, String _name,
             String _expression, String _params, State _instanceState, 
             State _sampleState, State _viewState) {
-        super(_index, _serial, _pointer, _name);
+        super(communicator, _index, _serial, _pointer, _name);
         expression = _expression;
         params = _params;
         instanceState = _instanceState;
@@ -68,11 +69,11 @@ public class QueryImpl extends ReaderImpl implements Query{
      * @throws CMException Thrown when Query could not be created.
      */
     public QueryImpl(ReaderImpl source, String name, String expression) throws CMException{
-        super(0, 0, "", "");
+        super(source.getCommunicator(), 0, 0, "", "");
         owner = true;
         QueryImpl q;
         try {
-            q = (QueryImpl)CMFactory.getCommunicator().queryNew(source, name, expression);
+            q = (QueryImpl)getCommunicator().queryNew(source, name, expression);
         } catch (CommunicationException e) {
             throw new CMException(e.getMessage());
         }

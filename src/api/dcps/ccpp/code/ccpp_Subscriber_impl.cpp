@@ -49,8 +49,8 @@ DDS::DataReader_ptr DDS::Subscriber_impl::create_datareader (
   DDS::TopicDescription_impl_ptr cfTopicImpl;
   DDS::DataReader_ptr DataReader = NULL;
   gapi_dataReader reader_handle;
-  CORBA::Boolean allocatedQos = false;
-  CORBA::Boolean proceed = true;
+  DDS::Boolean allocatedQos = false;
+  DDS::Boolean proceed = true;
 
   cfTopicImpl = dynamic_cast<DDS::TopicDescription_impl_ptr>(a_topic);
   if (!cfTopicImpl)
@@ -126,7 +126,7 @@ DDS::DataReader_ptr DDS::Subscriber_impl::create_datareader (
 
             if (tsf)
             {
-              CORBA::Object_ptr anObject = static_cast<CORBA::Object_ptr>(tsf);
+              DDS::Object_ptr anObject = static_cast<DDS::Object_ptr>(tsf);
               DDS::TypeSupportFactory_impl_ptr factory = dynamic_cast<DDS::TypeSupportFactory_impl_ptr>(anObject);
               if (factory)
               {
@@ -138,7 +138,7 @@ DDS::DataReader_ptr DDS::Subscriber_impl::create_datareader (
                   if (myUD)
                   {
                       gapi_subscriberQos *sqos = gapi_subscriberQos__alloc();
-                      gapi_object_set_user_data(reader_handle, (CORBA::Object *)myUD,
+                      gapi_object_set_user_data(reader_handle, (DDS::Object *)myUD,
                                                 ccpp_CallBack_DeleteUserData,NULL);
                       if(sqos){
                           if(gapi_subscriber_get_qos(_gapi_self, sqos) == GAPI_RETCODE_OK){
@@ -239,7 +239,7 @@ const char * topic_name
   {
     if (os_mutexLock(&s_mutex) == os_resultSuccess)
     {
-      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
       if (myUD)
       {
         dataReader = dynamic_cast<DDS::DataReader_ptr>(myUD->ccpp_object);
@@ -286,13 +286,13 @@ DDS::ReturnCode_t DDS::Subscriber_impl::get_datareaders (
                                                 view_states, instance_states);
     if (result == DDS::RETCODE_OK)
     {
-      CORBA::ULong l = static_cast<CORBA::ULong>(gapi_readers->_length);
+      DDS::ULong l = static_cast<DDS::ULong>(gapi_readers->_length);
       readers.length(l);
-      for (CORBA::ULong i=0; i<l; i++)
+      for (DDS::ULong i=0; i<l; i++)
       {
         DDS::ccpp_UserData_ptr myUD;
         myUD = dynamic_cast<DDS::ccpp_UserData_ptr>
-                              ((CORBA::Object *)gapi_object_get_user_data(gapi_readers->_buffer[i]));
+                              ((DDS::Object *)gapi_object_get_user_data(gapi_readers->_buffer[i]));
         if (myUD)
         {
           readers[i] = dynamic_cast<DDS::DataReader_ptr>(myUD->ccpp_object);
@@ -385,7 +385,7 @@ DDS::ReturnCode_t DDS::Subscriber_impl::set_listener (
     if (result == DDS::RETCODE_OK)
     {
       DDS::ccpp_UserData_ptr myUD;
-      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(_gapi_self));
+      myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(_gapi_self));
       if (myUD)
       {
         myUD->setListener(a_listener);
@@ -435,7 +435,7 @@ DDS::DomainParticipant_ptr DDS::Subscriber_impl::get_participant (
   if (handle)
   {
     DDS::ccpp_UserData_ptr myUD;
-    myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((CORBA::Object *)gapi_object_get_user_data(handle));
+    myUD = dynamic_cast<DDS::ccpp_UserData_ptr>((DDS::Object *)gapi_object_get_user_data(handle));
 
     if (myUD)
     {

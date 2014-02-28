@@ -9,7 +9,10 @@
  *   for full copyright notice and license terms.
  *
  */
+#include "ccpp_dds_builtinTopics.h"
+#include "ccpp_dds_namedQosTypes.h"
 #include "ccpp_QosUtils.h"
+#include "qp_qosProvider.h"
 #include "orb_abstraction.h"
 
 namespace DDS
@@ -80,7 +83,7 @@ namespace DDS
 
     static const DDS::ReliabilityQosPolicy DEFAULT_RELIABILITY_QOSPOLICY = {
         BEST_EFFORT_RELIABILITY_QOS,
-        {DURATION_INFINITE_SEC, DURATION_INFINITE_NSEC}
+        {0, 100000000}
     };
 
     static const DDS::DestinationOrderQosPolicy DEFAULT_DESTINATIONORDER_QOSPOLICY = {
@@ -243,6 +246,7 @@ namespace DDS
         qos->latency_budget         = DEFAULT_LATENCYBUDGET_QOSPOLICY;
         qos->liveliness             = DEFAULT_LIVELINESS_QOSPOLICY;
         qos->reliability            = DEFAULT_RELIABILITY_QOSPOLICY;
+        qos->reliability.kind       = RELIABLE_RELIABILITY_QOS;
         qos->destination_order      = DEFAULT_DESTINATIONORDER_QOSPOLICY;
         qos->history                = DEFAULT_HISTORY_QOSPOLICY;
         qos->resource_limits        = DEFAULT_RESOURCELIMITS_QOSPOLICY;
@@ -267,24 +271,201 @@ namespace DDS
     DDS::DataReaderViewQos_var           DDS::DefaultQos::DataReaderViewQosDefault     = DDS::initializeDataReaderViewQos();
     DDS::DataWriterQos_var               DDS::DefaultQos::DataWriterQosDefault         = DDS::initializeDataWriterQos();
     DDS::DataWriterQos_var               DDS::DefaultQos::DataWriterQosUseTopicQos     = DDS::initializeDataWriterQos();
+};
 
+extern c_bool __DDS_NamedDomainParticipantQos__copyIn_noCache(
+    c_base base,
+    struct DDS::NamedDomainParticipantQos *from,
+    struct _DDS_NamedDomainParticipantQos *to);
+
+extern void __DDS_NamedDomainParticipantQos__copyOut(
+    void *_from,
+    void *_to);
+
+extern c_bool __DDS_NamedPublisherQos__copyIn_noCache(
+    c_base base,
+    struct DDS::NamedPublisherQos *from,
+    struct _DDS_NamedPublisherQos *to);
+
+extern void __DDS_NamedPublisherQos__copyOut(
+    void *_from,
+    void *_to);
+
+extern c_bool __DDS_NamedSubscriberQos__copyIn_noCache(
+    c_base base,
+    struct DDS::NamedSubscriberQos *from,
+    struct _DDS_NamedSubscriberQos *to);
+
+extern void __DDS_NamedSubscriberQos__copyOut(
+    void *_from,
+    void *_to);
+
+extern c_bool __DDS_NamedTopicQos__copyIn_noCache(
+    c_base base,
+    struct DDS::NamedTopicQos *from,
+    struct _DDS_NamedTopicQos *to);
+
+extern void __DDS_NamedTopicQos__copyOut(
+    void *_from,
+    void *_to);
+
+extern c_bool __DDS_NamedDataWriterQos__copyIn_noCache(
+    c_base base,
+    struct DDS::NamedDataWriterQos *from,
+    struct _DDS_NamedDataWriterQos *to);
+
+extern void __DDS_NamedDataWriterQos__copyOut(
+    void *_from,
+    void *_to);
+
+extern c_bool __DDS_NamedDataReaderQos__copyIn_noCache(
+    c_base base,
+    struct DDS::NamedDataReaderQos *from,
+    struct _DDS_NamedDataReaderQos *to);
+
+extern void __DDS_NamedDataReaderQos__copyOut(
+    void *_from,
+    void *_to);
+
+namespace DDS
+{
+    static const NamedDomainParticipantQos defaultNamedParticipantQos = {
+        "",
+        {
+            DEFAULT_USERDATA_QOSPOLICY,
+            DEFAULT_ENTITYFACTORY_QOSPOLICY,
+            DEFAULT_SCHEDULING_QOSPOLICY,
+            DEFAULT_SCHEDULING_QOSPOLICY
+        }
+    };
+
+    static const NamedTopicQos defaultNamedTopicQos = {
+        "",
+        {
+            DEFAULT_TOPICDATA_QOSPOLICY,
+            DEFAULT_DURABILITY_QOSPOLICY,
+            DEFAULT_DURABILITYSERVICE_QOSPOLICY,
+            DEFAULT_DEADLINE_QOSPOLICY,
+            DEFAULT_LATENCYBUDGET_QOSPOLICY,
+            DEFAULT_LIVELINESS_QOSPOLICY,
+            DEFAULT_RELIABILITY_QOSPOLICY,
+            DEFAULT_DESTINATIONORDER_QOSPOLICY,
+            DEFAULT_HISTORY_QOSPOLICY,
+            DEFAULT_RESOURCELIMITS_QOSPOLICY,
+            DEFAULT_TRANSPORTPRIORITY_QOSPOLICY,
+            DEFAULT_LIFESPAN_QOSPOLICY,
+            DEFAULT_OWNERSHIP_QOSPOLICY
+        }
+    };
+
+    static const NamedSubscriberQos defaultNamedSubscriberQos = {
+        "",
+        {
+            DEFAULT_PRESENTATION_QOSPOLICY,
+            DEFAULT_PARTITION_QOSPOLICY,
+            DEFAULT_GROUPDATA_QOSPOLICY,
+            DEFAULT_ENTITYFACTORY_QOSPOLICY,
+            DEFAULT_SHARE_QOSPOLICY
+        }
+    };
+
+    static const NamedDataReaderQos defaultNamedDataReaderQos = {
+        "",
+        {
+            DEFAULT_DURABILITY_QOSPOLICY,
+            DEFAULT_DEADLINE_QOSPOLICY,
+            DEFAULT_LATENCYBUDGET_QOSPOLICY,
+            DEFAULT_LIVELINESS_QOSPOLICY,
+            DEFAULT_RELIABILITY_QOSPOLICY,
+            DEFAULT_DESTINATIONORDER_QOSPOLICY,
+            DEFAULT_HISTORY_QOSPOLICY,
+            DEFAULT_RESOURCELIMITS_QOSPOLICY,
+            DEFAULT_USERDATA_QOSPOLICY,
+            DEFAULT_OWNERSHIP_QOSPOLICY,
+            DEFAULT_TIMEBASEDFILTER_QOSPOLICY,
+            DEFAULT_READERDATALIFECYCLE_QOSPOLICY,
+            DEFAULT_SUBSCRIPTIONKEY_QOSPOLICY,
+            DEFAULT_READERLIFESPAN_QOSPOLICY,
+            DEFAULT_SHARE_QOSPOLICY
+        }
+    };
+
+    static const NamedPublisherQos defaultNamedPublisherQos = {
+        "",
+        {
+            DEFAULT_PRESENTATION_QOSPOLICY,
+            DEFAULT_PARTITION_QOSPOLICY,
+            DEFAULT_GROUPDATA_QOSPOLICY,
+            DEFAULT_ENTITYFACTORY_QOSPOLICY
+        }
+    };
+
+    static const NamedDataWriterQos defaultNamedDataWriterQos = {
+        "",
+        {
+            DEFAULT_DURABILITY_QOSPOLICY,
+            DEFAULT_DEADLINE_QOSPOLICY,
+            DEFAULT_LATENCYBUDGET_QOSPOLICY,
+            DEFAULT_LIVELINESS_QOSPOLICY,
+            {RELIABLE_RELIABILITY_QOS, {0, 100000000}},
+            DEFAULT_DESTINATIONORDER_QOSPOLICY,
+            DEFAULT_HISTORY_QOSPOLICY,
+            DEFAULT_RESOURCELIMITS_QOSPOLICY,
+            DEFAULT_TRANSPORTPRIORITY_QOSPOLICY,
+            DEFAULT_LIFESPAN_QOSPOLICY,
+            DEFAULT_USERDATA_QOSPOLICY,
+            DEFAULT_OWNERSHIP_QOSPOLICY,
+            DEFAULT_OWNERSHIPSTRENGTH_QOSPOLICY,
+            DEFAULT_WRITERDATALIFECYCLE_QOSPOLICY
+        }
+    };
+
+    /* The below qosProviderAttr uses the defaults supplied by the qosProvider
+     * implementation. If a C++ QoS would have to be used, the idlpp-generated
+     * copyIn-function with static type-caching disabled should be used. By
+     * default these are named __DDS_NamedDomainParticipantQos__copyIn_noCache,
+     * etc. */
+    static const C_STRUCT(qp_qosProviderInputAttr) qosProviderAttr = {
+        { /* ParticipantQos */
+            (qp_copyOut)&__DDS_NamedDomainParticipantQos__copyOut
+        },
+        { /* TopicQos */
+            (qp_copyOut)&__DDS_NamedTopicQos__copyOut
+        },
+        { /* SubscriberQos */
+            (qp_copyOut)&__DDS_NamedSubscriberQos__copyOut
+        },
+        { /* DataReaderQos */
+            (qp_copyOut)&__DDS_NamedDataReaderQos__copyOut
+        },
+        { /* PublisherQos */
+            (qp_copyOut)&__DDS_NamedPublisherQos__copyOut
+        },
+        { /* DataWriterQos */
+            (qp_copyOut)&__DDS_NamedDataWriterQos__copyOut
+        }
+    };
+
+    const C_STRUCT(qp_qosProviderInputAttr) *
+    ccpp_getQosProviderInputAttr()
+    {
+        return &qosProviderAttr;
+    }
 }
-
-
 
 //policies conversions
 
 void DDS::ccpp_UserDataQosPolicy_copyIn( const DDS::UserDataQosPolicy &from,
         gapi_userDataQosPolicy &to )
 {
-    DDS::ccpp_sequenceCopyIn<DDS::octSeq, CORBA::Octet, gapi_octetSeq, gapi_octet>(from.value,
+    DDS::ccpp_sequenceCopyIn<DDS::octSeq, DDS::Octet, gapi_octetSeq, gapi_octet>(from.value,
             to.value);
 }
 
 void DDS::ccpp_UserDataQosPolicy_copyOut( const gapi_userDataQosPolicy &from,
         DDS::UserDataQosPolicy &to )
 {
-    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::octSeq, CORBA::Octet >(
+    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::octSeq, DDS::Octet >(
             from.value, to.value );
 }
 
@@ -297,13 +478,13 @@ void DDS::ccpp_EntityFactoryQosPolicy_copyIn( const DDS::EntityFactoryQosPolicy 
 void DDS::ccpp_EntityFactoryQosPolicy_copyOut( const gapi_entityFactoryQosPolicy &from,
          DDS::EntityFactoryQosPolicy &to)
 {
-    to.autoenable_created_entities = from.autoenable_created_entities;
+    to.autoenable_created_entities = from.autoenable_created_entities != 0;
 }
 
 void DDS::ccpp_TopicDataQosPolicy_copyIn( const DDS::TopicDataQosPolicy &from,
         gapi_topicDataQosPolicy &to)
 {
-    DDS::ccpp_sequenceCopyIn< DDS::octSeq, CORBA::Octet, gapi_octetSeq, gapi_octet >(
+    DDS::ccpp_sequenceCopyIn< DDS::octSeq, DDS::Octet, gapi_octetSeq, gapi_octet >(
             from.value, to.value );
 }
 
@@ -507,7 +688,7 @@ void DDS::ccpp_PartitionQosPolicy_copyIn( const DDS::PartitionQosPolicy &from,
 void DDS::ccpp_GroupDataQosPolicy_copyIn(const DDS::GroupDataQosPolicy &from,
         gapi_groupDataQosPolicy &to)
 {
-    DDS::ccpp_sequenceCopyIn< DDS::octSeq, CORBA::Octet, gapi_octetSeq, gapi_octet >
+    DDS::ccpp_sequenceCopyIn< DDS::octSeq, DDS::Octet, gapi_octetSeq, gapi_octet >
             ( from.value, to.value );
 }
 
@@ -515,7 +696,7 @@ void DDS::ccpp_GroupDataQosPolicy_copyIn(const DDS::GroupDataQosPolicy &from,
 void DDS::ccpp_TopicDataQosPolicy_copyOut( const gapi_topicDataQosPolicy &from,
         DDS::TopicDataQosPolicy &to)
 {
-    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::octSeq, CORBA::Octet>(
+    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::octSeq, DDS::Octet>(
             from.value, to.value );
 }
 
@@ -721,7 +902,7 @@ void DDS::ccpp_OwnershipStrengthQosPolicy_copyOut(const gapi_ownershipStrengthQo
 void DDS::ccpp_WriterDataLifecycleQosPolicy_copyOut( const gapi_writerDataLifecycleQosPolicy &from,
         DDS::WriterDataLifecycleQosPolicy &to)
 {
-  to.autodispose_unregistered_instances = from.autodispose_unregistered_instances;
+  to.autodispose_unregistered_instances = from.autodispose_unregistered_instances != 0;
   ccpp_Duration_copyOut(from.autopurge_suspended_samples_delay, to.autopurge_suspended_samples_delay);
   ccpp_Duration_copyOut(from.autounregister_instance_delay, to.autounregister_instance_delay);
 }
@@ -731,7 +912,7 @@ void DDS::ccpp_ReaderDataLifecycleQosPolicy_copyOut( const gapi_readerDataLifecy
 {
   ccpp_Duration_copyOut(from.autopurge_nowriter_samples_delay, to.autopurge_nowriter_samples_delay);
   ccpp_Duration_copyOut(from.autopurge_disposed_samples_delay, to.autopurge_disposed_samples_delay);
-  to.enable_invalid_samples = from.enable_invalid_samples;
+  to.enable_invalid_samples = from.enable_invalid_samples != 0;
   ccpp_InvalidSampleVisibilityQosPolicy_copyOut(from.invalid_sample_visibility, to.invalid_sample_visibility);
 }
 
@@ -749,8 +930,8 @@ void DDS::ccpp_PresentationQosPolicy_copyOut( const gapi_presentationQosPolicy &
         DDS::PresentationQosPolicy & to)
 {
   to.access_scope = (DDS::PresentationQosPolicyAccessScopeKind)from.access_scope;
-  to.coherent_access = from.coherent_access;
-  to.ordered_access = from.ordered_access;
+  to.coherent_access = from.coherent_access != 0;
+  to.ordered_access = from.ordered_access != 0;
 }
 
 void DDS::ccpp_PartitionQosPolicy_copyOut( const gapi_partitionQosPolicy &from,
@@ -763,7 +944,7 @@ void DDS::ccpp_GroupDataQosPolicy_copyOut(
         const gapi_groupDataQosPolicy &from,
         DDS::GroupDataQosPolicy &to)
 {
-    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::octSeq, CORBA::Octet >(
+    DDS::ccpp_sequenceCopyOut< gapi_octetSeq, gapi_octet, DDS::octSeq, DDS::Octet >(
             from.value, to.value );
 }
 
@@ -780,7 +961,7 @@ void DDS::ccpp_SubscriptionKeyQosPolicy_copyOut(
         DDS::SubscriptionKeyQosPolicy &to )
 {
     DDS::ccpp_sequenceCopyOut(from.key_list, to.key_list);
-    to.use_key_list = from.use_key_list;
+    to.use_key_list = from.use_key_list != 0;
 }
 
 void DDS::ccpp_ReaderLifespanQosPolicy_copyIn (
@@ -795,7 +976,7 @@ void DDS::ccpp_ReaderLifespanQosPolicy_copyOut (
     const gapi_readerLifespanQosPolicy &from,
     DDS::ReaderLifespanQosPolicy &to )
 {
-    to.use_lifespan = from.use_lifespan;
+    to.use_lifespan = from.use_lifespan != 0;
     DDS::ccpp_Duration_copyOut(from.duration, to.duration);
 }
 
@@ -813,8 +994,8 @@ void DDS::ccpp_ShareQosPolicy_copyOut (
     const gapi_shareQosPolicy &from,
     DDS::ShareQosPolicy &to )
 {
-    to.enable = from.enable;
-    to.name = CORBA::string_dup(reinterpret_cast<const char *>(from.name));
+    to.enable = from.enable != 0;
+    to.name = DDS::string_dup(reinterpret_cast<const char *>(from.name));
 }
 
 void DDS::ccpp_SchedulingClassQosPolicy_copyIn ( const DDS::SchedulingClassQosPolicy &from,
@@ -1241,7 +1422,7 @@ void DDS::ccpp_ViewKeyQosPolicy_copyOut(
         const gapi_viewKeyQosPolicy &from,
         DDS::ViewKeyQosPolicy &to)
 {
-    to.use_key_list = from.use_key_list;
+    to.use_key_list = from.use_key_list != 0;
     DDS::ccpp_sequenceCopyOut(from.key_list, to.key_list);
 }
 
@@ -1285,4 +1466,792 @@ void DDS::ccpp_InvalidSampleVisibilityQosPolicy_copyOut(
         // impossible to reach
         break;
     }
+}
+
+bool
+DDS::operator==(
+    const DDS::Duration_t &a,
+    const DDS::Duration_t &b)
+{
+    return a.sec == b.sec && a.nanosec == b.nanosec ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::Duration_t &a,
+    const DDS::Duration_t &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::octSeq &a,
+    const DDS::octSeq &b)
+{
+    DDS::ULong i, j, n;
+
+    n = a.length ();
+    j = b.length ();
+
+    if (n == j) {
+        for (i = 0; i < n && a[i] == b[i]; i++) {
+            /* do nothing */
+        }
+        if (i == n) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::octSeq &a,
+    const DDS::octSeq &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::StringSeq &a,
+    const DDS::StringSeq &b)
+{
+    DDS::ULong i, j, n;
+
+    n = a.length ();
+    j = b.length ();
+    if (j == n) {
+        for (i = 0; i < n && strcmp (a[i], b[i]) == 0; i++) {
+            /* do nothing */
+        }
+        if (i == n) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::StringSeq &a,
+    const DDS::StringSeq &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::DeadlineQosPolicy &a,
+    const DDS::DeadlineQosPolicy &b)
+{
+    return a.period == b.period ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::DeadlineQosPolicy &a,
+    const DDS::DeadlineQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::DestinationOrderQosPolicy &a,
+    const DDS::DestinationOrderQosPolicy &b)
+{
+    return a.kind == b.kind ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::DestinationOrderQosPolicy &a,
+    const DDS::DestinationOrderQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::DurabilityQosPolicy &a,
+    const DDS::DurabilityQosPolicy &b)
+{
+    return a.kind == b.kind ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::DurabilityQosPolicy &a,
+    const DDS::DurabilityQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::DurabilityServiceQosPolicy &a,
+    const DDS::DurabilityServiceQosPolicy &b)
+{
+    if (a.history_depth == b.history_depth &&
+        a.history_kind == b.history_kind &&
+        a.max_instances == b.max_instances &&
+        a.max_samples == b.max_samples &&
+        a.max_samples_per_instance == b.max_samples_per_instance &&
+        a.service_cleanup_delay == b.service_cleanup_delay)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::DurabilityServiceQosPolicy &a,
+    const DDS::DurabilityServiceQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::EntityFactoryQosPolicy &a,
+    const DDS::EntityFactoryQosPolicy &b)
+{
+    if (a.autoenable_created_entities ==
+        b.autoenable_created_entities)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::EntityFactoryQosPolicy &a,
+    const DDS::EntityFactoryQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::GroupDataQosPolicy &a,
+    const DDS::GroupDataQosPolicy &b)
+{
+    return a.value == b.value ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::GroupDataQosPolicy &a,
+    const DDS::GroupDataQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::HistoryQosPolicy &a,
+    const DDS::HistoryQosPolicy &b)
+{
+    return a.depth == b.depth && a.kind == b.kind ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::HistoryQosPolicy &a,
+    const DDS::HistoryQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::LatencyBudgetQosPolicy &a,
+    const DDS::LatencyBudgetQosPolicy &b)
+{
+    return a.duration == b.duration ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::LatencyBudgetQosPolicy &a,
+    const DDS::LatencyBudgetQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::LifespanQosPolicy &a,
+    const DDS::LifespanQosPolicy &b)
+{
+    return a.duration == b.duration ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::LifespanQosPolicy &a,
+    const DDS::LifespanQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::LivelinessQosPolicy &a,
+    const DDS::LivelinessQosPolicy &b)
+{
+    return a.kind == b.kind && a.lease_duration == b.lease_duration ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::LivelinessQosPolicy &a,
+    const DDS::LivelinessQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::OwnershipQosPolicy &a,
+    const DDS::OwnershipQosPolicy &b)
+{
+    return a.kind == b.kind ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::OwnershipQosPolicy &a,
+    const DDS::OwnershipQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::OwnershipStrengthQosPolicy &a,
+    const DDS::OwnershipStrengthQosPolicy &b)
+{
+    return a.value == b.value ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::OwnershipStrengthQosPolicy &a,
+    const DDS::OwnershipStrengthQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::PartitionQosPolicy &a,
+    const DDS::PartitionQosPolicy &b)
+{
+    return a.name == b.name ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::PartitionQosPolicy &a,
+    const DDS::PartitionQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::PresentationQosPolicy &a,
+    const DDS::PresentationQosPolicy &b)
+{
+    if (a.access_scope == b.access_scope &&
+        a.coherent_access == b.coherent_access &&
+        a.ordered_access == b.ordered_access)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::PresentationQosPolicy &a,
+    const DDS::PresentationQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::ReaderDataLifecycleQosPolicy &a,
+    const DDS::ReaderDataLifecycleQosPolicy &b)
+{
+    if (a.enable_invalid_samples == b.enable_invalid_samples) {
+        if (a.enable_invalid_samples) {
+            if (a.autopurge_disposed_samples_delay ==
+                    b.autopurge_disposed_samples_delay &&
+                a.autopurge_nowriter_samples_delay ==
+                    b.autopurge_nowriter_samples_delay &&
+                a.invalid_sample_visibility.kind ==
+                    b.invalid_sample_visibility.kind)
+            {
+                return true;
+            }
+        } else {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::ReaderDataLifecycleQosPolicy &a,
+    const DDS::ReaderDataLifecycleQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::ReaderLifespanQosPolicy &a,
+    const DDS::ReaderLifespanQosPolicy &b)
+{
+    if (a.use_lifespan == b.use_lifespan) {
+        if (a.use_lifespan) {
+            if (a.duration == b.duration) {
+                return true;
+            }
+        } else {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::ReaderLifespanQosPolicy &a,
+    const DDS::ReaderLifespanQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::ReliabilityQosPolicy &a,
+    const DDS::ReliabilityQosPolicy &b)
+{
+    if (a.kind == b.kind &&
+        a.max_blocking_time == b.max_blocking_time &&
+        a.synchronous == b.synchronous)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::ReliabilityQosPolicy &a,
+    const DDS::ReliabilityQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::ResourceLimitsQosPolicy &a,
+    const DDS::ResourceLimitsQosPolicy &b)
+{
+    if (a.max_instances == b.max_instances &&
+        a.max_samples == b.max_samples &&
+        a.max_samples_per_instance == b.max_samples_per_instance)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::ResourceLimitsQosPolicy &a,
+    const DDS::ResourceLimitsQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::SchedulingQosPolicy &a,
+    const DDS::SchedulingQosPolicy &b)
+{
+    if (a.scheduling_class.kind == b.scheduling_class.kind &&
+        a.scheduling_priority == b.scheduling_priority &&
+        a.scheduling_priority_kind.kind == b.scheduling_priority_kind.kind)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::SchedulingQosPolicy &a,
+    const DDS::SchedulingQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::ShareQosPolicy &a,
+    const DDS::ShareQosPolicy &b)
+{
+    if (a.enable == b.enable) {
+        if (a.enable) {
+            if (a.name == NULL && b.name == NULL) {
+                return true;
+            } else if (a.name != NULL && b.name != NULL) {
+                if (strcmp (a.name, b.name) == 0) {
+                    return true;
+                }
+            }
+        } else {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::ShareQosPolicy &a,
+    const DDS::ShareQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::SubscriptionKeyQosPolicy &a,
+    const DDS::SubscriptionKeyQosPolicy &b)
+{
+    if (a.use_key_list == b.use_key_list) {
+        if (a.use_key_list) {
+            if (a.key_list == b.key_list) {
+                return true;
+            }
+        } else {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::SubscriptionKeyQosPolicy &a,
+    const DDS::SubscriptionKeyQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::TimeBasedFilterQosPolicy &a,
+    const DDS::TimeBasedFilterQosPolicy &b)
+{
+    return a.minimum_separation == b.minimum_separation ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::TimeBasedFilterQosPolicy &a,
+    const DDS::TimeBasedFilterQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::TopicDataQosPolicy &a,
+    const DDS::TopicDataQosPolicy &b)
+{
+    return a.value == b.value ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::TopicDataQosPolicy &a,
+    const DDS::TopicDataQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::TransportPriorityQosPolicy &a,
+    const DDS::TransportPriorityQosPolicy &b)
+{
+    return a.value == b.value ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::TransportPriorityQosPolicy &a,
+    const DDS::TransportPriorityQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::UserDataQosPolicy &a,
+    const DDS::UserDataQosPolicy &b)
+{
+    return a.value == b.value ? true : false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::UserDataQosPolicy &a,
+    const DDS::UserDataQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::ViewKeyQosPolicy &a,
+    const DDS::ViewKeyQosPolicy &b)
+{
+    if (a.use_key_list == b.use_key_list &&
+        a.key_list == b.key_list)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::ViewKeyQosPolicy &a,
+    const DDS::ViewKeyQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::WriterDataLifecycleQosPolicy &a,
+    const DDS::WriterDataLifecycleQosPolicy &b)
+{
+    if (a.autodispose_unregistered_instances == b.autodispose_unregistered_instances &&
+        a.autopurge_suspended_samples_delay == b.autopurge_suspended_samples_delay &&
+        a.autounregister_instance_delay == b.autounregister_instance_delay)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::WriterDataLifecycleQosPolicy &a,
+    const DDS::WriterDataLifecycleQosPolicy &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::DataReaderQos &a,
+    const DDS::DataReaderQos &b)
+{
+    if (a.durability == b.durability &&
+        a.deadline == b.deadline &&
+        a.latency_budget == b.latency_budget &&
+        a.liveliness == b.liveliness &&
+        a.reliability == b.reliability &&
+        a.destination_order == b.destination_order &&
+        a.history == b.history &&
+        a.resource_limits == b.resource_limits &&
+        a.user_data == b.user_data &&
+        a.ownership == b.ownership &&
+        a.time_based_filter == b.time_based_filter &&
+        a.reader_data_lifecycle == b.reader_data_lifecycle &&
+        a.subscription_keys == b.subscription_keys &&
+        a.reader_lifespan == b.reader_lifespan &&
+        a.share == b.share)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::DataReaderQos &a,
+    const DDS::DataReaderQos &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::DataReaderViewQos &a,
+    const DDS::DataReaderViewQos &b)
+{
+    if (a.view_keys == b.view_keys) {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::DataReaderViewQos &a,
+    const DDS::DataReaderViewQos &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::DataWriterQos &a,
+    const DDS::DataWriterQos &b)
+{
+    if (a.durability == b.durability &&
+        a.deadline == b.deadline &&
+        a.latency_budget == b.latency_budget &&
+        a.liveliness == b.liveliness &&
+        a.reliability == b.reliability &&
+        a.destination_order == b.destination_order &&
+        a.history == b.history &&
+        a.resource_limits == b.resource_limits &&
+        a.transport_priority == b.transport_priority &&
+        a.lifespan == b.lifespan &&
+        a.user_data == b.user_data &&
+        a.ownership == b.ownership &&
+        a.ownership_strength == b.ownership_strength &&
+        a.writer_data_lifecycle == b.writer_data_lifecycle)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::DataWriterQos &a,
+    const DDS::DataWriterQos &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::DomainParticipantQos &a,
+    const DDS::DomainParticipantQos &b)
+{
+    if (a.user_data == b.user_data &&
+        a.entity_factory == b.entity_factory &&
+        a.watchdog_scheduling == b.watchdog_scheduling &&
+        a.listener_scheduling == b.listener_scheduling)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::DomainParticipantQos &a,
+    const DDS::DomainParticipantQos &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::PublisherQos &a,
+    const DDS::PublisherQos &b)
+{
+    if (a.presentation == b.presentation &&
+        a.partition == b.partition &&
+        a.group_data == b.group_data &&
+        a.entity_factory == b.entity_factory)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::PublisherQos &a,
+    const DDS::PublisherQos &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::SubscriberQos &a,
+    const DDS::SubscriberQos &b)
+{
+    if (a.presentation == b.presentation &&
+        a.partition == b.partition &&
+        a.group_data == b.group_data &&
+        a.entity_factory == b.entity_factory &&
+        a.share == b.share)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::SubscriberQos &a,
+    const DDS::SubscriberQos &b)
+{
+    return !operator==(a, b);
+}
+
+bool
+DDS::operator==(
+    const DDS::TopicQos &a,
+    const DDS::TopicQos &b)
+{
+    if (a.topic_data == b.topic_data &&
+        a.durability == b.durability &&
+        a.durability_service == b.durability_service &&
+        a.deadline == b.deadline &&
+        a.latency_budget == b.latency_budget &&
+        a.liveliness == b.liveliness &&
+        a.reliability == b.reliability &&
+        a.destination_order == b.destination_order &&
+        a.history == b.history &&
+        a.resource_limits == b.resource_limits &&
+        a.transport_priority == b.transport_priority &&
+        a.lifespan == b.lifespan &&
+        a.ownership == b.ownership)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool
+DDS::operator!=(
+    const DDS::TopicQos &a,
+    const DDS::TopicQos &b)
+{
+    return !operator==(a, b);
 }

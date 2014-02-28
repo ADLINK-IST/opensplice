@@ -38,6 +38,16 @@ else
 ifneq ("$(VCPP10)", "")
 MPC_CISH_TYPE_TO_GEN = "vc10"
 MPC_JISH_TYPE_TO_GEN = "javabat"
+else
+ifneq ("$(VCPP11)", "")
+MPC_CISH_TYPE_TO_GEN = "vc11"
+MPC_JISH_TYPE_TO_GEN = "javabat"
+else
+ifneq ("$(VCPP12)", "")
+MPC_CISH_TYPE_TO_GEN = "vc12"
+MPC_JISH_TYPE_TO_GEN = "javabat"
+endif
+endif
 endif
 endif
 endif

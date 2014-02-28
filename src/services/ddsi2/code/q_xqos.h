@@ -18,6 +18,10 @@
 /*XXX*/
 #include "q_log.h"
 
+#if defined (__cplusplus)
+extern "C" {
+#endif
+
 #define NN_DDS_LENGTH_UNLIMITED -1
 
 typedef struct nn_octetseq {
@@ -266,6 +270,10 @@ int nn_xqos_mergein_missing (nn_xqos_t *a, const nn_xqos_t *b);
 unsigned nn_xqos_delta (const nn_xqos_t *a, const nn_xqos_t *b, unsigned mask);
 int nn_xqos_addtomsg (struct nn_xmsg *m, const nn_xqos_t *xqos, unsigned wanted);
 void nn_log_xqos (logcat_t cat, const nn_xqos_t *xqos);
+
+#if defined (__cplusplus)
+}
+#endif
 
 #endif /* NN_XQOS_H */
 

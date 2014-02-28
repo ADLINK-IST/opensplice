@@ -21,144 +21,189 @@
 #include <org/opensplice/core/exception_helper.hpp>
 
 
-namespace org {
-   namespace opensplice {
-      namespace sub {
+namespace org
+{
+namespace opensplice
+{
+namespace sub
+{
 
-         SubscriberDelegate::SubscriberDelegate(
-               const dds::domain::DomainParticipant& dp,
-               const dds::sub::qos::SubscriberQos& the_qos,
-               const dds::core::status::StatusMask& event_mask) :
-               dp_(dp),
-               qos_(the_qos),
-               listener_(0),
-               mask_(event_mask),
-               sub_(),
-               sub_event_forwarder_()
-         {
-            DDS::SubscriberQos sqos = convertQos(the_qos);
+SubscriberDelegate::SubscriberDelegate(
+    const dds::domain::DomainParticipant& dp,
+    const dds::sub::qos::SubscriberQos& qos,
+    const dds::core::status::StatusMask& event_mask) :
+    dp_(dp),
+    qos_(qos),
+    listener_(0),
+    mask_(event_mask),
+    sub_(),
+    sub_event_forwarder_()
+{
+    DDS::SubscriberQos sqos = org::opensplice::sub::qos::convertQos(qos);
 
-            DDS::Subscriber_ptr s = dp->dp_->create_subscriber(sqos, 0,
-                  event_mask.to_ulong());
+    DDS::Subscriber_ptr s = dp->dp_->create_subscriber(sqos, 0,
+                            event_mask.to_ulong());
 
-            if (s == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                        OSPL_CONTEXT_LITERAL(
-                            "dds::core::NullReferenceError : Unable to create Subscriber. "
-                            "Nil return from ::create_subscriber")));
+    if(s == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                    OSPL_CONTEXT_LITERAL(
+                        "dds::core::NullReferenceError : Unable to create Subscriber. "
+                        "Nil return from ::create_subscriber")));
 
-            sub_.reset(s, ::org::opensplice::core::SubDeleter(dp_->dp_));
+    sub_.reset(s, ::org::opensplice::core::SubDeleter(dp_->dp_));
 
-            entity_ = DDS::Entity::_narrow(s);
-         }
+    DDS::DataReaderQos oldqos;
+    DDS::ReturnCode_t result = sub_->get_default_datareader_qos(oldqos);
+    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_default_datareader_qos"));
 
-         SubscriberDelegate::SubscriberDelegate(
-               const dds::domain::DomainParticipant& dp) :
-               dp_(dp),
-               qos_(dp.default_subscriber_qos()),
-               listener_(0),
-               mask_(dds::core::status::StatusMask::all()),
-               sub_(),
-               sub_event_forwarder_()
-         {
-            DDS::Subscriber_ptr s = dp->dp_->get_builtin_subscriber();
+    default_dr_qos_ = org::opensplice::sub::qos::convertQos(oldqos);
 
-            if (s == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
-                        OSPL_CONTEXT_LITERAL(
-                            "dds::core::NullReferenceError : Unable to get builtin Subscriber. "
-                            "Nil return from ::get_builtin_subscriber")));
+    entity_ = DDS::Entity::_narrow(s);
+}
 
-            sub_.reset(s, ::org::opensplice::core::SubDeleter(dp_->dp_));
+void SubscriberDelegate::init_builtin(DDS::Subscriber_ptr ddssub)
+{
+    if(ddssub == 0) throw dds::core::NullReferenceError(org::opensplice::core::exception_helper(
+                    OSPL_CONTEXT_LITERAL(
+                        "dds::core::NullReferenceError : Unable to get builtin Subscriber. "
+                        "Nil return from ::get_builtin_subscriber")));
 
-            DDS::DataReaderQos oldqos;
-            DDS::ReturnCode_t result = sub_->get_default_datareader_qos(oldqos);
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_default_datareader_qos"));
+    DDS::SubscriberQos qos;
+    DDS::ReturnCode_t result = ddssub->get_qos(qos);
+    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_qos"));
+    qos_ = org::opensplice::sub::qos::convertQos(qos);
 
-            default_dr_qos_ = org::opensplice::sub::qos::convertQos(oldqos);
-         }
+    sub_.reset(ddssub, ::org::opensplice::core::SubDeleter(dp_->dp_));
 
-         SubscriberDelegate::~SubscriberDelegate()
-         {
-            if (listener_ != 0)
-            {
-                DDS::ReturnCode_t result = sub_->set_listener(0, DDS::STATUS_MASK_NONE);
-                org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_listener(nil)"));
-            }
-         }
+    DDS::DataReaderQos oldqos;
+    result = sub_->get_default_datareader_qos(oldqos);
+    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_default_datareader_qos"));
 
-         void SubscriberDelegate::notify_datareaders()
-         {
-            DDS::ReturnCode_t result = sub_->notify_datareaders();
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::notify_datareaders"));
-         }
+    default_dr_qos_ = org::opensplice::sub::qos::convertQos(oldqos);
+    entity_ = DDS::Entity::_narrow(ddssub);
 
-         const dds::domain::DomainParticipant&
-         SubscriberDelegate::participant() const
-         {
-            return dp_;
-         }
+    org::opensplice::core::SubDeleter* d = OSPL_CXX11_STD_MODULE::get_deleter<org::opensplice::core::SubDeleter>(sub_);
+    if(d)
+    {
+        d->set_builtin();
+    }
+}
 
-         const dds::sub::qos::SubscriberQos SubscriberDelegate::qos() const
-         {
-            return qos_;
-         }
+bool SubscriberDelegate::is_builtin() const
+{
+    org::opensplice::core::SubDeleter* d = OSPL_CXX11_STD_MODULE::get_deleter<org::opensplice::core::SubDeleter>(sub_);
+    if(d)
+    {
+        return d->is_builtin();
+    }
 
-         void SubscriberDelegate::qos(const dds::sub::qos::SubscriberQos& sqos)
-         {
-            DDS::ReturnCode_t result = sub_->set_qos(org::opensplice::sub::qos::convertQos(sqos));
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_qos"));
-            qos_ = sqos;
-         }
+    return false;
+}
 
-         dds::sub::qos::DataReaderQos
-         SubscriberDelegate::default_datareader_qos()
-         {
-            DDS::DataReaderQos oldqos;
+SubscriberDelegate::~SubscriberDelegate()
+{
+    if(listener_ != 0)
+    {
+        DDS::ReturnCode_t result = sub_->set_listener(0, DDS::STATUS_MASK_NONE);
+        org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_listener(nil)"));
+    }
+}
 
-            DDS::ReturnCode_t result = sub_->get_default_datareader_qos(oldqos);
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_default_datareader_qos"));
+void SubscriberDelegate::notify_datareaders()
+{
+    DDS::ReturnCode_t result = sub_->notify_datareaders();
+    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::notify_datareaders"));
+}
 
-            dds::sub::qos::DataReaderQos newqos = org::opensplice::sub::qos::convertQos(oldqos);
-            default_dr_qos_ = newqos;
-            return default_dr_qos_;
-         }
+const dds::domain::DomainParticipant&
+SubscriberDelegate::participant() const
+{
+    return dp_;
+}
 
-         void
-         SubscriberDelegate::default_datareader_qos(const dds::sub::qos::DataReaderQos &qos)
-         {
-            DDS::ReturnCode_t result = sub_->set_default_datareader_qos(convertQos(qos));
-            org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_default_datareader_qos"));
+const dds::sub::qos::SubscriberQos& SubscriberDelegate::qos() const
+{
+    return qos_;
+}
 
-            default_dr_qos_ = qos;
-         }
+void SubscriberDelegate::qos(const dds::sub::qos::SubscriberQos& sqos)
+{
+    DDS::ReturnCode_t result = sub_->set_qos(org::opensplice::sub::qos::convertQos(sqos));
+    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_qos"));
+    qos_ = sqos;
+}
 
-         dds::sub::SubscriberListener*
-         SubscriberDelegate::listener() const
-         {
-            return this->listener_;
-         }
+dds::sub::qos::DataReaderQos
+SubscriberDelegate::default_datareader_qos()
+{
+    DDS::DataReaderQos oldqos;
 
-         #ifdef _WIN32
-         #pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
-         #endif
-         void SubscriberDelegate::event_forwarder (
-            dds::sub::SubscriberListener* listener,
-            const dds::core::smart_ptr_traits<DDS::SubscriberListener>::ref_type& forwarder,
-            const dds::core::status::StatusMask& event_mask)
-         {
-             throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
-                OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : SubscriberListener is not yet implemented")));
-             dds::core::smart_ptr_traits<DDS::SubscriberListener>::ref_type tmp_fwd;
-             if (listener)
-             {
-                 tmp_fwd = forwarder;
-             }
-             listener_ = listener;
-             sub_event_forwarder_.swap(tmp_fwd);
-             mask_ = event_mask;
-             DDS::ReturnCode_t result = sub_->set_listener(sub_event_forwarder_.get(), event_mask.to_ulong());
-             org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_listener"));
-         }
+    DDS::ReturnCode_t result = sub_->get_default_datareader_qos(oldqos);
+    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_default_datareader_qos"));
 
-      }
-   }
+    dds::sub::qos::DataReaderQos newqos = org::opensplice::sub::qos::convertQos(oldqos);
+    default_dr_qos_ = newqos;
+    return default_dr_qos_;
+}
+
+void
+SubscriberDelegate::default_datareader_qos(const dds::sub::qos::DataReaderQos& qos)
+{
+    DDS::ReturnCode_t result = sub_->set_default_datareader_qos(convertQos(qos));
+    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_default_datareader_qos"));
+
+    default_dr_qos_ = qos;
+}
+
+dds::sub::SubscriberListener*
+SubscriberDelegate::listener() const
+{
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : SubscriberListener is not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
+    return this->listener_;
+}
+
+void SubscriberDelegate::event_forwarder(
+    dds::sub::SubscriberListener* listener,
+    const dds::core::smart_ptr_traits<DDS::SubscriberListener>::ref_type& forwarder,
+    const dds::core::status::StatusMask& event_mask)
+{
+#ifdef _WIN32
+#pragma warning( push )
+#pragma warning( disable : 4702 ) //disable warning caused by temporary exception, remove later
+#endif
+    throw dds::core::UnsupportedError(org::opensplice::core::exception_helper(
+                                          OSPL_CONTEXT_LITERAL("dds::core::UnsupportedError : SubscriberListener is not currently supported")));
+#ifdef _WIN32
+#pragma warning ( pop ) //re-enable warning to prevent leaking to user code, remove later
+#endif
+    dds::core::smart_ptr_traits<DDS::SubscriberListener>::ref_type tmp_fwd;
+    if(listener)
+    {
+        tmp_fwd = forwarder;
+    }
+    listener_ = listener;
+    sub_event_forwarder_.swap(tmp_fwd);
+    mask_ = event_mask;
+    DDS::ReturnCode_t result = sub_->set_listener(sub_event_forwarder_.get(), event_mask.to_ulong());
+    org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::set_listener"));
+}
+
+void SubscriberDelegate::close()
+{
+    org::opensplice::core::SubDeleter* d = OSPL_CXX11_STD_MODULE::get_deleter<org::opensplice::core::SubDeleter>(sub_);
+    if(d)
+    {
+        d->close(sub_.get());
+    }
+}
+
+}
+}
 }

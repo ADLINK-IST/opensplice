@@ -26,23 +26,27 @@
 
 
 
-namespace dds {
-  namespace pub {
+namespace dds
+{
+namespace pub
+{
 
-      template <typename T>
-      class DataWriterListener;
+template <typename T>
+class DataWriterListener;
 
-      namespace detail {
-        template <typename T>
-          class DataWriter;
-      }
-  }
+namespace detail
+{
+template <typename T>
+class DataWriter;
+}
+}
 }
 
 template <typename T>
-class dds::pub::detail::DataWriter : public  foo::bar::core::EntityDelegate  {
+class dds::pub::detail::DataWriter : public  foo::bar::core::EntityDelegate
+{
 public:
-  // Vendor implementation should go here.
+    // Vendor implementation should go here.
 };
 
 

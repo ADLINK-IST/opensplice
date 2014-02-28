@@ -53,7 +53,8 @@ u_subscriberNew(
                         OS_REPORT_1(OS_ERROR, "u_subscriberNew", 0,
                                     "Initialisation failed. "
                                     "For DataReader: <%s>.", name);
-                        u_subscriberFree(_this);
+                        (void)u_subscriberFree(_this);
+                        _this = NULL;
                     }
                 } else {
                     OS_REPORT_1(OS_ERROR, "u_subscriberNew", 0,

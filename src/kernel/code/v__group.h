@@ -27,6 +27,9 @@ extern "C" {
 #define v_groupSampleCountDecrement(_this) \
         v_group(_this)->count--;
 
+#define v_groupWriterAdministration(_this) \
+        v_group(_this)->writerAdministration;
+
 v_group
 v_groupNew (
     v_partition partition,
@@ -69,16 +72,12 @@ v_groupResend(
     v_resendScope *resendScope,
     v_networkId writingNetworkId);
 
-v_writeResult
-v_groupDisposeAll (
-    v_group group,
-    c_time timestamp);
-
 void
 v_groupDisconnectWriter(
     v_group g,
     struct v_publicationInfo *oInfo,
-    c_time timestamp);
+    c_time timestamp,
+    c_bool isValid);
 
 void
 v_groupDisconnectNode(

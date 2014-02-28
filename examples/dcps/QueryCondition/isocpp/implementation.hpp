@@ -23,6 +23,3 @@ namespace isocpp  {
 }
 }
 }
-
-ISOCPP_EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_QueryCondition_publisher, examples::dcps::QueryCondition::isocpp::publisher)
-ISOCPP_EXAMPLE_ENTRYPOINT(DCPS_ISOCPP_QueryCondition_subscriber, examples::dcps::QueryCondition::isocpp::subscriber)

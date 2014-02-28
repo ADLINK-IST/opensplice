@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 #include "os_if.h"
-#ifdef OSPL_BUILD_OS
+#ifdef OSPL_BUILD_CORE
 #define OS_API OS_API_EXPORT
 #else
 #define OS_API OS_API_IMPORT
@@ -38,8 +38,6 @@ typedef struct os_threadInfo_s
 typedef os_threadInfo os_os_threadId;
 
 OS_API os_os_threadId id_none;
-
-OS_API void os_threadSetThreadName (DWORD dwThreadID, char* threadName);
 
 #define OS_THREAD_ID_NONE id_none
 

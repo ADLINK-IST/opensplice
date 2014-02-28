@@ -45,8 +45,8 @@ cd "%OSPL_HOME%"
 ECHO Set OSPL runtime environment
 call release.bat
 mkdir "%OSPL_HOME%\etc\tmp"
-IF "%TMP%"=="" set TMP="%OSPL_HOME%\etc\tmp"
-IF "%TEMP%"=="" set TEMP="%OSPL_HOME%\etc\tmp"
+IF "%TMP%"=="" set TMP=%OSPL_HOME%\etc\tmp
+IF "%TEMP%"=="" set TEMP=%OSPL_HOME%\etc\tmp
 
 REM some processes appear to get left running this
 REM may be due to pop ups so try setting OSPL_DEBUG_LOGPATH

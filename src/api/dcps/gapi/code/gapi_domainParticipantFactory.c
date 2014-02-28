@@ -190,30 +190,26 @@ gapi_domainParticipantFactory_get_instance(
 
     safecount = pa_increment(&TheFactoryInitialized);
     if ((safecount == 1) && (TheFactory == NULL)) {
-        TheFactory = _DomainParticipantFactoryAlloc();
-        if (TheFactory != NULL) {
-            if (u_userInitialise() != U_RESULT_OK) {
-                _EntityDelete(TheFactory);
-                TheFactory = NULL;
-            } else {
-                os_mutexAttr attr;
-                TheFactory->DomainParticipantList = c_iterNew (NULL);
-                TheFactory->DomainList = c_iterNew (NULL);
-                memset(&TheFactory->defaultQos, 0, sizeof(TheFactory->defaultQos));
-                gapi_domainParticipantQosCopy (&gapi_domainParticipantQosDefault,
-                                               &TheFactory->defaultQos);
-                os_mutexAttrInit(&attr);
-                attr.scopeAttr = OS_SCOPE_PRIVATE;
-                os_mutexInit(&TheFactory->mtx, &attr);
-                TheFactory->registry = _ObjectRegistryNew();
-                gapi_expressionInitParser();
-                os_procAtExit(factoryCleanup);
-                _EntityRelease(TheFactory);
-            }
+        if (u_userInitialise() != U_RESULT_OK) {
+            TheFactory = NULL;
+        } else if ((TheFactory = _DomainParticipantFactoryAlloc()) != NULL) {
+            os_mutexAttr attr;
+            TheFactory->DomainParticipantList = c_iterNew (NULL);
+            TheFactory->DomainList = c_iterNew (NULL);
+            memset(&TheFactory->defaultQos, 0, sizeof(TheFactory->defaultQos));
+            gapi_domainParticipantQosCopy (&gapi_domainParticipantQosDefault,
+                                           &TheFactory->defaultQos);
+            os_mutexAttrInit(&attr);
+            attr.scopeAttr = OS_SCOPE_PRIVATE;
+            os_mutexInit(&TheFactory->mtx, &attr);
+            TheFactory->registry = _ObjectRegistryNew();
+            gapi_expressionInitParser();
+            os_procAtExit(factoryCleanup);
+            _EntityRelease(TheFactory);
         }
     } else { /* wait for the factory to become initialized */
 #ifdef _WRS_KERNEL
-    	os_procInitialize();
+        os_procInitialize();
 #endif
         if (TheFactory == NULL) {
             count = 0;
@@ -375,7 +371,7 @@ gapi_domainParticipantFactory_delete_participant(
                             /* Check if this pariticpant is the last participant of its domain.
                              */
                             c_iterWalk(factory->DomainParticipantList, countConnectedParticipant, &arg);
-    
+
                             /* if the just deleted participant was the last, also delete
                              * the reference to the domain, as it no longer exists */
                             if(arg.nrOfConnectedParticipants == 0)
@@ -398,7 +394,7 @@ gapi_domainParticipantFactory_delete_participant(
                                     }
                                 }
                             }
-    
+
                             result = _DomainParticipantFree (participant);
                             if( result == GAPI_RETCODE_OK )
                             {
@@ -460,6 +456,7 @@ gapi_domainParticipantFactory_lookup_participant(
         }
 
         _EntityRelease(factory);
+        os_free (domain_id2);
     }
 
     return (gapi_domainParticipant)_EntityHandle(participant);

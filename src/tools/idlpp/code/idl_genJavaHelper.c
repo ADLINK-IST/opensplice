@@ -20,8 +20,10 @@
 #include "os_stdlib.h"
 #include <errno.h>
 
-static os_char* orgPackageName = NULL;
-static os_char* tarPackageName = NULL;
+static c_iter originalPackageList = NULL;
+static c_iter targetPackageList = NULL;
+static const char* orgLastSubstituted = NULL;
+static const char* tarLastSubstituted = NULL;
 
 static os_char*
 idl_genJavaHelperApplyPackageSubstitute(
@@ -32,7 +34,8 @@ static os_char*
 idl_genJavaHelperSubstitute(
     const os_char* string,
     const os_char* searchFor,
-    const os_char* replaceWith);
+    const os_char* replaceWith,
+    c_long* replaced);
 
 static void
 idl_reportOpenError(
@@ -143,6 +146,16 @@ idl_scopeStackJava (
     c_char *scopeStack;
     c_char *Id;
 
+    if(orgLastSubstituted) {
+        os_free(orgLastSubstituted);
+        orgLastSubstituted = NULL;
+    }
+
+    if(tarLastSubstituted) {
+        os_free(tarLastSubstituted);
+        tarLastSubstituted = NULL;
+    }
+
     si = 0;
     sz = idl_scopeStackSize(scope);
     if (si < sz) {
@@ -193,7 +206,7 @@ idl_scopeStackJava (
              * into the substitution algorithm. After the algorithm we remove the
              * added scopeSepp again.
              * So not that nicely solved, but lack of time to do it more nicely
-             * (which would be to support regular expression type things).
+             * (which would be to support regular expression type things) --> No.
              */
             ptr = os_malloc(strlen(scopeStack)+ strlen(scopeSepp) + 1);
             os_strcpy(ptr, scopeStack);
@@ -216,7 +229,7 @@ idl_scopeStackJava (
 
         if (name) {
             /* A user identifier is specified */
-            /* Translate the user identifier to a C identifier */
+            /* Translate the user identifier to a Java identifier */
             Id = idl_javaId(name);
             /* allocate space for the current scope stack + the separator
                and the user identifier
@@ -254,7 +267,7 @@ c_char *
 idl_corbaJavaTypeFromTypeSpec (
     idl_typeSpec typeSpec)
 {
-    c_char *typeName;
+    c_char *typeName = NULL;
 
     /* QAC EXPECT 3416; No side effects here */
     if (idl_typeSpecType(typeSpec) == idl_tbasic) {
@@ -326,7 +339,7 @@ static int
 idl_createDir (
     os_char* fname)
 {
-    char pathName[OS_PATH_MAX];
+    char *pathName;
     os_result statRes;
     struct os_stat statbuf;
     char* outdir;
@@ -334,17 +347,26 @@ idl_createDir (
     os_char* token;
     const os_char* osSep;
 
+    /* to allow nested modules which may potentially lead to very long paths,
+     * pathName is not allocated fixed-size on stack
+     * but dynamically on heap
+     */
+    pathName = os_malloc(1);
     pathName[0] = '\0';
     outdir = idl_dirOutCur();
-
     if(outdir){
+        pathName = os_realloc(pathName, strlen(outdir) + strlen(os_fileSep()) + 1);
+        if (pathName == NULL) {
+            printf("Memory allocation failure when creating idl directory\n");
+            return 0;
+        }
         os_sprintf(pathName, "%s%s", outdir, os_fileSep());
     }
     /* make sure that we replace the os file seperator with a simple character
      * like '/', this will allow us to parse easier later.
      */
     osSep = os_fileSep();
-    stackScope = idl_genJavaHelperSubstitute(fname, osSep, "/");
+    stackScope = idl_genJavaHelperSubstitute(fname, osSep, "/", NULL);
 
     if(stackScope[0] != '\0'){ /* strlen(stackScope) > 0 */
         do
@@ -360,6 +382,13 @@ idl_createDir (
             {
                 *token = '\0';
                 token++;
+                /* reallocate pathName to include stackScope */
+                pathName = os_realloc(pathName, strlen(pathName) + strlen(stackScope) + 1);
+                if (pathName == NULL) {
+                    printf("Memory allocation failure when trying to create idl directory %s, \
+                            probably the path has grown too long\n", stackScope);
+                    return 0;
+                }
                 os_strcat (pathName, stackScope);
                 stackScope = token;
                 statRes = os_stat (pathName, &statbuf);
@@ -375,18 +404,28 @@ idl_createDir (
                 } else {
                     if (!OS_ISDIR(statbuf.stat_mode)) {
                         printf ("File %s already exists, but is not a directory\n", pathName);
+                        os_free(pathName);
                         return 0;
                     }
                 }
                 if (statRes == os_resultFail) {
                     printf ("Error when creating directory %s\n", pathName);
+                    os_free(pathName);
+                    return 0;
+                }
+                /* reallocate pathName to include os_fileSep() */
+                pathName = os_realloc(pathName, strlen(pathName) + strlen(stackScope) + strlen(os_fileSep()) + 1);
+                if (pathName == NULL) {
+                    printf("Memory allocation failure when trying to add the \
+                            file separator to idl directory %s", stackScope);
                     return 0;
                 }
                 os_strcat (pathName, os_fileSep());
             }
         } while(token);
     }
-
+    /* free the memory allocated to pathName */
+    os_free(pathName);
     return 1;
 }
 
@@ -520,31 +559,31 @@ idl_genJavaConstantGetter(void)
 
 void
 idl_genJavaHelperInit(
-    os_char* originalPackageName,
-    os_char* targetPackageName)
+    c_iter orgPackageList,
+    c_iter tarPackageList)
 {
-    if(originalPackageName)
+    if(orgPackageList)
     {
-        orgPackageName = os_strdup(originalPackageName);
+        originalPackageList = orgPackageList;
     }
-    if(targetPackageName)
+    if(tarPackageList)
     {
-        tarPackageName = os_strdup(targetPackageName);
+        targetPackageList = tarPackageList;
     }
 }
 
-os_char*
-idl_genJavaHelperGetOrgPName(
+const os_char*
+idl_genJavaHelperGetOrgLastSubstituted(
     void)
 {
-    return orgPackageName;
+    return orgLastSubstituted;
 }
 
-os_char*
-idl_genJavaHelperGetTgtPName(
+const os_char*
+idl_genJavaHelperGetTgtLastSubstituted(
     void)
 {
-    return tarPackageName;
+    return tarLastSubstituted;
 }
 
 /* Result must be freed with os_free! */
@@ -553,40 +592,75 @@ idl_genJavaHelperApplyPackageSubstitute(
     os_char* source,
     const os_char *scopeSepp)
 {
-    os_char* result;
+    os_char* result = NULL;
     os_char* tarPackageNameTMP;
     os_char* orgPackageNameTMP;
     assert(source);
 
     /* only if 'tarPackageName' is valid should there be any substitution done */
-    if(tarPackageName)
+    if(targetPackageList)
     {
-        /* if 'orgPackageName' is not valid, then we just need to prefix */
-        if(!orgPackageName)
-        {
-            tarPackageNameTMP = idl_genJavaHelperSubstitute(tarPackageName, ".", scopeSepp);
-            if(0 != strcmp(tarPackageNameTMP+(strlen(tarPackageNameTMP)-strlen(scopeSepp)), scopeSepp))
+        c_iterIter targetIter, originalIter;
+        os_char *tarPackageName, *orgPackageName;
+        c_long replaced = 0;
+
+        targetIter = c_iterIterGet(targetPackageList);
+        originalIter = c_iterIterGet(originalPackageList);
+        while ((tarPackageName = c_iterNext(&targetIter))) {
+            orgPackageName = c_iterNext(&originalIter);
+            /* if 'orgPackageName' is NULL, then we just need to prefix */
+            if(!strlen(orgPackageName))
             {
-                result = os_malloc(strlen(tarPackageNameTMP) + strlen(scopeSepp) + strlen(source) + 1);
-                os_strcpy(result, tarPackageNameTMP);
-                result = os_strncat(result, scopeSepp, strlen(scopeSepp));
+                if(tarLastSubstituted) {
+                    os_free(tarLastSubstituted);
+                }
+                tarLastSubstituted = os_strdup(tarPackageName);
+                tarPackageNameTMP = idl_genJavaHelperSubstitute(tarPackageName, ".", scopeSepp, NULL);
+                if(0 != strcmp(tarPackageNameTMP+(strlen(tarPackageNameTMP)-strlen(scopeSepp)), scopeSepp))
+                {
+                    if(result) {
+                        os_free(result);
+                    }
+                    result = os_malloc(strlen(tarPackageNameTMP) + strlen(scopeSepp) + strlen(source) + 1);
+                    os_strcpy(result, tarPackageNameTMP);
+                    result = os_strncat(result, scopeSepp, strlen(scopeSepp));
+                } else
+                {
+                    result = os_malloc(strlen(tarPackageNameTMP) + strlen(source) + 1);
+                    os_strcpy(result, tarPackageNameTMP);
+                }
+                result = os_strncat(result, source, strlen(source));
+                os_free(tarPackageNameTMP);
             } else
             {
-                result = os_malloc(strlen(tarPackageNameTMP) + strlen(source) + 1);
-                os_strcpy(result, tarPackageNameTMP);
+                /* We need to substitute all occurrences of 'orgPackageName' with
+                 * 'tarPackageName'
+                 */
+                char *tmpResult;
+                c_long tmpReplaced;
+                tarPackageNameTMP = idl_genJavaHelperSubstitute(tarPackageName, ".", scopeSepp, NULL);
+                orgPackageNameTMP = idl_genJavaHelperSubstitute(orgPackageName, ".", scopeSepp, NULL);
+                tmpResult = idl_genJavaHelperSubstitute(source, orgPackageNameTMP, tarPackageNameTMP, &tmpReplaced);
+                if(tmpReplaced >= replaced) {
+                    if(result) {
+                        os_free(result);
+                    }
+                    result = tmpResult;
+                    replaced = tmpReplaced;
+
+                    /* Set global variables indicating which was the last substitution that took place. */
+                    if(orgLastSubstituted) {
+                        os_free(orgLastSubstituted);
+                    }
+                    if(tarLastSubstituted) {
+                        os_free(tarLastSubstituted);
+                    }
+                    orgLastSubstituted = os_strdup(orgPackageNameTMP);
+                    tarLastSubstituted = os_strdup(tarPackageNameTMP);
+                }
+                os_free(tarPackageNameTMP);
+                os_free(orgPackageNameTMP);
             }
-            result = os_strncat(result, source, strlen(source));
-            os_free(tarPackageNameTMP);
-        } else
-        {
-            /* We need to substitute all occurances of 'orgPackageName' with
-             * 'tarPackageName'
-             */
-            tarPackageNameTMP = idl_genJavaHelperSubstitute(tarPackageName, ".", scopeSepp);
-            orgPackageNameTMP = idl_genJavaHelperSubstitute(orgPackageName, ".", scopeSepp);
-            result = idl_genJavaHelperSubstitute(source, orgPackageNameTMP, tarPackageNameTMP);
-            os_free(tarPackageNameTMP);
-            os_free(orgPackageNameTMP);
         }
     } else
     {
@@ -597,31 +671,39 @@ idl_genJavaHelperApplyPackageSubstitute(
 }
 
 /* ES, dds1540: This exact operation is copied in the
- * api/dcps/saj/c/code/saj_copyCache.c file. so any bugs fixed here, should be
+ * api/dcps/java/common/c/code/saj_copyCache.c file. so any bugs fixed here, should be
  * fixed there as well!!
  */
 os_char*
 idl_genJavaHelperSubstitute(
     const os_char* string,
     const os_char* searchFor,
-    const os_char* replaceWith)
+    const os_char* replaceWith,
+    c_long* replaced)
 {
     os_char* result;
     os_char* ptr;
     os_char* tmp;
+    if(replaced) {
+        *replaced = 0;
+    }
 
     tmp = os_strdup(string);
     ptr = strstr(tmp, searchFor);
-    if(ptr)
+    if(ptr && strcmp(searchFor, replaceWith))
     {
         os_char* before;
         os_char* after;
+        if(replaced) {
+            *replaced = strlen(searchFor); /* Return the length of the replaced string. A calling function can call this function multiple times
+                                            * with multiple replacements and select the one that replaced the most characters */
+        }
 
         before = os_malloc(ptr - tmp+1);
         *ptr = '\0';
-        os_strcpy(before, tmp);
+        os_strncpy(before, tmp, (size_t)(ptr - tmp+1));
         ptr = ptr+strlen(searchFor);
-        after = idl_genJavaHelperSubstitute(ptr, searchFor, replaceWith);
+        after = idl_genJavaHelperSubstitute(ptr, searchFor, replaceWith, NULL);
         result = os_malloc(strlen(before) + strlen(replaceWith) + strlen (after) + 1);
         os_strcpy(result, before);
         os_strncat(result, replaceWith, strlen(replaceWith));
@@ -637,5 +719,6 @@ idl_genJavaHelperSubstitute(
     {
         os_free(tmp);
     }
+
     return result;
 }

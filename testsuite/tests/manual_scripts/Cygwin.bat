@@ -74,8 +74,9 @@ set sel=%ERRORLEVEL%
 
 if %sel%==2 goto start_cygwin
 
-if defined VS80COMNTOOLS goto source_vs80
-if defined VS90COMNTOOLS goto source_vs90
+if defined VS80COMNTOOLS goto source_vs80 
+if defined VS90COMNTOOLS goto source_vs90 
+if defined VS100COMNTOOLS goto source_vs100
 echo "Visual Studio is not setup."
 goto start_cygwin
 
@@ -87,6 +88,9 @@ goto start_cygwin
 call "%VS90COMNTOOLS%\vsvars32.bat"
 goto start_cygwin
 
+:source_vs100
+call "%VS100COMNTOOLS%\vsvars32.bat"
+goto start_cygwin
 
 REM Start Cygwin
 

@@ -59,7 +59,7 @@ public:
     }
 
     /**
-    * Provides the begin iterator to the parameter list.
+    *  @internal Provides the begin iterator to the parameter list.
     */
     const_iterator begin() const
     {
@@ -67,7 +67,7 @@ public:
     }
 
     /**
-     * The const end iterator to the parameter list.
+     *  @internal The const end iterator to the parameter list.
      */
     const_iterator end() const
     {
@@ -75,7 +75,7 @@ public:
     }
 
     /**
-     * Provides the begin const iterator to the parameter list.
+     *  @internal Provides the begin const iterator to the parameter list.
      */
     iterator begin()
     {
@@ -83,7 +83,7 @@ public:
     }
 
     /**
-     * The end iterator to the parameter list.
+     *  @internal The end iterator to the parameter list.
      */
     iterator end()
     {
@@ -104,7 +104,7 @@ public:
 
     uint32_t parameters_length() const
     {
-        return static_cast<uint32_t> (params_.size());
+        return static_cast<uint32_t>(params_.size());
     }
 
     bool operator ==(const Filter& other) const
