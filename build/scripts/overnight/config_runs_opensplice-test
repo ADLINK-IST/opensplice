@@ -19,6 +19,9 @@ E   opensplice-test/rhel62a/x86.linux-release 25 #First# none
 E   opensplice-test/rhel62-64b/x86_64.linux-dev 25 #First# none
 E   opensplice-test/rhel62-64b/x86_64.linux-release 25 #First# none
 
+E   opensplice-test/rhel53a/x86.linux-dev 25 #First# none
+M   opensplice-test/rhel53a/x86.linux-release 25 #First# none
+
 E   opensplice-test/rhel54-64c/x86_64.linux-dev 25 #First# none
 M   opensplice-test/rhel54-64c/x86_64.linux-release 25 #First# none
 
