@@ -47,4 +47,4 @@ E   opensplice-test/win7d/x86_64.win64-dev-vs11 30 #First# none
 M   opensplice-test/win7d/x86_64.win64-release-vs11 30 #First# none
 
 E   opensplice-test/win7e/x86_64.win64-dev-vs12 30 #First# none
-M   opensplice-test/win7e/x86_64.win64-release-vs12 30 #First# none
+E   opensplice-test/win7e/x86_64.win64-release-vs12 30 #First# none
