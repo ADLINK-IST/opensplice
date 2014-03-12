@@ -481,12 +481,12 @@ qt_check ()
     echo -n "Qt: "
     if [ "$OSPL_QT_IS_ON" = "no" ]
     then
-        echo "Disabled. \$OSPL_QT_IS_ON was: no"
+        echo "Disabled. OSPL_QT_IS_ON was: no"
         return 0
     fi
     if [ -n "$QTDIR" ]
     then
-        if [ -f $QTDIR/bin/uic ]
+        if [ -f "$QTDIR/bin/uic" ]
         then
             QT_VERSION=`$QTDIR/bin/uic -version 2>&1 | sed 's/\([^0-9][^0-9]*\)\([0-9]\)\([^0-9].*\)/\2/'`
             if [ "$QT_VERSION" != "4" ]
@@ -517,7 +517,7 @@ qt_check ()
             return 1
         fi
     else
-        if [ -z $QTLIBDIR ]
+        if [ -z "$QTLIBDIR" ]
         then
             linkpath=`ld --verbose | grep SEARCH_DIR | tr ' '  '\n' | sed -e 's/SEARCH_DIR("\=\?\(.*\)");/\1/g'`
             for i in $linkpath
@@ -528,9 +528,12 @@ qt_check ()
                 fi
             done
         fi
-        if [ -z $QTLIBDIR ]
+        if [ -z "$QTLIBDIR" ]
         then
-            echo "Cannot find Qt libraries. Standalone demo package will not be built. Please specifiy QTLIBDIR."
+            echo "Warning - Cannot find Qt libraries. Standalone demo package will not be built."
+            echo "   Please specifiy QTLIBDIR."
+            set_var OSPL_QT_IS_ON no
+	        return 0
         fi
         case `uname` in
         CYGWIN_NT*)
@@ -559,7 +562,7 @@ qt_check ()
             echo "On. Using QT tools from the path."
             set_var OSPL_QT_IS_ON yes
         else
-            echo "Off. Ok, but you're missing out on bouncing shapes..."
+            echo "Off. Ok, iShapes Demo will not be built"
         fi
     fi
     return 0
@@ -658,8 +661,15 @@ gsoap_check ()
         pathcheck soapcpp2
         if [ $? != 0 ]
         then
-            echo "Error - Not found"
-            return 1
+            if [ -n "$OSPL_OUTER_HOME" ]
+            then
+                echo "Error - Not found"
+                return 1
+            else
+                echo "Warning - Not found, cmsoap will not be built"
+                unset_var INCLUDE_SERVICES_CMSOAP
+                return 0
+            fi
         fi
         SOAPCPP2_EXE="$PATHCHECK_FOUND"
         GSOAPHOME1=`dirname "$SOAPCPP2_EXE"`
@@ -937,7 +947,7 @@ javac_check ()
     fi
 
     echo "OK - using JAVAC version $JAVAC_REAL_VERSION"
-    echo "  JAVA_HOME is $JAVA_HOME"
+    echo "   JAVA_HOME is $JAVA_HOME"
     return 0
 }
 
