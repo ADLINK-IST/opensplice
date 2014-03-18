@@ -3,7 +3,6 @@ export VS_ENV_SCRIPT="C:\Program Files\Microsoft Visual Studio 8\Common7\Tools\v
 export JAVA_HOME="c:/Program Files/Java/jdk1.6.0_20"
 export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-Windows-vc8-inline-32bit-OpenSpliceDDS_v4.1_UNSUPPORTED_091104
 export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
-export ZLIB_HOME=/home/dds/INSTALLED\ FOR\ DDS/zlib-1.2.4
 export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/gsoap-v2.7
 
 #Winxp combined with new cygwin does not set TMP or TEMP even when in the windows settings
