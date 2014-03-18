@@ -1221,25 +1221,6 @@ jacorb_check_fn ()
     return 0
 }
 
-# Only needed for platforms that don't have zlib.h / libz on the builtin path anyway. ie Windows.
-zlib_check ()
-{
-    echo -n "zlib: "
-    if [ -z "$ZLIB_HOME" ]
-    then
-        echo "ERROR - ZLIB_HOME not set."
-        return 1
-    fi
-    if [ ! -f "$ZLIB_HOME/zlib.h" ]
-    then
-        echo "ERROR - No ZLIB_HOME/zlib.h found"
-        return 1
-    fi
-
-    echo OK
-    return 0
-}
-
 doxygen_check ()
 {
     echo -n "Doxygen: "
@@ -1300,7 +1281,6 @@ cleanup_checks ()
     unset csharp_check
     unset jacorb_check
     unset valgrind_check
-    unset zlib_check
     unset gsoap_check
     unset doxygen_check
     unset PATHCHECK_FOUND
