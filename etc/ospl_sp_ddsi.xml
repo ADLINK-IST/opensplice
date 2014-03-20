@@ -9,7 +9,7 @@
       <Service name="durability">
          <Command>durability</Command>
       </Service>
-      <Service name="cmsoap">
+      <Service enabled="false" name="cmsoap">
          <Command>cmsoap</Command>
       </Service>
    </Domain>
