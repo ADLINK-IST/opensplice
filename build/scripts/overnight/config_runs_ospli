@@ -558,6 +558,11 @@ M   ospli/raspberry1/armv6l.linux-release-notest-inner 1 #First# none
 E   ospli/raspberry1/armv6l.linux-release-nodbt-inner 1 #First# none
 E   ospli/raspberry1/armv6l.linux-debug-notest-noexample-inner 1 #First# none
 E   ospli/raspberry1/armv6l.linux-debug-inner 1 #First# none
+E   ospli/raspberry1/armv6l.linux-dev 25 #First# none
+E   ospli/raspberry1/armv6l.linux-release 25 #First# none
+
+E   ospli/bone1/armv7l.linux-dev 25 #First# none
+E   ospli/bone1/armv7l.linux-release 25 #First# none
 
 E   ospli/ubuntu1204/x86.linux-dev 25 #First# none
 E   ospli/ubuntu1204/x86.linux-release 25 #First# none

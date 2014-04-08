@@ -37,6 +37,12 @@ E   opensplice-test/ubuntu1204/x86.linux-release 25 #First# none
 E   opensplice-test/ubuntu1204-64/x86_64.linux-dev 25 #First# none
 E   opensplice-test/ubuntu1204-64/x86_64.linux-release 25 #First# none
 
+E   opensplice/raspberry1/armv6l.linux-dev 25 #First# none
+E   opensplice/raspberry1/armv6l.linux-release 25 #First# none
+
+E   opensplice/bone1/armv7l.linux-dev 25 #First# none 
+E   opensplice/bone1/armv7l.linux-release 25 #First# none 
+
 E   opensplice-test/win7b/x86.win32-dev-vs11 30 #First# none
 E   opensplice-test/win7b/x86.win32-release-vs11 30 #First# none
 

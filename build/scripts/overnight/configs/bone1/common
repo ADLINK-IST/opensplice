@@ -1,0 +1,6 @@
+export JAVA_HOME=/usr/local/jdk1.7.0_45/
+export JAVA_COMPATJAR=/usr/local/jdk1.7.0_45/jre/lib/rt.jar
+export JAVA_VERSION_OVERRIDE=1.7
+export JACORB_HOME=/home/dds/INSTALLED_FOR_DDS/JacORB-v2.3.1.0
+export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/gsoap_arm
+export OVERRIDE_STRICT_CHECKS=no
