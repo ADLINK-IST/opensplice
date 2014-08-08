@@ -634,7 +634,7 @@ public:
     close()
     {
         this->delegate()->close();
-        dds::pub::AnyDataWriter adw(*this);
+        dds::pub::AnyDataWriter &adw(*this);
         org::opensplice::core::retain_remove<dds::pub::AnyDataWriter>(adw);
     }
 
@@ -648,7 +648,7 @@ public:
     retain()
     {
         this->delegate()->retain();
-        dds::pub::AnyDataWriter adr(*this);
+        dds::pub::AnyDataWriter &adr(*this);
         org::opensplice::core::retain_add<dds::pub::AnyDataWriter>(adr);
     }
 

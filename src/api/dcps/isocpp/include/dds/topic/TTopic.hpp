@@ -180,7 +180,7 @@ void
 Topic<T, DELEGATE>::close()
 {
     this->delegate()->close();
-    dds::topic::AnyTopic at(*this);
+    dds::topic::AnyTopic &at(*this);
     org::opensplice::core::retain_remove<dds::topic::AnyTopic>(at);
 }
 
@@ -189,7 +189,7 @@ void
 Topic<T, DELEGATE>::retain()
 {
     this->delegate()->retain();
-    dds::topic::AnyTopic at(*this);
+    dds::topic::AnyTopic &at(*this);
     org::opensplice::core::retain_add<dds::topic::AnyTopic>(at);
 }
 
