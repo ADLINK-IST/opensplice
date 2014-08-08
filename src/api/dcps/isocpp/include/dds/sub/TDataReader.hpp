@@ -933,7 +933,7 @@ private:
         try
         {
             this->delegate()->close();
-            dds::sub::AnyDataReader adr(*this);
+            dds::sub::AnyDataReader &adr(*this);
             org::opensplice::core::retain_remove<dds::sub::AnyDataReader>(adr);
         }
         catch(int i)
@@ -952,7 +952,7 @@ private:
     retain()
     {
         this->delegate()->retain();
-        dds::sub::AnyDataReader adr(*this);
+        dds::sub::AnyDataReader &adr(*this);
         org::opensplice::core::retain_add<dds::sub::AnyDataReader>(adr);
     }
 #ifdef OSPL_2893_COMPILER_BUG
