@@ -31,6 +31,8 @@ namespace topic
 {
 
 class AnyTopic;
+template <typename T> std::unique_ptr<AnyTopic>
+create_AnyTopic(const dds::topic::Topic<T>& t);
 
 template <typename T, template <typename Q> class DELEGATE>
 Topic<T, DELEGATE>::Topic(const dds::domain::DomainParticipant& dp,
@@ -180,8 +182,8 @@ void
 Topic<T, DELEGATE>::close()
 {
     this->delegate()->close();
-    dds::topic::AnyTopic at(*this);
-    org::opensplice::core::retain_remove<dds::topic::AnyTopic>(at);
+    std::unique_ptr<AnyTopic> at = create_AnyTopic(*this);
+    org::opensplice::core::retain_remove<dds::topic::AnyTopic>(*at);
 }
 
 template <typename T, template <typename Q> class DELEGATE>
@@ -189,8 +191,8 @@ void
 Topic<T, DELEGATE>::retain()
 {
     this->delegate()->retain();
-    dds::topic::AnyTopic at(*this);
-    org::opensplice::core::retain_add<dds::topic::AnyTopic>(at);
+    std::unique_ptr<AnyTopic> at = create_AnyTopic(*this);
+    org::opensplice::core::retain_add<dds::topic::AnyTopic>(*at);
 }
 
 }

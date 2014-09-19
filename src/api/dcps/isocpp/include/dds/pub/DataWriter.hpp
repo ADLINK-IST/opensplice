@@ -32,6 +32,9 @@ namespace pub
 {
 
 class AnyDataWriter;
+template <typename T> std::unique_ptr<AnyDataWriter>
+create_AnyDataWriter(const dds::pub::DataWriter<T>& dw);
+
 #ifdef OSPL_2893_COMPILER_BUG
 #define DELEGATE dds::pub::detail::DataWriter
 template <typename T>
@@ -634,8 +637,8 @@ public:
     close()
     {
         this->delegate()->close();
-        dds::pub::AnyDataWriter adw(*this);
-        org::opensplice::core::retain_remove<dds::pub::AnyDataWriter>(adw);
+        std::unique_ptr<AnyDataWriter> adw = create_AnyDataWriter(*this);
+        org::opensplice::core::retain_remove<dds::pub::AnyDataWriter>(*adw);
     }
 
 #ifndef OSPL_2893_COMPILER_BUG
@@ -648,8 +651,8 @@ public:
     retain()
     {
         this->delegate()->retain();
-        dds::pub::AnyDataWriter adr(*this);
-        org::opensplice::core::retain_add<dds::pub::AnyDataWriter>(adr);
+        std::unique_ptr<AnyDataWriter> adw = create_AnyDataWriter(*this);
+        org::opensplice::core::retain_add<dds::pub::AnyDataWriter>(*adw);
     }
 
 #ifdef OSPL_2893_COMPILER_BUG
