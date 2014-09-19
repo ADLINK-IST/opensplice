@@ -33,6 +33,12 @@ inline AnyDataWriter::AnyDataWriter(const dds::core::null_type&)
 {
 }
 
+template <typename T> std::unique_ptr<AnyDataWriter>
+create_AnyDataWriter(const dds::pub::DataWriter<T>& dw)
+{
+    return std::unique_ptr<AnyDataWriter>(new AnyDataWriter(dw));
+}
+
 template <typename T>
 AnyDataWriter::AnyDataWriter(const dds::pub::DataWriter<T>& dw)
     : holder_(new dds::pub::detail::DWHolder<T>(dw)) { }

@@ -27,6 +27,12 @@ namespace dds
 namespace topic
 {
 
+template <typename T> std::unique_ptr<AnyTopic>
+create_AnyTopic(const dds::topic::Topic<T>& t)
+{
+  return std::unique_ptr<AnyTopic>(new AnyTopic(t));
+}
+
 template <typename T>
 AnyTopic::AnyTopic(const dds::topic::Topic<T>& t): holder_(new detail::THolder<T>(t)) { }
 

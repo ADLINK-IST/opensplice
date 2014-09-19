@@ -32,6 +32,12 @@ inline AnyDataReader::AnyDataReader(const dds::core::null_type&)
 {
 }
 
+template <typename T> std::unique_ptr<AnyDataReader>
+create_AnyDataReader(const dds::sub::DataReader<T>& dr)
+{
+    return std::unique_ptr<AnyDataReader>(new AnyDataReader(dr));
+}
+
 template <typename T>
 AnyDataReader::AnyDataReader(const dds::sub::DataReader<T>& dr)
     : holder_(new detail::DRHolder<T>(dr)) { }
