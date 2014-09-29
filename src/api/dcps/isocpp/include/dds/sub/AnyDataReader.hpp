@@ -79,6 +79,32 @@ dds::sub::DataReader<T> AnyDataReader::get()
 
 }
 }
+
+#ifndef OSPL_2893_COMPILER_BUG
+template <typename T, template <typename Q> class DELEGATE>
+void dds::sub::DataReader<T, DELEGATE>::close()
+{
+    try
+    {
+        this->delegate()->close();
+        dds::sub::AnyDataReader adr(*this);
+        org::opensplice::core::retain_remove<dds::sub::AnyDataReader>(adr);
+    }
+    catch(int i)
+    {
+        (void)i;
+    }
+}
+
+template <typename T, template <typename Q> class DELEGATE>
+void dds::sub::DataReader<T, DELEGATE>::retain()
+{
+    this->delegate()->retain();
+    dds::sub::AnyDataReader adr(*this);
+    org::opensplice::core::retain_add<dds::sub::AnyDataReader>(adr);
+}
+#endif
+
 // End of implementation
 
 #endif /* OSPL_DDS_SUB_ANYDATAREADER_HPP_ */

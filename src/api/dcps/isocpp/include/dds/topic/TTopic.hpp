@@ -175,23 +175,6 @@ Topic<T, DELEGATE>::inconsistent_topic_status() const
     return this->delegate()->inconsistent_topic_status();
 }
 
-template <typename T, template <typename Q> class DELEGATE>
-void
-Topic<T, DELEGATE>::close()
-{
-    this->delegate()->close();
-    dds::topic::AnyTopic at(*this);
-    org::opensplice::core::retain_remove<dds::topic::AnyTopic>(at);
-}
-
-template <typename T, template <typename Q> class DELEGATE>
-void
-Topic<T, DELEGATE>::retain()
-{
-    this->delegate()->retain();
-    dds::topic::AnyTopic at(*this);
-    org::opensplice::core::retain_add<dds::topic::AnyTopic>(at);
-}
 
 }
 }

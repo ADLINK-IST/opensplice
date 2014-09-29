@@ -921,14 +921,8 @@ private:
         return this->delegate()->subscription_matched_status();
     }
 
-#ifndef OSPL_2893_COMPILER_BUG
-    template <typename T, template <typename Q> class DELEGATE>
-#endif
-    void
-#ifndef OSPL_2893_COMPILER_BUG
-    DataReader<T, DELEGATE>::
-#endif
-    close()
+#ifdef OSPL_2893_COMPILER_BUG
+    void close()
     {
         try
         {
@@ -941,20 +935,14 @@ private:
             (void)i;
         }
     }
-
-#ifndef OSPL_2893_COMPILER_BUG
-    template <typename T, template <typename Q> class DELEGATE>
-#endif
-    void
-#ifndef OSPL_2893_COMPILER_BUG
-    DataReader<T, DELEGATE>::
-#endif
-    retain()
+    void retain()
     {
         this->delegate()->retain();
         dds::sub::AnyDataReader adr(*this);
         org::opensplice::core::retain_add<dds::sub::AnyDataReader>(adr);
     }
+#endif
+
 #ifdef OSPL_2893_COMPILER_BUG
 public:
     OMG_DDS_REF_TYPE(DataReader, dds::core::TEntity, dds::sub::detail::DataReader<T>)

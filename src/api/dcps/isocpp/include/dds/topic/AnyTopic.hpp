@@ -20,6 +20,7 @@
  * OMG PSM class declaration
  */
 #include <spec/dds/topic/AnyTopic.hpp>
+#include <org/opensplice/core/Retain.hpp>
 
 // Implementation
 namespace dds
@@ -49,6 +50,23 @@ inline const detail::THolderBase* AnyTopic::operator->() const
 }
 
 }
+}
+template <typename T, template <typename Q> class DELEGATE>
+void
+dds::topic::Topic<T, DELEGATE>::close()
+{
+    this->delegate()->close();
+    dds::topic::AnyTopic at(*this);
+    org::opensplice::core::retain_remove<dds::topic::AnyTopic>(at);
+}
+
+template <typename T, template <typename Q> class DELEGATE>
+void
+dds::topic::Topic<T, DELEGATE>::retain()
+{
+    this->delegate()->retain();
+    dds::topic::AnyTopic at(*this);
+    org::opensplice::core::retain_add<dds::topic::AnyTopic>(at);
 }
 // End of implementation
 

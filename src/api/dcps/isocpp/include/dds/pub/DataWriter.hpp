@@ -624,33 +624,21 @@ public:
         this->delegate()->assert_liveliness();
     }
 
-#ifndef OSPL_2893_COMPILER_BUG
-    template <typename T, template <typename Q> class DELEGATE>
-#endif
-    void
-#ifndef OSPL_2893_COMPILER_BUG
-    DataWriter<T, DELEGATE>::
-#endif
-    close()
+#ifdef OSPL_2893_COMPILER_BUG
+    void close()
     {
         this->delegate()->close();
         dds::pub::AnyDataWriter adw(*this);
         org::opensplice::core::retain_remove<dds::pub::AnyDataWriter>(adw);
     }
 
-#ifndef OSPL_2893_COMPILER_BUG
-    template <typename T, template <typename Q> class DELEGATE>
-#endif
-    void
-#ifndef OSPL_2893_COMPILER_BUG
-    DataWriter<T, DELEGATE>::
-#endif
-    retain()
+    void retain()
     {
         this->delegate()->retain();
         dds::pub::AnyDataWriter adr(*this);
         org::opensplice::core::retain_add<dds::pub::AnyDataWriter>(adr);
     }
+#endif
 
 #ifdef OSPL_2893_COMPILER_BUG
 #undef DELEGATE

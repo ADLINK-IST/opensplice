@@ -69,7 +69,23 @@ dds::pub::DataWriter<T> AnyDataWriter::get()
 
 }
 }
+#ifndef OSPL_2893_COMPILER_BUG
+    template <typename T, template <typename Q> class DELEGATE>
+    void dds::pub::DataWriter<T, DELEGATE>::close()
+    {
+        this->delegate()->close();
+        dds::pub::AnyDataWriter adw(*this);
+        org::opensplice::core::retain_remove<dds::pub::AnyDataWriter>(adw);
+    }
 
+    template <typename T, template <typename Q> class DELEGATE>
+    void dds::pub::DataWriter<T, DELEGATE>::retain()
+    {
+        this->delegate()->retain();
+        dds::pub::AnyDataWriter adr(*this);
+        org::opensplice::core::retain_add<dds::pub::AnyDataWriter>(adr);
+    }
+#endif
 // End of implementation
 
 #endif /* OSPL_DDS_PUB_ANYDATAWRITER_HPP_ */
