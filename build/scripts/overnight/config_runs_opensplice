@@ -44,13 +44,13 @@ E   opensplice/bone1/armv7l.linux-dev 25 #First# none
 M   opensplice/bone1/armv7l.linux-release 25 #First# none
 
 E   opensplice/win7b/x86.win32-dev-vs11 30 #First# none
-M   opensplice/win7b/x86.win32-release-vs11 30 #First# none
+E   opensplice/win7b/x86.win32-release-vs11 30 #First# none
 
 E   opensplice/win7c/x86.win32-dev-vs12 30 #First# none
-M   opensplice/win7c/x86.win32-release-vs12 30 #First# none
+E   opensplice/win7c/x86.win32-release-vs12 30 #First# none
 
 E   opensplice/win7d/x86_64.win64-dev-vs11 30 #First# none
-M   opensplice/win7d/x86_64.win64-release-vs11 30 #First# none
+E   opensplice/win7d/x86_64.win64-release-vs11 30 #First# none
 
 E   opensplice/win7e/x86_64.win64-dev-vs12 30 #First# none
 E   opensplice/win7e/x86_64.win64-release-vs12 30 #First# none
