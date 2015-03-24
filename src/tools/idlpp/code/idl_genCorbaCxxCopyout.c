@@ -1201,8 +1201,8 @@ idl_arrayElements(
                 idl_arrayLoopCopy(typeArray, buf, to, indent, stacRequested, catsRequested);
                 os_free(buf);
             } else {
-            	idl_printIndent(indent);
-                idl_fileOutPrintf(idl_fileCur(), "    memcpy ((void *)%s, %s, sizeof (%s));\n", cpyTo, from, cpyTo);
+                idl_printIndent(indent);
+                idl_fileOutPrintf(idl_fileCur(), "    memcpy ((void *)%s, %s, sizeof (%*s));\n", cpyTo, from, from);
             }
             /* QAC EXPECT 3416; No side effect here */
         } else if (idl_typeSpecType(idl_typeDefActual(idl_typeDef(subType))) == idl_tenum) {
