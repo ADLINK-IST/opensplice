@@ -66,7 +66,7 @@ matched_publications(const dds::sub::DataReader<T>& dr,
     DDS::ReturnCode_t result = ((dds::sub::DataReader<T>)dr)->get_raw_reader()->get_matched_publications(ddsSeq);
     org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_matched_publications"));
 
-    ddsSeq.length() < max_size ? max_size = ddsSeq.length() : max_size = max_size;
+    max_size = ddsSeq.length() < max_size ? ddsSeq.length() : max_size;
 
     for(uint32_t i = 0; i < max_size; i++)
     {
