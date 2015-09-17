@@ -1,9 +1,0 @@
-# "Standard" features we don't build for this platform.
-#set_var INCLUDE_CS no
-#set_var INCLUDE_DBT_API_DCPS_SACS no
-#set_var INCLUDE_API_DCPS_SACS no
-#set_var INCLUDE_SERVICES_CMSOAP no
-#set_var INCLUDE_ORB no
-
-# "Standard" features we don't build for this platform.
-set_undefined_var     INCLUDE_API_DCPS_ISOCPP yes

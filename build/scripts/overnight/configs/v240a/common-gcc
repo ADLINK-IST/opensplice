@@ -1,5 +1,0 @@
-PATH=/usr/users/dds/INSTALLED\ FOR\ DDS/make:/usr/local/gcc-4.2.4/bin:/usr/sfw/bin:/usr/bin:/usr/local/bin:/opt/sfw/bin:/usr/ccs/bin
-
-export PATH
-
-. configs/`hostname`/common

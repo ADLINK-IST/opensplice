@@ -1,9 +1,0 @@
-export JAVA_HOME=/usr/lib/jvm/jdk-7-oracle-armhf
-export JAVA_COMPATJAR=/usr/lib/jvm/jdk-7-oracle-armhf/jre/lib/rt.jar
-export JAVA_VERSION_OVERRIDE=1.7
-export JACORB_HOME=/home/dds/INSTALLED_FOR_DDS/JacORB-v2.3.1.0
-export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/GSOAP
-
-unset QTDIR
-unset TAO_ROOT
-export OVERRIDE_STRICT_CHECKS=no

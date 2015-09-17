@@ -1,7 +1,0 @@
-// -*- MPC -*-
-// $Id:$
-
-project(sacpp*sub): _repetitive_cpp_example_sub, sacpp_dcps_application {
-    requires += dcps_sacpp_example
-}
-

@@ -1,8 +1,0 @@
-// -*- MPC -*-
-// $Id:$
-
-project : dcps_typesupport_base, ospl_dcpssacpp, ospl_dcps_cpp_app_base_libs {
-
-  splice_ts_flags += -l cpp
-
-}

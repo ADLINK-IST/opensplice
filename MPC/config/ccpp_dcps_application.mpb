@@ -1,7 +1,0 @@
-// -*- MPC -*-
-// $Id$
-
-project : ccpp_dcps_app_libs, taoclient, ospl_testlib {
-    exename = *
-    exeout = .
-}

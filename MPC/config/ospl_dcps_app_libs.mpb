@@ -1,6 +1,0 @@
-// -*- MPC -*-
-// $Id$
-
-project : ospl_dcps_cpp_app_base_libs, ospl_dcpsccpp {
-
-}

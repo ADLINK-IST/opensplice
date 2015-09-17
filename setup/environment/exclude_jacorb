@@ -1,4 +1,0 @@
-# Unset variables for when JacORB is not availible
-
-unset_var INCLUDE_DBT_API_DCPS_CJ
-unset_var INCLUDE_API_DCPS_CJ

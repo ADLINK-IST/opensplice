@@ -1,1 +1,0 @@
-call c:\Python26\python GenerateUAHosts.py ..\hosts.pkl

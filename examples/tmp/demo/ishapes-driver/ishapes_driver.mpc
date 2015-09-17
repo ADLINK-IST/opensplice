@@ -1,4 +1,0 @@
-project (*main) : ospl_dcpssacpp, ospl_dcpsisocpp, sacpp_typesupport {
-    libs += boost_program_options
-    includes += $(OSPL_HOME_NORMALIZED)/examples
-}

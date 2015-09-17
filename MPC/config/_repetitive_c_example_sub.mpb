@@ -1,8 +1,0 @@
-// -*- MPC -*-
-// $Id:$
-
-project : _repetitive_c_example_base {
-    Source_Files {
-        ../src/*DataSubscriber.c
-    }
-}

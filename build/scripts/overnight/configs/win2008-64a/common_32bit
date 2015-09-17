@@ -1,7 +1,0 @@
-. ./configs/`hostname`/common
-
-export VS_ENV_SCRIPT="C:\Program Files (x86)\Microsoft Visual Studio 10.0\Common7\Tools\vsvars32.bat"
-export JAVA_HOME="c:/Program Files (x86)/Java/jdk1.6.0_24"
-export TAO_ROOT=
-export QTDIR=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_64bit
-export REDIST_OVERRIDE='/cygdrive/C/Program Files (x86)/Microsoft SDKs/Windows/v6.0A'

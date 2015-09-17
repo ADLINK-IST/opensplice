@@ -1,9 +1,0 @@
-export VS_HOME='/cygdrive/C/Program Files (x86)/Microsoft Visual Studio 10.0'
-export WINDOWSSDKDIR='/cygdrive/C/Program Files (x86)/Microsoft SDKs/Windows/v7.0A'
-export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
-export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/gsoap-v2.7
-
-#Winxp combined with new cygwin does not set TMP or TEMP even when in the windows settings
-#as the native calls done via TAO ask for a temp directory and windows fallback to using
-#USERPROFILE which has spaces in and does not work, unsetting solves the problem
-unset USERPROFILE

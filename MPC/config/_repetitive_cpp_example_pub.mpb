@@ -1,9 +1,0 @@
-// -*- MPC -*-
-// $Id:$
-
-project : _repetitive_cpp_example_base {
-
-    Source_Files {
-        ../src/*DataPublisher.cpp
-    }
-}

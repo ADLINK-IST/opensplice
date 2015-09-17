@@ -1,5 +1,0 @@
-export QTDIR=/usr/local/Trolltech/Qt-4.8.5
-export GSOAPHOME=/home/dds/INSTALLED_FOR_DDS/GSOAP
-export JAVA_HOME=/home/dds/INSTALLED_FOR_DDS/jdk1.6.0_23_64
-export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-RedHat-EL62-gcc446-inline-FT-64bit-120320-head
-export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0

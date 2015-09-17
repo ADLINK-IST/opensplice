@@ -1,6 +1,0 @@
-// -*- MPC -*-
-// $Id:$
-
-project : ospl_ddsrrstorage, ospl_base {
-  lit_libs += cmxml
-}

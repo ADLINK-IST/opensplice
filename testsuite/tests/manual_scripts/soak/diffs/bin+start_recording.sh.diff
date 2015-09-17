@@ -1,8 +1,0 @@
---- bin/start_recording.sh	2011-04-27 18:57:21.000000000 +0300
-+++ bin/start_recording.sh	2011-05-27 17:39:53.000000000 +0300
-@@ -44,4 +44,4 @@
- 
- echo "Starting Recording"
- echo "$COMMAND $ID $RFILE"
--$COMMAND $ID $RFILE 
-+$COMMAND $ID $RFILE &

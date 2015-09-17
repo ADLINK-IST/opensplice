@@ -1,7 +1,0 @@
-These scripts can run on its own. I.e. they don't depend on other routines in
-scripts for manual testing.
-
-The script run_tests.sh is organized so that it steps from one test to another
-allowing to run things required for each test manually. Since this script
-doesn't run anything but just prepares everything required for a test then
-naturally it must be launched on each host that we are testing.

@@ -1,3 +1,0 @@
-. configs/common-inner
-#export QTDIR=c:\\cygwin\\home\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_32bit
-export BOOST_ROOT=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\boost_1_53_0

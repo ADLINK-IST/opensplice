@@ -1,5 +1,0 @@
-// -*- MPC -*-
-// $Id:$
-
-project : _repetitive_cpp_example_pub, ospl_dcpsccpp, tao_example {
-}

@@ -1,6 +1,0 @@
-export JAVA_HOME=/usr/local/jdk1.6.0
-export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO211_0-RedHat-EL54-gcc412-inline-64bit-120927-head
-export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
-export ODBCHOME=/home/dds/INSTALLED\ FOR\ DDS/ODBC
-export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/GSOAP
-export QTDIR=/usr/local/Trolltech/Qt-4.8.5

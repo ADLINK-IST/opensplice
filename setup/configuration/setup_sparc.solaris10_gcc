@@ -1,6 +1,0 @@
-# "Standard" features we don't build for this platform.
-#unset_var INCLUDE_FILTERS
-set_undefined_var INCLUDE_API_DCPS_ISOCPP yes
-set_var OSPL_QT_IS_ON no
-set_var INCLUDE_LZF yes
-set_var INCLUDE_SNAPPY yes

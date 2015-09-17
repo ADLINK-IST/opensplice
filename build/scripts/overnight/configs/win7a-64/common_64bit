@@ -1,6 +1,0 @@
-. ./configs/`hostname`/common
-
-export VS_ENV_SCRIPT="C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64\vcvars64.bat"
-export JAVA_HOME="c:/Program Files/Java/jdk1.6.0_24"
-export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-Windows-vc10-inline-64bit_110704
-export QTDIR=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_64bit

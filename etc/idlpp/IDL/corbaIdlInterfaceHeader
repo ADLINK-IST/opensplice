@@ -1,7 +1,0 @@
-#ifndef $upper($(basename))DCPS_IDL_
-#define $upper($(basename))DCPS_IDL_
-
-#include "dds_dcps.idl"
-
-#include "$(basename).idl"
-

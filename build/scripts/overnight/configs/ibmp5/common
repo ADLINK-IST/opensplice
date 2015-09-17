@@ -1,4 +1,0 @@
-export JAVA_HOME=/usr/local/jdk1.5.0
-#export TAO_ROOT=TAO161_0-AIX_53-xlC_EEv80-inline-32bit-OpenSpliceDDS_v4.1_UNSUPPORTED_091104
-export EORBHOME=/home/dds/INSTALLED\ FOR\ DDS/eorb-V1-5-4_9th_April_2009
-export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/gsoap-v2.7.8

@@ -1,8 +1,0 @@
-// -*- MPC -*-
-// $Id:$
-
-project {
-    includes += $(OSPL_OUTER_HOME_NORMALIZED)/testsuite/framework/testframe/include
-    libs += testframe
-    libpaths += $(OSPL_OUTER_HOME_NORMALIZED)/testsuite/lib/$(SPLICE_TARGET)
-}

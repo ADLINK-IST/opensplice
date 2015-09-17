@@ -1,7 +1,0 @@
-# "Standard" features we don't build for this platform.
-unset_var INCLUDE_FILTERS
-unset_var INCLUDE_SERVICES_CMSOAP
-unset_var INCLUDE_ORB
-unset_var INCLUDE_API_DCPS_SACS
-set_var INCLUDE_LZF yes
-set_var INCLUDE_SNAPPY yes

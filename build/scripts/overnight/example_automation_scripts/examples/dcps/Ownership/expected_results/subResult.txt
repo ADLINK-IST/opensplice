@@ -1,5 +1,0 @@
-=== OwnershipSubscriber
-=== [Subscriber] Ready ...
-=== [Subscriber] message received :
-    userID  : 1
-    Message : "Hello World"

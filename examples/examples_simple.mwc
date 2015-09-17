@@ -1,6 +1,0 @@
-workspace (All_Standalone_C_and_CPlusPlus) {
-    cmdline += --features dcps_isocpp_example=1 --language cplusplus  --features ospl_dcpssacpp=1 --features ospl_dcpssac=1 --features ospl_dcpssaj=0 --features ospl_dcpscj=0 --features ospl_dcpssacs=0
-    exclude {
-       tmp
-    }
-}

@@ -1,3 +1,0 @@
-=== [Publisher] writing a message containing :
-    userID  : 1
-    Message : "Hello World"

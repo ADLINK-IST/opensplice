@@ -1,5 +1,0 @@
-// -*- MPC -*-
-// $Id:$
-
-project (Build*lib) : build_ospl_dcpsisocpp {
-}

@@ -1,8 +1,0 @@
-export VS_HOME='/cygdrive/C/Program Files/Microsoft Visual Studio 9.0/'
-export VS_ENV_SCRIPT="C:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat"
-export WINDOWSSDKDIR='/cygdrive/C/Program Files/Microsoft SDKs/Windows/v6.0A'
-export JAVA_HOME="c:/Program Files/Java/jdk1.6.0_19"
-export TAO_ROOT=/home/dds/INSTALLED_FOR_DDS/TAO161_0-Windows-vc9-inline-32bit-OpenSpliceDDS_v4.1_UNSUPPORTED_091104
-export JACORB_HOME=/home/dds/INSTALLED\ FOR\ DDS/JacORB-v2.3.1.0
-export QTDIR=c:\\cygwin\\home\\dds\\INSTALLED_FOR_DDS\\Qt\\4.8.4_vs2010_32bit
-export GSOAPHOME=/home/dds/INSTALLED\ FOR\ DDS/gsoap-v2.7

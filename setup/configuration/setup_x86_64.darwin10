@@ -1,2 +1,0 @@
-# "Standard" features we don't build for this platform.
-set_undefined_var     INCLUDE_API_DCPS_ISOCPP yes

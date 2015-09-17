@@ -1,9 +1,0 @@
-
-module Space {
-    struct Type1 {
-	long	long_1;
-	long	long_2;
-	long	long_3;
-    };
-#pragma keylist Type1 long_1
-};
