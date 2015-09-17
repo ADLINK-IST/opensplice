@@ -1,0 +1,83 @@
+    <!-- ******DOCS****** --> 
+    <section id="docs" class="docs section">
+        <div class="container">
+            <div class="docs-inner">
+            <h2 class="title text-center">Building POSIX/Linux</h2>
+            <div class="block">
+                <h3 class="sub-title text-center">POSIX / Linux Minimal Build Required Tools</h3>
+                <p>The list of tools below is the minimal set required to build OpenSplice.</p>
+                <p>The following tools should be installed and available on the machine executable / library search path.</p>
+
+                <dl>
+                    <dt>bash</dt><dd>shell</dd>
+                    <dt>gcc</dt><dd>3.2.x or above (not needed if using Sun Studio)</dd>
+                    <dt>Sun Studio</dt><dd>At this time only v12 of this compiler has been tested (not needed if using gcc)</dd>
+                    <dt>gmake</dt><dd>3.80 or above.</dd>
+                    <dt>flex</dt><dd>Any version is acceptable.</dd>
+                    <dt>bison</dt><dd>Any version is acceptable.</dd>
+                    <dt>perl</dt><dd>Version 5.8 or above is required.
+                    <dt>Java SDK</dt><dd>This is optional. Oracle SDK v1.6 or above is acceptable. If omitted no Java APIs or tools will be generated.</dd>
+                    <dt>Doxygen</dt><dd>This is optional. If omitted the documentation for the C# and I.S.O. C++ APIs will not be generated. Version 1.8 or greater is recommended for ideal results. (v6 of OpenSplice onwards only)</dd>
+                    <dt>Qt4</dt><dd>Highly optional. Its only use is to build the iShapes demonstration application into the distribution, which can be used to illustrate DCPS use and verify interoperability. (v6 of DDS Community Edition onwards only). See demos/iShapes/README.md.</dd>
+                </dl>
+
+            </div><!--//block-->
+            <div class="block">
+                <h3 class="sub-title text-center">POSIX / Linux Steps to Build OpenSplice from Source</h3>
+                <ol>
+                <li>Clone the OpenSplice project.</li>
+                <li>Set environment variables so that the above tools can be located:</li>
+                <li>Optionally set JAVA_HOME - set to the directory that a Oracle SDK (>1.6) is installed in.</li>
+                <li>All other tools will be located from the machine $PATH</li>
+                <li>Source the OpenSplice configure script to set-up your build environment. N.B. You must source this script each time you wish to configure a new shell as a build environment. The configuration choices are not persistent.</li>
+                <li>Choose the target platform configuration.</li>
+                <li>Invoke make to compile OpenSplice</li>
+                <li>Invoke make install to build a OpenSplice Distribution</li>
+                </ol>
+                
+            </div><!--//block-->
+
+            <div class="block">
+                <h3 class="sub-title text-center">Windows Minimal Build Required Tools</h3>
+                <dl>
+                    <dt>Microsoft Visual Studio 2005 to Microsoft Visual Studio 2010</dt>
+                    <dt>cygwin</dt>
+                        <dd>The latest available version is recommended. The following packages should be installed in addition to the recommended base selection:
+                            <ul>
+                                <li>gcc-core</li>
+                                <li>gmake</li>
+                                <li>bison</li>
+                                <li>flex</li>
+                                <li>gawk</li>
+                                <li>zip</li>
+                                <li>unzip</li>
+                            </ul>
+                        </dd>
+                        <dt>doxygen</dt><dd>(Optional - used for C# & ISO C++ API documentation)</dd>
+                        <dt>Java SDK</dt><dd>This is optional. Oracle SDK v1.6 or above is acceptable. If omitted no Java APIs or tools will be generated.</dd>
+                        <dt>Qt4</dt><dd>Highly optional. Its only use is to build the iShapes demonstration application into the distribution, which can be used to illustrate DCPS use and verify interoperability. (v6 of OpenSplice onwards only). See demos/iShapes/README.md.</dd>
+                </dl>
+            </div><!--//block-->
+
+            <div class="block">
+                <h3 class="sub-title text-center">Windows Steps to build OpenSplice from Source</h3>
+                <ol>
+                    <li>Clone the OpenSplice repository.</li>
+                    <li>In a Cygwin shell set environment variables so that the required build tools can be located.
+                        <ol>
+                            <li>VS_HOME - set to the installation directory of Visual Studio 2008 or 2010.</li>
+                            <li>WINDOWSSDKDIR - set to the location of the Windows SDK directory.</li>
+                            <li>Optionally set JAVA_HOME - set to the directory that an Oracle SDK (&gt;1.6) is installed in.</li>
+                            <li>All other tools will be located from the cygwin shell $PATH</li>
+                        </ol>
+                    </li>
+                    <li>Unset TMP and TEMP (lower and upper case) otherwise you may encouter error 256 while building the OpenSplice ISO C++ API. This is a known compatibility issue between Cygwin and Visual Studio. This can be done permanently by editing your /etc/profile and commenting out the setting of the variables.</li>
+                    <li>Source the OpenSplice configure script to set-up your build environment. N.B. You must source this script each time you wish to configure a new shell as a build environment. The configuration choices are not persistent.</li>
+                    <li>Choose the target platform configuration. N.B - 32/64 bit debug (dev) or release (release) builds are available.</li>
+                    <li>Invoke make to build OpenSplice</li>
+                    <li>Invoke make install to build an OpenSplice Distribution</li>
+                </ol>
+            </div><!--//block-->
+            </div><!--//docs-inner-->         
+        </div><!--//container-->
+    </section><!--//docs-->

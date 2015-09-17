@@ -1,0 +1,24 @@
+# Site settings
+name: PrismTech
+title: OpenSplice
+email: info@prismtech.com
+description: > # this means to ignore newlines until "baseurl:"
+  The OpenSplice project exists to support the Open Source Data Distribution Service (DDS) developer and user community and to encourage their involvement to speed DDS innovation.
+baseurl: "" # the subpath of your site, e.g. /blog/
+url: "https://prismtech.github.io/opensplice" # the base hostname & protocol for your site
+twitter_username: VortexDDS
+twitter_site: toby_mcclean
+github_username:  PrismTech
+
+# URL of your avatar or profile pic (you could use your GitHub profile pic)
+avatar: https://avatars2.githubusercontent.com/u/1701983
+
+# Enter your Disqus shortname (not your username) to enable commenting on posts
+# You can find your shortname on the Settings page of your Disqus account
+disqus: opensplice
+
+# Enter your Google Analytics web tracking code (e.g. UA-2110908-2) to activate tracking
+google_analytics: UA-66686350-5
+
+# Build settings
+markdown: kramdown

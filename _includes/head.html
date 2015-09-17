@@ -1,0 +1,41 @@
+<head>
+    <title>
+   {% if page.title == "Home" %}
+   {{ site.title }} &middot; {{ site.tagline }}
+   {% else %}
+   {{ page.title }} &middot; {{ site.title }}
+   {% endif %}
+    </title>
+    <!-- Meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{ site.description }}">
+    <meta name="og:description" content="{{ site.description }}">
+    <meta name="author" content="{{ site.name }}">
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:site" content="@{{ site.twitter_site }}" />
+    <meta name="twitter:title" content="{{ page.title }}" />
+    <meta name="twitter:description" content="{{ site.description }}" />
+    <meta name="twitter:creator" content="@{{ site.twitter_site }}" />
+    <meta name="twitter:image:src" content="https://prismtech.github.io/public/images/profile.png" />
+    <meta name="twitter:domain" content="github.io" />
+    {% if page.title %}
+    <meta name="og:title" content="{{ page.title }}" />
+    {% endif %}
+    <link rel="shortcut icon" href="favicon.ico">  
+    <link href='http://fonts.googleapis.com/css?family=Lato:300,400,300italic,400italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css'> 
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="{{ site.baseurl }}public/plugins/bootstrap/css/bootstrap.min.css">
+    <!-- Plugins CSS -->    
+    <link rel="stylesheet" href="{{ site.baseurl }}public/plugins/font-awesome/css/font-awesome.css">
+    <link rel="stylesheet" href="{{ site.baseurl }}public/plugins/prism/prism.css">
+    <!-- Theme CSS -->  
+    <link id="theme-style" rel="stylesheet" href="{{ site.baseurl }}public/css/styles.css">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
