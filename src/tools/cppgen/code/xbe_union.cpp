@@ -453,7 +453,7 @@ be_union::GenerateEquality(be_ClientHeader& source)
    TList<be_union_branch *>::iterator bit;
    os << tab << "bool operator==(const " << LocalName() << "& that) const" <<
    nl << tab << "{" << nl;
-
+   source.Indent();
    os << tab << "if (this != &that)" << nl;
    os << tab << "{" << nl;
    source.Indent();
@@ -471,8 +471,8 @@ be_union::GenerateEquality(be_ClientHeader& source)
       os << "if (that._d() == " << branch->Label() << ")" << nl << tab << tab << "return " << branch->LocalName() << "() == "
          << "that." << branch->LocalName() << "();" << nl;
    }
-   source.Outdent();
    os << nl << tab << "return false;" << nl;
+   source.Outdent();
    os << tab << "}" << nl << tab << "else" << nl << tab << "{" << nl << tab << tab << "return true;" << nl << tab << "}" << nl;
    source.Outdent();
    os << tab << "}" << nl;
@@ -1151,6 +1151,7 @@ be_union::GenerateUnion(be_ClientHeader& source)
         os << tab << tab << "::std::memset(&_other._union, 0, sizeof(_other._union));" << nl;
         os << tab << tab << "return *this;" << nl;
         os << tab << "}" << nl;
+        GenerateAssignmentOperator(source);
         source.Outdent();
         os << "#  else" << nl;
         source.Indent();

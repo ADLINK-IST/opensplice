@@ -656,13 +656,16 @@ void be_structure::Generate (be_ClientHeader& source)
               << field->get_local_name() << (is_sequency ? "(const " : "(") << relativeName
               << (is_sequency ? "&" : "") << " _val_) { this->" << field->get_local_name() << "_ = _val_; }" << nl;
           source.Outdent();
-          os << "#ifdef OSPL_DDS_CXX11" << nl;
-          source.Indent();
-          // C++ 11 move assignement op
-          os << tab << "void "
-              << field->get_local_name() <<  "(" << relativeName << "&& _val_) { this->" << field->get_local_name() << "_ = _val_; }" << nl;
-          source.Outdent();
-          os << "#endif" << nl;
+          if (!(field->get_be_type()->IsPrimitiveType()
+                  && !field->get_be_type()->IsEnumeratedType())) {
+              os << "#ifdef OSPL_DDS_CXX11" << nl;
+              source.Indent();
+              // C++ 11 move assignement op
+              os << tab << "void "
+                      << field->get_local_name() <<  "(" << relativeName << "&& _val_) { this->" << field->get_local_name() << "_ = _val_; }" << nl;
+              source.Outdent();
+              os << "#endif" << nl;
+          }
           source.Indent();
         }
       }
