@@ -1165,7 +1165,7 @@ idl_arrayElements(
                 os_free(buf);
             } else {
             	idl_printIndent(indent);
-                idl_fileOutPrintf(idl_fileCur(), "    memcpy (%s, %s, sizeof (%s));\n", to, from, to);
+                idl_fileOutPrintf(idl_fileCur(), "    memcpy (%s, %s, sizeof (*%s));\n", to, from, from);
             }
             /* QAC EXPECT 3416; No side effect here */
         } else if (idl_typeSpecType(idl_typeDefActual(idl_typeDef(subType))) == idl_tenum) {

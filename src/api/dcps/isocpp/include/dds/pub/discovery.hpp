@@ -66,7 +66,7 @@ matched_subscriptions(const dds::pub::DataWriter<T>& dw,
     DDS::ReturnCode_t result = ((dds::pub::DataWriter<T>)dw)->get_raw_writer()->get_matched_subscriptions(ddsSeq);
     org::opensplice::core::check_and_throw(result, OSPL_CONTEXT_LITERAL("Calling ::get_matched_subscriptions"));
 
-    ddsSeq.length() < max_size ? max_size = ddsSeq.length() : max_size = max_size;
+    max_size = ddsSeq.length() < max_size ? ddsSeq.length() : max_size;
 
     for(uint32_t i = 0; i < max_size; i++)
     {
