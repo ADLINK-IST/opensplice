@@ -220,18 +220,21 @@ static int maybe_set_dont_route (os_socket socket)
 static int set_reuse_options (os_socket socket)
 {
   /* Set REUSEADDR and REUSEPORT (if available on platform) for
-     multicast sockets, leave unicast sockets alone. */
+     multicast sockets, leave unicast sockets alone.
+
+     Prior to 3.9, Linux does not support SO_REUSEPORT. */
   int one = 1;
 
-  if (os_sockSetsockopt (socket, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof (one)) != os_resultSuccess)
-  {
-    print_sockerror ("SO_REUSEADDR");
-    return -2;
-  }
-#ifdef SO_REUSEPORT
+#if defined(SO_REUSEPORT) && !defined(__linux__)
   if (os_sockSetsockopt (socket, SOL_SOCKET, SO_REUSEPORT, (char *) &one, sizeof (one)) != os_resultSuccess)
   {
     print_sockerror ("SO_REUSEPORT");
+    return -2;
+  }
+#else
+  if (os_sockSetsockopt (socket, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof (one)) != os_resultSuccess)
+  {
+    print_sockerror ("SO_REUSEADDR");
     return -2;
   }
 #endif
