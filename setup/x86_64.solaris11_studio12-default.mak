@@ -65,7 +65,7 @@ JAVA_INCLUDE	+= -I"$(JAVA_HOME)/include/solaris"
 SOAPCPP		= soapcpp2
 
 # Identify compiler flags for building shared libraries
-SHCFLAGS         = -G -Kpic
+SHCFLAGS         = -G -KPIC
 
 # Values of compiler flags can be overruled
 CFLAGS_OPT       = -O -DNDEBUG
@@ -92,7 +92,7 @@ MTCFLAGS	+= -mt -D_POSIX_PTHREAD_SEMANTICS
 LDFLAGS		 = -L$(SPLICE_LIBRARY_PATH)
 
 # Identify linker options for building shared libraries
-SHLDFLAGS	 = -G -Kpic
+SHLDFLAGS	 = -G -KPIC
 
 # Set library context
 LDLIBS		 = -lsocket -lnsl -ldl -lintl -lpthread -lrt -lm
