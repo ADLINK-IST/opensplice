@@ -10,9 +10,9 @@ ifeq ($(INCLUDE_CXX),yes)
 ifeq ($(INCLUDE_API_DCPS_CCPP),yes)
 SUBSYSTEMS 	+= ccpp
 endif # INCLUDE_API_DCPS_CCPP
-#ifeq ($(INCLUDE_API_DCPS_SACPP),yes)
-#SUBSYSTEMS 	+= sacpp
-#endif # INCLUDE_API_DCPS_SACPP
+ifeq ($(INCLUDE_API_DCPS_SACPP),yes)
+SUBSYSTEMS 	+= sacpp
+endif # INCLUDE_API_DCPS_SACPP
 endif # INCLUDE_CXX
 ifeq ($(INCLUDE_CS),yes)
 ifeq ($(INCLUDE_API_DCPS_SACS),yes)
