@@ -54,7 +54,7 @@ public:
 
    inline DDS_StdString GetargMvalue() const
    {
-      return m_type->GetargMvalue(m_cppName, m_direction);
+      return (const char*)m_type->GetargMvalue(m_cppName, m_direction);
    }
 
    inline void DeclareForDispatcher(
@@ -73,13 +73,13 @@ public:
 
    inline DDS_StdString PassToServantMethod(int getargIndex) const
    {
-      return m_type->PassToServantMethod(
+      return (const char *)m_type->PassToServantMethod(
                 m_cppName, m_direction, getargIndex);
    }
 
    inline DDS_StdString PutargMvalue(int getargIndex) const
    {
-      return m_type->PutargMvalue(m_cppName, m_direction, getargIndex);
+      return (const char *)m_type->PutargMvalue(m_cppName, m_direction, getargIndex);
    }
 
    inline DDS_StdString IopParamMmode (DDS::Boolean server) const

@@ -61,7 +61,10 @@ set_var INCLUDE_API yes
 set_var INCLUDE_API_CM yes
 set_var INCLUDE_API_DCPS yes
 set_var INCLUDE_API_DCPS_CCPP yes
+# Currently does not compile on Solaris
+if [ "$SPLICE_TARGET" != "x86_64.solaris11_studio12-release" ]; then
 set_var INCLUDE_API_DCPS_SACPP yes
+fi
 set_var INCLUDE_API_DCPS_GAPI yes
 set_var INCLUDE_API_DCPS_SAC yes
 set_var INCLUDE_API_DCPS_JNI yes
