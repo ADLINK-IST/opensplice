@@ -258,9 +258,52 @@ dds_mask_to_state_masks(
     DDS_ViewStateMask *viewMask,
     DDS_InstanceStateMask *instanceMask)
 {
-    *sampleMask = mask & DDS_ANY_SAMPLE_STATE;
-    *viewMask = mask & DDS_ANY_VIEW_STATE;
-    *instanceMask = mask & DDS_ANY_INSTANCE_STATE;
+    uint32_t sMask = (mask & C99_DDS_READ_SAMPLE_STATE) |
+                     (mask & C99_DDS_NOT_READ_SAMPLE_STATE);
+    uint32_t vMask = (mask & C99_DDS_NEW_VIEW_STATE) |
+                     (mask & C99_DDS_NOT_NEW_VIEW_STATE);
+    uint32_t iMask = (mask & C99_DDS_ALIVE_INSTANCE_STATE) |
+                     (mask & C99_DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE) |
+                     (mask & C99_DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE);
+
+    if (sMask == 0) {
+        *sampleMask = DDS_ANY_SAMPLE_STATE;
+    } else {
+        *sampleMask = 0;
+        if (sMask & C99_DDS_READ_SAMPLE_STATE) {
+            *sampleMask |= DDS_READ_SAMPLE_STATE;
+        }
+        if (sMask & C99_DDS_NOT_READ_SAMPLE_STATE) {
+            *sampleMask |= DDS_NOT_READ_SAMPLE_STATE;
+        }
+    }
+
+    if (vMask == 0) {
+        *viewMask = DDS_ANY_VIEW_STATE;
+    } else {
+        *viewMask = 0;
+        if (vMask & C99_DDS_NEW_VIEW_STATE) {
+            *viewMask |= DDS_NEW_VIEW_STATE;
+        }
+        if (vMask & C99_DDS_NOT_NEW_VIEW_STATE) {
+            *viewMask |= DDS_NOT_NEW_VIEW_STATE;
+        }
+    }
+
+    if (iMask == 0) {
+        *instanceMask = DDS_ANY_INSTANCE_STATE;
+    } else {
+        *instanceMask = 0;
+        if (iMask & C99_DDS_ALIVE_INSTANCE_STATE) {
+            *instanceMask |= DDS_ALIVE_INSTANCE_STATE;
+        }
+        if (iMask & C99_DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE) {
+            *instanceMask |= DDS_NOT_ALIVE_DISPOSED_INSTANCE_STATE;
+        }
+        if (iMask & C99_DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE) {
+            *instanceMask |= DDS_NOT_ALIVE_NO_WRITERS_INSTANCE_STATE;
+        }
+    }
 }
 
 
