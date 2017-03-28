@@ -1316,6 +1316,7 @@ protoc_check()
 
     "$PROTOC_EXE" --version 2 > protoc.ver
     PROTOC_REAL_VERSION=`cat protoc.ver | grep "libprotoc" | head -1 | awk '{ print $2 }'`
+    PROTOC_REAL_VERSION="${PROTOC_REAL_VERSION//[$'\t\r\n']}"
     PROTOC_VERSION=`echo $PROTOC_REAL_VERSION | awk -F'.' '{ print $1"."$2"."$3}' | sed -e 's;\.;0;g'`
     rm -f protoc.ver
 
