@@ -1967,14 +1967,15 @@ v__dcKeepReaderSamples(
     c_object o,
     c_voidp arg)
 {
-    v_dataReaderSample s;
+    v_readerSample s;
     c_iter samples = (c_iter)arg;
 
     assert(samples);
 
     if (o) {
-        s = v_dataReaderSample(o);
+        s = v_readerSample(o);
         if (s != NULL) {
+            c_keep(v_readerSampleInstance(s));
             (void)c_iterAppend(samples, c_keep(s));
         }
     }
@@ -2250,6 +2251,7 @@ v__dcReadData(v_durabilityClient _this, v_dataReader reader, v__dcDataAction act
                 if (!_this->terminate) {
                     action(_this, sample);
                 }
+                c_free(v_readerSampleInstance(v_readerSample(sample)));
                 c_free(sample);
             }
         } else if (result == V_RESULT_NO_DATA) {
