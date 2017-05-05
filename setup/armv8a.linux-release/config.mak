@@ -1,7 +1,7 @@
 ifdef OSPL_OUTER_HOME
-include $(OSPL_OUTER_HOME)/setup/armv8.linux-default.mak
+include $(OSPL_OUTER_HOME)/setup/armv8a.linux-default.mak
 else
-include $(OSPL_HOME)/setup/armv8.linux-default.mak
+include $(OSPL_HOME)/setup/armv8a.linux-default.mak
 endif
 
 SPECIAL      = RELEASE
