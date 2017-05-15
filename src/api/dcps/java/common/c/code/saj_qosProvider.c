@@ -230,8 +230,8 @@ SAJ_FUNCTION(jniQosProviderFree)(
     OS_UNUSED_ARG(jqosProvider);
     assert(qosProvider);
 
-    cmn_qosProviderFree(saj_qosProvider(qosProvider)->qp);
     saj_qosProviderDeinitCopyCaches(SAJ_VOIDP(qosProvider));
+    cmn_qosProviderFree(saj_qosProvider(qosProvider)->qp);
     os_free(SAJ_VOIDP(qosProvider));
 }
 

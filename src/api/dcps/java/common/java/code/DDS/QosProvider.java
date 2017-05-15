@@ -19,9 +19,12 @@
  */
 package DDS;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 import org.opensplice.dds.dcps.QosProviderBase;
 
-public class QosProvider extends QosProviderBase implements DDS.QosProviderInterface
+public class QosProvider extends QosProviderBase implements DDS.QosProviderInterface, Closeable
 {
     private static final long serialVersionUID = -4512906977859245929L;
     /* the QosProvider does not have a userlayer object so it does not need to extend from ObjectImpl */
@@ -42,15 +45,6 @@ public class QosProvider extends QosProviderBase implements DDS.QosProviderInter
         } else {
             throw new NullPointerException("Could not create QosProvider; jniQosProviderNew(...) failed.");
         }
-    }
-
-    @Override
-    protected void finalize()
-            throws java.lang.Throwable
-    {
-        jniQosProviderFree(qosProviderObject);
-        qosProviderObject = 0;
-        super.finalize();
     }
 
     @Override
@@ -163,4 +157,10 @@ public class QosProvider extends QosProviderBase implements DDS.QosProviderInter
     private native int jniGetDatareaderQos (long qosProvider, DDS.NamedDataReaderQosHolder datareaderQos, String id);
     private native int jniGetPublisherQos (long qosProvider, DDS.NamedPublisherQosHolder publisherQos, String id);
     private native int jniGetDatawriterQos (long qosProvider, DDS.NamedDataWriterQosHolder datawriterQos, String id);
+
+    @Override
+    public void close() throws IOException {
+        jniQosProviderFree(qosProviderObject);
+        qosProviderObject = 0;
+    }
 }
